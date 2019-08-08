@@ -436,8 +436,11 @@ void exahype::solvers::LimitingADERDGSolver::adjustSolutionDuringMeshRefinementB
   VT_begin(adjustSolutionHandle);
   #endif
 
-  if ( solverPatch.getType()==SolverPatch::Type::Leaf ) {
-    if (solverPatch.getType()==SolverPatch::Type::LeafProlongating) {
+  if (
+    solverPatch.getType()==SolverPatch::Type::Leaf ||
+    solverPatch.getType()==SolverPatch::Type::LeafProlongates
+  ) {
+    if (solverPatch.getType()==SolverPatch::Type::LeafProlongates) {
       _solver->prolongateVolumeData(solverPatch,isInitialMeshRefinement);
       solverPatch.setType(SolverPatch::Type::Leaf);
     }
@@ -498,8 +501,8 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepOrRestrict(
     // Write the previous limiter status back onto the patch for all cell description types
     solverPatch.setPreviousRefinementStatus(solverPatch.getRefinementStatus());
 
-    if ( solverPatch.getType()==SolverPatch::Type::Leaf ) {
-      const bool isAMRSkeletonCell     = solverPatch.getHasVirtualChildren();
+    if ( ADERDGSolver::isLeaf(solverPatch) ) {
+      const bool isAMRSkeletonCell     = solverPatch.getAugmentationStatus() > ADERDGSolver::MinimumAugmentationStatusForVirtualRefining;
       const bool isSkeletonCell        = isAMRSkeletonCell || isAtRemoteBoundary;
       const bool mustBeDoneImmediately = isSkeletonCell && PredictionSweeps==1;
 
@@ -610,7 +613,7 @@ void exahype::solvers::LimitingADERDGSolver::predictionAndVolumeIntegral(
     SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[element];
     synchroniseTimeStepping(solverPatch,cellInfo);
 
-    const bool isAMRSkeletonCell = solverPatch.getHasVirtualChildren();
+    const bool isAMRSkeletonCell = ADERDGSolver::belongsToAMRSkeleton(solverPatch);
     const bool isSkeletonCell    = isAMRSkeletonCell || isAtRemoteBoundary;
     waitUntilCompletedLastStep(solverPatch,isSkeletonCell,false);
     if ( solverPatch.getType()==SolverPatch::Type::Leaf ) {
@@ -2021,8 +2024,8 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::LimitingADERDGSo
   solverPatch.setNeighbourMergePerformed(true);
   solverPatch.setAugmentationStatus(0);
   solverPatch.setFacewiseAugmentationStatus(0);
-  solverPatch.setCommunicationStatus(ADERDGSolver::CellCommunicationStatus);
-  solverPatch.setFacewiseCommunicationStatus(ADERDGSolver::CellCommunicationStatus);
+  solverPatch.setCommunicationStatus(ADERDGSolver::LeafCommunicationStatus);
+  solverPatch.setFacewiseCommunicationStatus(ADERDGSolver::LeafCommunicationStatus);
 
   // MEASUREMENTS
   CellProcessingTimes result;

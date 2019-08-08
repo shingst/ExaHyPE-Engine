@@ -122,12 +122,12 @@ std::string exahype::records::ADERDGCellDescription::getCreationMapping() {
 std::string exahype::records::ADERDGCellDescription::toString(const Type& param) {
    switch (param) {
       case Leaf: return "Leaf";
-      case LeafKeeps: return "LeafKeeps";
+      case LeafChecked: return "LeafChecked";
       case LeafInitiatesRefining: return "LeafInitiatesRefining";
       case LeafRefines: return "LeafRefines";
       case LeafProlongates: return "LeafProlongates";
       case Parent: return "Parent";
-      case ParentKeeps: return "ParentKeeps";
+      case ParentChecked: return "ParentChecked";
       case ParentRequestsCoarsening: return "ParentRequestsCoarsening";
       case ParentCoarsens: return "ParentCoarsens";
       case Virtual: return "Virtual";
@@ -137,7 +137,7 @@ std::string exahype::records::ADERDGCellDescription::toString(const Type& param)
 }
 
 std::string exahype::records::ADERDGCellDescription::getTypeMapping() {
-   return "Type(Leaf=0,LeafKeeps=1,LeafInitiatesRefining=2,LeafRefines=3,LeafProlongates=4,Parent=5,ParentKeeps=6,ParentRequestsCoarsening=7,ParentCoarsens=8,Virtual=9,Erased=10)";
+   return "Type(Leaf=0,LeafChecked=1,LeafInitiatesRefining=2,LeafRefines=3,LeafProlongates=4,Parent=5,ParentChecked=6,ParentRequestsCoarsening=7,ParentCoarsens=8,Virtual=9,Erased=10)";
 }
 
 

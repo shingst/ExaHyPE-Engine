@@ -82,7 +82,8 @@ void exahype::mappings::DropNeighbourMessages::enterCell(
       const bool isAtRemoteBoundary = Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator);
       // ADER-DG
       for (auto& p : cellInfo._ADERDGCellDescriptions) {
-        const bool waitForHighPriorityJob = isAtRemoteBoundary || p.getHasVirtualChildren();
+        const bool waitForHighPriorityJob =
+            isAtRemoteBoundary || p.getAugmentationStatus()>=exahype::solvers::ADERDGSolver::MinimumAugmentationStatusForVirtualRefining;
         solvers::RegisteredSolvers[p.getSolverNumber()]->waitUntilCompletedLastStep(p,waitForHighPriorityJob,false);
       }
       // // FV - fused time step jobs are only spawned within batches

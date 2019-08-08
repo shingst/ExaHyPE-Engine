@@ -21,7 +21,7 @@ exahype::solvers::ADERDGSolver::ProlongationJob::ProlongationJob(
 }
 
 bool exahype::solvers::ADERDGSolver::ProlongationJob::run(bool runOnMasterThread) {
-  _solver.prolongateFaceDataToDescendant(
+  _solver.prolongateFaceDataToVirtualCell(
       _cellDescription,_parentCellDescription,_subcellIndex);
 
   NumberOfEnclaveJobs.fetch_sub(1);

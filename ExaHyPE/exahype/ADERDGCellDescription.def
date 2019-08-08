@@ -65,12 +65,12 @@ class exahype::records::ADERDGCellDescription {
    */
   enum Type {
     Leaf,                     //! During the time stepping iterations, a leaf cell
-    LeafKeeps,                //! During the mesh refinement iterations, a leaf cell where the refinement criterion returned keep.
+    LeafChecked,              //! During the mesh refinement iterations, a leaf cell where the refinement criterion returned keep.
     LeafInitiatesRefining,    //! During the mesh refinement iterations, a leaf cell that requested refinement.
     LeafRefines,              //! During the mesh refinement iterations, a leaf cell that started refining.
     LeafProlongates,          //! During the mesh refinement iterations, a cell that still has to prolongate volume data. (Necessary if we use background jobs).  
     Parent,                   //! During the time stepping iterations, a leaf cell.
-    ParentKeeps,              //! During the mesh refinement iterations, a parent cell where the coarsening was vetoed.
+    ParentChecked,            //! During the mesh refinement iterations, a parent cell where the coarsening was vetoed.
     ParentRequestsCoarsening, //! During the mesh refinement iterations, a parent cell that requested coarsening.
     ParentCoarsens,           //! During the mesh refinement iterations, a parent cell that is coarsening.
     Virtual,                  //! A virtual cell.

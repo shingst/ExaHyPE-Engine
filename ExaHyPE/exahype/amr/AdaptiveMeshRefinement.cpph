@@ -43,10 +43,10 @@ exahype::amr::computeSubcellPositionOfVirtualCell(const CellDescription& pChild)
     }
   }
   assertion(pParent->getType() == CellDescription::Virtual ||
-            pParent->getType()==CellDescription::Type::LeafCoarsen ||
-            pParent->getType()==CellDescription::Type::LeafRefineInitiated ||
-            pParent->getType()==CellDescription::Type::LeafRefine ||
-            pParent->getType()==CellDescription::Type::LeafProlongating);
+            pParent->getType()==CellDescription::Type::LeafChecked ||
+            pParent->getType()==CellDescription::Type::LeafInitiatesRefining ||
+            pParent->getType()==CellDescription::Type::LeafRefines ||
+            pParent->getType()==CellDescription::Type::LeafProlongates);
 
   subcellPosition.subcellIndex =
       computeSubcellIndex(

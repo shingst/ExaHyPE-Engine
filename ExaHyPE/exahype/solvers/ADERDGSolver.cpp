@@ -82,7 +82,7 @@ int exahype::solvers::ADERDGSolver::restrictToTopMostParentHandle        = 0;
 tarch::logging::Log exahype::solvers::ADERDGSolver::_log( "exahype::solvers::ADERDGSolver");
 
 // communication status
-int exahype::solvers::ADERDGSolver::CellCommunicationStatus                             = 2;
+int exahype::solvers::ADERDGSolver::LeafCommunicationStatus                             = 2;
 int exahype::solvers::ADERDGSolver::MinimumCommunicationStatusForNeighbourCommunication = 1;
 // augmentation status
 // On-the fly erasing seems to work with those values
@@ -117,7 +117,7 @@ int exahype::solvers::ADERDGSolver::computeWeight(const int cellDescriptionsInde
 void exahype::solvers::ADERDGSolver::addNewCellDescription(
     const int                                    solverNumber,
     CellInfo&                                    cellInfo,
-    const CellDescription::Type                  cellType,
+    const CellDescription::Type&                 cellType,
     const int                                    level,
     const int                                    parentIndex,
     const tarch::la::Vector<DIMENSIONS, double>& cellSize,
@@ -139,14 +139,13 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
   newCellDescription.setParentIndex(parentIndex);
   newCellDescription.setLevel(level);
 
-  newCellDescription.setHasVirtualChildren(false);
   newCellDescription.setAugmentationStatus(0);
   newCellDescription.setFacewiseAugmentationStatus(0); // implicit conversion
   newCellDescription.setCommunicationStatus(0);
   newCellDescription.setFacewiseCommunicationStatus(0); // implicit conversion
   if (cellType==CellDescription::Type::Leaf) {
-    newCellDescription.setCommunicationStatus(CellCommunicationStatus);
-    newCellDescription.setFacewiseCommunicationStatus(CellCommunicationStatus); // implicit conversion
+    newCellDescription.setCommunicationStatus(LeafCommunicationStatus);
+    newCellDescription.setFacewiseCommunicationStatus(LeafCommunicationStatus); // implicit conversion
     // TODO(Dominic): Make sure prolongation and restriction considers this.
   }
   newCellDescription.setNeighbourMergePerformed((signed char) 0/*implicit conversion*/);
@@ -167,7 +166,6 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
   newCellDescription.setFluctuationIndex(-1);
   newCellDescription.setFluctuation(nullptr);
 
-  newCellDescription.setVetoErasingChildren(false);
   // Halo/Limiter meta data (oscillations identificator)
   newCellDescription.setRefinementFlag(false);
   newCellDescription.setRefinementStatus(Pending);
@@ -243,21 +241,15 @@ exahype::solvers::ADERDGSolver::CellDescription& exahype::solvers::ADERDGSolver:
   return Heap::getInstance().getData(cellDescriptionsIndex)[element];
 }
 
-
-bool exahype::solvers::ADERDGSolver::holdsFaceData(const CellDescription& cellDescription) {
-  return ( isLeaf(cellDescription) || isOfType(cellDescription,CellDescription::Type::Virtual) ) &&
-         cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication;
-}
-
 bool exahype::solvers::ADERDGSolver::communicateWithNeighbour(const CellDescription& cellDescription,const int faceIndex) {
   assertion1(cellDescription.getType()!=CellDescription::Type::Leaf ||
-            cellDescription.getCommunicationStatus()==CellCommunicationStatus,cellDescription.toString());
+            cellDescription.getCommunicationStatus()==LeafCommunicationStatus,cellDescription.toString());
   return
-      (cellDescription.getCommunicationStatus()                  == CellCommunicationStatus &&
+      (cellDescription.getCommunicationStatus()                  == LeafCommunicationStatus &&
       cellDescription.getFacewiseCommunicationStatus(faceIndex)  >= MinimumCommunicationStatusForNeighbourCommunication &&
       cellDescription.getFacewiseAugmentationStatus(faceIndex)   <  MaximumAugmentationStatus)
       ||
-      (cellDescription.getFacewiseCommunicationStatus(faceIndex) == CellCommunicationStatus &&
+      (cellDescription.getFacewiseCommunicationStatus(faceIndex) == LeafCommunicationStatus &&
       cellDescription.getCommunicationStatus()                   >= MinimumCommunicationStatusForNeighbourCommunication &&
       cellDescription.getAugmentationStatus()                    <  MaximumAugmentationStatus);
 }
@@ -865,7 +857,7 @@ void exahype::solvers::ADERDGSolver::fusedTimeStepOrRestrict(
     cellDescription.setHasCompletedLastStep(false);
 
     if ( cellDescription.getType()==CellDescription::Type::Leaf ) {
-      const bool isAMRSkeletonCell     = cellDescription.getHasVirtualChildren();
+      const bool isAMRSkeletonCell     = belongsToAMRSkeleton(cellDescription);
       const bool isSkeletonCell        = isAMRSkeletonCell || isAtRemoteBoundary;
       const bool mustBeDoneImmediately = isSkeletonCell && PredictionSweeps==1;
 
@@ -983,7 +975,7 @@ void exahype::solvers::ADERDGSolver::compress(
   if ( element!=NotFound ) {
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
     if (cellDescription.getType()==CellDescription::Type::Leaf) {
-      const bool isSkeletonCell = cellDescription.getHasVirtualChildren();
+      const bool isSkeletonCell = belongsToAMRSkeleton(cellDescription);
       compress(cellDescription,isSkeletonCell);
     }
   }
@@ -1069,7 +1061,7 @@ void exahype::solvers::ADERDGSolver::predictionAndVolumeIntegral(
   if ( cellDescription.getType()==CellDescription::Type::Leaf ) {
     cellDescription.setHasCompletedLastStep(false);
 
-    const bool isAMRSkeletonCell     = cellDescription.getHasVirtualChildren();
+    const bool isAMRSkeletonCell     = belongsToAMRSkeleton(cellDescription);
     const bool isSkeletonCell        = isAMRSkeletonCell || isAtRemoteBoundary;
     const bool mustBeDoneImmediately = isSkeletonCell && PredictionSweeps==1;
 
@@ -1097,7 +1089,7 @@ void exahype::solvers::ADERDGSolver::predictionAndVolumeIntegral(
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
     synchroniseTimeStepping(cellDescription);
 
-    const bool isAMRSkeletonCell = cellDescription.getHasVirtualChildren();
+    const bool isAMRSkeletonCell = belongsToAMRSkeleton(cellDescription);
     const bool isSkeletonCell    = isAMRSkeletonCell || isAtRemoteBoundary;
     waitUntilCompletedLastStep(cellDescription,isSkeletonCell,false);
     if ( cellDescription.getType()==CellDescription::Type::Leaf ) {
@@ -1192,53 +1184,11 @@ void exahype::solvers::ADERDGSolver::rollbackToPreviousTimeStep(CellDescription&
   cellDescription.setPreviousTimeStepSize(std::numeric_limits<double>::infinity());
 }
 
-void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinement(
-    const int solverNumber,
-    CellInfo& cellInfo) {
-  const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
-  if ( element != NotFound ) {
-    CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
-    synchroniseTimeStepping(cellDescription);
-
-    const bool isInitialMeshRefinement = getMeshUpdateEvent()==MeshUpdateEvent::InitialRefinementRequested;
-    if ( exahype::solvers::Solver::SpawnAMRBackgroundJobs ) {
-      cellDescription.setHasCompletedLastStep(false);
-      peano::datatraversal::TaskSet( new AdjustSolutionDuringMeshRefinementJob(*this,cellDescription,isInitialMeshRefinement));
-    } else {
-      adjustSolutionDuringMeshRefinementBody(cellDescription,isInitialMeshRefinement);
-    }
-  }
-}
-
-void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinementBody(
-    CellDescription& cellDescription,
-    const bool isInitialMeshRefinement) {
-  #ifdef USE_ITAC
-  VT_begin(adjustSolutionHandle);
-  #endif
-
-  if (
-      cellDescription.getType()==CellDescription::Type::Leaf ||
-      cellDescription.getType()==CellDescription::Type::LeafProlongating
-  ) {
-    if ( cellDescription.getType()==CellDescription::Type::LeafProlongating ) {
-      prolongateVolumeData(cellDescription,isInitialMeshRefinement);
-      cellDescription.setType(CellDescription::Type::Leaf);
-    }
-    
-    adjustSolution(cellDescription);
-    markForRefinement(cellDescription);
-  }
-
-  cellDescription.setHasCompletedLastStep(true);
-
-  #ifdef USE_ITAC
-  VT_end(adjustSolutionHandle);
-  #endif
-}
-
 void exahype::solvers::ADERDGSolver::adjustSolution(CellDescription& cellDescription) {
-  assertion1(cellDescription.getType()==CellDescription::Type::Leaf,cellDescription.toString());
+  assertion1(cellDescription.getType()==CellDescription::Type::Leaf ||
+             cellDescription.getType()==CellDescription::Type::LeafProlongates ||
+             cellDescription.getType()==CellDescription::Type::ParentCoarsens
+             ,cellDescription.toString());
 
   double* solution = static_cast<double*>(cellDescription.getSolution());
   adjustSolution(
@@ -1467,7 +1417,7 @@ void exahype::solvers::ADERDGSolver::prolongateObservablesMinAndMax(
     const CellDescription& parentCellDescription) const {
   const int numberOfObservables = getDMPObservables();
   for (int faceIndex = 0; faceIndex < DIMENSIONS_TIMES_TWO; ++faceIndex) {
-    if ( cellDescription.getFacewiseCommunicationStatus(faceIndex)==CellCommunicationStatus ) { // TODO(Dominic): If the grid changes dynamically during the time steps,
+    if ( cellDescription.getFacewiseCommunicationStatus(faceIndex)==LeafCommunicationStatus ) { // TODO(Dominic): If the grid changes dynamically during the time steps,
       // fine
       double* minFine = static_cast<double*>(cellDescription.getSolutionMin()) + numberOfObservables * faceIndex;
       double* maxFine = static_cast<double*>(cellDescription.getSolutionMax()) + numberOfObservables * faceIndex;
@@ -1481,7 +1431,7 @@ void exahype::solvers::ADERDGSolver::prolongateObservablesMinAndMax(
   }
 }
 
-void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
+void exahype::solvers::ADERDGSolver::prolongateFaceDataToVirtualCell(
     CellDescription& cellDescription,
     const CellDescription& parentCellDescription,
     const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) {
@@ -1502,7 +1452,7 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendant(
 
   for (int faceIndex = 0; faceIndex < DIMENSIONS_TIMES_TWO; ++faceIndex) {
     const int direction = faceIndex/2;
-    if ( cellDescription.getFacewiseCommunicationStatus(faceIndex)==CellCommunicationStatus ) { // TODO(Dominic): If the grid changes dynamically during the time steps,
+    if ( cellDescription.getFacewiseCommunicationStatus(faceIndex)==LeafCommunicationStatus ) { // TODO(Dominic): If the grid changes dynamically during the time steps,
       #ifdef Parallel
       assertion4( exahype::amr::faceIsOnBoundaryOfParent(faceIndex,subcellIndex,levelFine-levelCoarse),
             cellDescription.toString(),parentCellDescription.toString(),tarch::parallel::Node::getInstance().getRank(),
@@ -1565,7 +1515,7 @@ void exahype::solvers::ADERDGSolver::prolongateFaceData(
         cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication &&
         isValidCellDescriptionIndex(cellDescription.getParentIndex()) // might be at master-worker boundary
     ) {
-        Solver::SubcellPosition subcellPosition = amr::computeSubcellPositionOfDescendant<CellDescription,Heap>(cellDescription);
+        Solver::SubcellPosition subcellPosition = amr::computeSubcellPositionOfVirtualCell<CellDescription,Heap>(cellDescription);
         CellDescription& parentCellDescription = getCellDescription(
             subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
         assertion1(parentCellDescription.getType()==CellDescription::Type::Leaf,parentCellDescription.toString());
@@ -1575,7 +1525,7 @@ void exahype::solvers::ADERDGSolver::prolongateFaceData(
             !SpawnProlongationAsBackgroundJob ||
             isAtRemoteBoundary
         ) {
-          prolongateFaceDataToDescendant(cellDescription,parentCellDescription,subcellPosition.subcellIndex);
+          prolongateFaceDataToVirtualCell(cellDescription,parentCellDescription,subcellPosition.subcellIndex);
         } else {
           cellDescription.setHasCompletedLastStep(false); // done here in order to skip lookup of cell description in job constructor
           peano::datatraversal::TaskSet spawn( new ProlongationJob( *this, 
@@ -1595,7 +1545,7 @@ void exahype::solvers::ADERDGSolver::restrictObservablesMinAndMax(
     const CellDescription& parentCellDescription) const {
   const int numberOfObservables = getDMPObservables();
   for (int faceIndex=0; faceIndex<DIMENSIONS_TIMES_TWO; faceIndex++) {
-    if ( cellDescription.getFacewiseCommunicationStatus(faceIndex)==CellCommunicationStatus ) {
+    if ( cellDescription.getFacewiseCommunicationStatus(faceIndex)==LeafCommunicationStatus ) {
       // fine
       const double* minFine = static_cast<double*>(cellDescription.getSolutionMin()) + numberOfObservables* faceIndex;
       const double* maxFine = static_cast<double*>(cellDescription.getSolutionMax()) + numberOfObservables* faceIndex;
@@ -1623,7 +1573,7 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent(const CellDescripti
               cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication, cellDescription.toString() );
   assertion1( tryGetElement(cellDescription.getParentIndex(),cellDescription.getSolverNumber()) != NotFound, cellDescription.toString());
   exahype::solvers::Solver::SubcellPosition subcellPosition =
-      exahype::amr::computeSubcellPositionOfDescendant<CellDescription,Heap>(cellDescription);
+      exahype::amr::computeSubcellPositionOfVirtualCell<CellDescription,Heap>(cellDescription);
   assertion1(subcellPosition.parentElement!=exahype::solvers::Solver::NotFound,cellDescription.toString());
 
   CellDescription& parentCellDescription =
@@ -1662,7 +1612,7 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent(const CellDescripti
     const int orientation = faceIndex % 2;
     const tarch::la::Vector<DIMENSIONS-1,int> subfaceIndex =
       exahype::amr::getSubfaceIndex(subcellIndex,direction);
-    if ( cellDescription.getFacewiseCommunicationStatus(faceIndex)==CellCommunicationStatus ) {
+    if ( cellDescription.getFacewiseCommunicationStatus(faceIndex)==LeafCommunicationStatus ) {
       assertion1(exahype::amr::faceIsOnBoundaryOfParent(faceIndex,subcellIndex,levelDelta),cellDescription.toString());
       assertion1(SpawnProlongationAsBackgroundJob || cellDescription.getNeighbourMergePerformed(faceIndex),cellDescription.toString());// necessary but not sufficient
 
@@ -1705,127 +1655,6 @@ void exahype::solvers::ADERDGSolver::restrictToTopMostParent(const CellDescripti
 
 void exahype::solvers::ADERDGSolver::disableCheckForNaNs() {
   _checkForNaNs = false;
-}
-
-///////////////////////////////////
-// NEIGHBOUR
-///////////////////////////////////
-void exahype::solvers::ADERDGSolver::mergeWithRefinementStatus(
-    CellDescription& cellDescription,
-    const int faceIndex,
-    const int otherRefinementStatus) const {
-  cellDescription.setFacewiseRefinementStatus( faceIndex, otherRefinementStatus );
-}
-
-void
-exahype::solvers::ADERDGSolver::updateCommunicationStatus(
-    exahype::solvers::ADERDGSolver::CellDescription& cellDescription) const {
-  cellDescription.setCommunicationStatus(determineCommunicationStatus(cellDescription));
-  assertion1(
-      cellDescription.getType()!=CellDescription::Type::Leaf ||
-      cellDescription.getCommunicationStatus()==CellCommunicationStatus,
-      cellDescription.toString());
-}
-
-int
-exahype::solvers::ADERDGSolver::determineCommunicationStatus(
-    exahype::solvers::ADERDGSolver::CellDescription& cellDescription) const {
-  if ( cellDescription.getType()==CellDescription::Type::Leaf ) {
-    return CellCommunicationStatus;
-  } else {
-    int max = 0;
-    for (unsigned int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
-      if ( cellDescription.getNeighbourMergePerformed(i) ) {
-        max = std::max( max, cellDescription.getFacewiseCommunicationStatus(i)-1 );
-      }
-    }
-    return max;
-  }
-}
-
-void exahype::solvers::ADERDGSolver::mergeWithCommunicationStatus(
-    CellDescription& cellDescription,
-    const int faceIndex,
-    const int otherCommunicationStatus) const {
-  assertion3(cellDescription.getCommunicationStatus()<=CellCommunicationStatus,
-             cellDescription.getCommunicationStatus(),otherCommunicationStatus,
-             cellDescription.getCommunicationStatus());
-  cellDescription.setFacewiseCommunicationStatus( faceIndex, otherCommunicationStatus );
-}
-
-void
-exahype::solvers::ADERDGSolver::updateAugmentationStatus(
-    exahype::solvers::ADERDGSolver::CellDescription& cellDescription) const {
-  cellDescription.setAugmentationStatus(determineAugmentationStatus(cellDescription));
-  assertion1(
-      cellDescription.getType()!=CellDescription::Type::Parent ||
-      cellDescription.getAugmentationStatus()==MaximumAugmentationStatus,
-      cellDescription.toString());
-}
-
-int
-exahype::solvers::ADERDGSolver::determineAugmentationStatus(
-    exahype::solvers::ADERDGSolver::CellDescription& cellDescription) const {
-  if (cellDescription.getType()==CellDescription::Type::Parent) {
-    return MaximumAugmentationStatus;
-  } else {
-    int max = 0;
-    for (unsigned int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
-      if ( cellDescription.getNeighbourMergePerformed(i) ) {
-        max = std::max( max, cellDescription.getFacewiseAugmentationStatus(i)-1 );
-      }
-    }
-    return max;
-  }
-}
-
-void exahype::solvers::ADERDGSolver::mergeWithAugmentationStatus(
-    CellDescription& cellDescription,
-    const int faceIndex,
-    const int otherAugmentationStatus) const {
-  assertion3(
-      cellDescription.getAugmentationStatus()<=MaximumAugmentationStatus,
-      cellDescription.getAugmentationStatus(),otherAugmentationStatus,
-      cellDescription.getAugmentationStatus());
-  cellDescription.setFacewiseAugmentationStatus( faceIndex, otherAugmentationStatus );
-}
-
-void exahype::solvers::ADERDGSolver::updateRefinementStatus(
-    CellDescription&                                           cellDescription,
-    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) const {
-  if ( cellDescription.getLevel()==getMaximumAdaptiveMeshLevel() ) {
-    int max = Erase;
-    if ( cellDescription.getRefinementFlag() )
-      max = _refineOrKeepOnFineGrid;
-    if ( cellDescription.getRefinementStatus() == getMinRefinementStatusForTroubledCell() )
-      max = cellDescription.getRefinementStatus();
-
-    for (unsigned int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
-      if ( neighbourMergePerformed[i] ) {
-        max = std::max( max, cellDescription.getFacewiseRefinementStatus(i)-1 );
-      }
-    }
-    cellDescription.setRefinementStatus(max);
-  }
-}
-
-void exahype::solvers::ADERDGSolver::updateCoarseGridAncestorRefinementStatus(
-    const CellDescription& fineGridCellDescription,
-    CellDescription& coarseGridCellDescription) {
-  // fine to coarse grid
-  if ( coarseGridCellDescription.getType()==CellDescription::Type::Parent ) {
-    tarch::multicore::Lock lock(CoarseGridSemaphore);
-    if ( fineGridCellDescription.getType()==CellDescription::Type::Leaf ) {
-      coarseGridCellDescription.setRefinementStatus(
-          std::max( coarseGridCellDescription.getRefinementStatus(), fineGridCellDescription.getRefinementStatus()) );
-      // TODO(Dominic): Does that make sense?
-      coarseGridCellDescription.setPreviousRefinementStatus(
-          std::max( coarseGridCellDescription.getPreviousRefinementStatus(), fineGridCellDescription.getPreviousRefinementStatus()) );
-    } else if ( fineGridCellDescription.getType()==CellDescription::Type::Parent ) {
-      coarseGridCellDescription.setVetoErasingChildren(true);
-    }
-    lock.free();
-  }
 }
 
 // TODO(Dominic): Check that we have rolled back in time as well
@@ -3258,8 +3087,8 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::ADERDGSolver::me
   cellDescription.setNeighbourMergePerformed(true);
   cellDescription.setAugmentationStatus(0);
   cellDescription.setFacewiseAugmentationStatus(0);
-  cellDescription.setCommunicationStatus(ADERDGSolver::CellCommunicationStatus);
-  cellDescription.setFacewiseCommunicationStatus(ADERDGSolver::CellCommunicationStatus);
+  cellDescription.setCommunicationStatus(ADERDGSolver::LeafCommunicationStatus);
+  cellDescription.setFacewiseCommunicationStatus(ADERDGSolver::LeafCommunicationStatus);
 
   // MEASUREMENTS
   CellProcessingTimes result;

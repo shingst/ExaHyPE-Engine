@@ -33,7 +33,7 @@ namespace exahype {
  *
  * 		   build date: 09-02-2014 14:40
  *
- * @date   02/08/2019 16:12
+ * @date   05/08/2019 10:02
  */
 class exahype::records::ADERDGCellDescription { 
    
@@ -69,7 +69,7 @@ class exahype::records::ADERDGCellDescription {
       };
       
       enum Type {
-         Leaf = 0, LeafKeeps = 1, LeafInitiatesRefining = 2, LeafRefines = 3, LeafProlongates = 4, Parent = 5, ParentKeeps = 6, ParentRequestsCoarsening = 7, ParentCoarsens = 8, Virtual = 9, Erased = 10
+         Leaf = 0, LeafChecked = 1, LeafInitiatesRefining = 2, LeafRefines = 3, LeafProlongates = 4, Parent = 5, ParentChecked = 6, ParentRequestsCoarsening = 7, ParentCoarsens = 8, Virtual = 9, Erased = 10
       };
       
       struct PersistentRecords {
@@ -3469,7 +3469,7 @@ class exahype::records::ADERDGCellDescription {
  *
  * 		   build date: 09-02-2014 14:40
  *
- * @date   02/08/2019 16:12
+ * @date   05/08/2019 10:02
  */
 class exahype::records::ADERDGCellDescriptionPacked { 
    

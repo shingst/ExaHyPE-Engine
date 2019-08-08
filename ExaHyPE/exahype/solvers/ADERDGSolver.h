@@ -122,7 +122,7 @@ public:
   static int predictorBodyHandleSkeleton;
   static int updateBodyHandle;
   static int mergeNeighboursHandle;
-  static int prolongateFaceDataToVirtualHandle;
+  static int prolongateFaceDataToVirtualCellHandle;
   static int restrictToTopMostParentHandle;
   #endif
 
@@ -131,7 +131,7 @@ public:
    * This value is assigned to cell descriptions
    * of type Leaf.
    */
-  static int CellCommunicationStatus;
+  static int LeafCommunicationStatus;
   /**
    * The minimum helper status a cell description
    * must have for it allocating boundary data.
@@ -382,18 +382,6 @@ private:
   void decideOnRefinement(CellDescription& fineGridCellDescription, const bool stillInRefiningMode);
 
   /**
-   * Performs three operations:
-   * 1. Checks if a ErasingVirtualChildrenRequestedTriggered event on the coarse
-   * grid parent can be changed to a ErasingVirtualChildrenRequested event.
-   * In this case, the triggered request becomes an actual request.
-   * The fine grid children can however still veto this request.
-   * 2.
-   *
-   * @note Thread-safe.
-   */
-  void decideOnVirtualRefinement(CellDescription& fineGridCellDescription);
-
-  /**
    * Fills the solution and previous solution arrays
    * with zeros.
    */
@@ -424,27 +412,26 @@ private:
    * @return if a Cell (which was previously an Ancestor) can
    * erase its children.
    */
-  bool markPreviousAncestorForRefinement(CellDescription& cellDescription);
+  bool markPreviousParentForRefinement(CellDescription& cellDescription);
 
-  /**
-   * In case, we change the children to a Virtual
-   * or erase them from the grid, we first restrict
-   * volume data up to the parent and further
-   * copy the corrector and predictor time stamps.
-   *
-   * \return true if we erase Virtuals from
-   * the grid. In this case, to call an erase
-   * on the grid/Peano cell if no other cell descriptions are
-   * registered. Returns false otherwise.
-   *
-   * TODO(Dominic): More docu.
-   *
-   * @note This operations is not thread-safe
-   */
+
+   /**
+    * Erases a cell description of type Leaf if the parent cell description (type: Parent)
+    * is recoarsened. Erases a cell description of type Virtual if the
+    * parent cell description has an AugmentationStatus that
+    * indicates that it does not require virtual subcells.
+    *
+    * @param cellDescription       the fine grid cell description
+    * @param cellDescriptionsIndex heap index of the heap array that contains the the fine grid cell description
+    * @param fineGridCellElement   element of the fine grid cell description in the heap array.
+    * @param parentCellDescription the parent cell description of the fine grid cell description. Typically,
+    *                              it is located on the next coarser mesh level.
+    */
   void eraseCellDescriptionIfNecessary(
-      const int cellDescriptionsIndex,
-      const int fineGridCellElement,
-      CellDescription& coarseGridCellDescription);
+      CellDescription& cellDescription,
+      const int        cellDescriptionsIndex,
+      const int        fineGridCellElement,
+      CellDescription& parentCellDescription) const;
 
   /**
    * Initialise cell description of type Leaf.
@@ -619,7 +606,7 @@ private:
    * its faces. If so restrict face data from the parent down
    * to the Virtual for those face(s).
    */
-  void prolongateFaceDataToVirtual(
+  void prolongateFaceDataToVirtualCell(
       CellDescription& cellDescription,
       const CellDescription& parentCellDescription,
       const tarch::la::Vector<DIMENSIONS,int>& subcellIndex);
@@ -1152,7 +1139,7 @@ public:
   static void addNewCellDescription(
       const int                                    solverNumber,
       CellInfo&                                    cellInfo,
-      const CellDescription::Type&                 type,
+      const CellDescription::Type&                 cellType,
       const int                                    level,
       const int                                    parentIndex,
       const tarch::la::Vector<DIMENSIONS, double>& cellSize,
@@ -1174,11 +1161,29 @@ public:
       const int element);
 
   /**
+   * @param cellDescription a cell description
+   * @return if the cell description is a leaf cell.
+   * @note a cell description in state ParentCoarsening is considered a
+   * (temporary) leaf cell, too.
+   */
+  static bool holdsSolution(const CellDescription& cellDescription) {
+    return cellDescription.getType()==CellDescription::Type::Leaf ||
+        cellDescription.getType()==CellDescription::Type::LeafChecked ||
+        cellDescription.getType()==CellDescription::Type::LeafRefines ||
+        cellDescription.getType()==CellDescription::Type::LeafInitiatesRefining ||
+        cellDescription.getType()==CellDescription::Type::ParentCoarsens;
+  }
+
+  /**
    * @return if a cell description (should) hold face data.
    *
    * @param cellDescription a cell description.
    */
-  static bool holdsFaceData(const CellDescription& cellDescription);
+  static bool holdsFaceData(const CellDescription& cellDescription) {
+    return holdsSolution(cellDescription) ||
+        (isOfType(cellDescription,CellDescription::Type::Virtual) &&
+        cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication);
+  }
 
   /**
    * @param cellDescription a cell description
@@ -1188,10 +1193,9 @@ public:
    */
   static bool isLeaf(const CellDescription& cellDescription) {
     return cellDescription.getType()==CellDescription::Type::Leaf ||
-           cellDescription.getType()==CellDescription::Type::LeafKeeps ||
+           cellDescription.getType()==CellDescription::Type::LeafChecked ||
            cellDescription.getType()==CellDescription::Type::LeafRefines ||
-           cellDescription.getType()==CellDescription::Type::LeafInitiatesRefining ||
-           cellDescription.getType()==CellDescription::Type::ParentCoarsens;
+           cellDescription.getType()==CellDescription::Type::LeafInitiatesRefining;
   }
 
   /**
@@ -1200,8 +1204,9 @@ public:
    */
   static bool isParent(const CellDescription& cellDescription) {
     return cellDescription.getType()==CellDescription::Type::Parent ||
-           cellDescription.getType()==CellDescription::Type::ParentKeeps ||
-           cellDescription.getType()==CellDescription::Type::ParentRequestsCoarsening;
+           cellDescription.getType()==CellDescription::Type::ParentChecked ||
+           cellDescription.getType()==CellDescription::Type::ParentRequestsCoarsening ||
+           cellDescription.getType()==CellDescription::Type::ParentCoarsens;
   }
 
   /**
@@ -1210,6 +1215,16 @@ public:
    */
   static bool isVirtual(const CellDescription& cellDescription) {
     return cellDescription.getType()==CellDescription::Type::Virtual;
+  }
+
+  /**
+   * @param cellDescription a cell description
+   * @return if this cell description is a Leaf cell and if it belongs
+   * to the AMR skeleton.
+   */
+  static bool belongsToAMRSkeleton(const CellDescription& cellDescription) {
+    return isLeaf(cellDescription) &&
+           cellDescription.getAugmentationStatus() > ADERDGSolver::MinimumAugmentationStatusForVirtualRefining;
   }
 
   /**
