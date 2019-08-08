@@ -570,18 +570,19 @@ private:
    */
   void ensureFineGridCoarseGridConsistency(
       CellDescription& cellDescription,
-      const int coarseGridCellDescriptionsIndex);
+      const int        coarseGridCellDescriptionsIndex);
 
   /**
-   * Update the refinement status of a coarse grid parent of type
-   * Ancestor.
+   * Vetoes the coarse grid parent's coarsening request,
+   * if the fine grid cell description is either of type Parent or
+   * if it is of type Leaf and no refinement was
    *
-   * @param fineGridCellDescription the fine grid cell description
-   * @param coarseGridElement       element of the
+   * @param fineGridCellDescription   the fine grid cell description
+   * @param coarseGridCellDescription the coarse grid cell description
    */
-  void updateCoarseGridAncestorRefinementStatus(
+  void vetoParentCoarseningRequestsIfNecessary(
       const CellDescription& fineGridCellDescription,
-      CellDescription& coarseGridCellDescription);
+      CellDescription&       coarseGridCellDescription);
 
   /**
    * Turns checking for NaNs off.

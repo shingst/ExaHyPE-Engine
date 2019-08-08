@@ -43,6 +43,7 @@ exahype::amr::computeSubcellPositionOfVirtualCell(const CellDescription& pChild)
     }
   }
   assertion(pParent->getType() == CellDescription::Virtual ||
+            pParent->getType()==CellDescription::Type::Leaf ||
             pParent->getType()==CellDescription::Type::LeafChecked ||
             pParent->getType()==CellDescription::Type::LeafInitiatesRefining ||
             pParent->getType()==CellDescription::Type::LeafRefines ||

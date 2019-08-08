@@ -125,22 +125,27 @@ void exahype::solvers::ADERDGSolver::updateRefinementStatus(
 }
 
 
-void exahype::solvers::ADERDGSolver::updateCoarseGridAncestorRefinementStatus(
+void exahype::solvers::ADERDGSolver::vetoParentCoarseningRequestsIfNecessary(
     const CellDescription& fineGridCellDescription,
     CellDescription& coarseGridCellDescription) {
-  // fine to coarse grid
-  if ( coarseGridCellDescription.getType()==CellDescription::Type::Parent ) {
-    tarch::multicore::Lock lock(CoarseGridSemaphore);
-    if ( fineGridCellDescription.getType()==CellDescription::Type::Leaf ) {
-      coarseGridCellDescription.setRefinementStatus(
-          std::max( coarseGridCellDescription.getRefinementStatus(), fineGridCellDescription.getRefinementStatus()) );
-      // TODO(Dominic): Does that make sense?
-      coarseGridCellDescription.setPreviousRefinementStatus(
-          std::max( coarseGridCellDescription.getPreviousRefinementStatus(), fineGridCellDescription.getPreviousRefinementStatus()) );
-    } else if ( fineGridCellDescription.getType()==CellDescription::Type::Parent ) {
+  tarch::multicore::Lock lock(CoarseGridSemaphore);
+  if (
+      coarseGridCellDescription.getType()==CellDescription::Type::ParentRequestsCoarsening &&
+      isLeaf(fineGridCellDescription) &&
+      fineGridCellDescription.getRefinementStatus() > 0
+  ) {
+    coarseGridCellDescription.setType(CellDescription::Type::ParentChecked); // do not request coarsening again
+  } else if (
+      coarseGridCellDescription.getType()==CellDescription::Type::ParentRequestsCoarsening &&
+      isParent(fineGridCellDescription)
+  ) {
+    if ( fineGridCellDescription.getType()==CellDescription::Type::ParentChecked ) { // do not request coarsening again
+      coarseGridCellDescription.setType(CellDescription::Type::ParentChecked);
+    } else { // allows to request coarsening again
+      coarseGridCellDescription.setType(CellDescription::Type::Parent);
     }
-    lock.free();
   }
+  lock.free();
 }
 
 // Allocate / deallocate
@@ -534,7 +539,7 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
     if ( coarseGridElement != exahype::solvers::Solver::NotFound ) {
       CellDescription& coarseGridCellDescription = getCellDescription(
           coarseGridCell.getCellDescriptionsIndex(),coarseGridElement);
-      updateCoarseGridAncestorRefinementStatus(fineGridCellDescription,coarseGridCellDescription);
+      vetoParentCoarseningRequestsIfNecessary(fineGridCellDescription,coarseGridCellDescription);
     }
 
     progressCollectiveRefinementOperationsInEnterCell(fineGridCellDescription);
@@ -546,7 +551,7 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
   // Coarse grid cell based adaptive mesh refinement operations.
   // Add new cells to the grid and veto erasing or erasing virtual children
   // requests if there are cells on the fine level.
-  if (coarseGridElement!=exahype::solvers::Solver::NotFound) {
+  if ( coarseGridElement!=exahype::solvers::Solver::NotFound ) {
     CellDescription& coarseGridCellDescription = getCellDescription(
         coarseGridCell.getCellDescriptionsIndex(),coarseGridElement);
 
@@ -829,7 +834,7 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
     // compute flagging gradients in inside cells
     bool flaggingHasConverged = true;
     if ( !peano::grid::aspects::VertexStateAnalysis::isOneVertexBoundary(fineGridVertices,fineGridVerticesEnumerator) ) { // no check on boundary
-      if ( cellDescription.getType()==CellDescription::Type::Leaf || cellDescription.getType()==CellDescription::Type::Parent ) {
+      if ( isLeaf(cellDescription) || isParent(cellDescription) ) {
         for (int d=0; d<DIMENSIONS; d++) {
           flaggingHasConverged &=
               std::abs(cellDescription.getFacewiseAugmentationStatus(2*d+1)  - cellDescription.getFacewiseAugmentationStatus(2*d+0)) <= 2;
@@ -839,7 +844,7 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
       }
       // refinement status is only spread on finest level
       if (
-          cellDescription.getType()  == CellDescription::Type::Leaf &&
+          isLeaf(cellDescription) &&
           cellDescription.getLevel() == getMaximumAdaptiveMeshLevel()
       ) {
         for (int d=0; d<DIMENSIONS; d++) {
@@ -849,54 +854,47 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
       }
     }
 
-    bool stable =
+    const bool condA =
+        (!isLeaf(cellDescription) || // cell must not have pending refinement status and must not require refinement on coarser grids
+        (cellDescription.getRefinementStatus()!=Pending && // TODO(Dominic): Pending still required?
+        (cellDescription.getLevel() == getMaximumAdaptiveMeshLevel() ||
+        cellDescription.getRefinementStatus()<=0)));
+
+    const bool condB =
+        (!isOfType(cellDescription,CellDescription::Type::Virtual) || // virtual cell must not have refinement status > 0 on finest level
+        cellDescription.getLevel() != getMaximumAdaptiveMeshLevel() ||
+        cellDescription.getRefinementStatus()<=0);
+    const bool stable =
       flaggingHasConverged
       &&
-      (cellDescription.getType()==CellDescription::Type::LeafChecked   ||
+      (cellDescription.getType()==CellDescription::Type::LeafChecked  ||
       cellDescription.getType()==CellDescription::Type::ParentChecked ||
       cellDescription.getType()==CellDescription::Type::Virtual)
       &&
-      (!isLeaf(cellDescription) || // cell must not have pending refinement status and must not require refinement on coarser grids
-      (cellDescription.getRefinementStatus()!=Pending &&
-      (cellDescription.getLevel() == getMaximumAdaptiveMeshLevel() ||
-      cellDescription.getRefinementStatus()<=0)))
+      condA
       &&
-      (isOfType(cellDescription,CellDescription::Type::Virtual) || // descendant must not have refinement status > 0 on finest level
-      cellDescription.getLevel() != getMaximumAdaptiveMeshLevel() ||
-      cellDescription.getRefinementStatus()<=0);
+      condB;
 
-      if ( !stable ) {
-        #ifdef MonitorMeshRefinement
-        logInfo("attainedStableState(...)","cell has not attained stable state (yet):");
-        logInfo("attainedStableState(...)","type="<<cellDescription.toString(cellDescription.getType()));
-        logInfo("attainedStableState(...)","x="<<cellDescription.getOffset());
-        logInfo("attainedStableState(...)","level="<<cellDescription.getLevel());
-        logInfo("attainedStableState(...)","flaggingHasConverged="<<flaggingHasConverged);
-        logInfo("attainedStableState(...)","refinementEvent="<<cellDescription.toString(cellDescription.getRefinementEvent()));
-        logInfo("attainedStableState(...)","refinementStatus="<<cellDescription.getRefinementStatus());
-        logInfo("attainedStableState(...)","getFacewiseAugmentationStatus="<<cellDescription.getFacewiseAugmentationStatus());
-        logInfo("attainedStableState(...)","getFacewiseCommunicationStatus="<<cellDescription.getFacewiseCommunicationStatus());
-        logInfo("attainedStableState(...)","getFacewiseRefinementStatus="<<cellDescription.getFacewiseRefinementStatus());
-        #ifdef Asserts
-        logInfo("attainedStableState(...)","cellDescription.getCreation()="<<cellDescription.toString(cellDescription.getCreation()));
-        #endif
-        logInfo("attainedStableState(...)","fineGridCell.getCellDescriptionsIndex()="<<fineGridCell.getCellDescriptionsIndex());
-        logInfo("attainedStableState(...)","solver.getCoarsestMeshLevel="<<getCoarsestMeshLevel());
-        logInfo("attainedStableState(...)","solver.getMaximumAdaptiveMeshLevel="<<getMaximumAdaptiveMeshLevel());
-        logInfo("attainedStableState(...)","solver.getMaximumAdaptiveMeshDepth="<<getMaximumAdaptiveMeshDepth());
-        #endif
-        if (
-            !inRefiningMode &&
-            isOfType(cellDescription,CellDescription::Type::Leaf) &&
-            cellDescription.getLevel() == getMaximumAdaptiveMeshLevel() &&
-            cellDescription.getRefinementStatus() > 0
-        ) {
-          logError("attainedStableState(...)","Virtual subcell requests refining of coarse grid parent but mesh refinement is not in refining mode anymore. Inform Dominic.");
-          logError("attainedStableState(...)","cell="<<cellDescription.toString());
-          std::terminate();
-        }
-      }
-
+    if ( !stable ) {
+      #ifdef MonitorMeshRefinement
+      logInfo("attainedStableState(...)","cell has not attained stable state (yet):");
+      logInfo("attainedStableState(...)","type="<<cellDescription.toString(cellDescription.getType()));
+      logInfo("attainedStableState(...)","x="<<cellDescription.getOffset());
+      logInfo("attainedStableState(...)","level="<<cellDescription.getLevel());
+      logInfo("attainedStableState(...)","flaggingHasConverged="<<flaggingHasConverged);
+      logInfo("attainedStableState(...)","condA="<<condA);
+      logInfo("attainedStableState(...)","condB="<<condB);
+      logInfo("attainedStableState(...)","refinementStatus="<<cellDescription.getRefinementStatus());
+      logInfo("attainedStableState(...)","getFacewiseAugmentationStatus="<<cellDescription.getFacewiseAugmentationStatus());
+      logInfo("attainedStableState(...)","getFacewiseCommunicationStatus="<<cellDescription.getFacewiseCommunicationStatus());
+      logInfo("attainedStableState(...)","getFacewiseRefinementStatus="<<cellDescription.getFacewiseRefinementStatus());
+      logInfo("attainedStableState(...)","cellDescription.getCreation()="<<cellDescription.toString(cellDescription.getCreation()));
+      logInfo("attainedStableState(...)","fineGridCell.getCellDescriptionsIndex()="<<fineGridCell.getCellDescriptionsIndex());
+      logInfo("attainedStableState(...)","solver.getCoarsestMeshLevel="<<getCoarsestMeshLevel());
+      logInfo("attainedStableState(...)","solver.getMaximumAdaptiveMeshLevel="<<getMaximumAdaptiveMeshLevel());
+      logInfo("attainedStableState(...)","solver.getMaximumAdaptiveMeshDepth="<<getMaximumAdaptiveMeshDepth());
+      #endif
+    }
     return stable;
   } else {
     return true;
@@ -1065,7 +1063,7 @@ bool exahype::solvers::ADERDGSolver::markPreviousParentForRefinement(CellDescrip
         cellDescription,solution,cellDescription.getTimeStamp())
     );
     cellDescription.setPreviousRefinementStatus(
-      std::min( 
+      std::max(
         cellDescription.getPreviousRefinementStatus(),
         evaluateRefinementCriterion(
           cellDescription,previousSolution,cellDescription.getPreviousTimeStamp()
@@ -1073,8 +1071,8 @@ bool exahype::solvers::ADERDGSolver::markPreviousParentForRefinement(CellDescrip
       )
     );
 
-    return cellDescription.getRefinementStatus()        !=_refineOrKeepOnFineGrid &&
-           cellDescription.getPreviousRefinementStatus()!=_refineOrKeepOnFineGrid;
+    return cellDescription.getRefinementStatus()        <_refineOrKeepOnFineGrid &&
+           cellDescription.getPreviousRefinementStatus()<_refineOrKeepOnFineGrid;
 }
 
 void exahype::solvers::ADERDGSolver::progressCollectiveRefinementOperationsInLeaveCell(
@@ -1241,6 +1239,18 @@ void exahype::solvers::ADERDGSolver::finaliseStateUpdates(
   const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( element!=exahype::solvers::Solver::NotFound ) {
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
+
+    if ( cellDescription.getType()==CellDescription::Type::LeafChecked ) {
+      cellDescription.setType(CellDescription::Type::Leaf);
+    } else if ( cellDescription.getType()==CellDescription::Type::ParentChecked ) {
+      cellDescription.setType(CellDescription::Type::Parent);
+    }
+    assertion1(
+        cellDescription.getType()==CellDescription::Type::Leaf ||
+        cellDescription.getType()==CellDescription::Type::Parent ||
+        cellDescription.getType()==CellDescription::Type::Virtual,
+        cellDescription.toString());
+
     if (cellDescription.getType()==CellDescription::Type::Leaf) {
       validateCellDescriptionData(cellDescription,cellDescription.getTimeStamp()>0,false,true,"finaliseStateUpdates");
     }
@@ -1695,7 +1705,7 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithMaster(
   if ( coarseGridElement != exahype::solvers::Solver::NotFound ) {
     CellDescription& coarseGridCellDescription = getCellDescription(
         cellDescription.getParentIndex(),coarseGridElement);
-    updateCoarseGridAncestorRefinementStatus(cellDescription,coarseGridCellDescription);
+    vetoParentCoarseningRequestsIfNecessary(cellDescription,coarseGridCellDescription);
 
     if (
       coarseGridCellDescription.getType()==CellDescription::Type::ParentRequestsCoarsening &&
