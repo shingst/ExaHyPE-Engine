@@ -503,9 +503,11 @@ private:
       const int coarseGridCellDescriptionsIndex);
 
   /**
-   * Change a cell description of type Leaf to an Ancestor.
+   * Change a cell description of type LeafRefines or ParentCoarsens to Parent(Checked).
+   * In the ParentChecked state, the new parent is not allowed to request coarsening during
+   * the current set of mesh refinement iterations.
    *
-   * @param cellDescription a cell description of type Leaf.
+   * @param cellDescription a cell description of type LeafRefines or ParentCoarsens.
    */
   void changeLeafToParent(CellDescription& cellDescription);
 
@@ -1168,7 +1170,9 @@ public:
    * (temporary) leaf cell, too.
    */
   static bool holdsSolution(const CellDescription& cellDescription) {
-    return cellDescription.getType()==CellDescription::Type::Leaf ||
+    return
+        cellDescription.getType()==CellDescription::Type::Leaf ||
+        cellDescription.getType()==CellDescription::Type::LeafProlongates ||
         cellDescription.getType()==CellDescription::Type::LeafChecked ||
         cellDescription.getType()==CellDescription::Type::LeafRefines ||
         cellDescription.getType()==CellDescription::Type::LeafInitiatesRefining ||
@@ -1194,6 +1198,7 @@ public:
    */
   static bool isLeaf(const CellDescription& cellDescription) {
     return cellDescription.getType()==CellDescription::Type::Leaf ||
+           cellDescription.getType()==CellDescription::Type::LeafProlongates ||
            cellDescription.getType()==CellDescription::Type::LeafChecked ||
            cellDescription.getType()==CellDescription::Type::LeafRefines ||
            cellDescription.getType()==CellDescription::Type::LeafInitiatesRefining;

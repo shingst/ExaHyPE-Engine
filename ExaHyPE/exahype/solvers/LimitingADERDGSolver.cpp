@@ -440,6 +440,7 @@ void exahype::solvers::LimitingADERDGSolver::adjustSolutionDuringMeshRefinementB
     solverPatch.getType()==SolverPatch::Type::Leaf ||
     solverPatch.getType()==SolverPatch::Type::LeafProlongates
   ) {
+    _solver->ensureNecessaryMemoryIsAllocated(solverPatch);
     if (solverPatch.getType()==SolverPatch::Type::LeafProlongates) {
       _solver->prolongateVolumeData(solverPatch,isInitialMeshRefinement);
       solverPatch.setType(SolverPatch::Type::Leaf);

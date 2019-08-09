@@ -478,6 +478,7 @@ void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinementBody(
       cellDescription.getType()==CellDescription::Type::Leaf ||
       cellDescription.getType()==CellDescription::Type::LeafProlongates
   ) {
+    ensureNecessaryMemoryIsAllocated(cellDescription);
     if ( cellDescription.getType()==CellDescription::Type::LeafProlongates ) {
       prolongateVolumeData(cellDescription,isInitialMeshRefinement);
     }
@@ -657,9 +658,6 @@ void exahype::solvers::ADERDGSolver::addNewCell(
 
   const int fineGridElement = cellInfo.indexOfADERDGCellDescription(solverNumber);
   CellDescription& fineGridCellDescription = cellInfo._ADERDGCellDescriptions[fineGridElement]; //TODO(Dominic): Multi-solvers: Might need to lock this?
-  if ( !exahype::solvers::Solver::SpawnAMRBackgroundJobs ) {
-    ensureNecessaryMemoryIsAllocated(fineGridCellDescription);
-  }
 
   fineGridCellDescription.setPreviousRefinementStatus(Erase); // reasonable state after rollback
   fineGridCellDescription.setRefinementStatus(Pending);
@@ -1071,8 +1069,8 @@ bool exahype::solvers::ADERDGSolver::markPreviousParentForRefinement(CellDescrip
       )
     );
 
-    return cellDescription.getRefinementStatus()        <_refineOrKeepOnFineGrid &&
-           cellDescription.getPreviousRefinementStatus()<_refineOrKeepOnFineGrid;
+    return cellDescription.getRefinementStatus()        <= Keep &&
+           cellDescription.getPreviousRefinementStatus()<= Keep;
 }
 
 void exahype::solvers::ADERDGSolver::progressCollectiveRefinementOperationsInLeaveCell(
@@ -1240,11 +1238,18 @@ void exahype::solvers::ADERDGSolver::finaliseStateUpdates(
   if ( element!=exahype::solvers::Solver::NotFound ) {
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
 
+    assertion1(
+        cellDescription.getType()==CellDescription::Type::LeafChecked ||
+        cellDescription.getType()==CellDescription::Type::ParentChecked ||
+        cellDescription.getType()==CellDescription::Type::Virtual,
+        cellDescription.toString());
+
     if ( cellDescription.getType()==CellDescription::Type::LeafChecked ) {
       cellDescription.setType(CellDescription::Type::Leaf);
     } else if ( cellDescription.getType()==CellDescription::Type::ParentChecked ) {
       cellDescription.setType(CellDescription::Type::Parent);
     }
+
     assertion1(
         cellDescription.getType()==CellDescription::Type::Leaf ||
         cellDescription.getType()==CellDescription::Type::Parent ||
