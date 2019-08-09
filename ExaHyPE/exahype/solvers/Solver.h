@@ -1630,7 +1630,7 @@ public:
    * \return If a new compute cell was introduced
    * as part of a refinement operation.
    */
-  virtual bool (
+  virtual void progressMeshRefinementInLeaveCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,

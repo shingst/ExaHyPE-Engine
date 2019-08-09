@@ -372,7 +372,7 @@ private:
    *
    * @note Thread-safe.
    */
-  void decideOnRefinement(CellDescription& fineGridCellDescription, const bool stillInRefiningMode);
+  void decideOnRefinement(CellDescription& fineGridCellDescription);
 
   /**
    * Fills the solution and previous solution arrays

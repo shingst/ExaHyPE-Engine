@@ -666,8 +666,8 @@ exahype::solvers::ADERDGSolver::evaluateRefinementCriteriaAfterSolutionUpdate(
     updateRefinementStatus(cellDescription,neighbourMergePerformed);
 
     return
-        (cellDescription.getLevel() <= /*<*/ getMaximumAdaptiveMeshLevel() &&
-         refinementControl==RefinementControl::Erase/*_refineOr..*/ ) ? // TODO
+        (cellDescription.getLevel() < getMaximumAdaptiveMeshLevel() &&
+         refinementControl==RefinementControl::Refine ) ?
             MeshUpdateEvent::RefinementRequested : MeshUpdateEvent::None;
   } else if ( cellDescription.getType()==CellDescription::Type::Virtual ) {
     // bottom up refinement criterion TODO(Dominic): Add to docu

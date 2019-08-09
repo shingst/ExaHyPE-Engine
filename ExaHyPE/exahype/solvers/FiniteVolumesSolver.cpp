@@ -569,7 +569,7 @@ void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInLeaveCell(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
      const int solverNumber,
      const bool stillInRefiningMode) {
-  return false;
+  // do nothing
 }
 
 exahype::solvers::Solver::RefinementControl

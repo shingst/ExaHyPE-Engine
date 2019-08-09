@@ -647,13 +647,11 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
     if ( coarseGridElement != exahype::solvers::Solver::NotFound ) {
       CellDescription& coarseGridCellDescription = getCellDescription(
           coarseGridCell.getCellDescriptionsIndex(),coarseGridElement);
-      if ( !inRefiningMode ) {
-        vetoParentCoarseningRequestIfNecessary(fineGridCellDescription,coarseGridCellDescription);
-      }
+      vetoParentCoarseningRequestIfNecessary(fineGridCellDescription,coarseGridCellDescription);
     }
 
     finishRefinementOperation(fineGridCellDescription);
-    decideOnRefinement(fineGridCellDescription,inRefiningMode);
+    decideOnRefinement(fineGridCellDescription);
 
     ensureFineGridCoarseGridConsistency(fineGridCellDescription,coarseGridCell.getCellDescriptionsIndex()); // must come after refinement status update
   }
@@ -722,11 +720,9 @@ void exahype::solvers::ADERDGSolver::markForRefinement(CellDescription& cellDesc
   cellDescription.setRefinementStatus( std::max(cellDescription.getRefinementStatus(),refinementStatus) );
 }
 
-void exahype::solvers::ADERDGSolver::decideOnRefinement(
-    CellDescription& fineGridCellDescription,const bool inRefiningMode) {
+void exahype::solvers::ADERDGSolver::decideOnRefinement(CellDescription& fineGridCellDescription) {
   // top-down refining
   if (
-     inRefiningMode &&
      fineGridCellDescription.getType()==CellDescription::Type::LeafChecked &&
      fineGridCellDescription.getLevel()<getMaximumAdaptiveMeshLevel() &&
      fineGridCellDescription.getRefinementStatus() > Keep
@@ -736,7 +732,6 @@ void exahype::solvers::ADERDGSolver::decideOnRefinement(
 
   // bottom-up refining (halo refinement)
   if (
-     inRefiningMode &&
      fineGridCellDescription.getType()==CellDescription::Type::Virtual &&
      fineGridCellDescription.getLevel()==getMaximumAdaptiveMeshLevel() &&
      (fineGridCellDescription.getRefinementStatus() > Keep ||
@@ -1024,10 +1019,7 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInLeaveCell(
     const bool inRefiningMode) {
   const int fineGridElement =
       tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
-  if (
-      !inRefiningMode &&
-      fineGridElement!=exahype::solvers::Solver::NotFound
-  ) {
+  if ( fineGridElement!=exahype::solvers::Solver::NotFound ) {
     CellDescription& fineGridCellDescription = getCellDescription(
         fineGridCell.getCellDescriptionsIndex(),fineGridElement);
 
@@ -1828,7 +1820,7 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithMaster(
     }
   }
 
-  progressCoarseningOperationsInLeaveCell(cellDescription,stillInRefiningMode);
+  progressCoarseningOperationsInLeaveCell(cellDescription);
   // ignore return value as responsibiliy is still on fine grid.
 
   // check if any cell description requires vertical communication
@@ -1836,7 +1828,7 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithMaster(
 
   // block erasing request of coarse grid cell description if deployed cell
   // does not want to be erased
-  decideOnRefinement(cellDescription,stillInRefiningMode);
+  decideOnRefinement(cellDescription);
 
   return solverRequiresVerticalCommunication;
 }
