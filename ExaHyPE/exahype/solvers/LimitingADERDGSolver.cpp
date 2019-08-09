@@ -270,7 +270,7 @@ bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInEnterCell(
          solverNumber,stillInRefiningMode);
 }
 
-bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInLeaveCell(
+void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInLeaveCell(
     exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -278,10 +278,9 @@ bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInLeaveCell(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     const int solverNumber,
     const bool stillInRefiningMode) {
-  return
-      _solver->progressMeshRefinementInLeaveCell(
-          fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
-          coarseGridCell,fineGridPositionOfCell,solverNumber,stillInRefiningMode);
+  _solver->progressMeshRefinementInLeaveCell(
+      fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
+      coarseGridCell,fineGridPositionOfCell,solverNumber,stillInRefiningMode);
 }
 
 exahype::solvers::Solver::RefinementControl

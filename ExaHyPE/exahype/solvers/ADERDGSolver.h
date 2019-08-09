@@ -77,35 +77,28 @@ namespace exahype {
  * Subsequently, we list refinement "stories" cell descriptions of this solver
  * might "experience".
  *
- * Safe, Oscillation-Free Erasing of Child Cells
- * ---------------------------------------------
  *
- * This procedure can take up to 3 iterations.
+ * Refinement
+ * ----------
  *
- * 1. All children (type: Cell) of a cell (type: Ancestor) want to be erased.
- * They have the refinement status Erase. In the previous iteration, they
- * had this refinement status, too. (adjustSolutionDuringMeshRefinementBody -> markForRefinement)
- * They write their max refinement status to the parent (progressMeshRefinementInEnterCell->updateCoarseGridAncestorRefinementStatus).
- * (If one of them is an Ancestor itself, they set an erasing children veto flag which is reset by
- * the parent in every iteration.)
+ * It. #1 top-down  children spawn refinement criterion tasks (they run in the background)
+ * It. #2 top-down  If a child state is LeafInitatesRefining/Refines, new children (type: LeafProlongates)
+ *                  are introduced. They prolongate the solution and impose boundary conditions etc.
+ * It. #2 bottom-up the parent changes its state to ParentChecked and deallocates unncessary memory
  *
- * 2. The parent (type: Ancestor) changes its type to Cell and allocates
- * the necessary memory. (progressMeshRefinementInLeaveCell->progressCollectiveRefinementOperationsInLeaveCell)
- * The parent notifies its children by setting the ErasingChildrenRequested RefinementEvent.
+ * Oscillation-Free Coarsening
+ * ---------------------------
  *
- * 3.The children restrict their volume data (solution and previous solution) up to the parent. They
- * do not delete their data yet. (progressMeshRefinementInLeaveCell->restrictVolumeDataIfErasingChildrenRequested)
+ * This procedure can take up to 5 iterations.
  *
- * 4. The parent evaluates the refinement criterion for current solution and previous solution.
- * If one of the evaluations indicates that refining is necessary, the children erasing
- * process is stopped and the parent changes its type back to Ancestor. (progressMeshRefinementInLeaveCell->progressCollectiveRefinementOperationsInLeaveCell)
- * During the mesh refinement iterations, it stores the current and previous refinement status in order
- * to prevent the procedure to start again.
- *
- * If no refinement at both time stages is required, the parent keeps its new type (Cell) and signals its children to delete
- * themselves. It does this by changing the RefinementEvent from ErasingChildrenRequested -> ErasingChildren.
- *
- * 5. The parent resets its status to None.
+ * It. #1 top-down  children spawn refinement criterion tasks (they run in the background)
+ * It. #1 bottom-up parent sets coarsening request
+ * It. #2 top-down  children veto coarsening request or not based on the result of the refinement criterion.
+ * It. #3 bottom-up parent checks if coarsening request was accepted -> changes state, allocates memory for restriction
+ * It. #4 bottom-up children restrict solution up (do not erase)
+ *                  parent reevaluates the refinement criterion, deallocates memory if necessary, changes state to LeafChecked
+ * It. #5 top-down  children erase everything if parent is of type LeafChecked
+ * It. #5 bottom-up Peano vertices get erased
  */
 class exahype::solvers::ADERDGSolver : public exahype::solvers::Solver {
   friend class LimitingADERDGSolver;
@@ -395,12 +388,10 @@ private:
    * \return true if a new compute cell
    * was allocated as result of an erasing operation.
    */
-  void progressCollectiveRefinementOperationsInEnterCell(
+  void finishRefinementOperation(
       CellDescription& fineGridCellDescription);
 
-  void progressCollectiveRefinementOperationsInLeaveCell(
-      CellDescription& fineGridCellDescription,
-      const bool stillInRefiningMode);
+  void progressCoarseningOperationsInLeaveCell(CellDescription& fineGridCellDescription);
 
   /**
    * Checks the current and previous solution on a Cell which was
@@ -550,7 +541,7 @@ private:
    *
    * @note This method makes only sense for real cells.
    */
-  void restrictVolumeDataIfErasingRequested(
+  void restrictVolumeDataIfCoarseningRequested(
       const CellDescription& fineGridCellDescription,
       const CellDescription& coarseGridCellDescription);
 
@@ -582,7 +573,7 @@ private:
    * @param fineGridCellDescription   the fine grid cell description
    * @param coarseGridCellDescription the coarse grid cell description
    */
-  void vetoParentCoarseningRequestsIfNecessary(
+  void vetoParentCoarseningRequestIfNecessary(
       const CellDescription& fineGridCellDescription,
       CellDescription&       coarseGridCellDescription);
 
@@ -1174,8 +1165,9 @@ public:
         cellDescription.getType()==CellDescription::Type::Leaf ||
         cellDescription.getType()==CellDescription::Type::LeafProlongates ||
         cellDescription.getType()==CellDescription::Type::LeafChecked ||
-        cellDescription.getType()==CellDescription::Type::LeafRefines ||
         cellDescription.getType()==CellDescription::Type::LeafInitiatesRefining ||
+        cellDescription.getType()==CellDescription::Type::LeafRefines ||
+        cellDescription.getType()==CellDescription::Type::ParentRequestsCoarsening ||
         cellDescription.getType()==CellDescription::Type::ParentCoarsens;
   }
 
@@ -1578,7 +1570,7 @@ public:
       const int  solverNumber,
       const bool stillInRefiningMode) override;
 
-  bool progressMeshRefinementInLeaveCell(
+  void progressMeshRefinementInLeaveCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,

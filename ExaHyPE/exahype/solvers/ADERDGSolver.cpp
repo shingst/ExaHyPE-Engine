@@ -114,108 +114,6 @@ int exahype::solvers::ADERDGSolver::computeWeight(const int cellDescriptionsInde
   else return 0;
 }
 
-void exahype::solvers::ADERDGSolver::addNewCellDescription(
-    const int                                    solverNumber,
-    CellInfo&                                    cellInfo,
-    const CellDescription::Type&                 cellType,
-    const int                                    level,
-    const int                                    parentIndex,
-    const tarch::la::Vector<DIMENSIONS, double>& cellSize,
-    const tarch::la::Vector<DIMENSIONS, double>& cellOffset) {
-  assertion2(parentIndex == -1 || parentIndex != cellInfo._cellDescriptionsIndex, parentIndex, cellInfo._cellDescriptionsIndex);
-  assertion2(parentIndex != cellInfo._cellDescriptionsIndex, parentIndex, cellInfo._cellDescriptionsIndex);
-  logDebug("addNewCellDescription(...)","Add cell description: index="<<cellInfo._cellDescriptionsIndex<<",type="<<CellDescription::toString(cellType)<<",level="<<level<<",parentIndex="<<parentIndex << ",solver=" <<solverNumber);
-
-  assertion2(static_cast<unsigned int>(solverNumber) < solvers::RegisteredSolvers.size(),solverNumber,exahype::solvers::RegisteredSolvers.size());
-
-  CellDescription newCellDescription;
-  newCellDescription.setSolverNumber(solverNumber);
-
-  // Background job completion monitoring (must be initialised with true)
-  newCellDescription.setHasCompletedLastStep(true);
-
-  // Default AMR settings
-  newCellDescription.setType(cellType);
-  newCellDescription.setParentIndex(parentIndex);
-  newCellDescription.setLevel(level);
-
-  newCellDescription.setAugmentationStatus(0);
-  newCellDescription.setFacewiseAugmentationStatus(0); // implicit conversion
-  newCellDescription.setCommunicationStatus(0);
-  newCellDescription.setFacewiseCommunicationStatus(0); // implicit conversion
-  if (cellType==CellDescription::Type::Leaf) {
-    newCellDescription.setCommunicationStatus(LeafCommunicationStatus);
-    newCellDescription.setFacewiseCommunicationStatus(LeafCommunicationStatus); // implicit conversion
-    // TODO(Dominic): Make sure prolongation and restriction considers this.
-  }
-  newCellDescription.setNeighbourMergePerformed((signed char) 0/*implicit conversion*/);
-
-  // Pass geometry information to the cellDescription description
-  newCellDescription.setSize(cellSize);
-  newCellDescription.setOffset(cellOffset);
-
-  // Default field data indices
-  newCellDescription.setSolutionIndex(-1);
-  newCellDescription.setSolution(nullptr);
-  newCellDescription.setPreviousSolutionIndex(-1);
-  newCellDescription.setPreviousSolution(nullptr);
-  newCellDescription.setUpdateIndex(-1);
-  newCellDescription.setUpdate(nullptr);
-  newCellDescription.setExtrapolatedPredictorIndex(-1);
-  newCellDescription.setExtrapolatedPredictor(nullptr);
-  newCellDescription.setFluctuationIndex(-1);
-  newCellDescription.setFluctuation(nullptr);
-
-  // Halo/Limiter meta data (oscillations identificator)
-  newCellDescription.setRefinementFlag(false);
-  newCellDescription.setRefinementStatus(Pending);
-  newCellDescription.setPreviousRefinementStatus(Pending); 
-  newCellDescription.setFacewiseRefinementStatus(Pending);  // implicit conversion
-  newCellDescription.setSolutionMinIndex(-1);
-  newCellDescription.setSolutionMin(0);
-  newCellDescription.setSolutionMaxIndex(-1);
-  newCellDescription.setSolutionMax(0);
-  newCellDescription.setIterationsToCureTroubledCell(0);
-
-  // Compression
-  newCellDescription.setCompressionState(CellDescription::CompressionState::Uncompressed);
-  newCellDescription.setSolutionAveragesIndex(-1);
-  newCellDescription.setSolutionAverages(nullptr);
-  newCellDescription.setPreviousSolutionAveragesIndex(-1);
-  newCellDescription.setPreviousSolutionAverages(nullptr);
-  newCellDescription.setUpdateAveragesIndex(-1);
-  newCellDescription.setUpdateAverages(nullptr);
-  newCellDescription.setExtrapolatedPredictorAveragesIndex(-1);
-  newCellDescription.setExtrapolatedPredictorAverages(nullptr);
-  newCellDescription.setFluctuationAveragesIndex(-1);
-  newCellDescription.setFluctuationAverages(nullptr);
-
-  newCellDescription.setSolutionCompressedIndex(-1);
-  newCellDescription.setSolutionCompressed(nullptr);
-  newCellDescription.setPreviousSolutionAveragesIndex(-1);
-  newCellDescription.setPreviousSolutionAverages(nullptr);
-  newCellDescription.setUpdateCompressedIndex(-1);
-  newCellDescription.setUpdateCompressed(nullptr);
-  newCellDescription.setExtrapolatedPredictorCompressedIndex(-1);
-  newCellDescription.setExtrapolatedPredictorCompressed(nullptr);
-  newCellDescription.setFluctuationCompressedIndex(-1);
-  newCellDescription.setFluctuationCompressed(nullptr);
-
-  newCellDescription.setBytesPerDoFInExtrapolatedPredictor(-1);
-  newCellDescription.setBytesPerDoFInFluctuation(-1);
-  newCellDescription.setBytesPerDoFInPreviousSolution(-1);
-  newCellDescription.setBytesPerDoFInSolution(-1);
-  newCellDescription.setBytesPerDoFInUpdate(-1);
-
-  #ifdef Asserts
-  newCellDescription.setCreation(CellDescription::Creation::NotSpecified);
-  #endif
-
-  tarch::multicore::Lock lock(exahype::HeapSemaphore);
-  cellInfo._ADERDGCellDescriptions.push_back(newCellDescription);
-  lock.free();
-}
-
 /**
  * Returns the ADERDGCellDescription heap vector
  * at address \p cellDescriptionsIndex.
@@ -768,8 +666,8 @@ exahype::solvers::ADERDGSolver::evaluateRefinementCriteriaAfterSolutionUpdate(
     updateRefinementStatus(cellDescription,neighbourMergePerformed);
 
     return
-        (cellDescription.getLevel() < getMaximumAdaptiveMeshLevel() &&
-         refinementControl==RefinementControl::Refine ) ?
+        (cellDescription.getLevel() <= /*<*/ getMaximumAdaptiveMeshLevel() &&
+         refinementControl==RefinementControl::Erase/*_refineOr..*/ ) ? // TODO
             MeshUpdateEvent::RefinementRequested : MeshUpdateEvent::None;
   } else if ( cellDescription.getType()==CellDescription::Type::Virtual ) {
     // bottom up refinement criterion TODO(Dominic): Add to docu

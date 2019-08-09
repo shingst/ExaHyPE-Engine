@@ -585,7 +585,7 @@ public:
       const int  solverNumber,
       const bool stillInRefiningMode) override;
 
-  bool progressMeshRefinementInLeaveCell(
+  void progressMeshRefinementInLeaveCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,

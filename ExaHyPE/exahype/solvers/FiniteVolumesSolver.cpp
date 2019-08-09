@@ -561,7 +561,7 @@ bool exahype::solvers::FiniteVolumesSolver::attainedStableState(
   return true;
 }
 
-bool exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInLeaveCell(
+void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInLeaveCell(
     exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
