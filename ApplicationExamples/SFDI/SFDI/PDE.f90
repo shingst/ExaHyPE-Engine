@@ -249,7 +249,7 @@ END SUBROUTINE PDEIntermediateFields
     
     
 RECURSIVE SUBROUTINE PDEEigenvectors(R,L,iR,Q,nv) 
-	USE MainVariables, ONLY : nVar, nDim, EQN
+	USE MainVariables, ONLY : nVar, nDim, EQN, EPSalpha
 	USE iso_c_binding  
 	IMPLICIT NONE
 	! Argument list 
@@ -286,7 +286,7 @@ RECURSIVE SUBROUTINE PDEEigenvectors(R,L,iR,Q,nv)
 
   CALL PDECons2Prim(VP,QPR) 
 
-	  ialpha = VP(6)/(VP(6)**2 + 1e-12) 
+	  ialpha = VP(6)/(VP(6)**2 + EPSalpha) 
 
       dQdV(1,1) = VP(6)
       dQdV(1,2) = 0
