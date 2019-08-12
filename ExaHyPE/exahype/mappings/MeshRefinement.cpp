@@ -180,7 +180,12 @@ void exahype::mappings::MeshRefinement::refineSafely(
     const tarch::la::Vector<DIMENSIONS, double>&  fineGridH,
     int                                           fineGridLevel,
     bool                                          isCalledByCreationalEvent) const {
-  if ( fineGridVertex.getRefinementControl()==Vertex::Records::Unrefined ) {
+  bool vertexIsUnrefined =
+      fineGridVertex.getRefinementControl()==Vertex::Records::Unrefined ||
+      fineGridVertex.getRefinementControl()==Vertex::Records::EraseTriggered ||
+      fineGridVertex.getRefinementControl()==Vertex::Records::Erasing;
+
+  if ( vertexIsUnrefined ) {
     switch ( _stateCopy.mayRefine(isCalledByCreationalEvent,fineGridLevel) ) {
     case State::RefinementAnswer::DontRefineYet:
       break;
@@ -207,13 +212,12 @@ void exahype::mappings::MeshRefinement::touchVertexLastTime(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex) {
   bool correctAdjacencyInformation = true;
-
   exahype::solvers::Solver::RefinementControl refinementControl =
       fineGridVertex.evaluateRefinementCriterion(
       fineGridX,
       coarseGridVerticesEnumerator.getLevel()+1,
       fineGridH,
-      !_stateCopy.getMeshRefinementIsInRefiningMode(),
+      true,
       correctAdjacencyInformation);
 
   _allSolversAttainedStableState &= correctAdjacencyInformation;
@@ -257,7 +261,7 @@ void exahype::mappings::MeshRefinement::createBoundaryVertex(
       fineGridVertex.evaluateRefinementCriterion(
       fineGridX,
       coarseGridVerticesEnumerator.getLevel()+1,
-      fineGridH, true,
+      fineGridH, false,
       correctAdjacencyInformation)
       == exahype::solvers::Solver::RefinementControl::Refine
   ) {
@@ -288,7 +292,7 @@ void exahype::mappings::MeshRefinement::createInnerVertex(
           fineGridX,
           coarseGridVerticesEnumerator.getLevel()+1,
           fineGridH,
-          !_stateCopy.getMeshRefinementIsInRefiningMode(),
+          false,
           correctAdjacencyInformation)
       == exahype::solvers::Solver::RefinementControl::Refine
   ) {
@@ -372,32 +376,28 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
     enddforx
 
 	// @todo
-    if (oneInnerVertexIsRefined) {
+    if ( oneInnerVertexIsRefined ) {
       dfor2(v)
         tarch::multicore::Lock lock(BoundarySemaphore);
         if (
             fineGridVertices[fineGridVerticesEnumerator(v)].isBoundary()
             &&
-            fineGridVertices[fineGridVerticesEnumerator(v)].getRefinementControl()==
-                exahype::Vertex::Records::RefinementControl::Unrefined
-            &&
             fineGridVertices[fineGridVerticesEnumerator(v)].evaluateRefinementCriterion(
                 fineGridVerticesEnumerator.getVertexPosition(vScalar),
                 fineGridVerticesEnumerator.getLevel(),
                 fineGridVerticesEnumerator.getCellSize(),
-                false,
+                true,
                 correctAdjacencyInformation)
             !=exahype::solvers::Solver::RefinementControl::Erase
 			&&
         	_stateCopy.mayRefine(true,fineGridVerticesEnumerator.getLevel())
         ) {
-          fineGridVertices[fineGridVerticesEnumerator(v)].refine();
+          refineSafely(fineGridVertices[fineGridVerticesEnumerator(v)],fineGridVerticesEnumerator.getCellSize(),fineGridVerticesEnumerator.getLevel(),false);
         }
         lock.free();
       enddforx
-    } else if (
-        noInnerVertexIsRefined
-    ) {
+    }
+    else if ( noInnerVertexIsRefined ) {
       dfor2(v)
         tarch::multicore::Lock lock(BoundarySemaphore);
         if (
@@ -414,7 +414,7 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
               fineGridVerticesEnumerator.getVertexPosition(vScalar),
               fineGridVerticesEnumerator.getLevel(),
               fineGridVerticesEnumerator.getCellSize(),
-              false,
+              true,
               correctAdjacencyInformation)
             ==exahype::solvers::Solver::RefinementControl::Erase
 

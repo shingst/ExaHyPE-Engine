@@ -1058,7 +1058,8 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
 
 
   // adaptive mesh refinement
-  repository.switchToMeshRefinementAndPlotTree();
+  //repository.switchToMeshRefinementAndPlotTree();
+  repository.switchToMeshRefinement();
   repository.getState().setAllSolversAttainedStableState(false);
   repository.getState().setMeshRefinementIsInRefiningMode(true);
   repository.getState().setStableIterationsInARow(0);

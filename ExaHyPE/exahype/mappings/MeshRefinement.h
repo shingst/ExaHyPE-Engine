@@ -81,6 +81,10 @@ private:
    */
   static tarch::multicore::BooleanSemaphore BoundarySemaphore;
 
+  static bool vertexIsUnrefined() {
+
+  }
+
   /**
    * TODO(Tobias): Add docu.
    */

@@ -50,7 +50,7 @@ exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
     :
     exahype::solvers::Solver(identifier, Solver::Type::LimitingADERDG, solver->getNumberOfVariables(),
         solver->getNumberOfParameters(), solver->getNumberOfGlobalObservables(), solver->getNodesPerCoordinateAxis(),
-  solver->getMaximumMeshSize(),
+        solver->getMaximumMeshSize(),
         solver->getMaximumAdaptiveMeshDepth(),
         solver->getTimeStepping()),
         _solver(std::move(solver)),
@@ -731,8 +731,8 @@ void exahype::solvers::LimitingADERDGSolver::updateOrRestrict(
       _solver->updateRefinementStatus(solverPatch,solverPatch.getNeighbourMergePerformed());
       MeshUpdateEvent meshUpdateEvent = _solver->evaluateRefinementCriteriaAfterSolutionUpdate(
           solverPatch,solverPatch.getNeighbourMergePerformed()); // must be done by all cell types
-      solverPatch.setHasCompletedLastStep(true);
       updateMeshUpdateEvent(meshUpdateEvent);
+      solverPatch.setHasCompletedLastStep(true);
     }
   }
 }

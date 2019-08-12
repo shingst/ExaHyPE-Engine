@@ -740,7 +740,7 @@ public:
       exahype::solvers::FiniteVolumesSolver* limiter,
       const double DMPRelaxationParameter=1e-4,
       const double DMPDifferenceScaling=1e-3,
-      const int iterationsToCureTroubledCell=2);
+      const int iterationsToCureTroubledCell=0);
 
   virtual ~LimitingADERDGSolver() {
     _solver.reset();

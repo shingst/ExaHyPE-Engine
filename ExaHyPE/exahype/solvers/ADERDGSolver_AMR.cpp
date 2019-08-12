@@ -1163,19 +1163,13 @@ bool exahype::solvers::ADERDGSolver::markPreviousParentForRefinement(CellDescrip
           cellDescription.getPreviousTimeStamp(),
           cellDescription.getPreviousTimeStepSize());
 
-    // TODO(Dominic): Probably not a good idea to overwrite these values
-    // !!! Bug
     cellDescription.setRefinementStatus( 
       evaluateRefinementCriterion(
         cellDescription,solution,cellDescription.getTimeStamp())
     );
     cellDescription.setPreviousRefinementStatus(
-      std::max(
-        cellDescription.getPreviousRefinementStatus(),
         evaluateRefinementCriterion(
-          cellDescription,previousSolution,cellDescription.getPreviousTimeStamp()
-        )
-      )
+            cellDescription,previousSolution,cellDescription.getPreviousTimeStamp())
     );
 
     return cellDescription.getRefinementStatus()        <= Keep &&

@@ -130,11 +130,13 @@ exahype::solvers::Solver::RefinementControl exahype::Vertex::evaluateRefinementC
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
       const int cellDescriptionsIndex = _vertexData.getCellDescriptionsIndex(posScalar);
+      bool geometryInfoCorrect = false;
       exahype::solvers::Solver::RefinementControl control =
           solver->eraseOrRefineAdjacentVertices(
-              cellDescriptionsIndex,solverNumber,cellOffset,cellSize,level,checkThoroughly,checkSuccessful);
-      canErase   &= (control==exahype::solvers::Solver::RefinementControl::Erase);
-      mustRefine |= (control==exahype::solvers::Solver::RefinementControl::Refine);
+              cellDescriptionsIndex,solverNumber,cellOffset,cellSize,level,checkThoroughly,geometryInfoCorrect);
+      mustRefine      |= (control==exahype::solvers::Solver::RefinementControl::Refine);
+      canErase        &= (control==exahype::solvers::Solver::RefinementControl::Erase);
+      checkSuccessful &= geometryInfoCorrect;
     }
   enddforx
 
