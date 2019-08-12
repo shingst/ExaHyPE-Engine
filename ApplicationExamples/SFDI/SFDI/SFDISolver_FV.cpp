@@ -106,9 +106,9 @@ double SFDI::SFDISolver_FV::riemannSolver(double* fL, double *fR, const double* 
 	// Compute the average variables and parameters from the left and the right
 	double QavL[numberOfData] = { 0.0 }; // ~(numberOfVariables+numberOfParameters)
 	double QavR[numberOfData] = { 0.0 }; // ~(numberOfVariables+numberOfParameters)
-    //double lambda = kernels::finitevolumes::riemannsolvers::c::rusanov<true, true, false, SFDISolver_FV>(*static_cast<SFDISolver_FV*>(this), fL, fR, qL, qR, gradQL, gradQR, cellSize, direction);
-    double lambda;
-	hllemfluxfv_(&lambda, fL, fR, qL, qR, &direction);
+    double lambda = kernels::finitevolumes::riemannsolvers::c::rusanov<true, true, false, SFDISolver_FV>(*static_cast<SFDISolver_FV*>(this), fL, fR, qL, qR, gradQL, gradQR, cellSize, direction);
+    //double lambda;
+	//hllemfluxfv_(&lambda, fL, fR, qL, qR, &direction);
 	
 	
 	//std::cout << lambda << std::endl;
