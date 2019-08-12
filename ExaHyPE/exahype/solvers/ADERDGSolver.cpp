@@ -86,9 +86,9 @@ int exahype::solvers::ADERDGSolver::LeafCommunicationStatus                     
 int exahype::solvers::ADERDGSolver::MinimumCommunicationStatusForNeighbourCommunication = 1;
 // augmentation status
 // On-the fly erasing seems to work with those values
-int exahype::solvers::ADERDGSolver::MaximumAugmentationStatus                   = 4;
-int exahype::solvers::ADERDGSolver::MinimumAugmentationStatusForVirtualRefining = 3;
-int exahype::solvers::ADERDGSolver::MinimumAugmentationStatusForRefining        = 3;
+int exahype::solvers::ADERDGSolver::MaximumAugmentationStatus                   = 3;
+int exahype::solvers::ADERDGSolver::MinimumAugmentationStatusForVirtualRefining = 2;
+int exahype::solvers::ADERDGSolver::MinimumAugmentationStatusForRefining        = 1;
 
 /**
  * static constexpr need to declared again when following a

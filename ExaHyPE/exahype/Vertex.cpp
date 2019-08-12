@@ -116,7 +116,8 @@ exahype::solvers::Solver::RefinementControl exahype::Vertex::evaluateRefinementC
     const tarch::la::Vector<DIMENSIONS, double>& vertexOffset,
     const int                                    level,
     const tarch::la::Vector<DIMENSIONS, double>& cellSize,
-    const bool                                   checkThoroughly) const {
+    const bool                                   checkThoroughly,
+    bool&                                        checkSuccessful) const {
   bool canErase   = true;
   bool mustRefine = false;
   dfor2(pos)
@@ -130,7 +131,8 @@ exahype::solvers::Solver::RefinementControl exahype::Vertex::evaluateRefinementC
 
       const int cellDescriptionsIndex = _vertexData.getCellDescriptionsIndex(posScalar);
       exahype::solvers::Solver::RefinementControl control =
-          solver->eraseOrRefineAdjacentVertices(cellDescriptionsIndex,solverNumber,cellOffset,cellSize,level,checkThoroughly);
+          solver->eraseOrRefineAdjacentVertices(
+              cellDescriptionsIndex,solverNumber,cellOffset,cellSize,level,checkThoroughly,checkSuccessful);
       canErase   &= (control==exahype::solvers::Solver::RefinementControl::Erase);
       mustRefine |= (control==exahype::solvers::Solver::RefinementControl::Refine);
     }

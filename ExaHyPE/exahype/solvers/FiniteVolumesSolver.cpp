@@ -574,12 +574,13 @@ void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInLeaveCell(
 
 exahype::solvers::Solver::RefinementControl
 exahype::solvers::FiniteVolumesSolver::eraseOrRefineAdjacentVertices(
-        const int cellDescriptionsIndex,
-        const int solverNumber,
-        const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
-        const tarch::la::Vector<DIMENSIONS, double>& cellSize,
-        const int level,
-        const bool checkThoroughly) const {
+    const int cellDescriptionsIndex,
+    const int solverNumber,
+    const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
+    const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+    const int level,
+    const bool checkThoroughly,
+    bool& checkSuccessful) const {
   if ( level < _coarsestMeshLevel ) {
     return RefinementControl::Refine;
   } else {
@@ -1263,7 +1264,7 @@ void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInPrepareSendT
  // do nothing
 }
 
-bool exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInMergeWithMaster(
+void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInMergeWithMaster(
     const int worker,
     const int localCellDescriptionsIndex,
     const int localElement,
@@ -1272,7 +1273,6 @@ bool exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInMergeWithMas
     const int                                    level,
     const bool stillInRefiningMode) {
   // do nothing
-  return false;
 }
 
 ///////////////////////////////////

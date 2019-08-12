@@ -1643,11 +1643,15 @@ public:
    * \return if the vertices around a cell should be erased, kept,
    * or refined.
    *
-   * @param checkThoroughly If set to true, check that the indices found in the
-   *                        adjacency map are actual heap indices and that the
-   *                        geometry information of the cell descriptions found at
-   *                        the heap index indicates that these cells are adjacent
-   *                        to the vertex.
+   * @param[in] checkThoroughly If set to true, check that the indices found in the
+   *                            adjacency map are actual heap indices and that the
+   *                            geometry information of the cell descriptions found at
+   *                            the heap index indicates that these cells are adjacent
+   *                            to the vertex.
+   *
+   * @param[inout] checkSuccessful  indicates that the cell description's geometry
+   *                            information does not match that of the vertex. This implies
+   *                            that the adjacency lists are not up to date yet.
    */
   virtual exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
       const int cellDescriptionsIndex,
@@ -1655,7 +1659,8 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
       const tarch::la::Vector<DIMENSIONS, double>& cellSize,
       const int level,
-      const bool checkThoroughly) const = 0;
+      const bool checkThoroughly,
+      bool& checkSuccessful) const = 0;
 
   /**
    * Returns true if the solver has attained
@@ -1941,7 +1946,7 @@ public:
    *
    * Veto erasing requests from the coarse grid cell as well.
    */
-  virtual bool progressMeshRefinementInMergeWithMaster(
+  virtual void progressMeshRefinementInMergeWithMaster(
       const int worker,
       const int localCellDescriptionsIndex,
       const int localElement,

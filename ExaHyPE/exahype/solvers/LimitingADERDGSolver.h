@@ -950,7 +950,8 @@ void updateNextGlobalObservables(
      const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
      const tarch::la::Vector<DIMENSIONS, double>& cellSize,
      const int level,
-     const bool checkThoroughly) const final override;
+     const bool checkThoroughly,
+     bool& checkSuccessful) const final override;
 
  bool attainedStableState(
      exahype::Cell&                       fineGridCell,
@@ -1504,7 +1505,7 @@ void updateNextGlobalObservables(
    *
    * TODO(Dominic): No const modifier const as kernels are not const yet
    */
-  bool progressMeshRefinementInMergeWithMaster(
+  void progressMeshRefinementInMergeWithMaster(
       const int worker,
       const int localCellDescriptionsIndex,
       const int localElement,

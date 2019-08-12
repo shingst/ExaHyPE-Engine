@@ -412,17 +412,18 @@ private:
     * parent cell description has an AugmentationStatus that
     * indicates that it does not require virtual subcells.
     *
-    * @param cellDescription       the fine grid cell description
-    * @param cellDescriptionsIndex heap index of the heap array that contains the the fine grid cell description
-    * @param fineGridCellElement   element of the fine grid cell description in the heap array.
-    * @param parentCellDescription the parent cell description of the fine grid cell description. Typically,
-    *                              it is located on the next coarser mesh level.
+    * @param cellDescription          the fine grid cell description
+    * @param cellDescriptionsIndex    heap index of the heap array that contains the the fine grid cell description
+    * @param fineGridCellElement      element of the fine grid cell description in the heap array.
+    * @param parentType               type of the parent cell description.
+    * @param parentAugmentationStatus augmentation status of the parent cell description.
     */
   void eraseCellDescriptionIfNecessary(
-      CellDescription& cellDescription,
-      const int        cellDescriptionsIndex,
-      const int        fineGridCellElement,
-      CellDescription& parentCellDescription) const;
+      CellDescription&             cellDescription,
+      const int                    cellDescriptionsIndex,
+      const int                    fineGridElement,
+      const CellDescription::Type& parentType,
+      const int                    parentAugmentationStatus) const;
 
   /**
    * Initialise cell description of type Leaf.
@@ -541,7 +542,7 @@ private:
    *
    * @note This method makes only sense for real cells.
    */
-  void restrictVolumeDataIfCoarseningRequested(
+  void restrictVolumeDataIfParentCoarsens(
       const CellDescription& fineGridCellDescription,
       const CellDescription& coarseGridCellDescription);
 
@@ -849,14 +850,6 @@ private:
    */
   static void prepareWorkerCellDescriptionAtMasterWorkerBoundary(
       CellDescription& cellDescription);
-
-  /**
-   * As the worker does not know anything about the master's coarse
-   * grid cell, we set special child cell based erasing events
-   * to notify the worker about the master's coarse grid cell's
-   * erasing decision.
-   */
-  void deduceChildCellErasingEvents(CellDescription& cellDescription) const;
 
 #endif
 
@@ -1580,12 +1573,13 @@ public:
       const bool stillInRefiningMode) override;
 
   exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
-        const int cellDescriptionsIndex,
-        const int solverNumber,
-        const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
-        const tarch::la::Vector<DIMENSIONS, double>& cellSize,
-        const int level,
-        const bool checkThoroughly) const final override;
+      const int cellDescriptionsIndex,
+      const int solverNumber,
+      const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
+      const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+      const int level,
+      const bool checkThoroughly,
+      bool& checkSuccessful) const final override;
 
   /**\copydoc Solver::attainedStableState
    *
@@ -2196,12 +2190,9 @@ public:
     * Veto erasing requests of the coarse grid cell if the received
     * cell description has virtual children.
     *
-    * \return If we the solver requires master worker communication
-    * at this cell
-    *
     * TODO(Dominic): No const modifier const as kernels are not const yet
     */
-   bool progressMeshRefinementInMergeWithMaster(
+   void progressMeshRefinementInMergeWithMaster(
        const int                                    worker,
        const int                                    localCellDescriptionsIndex,
        const int                                    localElement,

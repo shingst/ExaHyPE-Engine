@@ -206,12 +206,17 @@ void exahype::mappings::MeshRefinement::touchVertexLastTime(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfVertex) {
+  bool correctAdjacencyInformation = true;
+
   exahype::solvers::Solver::RefinementControl refinementControl =
       fineGridVertex.evaluateRefinementCriterion(
       fineGridX,
       coarseGridVerticesEnumerator.getLevel()+1,
       fineGridH,
-      !_stateCopy.getMeshRefinementIsInRefiningMode());
+      !_stateCopy.getMeshRefinementIsInRefiningMode(),
+      correctAdjacencyInformation);
+
+  _allSolversAttainedStableState &= correctAdjacencyInformation;
 
   if ( refinementControl==exahype::solvers::Solver::RefinementControl::Refine ) {
     refineSafely(fineGridVertex,fineGridH,coarseGridVerticesEnumerator.getLevel()+1,false);
@@ -220,12 +225,16 @@ void exahype::mappings::MeshRefinement::touchVertexLastTime(
       &&
       !fineGridVertex.isHangingNode()
       &&
+      #ifdef Parallel
+      !fineGridVertex.isRemote(_stateCopy,true,true)
+      #endif
+      &&
       fineGridVertex.isInside()
       && // otherwise, we compete with ensureRegularityAlongBoundary
       fineGridVertex.getRefinementControl()==
           Vertex::Records::RefinementControl::Refined
   ) {
-  // TODO  fineGridVertex.erase(); // TODO(Dominic): vertex erasing is not well understood yet
+    fineGridVertex.erase();
   }
 }
 
@@ -243,16 +252,19 @@ void exahype::mappings::MeshRefinement::createBoundaryVertex(
                            coarseGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfVertex);
 
+  bool correctAdjacencyInformation = true;
   if (
       fineGridVertex.evaluateRefinementCriterion(
       fineGridX,
       coarseGridVerticesEnumerator.getLevel()+1,
-      fineGridH,
-      !_stateCopy.getMeshRefinementIsInRefiningMode())
+      fineGridH, true,
+      correctAdjacencyInformation)
       == exahype::solvers::Solver::RefinementControl::Refine
   ) {
     refineSafely(fineGridVertex,fineGridH,coarseGridVerticesEnumerator.getLevel()+1,true);
   }
+
+
 
   logTraceOutWith1Argument("createBoundaryVertex(...)", fineGridVertex);
 }
@@ -269,12 +281,15 @@ void exahype::mappings::MeshRefinement::createInnerVertex(
   logTraceInWith6Arguments("createInnerVertex(...)", fineGridVertex, fineGridX,
                            fineGridH, coarseGridVerticesEnumerator.toString(),
                            coarseGridCell, fineGridPositionOfVertex);
+
+  bool correctAdjacencyInformation = true;
   if (
       fineGridVertex.evaluateRefinementCriterion(
           fineGridX,
           coarseGridVerticesEnumerator.getLevel()+1,
           fineGridH,
-          !_stateCopy.getMeshRefinementIsInRefiningMode())
+          !_stateCopy.getMeshRefinementIsInRefiningMode(),
+          correctAdjacencyInformation)
       == exahype::solvers::Solver::RefinementControl::Refine
   ) {
     refineSafely(fineGridVertex,fineGridH,coarseGridVerticesEnumerator.getLevel()+1,true);
@@ -343,6 +358,8 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
   ) {
     bool oneInnerVertexIsRefined = false;
     bool noInnerVertexIsRefined  = true;
+    bool correctAdjacencyInformation = true;
+
     dfor2(v)
       oneInnerVertexIsRefined |=
           fineGridVertices[fineGridVerticesEnumerator(v)].isInside() &&
@@ -368,7 +385,8 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
                 fineGridVerticesEnumerator.getVertexPosition(vScalar),
                 fineGridVerticesEnumerator.getLevel(),
                 fineGridVerticesEnumerator.getCellSize(),
-                false)
+                false,
+                correctAdjacencyInformation)
             !=exahype::solvers::Solver::RefinementControl::Erase
 			&&
         	_stateCopy.mayRefine(true,fineGridVerticesEnumerator.getLevel())
@@ -383,6 +401,10 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
       dfor2(v)
         tarch::multicore::Lock lock(BoundarySemaphore);
         if (
+            #ifdef Parallel
+            !fineGridVertices[fineGridVerticesEnumerator(v)].isRemote(_stateCopy,true,true)
+            #endif
+            &&
             fineGridVertices[fineGridVerticesEnumerator(v)].isBoundary()
             &&
             fineGridVertices[fineGridVerticesEnumerator(v)].getRefinementControl()==
@@ -392,12 +414,12 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
               fineGridVerticesEnumerator.getVertexPosition(vScalar),
               fineGridVerticesEnumerator.getLevel(),
               fineGridVerticesEnumerator.getCellSize(),
-              false)
+              false,
+              correctAdjacencyInformation)
             ==exahype::solvers::Solver::RefinementControl::Erase
 
         ) {
-          // TODO
-          // fineGridVertices[fineGridVerticesEnumerator(v)].erase(); // TODO(Dominic): vertex erasing is not well understood yet
+          fineGridVertices[fineGridVerticesEnumerator(v)].erase();
         }
         lock.free();
       enddforx
@@ -563,10 +585,10 @@ bool exahype::mappings::MeshRefinement::prepareSendToWorker(
     // send out the cell descriptions
     const int cellDescriptionsIndex = fineGridCell.getCellDescriptionsIndex();
     _verticalExchangeOfSolverDataRequired |=
-        exahype::solvers::ADERDGSolver::sendCellDescriptions(worker,cellDescriptionsIndex,
-            false/* !(send data from worker side) */,
-            peano::heap::MessageType::MasterWorkerCommunication,
-            fineGridVerticesEnumerator.getCellCenter(),fineGridVerticesEnumerator.getLevel());
+    exahype::solvers::ADERDGSolver::sendCellDescriptions(worker,cellDescriptionsIndex,
+        false/* !(send data from worker side) */,
+        peano::heap::MessageType::MasterWorkerCommunication,
+        fineGridVerticesEnumerator.getCellCenter(),fineGridVerticesEnumerator.getLevel());
     exahype::solvers::FiniteVolumesSolver::sendCellDescriptions(worker,cellDescriptionsIndex,
         peano::heap::MessageType::MasterWorkerCommunication,
         fineGridVerticesEnumerator.getCellCenter(),fineGridVerticesEnumerator.getLevel());
@@ -763,13 +785,12 @@ void exahype::mappings::MeshRefinement::mergeWithMaster(
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       const int element = solver->tryGetElement(cellDescriptionsIndex,solverNumber);
       if ( element!=exahype::solvers::Solver::NotFound ) {
-        _verticalExchangeOfSolverDataRequired |=
-            solver->progressMeshRefinementInMergeWithMaster(
-                worker, cellDescriptionsIndex, element,
-                coarseGridCell.getCellDescriptionsIndex(),
-                fineGridVerticesEnumerator.getCellCenter(),
-                fineGridVerticesEnumerator.getLevel(),
-                _stateCopy.getMeshRefinementIsInRefiningMode());
+          solver->progressMeshRefinementInMergeWithMaster(
+              worker, cellDescriptionsIndex, element,
+              coarseGridCell.getCellDescriptionsIndex(),
+              fineGridVerticesEnumerator.getCellCenter(),
+              fineGridVerticesEnumerator.getLevel(),
+              _stateCopy.getMeshRefinementIsInRefiningMode());
       }
     }
 

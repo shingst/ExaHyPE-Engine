@@ -595,12 +595,13 @@ public:
       const bool stillInRefiningMode) override;
 
   exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
-          const int cellDescriptionsIndex,
-          const int solverNumber,
-          const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
-          const tarch::la::Vector<DIMENSIONS, double>& cellSize,
-          const int level,
-          const bool checkThoroughly) const final override;
+      const int cellDescriptionsIndex,
+      const int solverNumber,
+      const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
+      const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+      const int level,
+      const bool checkThoroughly,
+      bool& checkSuccessful) const final override;
 
   bool attainedStableState(
       exahype::Cell&                       fineGridCell,
@@ -900,7 +901,7 @@ public:
   /**
    * Nop. TODO(Dominic): As long as no multi-solver and limiter
    */
-  bool progressMeshRefinementInMergeWithMaster(
+  void progressMeshRefinementInMergeWithMaster(
         const int worker,
         const int localCellDescriptionsIndex,
         const int localElement,

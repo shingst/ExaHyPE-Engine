@@ -285,14 +285,16 @@ void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInLeaveCell(
 
 exahype::solvers::Solver::RefinementControl
 exahype::solvers::LimitingADERDGSolver::eraseOrRefineAdjacentVertices(
-        const int cellDescriptionsIndex,
-        const int solverNumber,
-        const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
-        const tarch::la::Vector<DIMENSIONS, double>& cellSize,
-        const int level,
-        const bool checkThoroughly) const {
-  return _solver->eraseOrRefineAdjacentVertices(
-             cellDescriptionsIndex,solverNumber,cellOffset,cellSize,level,checkThoroughly);
+    const int cellDescriptionsIndex,
+    const int solverNumber,
+    const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
+    const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+    const int level,
+    const bool checkThoroughly,
+    bool& checkSuccessful) const {
+  return
+      _solver->eraseOrRefineAdjacentVertices(
+          cellDescriptionsIndex,solverNumber,cellOffset,cellSize,level,checkThoroughly,checkSuccessful);
 }
 
 bool exahype::solvers::LimitingADERDGSolver::attainedStableState(
@@ -1896,7 +1898,7 @@ void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInPrepareSend
       masterRank,cellDescriptionsIndex,element,x,level);
 }
 
-bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInMergeWithMaster(
+void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInMergeWithMaster(
     const int worker,
     const int localCellDescriptionsIndex,
     const int localElement,
@@ -1904,7 +1906,7 @@ bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInMergeWithMa
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int  level,
     const bool stillInRefiningMode) {
-  return _solver->progressMeshRefinementInMergeWithMaster(
+  _solver->progressMeshRefinementInMergeWithMaster(
       worker,localCellDescriptionsIndex,localElement,coarseGridCellDescriptionsIndex,x,level,stillInRefiningMode);
 }
 
