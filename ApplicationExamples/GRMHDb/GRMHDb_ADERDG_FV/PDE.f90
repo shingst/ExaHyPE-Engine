@@ -435,10 +435,10 @@ RECURSIVE SUBROUTINE HLLEMFluxFV(FL,FR,QL,QR,QavL,QavR,NormalNonZero)
   INTEGER           :: i,j,k,l, ml(1)  
   REAL              :: smax, Qav(nVar)
   REAL              ::  nv(nDim), flattener(nLin)
-  REAL    :: absA(nVar,nVar), amax  
+  REAL    :: absA(nVar,nVar), amax, minL, maxR, minM, maxM   
   REAL    :: QM(nVar),LL(nVar),LR(nVar),LM(nVar)
   REAL    :: deltaL(nLin,nLin),Lam(nLin,nLin),Lap(nLin,nLin) 
-  REAL    :: RL(nVar,nLin),iRL(nLin,nVar),LLin(nLin,nLin) 
+  REAL    :: RL(nVar,nLin),iRL(nLin,nVar), temp(nLin,nVar), LLin(nLin,nLin) 
   REAL    :: Aroe(nVar,nVar),Aroep(nVar,nVar), Aroem(nVar,nVar), Dm(nVar), Dp(nVar), dQ(nVar)
   REAL :: f1R(nVar), g1R(nVar), h1R(nVar) 
   REAL :: f1L(nVar), g1L(nVar), h1L(nVar) 
@@ -484,8 +484,12 @@ IF(ANY(QM(6:8).NE.0)) THEN
     STOP
 ENDIF
   CALL PDEEigenvalues(LM,QM,nv)  
-  sL = MIN( 0., MINVAL(LL(:)), MINVAL(LM(:)) ) 
-  sR = MAX( 0., MAXVAL(LR(:)), MAXVAL(LM(:)) ) 
+  minL = MINVAL(LL)
+  minM = MINVAL(LM)
+  maxR = MAXVAL(LR) 
+  maxM = MAXVAL(LM) 
+  sL = MIN( 0., minL, minM ) 
+  sR = MAX( 0., maxR, maxM ) 
  ! PRINT *, "PDEIntermediateFields"
   !DO i=1,nVar
   !  WRITE(*,'(E16.6)'), QM(i)
@@ -512,10 +516,10 @@ ENDIF
   !
   IF(QR(1).LT.1e-9.OR.QL(1).LT.1e-9) THEN
       deltaL = 0.
-  ENDIF
-  !
-  !deltaL = 0.
-  absA = absA - sR*sL/(sR-sL)*MATMUL( RL, MATMUL(deltaL, iRL) )  ! HLLEM anti-diffusion  
+  ELSE
+      temp = MATMUL( deltaL, iRL ) 
+      absA = absA - sR*sL/(sR-sL)*MATMUL( RL, temp )  ! HLLEM anti-diffusion  
+  ENDIF 
   !    
   CALL RoeMatrix(ARoe,QL,QR,nv)
   !
