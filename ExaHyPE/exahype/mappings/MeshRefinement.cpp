@@ -238,7 +238,7 @@ void exahype::mappings::MeshRefinement::touchVertexLastTime(
       fineGridVertex.getRefinementControl()==
           Vertex::Records::RefinementControl::Refined
   ) {
-    fineGridVertex.erase();
+    //fineGridVertex.erase();
   }
 }
 
