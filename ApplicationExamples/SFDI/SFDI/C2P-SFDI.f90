@@ -18,7 +18,7 @@ SUBROUTINE PDEPrim2Cons(Q,V)
 END SUBROUTINE PDEPrim2Cons
 
 SUBROUTINE PDECons2Prim(V,Q)
-  USE MainVariables, ONLY: nVar, nDim, EQN
+  USE MainVariables, ONLY: nVar, nDim, EQN,EPSalpha
   IMPLICIT NONE
   !--------------------------------------------!
   ! Argument list declaration
@@ -28,9 +28,9 @@ SUBROUTINE PDECons2Prim(V,Q)
   ! Local variables
   REAL :: ialpha
   
-  ialpha = Q(6)/(Q(6)**2 + 1e-10) 
+  ialpha = Q(6)/(Q(6)**2 + EPSalpha) 
   V(1)   = Q(1)*ialpha 
-  V(2:4) = Q(2:4)*Q(1)/(Q(1)**2 + 1e-10)  
+  V(2:4) = Q(2:4)*Q(1)/(Q(1)**2 + EPSalpha)  
   V(5) = (EQN%gamma-1.)*( Q(5)*ialpha - 0.5*V(1)*( V(2)**2 + V(3)**2 +V(4)**2 ) ) 
   V(6:9) = Q(6:9) 
 END SUBROUTINE PDECons2Prim

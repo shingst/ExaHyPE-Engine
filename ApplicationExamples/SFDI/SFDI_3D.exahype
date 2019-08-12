@@ -20,9 +20,7 @@
       5.0,
       5.0,
       5.0
-    ],
-    "outside_cells_left":0,
-    "outside_cells_right":41
+    ]
   },
   "shared_memory": {
     "cores": 16,
@@ -57,8 +55,8 @@
       "name": "SFDISolver",
       "order": 3,
       "patch_size": 7,
-      "maximum_mesh_size": 4.9,
-      "maximum_mesh_depth": 0,
+      "maximum_mesh_size": 0.2,
+      "maximum_mesh_depth": 1,
       "time_stepping": "global",
       "aderdg_kernel": {
         "language": "C",

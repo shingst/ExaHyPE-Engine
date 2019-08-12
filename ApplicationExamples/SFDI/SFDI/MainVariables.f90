@@ -25,6 +25,7 @@
     INTEGER, PARAMETER 				:: nLin = 7					                                                           !
     !CHARACTER(LEN=20), PARAMETER	:: ICType='NBodies'			  ! Initial condition setup                                !
 	CHARACTER(LEN=20)            	:: ICType
+	REAL, PARAMETER					:: EPSalpha=1.e-5
 	! ---------------------------------------------------------------------------------------------------------------------!
 	
 	! Types and variables for the initial condition ----------------------------------------------------------------------------------
