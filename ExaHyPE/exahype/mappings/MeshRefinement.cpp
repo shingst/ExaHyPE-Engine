@@ -224,8 +224,8 @@ void exahype::mappings::MeshRefinement::touchVertexLastTime(
       refinementControl==exahype::solvers::Solver::RefinementControl::Erase
       &&
       !fineGridVertex.isHangingNode()
-      &&
       #ifdef Parallel
+      &&
       !fineGridVertex.isRemote(_stateCopy,true,true)
       #endif
       &&
@@ -403,8 +403,8 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
         if (
             #ifdef Parallel
             !fineGridVertices[fineGridVerticesEnumerator(v)].isRemote(_stateCopy,true,true)
-            #endif
             &&
+            #endif
             fineGridVertices[fineGridVerticesEnumerator(v)].isBoundary()
             &&
             fineGridVertices[fineGridVerticesEnumerator(v)].getRefinementControl()==

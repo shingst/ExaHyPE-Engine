@@ -741,7 +741,7 @@ void exahype::solvers::ADERDGSolver::decideOnRefinement(CellDescription& fineGri
     CellDescription& topMostParent =
       getCellDescription(subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
     tarch::multicore::Lock lock(ADERDGSolver::CoarseGridSemaphore);
-    if ( topMostParent.getType()==CellDescription::Type::Leaf ) {
+    if ( topMostParent.getType()==CellDescription::Type::LeafChecked ) {
       topMostParent.setRefinementStatus(_refineOrKeepOnFineGrid);
     }
     lock.free();
@@ -967,7 +967,6 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
         (cellDescription.getRefinementStatus()!=Pending && // TODO(Dominic): Pending still required?
         (cellDescription.getLevel() == getMaximumAdaptiveMeshLevel() ||
         cellDescription.getRefinementStatus()<=0)));
-
     const bool condB =
         (!isOfType(cellDescription,CellDescription::Type::Virtual) || // virtual cell must not have refinement status > 0 on finest level
         cellDescription.getLevel() != getMaximumAdaptiveMeshLevel() ||
@@ -1810,7 +1809,7 @@ void exahype::solvers::ADERDGSolver::sendDataToWorkerOrMasterDueToForkOrJoin(
   assertion5(Vertex::equalUpToRelativeTolerance(x,center),x,center,level,cellDescription.getLevel(),tarch::parallel::Node::getInstance().getRank());
   assertion2(cellDescription.getLevel()==level,cellDescription.getLevel(),level);
 
-  if ( cellDescription.getType()==CellDescription::Type::Leaf ) {
+  if ( isLeaf(cellDescription) ) {
     logDebug("sendDataToWorkerOrMasterDueToForkOrJoin(...)",""
             "solution of solver " << cellDescription.getSolverNumber() << " sent to rank "<<toRank<<
                  ", cell: "<< x << ", level: " << level);
@@ -1846,13 +1845,13 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerOrMasterDataDueToForkOrJoin(
   if ( messageType==peano::heap::MessageType::ForkOrJoinCommunication ) {
     ensureNecessaryMemoryIsAllocated(cellDescription);
     ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
-  } else if ( cellDescription.getType()==CellDescription::Type::Leaf ) {
+  } else if ( isLeaf(cellDescription) ) {
     ensureNecessaryMemoryIsAllocated(cellDescription);
     ensureNoUnnecessaryMemoryIsAllocated(cellDescription);
   }
 
   // receive data
-  if ( cellDescription.getType()==CellDescription::Type::Leaf ) {
+  if ( isLeaf(cellDescription) ) {
     logDebug("mergeWithRemoteDataDueToForkOrJoin(...)","[solution] receive from rank "<<fromRank<<
              ", cell: "<< x << ", level: " << level);
 
