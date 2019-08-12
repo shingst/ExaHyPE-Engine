@@ -1019,8 +1019,7 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInLeaveCell(
   const int fineGridElement =
       tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
   if ( fineGridElement!=exahype::solvers::Solver::NotFound ) {
-    CellDescription& fineGridCellDescription = getCellDescription(
-        fineGridCell.getCellDescriptionsIndex(),fineGridElement);
+    CellDescription& fineGridCellDescription = getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
 
     // start or finish collective operations
     progressCoarseningOperationsInLeaveCell(fineGridCellDescription);
@@ -1117,12 +1116,18 @@ exahype::solvers::ADERDGSolver::eraseOrRefineAdjacentVertices(
 
 void exahype::solvers::ADERDGSolver::prepareVolumeDataRestriction(
     CellDescription& cellDescription) const {
-  double* solution =
-      static_cast<double*>(cellDescription.getSolution());
+  double* solution = static_cast<double*>(cellDescription.getSolution());
+  double* previousSolution = static_cast<double*>(cellDescription.getPreviousSolution());
   std::fill_n(solution,getDataPerCell(),0.0);
-  double* previousSolution =
-      static_cast<double*>(cellDescription.getPreviousSolution());
   std::fill_n(previousSolution,getDataPerCell(),0.0);
+
+  const int DMPObservables = getDMPObservables() > 0;
+  if ( DMPObservables > 0 ) {
+    double* DMPObservablesMin = static_cast<double*>(cellDescription.getSolutionMin());
+    double* DMPObservablesMax = static_cast<double*>(cellDescription.getSolutionMax());
+    std::fill_n(DMPObservablesMin,DIMENSIONS_TIMES_TWO*DMPObservables,+std::numeric_limits<double>::infinity());
+    std::fill_n(DMPObservablesMax,DIMENSIONS_TIMES_TWO*DMPObservables,-std::numeric_limits<double>::infinity());
+  }
 }
 
 void exahype::solvers::ADERDGSolver::changeLeafToParent(CellDescription& cellDescription) {
@@ -1163,7 +1168,7 @@ bool exahype::solvers::ADERDGSolver::markPreviousParentForRefinement(CellDescrip
           cellDescription.getPreviousTimeStamp(),
           cellDescription.getPreviousTimeStepSize());
 
-    cellDescription.setRefinementStatus( 
+    cellDescription.setRefinementStatus(
       evaluateRefinementCriterion(
         cellDescription,solution,cellDescription.getTimeStamp())
     );
@@ -1278,17 +1283,18 @@ void exahype::solvers::ADERDGSolver::restrictVolumeDataIfParentCoarsens(
         levelCoarse,levelFine,
         subcellIndex);
 
-    // TODO(Dominic): Do later, move out
+    // Reset the observables min and max
+    const int numberOfDMPObservables = getDMPObservables();
+    if ( numberOfDMPObservables > 0 ) {
+      double* coarseGridObservablesMin = static_cast<double*>(coarseGridCellDescription.getSolutionMin());
+      double* coarseGridObservablesMax = static_cast<double*>(coarseGridCellDescription.getSolutionMax());
+      const double* const fineGridObservablesMin = static_cast<double*>(fineGridCellDescription.getSolutionMin());
+      const double* const fineGridObservablesMax = static_cast<double*>(fineGridCellDescription.getSolutionMax());
 
-    // Reset the min and max
-    const int numberOfObservables = getDMPObservables();
-    if ( numberOfObservables>0 ) {
-      double* solutionMin = static_cast<double*>(coarseGridCellDescription.getSolutionMin());
-      std::fill_n(solutionMin,DIMENSIONS_TIMES_TWO*numberOfObservables,
-          std::numeric_limits<double>::infinity());
-      double* solutionMax = static_cast<double*>(coarseGridCellDescription.getSolutionMax());
-      std::fill_n(solutionMax,DIMENSIONS_TIMES_TWO*numberOfObservables,
-          -std::numeric_limits<double>::infinity()); // Be aware of "-"
+      for ( int i = 0; i < DIMENSIONS_TIMES_TWO*numberOfDMPObservables; i++ ) {
+        coarseGridObservablesMin[i] = std::min( coarseGridObservablesMin[i], fineGridObservablesMin[i] );
+        coarseGridObservablesMax[i] = std::max( coarseGridObservablesMax[i], fineGridObservablesMax[i] );
+      }
     }
 
     // TODO(Dominic): What to do with the time step data for anarchic time stepping?

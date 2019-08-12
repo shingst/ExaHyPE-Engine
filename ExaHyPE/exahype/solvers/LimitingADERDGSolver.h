@@ -505,6 +505,17 @@ private:
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& limiterNeighbourMergePerformed,
       const bool                                                 isAtRemoteBoundary);
 
+  /**
+   * Veto a coarsening attempt of a Parent cell description if
+   * the restricted solution is troubled.
+   *
+   * @param cellDescriptionsIndex heap index associated with a mesh cell
+   * @param solverNumber          identification number of a solver.
+   */
+  void vetoCoarseningIfRestrictedSolutionIsTroubled(
+      const int cellDescriptionsIndex,
+      const int solverNumber);
+
 #ifdef Parallel
 
   /**

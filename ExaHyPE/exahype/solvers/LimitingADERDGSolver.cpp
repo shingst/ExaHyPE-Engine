@@ -270,6 +270,46 @@ bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInEnterCell(
          solverNumber,stillInRefiningMode);
 }
 
+void exahype::solvers::LimitingADERDGSolver::vetoCoarseningIfRestrictedSolutionIsTroubled(
+    const int cellDescriptionsIndex,
+    const int fineGridElement) {
+  const int DMPObservables = _solver->getDMPObservables();
+  if (
+      DMPObservables > 0 &&
+      fineGridElement!=exahype::solvers::Solver::NotFound
+  ) {
+    SolverPatch& solverPatch = _solver->getCellDescription(cellDescriptionsIndex,fineGridElement);
+
+    if ( solverPatch.getType() == SolverPatch::Type::ParentCoarsens ) {
+      // TODO(Dominic): Actually store and restrict the previous observables per cell.
+      const double* const previousSolution = static_cast<double*>(solverPatch.getPreviousSolution());
+      std::vector<double> previousDMPObservablesMin(DMPObservables,DMPObservables);
+      std::vector<double> previousDMPObservablesMax(DMPObservables,DMPObservables);
+      findCellLocalMinAndMax(previousSolution, previousDMPObservablesMin.data(), previousDMPObservablesMax.data());
+
+      // current values
+      const double* const solution = static_cast<double*>(solverPatch.getSolution());
+      double* DMPObservablesMin    = static_cast<double*>(solverPatch.getSolutionMin());
+      double* DMPObservablesMax    = static_cast<double*>(solverPatch.getSolutionMax());
+
+      auto centre = solverPatch.getOffset() + 0.5 * solverPatch.getSize();
+      const bool stable =
+          discreteMaximumPrincipleAndMinAndMaxSearch(solution,DMPObservablesMin,DMPObservablesMax)
+          &&
+          _solver->isPhysicallyAdmissible(solution,DMPObservablesMin,DMPObservablesMax,false,
+              centre,solverPatch.getSize(),solverPatch.getTimeStamp())
+          &&
+          _solver->isPhysicallyAdmissible(previousSolution,previousDMPObservablesMin.data(),previousDMPObservablesMax.data(),false,
+              centre,solverPatch.getSize(),solverPatch.getPreviousTimeStamp());
+
+      if (!stable) {
+        _solver->changeLeafToParent(solverPatch);
+        assertion1(solverPatch.getType()==SolverPatch::Type::ParentChecked,solverPatch.toString());
+      }
+    }
+  }
+}
+
 void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInLeaveCell(
     exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
@@ -278,6 +318,9 @@ void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInLeaveCell(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     const int solverNumber,
     const bool stillInRefiningMode) {
+  const int fineGridElement = tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
+  vetoCoarseningIfRestrictedSolutionIsTroubled(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
+
   _solver->progressMeshRefinementInLeaveCell(
       fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
       coarseGridCell,fineGridPositionOfCell,solverNumber,stillInRefiningMode);
@@ -1906,6 +1949,8 @@ void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInMergeWithMa
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int  level,
     const bool stillInRefiningMode) {
+  vetoCoarseningIfRestrictedSolutionIsTroubled(localCellDescriptionsIndex,localElement);
+
   _solver->progressMeshRefinementInMergeWithMaster(
       worker,localCellDescriptionsIndex,localElement,coarseGridCellDescriptionsIndex,x,level,stillInRefiningMode);
 }
