@@ -259,13 +259,11 @@ bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInEnterCell(
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    const int solverNumber,
-    const bool stillInRefiningMode) {
+    const int solverNumber) {
  return
      _solver->progressMeshRefinementInEnterCell(
          fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
-         coarseGridCell,coarseGridVerticesEnumerator,
-         solverNumber,stillInRefiningMode);
+         coarseGridCell,coarseGridVerticesEnumerator,solverNumber);
 }
 
 void exahype::solvers::LimitingADERDGSolver::vetoCoarseningIfRestrictedSolutionIsTroubled(
@@ -311,14 +309,13 @@ void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInLeaveCell(
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-    const int solverNumber,
-    const bool stillInRefiningMode) {
+    const int solverNumber) {
   const int fineGridElement = tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
   vetoCoarseningIfRestrictedSolutionIsTroubled(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
 
   _solver->progressMeshRefinementInLeaveCell(
       fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
-      coarseGridCell,fineGridPositionOfCell,solverNumber,stillInRefiningMode);
+      coarseGridCell,fineGridPositionOfCell,solverNumber);
 }
 
 exahype::solvers::Solver::RefinementControl
@@ -339,11 +336,10 @@ bool exahype::solvers::LimitingADERDGSolver::attainedStableState(
     exahype::Cell&                       fineGridCell,
     exahype::Vertex* const               fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-    const int                            solverNumber,
-    const bool                           stillInRefiningMode) const {
+    const int                            solverNumber) const {
   return
       _solver->attainedStableState(
-          fineGridCell,fineGridVertices,fineGridVerticesEnumerator,solverNumber,stillInRefiningMode);
+          fineGridCell,fineGridVertices,fineGridVerticesEnumerator,solverNumber);
 }
 
 void exahype::solvers::LimitingADERDGSolver::finaliseStateUpdates(
@@ -1941,12 +1937,11 @@ void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInMergeWithMa
     const int localElement,
     const int coarseGridCellDescriptionsIndex,
     const tarch::la::Vector<DIMENSIONS, double>& x,
-    const int  level,
-    const bool stillInRefiningMode) {
+    const int  level) {
   vetoCoarseningIfRestrictedSolutionIsTroubled(localCellDescriptionsIndex,localElement);
 
   _solver->progressMeshRefinementInMergeWithMaster(
-      worker,localCellDescriptionsIndex,localElement,coarseGridCellDescriptionsIndex,x,level,stillInRefiningMode);
+      worker,localCellDescriptionsIndex,localElement,coarseGridCellDescriptionsIndex,x,level);
 }
 
 void exahype::solvers::LimitingADERDGSolver::appendMasterWorkerCommunicationMetadata(

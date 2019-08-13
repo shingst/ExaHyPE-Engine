@@ -582,8 +582,7 @@ public:
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const int  solverNumber,
-      const bool stillInRefiningMode) override;
+      const int  solverNumber) override;
 
   void progressMeshRefinementInLeaveCell(
       exahype::Cell& fineGridCell,
@@ -591,8 +590,7 @@ public:
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const int solverNumber,
-      const bool stillInRefiningMode) override;
+      const int solverNumber) override;
 
   exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
       const int cellDescriptionsIndex,
@@ -607,8 +605,7 @@ public:
       exahype::Cell&                       fineGridCell,
       exahype::Vertex* const               fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      const int                            solverNumber,
-      const bool                           stillInRefiningMode) const final override;
+      const int                            solverNumber) const final override;
 
   void finaliseStateUpdates(
       const int solverNumber,
@@ -907,8 +904,7 @@ public:
         const int localElement,
         const int coarseGridCellDescriptionsIndex,
         const tarch::la::Vector<DIMENSIONS, double>& x,
-        const int                                    level,
-        const bool                                   stillInRefiningMode) final override;
+        const int                                    level) final override;
 
   ///////////////////////////////////
   // WORKER->MASTER

@@ -222,23 +222,29 @@ void exahype::mappings::MeshRefinement::touchVertexLastTime(
 
   _allSolversAttainedStableState &= correctAdjacencyInformation;
 
-  if ( refinementControl==exahype::solvers::Solver::RefinementControl::Refine ) {
+  if (
+      //_stateCopy.getMeshRefinementIsInRefiningMode()
+      //&&
+      refinementControl==exahype::solvers::Solver::RefinementControl::Refine
+  ) {
     refineSafely(fineGridVertex,fineGridH,coarseGridVerticesEnumerator.getLevel()+1,false);
   } else if (
       refinementControl==exahype::solvers::Solver::RefinementControl::Erase
+      //&&
+      //!_stateCopy.getMeshRefinementIsInRefiningMode()
+      &&
+      IsFirstIteration // TODO only erase in the first iteration; seems to work but is not optimal
       &&
       !fineGridVertex.isHangingNode()
       #ifdef Parallel
       &&
       !fineGridVertex.isRemote(_stateCopy,true,true)
       #endif
-      &&
-      fineGridVertex.isInside()
       && // otherwise, we compete with ensureRegularityAlongBoundary
       fineGridVertex.getRefinementControl()==
           Vertex::Records::RefinementControl::Refined
   ) {
-    //fineGridVertex.erase();
+    fineGridVertex.erase();
   }
 }
 
@@ -355,8 +361,6 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) const {
   if (
-      !_stateCopy.getMeshRefinementIsInRefiningMode()
-      &&
       peano::grid::aspects::VertexStateAnalysis::isOneVertexBoundary(
           fineGridVertices,fineGridVerticesEnumerator)
   ) {
@@ -375,8 +379,9 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
           ==exahype::Vertex::Records::RefinementControl::Unrefined;
     enddforx
 
-	// @todo
-    if ( oneInnerVertexIsRefined ) {
+    if ( oneInnerVertexIsRefined
+         //&& _stateCopy.getMeshRefinementIsInRefiningMode()
+    ) {
       dfor2(v)
         tarch::multicore::Lock lock(BoundarySemaphore);
         if (
@@ -397,7 +402,9 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
         lock.free();
       enddforx
     }
-    else if ( noInnerVertexIsRefined ) {
+    else if ( noInnerVertexIsRefined
+        // && !_stateCopy.getMeshRefinementIsInRefiningMode()
+    ) {
       dfor2(v)
         tarch::multicore::Lock lock(BoundarySemaphore);
         if (
@@ -457,8 +464,7 @@ void exahype::mappings::MeshRefinement::enterCell(
               fineGridVerticesEnumerator,
               coarseGridCell,
               coarseGridVerticesEnumerator,
-              solverNumber,
-              _stateCopy.getMeshRefinementIsInRefiningMode());
+              solverNumber);
 
       // Synchronise time stepping, adjust the solution, evaluate refinement criterion if required
       if (
@@ -503,16 +509,14 @@ void exahype::mappings::MeshRefinement::leaveCell(
           fineGridVerticesEnumerator,
           coarseGridCell,
           fineGridPositionOfCell,
-          solverNumber,
-          _stateCopy.getMeshRefinementIsInRefiningMode());
+          solverNumber);
 
       _allSolversAttainedStableState &=
           solver->attainedStableState(
               fineGridCell,
               fineGridVertices,
               fineGridVerticesEnumerator,
-              solverNumber,
-              _stateCopy.getMeshRefinementIsInRefiningMode());
+              solverNumber);
     }
   }
 
@@ -789,8 +793,7 @@ void exahype::mappings::MeshRefinement::mergeWithMaster(
               worker, cellDescriptionsIndex, element,
               coarseGridCell.getCellDescriptionsIndex(),
               fineGridVerticesEnumerator.getCellCenter(),
-              fineGridVerticesEnumerator.getLevel(),
-              _stateCopy.getMeshRefinementIsInRefiningMode());
+              fineGridVerticesEnumerator.getLevel());
       }
     }
 

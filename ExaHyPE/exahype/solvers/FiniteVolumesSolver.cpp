@@ -312,8 +312,7 @@ bool exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInEnterCell(
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    const int solverNumber,
-    const bool stillInRefiningMode) {
+    const int solverNumber) {
   // Fine grid cell based uniform mesh refinement.
   const int fineGridCellElement =
       tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
@@ -556,8 +555,7 @@ bool exahype::solvers::FiniteVolumesSolver::attainedStableState(
     exahype::Cell&                       fineGridCell,
     exahype::Vertex* const               fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-    const int                            solverNumber,
-    const bool                           stillInRefiningMode) const {
+    const int                            solverNumber) const {
   return true;
 }
 
@@ -567,8 +565,7 @@ void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInLeaveCell(
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-     const int solverNumber,
-     const bool stillInRefiningMode) {
+     const int solverNumber) {
   // do nothing
 }
 
@@ -1270,8 +1267,7 @@ void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInMergeWithMas
     const int localElement,
     const int coarseGridCellDescriptionsIndex,
     const tarch::la::Vector<DIMENSIONS, double>& x,
-    const int                                    level,
-    const bool stillInRefiningMode) {
+    const int                                    level) {
   // do nothing
 }
 

@@ -606,8 +606,7 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    const int  solverNumber,
-    const bool inRefiningMode) {
+    const int  solverNumber) {
   bool newComputeCell = false;
 
   // Fine grid cell based uniform mesh refinement.
@@ -927,8 +926,7 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
         exahype::Cell&                       fineGridCell,
         exahype::Vertex* const               fineGridVertices,
         const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-        const int                            solverNumber,
-        const bool                           inRefiningMode) const {
+        const int                            solverNumber) const {
   const int element = tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
   if ( element!=exahype::solvers::Solver::NotFound ) {
     CellDescription& cellDescription = getCellDescription(fineGridCell.getCellDescriptionsIndex(),element);
@@ -1007,8 +1005,7 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInLeaveCell(
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-    const int solverNumber,
-    const bool inRefiningMode) {
+    const int solverNumber) {
   const int fineGridElement =
       tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
   if ( fineGridElement!=exahype::solvers::Solver::NotFound ) {
@@ -1063,7 +1060,7 @@ exahype::solvers::ADERDGSolver::eraseOrRefineAdjacentVertices(
 
     if ( isValidIndex ) {
       const int element = tryGetElement(cellDescriptionsIndex,solverNumber);
-      if (element!=NotFound) {
+      if ( element!=NotFound ) {
         CellDescription& cellDescription = getCellDescription(
             cellDescriptionsIndex,element);
 
@@ -1071,26 +1068,27 @@ exahype::solvers::ADERDGSolver::eraseOrRefineAdjacentVertices(
         if (
             !checkThoroughly || checkSuccessful
         ) {
-          bool refineAdjacentVertices =
+          bool refineAdjacentVertex =
               isParent(cellDescription) ||
               cellDescription.getType()==CellDescription::Type::LeafInitiatesRefining ||
               cellDescription.getType()==CellDescription::Type::LeafRefines ||
-              cellDescription.getAugmentationStatus() > 0 ||
-              cellDescription.getRefinementStatus() > 0;
-          refineAdjacentVertices &= level < getMaximumAdaptiveMeshLevel();
+              cellDescription.getAugmentationStatus() >= MinimumAugmentationStatusForRefining ||
+              cellDescription.getRefinementStatus() > Keep ||
+              cellDescription.getPreviousRefinementStatus() > Keep;
+          refineAdjacentVertex &= level < getMaximumAdaptiveMeshLevel();
 
-          bool eraseAdjacentVertices =
+          bool eraseAdjacentVertex =
               (cellDescription.getType()==CellDescription::Type::LeafChecked ||
               cellDescription.getType()==CellDescription::Type::Virtual)
               &&
-              cellDescription.getAugmentationStatus()==0 // TODO(Dominic): Probably can tune here. This is chosen to large
+              cellDescription.getAugmentationStatus() < MinimumAugmentationStatusForRefining // TODO(Dominic): Probably can tune here. This is chosen to large
               &&
-              cellDescription.getRefinementStatus()==0 &&
-              cellDescription.getPreviousRefinementStatus()==0;
+              cellDescription.getRefinementStatus() <= Keep &&
+              cellDescription.getPreviousRefinementStatus() <= Keep;
 
-          if (refineAdjacentVertices) {
+          if (refineAdjacentVertex) {
             return RefinementControl::Refine;
-          } else if (eraseAdjacentVertices) {
+          } else if (eraseAdjacentVertex) {
             return RefinementControl::Erase;
           } else {
             return RefinementControl::Keep;
@@ -1102,7 +1100,7 @@ exahype::solvers::ADERDGSolver::eraseOrRefineAdjacentVertices(
         return RefinementControl::Erase;
       }
     } else {
-      return RefinementControl::Erase;
+      return RefinementControl::Keep;
     }
   }
 }
@@ -1736,8 +1734,7 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithMaster(
     const int localElement,
     const int coarseGridCellDescriptionsIndex,
     const tarch::la::Vector<DIMENSIONS, double>& x,
-    const int                                    level,
-    const bool                                   stillInRefiningMode) {
+    const int                                    level) {
   CellDescription& cellDescription = getCellDescription(localCellDescriptionsIndex,localElement);
   ensureFineGridCoarseGridConsistency(cellDescription,coarseGridCellDescriptionsIndex);
   #ifdef Asserts
