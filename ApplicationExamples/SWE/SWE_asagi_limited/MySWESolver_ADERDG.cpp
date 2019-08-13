@@ -9,10 +9,9 @@
 #include "MySWESolver_ADERDG.h"
 #include "InitialData.h"
 #include "MySWESolver_ADERDG_Variables.h"
-#include "peano/utils/Loop.h"
-//#include "kernels/aderdg/generic/Kernels.h"
-#include "kernels/KernelUtils.h"
 
+#include "peano/utils/Loop.h"
+#include "kernels/KernelUtils.h"
 #include "../../../ExaHyPE/kernels/GaussLegendreBasis.h"
 
 using namespace kernels;

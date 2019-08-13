@@ -32,8 +32,11 @@ void SWE::ProbeWriter::mapQuantities(
     double* const outputQuantities,
     double timeStamp
 ) {
-  const int writtenUnknowns = 6;
-  for (int i=0; i<writtenUnknowns; i++){ 
+  const int writtenUnknowns = 5;
+  for (int i=0; i<writtenUnknowns-1; i++){ 
     outputQuantities[i] = Q[i];
   }
+  outputQuantities[4] = 0.0;
+  if(Q[3] < 0.0)
+      outputQuantities[4] = Q[3]+Q[0];
 }
