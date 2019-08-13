@@ -58,15 +58,15 @@ function SmoothInterface(r,ICsig,epsilon,smooth_order_in)
         real    :: r
         real    :: SmoothInterface,smooth_order
         real    :: eta,ICsig,xi 
-        real, optional :: epsilon
-        real, optional :: smooth_order_in
+        real    :: epsilon
+        real    :: smooth_order_in
         
-        if(.not. present(epsilon)) then
-            epsilon=1.e-9    
-        end if
-        if(.not. present(smooth_order_in)) then
-            smooth_order=4   
-        end if
+        !if(.not. present(epsilon)) then
+        !    epsilon=1.e-9    
+        !end if
+        !if(.not. present(smooth_order_in)) then
+        !    smooth_order=4   
+        !end if
         smooth_order=smooth_order_in
 
         eta=0.0
