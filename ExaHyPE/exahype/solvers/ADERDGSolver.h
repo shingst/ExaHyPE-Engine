@@ -334,41 +334,20 @@ private:
   /**
    * Query the user's refinement criterion and
    * write a refinement request back to the cell description.
+   *
+   * @note Only used during the mesh refinement iterations.
+   *
+   * @note It is important that the refinement status
+   * is not overwritten by this method if
+   * it is larger than the current one.
    */
   void markForRefinement(CellDescription& cellDescription);
 
   /**
-   * Mark a cell description of Cell for refinement or erasing based
-   * on a user supplied physics based refinement criterion.
-   *
-   * TODO(Dominic): Move docu below to appropriate location.
-   *
-   * <h2>Erasing</h2> TODO(Dominic): Move docu.
-   * Note that we use a not so obvious strategy for performing
-   * erasing operations. We first set an erasing request on
-   * a parent cell description of type Ancestor or EmptyAncestor,
-   * and then let its children of type Leaf veto
-   * this request if they want to keep their
-   * solution or refine even further.
-   *
-   * No erasing children request can be set on cell descriptions
-   * of type Ancestor which have been introduced to the grid during
-   * the current mesh update iterations.
-   * This prevents races where a refinement criterion has triggered a
-   * refinement event on the parent cell but does trigger an erasing
-   * event on the children cells.
-   *
-   * We further veto erasing events if
-   * a child of the parent itself is a parent
-   * of cell descriptions of type Virtual.
-   *
-   * <h2>Augmentation</h2>
-   * Note that cell descriptions of type Leaf are allowed to overwrite an augmentation request
-   * by a refinement request if applicable.
-   * The refinement event of a cell description of type Leaf might be set to
-   * an augmentation request in the methods mergeWithNeighbourData(...)
-   * as well as in markForAugmentation(...) which is called from within
-   * enterCell(...)
+   * Start the refinement procedure for cell descriptions
+   * of type Leaf if they are flagged for refinement
+   * or if one of their virtual subcells requests
+   * reifnement.
    *
    * @note Thread-safe.
    */
