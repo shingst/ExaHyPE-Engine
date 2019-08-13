@@ -23,7 +23,6 @@
 #include "peano/heap/CompressedFloatingPointNumbers.h"
 
 #include <algorithm>
-#include <mm_malloc.h> //g++
 #include <cstring> //memset
 
 #include "../../../Peano/tarch/multicore/Jobs.h"
