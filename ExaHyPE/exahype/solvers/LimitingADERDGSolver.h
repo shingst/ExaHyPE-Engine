@@ -116,23 +116,6 @@ protected:
    */
   const double _DMPDifferenceScaling;
 
-  /**
-   * A counter holding the number of iterations to
-   * cure a troubled cell.
-   * This counter will be initialised to a certain
-   * (user-dependent?) value if a cell is flagged as troubled.
-   *
-   * If the cell is not troubled for one iteration, the counter is
-   * decreased until it reaches 0. Then, the
-   * cell is considered as cured.
-   * Note that the counter can be reset to the maximum value
-   * in the meantime if the cell is marked again as troubled.
-   *
-   * This counter prevents that a cell is toggling between
-   * troubled and Ok (cured).
-   */
-  int _iterationsToCureTroubledCell;
-
 private:
   typedef exahype::records::ADERDGCellDescription SolverPatch;
 
@@ -750,8 +733,7 @@ public:
       exahype::solvers::ADERDGSolver* solver,
       exahype::solvers::FiniteVolumesSolver* limiter,
       const double DMPRelaxationParameter=1e-4,
-      const double DMPDifferenceScaling=1e-3,
-      const int iterationsToCureTroubledCell=0);
+      const double DMPDifferenceScaling=1e-3);
 
   virtual ~LimitingADERDGSolver() {
     _solver.reset();
@@ -766,12 +748,6 @@ public:
   void updateMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) final override;
   void resetMeshUpdateEvent() final override;
   MeshUpdateEvent getMeshUpdateEvent() const final override;
-
-  // TODO(Lukas) Still needed?
-  /*
-void updateNextGlobalObservables(
-          const std::vector<double>& globalObservables) override;
-  */
 
   double getMinTimeStamp() const final override;
   double getMinTimeStepSize() const final override;

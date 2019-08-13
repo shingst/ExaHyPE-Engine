@@ -1568,13 +1568,8 @@ void exahype::solvers::ADERDGSolver::rollbackSolutionGlobally(const int solverNu
       swapSolutionAndPreviousSolution(cellDescription);
     }
 
-    // 3. Reset the previous refinement status on the finest mesh level
-    if ( cellDescription.getLevel()==getMaximumAdaptiveMeshLevel() ) {
-      cellDescription.setRefinementStatus(cellDescription.getPreviousRefinementStatus());
-    } else {
-      cellDescription.setRefinementStatus(Pending);
-      cellDescription.setPreviousRefinementStatus(Pending);
-    }
+    // 3. Reset the previous refinement status
+    cellDescription.setRefinementStatus(cellDescription.getPreviousRefinementStatus());
   }
 }
 

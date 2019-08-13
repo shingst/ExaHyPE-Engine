@@ -134,8 +134,8 @@ void exahype::solvers::ADERDGSolver::vetoParentCoarseningRequestIfNecessary(
   if (
       coarseGridCellDescriptionMighRequestCoarsening &&
       isLeaf(fineGridCellDescription) &&
-      (fineGridCellDescription.getRefinementStatus() > 0 ||
-      fineGridCellDescription.getPreviousRefinementStatus() > 0)
+      (fineGridCellDescription.getRefinementStatus() >= Keep ||
+      fineGridCellDescription.getPreviousRefinementStatus() >= Keep)
   ) {
     coarseGridCellDescription.setType(CellDescription::Type::ParentChecked); // do not request coarsening again
   } else if (
@@ -216,7 +216,6 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
   newCellDescription.setSolutionMin(0);
   newCellDescription.setSolutionMaxIndex(-1);
   newCellDescription.setSolutionMax(0);
-  newCellDescription.setIterationsToCureTroubledCell(0);
 
   // Compression
   newCellDescription.setCompressionState(CellDescription::CompressionState::Uncompressed);
@@ -767,7 +766,7 @@ void exahype::solvers::ADERDGSolver::addNewCell(
   const int fineGridElement = cellInfo.indexOfADERDGCellDescription(solverNumber);
   CellDescription& fineGridCellDescription = cellInfo._ADERDGCellDescriptions[fineGridElement]; //TODO(Dominic): Multi-solvers: Might need to lock this?
 
-  fineGridCellDescription.setPreviousRefinementStatus(Erase); // reasonable state after rollback
+  fineGridCellDescription.setPreviousRefinementStatus(Keep);
   fineGridCellDescription.setRefinementStatus(Pending);
 
   #ifdef Asserts
@@ -862,7 +861,7 @@ bool exahype::solvers::ADERDGSolver::addNewLeafIfRefinementRequested(
       fineGridCellDescription.setCommunicationStatus(LeafCommunicationStatus);
       fineGridCellDescription.setFacewiseCommunicationStatus(0); // implicit conversion
       ensureNecessaryMemoryIsAllocated(fineGridCellDescription);
-      fineGridCellDescription.setPreviousRefinementStatus(Erase); // reasonable state after rollback
+      fineGridCellDescription.setPreviousRefinementStatus(Keep); // reasonable state after rollback
       fineGridCellDescription.setRefinementStatus(Pending);
       #ifdef Asserts
       fineGridCellDescription.setCreation(CellDescription::Creation::AdaptiveRefinement);
@@ -911,11 +910,6 @@ void exahype::solvers::ADERDGSolver::prolongateVolumeData(
   fineGridCellDescription.setTimeStamp(coarseGridCellDescription.getTimeStamp());
   fineGridCellDescription.setTimeStepSize(coarseGridCellDescription.getTimeStepSize());
 
-  // TODO Dominic: This is a little inconsistent since I orignially tried to hide
-  // the limiting from the pure ADER-DG scheme
-  fineGridCellDescription.setPreviousRefinementStatus(Erase); // TODO(Dominic): NEW CELLS
-  fineGridCellDescription.setRefinementStatus(Pending);
-
   // TODO Dominic:
   // During the inital mesh build where we only refine
   // according to the PAD, we don't want to have a too broad refined area.
@@ -925,7 +919,6 @@ void exahype::solvers::ADERDGSolver::prolongateVolumeData(
       coarseGridCellDescription.getRefinementStatus()>=_minRefinementStatusForTroubledCell
   ) {
     fineGridCellDescription.setRefinementStatus(_minRefinementStatusForTroubledCell);
-    fineGridCellDescription.setIterationsToCureTroubledCell(coarseGridCellDescription.getIterationsToCureTroubledCell());
   }
   fineGridCellDescription.setFacewiseRefinementStatus(Pending);
 }
@@ -1138,6 +1131,7 @@ void exahype::solvers::ADERDGSolver::changeLeafToParent(CellDescription& cellDes
   cellDescription.setType(CellDescription::Type::ParentChecked);
   cellDescription.setAugmentationStatus(MaximumAugmentationStatus);
   cellDescription.setRefinementStatus(Keep);
+  cellDescription.setPreviousRefinementStatus(Keep);
   cellDescription.setCommunicationStatus(0);
   cellDescription.setFacewiseAugmentationStatus(0); // implicit conversion
   cellDescription.setFacewiseRefinementStatus(Pending);
@@ -1200,6 +1194,7 @@ void exahype::solvers::ADERDGSolver::progressCoarseningOperationsInLeaveCell(Cel
     case CellDescription::Type::ParentCoarsens:
       if ( markPreviousParentForRefinement(fineGridCellDescription) ) { // evaluate refinement criterion now that fine grid cells have restricted their data
         fineGridCellDescription.setType(CellDescription::Type::LeafChecked);
+        fineGridCellDescription.setRefinementStatus(Keep);
       } else {
         changeLeafToParent(fineGridCellDescription);
         assertion1(fineGridCellDescription.getType()==CellDescription::Type::ParentChecked,fineGridCellDescription.toString());
@@ -1513,9 +1508,6 @@ void exahype::solvers::ADERDGSolver::resetIndicesAndFlagsOfReceivedCellDescripti
   cellDescription.setFacewiseCommunicationStatus(0);
 
   cellDescription.setFacewiseRefinementStatus(Pending);
-
-  // limiter flagging
-  cellDescription.setIterationsToCureTroubledCell(-1);
 
   #ifdef Asserts
   cellDescription.setCreation(CellDescription::Creation::ReceivedDueToForkOrJoin);

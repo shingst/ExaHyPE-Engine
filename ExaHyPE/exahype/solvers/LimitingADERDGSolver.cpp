@@ -45,8 +45,7 @@ exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
     exahype::solvers::ADERDGSolver* solver,
     exahype::solvers::FiniteVolumesSolver* limiter,
     const double DMPRelaxationParameter,
-    const double DMPDifferenceScaling,
-    const int iterationsToCureTroubledCell)
+    const double DMPDifferenceScaling)
     :
     exahype::solvers::Solver(identifier, Solver::Type::LimitingADERDG, solver->getNumberOfVariables(),
         solver->getNumberOfParameters(), solver->getNumberOfGlobalObservables(), solver->getNodesPerCoordinateAxis(),
@@ -56,8 +55,7 @@ exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
         _solver(std::move(solver)),
         _limiter(std::move(limiter)),
         _DMPMaximumRelaxationParameter(DMPRelaxationParameter),
-        _DMPDifferenceScaling(DMPDifferenceScaling),
-        _iterationsToCureTroubledCell(iterationsToCureTroubledCell)
+        _DMPDifferenceScaling(DMPDifferenceScaling)
 {
   solver->disableCheckForNaNs();
 
@@ -281,28 +279,25 @@ void exahype::solvers::LimitingADERDGSolver::vetoCoarseningIfRestrictedSolutionI
     SolverPatch& solverPatch = _solver->getCellDescription(cellDescriptionsIndex,fineGridElement);
 
     if ( solverPatch.getType() == SolverPatch::Type::ParentCoarsens ) {
-      // TODO(Dominic): Actually store and restrict the previous observables per cell.
+      auto centre = solverPatch.getOffset() + 0.5 * solverPatch.getSize();
+      std::vector<double> DMPObservablesMin(DMPObservables,DMPObservables);
+      std::vector<double> DMPObservablesMax(DMPObservables,DMPObservables);
+
+      // previous values
       const double* const previousSolution = static_cast<double*>(solverPatch.getPreviousSolution());
-      std::vector<double> previousDMPObservablesMin(DMPObservables,DMPObservables);
-      std::vector<double> previousDMPObservablesMax(DMPObservables,DMPObservables);
-      findCellLocalMinAndMax(previousSolution, previousDMPObservablesMin.data(), previousDMPObservablesMax.data());
+      findCellLocalMinAndMax(previousSolution, DMPObservablesMin.data(), DMPObservablesMax.data());
+      bool stable =
+          _solver->isPhysicallyAdmissible(previousSolution,DMPObservablesMin.data(),DMPObservablesMax.data(),false,
+              centre,solverPatch.getSize(),solverPatch.getPreviousTimeStamp());
 
       // current values
       const double* const solution = static_cast<double*>(solverPatch.getSolution());
-      double* DMPObservablesMin    = static_cast<double*>(solverPatch.getSolutionMin());
-      double* DMPObservablesMax    = static_cast<double*>(solverPatch.getSolutionMax());
+      findCellLocalMinAndMax(previousSolution, DMPObservablesMin.data(), DMPObservablesMax.data());
+      stable &=
+          _solver->isPhysicallyAdmissible(solution,DMPObservablesMin.data(),DMPObservablesMax.data(),false,
+              centre,solverPatch.getSize(),solverPatch.getTimeStamp());
 
-      auto centre = solverPatch.getOffset() + 0.5 * solverPatch.getSize();
-      const bool stable =
-          discreteMaximumPrincipleAndMinAndMaxSearch(solution,DMPObservablesMin,DMPObservablesMax)
-          &&
-          _solver->isPhysicallyAdmissible(solution,DMPObservablesMin,DMPObservablesMax,false,
-              centre,solverPatch.getSize(),solverPatch.getTimeStamp())
-          &&
-          _solver->isPhysicallyAdmissible(previousSolution,previousDMPObservablesMin.data(),previousDMPObservablesMax.data(),false,
-              centre,solverPatch.getSize(),solverPatch.getPreviousTimeStamp());
-
-      if (!stable) {
+      if ( !stable ) {
         _solver->changeLeafToParent(solverPatch);
         assertion1(solverPatch.getType()==SolverPatch::Type::ParentChecked,solverPatch.toString());
       }
@@ -493,7 +488,6 @@ void exahype::solvers::LimitingADERDGSolver::adjustSolutionDuringMeshRefinementB
     determineSolverMinAndMax(solverPatch,false);
     if ( !evaluatePhysicalAdmissibilityCriterion(solverPatch,solverPatch.getTimeStamp()) ) {
        solverPatch.setRefinementStatus(_solver->_minRefinementStatusForTroubledCell);
-       solverPatch.setIterationsToCureTroubledCell(_iterationsToCureTroubledCell+1);
     } else {
       _solver->markForRefinement(solverPatch);
     }
