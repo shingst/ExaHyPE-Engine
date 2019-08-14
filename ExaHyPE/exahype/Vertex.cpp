@@ -232,8 +232,8 @@ void exahype::Vertex::validateNeighbourhood(
   // ADER-DG
   for (auto& p : cellInfo._ADERDGCellDescriptions) {
     if (
-        (p.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Leaf ||
-         p.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Parent)
+        (solvers::ADERDGSolver::isLeaf(p) ||
+         solvers::ADERDGSolver::isParent(p))
         &&
         cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
     ) {
@@ -244,8 +244,7 @@ void exahype::Vertex::validateNeighbourhood(
   // FV
   for (auto& p : cellInfo._FiniteVolumesCellDescriptions) {
     if (
-        p.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Leaf
-        &&
+        p.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Leaf &&
         cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
     ) {
       logError("validateNeighbourhood(...)","cell at index="<<cellDescriptionsIndex1<<" is at face="<<face._faceIndex<<" next to empty cell: cell="<<p.toString());

@@ -933,13 +933,11 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
     // compute flagging gradients in inside cells
     bool flaggingHasConverged = true;
     if ( !peano::grid::aspects::VertexStateAnalysis::isOneVertexBoundary(fineGridVertices,fineGridVerticesEnumerator) ) { // no check on boundary
-      if ( isLeaf(cellDescription) || isParent(cellDescription) ) {
-        for (int d=0; d<DIMENSIONS; d++) {
-          flaggingHasConverged &=
-              std::abs(cellDescription.getFacewiseAugmentationStatus(2*d+1)  - cellDescription.getFacewiseAugmentationStatus(2*d+0)) <= 2;
-          flaggingHasConverged &=
-              std::abs(cellDescription.getFacewiseCommunicationStatus(2*d+1) - cellDescription.getFacewiseCommunicationStatus(2*d+0)) <= 2;
-        }
+      for (int d=0; d<DIMENSIONS; d++) {
+        flaggingHasConverged &=
+            std::abs(cellDescription.getFacewiseAugmentationStatus(2*d+1)  - cellDescription.getFacewiseAugmentationStatus(2*d+0)) <= 2;
+        flaggingHasConverged &=
+            std::abs(cellDescription.getFacewiseCommunicationStatus(2*d+1) - cellDescription.getFacewiseCommunicationStatus(2*d+0)) <= 2;
       }
       // refinement status is only spread on finest level
       if (
@@ -952,16 +950,14 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
         }
       }
     }
-
-    const bool condA =
-        (!isLeaf(cellDescription) || // cell must not have pending refinement status and must not require refinement on coarser grids
-        (cellDescription.getRefinementStatus()!=Pending && // TODO(Dominic): Pending still required?
-        (cellDescription.getLevel() == getMaximumAdaptiveMeshLevel() ||
-        cellDescription.getRefinementStatus()<=0)));
-    const bool condB =
-        (!isOfType(cellDescription,CellDescription::Type::Virtual) || // virtual cell must not have refinement status > 0 on finest level
-        cellDescription.getLevel() != getMaximumAdaptiveMeshLevel() ||
-        cellDescription.getRefinementStatus()<=0);
+    const bool noCoarseGridLeafCellMustRequireRefinement =
+        !(isLeaf(cellDescription) &&
+        cellDescription.getLevel() < getMaximumAdaptiveMeshLevel() &&
+        cellDescription.getRefinementStatus()>=_refineOrKeepOnFineGrid);
+    const bool noFinestGridVirtualCellMustBeReplacedByLeafCell =
+        !(isOfType(cellDescription,CellDescription::Type::Virtual) &&
+        cellDescription.getLevel() == getMaximumAdaptiveMeshLevel() &&
+        cellDescription.getRefinementStatus() > Keep);
     const bool stable =
       flaggingHasConverged
       &&
@@ -969,9 +965,9 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
       cellDescription.getType()==CellDescription::Type::ParentChecked ||
       cellDescription.getType()==CellDescription::Type::Virtual)
       &&
-      condA
+      noCoarseGridLeafCellMustRequireRefinement
       &&
-      condB;
+      noFinestGridVirtualCellMustBeReplacedByLeafCell;
 
     if ( !stable ) {
       #ifdef MonitorMeshRefinement
@@ -980,8 +976,8 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
       logInfo("attainedStableState(...)","x="<<cellDescription.getOffset());
       logInfo("attainedStableState(...)","level="<<cellDescription.getLevel());
       logInfo("attainedStableState(...)","flaggingHasConverged="<<flaggingHasConverged);
-      logInfo("attainedStableState(...)","condA="<<condA);
-      logInfo("attainedStableState(...)","condB="<<condB);
+      logInfo("attainedStableState(...)","noCoarseGridLeafCellMustRequireRefinement="<<noCoarseGridLeafCellMustRequireRefinement);
+      logInfo("attainedStableState(...)","noFinestGridVirtualCellMustBeReplacedByLeafCell="<<noFinestGridVirtualCellMustBeReplacedByLeafCell);
       logInfo("attainedStableState(...)","refinementStatus="<<cellDescription.getRefinementStatus());
       logInfo("attainedStableState(...)","getFacewiseAugmentationStatus="<<cellDescription.getFacewiseAugmentationStatus());
       logInfo("attainedStableState(...)","getFacewiseCommunicationStatus="<<cellDescription.getFacewiseCommunicationStatus());
@@ -1276,7 +1272,7 @@ void exahype::solvers::ADERDGSolver::restrictVolumeDataIfParentCoarsens(
         levelCoarse,levelFine,
         subcellIndex);
 
-    // Reset the observables min and max
+    // Restrict the observables min and max
     const int numberOfDMPObservables = getDMPObservables();
     if ( numberOfDMPObservables > 0 ) {
       double* coarseGridObservablesMin = static_cast<double*>(coarseGridCellDescription.getSolutionMin());

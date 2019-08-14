@@ -5,7 +5,7 @@ class exahype::dastgen::State {
    * Consult Peano guidebook Section 6.3.2
    * "Incremental, slow decomposition with ranks running out of memory"
    */
-  persistent parallelise int maxRefinementLevelAllowed;
+  parallelise persistent int maxRefinementLevelAllowed;
   
   /**
    * Indicates that we need to exchange local solver
@@ -16,7 +16,7 @@ class exahype::dastgen::State {
    * They must not be confused with global solver data such as, e.g. 
    * admissible time step sizes. 
    */
-  persistent parallelise bool verticalExchangeOfSolverDataRequired;
+  parallelise persistent bool verticalExchangeOfSolverDataRequired;
   
   /**
    * All solvers attained a stable state in the last mesh 
@@ -29,10 +29,4 @@ class exahype::dastgen::State {
    * Used to switch from refining to erasing mode.
    */
   persistent int stableIterationsInARow;
-    
-  /**
-   * Used by the global master to signal 
-   * the workers that they currently have to refine (or erase).
-   */
-  parallelise persistent bool meshRefinementIsInRefiningMode;
 };
