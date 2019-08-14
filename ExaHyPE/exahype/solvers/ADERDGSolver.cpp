@@ -68,15 +68,15 @@ namespace {
 }
 
 #ifdef USE_ITAC
-int exahype::solvers::ADERDGSolver::adjustSolutionHandle                 = 0;
-int exahype::solvers::ADERDGSolver::fusedTimeStepBodyHandle              = 0;
-int exahype::solvers::ADERDGSolver::fusedTimeStepBodyHandleSkeleton      = 0;
-int exahype::solvers::ADERDGSolver::predictorBodyHandle                  = 0;
-int exahype::solvers::ADERDGSolver::predictorBodyHandleSkeleton          = 0;
-int exahype::solvers::ADERDGSolver::updateBodyHandle                     = 0;
-int exahype::solvers::ADERDGSolver::mergeNeighboursHandle                = 0;
-int exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendantHandle = 0;
-int exahype::solvers::ADERDGSolver::restrictToTopMostParentHandle        = 0;
+int exahype::solvers::ADERDGSolver::adjustSolutionHandle                  = 0;
+int exahype::solvers::ADERDGSolver::fusedTimeStepBodyHandle               = 0;
+int exahype::solvers::ADERDGSolver::fusedTimeStepBodyHandleSkeleton       = 0;
+int exahype::solvers::ADERDGSolver::predictorBodyHandle                   = 0;
+int exahype::solvers::ADERDGSolver::predictorBodyHandleSkeleton           = 0;
+int exahype::solvers::ADERDGSolver::updateBodyHandle                      = 0;
+int exahype::solvers::ADERDGSolver::mergeNeighboursHandle                 = 0;
+int exahype::solvers::ADERDGSolver::prolongateFaceDataToVirtualCellHandle = 0;
+int exahype::solvers::ADERDGSolver::restrictToTopMostParentHandle         = 0;
 #endif
 
 tarch::logging::Log exahype::solvers::ADERDGSolver::_log( "exahype::solvers::ADERDGSolver");
@@ -1334,7 +1334,7 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToVirtualCell(
     const CellDescription& parentCellDescription,
     const tarch::la::Vector<DIMENSIONS,int>& subcellIndex) {
   #ifdef USE_ITAC
-  VT_begin(prolongateFaceDataToDescendantHandle);
+  VT_begin(prolongateFaceDataToVirtualCellHandle);
   #endif
 
   assertion(parentCellDescription.getSolverNumber() == cellDescription.getSolverNumber());
@@ -1395,7 +1395,7 @@ void exahype::solvers::ADERDGSolver::prolongateFaceDataToVirtualCell(
   cellDescription.setHasCompletedLastStep(true);
 
   #ifdef USE_ITAC
-  VT_end(prolongateFaceDataToDescendantHandle);
+  VT_end(prolongateFaceDataToVirtualCellHandle);
   #endif
 }
 
