@@ -17,12 +17,11 @@
     "width": [
       4.0,
       4.0
-    ],
-    "outside_cells_left" : 0,
-    "outside_cells_right" : 0
+    ]
   },
   "shared_memory": {
     "cores": 1,
+    "spawn_amr_background_threads": false,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
     "background_job_consumers": 0
@@ -68,7 +67,7 @@
         "space_time_predictor": {},
         "optimised_terms": [],
         "optimised_kernel_debugging": [],
-        "implementation": "optimised"
+        "implementation": "generic"
       },
       "point_sources": 0,
       "limiter": {
