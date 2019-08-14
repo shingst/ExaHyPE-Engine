@@ -461,6 +461,13 @@ private:
       const int coarseGridCellDescriptionsIndex);
 
   /**
+   * The previous refinement status is initialised with keep
+   * to prevent that the coarsening procedure is removing
+   * the new cell again.
+   *
+   * TODO(Dominic): Update below
+   *
+   *
    * Initialises compute cell descriptions on the fine level (cell description type is Cell)
    * after coarse grid cell descriptions have been flagged for refinement and Peano has
    * created the requested new cells.

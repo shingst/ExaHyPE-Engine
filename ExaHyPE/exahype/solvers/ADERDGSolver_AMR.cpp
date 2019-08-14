@@ -884,10 +884,7 @@ bool exahype::solvers::ADERDGSolver::addNewLeafIfRefinementRequested(
       fineGridCellDescription.setFacewiseCommunicationStatus(0); // implicit conversion
       ensureNecessaryMemoryIsAllocated(fineGridCellDescription);
       fineGridCellDescription.setRefinementStatus(Pending);
-      // !!! do not overwrite the previous refinement status, if it > Keep, as we will do a rollback.
-      // and reseting might cut off parts of the limiter domain.
-      fineGridCellDescription.setPreviousRefinementStatus(
-          std::max(fineGridCellDescription.getPreviousRefinementStatus(), Keep));
+      fineGridCellDescription.setPreviousRefinementStatus(Keep); // prevents that this cell is erased again
       #ifdef Asserts
       fineGridCellDescription.setCreation(CellDescription::Creation::AdaptiveRefinement);
       #endif
