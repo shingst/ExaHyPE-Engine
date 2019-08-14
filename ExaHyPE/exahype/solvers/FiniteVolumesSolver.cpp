@@ -551,12 +551,12 @@ void exahype::solvers::FiniteVolumesSolver::ensureNecessaryMemoryIsAllocated(
   }
 }
 
-bool exahype::solvers::FiniteVolumesSolver::attainedStableState(
+void exahype::solvers::FiniteVolumesSolver::checkIfCellIsStable(
     exahype::Cell&                       fineGridCell,
     exahype::Vertex* const               fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     const int                            solverNumber) const {
-  return true;
+  // do nothing
 }
 
 void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInLeaveCell(

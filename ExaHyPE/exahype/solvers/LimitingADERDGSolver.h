@@ -938,7 +938,7 @@ public:
      const bool checkThoroughly,
      bool& checkSuccessful) const final override;
 
- bool attainedStableState(
+ void checkIfCellIsStable(
      exahype::Cell&                       fineGridCell,
      exahype::Vertex* const               fineGridVertices,
      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,

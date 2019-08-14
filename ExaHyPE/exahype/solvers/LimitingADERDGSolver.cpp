@@ -332,14 +332,13 @@ exahype::solvers::LimitingADERDGSolver::eraseOrRefineAdjacentVertices(
           cellDescriptionsIndex,solverNumber,cellOffset,cellSize,level,checkThoroughly,checkSuccessful);
 }
 
-bool exahype::solvers::LimitingADERDGSolver::attainedStableState(
+void exahype::solvers::LimitingADERDGSolver::checkIfCellIsStable(
     exahype::Cell&                       fineGridCell,
     exahype::Vertex* const               fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     const int                            solverNumber) const {
-  return
-      _solver->attainedStableState(
-          fineGridCell,fineGridVertices,fineGridVerticesEnumerator,solverNumber);
+  _solver->checkIfCellIsStable(
+      fineGridCell,fineGridVertices,fineGridVerticesEnumerator,solverNumber);
 }
 
 void exahype::solvers::LimitingADERDGSolver::finaliseStateUpdates(

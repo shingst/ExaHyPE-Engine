@@ -85,6 +85,8 @@ double exahype::solvers::Solver::PipedCompressedBytes = 0;
 
 tarch::logging::Log exahype::solvers::Solver::_log( "exahype::solvers::Solver");
 
+std::atomic<bool> exahype::solvers::Solver::AllSolversAreStable = ATOMIC_VAR_INIT(false);
+
 #ifdef Parallel
 int exahype::solvers::Solver::MasterWorkerCommunicationTag = MPI_ANY_TAG;
 #endif

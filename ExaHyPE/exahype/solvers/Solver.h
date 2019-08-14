@@ -390,6 +390,14 @@ protected:
   void glueTogether(int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const;
 
 public:
+
+  /**
+   * A flag that memorises if all solvers are stable.
+   * It is reset to false by the MeshRefinement mapping's
+   * beginIteration(...) method.
+   */
+  static std::atomic<bool> AllSolversAreStable;
+
   #ifdef USE_ITAC
   /**
    * These handles are used to trace solver events with Intel Trace Analyzer and Collector.
@@ -1669,7 +1677,7 @@ public:
    * @param fineGridVerticesEnumerator a enumerator for the fine grid vertices
    * @param solverNumber               a solver number
    */
-  virtual bool attainedStableState(
+  virtual void checkIfCellIsStable(
       exahype::Cell&                       fineGridCell,
       exahype::Vertex* const               fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,

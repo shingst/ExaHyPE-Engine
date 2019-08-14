@@ -347,7 +347,7 @@ private:
    * Start the refinement procedure for cell descriptions
    * of type Leaf if they are flagged for refinement
    * or if one of their virtual subcells requests
-   * reifnement.
+   * refinement.
    *
    * @note Thread-safe.
    */
@@ -1276,6 +1276,14 @@ public:
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) const;
 
   /**
+   * Updates the status flags and sets the stability criterion to
+   * false if any flag was updated.
+   *
+   * @param cellDescription a cell description.
+   */
+  void updateStatusFlags(CellDescription& cellDescription);
+
+  /**
    * Construct an ADERDGSolver.
    *
    * @param identifier               An identifier for this solver.
@@ -1569,7 +1577,7 @@ public:
    * evaluated yet, we say the solver has not attained
    * a stable state yet.
    */
-  bool attainedStableState(
+  void checkIfCellIsStable(
       exahype::Cell&                       fineGridCell,
       exahype::Vertex* const               fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,

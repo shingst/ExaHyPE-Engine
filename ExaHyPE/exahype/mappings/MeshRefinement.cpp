@@ -113,9 +113,8 @@ exahype::mappings::MeshRefinement::descendSpecification(int level) const {
 }
 
 #if defined(SharedMemoryParallelisation)
-exahype::mappings::MeshRefinement::MeshRefinement(const MeshRefinement& masterThread):
-  _allSolversAttainedStableState(masterThread._allSolversAttainedStableState),
-  _stateCopy(masterThread._stateCopy) {
+exahype::mappings::MeshRefinement::MeshRefinement(const MeshRefinement& masterThread) :
+    _stateCopy(masterThread._stateCopy) {
   // do nothing
 }
 #endif
@@ -123,7 +122,7 @@ exahype::mappings::MeshRefinement::MeshRefinement(const MeshRefinement& masterTh
 #if defined(SharedMemoryParallelisation)
 void exahype::mappings::MeshRefinement::mergeWithWorkerThread(
     const MeshRefinement& workerThread) {
-  _allSolversAttainedStableState &= workerThread._allSolversAttainedStableState;
+  // do nothing
 }
 #endif
 
@@ -137,7 +136,7 @@ void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverSt
   }
 
   // mesh refinement convergence check
-  _allSolversAttainedStableState =
+  solvers::Solver::AllSolversAreStable =
       !exahype::mappings::MeshRefinement::IsFirstIteration &&
       !solverState.isInvolvedInJoinOrFork();
 
@@ -155,7 +154,7 @@ void exahype::mappings::MeshRefinement::endIteration(exahype::State& solverState
   logTraceInWith1Argument("endIteration(State)", solverState);
 
   // update the solver state
-  solverState.setAllSolversAttainedStableState(_allSolversAttainedStableState);  // merge the local values
+  solverState.setAllSolversAttainedStableState(solvers::Solver::AllSolversAreStable.load());  // merge the local values
   solverState.setVerticalExchangeOfSolverDataRequired(_verticalExchangeOfSolverDataRequired);
 
   if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
@@ -218,7 +217,9 @@ void exahype::mappings::MeshRefinement::touchVertexLastTime(
       true,
       correctAdjacencyInformation);
 
-  _allSolversAttainedStableState &= correctAdjacencyInformation;
+  solvers::Solver::AllSolversAreStable =
+      solvers::Solver::AllSolversAreStable.load() &&
+      correctAdjacencyInformation;
 
   if (
       //_stateCopy.getMeshRefinementIsInRefiningMode()
@@ -509,12 +510,11 @@ void exahype::mappings::MeshRefinement::leaveCell(
           fineGridPositionOfCell,
           solverNumber);
 
-      _allSolversAttainedStableState &=
-          solver->attainedStableState(
-              fineGridCell,
-              fineGridVertices,
-              fineGridVerticesEnumerator,
-              solverNumber);
+      solver->checkIfCellIsStable(
+          fineGridCell,
+          fineGridVertices,
+          fineGridVerticesEnumerator,
+          solverNumber);
     }
   }
 
@@ -760,7 +760,10 @@ void exahype::mappings::MeshRefinement::mergeWithMaster(
   logTraceIn( "mergeWithMaster(...)" );
 
   // Merge global solver states
-  _allSolversAttainedStableState        &= workerState.getAllSolversAttainedStableState();
+  solvers::Solver::AllSolversAreStable =
+        solvers::Solver::AllSolversAreStable.load() &&
+        workerState.getAllSolversAttainedStableState();
+
   _verticalExchangeOfSolverDataRequired |= workerState.getVerticalExchangeOfSolverDataRequired();
 
   if ( fineGridCell.hasToCommunicate( fineGridVerticesEnumerator.getLevel() ) ) {
@@ -814,7 +817,7 @@ void exahype::mappings::MeshRefinement::prepareCopyToRemoteNode(
     const tarch::la::Vector<DIMENSIONS, double>& cellSize, int level) {
   logTraceInWith5Arguments( "prepareCopyToRemoteNode(...)", localCell, toRank, cellCentre, cellSize, level );
 
-  _allSolversAttainedStableState = false;
+  solvers::Solver::AllSolversAreStable = false;
 
   if ( 
       localCell.hasToCommunicate(level) &&

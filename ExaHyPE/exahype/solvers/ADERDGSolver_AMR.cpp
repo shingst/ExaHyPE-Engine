@@ -600,6 +600,20 @@ void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinementBody(
   #endif
 }
 
+void exahype::solvers::ADERDGSolver::updateStatusFlags(CellDescription& cellDescription) {
+  const int preUpdateRefinementStatus    = cellDescription.getRefinementStatus();
+  const int preUpdateAugmentationStatus  = cellDescription.getAugmentationStatus();
+  const int preUpdateCommunicationStatus = cellDescription.getCommunicationStatus();
+
+  updateCommunicationStatus(cellDescription);
+  updateAugmentationStatus(cellDescription);
+  updateRefinementStatus(cellDescription,cellDescription.getNeighbourMergePerformed());
+
+  if ( preUpdateRefinementStatus    != cellDescription.getRefinementStatus()    ) { AllSolversAreStable = false; }
+  if ( preUpdateAugmentationStatus  != cellDescription.getAugmentationStatus()  ) { AllSolversAreStable = false; }
+  if ( preUpdateCommunicationStatus != cellDescription.getCommunicationStatus() ) { AllSolversAreStable = false; }
+}
+
 bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
     exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
@@ -637,11 +651,12 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
     waitUntilCompletedLastStep(fineGridCellDescription,false,false); // wait for background jobs to complete
 
     // Update the status flags, allocate / deallocate memory
-    updateCommunicationStatus(fineGridCellDescription);
+    updateStatusFlags(fineGridCellDescription);
+
+    // allocate / deallocate memory
     ensureNecessaryMemoryIsAllocated(fineGridCellDescription);
     ensureNoUnnecessaryMemoryIsAllocated(fineGridCellDescription);
-    updateAugmentationStatus(fineGridCellDescription);
-    updateRefinementStatus(fineGridCellDescription,fineGridCellDescription.getNeighbourMergePerformed());
+
     if ( coarseGridElement != exahype::solvers::Solver::NotFound ) {
       CellDescription& coarseGridCellDescription = getCellDescription(
           coarseGridCell.getCellDescriptionsIndex(),coarseGridElement);
@@ -726,6 +741,7 @@ void exahype::solvers::ADERDGSolver::decideOnRefinement(CellDescription& fineGri
      fineGridCellDescription.getRefinementStatus() > Keep
   ) {
     fineGridCellDescription.setType(CellDescription::Type::LeafInitiatesRefining);
+    AllSolversAreStable = false;
   }
 
   // bottom-up refining (halo refinement)
@@ -741,6 +757,7 @@ void exahype::solvers::ADERDGSolver::decideOnRefinement(CellDescription& fineGri
     tarch::multicore::Lock lock(ADERDGSolver::CoarseGridSemaphore);
     if ( topMostParent.getType()==CellDescription::Type::LeafChecked ) {
       topMostParent.setRefinementStatus(_refineOrKeepOnFineGrid);
+      AllSolversAreStable = false;
     }
     lock.free();
   }
@@ -922,7 +939,7 @@ void exahype::solvers::ADERDGSolver::prolongateVolumeData(
   fineGridCellDescription.setFacewiseRefinementStatus(Pending);
 }
 
-bool exahype::solvers::ADERDGSolver::attainedStableState(
+void exahype::solvers::ADERDGSolver::checkIfCellIsStable(
         exahype::Cell&                       fineGridCell,
         exahype::Vertex* const               fineGridVertices,
         const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -970,6 +987,8 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
       noFinestGridVirtualCellMustBeReplacedByLeafCell;
 
     if ( !stable ) {
+      AllSolversAreStable = false;
+
       #ifdef MonitorMeshRefinement
       logInfo("attainedStableState(...)","cell has not attained stable state (yet):");
       logInfo("attainedStableState(...)","type="<<cellDescription.toString(cellDescription.getType()));
@@ -989,9 +1008,6 @@ bool exahype::solvers::ADERDGSolver::attainedStableState(
       logInfo("attainedStableState(...)","solver.getMaximumAdaptiveMeshDepth="<<getMaximumAdaptiveMeshDepth());
       #endif
     }
-    return stable;
-  } else {
-    return true;
   }
 }
 
