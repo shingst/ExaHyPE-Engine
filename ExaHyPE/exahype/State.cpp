@@ -195,12 +195,12 @@ bool exahype::State::continueToConstructGrid() {
   const int levelDelta =
       (exahype::solvers::Solver::getMaximumAdaptiveMeshLevelOfAllSolvers() -
       exahype::solvers::Solver::getCoarsestMeshLevelOfAllSolvers());
-  static const int iterationsForErasingToConverge = 2;
-      //3*levelDelta  +
-      //std::max(exahype::solvers::Solver::getMaxRefinementStatus(),3);
-  static const int iterationsForRefiningToConverge = 1;
-      //2*levelDelta +
-      //std::max(exahype::solvers::Solver::getMaxRefinementStatus(),3);
+  static const int iterationsForErasingToConverge =
+      3*levelDelta  +
+      std::max(exahype::solvers::Solver::getMaxRefinementStatus(),3);
+  static const int iterationsForRefiningToConverge =
+      2*levelDelta +
+      std::max(exahype::solvers::Solver::getMaxRefinementStatus(),3);
 
   // convergence analysis
   if ( getAllSolversAttainedStableState() ) {

@@ -181,9 +181,7 @@ void exahype::mappings::MeshRefinement::refineSafely(
     int                                           fineGridLevel,
     bool                                          isCalledByCreationalEvent) const {
   bool vertexIsUnrefined =
-      fineGridVertex.getRefinementControl()==Vertex::Records::Unrefined ||
-      fineGridVertex.getRefinementControl()==Vertex::Records::EraseTriggered ||
-      fineGridVertex.getRefinementControl()==Vertex::Records::Erasing;
+      fineGridVertex.getRefinementControl()==Vertex::Records::Unrefined;
 
   if ( vertexIsUnrefined ) {
     switch ( _stateCopy.mayRefine(isCalledByCreationalEvent,fineGridLevel) ) {
@@ -244,7 +242,7 @@ void exahype::mappings::MeshRefinement::touchVertexLastTime(
       fineGridVertex.getRefinementControl()==
           Vertex::Records::RefinementControl::Refined
   ) {
-    fineGridVertex.erase();
+    //fineGridVertex.erase();
   }
 }
 
@@ -426,7 +424,7 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
             ==exahype::solvers::Solver::RefinementControl::Erase
 
         ) {
-          fineGridVertices[fineGridVerticesEnumerator(v)].erase();
+//          fineGridVertices[fineGridVerticesEnumerator(v)].erase();
         }
         lock.free();
       enddforx
