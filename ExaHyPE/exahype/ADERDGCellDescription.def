@@ -64,17 +64,18 @@ class exahype::records::ADERDGCellDescription {
    * Cell.
    */
   enum Type {
-    Leaf,                     //! During the time stepping iterations, a leaf cell
-    LeafChecked,              //! During the mesh refinement iterations, a leaf cell where the refinement criterion returned keep.
-    LeafInitiatesRefining,    //! During the mesh refinement iterations, a leaf cell that requested refinement.
-    LeafRefines,              //! During the mesh refinement iterations, a leaf cell that started refining.
-    LeafProlongates,          //! During the mesh refinement iterations, a cell that still has to prolongate volume data. (Necessary if we use background jobs).  
-    Parent,                   //! During the time stepping iterations, a leaf cell.
-    ParentChecked,            //! During the mesh refinement iterations, a parent cell where the coarsening was vetoed.
-    ParentRequestsCoarsening, //! During the mesh refinement iterations, a parent cell that requested coarsening.
-    ParentCoarsens,           //! During the mesh refinement iterations, a parent cell that is coarsening.
-    Virtual,                  //! A virtual cell.
-    Erased                    //! An erased cell. Indicates that memory can be deallocated for this cell.
+    Leaf,                      //! During the time stepping iterations, a leaf cell
+    LeafChecked,               //! During the mesh refinement iterations, a leaf cell where the refinement criterion returned keep.
+    LeafInitiatesRefining,     //! During the mesh refinement iterations, a leaf cell that requested refinement.
+    LeafRefines,               //! During the mesh refinement iterations, a leaf cell that started refining.
+    LeafProlongates,           //! During the mesh refinement iterations, a cell that still has to prolongate volume data. (Necessary if we use background jobs).  
+    Parent,                    //! During the time stepping iterations, a leaf cell.
+    ParentChecked,             //! During the mesh refinement iterations, a parent cell where the coarsening was vetoed.
+    ParentRequestsCoarseningA, //! During the mesh refinement iterations, a parent cell that requests coarsening.  Children get two iterations to veto. First iteration.
+    ParentRequestsCoarseningB, //! During the mesh refinement iterations, a parent cell that requested coarsening. Second iteration.
+    ParentCoarsens,            //! During the mesh refinement iterations, a parent cell that is coarsening.
+    Virtual,                   //! A virtual cell.
+    Erased                     //! An erased cell. Indicates that memory can be deallocated for this cell.
   };
  
   /**

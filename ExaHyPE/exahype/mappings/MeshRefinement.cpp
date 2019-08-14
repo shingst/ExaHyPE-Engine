@@ -509,13 +509,13 @@ void exahype::mappings::MeshRefinement::leaveCell(
           coarseGridCell,
           fineGridPositionOfCell,
           solverNumber);
-
-      solver->checkIfCellIsStable(
-          fineGridCell,
-          fineGridVertices,
-          fineGridVerticesEnumerator,
-          solverNumber);
     }
+  }
+
+  if ( fineGridCell.isInitialised() ) {
+    // Must be performed for all cell descriptions
+    solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
+    Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
 
   ensureRegularityAlongBoundary(fineGridVertices,fineGridVerticesEnumerator);

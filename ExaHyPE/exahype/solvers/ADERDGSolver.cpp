@@ -1611,6 +1611,8 @@ void exahype::solvers::ADERDGSolver::mergeNeighboursMetadata(
 
       cellDescription1.setNeighbourMergePerformed(face._faceIndex1,true); // here we only set, doesn't matter if operation is done twice.
       cellDescription2.setNeighbourMergePerformed(face._faceIndex2,true);
+    } else {
+      AllSolversAreStable = false;
     }
   }
 }

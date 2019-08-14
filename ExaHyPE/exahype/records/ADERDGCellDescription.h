@@ -33,7 +33,7 @@ namespace exahype {
  *
  * 		   build date: 09-02-2014 14:40
  *
- * @date   13/08/2019 15:24
+ * @date   14/08/2019 19:19
  */
 class exahype::records::ADERDGCellDescription { 
    
@@ -48,7 +48,7 @@ class exahype::records::ADERDGCellDescription {
        * and the consumer threads set it.
        */
       util::CopyableAtomic<bool> _hasCompletedLastStep{true};
-
+      
       bool getHasCompletedLastStep() const {
         return _hasCompletedLastStep.load();
       }
@@ -57,7 +57,8 @@ class exahype::records::ADERDGCellDescription {
         _hasCompletedLastStep.store(state);
       }
       // MANUALLY ADDED
-      
+
+
       typedef exahype::records::ADERDGCellDescriptionPacked Packed;
       
       enum CompressionState {
@@ -69,7 +70,7 @@ class exahype::records::ADERDGCellDescription {
       };
       
       enum Type {
-         Leaf = 0, LeafChecked = 1, LeafInitiatesRefining = 2, LeafRefines = 3, LeafProlongates = 4, Parent = 5, ParentChecked = 6, ParentRequestsCoarsening = 7, ParentCoarsens = 8, Virtual = 9, Erased = 10
+         Leaf = 0, LeafChecked = 1, LeafInitiatesRefining = 2, LeafRefines = 3, LeafProlongates = 4, Parent = 5, ParentChecked = 6, ParentRequestsCoarseningA = 7, ParentRequestsCoarseningB = 8, ParentCoarsens = 9, Virtual = 10, Erased = 11
       };
       
       struct PersistentRecords {
@@ -3428,7 +3429,7 @@ class exahype::records::ADERDGCellDescription {
  *
  * 		   build date: 09-02-2014 14:40
  *
- * @date   13/08/2019 15:24
+ * @date   14/08/2019 19:19
  */
 class exahype::records::ADERDGCellDescriptionPacked { 
    
@@ -3628,7 +3629,7 @@ class exahype::records::ADERDGCellDescriptionPacked {
    mask = static_cast<int>(mask << (0));
    int tmp = static_cast<int>(_packedRecords0 & mask);
    tmp = static_cast<int>(tmp >> (0));
-   assertion(( tmp >= 0 &&  tmp <= 10));
+   assertion(( tmp >= 0 &&  tmp <= 11));
    return (Type) tmp;
          }
          
@@ -3639,7 +3640,7 @@ class exahype::records::ADERDGCellDescriptionPacked {
  __attribute__((always_inline))
  #endif 
  {
-            assertion((type >= 0 && type <= 10));
+            assertion((type >= 0 && type <= 11));
    int mask =  (1 << (4)) - 1;
    mask = static_cast<int>(mask << (0));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
@@ -3657,7 +3658,7 @@ class exahype::records::ADERDGCellDescriptionPacked {
    mask = static_cast<int>(mask << (4));
    int tmp = static_cast<int>(_packedRecords0 & mask);
    tmp = static_cast<int>(tmp >> (4));
-   assertion(( tmp >= 0 &&  tmp <= 10));
+   assertion(( tmp >= 0 &&  tmp <= 11));
    return (Type) tmp;
          }
          
@@ -3668,7 +3669,7 @@ class exahype::records::ADERDGCellDescriptionPacked {
  __attribute__((always_inline))
  #endif 
  {
-            assertion((parentType >= 0 && parentType <= 10));
+            assertion((parentType >= 0 && parentType <= 11));
    int mask =  (1 << (4)) - 1;
    mask = static_cast<int>(mask << (4));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
@@ -5245,7 +5246,7 @@ class exahype::records::ADERDGCellDescriptionPacked {
    mask = static_cast<int>(mask << (0));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
    tmp = static_cast<int>(tmp >> (0));
-   assertion(( tmp >= 0 &&  tmp <= 10));
+   assertion(( tmp >= 0 &&  tmp <= 11));
    return (Type) tmp;
          }
          
@@ -5256,7 +5257,7 @@ class exahype::records::ADERDGCellDescriptionPacked {
  __attribute__((always_inline))
  #endif 
  {
-            assertion((type >= 0 && type <= 10));
+            assertion((type >= 0 && type <= 11));
    int mask =  (1 << (4)) - 1;
    mask = static_cast<int>(mask << (0));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
@@ -5274,7 +5275,7 @@ class exahype::records::ADERDGCellDescriptionPacked {
    mask = static_cast<int>(mask << (4));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
    tmp = static_cast<int>(tmp >> (4));
-   assertion(( tmp >= 0 &&  tmp <= 10));
+   assertion(( tmp >= 0 &&  tmp <= 11));
    return (Type) tmp;
          }
          
@@ -5285,7 +5286,7 @@ class exahype::records::ADERDGCellDescriptionPacked {
  __attribute__((always_inline))
  #endif 
  {
-            assertion((parentType >= 0 && parentType <= 10));
+            assertion((parentType >= 0 && parentType <= 11));
    int mask =  (1 << (4)) - 1;
    mask = static_cast<int>(mask << (4));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);

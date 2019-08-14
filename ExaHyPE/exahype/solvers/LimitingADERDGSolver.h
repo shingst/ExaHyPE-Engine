@@ -938,12 +938,6 @@ public:
      const bool checkThoroughly,
      bool& checkSuccessful) const final override;
 
- void checkIfCellIsStable(
-     exahype::Cell&                       fineGridCell,
-     exahype::Vertex* const               fineGridVertices,
-     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-     const int                            solverNumber) const final override;
-
   void finaliseStateUpdates(
       const int solverNumber,
       CellInfo& cellInfo) final override;
@@ -1087,7 +1081,8 @@ public:
     * Go back to previous time step with
     * time step data and solution.
     *
-    * Keep the new refinement status.
+    * Reset the refinement status to the old value.
+    * (Nothing has happened but we have a new mesh.)
     *
     * Allocate necessary new limiter patches.
     */

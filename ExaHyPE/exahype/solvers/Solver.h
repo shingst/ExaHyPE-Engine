@@ -1669,21 +1669,6 @@ public:
       bool& checkSuccessful) const = 0;
 
   /**
-   * Returns true if the solver has attained
-   * a stable state on the cell description
-   *
-   * @param fineGridCell               a fine grid cell
-   * @param fineGridVertices           vertices surrounding the fine grid cell
-   * @param fineGridVerticesEnumerator a enumerator for the fine grid vertices
-   * @param solverNumber               a solver number
-   */
-  virtual void checkIfCellIsStable(
-      exahype::Cell&                       fineGridCell,
-      exahype::Vertex* const               fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      const int                            solverNumber) const = 0;
-
-  /**
    * This method is called after the
    * mesh refinement iterations where this
    * solver performs states updates in

@@ -601,12 +601,6 @@ public:
       const bool checkThoroughly,
       bool& checkSuccessful) const final override;
 
-  void checkIfCellIsStable(
-      exahype::Cell&                       fineGridCell,
-      exahype::Vertex* const               fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      const int                            solverNumber) const final override;
-
   void finaliseStateUpdates(
       const int solverNumber,
       CellInfo& cellInfo) final override;

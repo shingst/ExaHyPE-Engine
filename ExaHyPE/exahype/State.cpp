@@ -184,8 +184,8 @@ exahype::State::RefinementAnswer exahype::State::mayRefine(bool isCreationalEven
 
 
 bool exahype::State::continueToConstructGrid() {
-  static const int stableIterationsToTerminate =
-      std::max(exahype::solvers::Solver::getMaxRefinementStatus(),3 /* iterations for fork */);
+  static const int stableIterationsToTerminate = 2;
+      //std::max(exahype::solvers::Solver::getMaxRefinementStatus(),3 /* iterations for fork */);
 
   // convergence analysis
   if ( getAllSolversAttainedStableState() ) {

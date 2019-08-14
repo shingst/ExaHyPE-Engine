@@ -370,6 +370,15 @@ private:
   void finishRefinementOperation(
       CellDescription& fineGridCellDescription);
 
+  /**
+   * Progress coarsening operations.
+   *
+   * @note Parent coarsening requests are spread over two
+   * iterations as the AMR background jobs might delay
+   * the evaluation of the the refinement criterion.
+   *
+   * @param fineGridCellDescription a fine grid cell description.
+   */
   void progressCoarseningOperationsInLeaveCell(CellDescription& fineGridCellDescription);
 
   /**
@@ -390,6 +399,9 @@ private:
     * is recoarsened. Erases a cell description of type Virtual if the
     * parent cell description has an AugmentationStatus that
     * indicates that it does not require virtual subcells.
+    *
+    *  @note Only erases virtual the refinement status flagging allows it.
+    *  We require the previous refinement status value.
     *
     * @param cellDescription          the fine grid cell description
     * @param cellDescriptionsIndex    heap index of the heap array that contains the the fine grid cell description
@@ -548,7 +560,11 @@ private:
   /**
    * Vetoes the coarse grid parent's coarsening request,
    * if the fine grid cell description is either of type Parent or
-   * if it is of type Leaf and no refinement was
+   * if it is of type Leaf and the latter wants to stay.
+   *
+   * The implementation only allows to
+   * erase one layer of Leaf cells per mesh refinement
+   * iterations.
    *
    * @param fineGridCellDescription   the fine grid cell description
    * @param coarseGridCellDescription the coarse grid cell description
@@ -1139,7 +1155,8 @@ public:
         cellDescription.getType()==CellDescription::Type::LeafChecked ||
         cellDescription.getType()==CellDescription::Type::LeafInitiatesRefining ||
         cellDescription.getType()==CellDescription::Type::LeafRefines ||
-        cellDescription.getType()==CellDescription::Type::ParentRequestsCoarsening ||
+        cellDescription.getType()==CellDescription::Type::ParentRequestsCoarseningA ||
+        cellDescription.getType()==CellDescription::Type::ParentRequestsCoarseningB ||
         cellDescription.getType()==CellDescription::Type::ParentCoarsens;
   }
 
@@ -1175,7 +1192,8 @@ public:
   static bool isParent(const CellDescription& cellDescription) {
     return cellDescription.getType()==CellDescription::Type::Parent ||
            cellDescription.getType()==CellDescription::Type::ParentChecked ||
-           cellDescription.getType()==CellDescription::Type::ParentRequestsCoarsening ||
+           cellDescription.getType()==CellDescription::Type::ParentRequestsCoarseningA ||
+           cellDescription.getType()==CellDescription::Type::ParentRequestsCoarseningB ||
            cellDescription.getType()==CellDescription::Type::ParentCoarsens;
   }
 
@@ -1566,8 +1584,7 @@ public:
       const bool checkThoroughly,
       bool& checkSuccessful) const final override;
 
-  /**\copydoc Solver::attainedStableState
-   *
+  /**
    * Compute flagging gradients in inside cells.
    * If the facewise flags on two opposite sides differ
    * by more than 2, then the flagging has not converged.
@@ -1576,12 +1593,17 @@ public:
    * of a cell are none or the refinement criterion was not
    * evaluated yet, we say the solver has not attained
    * a stable state yet.
+   *
+   * @param fineGridCell               a fine grid cell
+   * @param fineGridVertices           vertices surrounding the fine grid cell
+   * @param fineGridVerticesEnumerator a enumerator for the fine grid vertices
+   * @param solverNumber               a solver number
    */
   void checkIfCellIsStable(
       exahype::Cell&                       fineGridCell,
       exahype::Vertex* const               fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      const int                            solverNumber) const final override;
+      const int                            solverNumber) const;
 
   void finaliseStateUpdates(const int solverNumber,CellInfo& cellInfo) override;
 
