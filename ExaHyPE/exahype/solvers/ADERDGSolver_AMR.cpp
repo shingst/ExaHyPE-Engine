@@ -1364,7 +1364,6 @@ void exahype::solvers::ADERDGSolver::finaliseStateUpdates(
 
     assertion1(
         cellDescription.getType()==CellDescription::Type::LeafChecked   ||
-        cellDescription.getType()==CellDescription::Type::Parent        ||
         cellDescription.getType()==CellDescription::Type::ParentChecked ||
         cellDescription.getType()==CellDescription::Type::Virtual,
         cellDescription.toString());
