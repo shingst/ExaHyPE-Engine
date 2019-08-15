@@ -914,10 +914,6 @@ int exahype::solvers::ADERDGSolver::predictionAndVolumeIntegralBody(
   counter++;
   #endif
 
-  // TODO(Lukas) Is this really the corrector timestamp?
-  const auto correctorTimeStamp    = cellDescription.getTimeStamp();
-  const auto correctorTimeStepSize = cellDescription.getTimeStepSize(); // TODO(Dominic): where is this used?
-
   const int numberOfPicardIterations = fusedSpaceTimePredictorVolumeIntegral(
       lduh,lQhbnd,lGradQhbnd,lFhbnd,
       luh,
