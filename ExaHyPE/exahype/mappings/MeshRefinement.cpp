@@ -222,17 +222,13 @@ void exahype::mappings::MeshRefinement::touchVertexLastTime(
       correctAdjacencyInformation;
 
   if (
-      //_stateCopy.getMeshRefinementIsInRefiningMode()
-      //&&
       refinementControl==exahype::solvers::Solver::RefinementControl::Refine
   ) {
     refineSafely(fineGridVertex,fineGridH,coarseGridVerticesEnumerator.getLevel()+1,false);
   } else if (
       refinementControl==exahype::solvers::Solver::RefinementControl::Erase
-      //&&
-      //!_stateCopy.getMeshRefinementIsInRefiningMode()
       &&
-      IsFirstIteration // TODO only erase in the first iteration; seems to work but is not optimal
+      IsFirstIteration
       &&
       !fineGridVertex.isHangingNode()
       #ifdef Parallel
