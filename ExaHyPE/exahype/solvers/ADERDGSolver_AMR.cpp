@@ -945,6 +945,17 @@ void exahype::solvers::ADERDGSolver::prolongateVolumeData(
   fineGridCellDescription.setFacewiseRefinementStatus(Pending);
 }
 
+bool checkIfStatusFlaggingHasConverged(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,unsigned char>& neighbourFlags,const int minValueToConsider) {
+  bool flaggingHasConverged = true;
+  for (int d=0; d<DIMENSIONS; d++) {
+    if ( neighbourFlags(2*d+1) >= minValueToConsider && neighbourFlags(2*d+0) >= minValueToConsider ) {
+      flaggingHasConverged &=
+          std::abs(neighbourFlags(2*d+1) - neighbourFlags(2*d+0)) <= 2;
+    }
+  }
+  return flaggingHasConverged;
+}
+
 void exahype::solvers::ADERDGSolver::checkIfCellIsStable(
         exahype::Cell&                       fineGridCell,
         exahype::Vertex* const               fineGridVertices,
@@ -954,25 +965,17 @@ void exahype::solvers::ADERDGSolver::checkIfCellIsStable(
   if ( element!=exahype::solvers::Solver::NotFound ) {
     CellDescription& cellDescription = getCellDescription(fineGridCell.getCellDescriptionsIndex(),element);
     // compute flagging gradients in inside cells
-    bool flaggingHasConverged = true;
-    if ( !peano::grid::aspects::VertexStateAnalysis::isOneVertexBoundary(fineGridVertices,fineGridVerticesEnumerator) ) { // no check on boundary
-      for (int d=0; d<DIMENSIONS; d++) {
-        flaggingHasConverged &=
-            std::abs(cellDescription.getFacewiseAugmentationStatus(2*d+1)  - cellDescription.getFacewiseAugmentationStatus(2*d+0)) <= 2;
-        flaggingHasConverged &=
-            std::abs(cellDescription.getFacewiseCommunicationStatus(2*d+1) - cellDescription.getFacewiseCommunicationStatus(2*d+0)) <= 2;
-      }
-      // refinement status is only spread on finest level
-      if (
-          isLeaf(cellDescription) &&
-          cellDescription.getLevel() == getMaximumAdaptiveMeshLevel()
-      ) {
-        for (int d=0; d<DIMENSIONS; d++) {
-          flaggingHasConverged &=
-              std::abs(cellDescription.getFacewiseRefinementStatus(2*d+1) - cellDescription.getFacewiseRefinementStatus(2*d+0)) <= 2;
-        }
-      }
+    bool flaggingHasConverged =
+        checkIfStatusFlaggingHasConverged(cellDescription.getAugmentationStatus(),0)  &&
+        checkIfStatusFlaggingHasConverged(cellDescription.getCommunicationStatus(),0);
+    // refinement status is only spread on finest level
+    if (
+        ( isLeaf(cellDescription) || isVirtual(cellDescription) ) &&
+        cellDescription.getLevel() == getMaximumAdaptiveMeshLevel()
+    ) {
+      flaggingHasConverged &= checkIfStatusFlaggingHasConverged(cellDescription.getRefinementStatus(),Pending);
     }
+
     const bool noCoarseGridLeafCellMustRequireRefinement =
         !(isLeaf(cellDescription) &&
         cellDescription.getLevel() < getMaximumAdaptiveMeshLevel() &&
@@ -981,6 +984,7 @@ void exahype::solvers::ADERDGSolver::checkIfCellIsStable(
         !(isOfType(cellDescription,CellDescription::Type::Virtual) &&
         cellDescription.getLevel() == getMaximumAdaptiveMeshLevel() &&
         cellDescription.getRefinementStatus() > Keep);
+
     const bool stable =
       flaggingHasConverged
       &&

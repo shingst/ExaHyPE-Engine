@@ -1917,9 +1917,9 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourMetadata(
     const int neighbourCommunicationStatus = neighbourMetadata[exahype::NeighbourCommunicationMetadataCommunicationStatus ];
     const int neighbourRefinementStatus    = neighbourMetadata[exahype::NeighbourCommunicationMetadataLimiterStatus       ];
 
-    mergeWithAugmentationStatus (cellDescription,face._faceIndex,neighbourAugmentationStatus);
+    mergeWithAugmentationStatus (cellDescription,face._faceIndex,neighbourAugmentationStatus );
     mergeWithCommunicationStatus(cellDescription,face._faceIndex,neighbourCommunicationStatus);
-    mergeWithRefinementStatus   (cellDescription,face._faceIndex,neighbourRefinementStatus);
+    mergeWithRefinementStatus   (cellDescription,face._faceIndex,neighbourRefinementStatus   );
 
     cellDescription.setNeighbourMergePerformed(face._faceIndex,true);
   }
