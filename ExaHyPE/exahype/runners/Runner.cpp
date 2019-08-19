@@ -868,7 +868,7 @@ void exahype::runners::Runner::initHPCEnvironment() {
   ierr=VT_funcdef("ADERDGSolver::predictorBodyHandleSkeleton"             , VT_NOCLASS, &exahype::solvers::ADERDGSolver::predictorBodyHandleSkeleton            ); assertion(ierr==0);
   ierr=VT_funcdef("ADERDGSolver::updateBodyHandle"                        , VT_NOCLASS, &exahype::solvers::ADERDGSolver::updateBodyHandle                       ); assertion(ierr==0);
   ierr=VT_funcdef("ADERDGSolver::mergeNeighboursHandle"                   , VT_NOCLASS, &exahype::solvers::ADERDGSolver::mergeNeighboursHandle                  ); assertion(ierr==0);
-  ierr=VT_funcdef("ADERDGSolver::prolongateFaceDataToDescendantHandle"    , VT_NOCLASS, &exahype::solvers::ADERDGSolver::prolongateFaceDataToDescendantHandle   ); assertion(ierr==0);
+  ierr=VT_funcdef("ADERDGSolver::prolongateFaceDataToVirtualCellHandle"   , VT_NOCLASS, &exahype::solvers::ADERDGSolver::prolongateFaceDataToVirtualCellHandle  ); assertion(ierr==0);
   ierr=VT_funcdef("ADERDGSolver::restrictToTopMostParentHandle"           , VT_NOCLASS, &exahype::solvers::ADERDGSolver::restrictToTopMostParentHandle          ); assertion(ierr==0);
   ierr=VT_funcdef("LimitingADERDGSolver::adjustSolutionHandle"            , VT_NOCLASS, &exahype::solvers::LimitingADERDGSolver::adjustSolutionHandle           ); assertion(ierr==0);
   ierr=VT_funcdef("LimitingADERDGSolver::fusedTimeStepBodyHandle"         , VT_NOCLASS, &exahype::solvers::LimitingADERDGSolver::fusedTimeStepBodyHandle        ); assertion(ierr==0);
@@ -1141,9 +1141,9 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
 
 
   // adaptive mesh refinement
+  //repository.switchToMeshRefinementAndPlotTree();
   repository.switchToMeshRefinement();
   repository.getState().setAllSolversAttainedStableState(false);
-  repository.getState().setMeshRefinementIsInRefiningMode(true);
   repository.getState().setStableIterationsInARow(0);
   while (
       repository.getState().continueToConstructGrid() &&
@@ -1639,6 +1639,11 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
     repository.iterate(
         exahype::solvers::Solver::getMaxRefinementStatus()+1,false);
   }
+
+  // 2.1 A broadcast is necessary to communicate if the refinement event has
+  // changed from local recomputation to mesh refinement.
+  repository.switchToBroadcast();
+  repository.iterate(1,false);
 
   // 3. Perform a grid update for those solvers that requested refinement
   if ( exahype::solvers::Solver::oneSolverRequestedMeshRefinement() ) {

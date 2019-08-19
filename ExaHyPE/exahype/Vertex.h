@@ -399,12 +399,21 @@ private:
    * Instead, we simply check here the refinement events and flags of
    * adjacent cell descriptions (which might have been modified earlier by
    * a physics-based refinement criterion.)
+   *
+   * @param[in]    vertexOffset    offset of the vertex
+   * @param[in]    level           level of the vertex
+   * @param[in]    cellSize        size of the cells adjacent to the vertex
+   * @param[in]    checkThoroughly compare the geometry information of cell descriptions with the vertex' geometry information.
+   * @param[inout] checkSuccessful     return if the geometry information matches or not.
+   *
+   * @return if the vertex should be kept in the mesh, erased or refined.
    */
   exahype::solvers::Solver::RefinementControl evaluateRefinementCriterion(
       const tarch::la::Vector<DIMENSIONS, double>& vertexOffset,
       const int                                    level,
       const tarch::la::Vector<DIMENSIONS, double>& cellSize,
-      const bool                                   checkThoroughly) const;
+      const bool                                   checkThoroughly,
+      bool&                                        checkSuccessful) const;
 
   /**
    * Loop over all neighbouring cells and merge

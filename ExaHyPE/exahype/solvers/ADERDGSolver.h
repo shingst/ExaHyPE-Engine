@@ -87,35 +87,28 @@ namespace exahype {
  * Subsequently, we list refinement "stories" cell descriptions of this solver
  * might "experience".
  *
- * Safe, Oscillation-Free Erasing of Child Cells
- * ---------------------------------------------
  *
- * This procedure can take up to 3 iterations.
+ * Refinement
+ * ----------
  *
- * 1. All children (type: Cell) of a cell (type: Ancestor) want to be erased.
- * They have the refinement status Erase. In the previous iteration, they
- * had this refinement status, too. (adjustSolutionDuringMeshRefinementBody -> markForRefinement)
- * They write their max refinement status to the parent (progressMeshRefinementInEnterCell->updateCoarseGridAncestorRefinementStatus).
- * (If one of them is an Ancestor itself, they set an erasing children veto flag which is reset by
- * the parent in every iteration.)
+ * It. #1 top-down  children spawn refinement criterion tasks (they run in the background)
+ * It. #2 top-down  If a child state is LeafInitatesRefining/Refines, new children (type: LeafProlongates)
+ *                  are introduced. They prolongate the solution and impose boundary conditions etc.
+ * It. #2 bottom-up the parent changes its state to ParentChecked and deallocates unncessary memory
  *
- * 2. The parent (type: Ancestor) changes its type to Cell and allocates
- * the necessary memory. (progressMeshRefinementInLeaveCell->progressCollectiveRefinementOperationsInLeaveCell)
- * The parent notifies its children by setting the ErasingChildrenRequested RefinementEvent.
+ * Oscillation-Free Coarsening
+ * ---------------------------
  *
- * 3.The children restrict their volume data (solution and previous solution) up to the parent. They
- * do not delete their data yet. (progressMeshRefinementInLeaveCell->restrictVolumeDataIfErasingChildrenRequested)
+ * This procedure can take up to 5 iterations.
  *
- * 4. The parent evaluates the refinement criterion for current solution and previous solution.
- * If one of the evaluations indicates that refining is necessary, the children erasing
- * process is stopped and the parent changes its type back to Ancestor. (progressMeshRefinementInLeaveCell->progressCollectiveRefinementOperationsInLeaveCell)
- * During the mesh refinement iterations, it stores the current and previous refinement status in order
- * to prevent the procedure to start again.
- *
- * If no refinement at both time stages is required, the parent keeps its new type (Cell) and signals its children to delete
- * themselves. It does this by changing the RefinementEvent from ErasingChildrenRequested -> ErasingChildren.
- *
- * 5. The parent resets its status to None.
+ * It. #1 top-down  children spawn refinement criterion tasks (they run in the background)
+ * It. #1 bottom-up parent sets coarsening request
+ * It. #2 top-down  children veto coarsening request or not based on the result of the refinement criterion.
+ * It. #3 bottom-up parent checks if coarsening request was accepted -> changes state, allocates memory for restriction
+ * It. #4 bottom-up children restrict solution up (do not erase)
+ *                  parent reevaluates the refinement criterion, deallocates memory if necessary, changes state to LeafChecked
+ * It. #5 top-down  children erase everything if parent is of type LeafChecked
+ * It. #5 bottom-up Peano vertices get erased
  */
 class exahype::solvers::ADERDGSolver : public exahype::solvers::Solver {
   friend class LimitingADERDGSolver;
@@ -132,16 +125,16 @@ public:
   static int predictorBodyHandleSkeleton;
   static int updateBodyHandle;
   static int mergeNeighboursHandle;
-  static int prolongateFaceDataToDescendantHandle;
+  static int prolongateFaceDataToVirtualCellHandle;
   static int restrictToTopMostParentHandle;
   #endif
 
   /**
    * The maximum helper status.
    * This value is assigned to cell descriptions
-   * of type Cell.
+   * of type Leaf.
    */
-  static int CellCommunicationStatus;
+  static int LeafCommunicationStatus;
   /**
    * The minimum helper status a cell description
    * must have for it allocating boundary data.
@@ -156,8 +149,8 @@ public:
   static int MaximumAugmentationStatus;
   /**
    * The minimum augmentation status a cell description
-   * of type Cell must have for it to refine
-   * and add child cells of type Descendant to
+   * of type Leaf must have for it to refine
+   * and add child cells of type Virtual to
    * the grid.
    */
   static int MinimumAugmentationStatusForVirtualRefining;
@@ -348,6 +341,8 @@ private:
    * Evaluate the refinement criterion and convert the user
    * input to an integer representation, the refinement status.
    *
+   * @note Has no side effects.
+   *
    * @param cellDescription   a cell description
    * @param solutionHeapIndex solution array heap index. Externalised in order to use the method for current and previous solution.
    * @param timeStamp         time stamp matching the solution array.
@@ -360,86 +355,24 @@ private:
   /**
    * Query the user's refinement criterion and
    * write a refinement request back to the cell description.
+   *
+   * @note Only used during the mesh refinement iterations.
+   *
+   * @note It is important that the refinement status
+   * is not overwritten by this method if
+   * it is larger than the current one.
    */
   void markForRefinement(CellDescription& cellDescription);
 
   /**
-   * Mark a cell description of Cell for refinement or erasing based
-   * on a user supplied physics based refinement criterion.
-   *
-   * TODO(Dominic): Move docu below to appropriate location.
-   *
-   * <h2>Erasing</h2> TODO(Dominic): Move docu.
-   * Note that we use a not so obvious strategy for performing
-   * erasing operations. We first set an erasing request on
-   * a parent cell description of type Ancestor or EmptyAncestor,
-   * and then let its children of type Cell veto
-   * this request if they want to keep their
-   * solution or refine even further.
-   *
-   * No erasing children request can be set on cell descriptions
-   * of type Ancestor which have been introduced to the grid during
-   * the current mesh update iterations.
-   * This prevents races where a refinement criterion has triggered a
-   * refinement event on the parent cell but does trigger an erasing
-   * event on the children cells.
-   *
-   * We further veto erasing events if
-   * a child of the parent itself is a parent
-   * of cell descriptions of type Descendant.
-   *
-   * <h2>Augmentation</h2>
-   * Note that cell descriptions of type Cell are allowed to overwrite an augmentation request
-   * by a refinement request if applicable.
-   * The refinement event of a cell description of type Cell might be set to
-   * an augmentation request in the methods mergeWithNeighbourData(...)
-   * as well as in markForAugmentation(...) which is called from within
-   * enterCell(...)
+   * Start the refinement procedure for cell descriptions
+   * of type Leaf if they are flagged for refinement
+   * or if one of their virtual subcells requests
+   * refinement.
    *
    * @note Thread-safe.
    */
-  void decideOnRefinement(CellDescription& fineGridCellDescription, const bool stillInRefiningMode);
-
-  /**
-   * Performs three operations:
-   * 1. Checks if a ErasingVirtualChildrenRequestedTriggered event on the coarse
-   * grid parent can be changed to a ErasingVirtualChildrenRequested event.
-   * In this case, the triggered request becomes an actual request.
-   * The fine grid children can however still veto this request.
-   * 2.
-   *
-   * @note Thread-safe.
-   */
-  void decideOnVirtualRefinement(CellDescription& fineGridCellDescription);
-
-  /**
-   * Change the erasing children request to a change children to descendants
-   * request of the coarse grid cell description's parent
-   * if the coarse grid cell has children itself (of type Descendant).
-   * Rationale: We cannot directly erase a Cell that has children (of type Descendant).
-   *
-   * Further, reset the erasing virtual children request if a coarse grid
-   * Descendant has virtual children itself (of type Descendant). Rationale:
-   * We cannot erase a coarse grid cell that has children (of type Descendant)
-   * before erasing the children.
-   *
-   * @note This operation spans over three spacetree levels. Calling
-   * it requires that a cell description for
-   * the same solver the @p coarseGridCellDescription is associated with
-   * is registered on the fine grid cell.
-   *
-   * @note A more sophisticated procedure has to performed for the refinement event
-   * AugmentationRequested. We need to use the taversal's descend event to handle
-   * this event. We thus do not rely on fineGridCell.isRefined() in the previous enterCell event
-   * to check if we need to reset the deaugmenting request.
-   *
-   * TODO(Dominic): Make template function as soon as verified.
-   *
-   * @note Not thread-safe!
-   */
-  void alterErasingRequestsIfNecessary(
-      CellDescription& coarseGridCellDescription,
-      const int fineGridCellDescriptionsIndex) const;
+  void decideOnRefinement(CellDescription& fineGridCellDescription);
 
   /**
    * Fills the solution and previous solution arrays
@@ -455,12 +388,19 @@ private:
    * \return true if a new compute cell
    * was allocated as result of an erasing operation.
    */
-  void progressCollectiveRefinementOperationsInEnterCell(
+  void finishRefinementOperation(
       CellDescription& fineGridCellDescription);
 
-  void progressCollectiveRefinementOperationsInLeaveCell(
-      CellDescription& fineGridCellDescription,
-      const bool stillInRefiningMode);
+  /**
+   * Progress coarsening operations.
+   *
+   * @note Parent coarsening requests are spread over two
+   * iterations as the AMR background jobs might delay
+   * the evaluation of the the refinement criterion.
+   *
+   * @param fineGridCellDescription a fine grid cell description.
+   */
+  void progressCoarseningOperationsInLeaveCell(CellDescription& fineGridCellDescription);
 
   /**
    * Checks the current and previous solution on a Cell which was
@@ -472,30 +412,33 @@ private:
    * @return if a Cell (which was previously an Ancestor) can
    * erase its children.
    */
-  bool markPreviousAncestorForRefinement(CellDescription& cellDescription);
+  bool markPreviousParentForRefinement(CellDescription& cellDescription);
 
-  /**
-   * In case, we change the children to a descendant
-   * or erase them from the grid, we first restrict
-   * volume data up to the parent and further
-   * copy the corrector and predictor time stamps.
-   *
-   * \return true if we erase descendants from
-   * the grid. In this case, to call an erase
-   * on the grid/Peano cell if no other cell descriptions are
-   * registered. Returns false otherwise.
-   *
-   * TODO(Dominic): More docu.
-   *
-   * @note This operations is not thread-safe
-   */
+
+   /**
+    * Erases a cell description of type Leaf if the parent cell description (type: Parent)
+    * is recoarsened. Erases a cell description of type Virtual if the
+    * parent cell description has an AugmentationStatus that
+    * indicates that it does not require virtual subcells.
+    *
+    *  @note Only erases virtual the refinement status flagging allows it.
+    *  We require the previous refinement status value.
+    *
+    * @param cellDescription          the fine grid cell description
+    * @param cellDescriptionsIndex    heap index of the heap array that contains the the fine grid cell description
+    * @param fineGridCellElement      element of the fine grid cell description in the heap array.
+    * @param parentType               type of the parent cell description.
+    * @param parentAugmentationStatus augmentation status of the parent cell description.
+    */
   void eraseCellDescriptionIfNecessary(
-      const int cellDescriptionsIndex,
-      const int fineGridCellElement,
-      CellDescription& coarseGridCellDescription);
+      CellDescription&             cellDescription,
+      const int                    cellDescriptionsIndex,
+      const int                    fineGridElement,
+      const CellDescription::Type& parentType,
+      const int                    parentAugmentationStatus) const;
 
   /**
-   * Initialise cell description of type Cell.
+   * Initialise cell description of type Leaf.
    * Initialise the refinement event with None.
    *
    * @note This operations is thread-safe
@@ -507,31 +450,31 @@ private:
       const int solverNumber);
 
   /**
-   * Initialises helper cell descriptions of type Descendant
+   * Initialises helper cell descriptions of type Virtual
    * on the fine level after cell descriptions on the coarse level
    * have been flagged for augmentation and Peano has
    * created the requested new cells.
    *
-   * Further sets the refinement event on a coarse grid Descendant to Augmenting
-   * if the first new Descendant was initialised on the fine grid.
+   * Further sets the refinement event on a coarse grid Virtual to Augmenting
+   * if the first new Virtual was initialised on the fine grid.
    *
    * Additionally, copies the information if a face is inside
    * from the parent to the new child cell.
    *
    * Reset an augmentation request if the child cell does hold
-   * a Descendant or EmptyDescendant cell description with
+   * a Virtual or EmptyVirtual cell description with
    * the same solver number.
    *
    * This scenario occurs if an augmentation request is triggered in
    * enterCell().
    *
    * A similar scenario can never occur for refinement requests
-   * since only cell descriptions of type Cell can be refined.
+   * since only cell descriptions of type Leaf can be refined.
    * Ancestors can never request refinement.
    *
    * @note This operations is not thread-safe
    */
-  void addNewDescendantIfVirtualRefiningRequested(
+  void addNewVirtualCellIfVirtualRefiningRequested(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -539,6 +482,13 @@ private:
       const int coarseGridCellDescriptionsIndex);
 
   /**
+   * The previous refinement status is initialised with keep
+   * to prevent that the coarsening procedure is removing
+   * the new cell again.
+   *
+   * TODO(Dominic): Update below
+   *
+   *
    * Initialises compute cell descriptions on the fine level (cell description type is Cell)
    * after coarse grid cell descriptions have been flagged for refinement and Peano has
    * created the requested new cells.
@@ -551,12 +501,12 @@ private:
    * Additionally, copies the information if a face is inside
    * from the parent to the new child cell.
    *
-   * \return True if a cell description of type Cell was allocated
+   * \return True if a cell description of type Leaf was allocated
    * on the fineGridCell
    *
    * @note This operations is not thread-safe
    */
-  bool addNewCellIfRefinementRequested(
+  bool addNewLeafIfRefinementRequested(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
@@ -564,11 +514,13 @@ private:
       const int coarseGridCellDescriptionsIndex);
 
   /**
-   * Change a cell description of type Cell to an Ancestor.
+   * Change a cell description of type LeafRefines or ParentCoarsens to Parent(Checked).
+   * In the ParentChecked state, the new parent is not allowed to request coarsening during
+   * the current set of mesh refinement iterations.
    *
-   * @param cellDescription a cell description of type Cell.
+   * @param cellDescription a cell description of type LeafRefines or ParentCoarsens.
    */
-  void changeCellToAncestor(CellDescription& cellDescription);
+  void changeLeafToParent(CellDescription& cellDescription);
 
   /**
    * Prolongates Volume data from a parent cell description to
@@ -609,7 +561,7 @@ private:
    *
    * @note This method makes only sense for real cells.
    */
-  void restrictVolumeDataIfErasingRequested(
+  void restrictVolumeDataIfParentCoarsens(
       const CellDescription& fineGridCellDescription,
       const CellDescription& coarseGridCellDescription);
 
@@ -626,23 +578,28 @@ private:
    * If so, update the parent index of the fine grid cell description
    * with the coarse grid cell descriptions index.
    *
-   * For cell descriptions of type Descendant, copy offset and
-   * level of the top-most parent cell description, which is of type Cell.
+   * For cell descriptions of type Virtual, copy offset and
+   * level of the top-most parent cell description, which is of type Leaf.
    */
   void ensureFineGridCoarseGridConsistency(
       CellDescription& cellDescription,
-      const int coarseGridCellDescriptionsIndex);
+      const int        coarseGridCellDescriptionsIndex);
 
   /**
-   * Update the refinement status of a coarse grid parent of type
-   * Ancestor.
+   * Vetoes the coarse grid parent's coarsening request,
+   * if the fine grid cell description is either of type Parent or
+   * if it is of type Leaf and the latter wants to stay.
    *
-   * @param fineGridCellDescription the fine grid cell description
-   * @param coarseGridElement       element of the
+   * The implementation only allows to
+   * erase one layer of Leaf cells per mesh refinement
+   * iterations.
+   *
+   * @param fineGridCellDescription   the fine grid cell description
+   * @param coarseGridCellDescription the coarse grid cell description
    */
-  void updateCoarseGridAncestorRefinementStatus(
+  void vetoParentCoarseningRequestIfNecessary(
       const CellDescription& fineGridCellDescription,
-      CellDescription& coarseGridCellDescription);
+      CellDescription&       coarseGridCellDescription);
 
   /**
    * Turns checking for NaNs off.
@@ -662,19 +619,19 @@ private:
 
   /**
    * Determine if the cell description of type
-   * Descendant is on the cell boundary of its parent
-   * of type Cell or Descendant with at least one of
+   * Virtual is on the cell boundary of its parent
+   * of type Leaf or Virtual with at least one of
    * its faces. If so restrict face data from the parent down
-   * to the Descendant for those face(s).
+   * to the Virtual for those face(s).
    */
-  void prolongateFaceDataToDescendant(
+  void prolongateFaceDataToVirtualCell(
       CellDescription& cellDescription,
       const CellDescription& parentCellDescription,
       const tarch::la::Vector<DIMENSIONS,int>& subcellIndex);
 
   /**
    * Copies the parent cell descriptions observables'
-   * minimum and maximum down to the Descendant.
+   * minimum and maximum down to the Virtual.
    */
   void prolongateObservablesMinAndMax(
       const CellDescription& cellDescription,
@@ -776,7 +733,7 @@ private:
    * Calls the mapGlobalObservables function of the user solver,
    * and merges the result with _nextGlobalObservables variable.
    *
-   * @param[in[ cellDescription a cell description of type Cell.
+   * @param[in[ cellDescription a cell description of type Leaf.
    * @param[in[ updateResult    see update result.
    */
   void reduce(
@@ -789,7 +746,7 @@ private:
    *
    * @note Can be called from the LimitingADERDGSolver.
    *
-   * @param cellDescription a cell description of type Cell.
+   * @param cellDescription a cell description of type Leaf.
    */
 
   /**
@@ -809,7 +766,7 @@ private:
    * into the correction time step data fields of the patch
    * after the time step data update.
    *
-   * @param cellDescription         an ADER-DG cell description of type Cell
+   * @param cellDescription         an ADER-DG cell description of type Leaf
    * @param cellInfo                struct referring to all cell descriptions registered for a cell
    * @param neighbourMergePerformed flag indicating where a neighbour merge has been performed (at spawn time if run by job)
    * @param isFirstTimeStepOfBatch  if this the first time step in a batch (at spawn time if run by job)
@@ -833,7 +790,7 @@ private:
       const bool                                                 mustBeDoneImmediately);
 
   /**
-   * If the cell description is of type Cell, update the solution, evaluate the refinement criterion,
+   * If the cell description is of type Leaf, update the solution, evaluate the refinement criterion,
    * and compute an admissible time step size.
    *
    * @note Not const as kernels are not const.
@@ -907,23 +864,15 @@ private:
 
   /** \copydoc Solver::prepareWorkerCellDescriptionAtMasterWorkerBoundary
    *
-   * If the cell description is of type Descendant and
-   * is next to a cell description of type Cell
-   * or is virtually refined, i.e. has children of type Descendant itself,
+   * If the cell description is of type Virtual and
+   * is next to a cell description of type Leaf
+   * or is virtually refined, i.e. has children of type Virtual itself,
    * we set the hasToHoldDataForMasterWorkerCommunication flag
    * on the cell description to true and allocate the required
    * memory.
    */
   static void prepareWorkerCellDescriptionAtMasterWorkerBoundary(
       CellDescription& cellDescription);
-
-  /**
-   * As the worker does not know anything about the master's coarse
-   * grid cell, we set special child cell based erasing events
-   * to notify the worker about the master's coarse grid cell's
-   * erasing decision.
-   */
-  void deduceChildCellErasingEvents(CellDescription& cellDescription) const;
 
 #if defined(DistributedOffloading)
 
@@ -1460,7 +1409,7 @@ public:
    * previous augmentation status is initialised for new cell
    * descriptions as MaximumAugmentationStatus.
    * This prevents erasing of vertices around newly introduced
-   * cell descriptions of type Cell.
+   * cell descriptions of type Leaf.
    *
    * Note that this is the previous augmentation status.
    * It does not spread.
@@ -1468,8 +1417,7 @@ public:
   static void addNewCellDescription(
       const int                                    solverNumber,
       CellInfo&                                    cellInfo,
-      const CellDescription::Type                  cellType,
-      const CellDescription::RefinementEvent       refinementEvent,
+      const CellDescription::Type&                 cellType,
       const int                                    level,
       const int                                    parentIndex,
       const tarch::la::Vector<DIMENSIONS, double>& cellSize,
@@ -1491,11 +1439,85 @@ public:
       const int element);
 
   /**
+   * @param cellDescription a cell description
+   * @return if the cell description is a leaf cell.
+   * @note a cell description in state ParentCoarsening is considered a
+   * (temporary) leaf cell, too.
+   */
+  static bool holdsSolution(const CellDescription& cellDescription) {
+    return
+        cellDescription.getType()==CellDescription::Type::Leaf ||
+        cellDescription.getType()==CellDescription::Type::LeafProlongates ||
+        cellDescription.getType()==CellDescription::Type::LeafChecked ||
+        cellDescription.getType()==CellDescription::Type::LeafInitiatesRefining ||
+        cellDescription.getType()==CellDescription::Type::LeafRefines ||
+        cellDescription.getType()==CellDescription::Type::ParentRequestsCoarseningA ||
+        cellDescription.getType()==CellDescription::Type::ParentRequestsCoarseningB ||
+        cellDescription.getType()==CellDescription::Type::ParentCoarsens;
+  }
+
+  /**
    * @return if a cell description (should) hold face data.
    *
    * @param cellDescription a cell description.
    */
-  static bool holdsFaceData(const CellDescription& cellDescription);
+  static bool holdsFaceData(const CellDescription& cellDescription) {
+    return holdsSolution(cellDescription) ||
+        (isOfType(cellDescription,CellDescription::Type::Virtual) &&
+        cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication);
+  }
+
+  /**
+   * @param cellDescription a cell description
+   * @return if the cell description is a leaf cell.
+   * @note a cell description in state ParentCoarsening is considered a
+   * (temporary) leaf cell, too.
+   */
+  static bool isLeaf(const CellDescription& cellDescription) {
+    return cellDescription.getType()==CellDescription::Type::Leaf ||
+           cellDescription.getType()==CellDescription::Type::LeafProlongates ||
+           cellDescription.getType()==CellDescription::Type::LeafChecked ||
+           cellDescription.getType()==CellDescription::Type::LeafRefines ||
+           cellDescription.getType()==CellDescription::Type::LeafInitiatesRefining;
+  }
+
+  /**
+   * @param cellDescription a cell description
+   * @return if the cell description is a parent cell.
+   */
+  static bool isParent(const CellDescription& cellDescription) {
+    return cellDescription.getType()==CellDescription::Type::Parent ||
+           cellDescription.getType()==CellDescription::Type::ParentChecked ||
+           cellDescription.getType()==CellDescription::Type::ParentRequestsCoarseningA ||
+           cellDescription.getType()==CellDescription::Type::ParentRequestsCoarseningB ||
+           cellDescription.getType()==CellDescription::Type::ParentCoarsens;
+  }
+
+  /**
+   * @param cellDescription a cell description
+   * @return if the cell description is a parent cell.
+   */
+  static bool isVirtual(const CellDescription& cellDescription) {
+    return cellDescription.getType()==CellDescription::Type::Virtual;
+  }
+
+  /**
+   * @param cellDescription a cell description
+   * @return if this cell description is a Leaf cell and if it belongs
+   * to the AMR skeleton.
+   */
+  static bool belongsToAMRSkeleton(const CellDescription& cellDescription) {
+    return isLeaf(cellDescription) &&
+           cellDescription.getAugmentationStatus() > ADERDGSolver::MinimumAugmentationStatusForVirtualRefining;
+  }
+
+  /**
+   * @param cellDescription a cell description
+   * @return if the cell is of a certain type.
+   */
+  static bool isOfType(const CellDescription& cellDescription,const CellDescription::Type type) {
+    return cellDescription.getType()==type;
+  }
 
   /**
    * \return if communication with a (remote) neighbour is necessary.
@@ -1525,10 +1547,10 @@ public:
   /**
    * Determine the communication status of this cell
    * description based on the face wise communication status flags
-   * if the cell is of type Descendant.
+   * if the cell is of type Virtual.
    *
    * If the cell description is of type Ancestor, return 0.
-   * If the cell description of type Cell, return the maximum
+   * If the cell description of type Leaf, return the maximum
    * commmunication status.
    */
   int determineCommunicationStatus(
@@ -1566,6 +1588,14 @@ public:
   void updateRefinementStatus(
       CellDescription&                                           cellDescription,
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) const;
+
+  /**
+   * Updates the status flags and sets the stability criterion to
+   * false if any flag was updated.
+   *
+   * @param cellDescription a cell description.
+   */
+  void updateStatusFlags(CellDescription& cellDescription);
 
   /**
    * Construct an ADERDGSolver.
@@ -1831,28 +1861,26 @@ public:
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const int  solverNumber,
-      const bool stillInRefiningMode) override;
+      const int  solverNumber) override;
 
-  bool progressMeshRefinementInLeaveCell(
+  void progressMeshRefinementInLeaveCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const int solverNumber,
-      const bool stillInRefiningMode) override;
+      const int solverNumber) override;
 
   exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
-        const int cellDescriptionsIndex,
-        const int solverNumber,
-        const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
-        const tarch::la::Vector<DIMENSIONS, double>& cellSize,
-        const int level,
-        const bool checkThoroughly) const final override;
+      const int cellDescriptionsIndex,
+      const int solverNumber,
+      const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
+      const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+      const int level,
+      const bool checkThoroughly,
+      bool& checkSuccessful) const final override;
 
-  /**\copydoc Solver::attainedStableState
-   *
+  /**
    * Compute flagging gradients in inside cells.
    * If the facewise flags on two opposite sides differ
    * by more than 2, then the flagging has not converged.
@@ -1861,13 +1889,17 @@ public:
    * of a cell are none or the refinement criterion was not
    * evaluated yet, we say the solver has not attained
    * a stable state yet.
+   *
+   * @param fineGridCell               a fine grid cell
+   * @param fineGridVertices           vertices surrounding the fine grid cell
+   * @param fineGridVerticesEnumerator a enumerator for the fine grid vertices
+   * @param solverNumber               a solver number
    */
-  bool attainedStableState(
+  void checkIfCellIsStable(
       exahype::Cell&                       fineGridCell,
       exahype::Vertex* const               fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      const int                            solverNumber,
-      const bool                           stillInRefiningMode) const final override;
+      const int                            solverNumber) const;
 
   void finaliseStateUpdates(const int solverNumber,CellInfo& cellInfo) override;
 
@@ -2005,7 +2037,7 @@ public:
    * values. Does not advance the cell descriptions
    * time stamps forward.
    *
-   * \return the newly computed time step size if the cell description is of type Cell or the maximum
+   * \return the newly computed time step size if the cell description is of type Leaf or the maximum
    *         double value.
    */
   double computeTimeStepSize(
@@ -2058,7 +2090,7 @@ public:
 
   /**
    * Print the 2D ADER-DG solution.
-   * @param cellDescription a cell description of type Cell
+   * @param cellDescription a cell description of type Leaf
    */
   void printADERDGSolution2D(const CellDescription& cellDescription) const;
 
@@ -2131,7 +2163,7 @@ public:
    * be called from the enterCell(...) mapping method.
    *
    * @note It is assumed that this operation is applied only to helper cell descriptions
-   * of type Descendant and Ancestor. No cell description of type Cell
+   * of type Virtual and Ancestor. No cell description of type Leaf
    * must be touched by this operation. Otherwise, we cannot spawn
    * the prediction and/or the compression as background task.
    *
@@ -2143,7 +2175,7 @@ public:
       const bool isAtRemoteBoundary);
 
   /**
-   * If the fine grid cell of type Descendant has a face which intersects with one its Cell parent's faces,
+   * If the fine grid cell of type Virtual has a face which intersects with one its Cell parent's faces,
    * restrict face data up to the parent.
    *
    * @note This function assumes a bottom-up traversal of the grid and must thus
@@ -2209,7 +2241,7 @@ public:
    *
    * <h2>Adaptive mesh refinement</h2>
    * For adaptive meshes, we further fix the type
-   * of a descendant to RemoteBoundaryDescendant
+   * of a Virtual to RemoteBoundaryVirtual
    * at both sides of master-worker boundaries.
    *
    * We further fix the type of an Ancestor
@@ -2460,19 +2492,15 @@ public:
     * Veto erasing requests of the coarse grid cell if the received
     * cell description has virtual children.
     *
-    * \return If we the solver requires master worker communication
-    * at this cell
-    *
     * TODO(Dominic): No const modifier const as kernels are not const yet
     */
-   bool progressMeshRefinementInMergeWithMaster(
+   void progressMeshRefinementInMergeWithMaster(
        const int                                    worker,
        const int                                    localCellDescriptionsIndex,
        const int                                    localElement,
        const int                                    coarseGridCellDescriptionsIndex,
        const tarch::la::Vector<DIMENSIONS, double>& x,
-       const int                                    level,
-       const bool                                   stillInRefiningMode) final override;
+       const int                                    level) final override;
 
   void appendMasterWorkerCommunicationMetadata(
       MetadataHeap::HeapEntries& metadata,
@@ -2686,9 +2714,9 @@ protected:
    *                            with the given direction and the given geometry. No const modifier as it might get post-processed.
    * @param[in]    direction    Coordinate direction the normal vector is aligned with.
    * @param[in]    orientation  Orientation of the normal vector (0: negative sign, 1: positive sign).
-   * @param[in[    levelDelta   The difference in levels up to a cell description of type Cell.
+   * @param[in[    levelDelta   The difference in levels up to a cell description of type Leaf.
    *                            Must be set to zero if we are already performing a face integral for a cell description
-   *                            of type Cell. Is greater zero if lFbhnd stems from a Descendant cell description.
+   *                            of type Leaf. Is greater zero if lFbhnd stems from a Virtual cell description.
    * @param[in]    cellSize     Extent of the cell in each coordinate direction.
    * @param[in]    dt           the time step size used on the fine grid
    * @param[in]    addToUpdate  if addToUpdate is specified, @p out is assumed to have the cardinality of the (padded) update vector.

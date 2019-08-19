@@ -117,23 +117,6 @@ protected:
    */
   const double _DMPDifferenceScaling;
 
-  /**
-   * A counter holding the number of iterations to
-   * cure a troubled cell.
-   * This counter will be initialised to a certain
-   * (user-dependent?) value if a cell is flagged as troubled.
-   *
-   * If the cell is not troubled for one iteration, the counter is
-   * decreased until it reaches 0. Then, the
-   * cell is considered as cured.
-   * Note that the counter can be reset to the maximum value
-   * in the meantime if the cell is marked again as troubled.
-   *
-   * This counter prevents that a cell is toggling between
-   * troubled and Ok (cured).
-   */
-  int _iterationsToCureTroubledCell;
-
 private:
   typedef exahype::records::ADERDGCellDescription SolverPatch;
 
@@ -470,7 +453,7 @@ private:
    */
   bool isInvolvedInLocalRecomputation(const SolverPatch& solverPatch) const {
     return
-        solverPatch.getType()==SolverPatch::Type::Cell &&
+        solverPatch.getType()==SolverPatch::Type::Leaf &&
         solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
         solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell-2;
   }
@@ -505,6 +488,17 @@ private:
       Solver::CellInfo&                                          cellInfo,
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& limiterNeighbourMergePerformed,
       const bool                                                 isAtRemoteBoundary);
+
+  /**
+   * Veto a coarsening attempt of a Parent cell description if
+   * the restricted solution is troubled.
+   *
+   * @param cellDescriptionsIndex heap index associated with a mesh cell
+   * @param solverNumber          identification number of a solver.
+   */
+  void vetoCoarseningIfRestrictedSolutionIsTroubled(
+      const int cellDescriptionsIndex,
+      const int solverNumber);
 
 #ifdef Parallel
 
@@ -740,8 +734,7 @@ public:
       exahype::solvers::ADERDGSolver* solver,
       exahype::solvers::FiniteVolumesSolver* limiter,
       const double DMPRelaxationParameter=1e-4,
-      const double DMPDifferenceScaling=1e-3,
-      const int iterationsToCureTroubledCell=2);
+      const double DMPDifferenceScaling=1e-3);
 
   virtual ~LimitingADERDGSolver() {
     _solver.reset();
@@ -756,12 +749,6 @@ public:
   void updateMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) final override;
   void resetMeshUpdateEvent() final override;
   MeshUpdateEvent getMeshUpdateEvent() const final override;
-
-  // TODO(Lukas) Still needed?
-  /*
-void updateNextGlobalObservables(
-          const std::vector<double>& globalObservables) override;
-  */
 
   double getMinTimeStamp() const final override;
   double getMinTimeStepSize() const final override;
@@ -933,17 +920,15 @@ void updateNextGlobalObservables(
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const int  solverNumber,
-      const bool stillInRefiningMode) override;
+      const int  solverNumber) override;
 
- bool progressMeshRefinementInLeaveCell(
+ void progressMeshRefinementInLeaveCell(
      exahype::Cell& fineGridCell,
      exahype::Vertex* const fineGridVertices,
      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
      exahype::Cell& coarseGridCell,
      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-     const int solverNumber,
-     const bool stillInRefiningMode) override;
+     const int solverNumber) override;
 
  exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
      const int cellDescriptionsIndex,
@@ -951,14 +936,8 @@ void updateNextGlobalObservables(
      const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
      const tarch::la::Vector<DIMENSIONS, double>& cellSize,
      const int level,
-     const bool checkThoroughly) const final override;
-
- bool attainedStableState(
-     exahype::Cell&                       fineGridCell,
-     exahype::Vertex* const               fineGridVertices,
-     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-     const int                            solverNumber,
-     const bool                           stillInRefiningMode) const final override;
+     const bool checkThoroughly,
+     bool& checkSuccessful) const final override;
 
   void finaliseStateUpdates(
       const int solverNumber,
@@ -1103,7 +1082,8 @@ void updateNextGlobalObservables(
     * Go back to previous time step with
     * time step data and solution.
     *
-    * Keep the new refinement status.
+    * Reset the refinement status to the old value.
+    * (Nothing has happened but we have a new mesh.)
     *
     * Allocate necessary new limiter patches.
     */
@@ -1505,14 +1485,13 @@ void updateNextGlobalObservables(
    *
    * TODO(Dominic): No const modifier const as kernels are not const yet
    */
-  bool progressMeshRefinementInMergeWithMaster(
+  void progressMeshRefinementInMergeWithMaster(
       const int worker,
       const int localCellDescriptionsIndex,
       const int localElement,
       const int coarseGridCellDescriptionsIndex,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int  level,
-      const bool stillInRefiningMode) final override;
+      const int  level) final override;
 
   void appendMasterWorkerCommunicationMetadata(
       exahype::MetadataHeap::HeapEntries& metadata,

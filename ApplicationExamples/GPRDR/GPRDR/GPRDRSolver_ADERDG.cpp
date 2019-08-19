@@ -17,6 +17,8 @@
 #include "PDE.h"
 #include "InitialData.h"
 #include "Tools.h"
+#include "Tools.h"
+#include "CGinterface.h"
 
 #include "kernels/KernelUtils.h"
 #include "peano/utils/Loop.h"
@@ -59,6 +61,25 @@ void GPRDR::GPRDRSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs
 	printf("\n******************************************************************");
 	printf("\n**************<<<       DONE       >>>****************************");
 	printf("\n******************************************************************");
+	if (constants.isValueValidString("cgfile")) {
+		std::string cgfile = constants.getValueAsString("cgfile");
+		if (constants.isValueValidDouble("cx") && constants.isValueValidDouble("cy") && constants.isValueValidInt("isbinary") ) {
+			const double cx = constants.getValueAsDouble("cx");
+			const double cy = constants.getValueAsDouble("cy");
+			const int isbinary = constants.getValueAsInt("isbinary");
+			const int lengthcg=cgfile.length();
+			
+			logInfo("init(...)","CG File:"<<cgfile);
+			logInfo("init(...)","CG center:("<<cx<<","<<cy<<")");
+			logInfo("init(...)","CG binary:"<<isbinary);
+			std::cout << cgfile << std::endl;
+			//loadcgfile_(&_domainOffset[0],&_domainSize[0],&lengthcg,&cgfile[0],&cx,&cy,&isbinary);
+			loadcgfile_(&_domainOffset[0],&_domainSize[0],&cx,&cy,&isbinary);
+		}else{
+			logInfo("init(...)","CG data CX is not correct.");
+			std::abort();
+		}
+	}
   } else {
     logInfo("init(...)","Not recognized setup.");
 	std::abort();

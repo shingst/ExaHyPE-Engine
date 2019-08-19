@@ -230,7 +230,6 @@ exahype::solvers::Solver::CellInfo exahype::Cell::createCellInfo() const {
 exahype::solvers::Solver::CellInfo exahype::Cell::addNewCellDescription(
     const int solverNumber,
     const exahype::records::FiniteVolumesCellDescription::Type cellType,
-    const exahype::records::FiniteVolumesCellDescription::RefinementEvent refinementEvent,
     const int level,
     const int parentIndex,
     const tarch::la::Vector<DIMENSIONS, double>&  cellSize,
@@ -241,8 +240,7 @@ exahype::solvers::Solver::CellInfo exahype::Cell::addNewCellDescription(
 
   solvers::Solver::CellInfo cellInfo(_cellData.getCellDescriptionsIndex());
   solvers::FiniteVolumesSolver::addNewCellDescription(
-      solverNumber,cellInfo,
-      cellType,refinementEvent,
+      solverNumber,cellInfo,cellType,
       level,parentIndex,cellSize,cellOffset);
   return cellInfo;
 }
@@ -251,7 +249,6 @@ exahype::solvers::Solver::CellInfo exahype::Cell::addNewCellDescription(
 exahype::solvers::Solver::CellInfo exahype::Cell::addNewCellDescription(
     const int                                     solverNumber,
     const exahype::records::ADERDGCellDescription::Type cellType,
-    const exahype::records::ADERDGCellDescription::RefinementEvent refinementEvent,
     const int                                     level,
     const int                                     parentIndex,
     const tarch::la::Vector<DIMENSIONS, double>&  cellSize,
@@ -262,8 +259,7 @@ exahype::solvers::Solver::CellInfo exahype::Cell::addNewCellDescription(
 
   solvers::Solver::CellInfo cellInfo(_cellData.getCellDescriptionsIndex());
   exahype::solvers::ADERDGSolver::addNewCellDescription(
-      solverNumber,cellInfo,
-      cellType,refinementEvent,
+      solverNumber,cellInfo,cellType,
       level,parentIndex,cellSize,cellOffset);
   return cellInfo;
 }

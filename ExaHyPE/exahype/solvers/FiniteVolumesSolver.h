@@ -409,7 +409,6 @@ public:
     * @param solverNumber    identification number of this solver
     * @param cellInfo        references to the cell descriptions associated with a mesh cell.
     * @param cellType        the cell type the new cell description should become
-    * @param refinementEvent the initial refinement event the new cell description should get
     * @param level           the mesh level the new cell description is associated with
     * @param parentIndex     the cell descriptions index of a parent cell
     * @param cellSize        the size of the mesh cell the new cell description is associated with
@@ -419,7 +418,6 @@ public:
        const int solverNumber,
        CellInfo& cellInfo,
        const CellDescription::Type cellType,
-       const CellDescription::RefinementEvent refinementEvent,
        const int level,
        const int parentIndex,
        const tarch::la::Vector<DIMENSIONS, double>&  cellSize,
@@ -584,32 +582,24 @@ public:
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const int  solverNumber,
-      const bool stillInRefiningMode) override;
+      const int  solverNumber) override;
 
-  bool progressMeshRefinementInLeaveCell(
+  void progressMeshRefinementInLeaveCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const int solverNumber,
-      const bool stillInRefiningMode) override;
+      const int solverNumber) override;
 
   exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
-          const int cellDescriptionsIndex,
-          const int solverNumber,
-          const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
-          const tarch::la::Vector<DIMENSIONS, double>& cellSize,
-          const int level,
-          const bool checkThoroughly) const final override;
-
-  bool attainedStableState(
-      exahype::Cell&                       fineGridCell,
-      exahype::Vertex* const               fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      const int                            solverNumber,
-      const bool                           stillInRefiningMode) const final override;
+      const int cellDescriptionsIndex,
+      const int solverNumber,
+      const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
+      const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+      const int level,
+      const bool checkThoroughly,
+      bool& checkSuccessful) const final override;
 
   void finaliseStateUpdates(
       const int solverNumber,
@@ -902,14 +892,13 @@ public:
   /**
    * Nop. TODO(Dominic): As long as no multi-solver and limiter
    */
-  bool progressMeshRefinementInMergeWithMaster(
+  void progressMeshRefinementInMergeWithMaster(
         const int worker,
         const int localCellDescriptionsIndex,
         const int localElement,
         const int coarseGridCellDescriptionsIndex,
         const tarch::la::Vector<DIMENSIONS, double>& x,
-        const int                                    level,
-        const bool                                   stillInRefiningMode) final override;
+        const int                                    level) final override;
 
   ///////////////////////////////////
   // WORKER->MASTER

@@ -18,17 +18,16 @@
  */
 exahype-project GPR
 
-  peano-kernel-path const          = ./Peano
-  exahype-path const               = ./ExaHyPE
-  output-directory const           = ./ApplicationExamples/TestCases/GPR
-  architecture const               = noarch
-  log-file                         = whatever.log
+  peano-kernel-path const = ./Peano
+  exahype-path const      = ./ExaHyPE
+  output-directory const  = ./ApplicationExamples/TestCases/GPR
+  architecture const      = noarch
 
   computational-domain
     dimension const         = 2
     width                   = 1.0, 0.3
     offset                  = -0.5, -0.15
-    end-time                = 0.01
+    end-time                = 0.1
   end computational-domain
   
   shared-memory
@@ -46,44 +45,43 @@ exahype-project GPR
   end distributed-memory
 
   global-optimisation
-    fuse-algorithmic-steps          = all
-    fuse-algorithmic-steps-rerun-factor   = 0.99
-    fuse-algorithmic-steps-diffusion-factor   = 0.99
-    spawn-predictor-as-background-thread = on
-    spawn-amr-background-threads         = off
-    disable-vertex-exchange-in-time-steps = on
-    time-step-batch-factor           = 0.0
+    fuse-algorithmic-steps                          = all
+    fuse-algorithmic-steps-rerun-factor             = 0.99
+    fuse-algorithmic-steps-diffusion-factor         = 0.99
+    spawn-predictor-as-background-thread            = on
+    spawn-amr-background-threads                    = off
+    disable-vertex-exchange-in-time-steps           = on
+    time-step-batch-factor                          = 0.0
     disable-metadata-exchange-in-batched-time-steps = off
-    double-compression = 0.0
-    spawn-double-compression-as-background-thread = on
+    double-compression                              = 0.0
+    spawn-double-compression-as-background-thread   = on
   end global-optimisation
 
   solver Limiting-ADER-DG GPRSolver
     /* gamma is actually parts of a matrix... */
-    variables const                = rho:1,vel:3,p:1,A:9,j:3
-    order const                    = 3
-    maximum-mesh-size              = 0.05
-    maximum-mesh-depth             = 1
-    time-stepping                  = global
-    type const = nonlinear
-	terms const = flux,ncp,source
-	optimisation const = generic
-    language const                 = C
+    variables const            = rho:1,vel:3,p:1,A:9,j:3
+    order const                = 3
+    maximum-mesh-size          = 0.05
+    maximum-mesh-depth         = 1
+    time-stepping              = global
+    type const                 = nonlinear
+    terms const                = flux,ncp,source
+    optimisation const         = generic
+    language const             = C
     limiter-type const         = musclhancock
     limiter-optimisation const = generic
     limiter-language const     = C
-    dmp-observables const          = 1
-    dmp-relaxation-parameter       = 1e-3 
-    dmp-difference-scaling         = 1e-4 
-    // helper-layers              = 2
+    dmp-observables const      = 1
+    dmp-relaxation-parameter   = 1e-3 
+    dmp-difference-scaling     = 1e-4 
 /*
-    plot vtu::Cartesian::vertices::ascii ConservedWriter
+    plot vtu::Cartesian::cells::limited::ascii ConservedWriter
       variables const = 17
       time      = 0.0
       repeat    = 0.01
       output    = ./vtk-output/conserved
     end plot
-
+    
     plot vtu::Cartesian::vertices::ascii PrimitiveWriter
       variables const = 18
       time      = 0.0

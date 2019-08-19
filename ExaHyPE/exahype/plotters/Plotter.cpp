@@ -720,13 +720,6 @@ void exahype::plotters::Plotter::sendDataToWorker(
     logDebug("sendDataWorker(...)","_time="<<_time);
   }
 
-//  MPI_Send(
-//      plotterDataToSend.data(), plotterDataToSend.size(),
-//      MPI_DOUBLE,
-//      workerRank,
-//      MasterWorkerCommunicationTag,
-//      tarch::parallel::Node::getInstance().getCommunicator());
-
   DataHeap::getInstance().sendData(
       plotterDataToSend.data(), plotterDataToSend.size(),
       workerRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
@@ -737,13 +730,6 @@ void exahype::plotters::Plotter::mergeWithMasterData(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
   std::vector<double> receivedPlotterData(1);
-
-//  MPI_Recv(
-//      receivedPlotterData.data(), receivedPlotterData.size(),
-//      MPI_DOUBLE,
-//      masterRank,
-//      MasterWorkerCommunicationTag,
-//      tarch::parallel::Node::getInstance().getCommunicator(),MPI_STATUS_IGNORE);
 
   DataHeap::getInstance().receiveData(
       receivedPlotterData.data(), receivedPlotterData.size(),

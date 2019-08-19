@@ -74,32 +74,26 @@ class exahype::mappings::AugmentedAMRTreePlot2d {
    */
   static std::map<int, double> _level2OffsetMap;
 
-#if defined(Debug) || defined(Asserts)
-  typedef tarch::plotter::griddata::unstructured::vtk::VTKTextFileWriter
-      UsedWriter;
-#else
-  typedef tarch::plotter::griddata::unstructured::vtk::VTKBinaryFileWriter
-      UsedWriter;
-#endif
+  #if defined(Debug) || defined(Asserts)
+  typedef tarch::plotter::griddata::unstructured::vtk::VTKTextFileWriter UsedWriter;
+  #else
+  typedef tarch::plotter::griddata::unstructured::vtk::VTKBinaryFileWriter UsedWriter;
+  #endif
 
   UsedWriter* _vtkWriter;
-  tarch::plotter::griddata::unstructured::UnstructuredGridWriter::VertexWriter*
-      _vertexWriter;
-  tarch::plotter::griddata::unstructured::UnstructuredGridWriter::CellWriter*
-      _cellWriter;
+  tarch::plotter::griddata::unstructured::UnstructuredGridWriter::VertexWriter* _vertexWriter = nullptr;
+  tarch::plotter::griddata::unstructured::UnstructuredGridWriter::CellWriter*   _cellWriter   = nullptr;
 
-  tarch::plotter::griddata::Writer::CellDataWriter* _cellNumberWriter;
-  tarch::plotter::griddata::Writer::CellDataWriter* _cellTypeWriter;
-  tarch::plotter::griddata::Writer::CellDataWriter* _cellDescriptionIndexWriter;
-  tarch::plotter::griddata::Writer::CellDataWriter* _refinementEventWriter;
-  tarch::plotter::griddata::Writer::CellDataWriter* _cellDataWriter;
-  tarch::plotter::griddata::Writer::CellDataWriter* _augmentationStatusWriter;
-  tarch::plotter::griddata::Writer::CellDataWriter* _communicationStatusWriter;
-  tarch::plotter::griddata::Writer::CellDataWriter* _refinementStatusWriter;
-  tarch::plotter::griddata::Writer::CellDataWriter* _previousRefinementStatusWriter;
-  tarch::plotter::griddata::Writer::CellDataWriter* _hasVirtualChildrenWriter;
+  tarch::plotter::griddata::Writer::CellDataWriter* _cellNumberWriter               = nullptr;
+  tarch::plotter::griddata::Writer::CellDataWriter* _cellTypeWriter                 = nullptr;
+  tarch::plotter::griddata::Writer::CellDataWriter* _cellDescriptionIndexWriter     = nullptr;
+  tarch::plotter::griddata::Writer::CellDataWriter* _cellDataWriter                 = nullptr;
+  tarch::plotter::griddata::Writer::CellDataWriter* _augmentationStatusWriter       = nullptr;
+  tarch::plotter::griddata::Writer::CellDataWriter* _communicationStatusWriter      = nullptr;
+  tarch::plotter::griddata::Writer::CellDataWriter* _refinementStatusWriter         = nullptr;
+  tarch::plotter::griddata::Writer::CellDataWriter* _previousRefinementStatusWriter = nullptr;
 
-  int _cellCounter;
+  int _cellCounter = 0;
 
   static int _snapshotCounter;
 

@@ -55,7 +55,7 @@ void exahype::solvers::FiniteVolumesSolver::eraseCellDescriptions(const int cell
   assertion(Heap::getInstance().isValidIndex(cellDescriptionsIndex));
 
   for (auto& p : Heap::getInstance().getData(cellDescriptionsIndex)) {
-    assertion(p.getType()==CellDescription::Type::Cell);
+    assertion(p.getType()==CellDescription::Type::Leaf);
 
     auto *solver = exahype::solvers::RegisteredSolvers[p.getSolverNumber()];
 
@@ -312,8 +312,7 @@ bool exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInEnterCell(
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-    const int solverNumber,
-    const bool stillInRefiningMode) {
+    const int solverNumber) {
   // Fine grid cell based uniform mesh refinement.
   const int fineGridCellElement =
       tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
@@ -340,8 +339,7 @@ void exahype::solvers::FiniteVolumesSolver::addNewCell(
   CellInfo cellInfo =
       fineGridCell.addNewCellDescription(
               solverNumber,
-              CellDescription::Cell,
-              CellDescription::None,
+              CellDescription::Leaf,
               fineGridVerticesEnumerator.getLevel(),
               coarseGridCellDescriptionsIndex,
               fineGridVerticesEnumerator.getCellSize(),
@@ -356,7 +354,6 @@ void exahype::solvers::FiniteVolumesSolver::addNewCellDescription(
     const int solverNumber,
     CellInfo& cellInfo,
     const exahype::records::FiniteVolumesCellDescription::Type cellType,
-    const exahype::records::FiniteVolumesCellDescription::RefinementEvent refinementEvent,
     const int level,
     const int parentIndex,
     const tarch::la::Vector<DIMENSIONS, double>&  cellSize,
@@ -373,7 +370,6 @@ void exahype::solvers::FiniteVolumesSolver::addNewCellDescription(
   // Default AMR settings
   newCellDescription.setType(cellType);
   newCellDescription.setLevel(level);
-  newCellDescription.setRefinementEvent(refinementEvent);
   // newCellDescription.setHelperCellNeedsToStoreFaceData(false); // TODO(Dominic): Add to FV cell descr.
 
   newCellDescription.setNeighbourMergePerformed((signed char) 0/*implicit conversion*/);
@@ -472,7 +468,7 @@ void exahype::solvers::FiniteVolumesSolver::ensureNoUnnecessaryMemoryIsAllocated
           cellDescription.setExtrapolatedSolutionAverages(nullptr);
         lock.free();
       } break;
-      case CellDescription::Cell:
+      case CellDescription::Type::Leaf:
         // do nothing
         break;
       default:
@@ -494,7 +490,7 @@ void exahype::solvers::FiniteVolumesSolver::checkDataHeapIndex(const CellDescrip
 void exahype::solvers::FiniteVolumesSolver::ensureNecessaryMemoryIsAllocated(
     CellDescription& cellDescription) const {
   switch (cellDescription.getType()) {
-    case CellDescription::Cell:
+    case CellDescription::Type::Leaf:
       if (!DataHeap::getInstance().isValidIndex(cellDescription.getSolutionIndex())) {
         assertion(!DataHeap::getInstance().isValidIndex(cellDescription.getSolutionIndex()));
         // Allocate volume data
@@ -555,34 +551,25 @@ void exahype::solvers::FiniteVolumesSolver::ensureNecessaryMemoryIsAllocated(
   }
 }
 
-bool exahype::solvers::FiniteVolumesSolver::attainedStableState(
-    exahype::Cell&                       fineGridCell,
-    exahype::Vertex* const               fineGridVertices,
-    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-    const int                            solverNumber,
-    const bool                           stillInRefiningMode) const {
-  return true;
-}
-
-bool exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInLeaveCell(
+void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInLeaveCell(
     exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-     const int solverNumber,
-     const bool stillInRefiningMode) {
-  return false;
+     const int solverNumber) {
+  // do nothing
 }
 
 exahype::solvers::Solver::RefinementControl
 exahype::solvers::FiniteVolumesSolver::eraseOrRefineAdjacentVertices(
-        const int cellDescriptionsIndex,
-        const int solverNumber,
-        const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
-        const tarch::la::Vector<DIMENSIONS, double>& cellSize,
-        const int level,
-        const bool checkThoroughly) const {
+    const int cellDescriptionsIndex,
+    const int solverNumber,
+    const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
+    const tarch::la::Vector<DIMENSIONS, double>& cellSize,
+    const int level,
+    const bool checkThoroughly,
+    bool& checkSuccessful) const {
   if ( level < _coarsestMeshLevel ) {
     return RefinementControl::Refine;
   } else {
@@ -601,7 +588,7 @@ void exahype::solvers::FiniteVolumesSolver::finaliseStateUpdates(
 //////////////////////////////////
 
 double exahype::solvers::FiniteVolumesSolver::startNewTimeStep(CellDescription& cellDescription,const bool isFirstTimeStepOfBatch) {
-  assertion1(cellDescription.getType()==exahype::records::FiniteVolumesCellDescription::Cell,cellDescription.toString());
+  assertion1(cellDescription.getType()==exahype::records::FiniteVolumesCellDescription::Type::Leaf,cellDescription.toString());
   // n-1
   if (isFirstTimeStepOfBatch) {
     cellDescription.setPreviousTimeStamp(cellDescription.getTimeStamp());
@@ -624,7 +611,7 @@ void exahype::solvers::FiniteVolumesSolver::updateTimeStepSize(const int solverN
   const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
   if ( element != NotFound ) {
     CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
-    if ( cellDescription.getType()==exahype::records::FiniteVolumesCellDescription::Cell ) {
+    if ( cellDescription.getType()==CellDescription::Type::Leaf ) {
       double* solution = static_cast<double*>(cellDescription.getSolution());
       double admissibleTimeStepSize = stableTimeStepSize(solution, cellDescription.getSize());
       assertion1(std::isfinite(admissibleTimeStepSize),cellDescription.toString());
@@ -640,7 +627,7 @@ void exahype::solvers::FiniteVolumesSolver::updateGlobalObservables(const int so
     CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
 
     if ( _numberOfGlobalObservables > 0 ) {
-      assert(cellDescription.getType()==CellDescription::Type::Cell);
+      assert(cellDescription.getType()==CellDescription::Type::Leaf);
       const double* const luh = static_cast<double*>(cellDescription.getSolution());
       const auto cellCentre   = cellDescription.getOffset() + 0.5 * cellDescription.getSize();
       const auto& cellSize    = cellDescription.getSize();
@@ -666,7 +653,7 @@ void exahype::solvers::FiniteVolumesSolver::adjustSolutionDuringMeshRefinementBo
   VT_begin(adjustSolutionHandle);
   #endif
 
-  assertion(cellDescription.getType()==CellDescription::Cell);
+  assertion(cellDescription.getType()==CellDescription::Type::Leaf);
 
   adjustSolution(cellDescription);
 
@@ -707,7 +694,7 @@ void exahype::solvers::FiniteVolumesSolver::reduce(
   updateAdmissibleTimeStepSize(result._timeStepSize);
 
   if ( _numberOfGlobalObservables > 0 ) {
-    assert(cellDescription.getType()==CellDescription::Type::Cell);
+    assert(cellDescription.getType()==CellDescription::Type::Leaf);
     const double* const luh = static_cast<double*>(cellDescription.getSolution());
     const auto& cellSize    = cellDescription.getSize();
     const auto cellCentre   = cellDescription.getOffset() + 0.5 * cellDescription.getSize();
@@ -944,7 +931,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeNeighboursData(
     waitUntilCompletedLastStep<CellDescription>(cellDescription1,false,false);
     waitUntilCompletedLastStep<CellDescription>(cellDescription2,false,false);
 
-    assertion(cellDescription1.getType()==CellDescription::Cell && cellDescription2.getType()==CellDescription::Cell);
+    assertion(cellDescription1.getType()==CellDescription::Type::Leaf && cellDescription2.getType()==CellDescription::Type::Leaf);
 
     assertion2(cellDescription1.getTimeStamp()<std::numeric_limits<double>::infinity(),cellDescription1.toString(),cellInfo1._cellDescriptionsIndex);
     assertion2(cellDescription1.getTimeStepSize()<std::numeric_limits<double>::infinity(),cellDescription1.toString(),cellInfo1._cellDescriptionsIndex);
@@ -993,7 +980,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithBoundaryData(
   const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
   if ( element != Solver::NotFound ) {
     CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
-    assertion1( cellDescription.getType()==CellDescription::Cell, cellDescription.toString() );
+    assertion1( cellDescription.getType()==CellDescription::Type::Leaf, cellDescription.toString() );
 
     #if !defined(SharedMemoryParallelisation) && !defined(Parallel) && defined(Asserts)
     static int counter = 0;
@@ -1180,7 +1167,7 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToWorkerOrMasterDueToForkOrJ
   logDebug("sendDataToWorkerOrMasterDueToForkOrJoin(...)","solution of solver " << cellDescription.getSolverNumber() << " sent to rank "<<toRank<<
       ", cell: "<< x << ", level: " << level);
 
-  assertion(cellDescription.getType()==CellDescription::Cell);
+  assertion(cellDescription.getType()==CellDescription::Type::Leaf);
   assertion2(DataHeap::getInstance().isValidIndex(cellDescription.getSolutionIndex()),
       cellDescriptionsIndex,cellDescription.toString());
   assertion2(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolutionIndex()),
@@ -1206,7 +1193,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithWorkerOrMasterDataDueToFork
   #endif
   assertion5(Vertex::equalUpToRelativeTolerance(x,center),x,center,level,cellDescription.getLevel(),tarch::parallel::Node::getInstance().getRank());
   assertion2(cellDescription.getLevel()==level,cellDescription.getLevel(),level);
-  assertion(cellDescription.getType()==CellDescription::Cell);
+  assertion(cellDescription.getType()==CellDescription::Type::Leaf);
 
   logDebug("mergeWithRemoteDataDueToForkOrJoin(...)","[solution] receive from rank "<<fromRank<<
            ", cell: "<< x << ", level: " << level);
@@ -1266,16 +1253,14 @@ void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInPrepareSendT
  // do nothing
 }
 
-bool exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInMergeWithMaster(
+void exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInMergeWithMaster(
     const int worker,
     const int localCellDescriptionsIndex,
     const int localElement,
     const int coarseGridCellDescriptionsIndex,
     const tarch::la::Vector<DIMENSIONS, double>& x,
-    const int                                    level,
-    const bool stillInRefiningMode) {
+    const int                                    level) {
   // do nothing
-  return false;
 }
 
 ///////////////////////////////////
@@ -2100,7 +2085,7 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::FiniteVolumesSol
 
   Solver::CellInfo cellInfo(cellDescriptionsIndex);
   addNewCellDescription(
-      0,cellInfo,CellDescription::Type::Cell,CellDescription::RefinementEvent::None,
+      0,cellInfo,CellDescription::Type::Leaf,
       getMaximumAdaptiveMeshLevel(), /* needs to be on the fine grid for the limiter cells */-1,
       getCoarsestMeshSize(),
       _domainOffset);
@@ -2110,7 +2095,6 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::FiniteVolumesSol
 
   adjustSolutionDuringMeshRefinementBody(cellDescription,true);
   updateTimeStepSize(0,cellInfo);
-  cellDescription.setRefinementEvent(CellDescription::RefinementEvent::None);
   cellDescription.setNeighbourMergePerformed(true);
 
   // MEASUREMENTS

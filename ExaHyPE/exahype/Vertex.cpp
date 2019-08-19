@@ -116,7 +116,8 @@ exahype::solvers::Solver::RefinementControl exahype::Vertex::evaluateRefinementC
     const tarch::la::Vector<DIMENSIONS, double>& vertexOffset,
     const int                                    level,
     const tarch::la::Vector<DIMENSIONS, double>& cellSize,
-    const bool                                   checkThoroughly) const {
+    const bool                                   checkThoroughly,
+    bool&                                        checkSuccessful) const {
   bool canErase   = true;
   bool mustRefine = false;
   dfor2(pos)
@@ -129,10 +130,13 @@ exahype::solvers::Solver::RefinementControl exahype::Vertex::evaluateRefinementC
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
       const int cellDescriptionsIndex = _vertexData.getCellDescriptionsIndex(posScalar);
+      bool geometryInfoCorrect = false;
       exahype::solvers::Solver::RefinementControl control =
-          solver->eraseOrRefineAdjacentVertices(cellDescriptionsIndex,solverNumber,cellOffset,cellSize,level,checkThoroughly);
-      canErase   &= (control==exahype::solvers::Solver::RefinementControl::Erase);
-      mustRefine |= (control==exahype::solvers::Solver::RefinementControl::Refine);
+          solver->eraseOrRefineAdjacentVertices(
+              cellDescriptionsIndex,solverNumber,cellOffset,cellSize,level,checkThoroughly,geometryInfoCorrect);
+      mustRefine      |= (control==exahype::solvers::Solver::RefinementControl::Refine);
+      canErase        &= (control==exahype::solvers::Solver::RefinementControl::Erase);
+      checkSuccessful &= geometryInfoCorrect;
     }
   enddforx
 
@@ -228,8 +232,8 @@ void exahype::Vertex::validateNeighbourhood(
   // ADER-DG
   for (auto& p : cellInfo._ADERDGCellDescriptions) {
     if (
-        (p.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell ||
-         p.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Ancestor)
+        (solvers::ADERDGSolver::isLeaf(p) ||
+         solvers::ADERDGSolver::isParent(p))
         &&
         cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
     ) {
@@ -240,8 +244,7 @@ void exahype::Vertex::validateNeighbourhood(
   // FV
   for (auto& p : cellInfo._FiniteVolumesCellDescriptions) {
     if (
-        p.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell
-        &&
+        p.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Leaf &&
         cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
     ) {
       logError("validateNeighbourhood(...)","cell at index="<<cellDescriptionsIndex1<<" is at face="<<face._faceIndex<<" next to empty cell: cell="<<p.toString());

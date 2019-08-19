@@ -614,6 +614,8 @@ void Euler::EulerSolver_ADERDG::mergeGlobalObservables(
   
 void Euler::EulerSolver_ADERDG::beginTimeStep(const double minTimeStamp,const bool isFirstTimeStepOfBatchOrNoBatch) {
   ReadOnlyGlobalObservables observables = getGlobalObservables();
-  logInfo("beginTimeStep(...)","observables.dgcells()="<<observables.dgcells());
-  logInfo("beginTimeStep(...)","observables.fvcells()="<<observables.fvcells());
+  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+    logInfo("beginTimeStep(...)","observables.dgcells()="<<observables.dgcells());
+    logInfo("beginTimeStep(...)","observables.fvcells()="<<observables.fvcells());
+  }
 }

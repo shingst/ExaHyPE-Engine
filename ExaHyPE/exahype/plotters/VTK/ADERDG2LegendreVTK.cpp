@@ -508,7 +508,7 @@ void exahype::plotters::ADERDG2LegendreVTK::plotPatch(const int solverNumber,sol
   const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   auto& aderdgCellDescription  = cellInfo._ADERDGCellDescriptions[element];
 
-  if (aderdgCellDescription.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell) {
+  if (aderdgCellDescription.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Leaf) {
     double* solution = static_cast<double*>(aderdgCellDescription.getSolution());
     const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch = aderdgCellDescription.getOffset();
 

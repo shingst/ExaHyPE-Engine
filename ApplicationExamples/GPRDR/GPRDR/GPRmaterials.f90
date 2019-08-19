@@ -56,12 +56,19 @@ CONTAINS
 
         do iMAT=1,nMAT
             locXI(iMAT)=max(0., min(1.,mixXI(iMAT)))
-            if(locXI(iMAT)>0.5) then
-                locXI(iMAT)=1.0   
-            else
-                locXI(iMAT)=0.0  
-            endif
+            !if(locXI(iMAT)>0.5) then
+            !    locXI(iMAT)=1.0   
+            !else
+            !    locXI(iMAT)=0.0  
+            !endif
         END DO
+		if(locXI(1)>0.5) then
+			locXI(1)=1.0
+			locXI(2)=1.0-locXI(1)
+		else
+		    locXI(2)=1.0
+			locXI(1)=1.0-locXI(2)
+		end if
         XITOT=sum(locXI)
         XImean=locXI/XITOT
         
@@ -125,6 +132,9 @@ CONTAINS
 		if(locXI(1)>0.5) then
 			locXI(1)=1.0
 			locXI(2)=1.0-locXI(1)
+			else
+		    locXI(2)=1.0
+			locXI(1)=1.0-locXI(2)
 		end if
         XITOT=sum(locXI)
         XImean=locXI/XITOT

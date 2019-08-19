@@ -57,12 +57,6 @@ private:
   static tarch::logging::Log _log;
 
   /**
-   * A state indicating if the mesh refinement has attained a stable state
-   * for all solver.
-   */
-  bool _allSolversAttainedStableState = false;
-
-  /**
    * A state indicating if vertical (master-worker) exchange
    * of face data is required during the time stepping iterations
    * for any of the registered solvers.

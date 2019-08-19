@@ -21,10 +21,10 @@
     ]
   },
   "shared_memory": {
-    "cores": 16,
+    "cores": 4,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
-    "background_job_consumers": 15
+    "background_job_consumers": 3
   },
   "distributed_memory": {
     "timeout": 6000,
@@ -32,7 +32,7 @@
     "buffer_size": 6400,
     "load_balancing_strategy": "hotspot",
     "node_pool_strategy": "fair",
-    "ranks_per_node": 1
+    "ranks_per_node": 4
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",

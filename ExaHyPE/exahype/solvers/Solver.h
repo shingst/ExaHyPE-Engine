@@ -410,6 +410,14 @@ protected:
   void glueTogether(int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const;
 
 public:
+
+  /**
+   * A flag that memorises if all solvers are stable.
+   * It is reset to false by the MeshRefinement mapping's
+   * beginIteration(...) method.
+   */
+  static std::atomic<bool> AllSolversAreStable;
+
   #ifdef USE_ITAC
   /**
    * These handles are used to trace solver events with Intel Trace Analyzer and Collector.
@@ -1756,8 +1764,7 @@ public:
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const int  solverNumber,
-      const bool stillInRefiningMode) = 0;
+      const int  solverNumber) = 0;
 
   /**
    * Refinement routine that should be used for
@@ -1766,24 +1773,27 @@ public:
    * \return If a new compute cell was introduced
    * as part of a refinement operation.
    */
-  virtual bool progressMeshRefinementInLeaveCell(
+  virtual void progressMeshRefinementInLeaveCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const int solverNumber,
-      const bool stillInRefiningMode) = 0;
+      const int solverNumber) = 0;
 
   /**
    * \return if the vertices around a cell should be erased, kept,
    * or refined.
    *
-   * @param checkThoroughly If set to true, check that the indices found in the
-   *                        adjacency map are actual heap indices and that the
-   *                        geometry information of the cell descriptions found at
-   *                        the heap index indicates that these cells are adjacent
-   *                        to the vertex.
+   * @param[in] checkThoroughly If set to true, check that the indices found in the
+   *                            adjacency map are actual heap indices and that the
+   *                            geometry information of the cell descriptions found at
+   *                            the heap index indicates that these cells are adjacent
+   *                            to the vertex.
+   *
+   * @param[inout] checkSuccessful  indicates that the cell description's geometry
+   *                            information does not match that of the vertex. This implies
+   *                            that the adjacency lists are not up to date yet.
    */
   virtual exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
       const int cellDescriptionsIndex,
@@ -1791,25 +1801,8 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
       const tarch::la::Vector<DIMENSIONS, double>& cellSize,
       const int level,
-      const bool checkThoroughly) const = 0;
-
-  /**
-   * Returns true if the solver has attained
-   * a stable state on the cell description
-   *
-   * @param fineGridCell               a fine grid cell
-   * @param fineGridVertices           vertices surrounding the fine grid cell
-   * @param fineGridVerticesEnumerator a enumerator for the fine grid vertices
-   * @param solverNumber               a solver number
-   * @param stillInRefiningMode        indicates if the mesh refinement
-   *                                   is still in refining mode (true) or switched to coarsening mode (false).
-   */
-  virtual bool attainedStableState(
-      exahype::Cell&                       fineGridCell,
-      exahype::Vertex* const               fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      const int                            solverNumber,
-      const bool                           stillInRefiningMode) const = 0;
+      const bool checkThoroughly,
+      bool& checkSuccessful) const = 0;
 
   /**
    * This method is called after the
@@ -2077,14 +2070,13 @@ public:
    *
    * Veto erasing requests from the coarse grid cell as well.
    */
-  virtual bool progressMeshRefinementInMergeWithMaster(
+  virtual void progressMeshRefinementInMergeWithMaster(
       const int worker,
       const int localCellDescriptionsIndex,
       const int localElement,
       const int coarseGridCellDescriptionsIndex,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level,
-      const bool                                   stillInRefiningMode) = 0;
+      const int                                    level) = 0;
 
   /**
    * If a cell description was allocated at heap address @p cellDescriptionsIndex

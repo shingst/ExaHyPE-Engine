@@ -28,9 +28,12 @@ event-mapping: // -DEC: consider to move the computation of boundary extrapolate
 
 event-mapping: 
   name: LoadBalancing
+
+event-mapping:
+  name: Broadcast
  
 event-mapping:
-  name: BroadcastAndDropNeighbourMessages
+  name: DropNeighbourMessages
   
 event-mapping:
   name: MergeNeighbours
@@ -116,9 +119,15 @@ adapter:
 
 // Additional adapters for limiter status spreading and recomputation
 adapter: 
-  name: BroadcastAndDropNeighbourMessages
-  merge-with-user-defined-mapping: BroadcastAndDropNeighbourMessages
+  name: Broadcast
+  merge-with-user-defined-mapping: Broadcast
 
+adapter:
+  name: BroadcastAndDropNeighbourMessages
+  merge-with-user-defined-mapping: Broadcast
+  merge-with-user-defined-mapping: DropNeighbourMessages
+  
+// Additional adapters for limiter status spreading and recomputation
 adapter:
   name: RefinementStatusSpreading
   merge-with-user-defined-mapping: RefinementStatusSpreading

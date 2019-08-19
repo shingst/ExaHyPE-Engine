@@ -32,7 +32,7 @@ namespace exahype {
 
 /** Nop */
 class exahype::mappings::Empty {
-  private:
+  public:
 
     #ifdef USE_ITAC
     /**
@@ -41,7 +41,6 @@ class exahype::mappings::Empty {
     static int iterationHandle;
     #endif
 
-  public:
     /** Nop */
     peano::MappingSpecification       touchVertexLastTimeSpecification(int level) const;
     peano::MappingSpecification       touchVertexFirstTimeSpecification(int level) const;

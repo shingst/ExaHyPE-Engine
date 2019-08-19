@@ -1,8 +1,7 @@
-
 template <class CellDescription,class CellDescriptionHeap>
 exahype::solvers::Solver::SubcellPosition
-exahype::amr::computeSubcellPositionOfDescendant(const CellDescription& pChild) {
-  assertion1(pChild.getType()==CellDescription::Descendant,pChild.toString());
+exahype::amr::computeSubcellPositionOfVirtualCell(const CellDescription& pChild) {
+  assertion1(pChild.getType()==CellDescription::Type::Virtual,pChild.toString());
   assertion1(CellDescriptionHeap::getInstance().isValidIndex(
       pChild.getParentIndex()),pChild.getParentIndex());
 
@@ -21,17 +20,17 @@ exahype::amr::computeSubcellPositionOfDescendant(const CellDescription& pChild) 
     }
     ++parentElement;
   }
-  // Descendant pChild must always have
+  // Virtual pChild must always have
   // a parent in the parent's cell description array.
   assertion1(pParent!=0,pChild.toString());
 
-  // 2. If the current parent is a Descendant try to determine iteratively the next Cell
-  // or the top most Descendant.
-  while ( pParent->getType()==CellDescription::Descendant ) {
+  // 2. If the current parent is a Virtual try to determine iteratively the next Cell
+  // or the top most Virtual.
+  while ( pParent->getType()==CellDescription::Type::Virtual ) {
     const int currentParentIndex =
         pParent->getParentIndex();
     assertion1(CellDescriptionHeap::getInstance().isValidIndex(
-        currentParentIndex),currentParentIndex); // Must always hold if the current parent is an (Empty)Descendant
+        currentParentIndex),currentParentIndex); // Must always hold if the current parent is an (Empty)Virtual
     int parentElement=0;
     for (auto& p : CellDescriptionHeap::getInstance().getData(currentParentIndex)) {
       if (p.getSolverNumber()==pChild.getSolverNumber()) {
@@ -43,8 +42,12 @@ exahype::amr::computeSubcellPositionOfDescendant(const CellDescription& pChild) 
       ++parentElement;
     }
   }
-  assertion(pParent->getType() == CellDescription::Descendant ||
-            pParent->getType() == CellDescription::Cell);
+  assertion(pParent->getType() == CellDescription::Virtual ||
+            pParent->getType()==CellDescription::Type::Leaf ||
+            pParent->getType()==CellDescription::Type::LeafChecked ||
+            pParent->getType()==CellDescription::Type::LeafInitiatesRefining ||
+            pParent->getType()==CellDescription::Type::LeafRefines ||
+            pParent->getType()==CellDescription::Type::LeafProlongates);
 
   subcellPosition.subcellIndex =
       computeSubcellIndex(

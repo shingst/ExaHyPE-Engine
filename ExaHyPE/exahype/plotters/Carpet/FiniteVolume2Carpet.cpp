@@ -76,7 +76,7 @@ void exahype::plotters::FiniteVolume2Carpet::init(const std::string& filename, i
 void exahype::plotters::FiniteVolume2Carpet::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {
   const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
   auto& cellDescription  = cellInfo._FiniteVolumesCellDescriptions[element];
-	if (cellDescription.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell) {
+	if (cellDescription.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Leaf) {
 		double* solution = static_cast<double*>(cellDescription.getSolution());
 
 		plotPatch(

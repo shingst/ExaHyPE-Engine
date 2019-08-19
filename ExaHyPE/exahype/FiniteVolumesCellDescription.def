@@ -4,6 +4,7 @@
 /// Version: 13/11/15
 /////////////////////////////////////////////////
 #include "peano/utils/Globals.h"
+#include "exahype/util/CopyableAtomic.h"
 
 Packed-Type: int;
 
@@ -24,12 +25,6 @@ class exahype::records::FiniteVolumesCellDescription {
    * Bitsets cannot be modified by multiple threads simultaneously.
    */
   parallelise persistent signed char neighbourMergePerformed[DIMENSIONS_TIMES_TWO];
-  
-  /**
-     * Flag indicating if the last operation was completed for this cell description
-     * and its data can be used for the next operations.
-     */
-    persistent packed bool hasCompletedLastStep;
 
   /**
   * The time step size this cell description is working with.
@@ -152,9 +147,7 @@ class exahype::records::FiniteVolumesCellDescription {
 
   enum Type {
     Erased,
-    Ancestor,
-    Cell,
-    Descendant
+    Leaf
   };
 
   /**
@@ -175,109 +168,5 @@ class exahype::records::FiniteVolumesCellDescription {
    * this ADERDGCellDescription or "-1" if no parent is specified.
    */
   parallelise persistent int parentIndex;
-
-  enum RefinementEvent {
-    /**
-     * In this state, the cell description is ready to
-     * perform operations of the ADER-DG method, e.g.,
-     * the Riemann solve, the solution update etc.
-     */
-    None,
-    /**
-     * If this refinement event is set, 
-     * the parent Ancestor asks its
-     * children if they want to be erased. If not so,
-     * the children change the RefinementEvent 
-     * of the parent to None. If so,
-     * they leave the parent's RefinementEvent
-     * unchanged. 
-     */
-    ErasingChildrenRequested,
-    /**
-     * After all children of a parent left
-     * the parent's refinement event ErasingChildrenRequested
-     * unchanged, the parent changes its state
-     * to this event. In the next iteration
-     * the parent's children need to restrict their
-     * solution up to the parent and
-     * the child cell descriptions need to be
-     * removed from the grid.
-     */
-    ErasingChildren,   
-    /**
-     * Change children to descendants.
-     * An Ancestor cell description can adopt 
-     * this status if its children can be erased 
-     * w.r.t. the physics based refinement criterion
-     * however one of the children is parent itself
-     * to children of type Descendant.
-     * In this case, we do not erase the children
-     * of the Ancestor but change their type to (Empty)Descendant.
-     */
-    ChangeChildrenToDescendantsRequested,
-    /**
-     * Change children to descendants.
-     * An Ancestor cell description can adopt 
-     * this status if its children can be erased 
-     * w.r.t. the physics based refinement criterion
-     * however one of the children is parent itself
-     * to children of type Descendant.
-     * In this case, we do not erase the children
-     * of the Ancestor but change their type to (Empty)Descendant.
-     */
-    ChangeChildrenToDescendants,
-    
-    RefiningRequested,           
-    Refining,                    
-    
-    /**
-     * This refinement event is set on 
-     * a cell description of type 
-     * Descendant or Cell in every 
-     * grid setup iteration
-     * if no other event is set. 
-     * 
-     * If the cell description has children,
-     * the first traversed child sets
-     * this event to DeaugmentingChildrenRequestedTriggered.
-     * 
-     * We have to rely on this mechanism since we
-     * cannot guess based on the cell description type if
-     * a cell description has children as opposed to the
-     * physics based refinement where we have
-     * Ancestor and EmptyAncestor parent cell descriptions and
-     * Cell child cell descriptions.
-     */
-    DeaugmentingChildrenRequestedTriggered,
-    
-    /**
-     * If this refinement event is set, 
-     * the parent Descendant or Cell asks its
-     * children if they want to be deaugmented. If not so,
-     * the children change the RefinementEvent 
-     * of the parent to None. If so,
-     * they leave the parent's RefinementEvent
-     * unchanged. 
-     */
-    DeaugmentingChildrenRequested,
-    /**
-     * After all children of a parent left
-     * the parent's refinement event DeaugmentingChildrenRequested
-     * unchanged, the parent changes its state
-     * to this event. In the next iteration
-     * the parent's children need to restrict their
-     * solution up to the parent and
-     * the child cell descriptions need to be
-     * removed from the grid.
-     */
-    DeaugmentingChildren, 
-    AugmentingRequested,         
-    Augmenting                   
-  };
-
-  /**
-   * Returns the refinement event.
-   */
-  parallelise persistent RefinementEvent refinementEvent;
   ///@}
 };

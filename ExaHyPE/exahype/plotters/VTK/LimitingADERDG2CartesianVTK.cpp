@@ -448,7 +448,7 @@ void exahype::plotters::LimitingADERDG2CartesianVTK::plotPatch(const int solverN
   const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   auto& solverPatch  = cellInfo._ADERDGCellDescriptions[element];
 
-  if ( solverPatch.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell ) {
+  if ( solverPatch.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Leaf ) {
     int refinementStatus         = solverPatch.getRefinementStatus();
     int previousRefinementStatus = solverPatch.getPreviousRefinementStatus();
 

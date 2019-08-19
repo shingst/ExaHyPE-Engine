@@ -34,7 +34,8 @@ class QuadratureModel(AbstractModelBaseClass):
             QuadratureWeights, QuadratureNodes = MathsUtils.getGaussLegendre(self.context["nDof"])
             OtherQuadratureWeights, OtherQuadratureNodes = MathsUtils.getGaussLobatto(self.context["nDof"])
         elif self.context["quadratureType"] == "Gauss-Lobatto":
-            raise ValueError("Quadrature type "+self.context["quadratureType"]+" not supported." ) #TODO JMG
+            QuadratureWeights, QuadratureNodes = MathsUtils.getGaussLobatto(self.context["nDof"])
+            OtherQuadratureWeights, OtherQuadratureNodes = MathsUtils.getGaussLobatto(self.context["nDof"])
         else:
             raise ValueError("Quadrature type "+self.context["quadratureType"]+" not supported." )
         

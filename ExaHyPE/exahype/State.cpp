@@ -62,14 +62,6 @@ bool exahype::State::getAllSolversAttainedStableState() const {
   return _stateData.getAllSolversAttainedStableState();
 }
 
-void exahype::State::setMeshRefinementIsInRefiningMode(const bool state) {
-  _stateData.setMeshRefinementIsInRefiningMode(state);
-}
-
-bool exahype::State::getMeshRefinementIsInRefiningMode() const {
-  return _stateData.getMeshRefinementIsInRefiningMode();
-}
-
 void exahype::State::setStableIterationsInARow(const int value) {
   _stateData.setStableIterationsInARow(value);
 }
@@ -196,38 +188,23 @@ exahype::State::RefinementAnswer exahype::State::mayRefine(bool isCreationalEven
 
 
 bool exahype::State::continueToConstructGrid() {
-  const int levelDelta =
-      (exahype::solvers::Solver::getMaximumAdaptiveMeshLevelOfAllSolvers() -
-      exahype::solvers::Solver::getCoarsestMeshLevelOfAllSolvers());
-  static const int iterationsForErasingToConverge =
-      3*levelDelta  +
-      std::max(exahype::solvers::Solver::getMaxRefinementStatus(),3);
-  static const int iterationsForRefiningToConverge =
-      2*levelDelta +
-      std::max(exahype::solvers::Solver::getMaxRefinementStatus(),3);
+  static const int stableIterationsToTerminate =
+      std::max(exahype::solvers::Solver::getMaxRefinementStatus(),3 /* iterations for fork */); // adjacency mapping must converge too TODO add adjacency map check to stability criterion
 
   // convergence analysis
   if ( getAllSolversAttainedStableState() ) {
     setStableIterationsInARow( getStableIterationsInARow()+1 );
-    if (  getMeshRefinementIsInRefiningMode() &&
-        getStableIterationsInARow() > iterationsForRefiningToConverge ) {
-      setMeshRefinementIsInRefiningMode(false);
-      setStableIterationsInARow(0);
-    }
   } else {
     setStableIterationsInARow(0);
   }
   const bool meshRefinementHasConverged =
       isGridBalanced()                     &&
-      !getMeshRefinementIsInRefiningMode() &&
-      (mappings::MeshRefinement::IsInitialMeshRefinement ||
-          getStableIterationsInARow() > iterationsForErasingToConverge);
+      getStableIterationsInARow() > stableIterationsToTerminate;
 
   if (!meshRefinementHasConverged) {
     logInfo( "continueToConstructGrid(...)",
         "grid construction not yet finished. grid balanced=" << isGridBalanced() <<
         ", grid stationary=" << isGridStationary() <<
-        ", still in refining mode=" << getMeshRefinementIsInRefiningMode() <<
         ", initial refinement=" << mappings::MeshRefinement::IsInitialMeshRefinement <<
         ", stable iterations in a row=" << getStableIterationsInARow() <<
         ", all solvers attained stable state=" << getAllSolversAttainedStableState() <<
@@ -302,6 +279,7 @@ bool exahype::State::startAndFinishSynchronousExchangeManually(const exahype::re
       action==exahype::records::RepositoryState::UseAdapterFusedTimeStep) &&
       predictionFusedTimeStepCondition)
       ||
+      action==exahype::records::RepositoryState::UseAdapterBroadcast ||
       action==exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages;
 }
 
@@ -314,6 +292,7 @@ bool exahype::State::startAndFinishNeighbourExchangeManually(const exahype::reco
       action==exahype::records::RepositoryState::UseAdapterFusedTimeStep) &&
       predictionFusedTimeStepCondition)
       ||
+      action==exahype::records::RepositoryState::UseAdapterBroadcast ||
       action==exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages;
 }
 

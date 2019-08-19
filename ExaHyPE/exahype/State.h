@@ -236,15 +236,6 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
   /**
    * \see exahype/State.def
    */
-  void setMeshRefinementIsInRefiningMode(const bool state);
-  /**
-   * \see exahype/State.def
-   */
-  bool getMeshRefinementIsInRefiningMode() const;
-
-  /**
-   * \see exahype/State.def
-   */
   void setStableIterationsInARow(const int value);
   /**
    * \see exahype/State.def

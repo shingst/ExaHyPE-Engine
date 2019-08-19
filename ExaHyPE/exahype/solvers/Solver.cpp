@@ -26,7 +26,6 @@
 #include "peano/heap/CompressedFloatingPointNumbers.h"
 
 #include <algorithm>
-#include <mm_malloc.h> //g++
 #include <cstring> //memset
 
 #include "../../../Peano/tarch/multicore/Jobs.h"
@@ -91,6 +90,8 @@ double exahype::solvers::Solver::PipedCompressedBytes = 0;
 #endif
 
 tarch::logging::Log exahype::solvers::Solver::_log( "exahype::solvers::Solver");
+
+std::atomic<bool> exahype::solvers::Solver::AllSolversAreStable = ATOMIC_VAR_INIT(false);
 
 #ifdef Parallel
 int exahype::solvers::Solver::MasterWorkerCommunicationTag = MPI_ANY_TAG;
