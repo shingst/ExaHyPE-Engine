@@ -4,6 +4,7 @@
 
 #include "exahype/offloading/PerformanceMonitor.h"
 #include "exahype/offloading/OffloadingAnalyser.h"
+#include "exahype/offloading/OffloadingProfiler.h"
 
 exahype::solvers::ADERDGSolver::StealablePredictionJob::StealablePredictionJob(
     ADERDGSolver& solver,

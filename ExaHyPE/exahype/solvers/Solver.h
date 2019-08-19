@@ -1179,14 +1179,15 @@ public:
   bool hasTriggeredEmergency = false;
   bool offloadingTreatment = true;
 
-  exahype::solvers::ADERDGSolver* solver = nullptr; 
+  exahype::solvers::ADERDGSolver* solver = nullptr;
 
   switch ( this->getType() ) {
     case solvers::Solver::Type::ADERDG:
        solver = static_cast<exahype::solvers::ADERDGSolver*>(const_cast<exahype::solvers::Solver*>(this));
        break;
     case solvers::Solver::Type::LimitingADERDG:
-       solver = static_cast<const exahype::solvers::LimitingADERDGSolver*>(this)->_solver.get();
+       solver = static_cast<exahype::solvers::LimitingADERDGSolver*>
+                       (const_cast<exahype::solvers::Solver*>(this))->_solver.get();
        break;    
     case solvers::Solver::Type::FiniteVolumes:
        solver = nullptr;
