@@ -1186,9 +1186,13 @@ public:
        solver = static_cast<exahype::solvers::ADERDGSolver*>(const_cast<exahype::solvers::Solver*>(this));
        break;
     case solvers::Solver::Type::LimitingADERDG:
+      //this is really strange: normal casts don't work as the type seems to be incomplete
+      //auto tmpsolver = (reinterpret_cast<exahype::solvers::LimitingADERDGSolver*>( this)); //->_solver.get();
+      //tmpsolver->areRollbacksPossible();
+      //break;
        solver = static_cast<exahype::solvers::LimitingADERDGSolver*>
                        (const_cast<exahype::solvers::Solver*>(this))->_solver.get();
-       break;    
+       break;
     case solvers::Solver::Type::FiniteVolumes:
        solver = nullptr;
        offloadingTreatment = false;

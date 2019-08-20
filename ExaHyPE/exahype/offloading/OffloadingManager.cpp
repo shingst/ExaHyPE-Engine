@@ -31,6 +31,7 @@
 #include "exahype/offloading/AggressiveCCPDistributor.h"
 #include "exahype/offloading/AggressiveHybridDistributor.h"
 #include "exahype/offloading/PerformanceMonitor.h"
+#include "exahype/solvers/LimitingADERDGSolver.h"
 
 #ifdef USE_ITAC
 #include "VT.h"

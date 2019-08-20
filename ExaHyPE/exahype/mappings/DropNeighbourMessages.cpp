@@ -12,6 +12,14 @@
  
 #include "exahype/mappings/DropNeighbourMessages.h"
 
+//Workaround: we need to define solver classes before the template
+//instantiation of waitUntilLastStepCompleted as otherwise the compiler
+//complains about incomplete types
+#if defined(DistributedOffloading)
+#include "exahype/solvers/ADERDGSolver.h"
+#include "exahype/solvers/LimitingADERDGSolver.h"
+#endif
+
 peano::CommunicationSpecification exahype::mappings::DropNeighbourMessages::communicationSpecification() const {
   return peano::CommunicationSpecification(
         peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,

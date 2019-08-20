@@ -26,6 +26,7 @@
 #include "exahype/offloading/PerformanceMonitor.h"
 #include "exahype/offloading/OffloadingAnalyser.h"
 #include "exahype/solvers/ADERDGSolver.h"
+#include "exahype/solvers/LimitingADERDGSolver.h"
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/tbb/Jobs.h"
 

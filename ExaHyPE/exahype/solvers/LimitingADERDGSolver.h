@@ -15,6 +15,7 @@
 #ifndef LIMITEDADERDGSOLVER_H_
 #define LIMITEDADERDGSOLVER_H_
 
+#include "exahype/solvers/Solver.h"
 #include "exahype/solvers/ADERDGSolver.h"
 #include "exahype/solvers/FiniteVolumesSolver.h"
 
