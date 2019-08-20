@@ -103,6 +103,11 @@
 #endif
 
 #include "exahype/offloading/OffloadingProfiler.h"
+
+#if defined (ReplicationSaving)
+#include "teaMPI.h"
+#endif
+
 #endif
 
 tarch::logging::Log exahype::runners::Runner::_log("exahype::runners::Runner");
@@ -299,6 +304,20 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     // Create a new MPI communicator for offloading related MPI communication
     exahype::offloading::OffloadingManager::getInstance().createMPICommunicator(); 
 
+#if defined(ReplicationSaving)
+    int nteams = TMPI_GetInterTeamCommSize();
+    MPI_Comm interTeamComm = TMPI_GetInterTeamComm();
+
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    int rankInterComm;
+    PMPI_Comm_rank(interTeamComm, &rankInterComm);
+    int team = TMPI_GetTeamNumber();
+
+
+    logInfo("initDistributedMemoryConfiguration()", " teams: "<<nteams<<", rank in team "
+    		                                         <<team<<" : "<<rank<<", team rank in intercomm: "<<rankInterComm);
+#endif
 
 #if defined(OffloadingStrategyStaticHardcoded)
     exahype::offloading::StaticDistributor::getInstance().loadDistributionFromFile(_parser.getOffloadingInputFile());
