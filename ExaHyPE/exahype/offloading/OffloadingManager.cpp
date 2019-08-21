@@ -86,6 +86,33 @@ exahype::offloading::OffloadingManager::~OffloadingManager() {
   delete[] _localBlacklist;
 }
 
+#if defined(ReplicationSaving)
+
+void exahype::offloading::OffloadingManager::setTMPIInterTeamCommunicator(MPI_Comm comm) {
+  _interTeamComm = comm;
+}
+
+MPI_Comm exahype::offloading::OffloadingManager::getTMPIInterTeamCommunicator() {
+  return _interTeamComm;
+}
+
+void exahype::offloading::OffloadingManager::setTMPITeamSize(int team) {
+  _team = team;
+}
+
+int exahype::offloading::OffloadingManager::getTMPITeamSize() {
+  return _team;
+}
+
+void exahype::offloading::OffloadingManager::setTMPIInterTeamRank(int interTeamRank) {
+  _interTeamRank = interTeamRank;
+}
+
+int exahype::offloading::OffloadingManager::getTMPIInterTeamRank(){
+  return _interTeamRank;
+}
+#endif
+
 void exahype::offloading::OffloadingManager::createMPICommunicator() {
   int ierr = MPI_Comm_dup(MPI_COMM_WORLD, &_offloadingComm);
   assertion(ierr==MPI_SUCCESS);

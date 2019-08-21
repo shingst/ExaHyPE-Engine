@@ -314,6 +314,9 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     PMPI_Comm_rank(interTeamComm, &rankInterComm);
     int team = TMPI_GetTeamNumber();
 
+    exahype::offloading::OffloadingManager::getInstance().setTMPIInterTeamCommunicator(interTeamComm);
+    exahype::offloading::OffloadingManager::getInstance().setTMPITeamSize(nteams);
+    exahype::offloading::OffloadingManager::getInstance().setTMPIInterTeamRank(rankInterComm);
 
     logInfo("initDistributedMemoryConfiguration()", " teams: "<<nteams<<", rank in team "
     		                                         <<team<<" : "<<rank<<", team rank in intercomm: "<<rankInterComm);

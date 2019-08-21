@@ -38,7 +38,9 @@ namespace exahype {
       send = 0,
       sendBack = 1,
       receive = 2,
-      receiveBack = 3
+      receiveBack = 3,
+	  sendReplica = 4,
+	  receiveReplica = 5
     };
   }
 }
@@ -212,6 +214,15 @@ class exahype::offloading::OffloadingManager {
      */
     MPI_Comm _offloadingCommMapped;
 
+#if defined(ReplicationSaving)
+    /**
+     * Communicator for communication between replicating ranks.
+     */
+    MPI_Comm _interTeamComm;
+	int _team;
+	int _interTeamRank;
+#endif
+
     /**
      * The request handler job aims to distribute the work that is to be done
      * when a request group is finished evenly among the TBB worker threads.
@@ -301,6 +312,17 @@ class exahype::offloading::OffloadingManager {
     void progressAnyRequests();
     bool progressReceiveBackRequests();
     bool hasOutstandingRequestOfType(RequestType requestType);
+
+#if defined (ReplicationSaving)
+    void setTMPIInterTeamCommunicator(MPI_Comm comm);
+    MPI_Comm getTMPIInterTeamCommunicator();
+
+    void setTMPITeamSize(int team);
+    int getTMPITeamSize();
+
+    void setTMPIInterTeamRank(int interTeamRank);
+    int getTMPIInterTeamRank();
+#endif
 
     /**
      * Creates offloading MPI communicators.

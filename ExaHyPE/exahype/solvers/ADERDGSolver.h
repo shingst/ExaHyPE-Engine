@@ -876,6 +876,7 @@ private:
 
 #if defined(DistributedOffloading)
 
+
 #ifdef OffloadingUseProgressTask
   /**
    * Used to track sending ranks from which my rank currently receives tasks.
@@ -960,6 +961,7 @@ private:
       ~StealablePredictionJobData();
   };
 
+
   /**
    * These maps are needed for deallocating data that belongs to offloaded tasks
    * and triggering a finished event on the cell description when a STP has finished
@@ -971,6 +973,9 @@ private:
   tbb::concurrent_hash_map<int, double*> _mapTagToMetaData;
   // Used in order to time offloaded tasks.
   tbb::concurrent_hash_map<int, double> _mapTagToOffloadTime;
+#if defined(ReplicationSaving)
+  tbb::concurrent_hash_map<int, StealablePredictionJobData*> _mapTagToReplicationSendData;
+#endif
   
   /**
    * These vectors are used to avoid duplicate
@@ -1044,6 +1049,12 @@ private:
     	  exahype::solvers::Solver* solver,
 		  int tag,
 		  int rank);
+
+      static void sendHandlerReplication(
+    	  exahype::solvers::Solver* solver,
+		  int tag,
+		  int rank);
+
       // call-back method: called when a remotely executed job has been returned back
       static void receiveBackHandler(
     	  exahype::solvers::Solver* solver,
@@ -1057,6 +1068,10 @@ private:
 
       bool run(bool calledFromMaster) override;
   };
+
+#if defined(ReplicationSaving)
+  void notifyReplicasSTPCompleted(StealablePredictionJob *job);
+#endif
 
   /**
    * If a task decides to send itself away, an offload entry is generated and submitted into

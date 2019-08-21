@@ -113,6 +113,8 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
     double *lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
     double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
 
+    logInfo("handleLocalExecution()", "cellDescriptionIndex"<<_cellDescriptionsIndex<<" element: "<<_element<<" time stamp: "<<_predictorTimeStamp);
+
     //TODO: add support for lGradQhbnd
     _solver.fusedSpaceTimePredictorVolumeIntegral(
         lduh,lQhbnd,nullptr, lFhbnd,
@@ -123,6 +125,11 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
         _predictorTimeStepSize,
        true);
     cellDescription.setHasCompletedLastStep(true);
+
+#if defined (ReplicationSaving)
+    _solver.notifyReplicasSTPCompleted(this);
+    // TODO: send STP here
+#endif
 
     exahype::offloading::PerformanceMonitor::getInstance().decRemainingTasks();
   }
@@ -269,6 +276,21 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendBackHandler(exa
 
   NumberOfStolenJobs--;
   assertion( NumberOfStolenJobs>=0 );
+}
+
+void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendHandlerReplication(
+		exahype::solvers::Solver* solver,
+		int tag,
+		int remoteRank)
+{
+
+  logInfo("sendHandlerReplication","successfully completed send to other teams");
+  tbb::concurrent_hash_map<int, StealablePredictionJobData*>::accessor a_tagToData;
+  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToReplicationSendData.find(a_tagToData, tag);
+  StealablePredictionJobData *data = a_tagToData->second;
+  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToReplicationSendData.erase(a_tagToData);
+  delete data;
+  a_tagToData.release();
 }
 
 void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendHandler(exahype::solvers::Solver* solver, int tag, int remoteRank) {
