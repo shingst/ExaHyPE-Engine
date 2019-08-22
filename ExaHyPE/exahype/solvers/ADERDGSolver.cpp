@@ -2475,7 +2475,9 @@ void exahype::solvers::ADERDGSolver::notifyReplicasSTPCompleted(StealablePredict
     //double *metadata = new double[2*DIMENSIONS+2];
     packMetadataToBuffer(entry, data->_metadata);
 
-    MPI_Request sendRequests[5*(teams-1)];
+
+    MPI_Request *sendRequests= new MPI_Request[5*(teams-1)];
+
     int tag = exahype::offloading::OffloadingManager::getInstance().getOffloadingTag();
 
     _mapTagToReplicationSendData.insert(std::make_pair(tag, data));
@@ -2502,8 +2504,9 @@ void exahype::solvers::ADERDGSolver::notifyReplicasSTPCompleted(StealablePredict
 
 	exahype::offloading::OffloadingManager::getInstance().submitRequests(sendRequests, (teams-1)*5, tag, -1,
 			                                                             StealablePredictionJob::sendHandlerReplication,
-																		 exahype::offloading::RequestType::sendReplica,
-																		 this, false);
+										     exahype::offloading::RequestType::sendReplica,
+										     this, false);
+	delete[] sendRequests;
 }
 
 #endif
