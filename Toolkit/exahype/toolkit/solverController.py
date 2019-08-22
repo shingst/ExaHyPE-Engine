@@ -78,8 +78,9 @@ class SolverController:
                     # scale the ADER-DG method's CFL safety factor according to the chosen patch size
                     aderdgContext["CFL"] = aderdgContext["CFL"] * min(self.cflADER[order], 1.0/fvContext["patchSize"]) / self.cflADER[order];
 
-                # forward patchSize information to the code generator
+                # forward informations
                 context["patchSize"] = fvContext["patchSize"]
+                context["ghostLayerWidth"] = fvContext["ghostLayerWidth"]
 
                 aderdgContext["solver"]                 = context["ADERDGSolver"]
                 aderdgContext["solverType"]             = "ADER-DG"
