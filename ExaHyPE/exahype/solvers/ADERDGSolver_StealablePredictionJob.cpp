@@ -391,6 +391,7 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendHandler(exahype
 
 #if !defined(OffloadingNoEarlyReceiveBacks)
   logDebug("sendHandler","posting Irecv back early");
+  
   MPI_Comm commMapped = exahype::offloading::OffloadingManager::getInstance().getMPICommunicatorMapped();
   tbb::concurrent_hash_map<int, CellDescription*>::accessor a_tagToCellDesc;
   bool found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToCellDesc.find(a_tagToCellDesc, tag);
