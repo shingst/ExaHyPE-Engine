@@ -482,7 +482,7 @@ void exahype::offloading::AggressiveHybridDistributor::updateLoadDistributionDif
                                              + _temperatureDiffusion*optimalTasksToOffload;
      }
   }
-  else if(_tasksToOffload[currentCriticalRank]>0) {
+  else if(currentCriticalRank>=0 && _tasksToOffload[currentCriticalRank]>0) {
     _optimalTasks[currentCriticalRank] = 0;
     _tasksToOffload[currentCriticalRank] = std::max( (1-_temperatureDiffusion), 0.0)*_tasksToOffload[currentCriticalRank];
   }

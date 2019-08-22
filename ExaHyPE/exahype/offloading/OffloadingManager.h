@@ -97,44 +97,44 @@ class exahype::offloading::OffloadingManager {
     /**
      * Request queues for each request type.
      */
-    tbb::concurrent_queue<int> _outstandingRequests[4];
+    tbb::concurrent_queue<int> _outstandingRequests[5];
 
     /**
      * Maps internal integer request id to MPI_Request handle.
      */
-    tbb::concurrent_hash_map<int, MPI_Request> _reqIdToReqHandle[4];
+    tbb::concurrent_hash_map<int, MPI_Request> _reqIdToReqHandle[5];
 
     /**
      * Maps internal request id to internal group id.
      */
-    tbb::concurrent_hash_map<int, int>         _reqIdToGroup[4];
+    tbb::concurrent_hash_map<int, int>         _reqIdToGroup[5];
 
     /**
      * Map that tracks how many outstanding requests a request group still has.
      */
-    tbb::concurrent_hash_map<int, int>         _outstandingReqsForGroup[4];
+    tbb::concurrent_hash_map<int, int>         _outstandingReqsForGroup[5];
 
     /**
      * Maps a group id to the remote rank which its requests belong to.
      */
-    tbb::concurrent_hash_map<int, int>         _groupIdToRank[4];
+    tbb::concurrent_hash_map<int, int>         _groupIdToRank[5];
 
     /**
      * Maps a group id to the MPI tag which its requests belong to.
      */
-    tbb::concurrent_hash_map<int, int>         _groupIdToTag[4];
+    tbb::concurrent_hash_map<int, int>         _groupIdToTag[5];
 
     /**
      * Maps a group id to the handler function which is invoked when
      * the group's requests have been completed.
      */
-    tbb::concurrent_hash_map<int, std::function<void(exahype::solvers::Solver*, int , int)>> _handlers[4];
+    tbb::concurrent_hash_map<int, std::function<void(exahype::solvers::Solver*, int , int)>> _handlers[5];
 
     /**
      * Maps a group id to a pointer to the solver to which its requests
      * logically belong to.
      */
-    tbb::concurrent_hash_map<int, exahype::solvers::Solver*> _solvers[4];
+    tbb::concurrent_hash_map<int, exahype::solvers::Solver*> _solvers[5];
 
     /**
      * The vector of MPI_Request handles which the manager currently
@@ -145,13 +145,13 @@ class exahype::offloading::OffloadingManager {
      * request queue and - if possible - creates a new
      * vector of outstanding requests.
      */
-    std::vector<MPI_Request> _activeRequests[4];
+    std::vector<MPI_Request> _activeRequests[5];
 
     /**
      * This array maps the elements in _currentOutstandingRequests
      * back to the internal request ids.
      */
-    std::unordered_map<int, int> _internalIdsOfActiveRequests[4];
+    std::unordered_map<int, int> _internalIdsOfActiveRequests[5];
 
     // some counters for debugging
     std::atomic<int> *_postedSendsPerRank;

@@ -2504,7 +2504,7 @@ void exahype::solvers::ADERDGSolver::notifyReplicasSTPCompleted(StealablePredict
 
 	exahype::offloading::OffloadingManager::getInstance().submitRequests(sendRequests, (teams-1)*5, tag, -1,
 			                                                             StealablePredictionJob::sendHandlerReplication,
-										     exahype::offloading::RequestType::sendReplica,
+ 										     exahype::offloading::RequestType::sendReplica,
 										     this, false);
 	delete[] sendRequests;
 }
@@ -3380,29 +3380,29 @@ void exahype::solvers::ADERDGSolver::isendStealablePredictionJob(
 
   if(metadata != nullptr) {
     ierr = MPI_Isend(metadata, 2*DIMENSIONS+2, MPI_DOUBLE, dest, tag, comm, &requests[i++]);
-    assertion(ierr==MPI_SUCCESS);
-    assertion(requests[i-1]!=MPI_REQUEST_NULL);
+    assert(ierr==MPI_SUCCESS);
+    assert(requests[i-1]!=MPI_REQUEST_NULL);
   }
 
-  assertion(luh!=NULL);
+  assert(luh!=NULL);
   ierr = MPI_Isend(luh, getDataPerCell(), MPI_DOUBLE, dest, tag, comm, &requests[i++]);
-  assertion(ierr==MPI_SUCCESS);
-  assertion(requests[i-1]!=MPI_REQUEST_NULL);
+  assert(ierr==MPI_SUCCESS);
+  assert(requests[i-1]!=MPI_REQUEST_NULL);
 
-  assertion(lduh!=NULL);
+  assert(lduh!=NULL);
   ierr = MPI_Isend(lduh, getUpdateSize(), MPI_DOUBLE, dest, tag, comm, &requests[i++]);
-  assertion(ierr==MPI_SUCCESS);
-  assertion(requests[i-1]!=MPI_REQUEST_NULL);
+  assert(ierr==MPI_SUCCESS);
+  assert(requests[i-1]!=MPI_REQUEST_NULL);
 
-  assertion(lQhbnd!=NULL);
+  assert(lQhbnd!=NULL);
   ierr = MPI_Isend(lQhbnd, getBndTotalSize(), MPI_DOUBLE, dest, tag, comm, &requests[i++]);
-  assertion(ierr==MPI_SUCCESS);
-  assertion(requests[i-1]!=MPI_REQUEST_NULL);
+  assert(ierr==MPI_SUCCESS);
+  assert(requests[i-1]!=MPI_REQUEST_NULL);
 
-  assertion(lFhbnd!=NULL);
+  assert(lFhbnd!=NULL);
   ierr = MPI_Isend(lFhbnd, getBndFluxTotalSize(), MPI_DOUBLE, dest, tag, comm, &requests[i++]);
-  assertion(ierr==MPI_SUCCESS);
-  assertion(requests[i-1]!=MPI_REQUEST_NULL);
+  assert(ierr==MPI_SUCCESS);
+  assert(requests[i-1]!=MPI_REQUEST_NULL);
 
 };
 
