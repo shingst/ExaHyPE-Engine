@@ -337,6 +337,14 @@ void exahype::offloading::OffloadingManager::progressRequests() {
     VT_end(event_progress_sendBack);
 #endif
   }
+#if defined(ReplicationSaving)
+  else if (hasOutstandingRequestOfType(RequestType::sendReplica)) {
+	 progressRequestsOfType(RequestType::sendReplica);
+  }
+  else if (hasOutstandingRequestOfType(RequestType::receiveReplica)) {
+     progressRequestsOfType(RequestType::receiveReplica);
+  }
+#endif
 }
 
 void exahype::offloading::OffloadingManager::progressAnyRequests() {

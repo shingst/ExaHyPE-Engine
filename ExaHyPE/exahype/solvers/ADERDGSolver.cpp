@@ -2710,18 +2710,32 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
   MPI_Comm commMapped = exahype::offloading::OffloadingManager::getInstance().getMPICommunicatorMapped();
   int iprobesCounter = 0;
 
+#if defined(ReplicationSaving)
+  MPI_Comm interTeamComm = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamCommunicator();
+  int receivedReplicaTask = 0;
+  MPI_Status statRep;
+#endif
+
   //static std::atomic<int> postedReceives=0;
 
   MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
 #if defined(OffloadingNoEarlyReceiveBacks)
   MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, commMapped, &receivedTaskBack, &statMapped);
 #endif
+#if defined(ReplicationSaving)
+  MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamComm, &receivedReplicaTask, &statRep);
+#endif
   double time = -MPI_Wtime();
 
   bool terminateImmediately = false;
 
+#if defined (ReplicationSaving)
+  while( (receivedTask || receivedTaskBack || receivedReplicaTask) && iprobesCounter<MaxIprobesInOffloadingProgress && !terminateImmediately ) {
+#else
   while( (receivedTask || receivedTaskBack) && iprobesCounter<MaxIprobesInOffloadingProgress && !terminateImmediately ) {
+#endif
     iprobesCounter++;
+    // RECEIVE TASK BACK
 #if defined(OffloadingNoEarlyReceiveBacks)
     if(receivedTaskBack && (statMapped.MPI_TAG!=lastRecvBackTag || statMapped.MPI_SOURCE!=lastRecvBackSrc)) {
       lastRecvBackSrc = statMapped.MPI_SOURCE;
@@ -2765,6 +2779,7 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
     }
 #endif
 
+    // RECEIVE TASK
     if(receivedTask) {
 #ifdef OffloadingUseProgressTask
        logInfo("progressOffloading()","inserting active sender "<<stat.MPI_SOURCE);
@@ -2822,11 +2837,11 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
              //logInfo("progressOffloading()","running out of tasks and could not receive stolen task so we just block!");
              double wtime = -MPI_Wtime();
              exahype::offloading::OffloadingManager::getInstance().submitRequests(
-                             receiveRequests,
+                 receiveRequests,
 			     5,
 			     stat.MPI_TAG,
 		 	     stat.MPI_SOURCE,
-		             StealablePredictionJob::receiveHandler,
+		         StealablePredictionJob::receiveHandler,
 		 	     exahype::offloading::RequestType::receive,
 			     solver,
 			     true);
@@ -2836,21 +2851,52 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
            }
           else {
              exahype::offloading::OffloadingManager::getInstance().submitRequests(
-                               receiveRequests,
-			       5,
-			       stat.MPI_TAG,
-			       stat.MPI_SOURCE,
-		               StealablePredictionJob::receiveHandler,
-			       exahype::offloading::RequestType::receive,
-			       solver,
-			       false);
+                 receiveRequests,
+			     5,
+			     stat.MPI_TAG,
+			     stat.MPI_SOURCE,
+		         StealablePredictionJob::receiveHandler,
+			     exahype::offloading::RequestType::receive,
+			     solver,
+			     false);
            }
         }
       }
    //   exahype::offloading::OffloadingManager::getInstance().progressRequests();
     }
-
     MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
+#if defined(ReplicationSaving)
+    if(receivedReplicaTask) {
+      MPI_Request receiveReplicaRequests[5];
+      int msgLen = -1;
+      MPI_Get_count(&statRep, MPI_DOUBLE, &msgLen);
+      // is this message metadata? -> if true, we are about to receive a new STP task
+      if(msgLen==DIMENSIONS*2+2) {
+         MPI_Request receiveRequests[5];
+         StealablePredictionJobData *data = new StealablePredictionJobData(*solver);
+         solver->irecvStealablePredictionJob(
+ 		         data->_luh.data(),
+   	 	         data->_lduh.data(),
+   	 	         data->_lQhbnd.data(),
+   		         data->_lFhbnd.data(),
+   		         statRep.MPI_SOURCE,
+   		         statRep.MPI_TAG,
+   		         interTeamComm,
+   		         &receiveReplicaRequests[0],
+   		         &(data->_metadata[0]));
+         exahype::offloading::OffloadingManager::getInstance().submitRequests(
+                         receiveReplicaRequests,
+                         5,
+                         statRep.MPI_TAG,
+                         statRep.MPI_SOURCE,
+                         StealablePredictionJob::receiveHandlerReplication,
+                         exahype::offloading::RequestType::receiveReplica,
+   		         solver,
+   		         false);
+       }
+    }
+    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamComm, &receivedReplicaTask, &statRep);
+#endif
     //tarch::parallel::Node::getInstance().receiveDanglingMessages();  -> does lead to problems with lock!
   }
   time+= MPI_Wtime();
@@ -3408,14 +3454,14 @@ void exahype::solvers::ADERDGSolver::isendStealablePredictionJob(
 
 void exahype::solvers::ADERDGSolver::irecvStealablePredictionJob(
     double *luh,
-	double *lduh,
-	double *lQhbnd,
-	double *lFhbnd,
+    double *lduh,
+    double *lQhbnd,
+    double *lFhbnd,
     int srcRank,
-	int tag,
-	MPI_Comm comm,
-	MPI_Request *requests,
-	double *metadata ) {
+    int tag,
+    MPI_Comm comm,
+    MPI_Request *requests,
+    double *metadata ) {
   int ierr;
   //MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
   int i = 0;

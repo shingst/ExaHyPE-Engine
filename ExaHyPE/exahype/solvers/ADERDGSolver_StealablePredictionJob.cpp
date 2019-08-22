@@ -221,6 +221,25 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveHandler(exah
   exahype::offloading::OffloadingProfiler::getInstance().notifyReceivedTask(remoteRank);
 }
 
+void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveHandlerReplication(exahype::solvers::Solver* solver, int tag, int remoteRank) {
+#if defined(PerformanceAnalysisOffloadingDetailed)
+  logInfo("receiveHandlerReplica","successful receive request");
+#endif
+  logInfo("receiveHandlerReplica","successful receive request");
+
+  //tbb::concurrent_hash_map<std::pair<int, int>, StealablePredictionJobData*>::accessor a_tagRankToData;
+  //StealablePredictionJobData *data;
+  //static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagRankToStolenData.find(a_tagRankToData, std::make_pair(remoteRank, tag));
+  //data = a_tagRankToData->second;
+  //a_tagRankToData.release();
+
+  //exahype::offloading::OffloadingAnalyser::getInstance().notifyReceivedSTPJob();
+  //StealablePredictionJob *job= static_cast<exahype::solvers::ADERDGSolver*> (solver)->createFromData(data, remoteRank, tag);
+  //peano::datatraversal::TaskSet spawnedSet(job);
+
+  //exahype::offloading::OffloadingProfiler::getInstance().notifyReceivedTask(remoteRank);
+}
+
 void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveBackHandler(exahype::solvers::Solver* solver, int tag, int remoteRank) {
 #if defined(PerformanceAnalysisOffloadingDetailed)
   static std::atomic<int> cnt=0;

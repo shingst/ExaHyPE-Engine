@@ -1065,6 +1065,11 @@ private:
     	  exahype::solvers::Solver* solver,
 		  int tag,
 		  int rank);
+      // call-back method: called when a job has been received from another rank
+      static void receiveHandlerReplication(
+    	  exahype::solvers::Solver* solver,
+		  int tag,
+		  int rank);
 
       bool run(bool calledFromMaster) override;
   };
