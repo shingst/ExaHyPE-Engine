@@ -29,7 +29,59 @@ namespace {{solverNamespace}} {
 namespace {{namespaceName}} {
 {% endfor %}
 
-//TODO JMG
+//common
+/*
+  void solutionAdjustment(
+    {{solverName}}& solver,
+    double* luh, 
+    const double* const center,
+    const double* const dx, 
+    const double t,
+    const double dt
+  );
+*/
+
+  double stableTimeStepSize(
+    {{solverName}}& solver,
+    const double* const luh,
+    const double dx
+  );
+
+/*
+  void boundaryLayerExtraction(
+    {{solverName}}& solver,
+    double* luhbnd,
+    const double* luh,
+    const double* const boundaryPosition
+  );
+
+
+  void boundaryConditions(
+    {{solverName}}& solver,
+    double* stateOut,
+    const double* const stateIn,
+    const double* const cellCentre,
+    const double* const cellSize,
+    const double t,const double dt,
+    const int faceIndex,
+    const int normalNonZero
+  );
+
+
+  void ghostLayerFillingAtBoundary(
+    {{solverName}}& solver,
+    double* luh,
+    const double* luhbnd,
+    const double* const boundaryPosition
+  );
+
+
+  void ghostLayerFilling(
+    {{solverName}}& solver,
+    double* luh,const double* luhNeighbour,
+    const double* const neighbourPosition
+  );
+*/
 
 {% for namespaceName in codeNamespaceList %}
 }

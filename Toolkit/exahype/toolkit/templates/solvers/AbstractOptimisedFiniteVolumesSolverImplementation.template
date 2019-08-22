@@ -6,6 +6,7 @@
 //   www.exahype.eu
 // ========================
 #include "{{abstractSolver}}.h"
+#include "{{optKernelPath}}/Kernels.h"
 
 #include "kernels/finitevolumes/commons/c/commons.h"
 #include "kernels/finitevolumes/{{finiteVolumesType}}/c/{{finiteVolumesType}}.h"
@@ -55,7 +56,8 @@ void {{project}}::{{abstractSolver}}::solutionUpdate(double* luh,const tarch::la
 
 
 double {{project}}::{{abstractSolver}}::stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellSize) {
-  double maxAdmissibleDt = kernels::finitevolumes::commons::c::stableTimeStepSize<{{solver}},{{useViscousFlux_s}}>(*static_cast<{{solver}}*>(this),luh,cellSize);
+  //double maxAdmissibleDt = kernels::finitevolumes::commons::c::stableTimeStepSize<{{solver}},{{useViscousFlux_s}}>(*static_cast<{{solver}}*>(this),luh,cellSize);
+  double maxAdmissibleDt = {{optNamespace}}::stableTimeStepSize(*static_cast<{{solver}}*>(this),luh,cellSize[0]); //dx
   return maxAdmissibleDt;
 }
 

@@ -129,7 +129,8 @@ class Controller:
                 "nPointSources"         : args["usePointSources"],
                 "usePointSources"       : args["usePointSources"] >= 0,
                 "useMaterialParam"      : args["useMaterialParam"],
-                "finiteVolumesType"     : args["finiteVolumesType"]
+                "finiteVolumesType"     : args["finiteVolumesType"],
+                "ghostLayerWidth"       : 2 #hard coded musclhancock value
             })
             
         self.validateConfig(Configuration.simdWidth.keys())
@@ -181,6 +182,9 @@ class Controller:
         elif self.config["kernelType"] == "aderdg":
             context["isLinear"] = context["numerics"] == "linear"
             context["useVectPDEs"] = context["useFluxVect"] or True #TODO JMG add other vect
+        elif self.config["kernelType"] == "fv":
+            context["ghostLayerWidth3D"] = 0 if context["nDim"] == 2 else context["ghostLayerWidth"]
+            context["nDofG"] = context["ghostLayerWidth"]*2 + context["nDof"]
         return context
 
     def getSizeWithPadding(self, sizeWithoutPadding):
@@ -287,11 +291,6 @@ class Controller:
             runtimes["solutionUpdate"] = time.perf_counter() - start
             
             start = time.perf_counter()
-            stableTimeStepSize = stableTimeStepSizeModel.StableTimeStepSizeModel(self.baseContext)
-            stableTimeStepSize.generateCode()
-            runtimes["stableTimeStepSize"] = time.perf_counter() - start
-            
-            start = time.perf_counter()
             surfaceIntegral = surfaceIntegralModel.SurfaceIntegralModel(self.baseContext)
             surfaceIntegral.generateCode()
             runtimes["surfaceIntegral"] = time.perf_counter() - start
@@ -305,6 +304,12 @@ class Controller:
         
         if self.config["kernelType"] == "fv":
             pass #TODO JMG
+            
+        if self.config["kernelType"] in ["aderdg", "fv"]:
+            start = time.perf_counter()
+            stableTimeStepSize = stableTimeStepSizeModel.StableTimeStepSizeModel(self.baseContext)
+            stableTimeStepSize.generateCode()
+            runtimes["stableTimeStepSize"] = time.perf_counter() - start
         
         # must be run only after all gemm have been generated
         start = time.perf_counter()

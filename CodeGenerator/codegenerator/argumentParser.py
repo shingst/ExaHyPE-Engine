@@ -115,6 +115,7 @@ class ArgumentParser:
         ("architecture",        ArgType.MandatoryString, "the microarchitecture of the target device"),
         # optional arguments       
         ("useFlux",             ArgType.OptionalBool,    "enable flux"),
+        ("useViscousFlux",      ArgType.OptionalBool,    "enable viscous flux"),
         ("useNCP",              ArgType.OptionalBool,    "enable non conservative product"),
         ("useSource",           ArgType.OptionalBool,    "enable source terms"),
         ("useFusedSource",      ArgType.OptionalBool,    "enable fused source terms (include useSource)"),

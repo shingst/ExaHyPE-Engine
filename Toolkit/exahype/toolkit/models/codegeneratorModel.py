@@ -82,6 +82,7 @@ class CodegeneratorModel:
                 "architecture"       : solverContext["architecture"],
                 # Optional bool parameters (may set redundant flags and default false flag)
                 "useFlux"            : solverContext["useFlux"],
+                "useViscousFlux"     : solverContext["useViscousFlux"],
                 "useNCP"             : solverContext["useNCP"],
                 "useSource"          : solverContext["useSource"],
                 "useFusedSource"     : solverContext["useFusedSource"],
