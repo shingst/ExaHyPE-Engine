@@ -1257,7 +1257,7 @@ public:
      }
 
 #if defined(DistributedOffloading)
-     if((MPI_Wtime()-startTime)>10.0 && responsibleRank!=myRank) {
+     if((MPI_Wtime()-startTime)>10.0) { // && responsibleRank!=myRank) {
        startTime = MPI_Wtime();
        logInfo("waitUntilCompletedTimeStep()","warning: rank waiting too long for missing task from rank "<<responsibleRank<< " outstanding jobs:"<<NumberOfRemoteJobs);
      }
