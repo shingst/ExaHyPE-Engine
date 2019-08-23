@@ -12,7 +12,7 @@ exahype::solvers::ADERDGSolver::StealablePredictionJob::StealablePredictionJob(
     const int element,
     const double predictorTimeStamp,
     const double predictorTimeStepSize) :
-       tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask, 0, tarch::multicore::DefaultPriority),  //this is a locally executed job
+       tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask, 0, getTaskPriorityLocalStealableJob(cellDescriptionsIndex, element, predictorTimeStamp)),  //this is a locally executed job
         _solver(solver),
         _cellDescriptionsIndex(cellDescriptionsIndex),
         _element(element),
@@ -22,6 +22,7 @@ exahype::solvers::ADERDGSolver::StealablePredictionJob::StealablePredictionJob(
         _tag(-1),
         _luh(nullptr),_lduh(nullptr),_lQhbnd(nullptr), _lFhbnd(nullptr)
 {
+  LocalStealableSTPCounter++;
   NumberOfEnclaveJobs++;
   exahype::offloading::PerformanceMonitor::getInstance().incCurrentTasks();
 };

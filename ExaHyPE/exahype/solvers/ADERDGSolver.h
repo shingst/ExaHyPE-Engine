@@ -128,8 +128,17 @@ public:
   static int mergeNeighboursHandle;
   static int prolongateFaceDataToVirtualCellHandle;
   static int restrictToTopMostParentHandle;
-  #endif
 
+  static int event_stp;
+  static int event_offloadingManager;
+  static int event_spawn;
+  static int event_initial;
+  static int event_memory;
+  static int event_lock;
+  static int event_pack;
+  static int event_progress;
+  static int event_offload;
+  #endif
   /**
    * The maximum helper status.
    * This value is assigned to cell descriptions
@@ -188,6 +197,8 @@ public:
 
   static std::atomic<int> NumberOfReceiveJobs;
   static std::atomic<int> NumberOfReceiveBackJobs;
+
+  static std::atomic<int> LocalStealableSTPCounter;
 #endif
 
   /**
@@ -877,6 +888,30 @@ private:
 
 #if defined(DistributedOffloading)
 
+  static int getTaskPriorityLocalStealableJob(int cellDescriptionsIndex, int element, double timeStamp) {
+#if defined(ReplicationSaving)
+      int team = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank();
+      int teamSize = exahype::offloading::OffloadingManager::getInstance().getTMPITeamSize();
+
+      CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex, element);
+
+      double *center;
+      center = (cellDescription.getOffset()+0.5*cellDescription.getSize()).data();
+
+      int prio = getTaskPriority(false)+(LocalStealableSTPCounter+team)%teamSize;
+
+      logInfo("getTaskPriorityLocalStealableJob()", "team = "<<team
+    		  	  	  	  	  	  	  <<" center[0] = "<< center[0]
+  						              <<" center[1] = "<< center[1]
+  			                          <<" center[2] = "<< center[2]
+  								      <<" time stamp = "<<timeStamp
+									  <<" prio = "<<prio);
+
+	  return prio;
+#else
+	  return getTaskPriority(false);
+#endif
+  }
 
 #ifdef OffloadingUseProgressTask
   /**
@@ -1036,7 +1071,7 @@ private:
 		  double *luh, double *lduh,
 		  double *lQhbnd, double *lFhbnd,
 		  double *dx, double *center,
-                  const int originRank,
+          const int originRank,
 		  const int tag
       );
   

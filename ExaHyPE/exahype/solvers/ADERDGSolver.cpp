@@ -60,18 +60,6 @@
 
 #include "tarch/timing/Watch.h"
 
-#ifdef USE_ITAC
-#include "VT.h"
-static int event_stp = -1;
-static int event_offloadingManager = -1;
-static int event_spawn = -1;
-static int event_initial = -1;
-static int event_memory = -1;
-static int event_lock = -1;
-static int event_pack = -1;
-static int event_progress = -1;
-static int event_offload = -1;
-#endif
 
 namespace {
   constexpr const char* tags[]{"solutionUpdate",
@@ -100,6 +88,17 @@ int exahype::solvers::ADERDGSolver::updateBodyHandle                      = 0;
 int exahype::solvers::ADERDGSolver::mergeNeighboursHandle                 = 0;
 int exahype::solvers::ADERDGSolver::prolongateFaceDataToVirtualCellHandle = 0;
 int exahype::solvers::ADERDGSolver::restrictToTopMostParentHandle         = 0;
+
+int exahype::solvers::ADERDGSolver::event_stp = 0;
+int exahype::solvers::ADERDGSolver::event_offloadingManager = 0;
+int exahype::solvers::ADERDGSolver::event_spawn = 0;
+int exahype::solvers::ADERDGSolver::event_initial = -1;
+int exahype::solvers::ADERDGSolver::event_memory = -1;
+int exahype::solvers::ADERDGSolver::event_lock = -1;
+int exahype::solvers::ADERDGSolver::event_pack = -1;
+int exahype::solvers::ADERDGSolver::event_progress = -1;
+int exahype::solvers::ADERDGSolver::event_offload = -1;
+
 #endif
 
 tarch::logging::Log exahype::solvers::ADERDGSolver::_log( "exahype::solvers::ADERDGSolver");
@@ -132,6 +131,7 @@ tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::OffloadingSem
 //ToDo (Philipp): may no longer be necessary
 std::atomic<int> exahype::solvers::ADERDGSolver::MaxIprobesInOffloadingProgress = std::numeric_limits<int>::max();
 
+std::atomic<int> exahype::solvers::ADERDGSolver::LocalStealableSTPCounter = 0;
 std::atomic<int> exahype::solvers::ADERDGSolver::StealablePredictionJob::JobCounter = 0;
 std::atomic<int> exahype::solvers::ADERDGSolver::NumberOfReceiveJobs = 0;
 std::atomic<int> exahype::solvers::ADERDGSolver::NumberOfReceiveBackJobs = 0;

@@ -1326,6 +1326,7 @@ public:
   static int getHighPriorityTaskPriority() {
     return tarch::multicore::DefaultPriority*2;
   }
+
   /**
    * @return a high priority if the argument is set to true. Otherwise,
    * the default priority.
