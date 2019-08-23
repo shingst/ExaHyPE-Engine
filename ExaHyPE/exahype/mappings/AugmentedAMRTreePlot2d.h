@@ -86,6 +86,7 @@ class exahype::mappings::AugmentedAMRTreePlot2d {
 
   tarch::plotter::griddata::Writer::CellDataWriter* _cellNumberWriter               = nullptr;
   tarch::plotter::griddata::Writer::CellDataWriter* _cellTypeWriter                 = nullptr;
+  tarch::plotter::griddata::Writer::CellDataWriter* _cellVariantWriter              = nullptr;
   tarch::plotter::griddata::Writer::CellDataWriter* _cellDescriptionIndexWriter     = nullptr;
   tarch::plotter::griddata::Writer::CellDataWriter* _cellDataWriter                 = nullptr;
   tarch::plotter::griddata::Writer::CellDataWriter* _augmentationStatusWriter       = nullptr;
