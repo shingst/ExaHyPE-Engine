@@ -92,12 +92,12 @@ int exahype::solvers::ADERDGSolver::restrictToTopMostParentHandle         = 0;
 int exahype::solvers::ADERDGSolver::event_stp = 0;
 int exahype::solvers::ADERDGSolver::event_offloadingManager = 0;
 int exahype::solvers::ADERDGSolver::event_spawn = 0;
-int exahype::solvers::ADERDGSolver::event_initial = -1;
-int exahype::solvers::ADERDGSolver::event_memory = -1;
-int exahype::solvers::ADERDGSolver::event_lock = -1;
-int exahype::solvers::ADERDGSolver::event_pack = -1;
-int exahype::solvers::ADERDGSolver::event_progress = -1;
-int exahype::solvers::ADERDGSolver::event_offload = -1;
+int exahype::solvers::ADERDGSolver::event_initial = 0;
+int exahype::solvers::ADERDGSolver::event_memory = 0;
+int exahype::solvers::ADERDGSolver::event_lock = 0;
+int exahype::solvers::ADERDGSolver::event_pack = 0;
+int exahype::solvers::ADERDGSolver::event_progress = 0;
+int exahype::solvers::ADERDGSolver::event_offload = 0;
 
 #endif
 
@@ -274,27 +274,6 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
 
 #ifdef OffloadingUseProfiler
   exahype::offloading::OffloadingProfiler::getInstance().beginPhase();
-#endif
-
-#ifdef USE_ITAC
-  static const char *event_name_stp = "computeSTP";
-  static const char *event_name_offloadingManager = "offloadingManager";
-  static const char *event_name_spawn = "spawnSTP";
-  static const char *event_name_initial = "initialSTP";
-  static const char *event_name_lock = "lock";
-  static const char *event_name_memory = "memory";
-  static const char *event_name_pack = "pack";
-  static const char *event_name_progress = "progress";
-  static const char *event_name_offload = "offload";
-  int ierr=VT_funcdef(event_name_stp, VT_NOCLASS, &event_stp ); assertion(ierr==0);
-  ierr=VT_funcdef(event_name_offloadingManager, VT_NOCLASS, &event_offloadingManager ); assertion(ierr==0);
-  ierr=VT_funcdef(event_name_spawn, VT_NOCLASS, &event_spawn ); assertion(ierr==0);
-  ierr=VT_funcdef(event_name_initial, VT_NOCLASS, &event_initial ); assertion(ierr==0);
-  ierr=VT_funcdef(event_name_lock, VT_NOCLASS, &event_lock ); assertion(ierr==0);
-  ierr=VT_funcdef(event_name_memory, VT_NOCLASS, &event_memory ); assertion(ierr==0);
-  ierr=VT_funcdef(event_name_pack, VT_NOCLASS, &event_pack ); assertion(ierr==0);
-  ierr=VT_funcdef(event_name_offload, VT_NOCLASS, &event_offload ); assertion(ierr==0);
-  ierr=VT_funcdef(event_name_progress, VT_NOCLASS, &event_progress ); assertion(ierr==0);
 #endif
 
 #endif

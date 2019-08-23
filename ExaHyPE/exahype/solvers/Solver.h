@@ -1164,9 +1164,9 @@ public:
      const CellDescription& cellDescription,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) {
 #ifdef USE_ITAC
   VT_begin(waitUntilCompletedLastStepHandle);
-  static int event_emergency = -1;
-  static const char *event_name_emergency = "trigger_emergency";
-  int ierr=VT_funcdef(event_name_emergency, VT_NOCLASS, &event_emergency ); assert(ierr==0);
+  //static int event_emergency = -1;
+  //static const char *event_name_emergency = "trigger_emergency";
+  //int ierr=VT_funcdef(event_name_emergency, VT_NOCLASS, &event_emergency ); assert(ierr==0);
 #endif
 
 #ifdef OffloadingUseProfiler
@@ -1284,13 +1284,13 @@ public:
 #endif
        {
 #ifdef USE_ITAC
-	 VT_begin(event_emergency);
+	 //VT_begin(event_emergency);
 #endif
          hasTriggeredEmergency = true;
          logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank);
          exahype::offloading::OffloadingManager::getInstance().triggerEmergencyForRank(responsibleRank);
 #ifdef USE_ITAC
-	 VT_end(event_emergency);
+	 //VT_end(event_emergency);
 #endif
        }
 #endif
