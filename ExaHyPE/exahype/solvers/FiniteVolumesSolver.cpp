@@ -570,6 +570,7 @@ exahype::solvers::FiniteVolumesSolver::eraseOrRefineAdjacentVertices(
     const int level,
     const bool checkThoroughly,
     bool& checkSuccessful) const {
+  checkSuccessful = true;
   if ( level < _coarsestMeshLevel ) {
     return RefinementControl::Refine;
   } else {

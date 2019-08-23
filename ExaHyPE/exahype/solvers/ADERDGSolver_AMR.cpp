@@ -132,6 +132,7 @@ void exahype::solvers::ADERDGSolver::vetoParentCoarseningRequestIfNecessary(
     CellDescription& coarseGridCellDescription) {
   tarch::multicore::Lock lock(CoarseGridSemaphore);
   const bool coarseGridCellDescriptionMighRequestCoarsening  =
+      coarseGridCellDescription.getType()==CellDescription::Type::Parent ||
       coarseGridCellDescription.getType()==CellDescription::Type::ParentRequestsCoarseningA ||
       coarseGridCellDescription.getType()==CellDescription::Type::ParentRequestsCoarseningB;
   if (

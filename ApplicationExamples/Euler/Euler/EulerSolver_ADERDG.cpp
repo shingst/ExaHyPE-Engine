@@ -25,6 +25,7 @@
 
 #include "kernels/aderdg/generic/Kernels.h"
 
+#include "peano/utils/Loop.h"
 
 tarch::logging::Log Euler::EulerSolver_ADERDG::_log("Euler::EulerSolver_ADERDG");
 
@@ -501,10 +502,24 @@ Euler::EulerSolver_ADERDG::refinementCriterion(
     const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center,
     const tarch::la::Vector<DIMENSIONS, double>& dx, double t,
     const int level) {
-  if ( level > getCoarsestMeshLevel() ) {
-    return exahype::solvers::Solver::RefinementControl::Erase;
+  double maxE = -std::numeric_limits<double>::max();
+  double minE = +std::numeric_limits<double>::max();
+  
+  const int nodes = std::pow((Order+1), DIMENSIONS);
+  for(int i=0;i<nodes;i++) {
+    maxE = std::max(maxE, luh[i*NumberOfVariables+NumberOfVariables-1]);
+    minE = std::min(minE, luh[i*NumberOfVariables+NumberOfVariables-1]);
   }
-  return exahype::solvers::Solver::RefinementControl::Keep;
+
+  if ( maxE/minE > 1.05 ) {
+    return RefinementControl::Refine;
+  }
+
+  if ( level > getCoarsestMeshLevel() ) {
+    return RefinementControl::Erase;
+  }
+
+  return RefinementControl::Keep;
 }
 
 void Euler::EulerSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int direction,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut){
