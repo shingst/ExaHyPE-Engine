@@ -107,7 +107,8 @@ void {{project}}::{{abstractSolver}}::ghostLayerFilling(double* const luh,const 
 }
 
 void {{project}}::{{abstractSolver}}::ghostLayerFillingAtBoundary(double* const luh,const double* const luhbnd,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) {
-  kernels::finitevolumes::commons::c::ghostLayerFillingAtBoundary<{{solver}}>(*static_cast<{{solver}}*>(this),luh,luhbnd,boundaryPosition);
+  //kernels::finitevolumes::commons::c::ghostLayerFillingAtBoundary<{{solver}}>(*static_cast<{{solver}}*>(this),luh,luhbnd,boundaryPosition);
+  {{optNamespace}}::ghostLayerFillingAtBoundary(*static_cast<{{solver}}*>(this),luh,luhbnd,&boundaryPosition[0]);
 }
 
 void {{project}}::{{abstractSolver}}::boundaryLayerExtraction(double* const luhbnd,const double* const luh,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) {

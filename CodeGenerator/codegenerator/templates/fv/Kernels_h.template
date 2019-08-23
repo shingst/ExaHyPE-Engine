@@ -66,15 +66,15 @@ namespace {{namespaceName}} {
     const int faceIndex,
     const int normalNonZero
   );
-
+*/
 
   void ghostLayerFillingAtBoundary(
     {{solverName}}& solver,
     double* luh,
     const double* luhbnd,
-    const double* const boundaryPosition
+    const int* const boundaryPosition
   );
-*/
+
 
   void ghostLayerFilling(
     {{solverName}}& solver,

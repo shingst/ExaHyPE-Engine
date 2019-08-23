@@ -17,60 +17,61 @@
 
 #include <algorithm>
 
-void {{codeNamespace}}::ghostLayerFilling(
+
+void {{codeNamespace}}::ghostLayerFillingAtBoundary(
     {{solverName}}& solver,
     double* luh,
-    const double* luhNeighbour,
-    const int* const neighbourPosition
+    const double* luhbnd,
+    const int* const boundaryPosition
 ) {
 
   // Always do the whole x dim in one copy
 
   // x-axis
-  if (neighbourPosition[0] == -1) {
+  if (boundaryPosition[0] == -1) {
     for (int z = {{ghostLayerWidth3D}}; z < {{ghostLayerWidth3D+nDof3D}}; z++) {
       for (int y = {{ghostLayerWidth}}; y < {{ghostLayerWidth+nDof}}; y++) {
-        std::copy_n(luhNeighbour+(z*{{nDofG}}+y)*{{nDofG*nData}}+{{nDof*nData}}, {{nData*ghostLayerWidth}}, luh+(z*{{nDofG}}+y)*{{nDofG*nData}});
+        std::copy_n(luhbnd+((z-{{ghostLayerWidth3D}})*{{nDof}}+y-{{ghostLayerWidth}})*{{ghostLayerWidth*nData}}, {{nData*ghostLayerWidth}}, luh+(z*{{nDofG}}+y)*{{nDofG*nData}});
       }
     }
   }
-  if (neighbourPosition[0] == +1) {
+  if (boundaryPosition[0] == +1) {
     for (int z = {{ghostLayerWidth3D}}; z < {{ghostLayerWidth3D+nDof3D}}; z++) {
       for (int y = {{ghostLayerWidth}}; y < {{ghostLayerWidth+nDof}}; y++) {
-        std::copy_n(luhNeighbour+((z*{{nDofG}}+y)*{{nDofG}}+{{ghostLayerWidth}})*{{nData}}, {{nData*ghostLayerWidth}}, luh+(z*{{nDofG}}+y)*{{nDofG*nData}}+{{(ghostLayerWidth+nDof)*nData}});
+        std::copy_n(luhbnd+((z-{{ghostLayerWidth3D}})*{{nDof}}+y-{{ghostLayerWidth}})*{{ghostLayerWidth*nData}}, {{nData*ghostLayerWidth}}, luh+(z*{{nDofG}}+y)*{{nDofG*nData}}+{{(ghostLayerWidth+nDof)*nData}});
       }
     }
   }
 
   // y-axis
-  if (neighbourPosition[1] == -1) {
+  if (boundaryPosition[1] == -1) {
     for (int z = {{ghostLayerWidth3D}}; z < {{ghostLayerWidth3D+nDof3D}}; z++) {
       for (int y = 0; y < {{ghostLayerWidth}}; y++) {
-        std::copy_n(luhNeighbour+(z*{{nDofG}}+y+{{nDof}})*{{nDofG*nData}}+{{ghostLayerWidth*nData}}, {{nData*nDof}}, luh+(z*{{nDofG}}+y)*{{nDofG*nData}}+{{ghostLayerWidth*nData}});
+        std::copy_n(luhbnd+((z-{{ghostLayerWidth3D}})*{{ghostLayerWidth}}+y)*{{nDof*nData}}, {{nData*nDof}}, luh+(z*{{nDofG}}+y)*{{nDofG*nData}}+{{ghostLayerWidth*nData}});
       }
     }
   }
-  if (neighbourPosition[1] == +1) {
+  if (boundaryPosition[1] == +1) {
     for (int z = {{ghostLayerWidth3D}}; z < {{ghostLayerWidth3D+nDof3D}}; z++) {
       for (int y = 0; y < {{ghostLayerWidth}}; y++) {
-        std::copy_n(luhNeighbour+(z*{{nDofG}}+y+{{ghostLayerWidth}})*{{nDofG*nData}}+{{ghostLayerWidth*nData}}, {{nData*nDof}}, luh+(z*{{nDofG}}+y+{{ghostLayerWidth+nDof}})*{{nDofG*nData}}+{{ghostLayerWidth*nData}});
+        std::copy_n(luhbnd+((z-{{ghostLayerWidth3D}})*{{ghostLayerWidth}}+y)*{{nDof*nData}}, {{nData*nDof}}, luh+(z*{{nDofG}}+y+{{ghostLayerWidth+nDof}})*{{nDofG*nData}}+{{ghostLayerWidth*nData}});
       }
     }
   }
 {% if nDim == 3 %}
 
   // z-axis
-  if (neighbourPosition[2] == -1) {
+  if (boundaryPosition[2] == -1) {
     for (int z = 0; z < {{ghostLayerWidth}}; z++) {
       for (int y = {{ghostLayerWidth}}; y < {{ghostLayerWidth+nDof}}; y++) {
-        std::copy_n(luhNeighbour+((z+{{nDof}})*{{nDofG}}+y)*{{nDofG*nData}}+{{ghostLayerWidth*nData}}, {{nData*nDof}}, luh+(z*{{nDofG}}+y)*{{nDofG*nData}}+{{ghostLayerWidth*nData}});
+        std::copy_n(luhbnd+(z*{{nDof}}+y-{{ghostLayerWidth}})*{{nDof*nData}}, {{nDof*nData}}, luh+(z*{{nDofG}}+y)*{{nDofG*nData}}+{{ghostLayerWidth*nData}});
       }
     }
   }
-  if (neighbourPosition[2] == +1) {
+  if (boundaryPosition[2] == +1) {
     for (int z = 0; z < {{ghostLayerWidth}}; z++) {
       for (int y = {{ghostLayerWidth}}; y < {{ghostLayerWidth+nDof}}; y++) {
-        std::copy_n(luhNeighbour+((z+{{ghostLayerWidth}})*{{nDofG}}+y)*{{nDofG*nData}}+{{ghostLayerWidth*nData}}, {{nData*nDof}}, luh+((z+{{ghostLayerWidth+nDof}})*{{nDofG}}+y)*{{nDofG*nData}}+{{ghostLayerWidth*nData}});
+        std::copy_n(luhbnd+(z*{{nDof}}+y-{{ghostLayerWidth}})*{{nDof*nData}}, {{nDof*nData}}, luh+((z+{{ghostLayerWidth+nDof}})*{{nDofG}}+y)*{{nDofG*nData}}+{{ghostLayerWidth*nData}});
       }
     }
   }

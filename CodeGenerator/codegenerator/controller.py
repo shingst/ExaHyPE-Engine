@@ -303,6 +303,11 @@ class Controller:
             ghostLayerFilling.generateCode()
             runtimes["ghostLayerFilling"] = time.perf_counter() - start
             
+            start = time.perf_counter()
+            ghostLayerFillingAtBoundary = fvGhostLayerFillingAtBoundaryModel.FVGhostLayerFillingAtBoundaryModel(self.baseContext)
+            ghostLayerFillingAtBoundary.generateCode()
+            runtimes["ghostLayerFillingAtBoundary"] = time.perf_counter() - start
+            
         if self.config["kernelType"] in ["aderdg", "fv"]:
             start = time.perf_counter()
             stableTimeStepSize = stableTimeStepSizeModel.StableTimeStepSizeModel(self.baseContext)
