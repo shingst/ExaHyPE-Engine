@@ -102,7 +102,8 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* const luh,const
 
 
 void {{project}}::{{abstractSolver}}::ghostLayerFilling(double* const luh,const double* const luhNeighbour,const tarch::la::Vector<DIMENSIONS,int>& neighbourPosition) {
-  kernels::finitevolumes::commons::c::ghostLayerFilling<{{solver}}>(*static_cast<{{solver}}*>(this),luh,luhNeighbour,neighbourPosition);
+  //kernels::finitevolumes::commons::c::ghostLayerFilling<{{solver}}>(*static_cast<{{solver}}*>(this),luh,luhNeighbour,neighbourPosition);
+  {{optNamespace}}::ghostLayerFilling(*static_cast<{{solver}}*>(this),luh,luhNeighbour,&neighbourPosition[0]);
 }
 
 void {{project}}::{{abstractSolver}}::ghostLayerFillingAtBoundary(double* const luh,const double* const luhbnd,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) {

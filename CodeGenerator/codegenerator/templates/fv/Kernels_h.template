@@ -74,14 +74,15 @@ namespace {{namespaceName}} {
     const double* luhbnd,
     const double* const boundaryPosition
   );
-
+*/
 
   void ghostLayerFilling(
     {{solverName}}& solver,
-    double* luh,const double* luhNeighbour,
-    const double* const neighbourPosition
+    double* luh,
+    const double* luhNeighbour,
+    const int* const neighbourPosition
   );
-*/
+
 
 {% for namespaceName in codeNamespaceList %}
 }

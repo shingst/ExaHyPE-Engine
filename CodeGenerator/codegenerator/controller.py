@@ -298,7 +298,10 @@ class Controller:
             runtimes["limiter"] = time.perf_counter() - start
         
         if self.config["kernelType"] == "fv":
-            pass #TODO JMG
+            start = time.perf_counter()
+            ghostLayerFilling = fvGhostLayerFillingModel.FVGhostLayerFillingModel(self.baseContext)
+            ghostLayerFilling.generateCode()
+            runtimes["ghostLayerFilling"] = time.perf_counter() - start
             
         if self.config["kernelType"] in ["aderdg", "fv"]:
             start = time.perf_counter()
