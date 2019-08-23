@@ -21,6 +21,7 @@
 #include <vector>
 #include <atomic>
 #include <tuple>
+#include <functional>
 
 #include "exahype/solvers/Solver.h"
 
@@ -955,7 +956,7 @@ private:
 	  // 2. dx
 	  // 3. predictorTimeStamp
 	  // 4. predictorTimeStepSize
-	  double  _metadata[DIMENSIONS*2+2];
+	  double  _metadata[2*DIMENSIONS+3];
 
 	  StealablePredictionJobData(ADERDGSolver& solver);
       ~StealablePredictionJobData();
@@ -968,6 +969,9 @@ private:
    * and its data has been sent back.
    */
   tbb::concurrent_hash_map<std::pair<int,int>, StealablePredictionJobData*> _mapTagRankToStolenData;
+#if defined(ReplicationSaving)
+  tbb::concurrent_hash_map<std::pair<int,int>, StealablePredictionJobData*> _mapTagRankToReplicaData;
+#endif
   tbb::concurrent_hash_map<int, CellDescription*> _mapTagToCellDesc;
   tbb::concurrent_hash_map<const CellDescription*, std::pair<int,int>> _mapCellDescToTagRank;
   tbb::concurrent_hash_map<int, double*> _mapTagToMetaData;
@@ -1049,11 +1053,12 @@ private:
     	  exahype::solvers::Solver* solver,
 		  int tag,
 		  int rank);
-
+#if defined(ReplicationSaving)
       static void sendHandlerReplication(
     	  exahype::solvers::Solver* solver,
 		  int tag,
 		  int rank);
+#endif
 
       // call-back method: called when a remotely executed job has been returned back
       static void receiveBackHandler(
@@ -1065,17 +1070,50 @@ private:
     	  exahype::solvers::Solver* solver,
 		  int tag,
 		  int rank);
+
+#if defined(ReplicationSaving)
       // call-back method: called when a job has been received from another rank
       static void receiveHandlerReplication(
     	  exahype::solvers::Solver* solver,
 		  int tag,
 		  int rank);
+#endif
 
       bool run(bool calledFromMaster) override;
   };
 
 #if defined(ReplicationSaving)
-  void notifyReplicasSTPCompleted(StealablePredictionJob *job);
+  void sendReplicatedSTPToOtherTeams(StealablePredictionJob *job);
+
+  struct JobTableKey {
+	  double *center;
+	  double timestamp;
+	  int element;
+
+	  bool operator==(const JobTableKey &other) const {
+		  bool result =  true;
+		  for(int i=0; i<DIMENSIONS; i++)
+		   result &= center[i]==other.center[i];
+		  result &= timestamp == other.timestamp;
+		  result &= element == other.element;
+		  return result;
+	  }
+
+	  operator std::size_t() const {
+		  using std::hash;
+		  std::size_t result;
+		  std::hash<double> hash_fn_db;
+		  std::hash<int> hash_fn_int;
+		    //size_t str_hash = hash_fn(str);
+		  for( int i=0; i<DIMENSIONS; i++)
+			result ^= hash_fn_db(center[i]);
+		  result ^= hash_fn_db(timestamp);
+		  result ^= hash_fn_int(element);
+		  return result;
+	  }
+  };
+  tbb::concurrent_hash_map<JobTableKey, StealablePredictionJobData*> _mapJobToData;
+
 #endif
 
   /**

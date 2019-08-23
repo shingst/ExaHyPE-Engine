@@ -2435,7 +2435,7 @@ void exahype::solvers::ADERDGSolver::toString (std::ostream& out) const {
 #if defined(DistributedOffloading)
 
 #if defined (ReplicationSaving)
-void exahype::solvers::ADERDGSolver::notifyReplicasSTPCompleted(StealablePredictionJob *job) {
+void exahype::solvers::ADERDGSolver::sendReplicatedSTPToOtherTeams(StealablePredictionJob *job) {
 
 /*	int size = sizeof(double)+2*sizeof(int);
 	char *buffer = new char [size]; //TODO: deallocate
@@ -2542,7 +2542,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendStealablePredictionJob(Stealabl
 
      MPI_Request sendRequests[5];
      int tag = exahype::offloading::OffloadingManager::getInstance().getOffloadingTag();
-     double *metadata = new double[2*DIMENSIONS+2];
+     double *metadata = new double[2*DIMENSIONS+3];
      packMetadataToBuffer(entry, metadata);
      // we need this info when the task comes back...
      _mapTagToMetaData.insert(std::make_pair(tag, metadata));
@@ -2798,7 +2798,7 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
       int msgLen = -1;
       MPI_Get_count(&stat, MPI_DOUBLE, &msgLen);
       // is this message metadata? -> if true, we are about to receive a new STP task
-      if(msgLen==DIMENSIONS*2+2 && !(lastRecvTag==stat.MPI_TAG && lastRecvSrc==stat.MPI_SOURCE)) {
+      if(msgLen==2*DIMENSIONS+3 && !(lastRecvTag==stat.MPI_TAG && lastRecvSrc==stat.MPI_SOURCE)) {
         lastRecvTag = stat.MPI_TAG;
         lastRecvSrc = stat.MPI_SOURCE;
       
@@ -2871,7 +2871,7 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
       int msgLen = -1;
       MPI_Get_count(&statRep, MPI_DOUBLE, &msgLen);
       // is this message metadata? -> if true, we are about to receive a new STP task
-      if(msgLen==DIMENSIONS*2+2) {
+      if(msgLen==2*DIMENSIONS+3) {
          MPI_Request receiveRequests[5];
          StealablePredictionJobData *data = new StealablePredictionJobData(*solver);
          solver->irecvStealablePredictionJob(
@@ -2884,6 +2884,7 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
    		         interTeamComm,
    		         &receiveReplicaRequests[0],
    		         &(data->_metadata[0]));
+         solver->_mapTagRankToReplicaData.insert(std::make_pair(std::make_pair(statRep.MPI_SOURCE, statRep.MPI_TAG), data));
          exahype::offloading::OffloadingManager::getInstance().submitRequests(
                          receiveReplicaRequests,
                          5,
@@ -3062,7 +3063,7 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::run( bool isCalledOnMaster ) {
          int msgLen = -1;
          MPI_Get_count(&stat, MPI_DOUBLE, &msgLen);
          // is this message metadata? -> if true, we are about to receive a new STP task
-         if(msgLen==DIMENSIONS*2+2 && !(lastRecvTag==stat.MPI_TAG && lastRecvSrc==stat.MPI_SOURCE)) {
+         if(msgLen==2*DIMENSIONS+3 && !(lastRecvTag==stat.MPI_TAG && lastRecvSrc==stat.MPI_SOURCE)) {
            lastRecvTag=stat.MPI_TAG;
            lastRecvSrc=stat.MPI_SOURCE;
 
@@ -3386,6 +3387,9 @@ void exahype::solvers::ADERDGSolver::packMetadataToBuffer(
   offset+=1;
   memcpy(buf+offset, &entry.predictorTimeStepSize, sizeof(double));
   offset+=1;
+  double element  = entry.element; //store as double for compatibility reasons
+  memcpy(buf+offset, &element, sizeof(double));
+  offset+=1;
 
 //  logInfo("packMetadata","center "<<center_src[0]<<" dx "<<dx_src[0]<<" predictorTmeStamp "<< entry.predictorTimeStamp << " predictorTimeStepSize "<< entry.predictorTimeStepSize);
 }
@@ -3425,7 +3429,7 @@ void exahype::solvers::ADERDGSolver::isendStealablePredictionJob(
   //MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
 
   if(metadata != nullptr) {
-    ierr = MPI_Isend(metadata, 2*DIMENSIONS+2, MPI_DOUBLE, dest, tag, comm, &requests[i++]);
+    ierr = MPI_Isend(metadata, 2*DIMENSIONS+3, MPI_DOUBLE, dest, tag, comm, &requests[i++]);
     assert(ierr==MPI_SUCCESS);
     assert(requests[i-1]!=MPI_REQUEST_NULL);
   }
@@ -3467,7 +3471,7 @@ void exahype::solvers::ADERDGSolver::irecvStealablePredictionJob(
   int i = 0;
 
   if(metadata != nullptr) {
-    ierr = MPI_Irecv(metadata, 2*DIMENSIONS+2, MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
+    ierr = MPI_Irecv(metadata, 2*DIMENSIONS+3, MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
     assert(ierr==MPI_SUCCESS);
     assert(requests[i-1]!=MPI_REQUEST_NULL);
   }
@@ -3507,7 +3511,7 @@ void exahype::solvers::ADERDGSolver::recvStealablePredictionJob(
   //MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
 
   if(metadata != nullptr) {
-    ierr = MPI_Recv(metadata, 2*DIMENSIONS+2, MPI_DOUBLE, srcRank, tag, comm, MPI_STATUS_IGNORE);
+    ierr = MPI_Recv(metadata, 2*DIMENSIONS+3, MPI_DOUBLE, srcRank, tag, comm, MPI_STATUS_IGNORE);
     assertion(ierr==MPI_SUCCESS);
   }
 

@@ -115,8 +115,37 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
 
     logInfo("handleLocalExecution()", "cellDescriptionIndex"<<_cellDescriptionsIndex<<" element: "<<_element<<" time stamp: "<<_predictorTimeStamp);
 
-    //TODO: add support for lGradQhbnd
-    _solver.fusedSpaceTimePredictorVolumeIntegral(
+#if defined(ReplicationSaving)
+    double *center;
+    center = (cellDescription.getOffset()+0.5*cellDescription.getSize()).data();
+    JobTableKey  key  = {center, _predictorTimeStamp, _element};
+    logInfo("handleLocalExecution()", "looking for replica center[0] = "<< center[0]
+						              <<"center[1] = "<< center[1]
+			                          <<"center[2] = "<< center[2]
+								      <<"time stamp = "<<_predictorTimeStamp);
+    tbb::concurrent_hash_map<JobTableKey, StealablePredictionJobData*>::accessor a_jobToData;
+    bool found = _solver._mapJobToData.find(a_jobToData, key);
+    if(found) {
+    	StealablePredictionJobData *data = a_jobToData->second;
+    	assert(data->_metadata[2*DIMENSIONS]==_predictorTimeStamp);
+    	logInfo("handleLocalExecution()", "found STP in received replica jobs:"
+    			                           <<"center[0] = "<<data->_metadata[0]
+										   <<" center[1] = "<<data->_metadata[1]
+										   <<" center[2] = "<<data->_metadata[2]
+										   <<" time stamp = "<<data->_metadata[2*DIMENSIONS]
+										   <<" element = "<<(int) data->_metadata[2*DIMENSIONS+2]);
+        std::memcpy(luh, &data->_luh[0], data->_luh.size()*sizeof(double));
+        std::memcpy(lduh, &data->_lduh[0], data->_lduh.size()*sizeof(double));
+        std::memcpy(lQhbnd, &data->_lQhbnd[0], data->_lQhbnd.size()*sizeof(double));
+        std::memcpy(lFhbnd, &data->_lFhbnd[0], data->_lFhbnd.size()*sizeof(double));
+	    cellDescription.setHasCompletedLastStep(true);
+    }
+    else {
+    	logInfo("handleLocalExecution()", " Data not available, gotta do it on my own!");
+#endif
+
+      //TODO: add support for lGradQhbnd
+      _solver.fusedSpaceTimePredictorVolumeIntegral(
         lduh,lQhbnd,nullptr, lFhbnd,
         luh,
         cellDescription.getOffset()+0.5*cellDescription.getSize(),
@@ -124,10 +153,11 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
         _predictorTimeStamp,
         _predictorTimeStepSize,
        true);
-    cellDescription.setHasCompletedLastStep(true);
+      cellDescription.setHasCompletedLastStep(true);
 
 #if defined (ReplicationSaving)
-    _solver.notifyReplicasSTPCompleted(this);
+      _solver.sendReplicatedSTPToOtherTeams(this);
+    }
     // TODO: send STP here
 #endif
 
@@ -221,24 +251,33 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveHandler(exah
   exahype::offloading::OffloadingProfiler::getInstance().notifyReceivedTask(remoteRank);
 }
 
+#if defined(ReplicationSaving)
 void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveHandlerReplication(exahype::solvers::Solver* solver, int tag, int remoteRank) {
 #if defined(PerformanceAnalysisOffloadingDetailed)
   logInfo("receiveHandlerReplica","successful receive request");
 #endif
-  logInfo("receiveHandlerReplica","successful receive request");
+  //logInfo("receiveHandlerReplica","successful receive request");
 
-  //tbb::concurrent_hash_map<std::pair<int, int>, StealablePredictionJobData*>::accessor a_tagRankToData;
-  //StealablePredictionJobData *data;
-  //static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagRankToStolenData.find(a_tagRankToData, std::make_pair(remoteRank, tag));
-  //data = a_tagRankToData->second;
-  //a_tagRankToData.release();
+  tbb::concurrent_hash_map<std::pair<int, int>, StealablePredictionJobData*>::accessor a_tagRankToData;
+  StealablePredictionJobData *data;
+  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagRankToReplicaData.find(a_tagRankToData, std::make_pair(remoteRank, tag));
+  data = a_tagRankToData->second;
+  a_tagRankToData.release();
 
+  logInfo("receiveHandlerReplica", "received replica job: center[0] = "<<data->_metadata[0]
+												        <<" center[1] = "<<data->_metadata[1]
+														<<" center[2] = "<<data->_metadata[2]
+														<<" time stamp = "<<data->_metadata[2*DIMENSIONS]
+														<<" element = "<<(int) data->_metadata[2*DIMENSIONS+2]);
+  JobTableKey key{&data->_metadata[0], data->_metadata[2*DIMENSIONS], (int) data->_metadata[2*DIMENSIONS+2] };
+  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapJobToData.insert(std::make_pair(key,data));
   //exahype::offloading::OffloadingAnalyser::getInstance().notifyReceivedSTPJob();
   //StealablePredictionJob *job= static_cast<exahype::solvers::ADERDGSolver*> (solver)->createFromData(data, remoteRank, tag);
   //peano::datatraversal::TaskSet spawnedSet(job);
 
   //exahype::offloading::OffloadingProfiler::getInstance().notifyReceivedTask(remoteRank);
 }
+#endif
 
 void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveBackHandler(exahype::solvers::Solver* solver, int tag, int remoteRank) {
 #if defined(PerformanceAnalysisOffloadingDetailed)
@@ -297,6 +336,7 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendBackHandler(exa
   assertion( NumberOfStolenJobs>=0 );
 }
 
+#if defined(ReplicationSaving)
 void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendHandlerReplication(
 		exahype::solvers::Solver* solver,
 		int tag,
@@ -311,6 +351,7 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendHandlerReplicat
   delete data;
   a_tagToData.release();
 }
+#endif
 
 void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendHandler(exahype::solvers::Solver* solver, int tag, int remoteRank) {
 #if defined(PerformanceAnalysisOffloadingDetailed)
