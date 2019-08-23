@@ -62,7 +62,8 @@ double {{project}}::{{abstractSolver}}::stableTimeStepSize(const double* const l
 }
 
 void {{project}}::{{abstractSolver}}::adjustSolution(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt) {
-  kernels::finitevolumes::commons::c::solutionAdjustment<{{solver}}>(*static_cast<{{solver}}*>(this),luh,cellCentre,cellSize,t,dt);
+  //kernels::finitevolumes::commons::c::solutionAdjustment<{{solver}}>(*static_cast<{{solver}}*>(this),luh,cellCentre,cellSize,t,dt);
+  {{optNamespace}}::solutionAdjustment(*static_cast<{{solver}}*>(this),luh,&cellCentre[0],cellSize[0],t,dt); //dx
 }
 
 void {{project}}::{{abstractSolver}}::boundaryConditions(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const tarch::la::Vector<DIMENSIONS, int>& posCell,const tarch::la::Vector<DIMENSIONS, int>& posBoundary) {

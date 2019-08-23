@@ -30,21 +30,21 @@ namespace {{namespaceName}} {
 {% endfor %}
 
 //common
-/*
+
   void solutionAdjustment(
     {{solverName}}& solver,
     double* luh, 
     const double* const center,
-    const double* const dx, 
+    const double dx, //Assume dx[0] == dx[1] == dx[2]
     const double t,
     const double dt
   );
-*/
+
 
   double stableTimeStepSize(
     {{solverName}}& solver,
     const double* const luh,
-    const double dx
+    const double dx //Assume dx[0] == dx[1] == dx[2]
   );
 
 /*

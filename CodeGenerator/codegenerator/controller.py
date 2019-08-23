@@ -241,11 +241,6 @@ class Controller:
             runtimes["configurationParameters"] = time.perf_counter() - start
             
             start = time.perf_counter()
-            adjustSolution = adjustSolutionModel.AdjustSolutionModel(self.baseContext)
-            adjustSolution.generateCode()
-            runtimes["adjustSolution"] = time.perf_counter() - start
-            
-            start = time.perf_counter()
             amrRoutines = amrRoutinesModel.AMRRoutinesModel(self.baseContext, self)
             amrRoutines.generateCode()
             runtimes["amrRoutines"] = time.perf_counter() - start
@@ -310,6 +305,11 @@ class Controller:
             stableTimeStepSize = stableTimeStepSizeModel.StableTimeStepSizeModel(self.baseContext)
             stableTimeStepSize.generateCode()
             runtimes["stableTimeStepSize"] = time.perf_counter() - start
+            
+            start = time.perf_counter()
+            adjustSolution = adjustSolutionModel.AdjustSolutionModel(self.baseContext)
+            adjustSolution.generateCode()
+            runtimes["adjustSolution"] = time.perf_counter() - start
         
         # must be run only after all gemm have been generated
         start = time.perf_counter()
