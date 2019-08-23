@@ -46,7 +46,7 @@ double {{codeNamespace}}::stableTimeStepSize(
       for (int n = 0; n < {{nVar}}; n++) {
 	maxEigenvalueVisc = std::max(std::abs(lambda[n]), maxEigenvalueVisc);
       }
-      maxEigenvalue += maxEigenvalueVisc * (2.0/PNPM[{{nDof - 1}}]) * inverseDx;
+      maxEigenvalue += maxEigenvalueVisc * (2.0/PNPM) * inverseDx;
       {% endif %}
       denominator += maxEigenvalue * inverseDx; //Assume dx[0] == dx[1] == dx[2]
     }

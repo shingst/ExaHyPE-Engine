@@ -260,7 +260,7 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
   // Now also check if TV is too high!
   double data[NumberOfGlobalObservables];
   GlobalObservables curObs(data);
-  mapGlobalObservables(curObs,solution, 0,dx,0,0);
+  mapGlobalObservables(curObs,solution,center,dx,t,0); // center/dt unused
   const auto *curObsRaw = curObs.data();
   
   const auto curTv = curObsRaw[0];
@@ -333,7 +333,7 @@ exahype::solvers::Solver::RefinementControl NavierStokes::NavierStokesSolver_ADE
 
   double data[NumberOfGlobalObservables];
   GlobalObservables curObs(data);
-  mapGlobalObservables(curObs,luh,0,dx,0,0);
+  mapGlobalObservables(curObs,luh,center,dx,t,0); // center/t/dt unused
   const auto *curObsRaw = curObs.data();
   
   const auto curTv = curObsRaw[0];
@@ -533,3 +533,4 @@ void NavierStokes::NavierStokesSolver_ADERDG::riemannSolver(double* FL_,double* 
   converter::FFace_generic2optimised(FR,FR_);
 #endif 
 }
+double ** NavierStokes::NavierStokesSolver_ADERDG::weights = kernels::legendre::weights;

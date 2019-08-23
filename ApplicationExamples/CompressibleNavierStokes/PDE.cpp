@@ -65,11 +65,7 @@ void NavierStokes::PDE::setZ(double *Q, double value) const {
 }
 
 double NavierStokes::PDE::getHeight(double const *Q) const {
-#ifdef OPT_KERNELS
-  constexpr auto parametersOffset = NavierStokes::NavierStokesSolver_ADERDG_kernels::aderdg::getNumberOfVariablePadded();
-#else
   constexpr auto parametersOffset = AbstractNavierStokesSolver_ADERDG::VariableMetrics::SizeVariables;
-#endif
   if (useGravity) {
     // Gravity is included in pressure!
     const auto heightIdx = parametersOffset;
@@ -81,11 +77,7 @@ double NavierStokes::PDE::getHeight(double const *Q) const {
 }
 
 void NavierStokes::PDE::setHeight(double *Q, double value) const {
-#ifdef OPT_KERNELS
-  constexpr auto parametersOffset = NavierStokes::NavierStokesSolver_ADERDG_kernels::aderdg::getNumberOfVariablePadded();
-#else
   constexpr auto parametersOffset = AbstractNavierStokesSolver_ADERDG::VariableMetrics::SizeVariables;
-#endif
   if (useGravity) {
     // Gravity is included in pressure!
     const auto heightIdx = parametersOffset;
@@ -95,11 +87,7 @@ void NavierStokes::PDE::setHeight(double *Q, double value) const {
 }
 
 void NavierStokes::PDE::setBackgroundState(double *Q, double backgroundRho, double backgroundPressure) const {
-#ifdef OPT_KERNELS
-  constexpr auto parametersOffset = NavierStokes::NavierStokesSolver_ADERDG_kernels::aderdg::getNumberOfVariablePadded();
-#else
   constexpr auto parametersOffset = AbstractNavierStokesSolver_ADERDG::VariableMetrics::SizeVariables;
-#endif
   if (useBackgroundState) {
     const auto backgroundStateIdx = parametersOffset + 1;
       Q[backgroundStateIdx] = backgroundRho;
@@ -108,11 +96,7 @@ void NavierStokes::PDE::setBackgroundState(double *Q, double backgroundRho, doub
 }
 
 std::pair<double, double> NavierStokes::PDE::getBackgroundState(double const *Q) const {
-#ifdef OPT_KERNELS
-  constexpr auto parametersOffset = NavierStokes::NavierStokesSolver_ADERDG_kernels::aderdg::getNumberOfVariablePadded();
-#else
   constexpr auto parametersOffset = AbstractNavierStokesSolver_ADERDG::VariableMetrics::SizeVariables;
-#endif
   if (useBackgroundState) {
     const auto backgroundStateIdx = parametersOffset + 1;
     return {Q[backgroundStateIdx], Q[backgroundStateIdx+1]};

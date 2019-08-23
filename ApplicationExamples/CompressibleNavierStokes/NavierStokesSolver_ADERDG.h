@@ -14,6 +14,7 @@
 #include "AbstractNavierStokesSolver_ADERDG.h"
 #include <string>
 #include "Scenarios/Scenario.h"
+#include "kernels/GaussLegendreBasis.h"
 
 #include "exahype/parser/ParserView.h"
 
@@ -36,6 +37,7 @@ class NavierStokes::NavierStokesSolver_ADERDG : public NavierStokes::AbstractNav
      */
     static tarch::logging::Log _log;
   public:
+    static double** weights; 
     std::unique_ptr<Scenario> scenario;
     std::string scenarioName;
     PDE ns;

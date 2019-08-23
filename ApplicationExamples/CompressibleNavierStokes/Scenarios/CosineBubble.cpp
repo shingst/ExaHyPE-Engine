@@ -1,7 +1,7 @@
 #include "CosineBubble.h"
 
 NavierStokes::CosineBubble::CosineBubble() {
-  const auto tempDiff = DIMENSIONS == 1.0;
+  const auto tempDiff = 0.5;
   const auto x = 500;     // [m]
   const auto z = 350;     // [m]
   const auto size = 250;  // [m]

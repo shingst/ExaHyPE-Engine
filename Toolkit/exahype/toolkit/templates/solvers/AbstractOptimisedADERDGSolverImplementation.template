@@ -749,3 +749,4 @@ void {{project}}::{{abstractSolver}}::preProcessRiemannSolverInputs(double* cons
 void {{project}}::{{abstractSolver}}::postProcessRiemannSolution(double* const lFhbnd,const int direction,const int fineGridFaceIndex) const {
   abortWithMsg("If this operation is entered (postProcessRiemannSolution), you have specified Riemann solver input and output transformations. Then you have to re-implement this routine, too." );
 }
+{% endif %}
