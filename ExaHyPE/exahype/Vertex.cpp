@@ -743,8 +743,6 @@ void exahype::Vertex::sendToNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h,
     const int                                    level) const {
-//  return; // TODO remove
-
   if ( hasToCommunicate(level) ) {
     const tarch::la::Vector<DIMENSIONS,int> lowerLeft(0);
     sendToNeighbourLoopBody(toRank,0,1,_vertexData.getCellDescriptionsIndex(0),getAdjacentRanks(),isLastIterationOfBatchOrNoBatch,computeFaceBarycentre(x,h,0,lowerLeft),level);
@@ -849,8 +847,8 @@ void exahype::Vertex::receiveNeighbourData(
 
     const tarch::la::Vector<DIMENSIONS,int> lowerLeft(0);
     #if DIMENSIONS==3
-    receiveNeighbourDataLoopBody(fromRank,4,0,_vertexData.getCellDescriptionsIndex(0),mergeWithReceivedData,receiveMetadata,getAdjacentRanks(),computeFaceBarycentre(x,h,2,x,lowerLeft),x,h,level);
-    receiveNeighbourDataLoopBody(fromRank,0,4,_vertexData.getCellDescriptionsIndex(4),mergeWithReceivedData,receiveMetadata,getAdjacentRanks(),computeFaceBarycentre(x,h,2,x,lowerLeft),x,h,level);
+    receiveNeighbourDataLoopBody(fromRank,4,0,_vertexData.getCellDescriptionsIndex(0),mergeWithReceivedData,receiveMetadata,getAdjacentRanks(),computeFaceBarycentre(x,h,2,lowerLeft),x,h,level);
+    receiveNeighbourDataLoopBody(fromRank,0,4,_vertexData.getCellDescriptionsIndex(4),mergeWithReceivedData,receiveMetadata,getAdjacentRanks(),computeFaceBarycentre(x,h,2,lowerLeft),x,h,level);
     #endif
     receiveNeighbourDataLoopBody(fromRank,2,0,_vertexData.getCellDescriptionsIndex(0),mergeWithReceivedData,receiveMetadata,getAdjacentRanks(),computeFaceBarycentre(x,h,1,lowerLeft),x,h,level);
     receiveNeighbourDataLoopBody(fromRank,0,2,_vertexData.getCellDescriptionsIndex(2),mergeWithReceivedData,receiveMetadata,getAdjacentRanks(),computeFaceBarycentre(x,h,1,lowerLeft),x,h,level);
