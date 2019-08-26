@@ -3024,6 +3024,139 @@ public:
       const double& previousMax) const {
      return specifiedRelaxationParameter;
   }
+
+#if defined(DistributedOffloading)
+  virtual void waitUntilCompletedLastStepOffloading(
+      const void* cellDescripPtr,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) {
+ #ifdef USE_ITAC
+   VT_begin(waitUntilCompletedLastStepHandle);
+   static int event_emergency = -1;
+   static const char *event_name_emergency = "trigger_emergency";
+   int ierr=VT_funcdef(event_name_emergency, VT_NOCLASS, &event_emergency ); assert(ierr==0);
+ #endif
+
+ #ifdef OffloadingUseProfiler
+   exahype::offloading::OffloadingProfiler::getInstance().beginWaitForTasks();
+   double time_background = -MPI_Wtime();
+ #endif
+
+   const CellDescription& cellDescription = *((const CellDescription*) cellDescripPtr);
+   bool hasProcessed = false;
+   bool hasTriggeredEmergency = false;
+   bool offloadingTreatment = true;
+
+ #if !defined(OffloadingUseProgressThread)
+   if( offloadingTreatment )
+   {
+     //exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressOffloading(1);
+     setMaxNumberOfIprobesInProgressOffloading(1);
+   }
+ #endif
+   int myRank = tarch::parallel::Node::getInstance().getRank();
+   int responsibleRank = myRank;
+   if( offloadingTreatment)
+     responsibleRank = getResponsibleRankForCellDescription((const void*) &cellDescription);
+   bool progress = false;
+   double startTime = MPI_Wtime();
+
+   if ( !cellDescription.getHasCompletedLastStep() ) {
+      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
+ #if !defined(OffloadingUseProgressThread)
+      if ( responsibleRank!=myRank
+          && offloadingTreatment) {
+        pauseOffloadingManager();
+        logInfo("waitUntil", "cell missing from responsible rank: "<<responsibleRank);
+        tryToReceiveTaskBack(this) ;
+      }
+ #endif
+    }
+    while ( !cellDescription.getHasCompletedLastStep() ) {
+ #if !defined(OffloadingUseProgressThread)
+      if ( responsibleRank!=myRank
+         && offloadingTreatment) {
+       tryToReceiveTaskBack(this);
+        //solver->spawnReceiveBackJob();
+      }
+ #elif defined(OffloadingUseProgressThread)
+      progress = false;
+ #endif
+      #ifdef Parallel
+      {
+        tarch::multicore::RecursiveLock lock( tarch::services::Service::receiveDanglingMessagesSemaphore, false );
+        if(lock.tryLock()) {
+          tarch::parallel::Node::getInstance().receiveDanglingMessages();
+          lock.free();
+        }
+      }
+      #endif
+
+      switch ( JobSystemWaitBehaviour ) {
+         case JobSystemWaitBehaviourType::ProcessJobsWithSamePriority:
+           hasProcessed = tarch::multicore::jobs::processBackgroundJobs( 1, getTaskPriority(waitForHighPriorityJob), true );
+           break;
+         case JobSystemWaitBehaviourType::ProcessAnyJobs:
+           hasProcessed = tarch::multicore::jobs::processBackgroundJobs( 1, -1, true );
+           break;
+         default:
+           break;
+      }
+
+      if((MPI_Wtime()-startTime)>10.0) { // && responsibleRank!=myRank) {
+        startTime = MPI_Wtime();
+        logInfo("waitUntilCompletedTimeStep()","warning: rank waiting too long for missing task from rank "<<responsibleRank<< " outstanding jobs:"<<NumberOfRemoteJobs);
+      }
+
+
+ #if !defined(OffloadingUseProgressThread)
+        if( !cellDescription.getHasCompletedLastStep()
+          //&& tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()==1
+          && !hasTriggeredEmergency
+          && !progress
+          && myRank!=responsibleRank
+          && offloadingTreatment
+          && ( exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs
+              -exahype::solvers::ADERDGSolver::NumberOfRemoteJobs)==0
+        )
+          //&& exahype::solvers::ADERDGSolver::NumberOfReceiveBackJobs==0)
+          //&& !exahype::offloading::OffloadingManager::getInstance().getRunningAndReceivingBack())
+ #else
+        if( !cellDescription.getHasCompletedLastStep()
+          && !hasTriggeredEmergency
+          && myRank!=responsibleRank
+          && offloadingTreatment
+          && !hasProcessed)
+ #endif
+        {
+ #ifdef USE_ITAC
+    VT_begin(event_emergency);
+ #endif
+          hasTriggeredEmergency = true;
+          logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank);
+          exahype::offloading::OffloadingManager::getInstance().triggerEmergencyForRank(responsibleRank);
+ #ifdef USE_ITAC
+    VT_end(event_emergency);
+ #endif
+        }
+
+    }
+ #if !defined(OffloadingUseProgressThread)
+    if ( responsibleRank!=myRank
+       && offloadingTreatment) {
+      resumeOffloadingManager();
+    }
+    exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressOffloading( std::numeric_limits<int>::max() );
+ #endif
+
+ #ifdef OffloadingUseProfiler
+   time_background += MPI_Wtime();
+   exahype::offloading::OffloadingProfiler::getInstance().endWaitForTasks(time_background);
+ #endif
+
+ #ifdef USE_ITAC
+    VT_end(waitUntilCompletedLastStepHandle);
+ #endif
+  }
 };
+#endif
 
 #endif
