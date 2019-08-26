@@ -214,60 +214,51 @@ class Controller:
                 os.remove(self.config['pathToOutputDirectory'] + "/" + fileName)
         
         # run the models new files
-        runtimes = {}
-        modelList = [] #name (for debug output), model object
         
-        modelList.append((    "kernelsHeader",               kernelsHeaderModel.KernelsHeaderModel(self.baseContext)))
+        self.runModel(    "kernelsHeader",            kernelsHeaderModel.KernelsHeaderModel(self.baseContext))
         
         if self.config["kernelType"] in ["aderdg", "limiter"]:
-            modelList.append(("quadrature",                  quadratureModel.QuadratureModel(self.baseContext, self)))
+            self.runModel("quadrature",               quadratureModel.QuadratureModel(self.baseContext, self))
         
         if self.config["kernelType"] == "aderdg":
-            modelList.append(("converter",                   converterModel.ConverterModel(self.baseContext)))
-            modelList.append(("configurationParameters",     configurationParametersModel.ConfigurationParametersModel(self.baseContext)))
-            modelList.append(("amrRoutines",                 amrRoutinesModel.AMRRoutinesModel(self.baseContext, self)))
-            modelList.append(("boundaryConditions",          boundaryConditionsModel.BoundaryConditionsModel(self.baseContext)))
-            modelList.append(("deltaDistribution",           deltaDistributionModel.DeltaDistributionModel(self.baseContext)))
-            modelList.append(("faceIntegral",                faceIntegralModel.FaceIntegralModel(self.baseContext)))
-            modelList.append(("fusedSpaceTimePredictorVolumeIntegral", fusedSpaceTimePredictorVolumeIntegralModel.FusedSpaceTimePredictorVolumeIntegralModel(self.baseContext, self)))
-            modelList.append(("matrixUtils",                 matrixUtilsModel.MatrixUtilsModel(self.baseContext)))
-            modelList.append(("dgMatrix",                    dgMatrixModel.DGMatrixModel(self.baseContext)))
-            modelList.append(("riemann",                     riemannModel.RiemannModel(self.baseContext)))
-            modelList.append(("solutionUpdate",              solutionUpdateModel.SolutionUpdateModel(self.baseContext)))
-            modelList.append(("surfaceIntegral",             surfaceIntegralModel.SurfaceIntegralModel(self.baseContext)))
+            self.runModel("converter",                converterModel.ConverterModel(self.baseContext))
+            self.runModel("configurationParameters",  configurationParametersModel.ConfigurationParametersModel(self.baseContext))
+            self.runModel("amrRoutines",              amrRoutinesModel.AMRRoutinesModel(self.baseContext, self))
+            self.runModel("boundaryConditions",       boundaryConditionsModel.BoundaryConditionsModel(self.baseContext))
+            self.runModel("deltaDistribution",        deltaDistributionModel.DeltaDistributionModel(self.baseContext))
+            self.runModel("faceIntegral",             faceIntegralModel.FaceIntegralModel(self.baseContext))
+            self.runModel("fusedSTPVI",               fusedSpaceTimePredictorVolumeIntegralModel.FusedSpaceTimePredictorVolumeIntegralModel(self.baseContext, self))
+            self.runModel("matrixUtils",              matrixUtilsModel.MatrixUtilsModel(self.baseContext))
+            self.runModel("dgMatrix",                 dgMatrixModel.DGMatrixModel(self.baseContext))
+            self.runModel("riemann",                  riemannModel.RiemannModel(self.baseContext))
+            self.runModel("solutionUpdate",           solutionUpdateModel.SolutionUpdateModel(self.baseContext))
+            self.runModel("surfaceIntegral",          surfaceIntegralModel.SurfaceIntegralModel(self.baseContext))
         
         if self.config["kernelType"] == "limiter":
-            modelList.append(("limiter", limiterModel.LimiterModel(self.baseContext, self)))
+            self.runModel("limiter",                  limiterModel.LimiterModel(self.baseContext, self))
         
         if self.config["kernelType"] == "fv":
-            modelList.append(("ghostLayerFilling",           fvGhostLayerFillingModel.FVGhostLayerFillingModel(self.baseContext)))
-            modelList.append(("ghostLayerFillingAtBoundary", fvGhostLayerFillingAtBoundaryModel.FVGhostLayerFillingAtBoundaryModel(self.baseContext)))
-            modelList.append(("boundaryLayerExtraction",     fvBoundaryLayerExtractionModel.FVBoundaryLayerExtractionModel(self.baseContext)))
+            self.runModel("ghostLayerFilling",        fvGhostLayerFillingModel.FVGhostLayerFillingModel(self.baseContext))
+            self.runModel("ghostLayerFillingAtBoundary", fvGhostLayerFillingAtBoundaryModel.FVGhostLayerFillingAtBoundaryModel(self.baseContext))
+            self.runModel("boundaryLayerExtraction",  fvBoundaryLayerExtractionModel.FVBoundaryLayerExtractionModel(self.baseContext))
         
         if self.config["kernelType"] in ["aderdg", "fv"]:
-            modelList.append(("stableTimeStepSize",          stableTimeStepSizeModel.StableTimeStepSizeModel(self.baseContext)))
-            modelList.append(("adjustSolution",              adjustSolutionModel.AdjustSolutionModel(self.baseContext)))
-        
-        
-        ## run the models
-        for name, model in modelList:
-            runtimes[name] = self.runModel(model)
+            self.runModel("stableTimeStepSize",       stableTimeStepSizeModel.StableTimeStepSizeModel(self.baseContext))
+            self.runModel("adjustSolution",           adjustSolutionModel.AdjustSolutionModel(self.baseContext))
         
         ## must be run only after all gemm have been generated
         gemmsContext = copy.copy(self.baseContext)
         gemmsContext["gemmList"] = self.gemmList
-        runtimes["gemmsCPP"] = self.runModel(gemmsCPPModel.GemmsCPPModel(gemmsContext))
-        
-        if self.config['runtimeDebug']:
-            for key, value in runtimes.items():
-                print(key+": "+str(value))
+        self.runModel(    "gemmsCPP",                 gemmsCPPModel.GemmsCPPModel(gemmsContext))
 
 
-    def runModel(self, model):
-        """Run the given model and measure runtime"""
+    def runModel(self, name, model):
+        """Run the given model and if debug then print runtime"""
         start = time.perf_counter()
         model.generateCode()
-        return time.perf_counter() - start
+        if self.config['runtimeDebug']:
+            t = time.perf_counter() - start
+            print(name+": "+str(value))
 
     def generateGemms(self, outputFileName, matmulConfigList):
         """Generate the gemms with the given config list using LIBXSMM"""
