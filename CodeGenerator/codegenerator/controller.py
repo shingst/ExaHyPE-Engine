@@ -213,124 +213,60 @@ class Controller:
             if(ext in [".cpp", ".cpph", ".c", ".h"]):
                 os.remove(self.config['pathToOutputDirectory'] + "/" + fileName)
         
-        # generate new files
+        # run the models new files
         runtimes = {}
+        modelList = [] #name (for debug output), model object
         
-        # Always generated
-        start = time.perf_counter()
-        kernelsHeader = kernelsHeaderModel.KernelsHeaderModel(self.baseContext)
-        kernelsHeader.generateCode()
-        runtimes["kernelsHeader"] = time.perf_counter() - start
+        modelList.append((    "kernelsHeader",               kernelsHeaderModel.KernelsHeaderModel(self.baseContext)))
         
         if self.config["kernelType"] in ["aderdg", "limiter"]:
-            start = time.perf_counter()
-            quadrature = quadratureModel.QuadratureModel(self.baseContext, self)
-            quadrature.generateCode()
-            runtimes["quadrature"] = time.perf_counter() - start
+            modelList.append(("quadrature",                  quadratureModel.QuadratureModel(self.baseContext, self)))
         
         if self.config["kernelType"] == "aderdg":
-        
-            start = time.perf_counter()
-            converter = converterModel.ConverterModel(self.baseContext)
-            converter.generateCode()
-            runtimes["converter"] = time.perf_counter() - start
-            
-            start = time.perf_counter()
-            configurationParameters = configurationParametersModel.ConfigurationParametersModel(self.baseContext)
-            configurationParameters.generateCode()
-            runtimes["configurationParameters"] = time.perf_counter() - start
-            
-            start = time.perf_counter()
-            amrRoutines = amrRoutinesModel.AMRRoutinesModel(self.baseContext, self)
-            amrRoutines.generateCode()
-            runtimes["amrRoutines"] = time.perf_counter() - start
-            
-            start = time.perf_counter()
-            boundaryConditions = boundaryConditionsModel.BoundaryConditionsModel(self.baseContext)
-            boundaryConditions.generateCode()
-            runtimes["boundaryConditions"] = time.perf_counter() - start
-            
-            start = time.perf_counter()
-            deltaDistribution = deltaDistributionModel.DeltaDistributionModel(self.baseContext)
-            deltaDistribution.generateCode()
-            runtimes["deltaDistribution"] = time.perf_counter() - start
-            
-            start = time.perf_counter()
-            faceIntegral = faceIntegralModel.FaceIntegralModel(self.baseContext)
-            faceIntegral.generateCode()
-            runtimes["faceIntegral"] = time.perf_counter() - start
-        
-            start = time.perf_counter()
-            fusedSpaceTimePredictorVolumeIntegral = fusedSpaceTimePredictorVolumeIntegralModel.FusedSpaceTimePredictorVolumeIntegralModel(self.baseContext, self)
-            fusedSpaceTimePredictorVolumeIntegral.generateCode()
-            runtimes["fusedSpaceTimePredictorVolumeIntegral"] = time.perf_counter() - start
-            
-            start = time.perf_counter()
-            matrixUtils = matrixUtilsModel.MatrixUtilsModel(self.baseContext)
-            matrixUtils.generateCode()
-            runtimes["matrixUtils"] = time.perf_counter() - start
-            
-            start = time.perf_counter()
-            dgMatrix = dgMatrixModel.DGMatrixModel(self.baseContext)
-            dgMatrix.generateCode()
-            runtimes["dgMatrix"] = time.perf_counter() - start
-            
-            start = time.perf_counter()
-            riemann = riemannModel.RiemannModel(self.baseContext)
-            riemann.generateCode()
-            runtimes["riemann"] = time.perf_counter() - start
-            
-            start = time.perf_counter()
-            solutionUpdate = solutionUpdateModel.SolutionUpdateModel(self.baseContext)
-            solutionUpdate.generateCode()
-            runtimes["solutionUpdate"] = time.perf_counter() - start
-            
-            start = time.perf_counter()
-            surfaceIntegral = surfaceIntegralModel.SurfaceIntegralModel(self.baseContext)
-            surfaceIntegral.generateCode()
-            runtimes["surfaceIntegral"] = time.perf_counter() - start
-        
+            modelList.append(("converter",                   converterModel.ConverterModel(self.baseContext)))
+            modelList.append(("configurationParameters",     configurationParametersModel.ConfigurationParametersModel(self.baseContext)))
+            modelList.append(("amrRoutines",                 amrRoutinesModel.AMRRoutinesModel(self.baseContext, self)))
+            modelList.append(("boundaryConditions",          boundaryConditionsModel.BoundaryConditionsModel(self.baseContext)))
+            modelList.append(("deltaDistribution",           deltaDistributionModel.DeltaDistributionModel(self.baseContext)))
+            modelList.append(("faceIntegral",                faceIntegralModel.FaceIntegralModel(self.baseContext)))
+            modelList.append(("fusedSpaceTimePredictorVolumeIntegral", fusedSpaceTimePredictorVolumeIntegralModel.FusedSpaceTimePredictorVolumeIntegralModel(self.baseContext, self)))
+            modelList.append(("matrixUtils",                 matrixUtilsModel.MatrixUtilsModel(self.baseContext)))
+            modelList.append(("dgMatrix",                    dgMatrixModel.DGMatrixModel(self.baseContext)))
+            modelList.append(("riemann",                     riemannModel.RiemannModel(self.baseContext)))
+            modelList.append(("solutionUpdate",              solutionUpdateModel.SolutionUpdateModel(self.baseContext)))
+            modelList.append(("surfaceIntegral",             surfaceIntegralModel.SurfaceIntegralModel(self.baseContext)))
         
         if self.config["kernelType"] == "limiter":
-            start = time.perf_counter()
-            limiter = limiterModel.LimiterModel(self.baseContext, self)
-            limiter.generateCode()
-            runtimes["limiter"] = time.perf_counter() - start
+            modelList.append(("limiter", limiterModel.LimiterModel(self.baseContext, self)))
         
         if self.config["kernelType"] == "fv":
-            start = time.perf_counter()
-            ghostLayerFilling = fvGhostLayerFillingModel.FVGhostLayerFillingModel(self.baseContext)
-            ghostLayerFilling.generateCode()
-            runtimes["ghostLayerFilling"] = time.perf_counter() - start
-            
-            start = time.perf_counter()
-            ghostLayerFillingAtBoundary = fvGhostLayerFillingAtBoundaryModel.FVGhostLayerFillingAtBoundaryModel(self.baseContext)
-            ghostLayerFillingAtBoundary.generateCode()
-            runtimes["ghostLayerFillingAtBoundary"] = time.perf_counter() - start
-            
-        if self.config["kernelType"] in ["aderdg", "fv"]:
-            start = time.perf_counter()
-            stableTimeStepSize = stableTimeStepSizeModel.StableTimeStepSizeModel(self.baseContext)
-            stableTimeStepSize.generateCode()
-            runtimes["stableTimeStepSize"] = time.perf_counter() - start
-            
-            start = time.perf_counter()
-            adjustSolution = adjustSolutionModel.AdjustSolutionModel(self.baseContext)
-            adjustSolution.generateCode()
-            runtimes["adjustSolution"] = time.perf_counter() - start
+            modelList.append(("ghostLayerFilling",           fvGhostLayerFillingModel.FVGhostLayerFillingModel(self.baseContext)))
+            modelList.append(("ghostLayerFillingAtBoundary", fvGhostLayerFillingAtBoundaryModel.FVGhostLayerFillingAtBoundaryModel(self.baseContext)))
         
-        # must be run only after all gemm have been generated
-        start = time.perf_counter()
+        if self.config["kernelType"] in ["aderdg", "fv"]:
+            modelList.append(("stableTimeStepSize",          stableTimeStepSizeModel.StableTimeStepSizeModel(self.baseContext)))
+            modelList.append(("adjustSolution",              adjustSolutionModel.AdjustSolutionModel(self.baseContext)))
+        
+        
+        ## run the models
+        for name, model in modelList:
+            runtimes[name] = self.runModel(model)
+        
+        ## must be run only after all gemm have been generated
         gemmsContext = copy.copy(self.baseContext)
         gemmsContext["gemmList"] = self.gemmList
-        gemmsCPP = gemmsCPPModel.GemmsCPPModel(gemmsContext)
-        gemmsCPP.generateCode()
-        runtimes["gemmsCPP"] = time.perf_counter() - start
+        runtimes["gemmsCPP"] = self.runModel(gemmsCPPModel.GemmsCPPModel(gemmsContext))
         
         if self.config['runtimeDebug']:
             for key, value in runtimes.items():
                 print(key+": "+str(value))
 
+
+    def runModel(self, model):
+        """Run the given model and measure runtime"""
+        start = time.perf_counter()
+        model.generateCode()
+        return time.perf_counter() - start
 
     def generateGemms(self, outputFileName, matmulConfigList):
         """Generate the gemms with the given config list using LIBXSMM"""
