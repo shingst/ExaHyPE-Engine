@@ -224,8 +224,8 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveBackHandler(
  // logInfo("receiveBackHandler","successful receiveBack request");
   tbb::concurrent_hash_map<int, CellDescription*>::accessor a_tagToCellDesc;
   bool found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToCellDesc.find(a_tagToCellDesc, tag);
- // assert(found);
-  assertion(found);
+  assert(found);
+  //assertion(found);
   auto cellDescription = a_tagToCellDesc->second;
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToCellDesc.erase(a_tagToCellDesc);
   a_tagToCellDesc.release();
@@ -291,7 +291,7 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendHandler(exahype
   MPI_Comm commMapped = exahype::offloading::OffloadingManager::getInstance().getMPICommunicatorMapped();
   tbb::concurrent_hash_map<int, CellDescription*>::accessor a_tagToCellDesc;
   bool found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToCellDesc.find(a_tagToCellDesc, tag);
-  assertion(found);
+  assert(found);
   auto cellDescription = a_tagToCellDesc->second;
   a_tagToCellDesc.release();
   double *luh    = static_cast<double*>(cellDescription->getSolution());

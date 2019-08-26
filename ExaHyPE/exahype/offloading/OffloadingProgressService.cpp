@@ -21,12 +21,16 @@ registerService(exahype::offloading::OffloadingProgressService);
 tarch::logging::Log exahype::offloading::OffloadingProgressService::_log("exahype::offloading::OffloadingProgressService");
 
 exahype::offloading::OffloadingProgressService::OffloadingProgressService()
-: _isSet(false), _solver(nullptr) {};
+: _isSet(false), _isEnabled(false), _solver(nullptr) {};
 
 exahype::offloading::OffloadingProgressService::~OffloadingProgressService() {};
 
+void exahype::offloading::OffloadingProgressService::enable() {
+  _isEnabled = true;
+}
+
 void exahype::offloading::OffloadingProgressService::receiveDanglingMessages() {
-  if(_isSet) {
+  if(_isSet && _isEnabled) {
     exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressOffloading(1);
     // ToDo (Philipp): pass number of iterations through progress engine directly
     exahype::solvers::ADERDGSolver::progressOffloading(_solver);

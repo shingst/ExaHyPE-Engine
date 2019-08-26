@@ -47,6 +47,8 @@ class exahype::offloading::OffloadingProgressService : public tarch::services::S
    * Flag indicating if a solver has been registered.
    */
   bool _isSet;
+
+  bool _isEnabled;
   /**
    * The log device of this class.
    */
@@ -55,6 +57,9 @@ class exahype::offloading::OffloadingProgressService : public tarch::services::S
   public:
   OffloadingProgressService();
   static OffloadingProgressService& getInstance();
+ 
+  virtual void enable();
+
   virtual ~OffloadingProgressService();
   /**
    *  Progress method invoked by Peano

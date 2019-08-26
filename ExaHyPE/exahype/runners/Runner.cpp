@@ -95,6 +95,7 @@
 
 #if defined(DistributedOffloading)
 #include "exahype/offloading/PerformanceMonitor.h"
+#include "exahype/offloading/OffloadingProgressService.h"
 
 #if defined(OffloadingStrategyStaticHardcoded)
 #include "exahype/offloading/StaticDistributor.h"
@@ -296,9 +297,10 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     //always use offloading analyser
     peano::performanceanalysis::Analysis::getInstance().setDevice(&exahype::offloading::OffloadingAnalyser::getInstance());
 #if defined(DistributedOffloading)
+    
     // Create a new MPI communicator for offloading related MPI communication
     exahype::offloading::OffloadingManager::getInstance().createMPICommunicator(); 
-
+    exahype::offloading::OffloadingProgressService::getInstance().enable();
 
 #if defined(OffloadingStrategyStaticHardcoded)
     exahype::offloading::StaticDistributor::getInstance().loadDistributionFromFile(_parser.getOffloadingInputFile());
