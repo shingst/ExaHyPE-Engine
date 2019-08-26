@@ -236,11 +236,13 @@ void exahype::offloading::PerformanceMonitor::postFusedRequest() {
  
   //for(int i=0; i< nnodes*2;i++)
   //  logInfo("postFusedrequest()", "send buffer "<<_currentFusedDataSendBuffer[i]);
-
-  int err = MPI_Iallgather(&_currentFusedDataSendBuffer[0], 2*nnodes+2, MPI_DOUBLE, &_currentFusedDataReceiveBuffer[0],
-                   2*nnodes+2, MPI_DOUBLE, exahype::offloading::OffloadingManager::getInstance().getMPICommunicator(),
+  MPI_Comm comm =  exahype::offloading::OffloadingManager::getInstance().getMPICommunicator(); 
+  
+  if(comm!=MPI_COMM_NULL) {
+    int err = MPI_Iallgather(&_currentFusedDataSendBuffer[0], 2*nnodes+2, MPI_DOUBLE, &_currentFusedDataReceiveBuffer[0],
+                   2*nnodes+2, MPI_DOUBLE, comm,
                    &_fusedGatherRequest); assertion(err==MPI_SUCCESS);
-
+  }
 }
 
 bool exahype::offloading::PerformanceMonitor::isGloballyTerminated() {

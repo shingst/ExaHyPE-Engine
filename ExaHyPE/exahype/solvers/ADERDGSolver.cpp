@@ -3154,9 +3154,11 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::run( bool isCalledOnMaster ) {
   return false;
 }
 
+#if defined(OffloadingNoEarlyReceiveBacks) 
 exahype::solvers::ADERDGSolver::ReceiveBackJob::ReceiveBackJob(ADERDGSolver& solver)
   :  tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask, 0, tarch::multicore::DefaultPriority*8),
     _solver(solver) {};
+
 
 bool exahype::solvers::ADERDGSolver::ReceiveBackJob::run( bool isCalledOnMaster ) {
   tarch::multicore::Lock lock(OffloadingSemaphore, false);
@@ -3211,6 +3213,7 @@ bool exahype::solvers::ADERDGSolver::ReceiveBackJob::run( bool isCalledOnMaster 
   lock.free();
   return false;
 }
+#endif
 #endif
 
 exahype::solvers::ADERDGSolver::OffloadingManagerJob::OffloadingManagerJob(ADERDGSolver& solver) :
@@ -3346,12 +3349,14 @@ void exahype::solvers::ADERDGSolver::stopOffloadingManager() {
 }
 
 #ifdef OffloadingUseProgressTask
+#if defined(OffloadingNoEarlyReceiveBacks)
 void exahype::solvers::ADERDGSolver::spawnReceiveBackJob() {
   if(NumberOfReceiveBackJobs==0) {
     NumberOfReceiveBackJobs++;
     peano::datatraversal::TaskSet spawnedSet(new ReceiveBackJob(*this));
   }
 }
+#endif
 #endif
 
 int exahype::solvers::ADERDGSolver::getResponsibleRankForCellDescription(const void* cellDescription) {
