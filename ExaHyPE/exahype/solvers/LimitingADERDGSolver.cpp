@@ -803,11 +803,6 @@ void exahype::solvers::LimitingADERDGSolver::adjustSolutionDuringMeshRefinement(
     SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
     synchroniseTimeStepping(solverPatch,cellInfo);
 
-    // reset face-wise flags
-    solverPatch.setFacewiseAugmentationStatus(0);
-    solverPatch.setFacewiseCommunicationStatus(0);
-    solverPatch.setFacewiseRefinementStatus(ADERDGSolver::Pending);
-
     const bool isInitialMeshRefinement = getMeshUpdateEvent()==MeshUpdateEvent::InitialRefinementRequested;
     if ( exahype::solvers::Solver::SpawnAMRBackgroundJobs ) {
       solverPatch.setHasCompletedLastStep(false);

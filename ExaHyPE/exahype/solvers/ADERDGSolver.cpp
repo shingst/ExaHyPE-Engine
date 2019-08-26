@@ -1588,7 +1588,7 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourMetadata(
     const tarch::la::Vector<DIMENSIONS,double> baryCentreFrom1 =
         exahype::Cell::computeFaceBarycentre(cellDescription.getOffset(),cellDescription.getSize(),face._direction,face._orientation);
     const tarch::la::Vector<DIMENSIONS,double> baryCentreFromVertex =
-        exahype::Vertex::computeFaceBarycentre(x,h,face._direction,pos); // or src
+        exahype::Vertex::computeFaceBarycentre(x,h,face._direction,pos); // or posNeighbour
     if ( Vertex::equalUpToRelativeTolerance(baryCentreFrom1,baryCentreFromVertex) ) {
       mergeWithAugmentationStatus (cellDescription,face._faceIndex,neighbourAugmentationStatus );
       mergeWithCommunicationStatus(cellDescription,face._faceIndex,neighbourCommunicationStatus);
@@ -1633,10 +1633,18 @@ void exahype::solvers::ADERDGSolver::mergeNeighboursMetadata(
       mergeWithCommunicationStatus(cellDescription2,face._faceIndex2,cellDescription1.getCommunicationStatus());
       mergeWithAugmentationStatus(cellDescription2,face._faceIndex2,cellDescription1.getAugmentationStatus());
       mergeWithRefinementStatus(cellDescription2,face._faceIndex2,cellDescription1.getRefinementStatus());
+    } else {
+      mergeWithCommunicationStatus(cellDescription1,face._faceIndex1,-1); // TODO(Dominic): Use constants
+      mergeWithAugmentationStatus(cellDescription1,face._faceIndex1,-1);
+      mergeWithRefinementStatus(cellDescription1,face._faceIndex1,Pending);
 
-      cellDescription1.setNeighbourMergePerformed(face._faceIndex1,true); // here we only set, doesn't matter if operation is done twice.
-      cellDescription2.setNeighbourMergePerformed(face._faceIndex2,true);
+      mergeWithCommunicationStatus(cellDescription2,face._faceIndex2,-1);
+      mergeWithAugmentationStatus(cellDescription2,face._faceIndex2,-1);
+      mergeWithRefinementStatus(cellDescription2,face._faceIndex2,Pending);
     }
+
+    cellDescription1.setNeighbourMergePerformed(face._faceIndex1,true); // here we only set, doesn't matter if operation is done twice.
+    cellDescription2.setNeighbourMergePerformed(face._faceIndex2,true);
   }
 }
 
@@ -1934,7 +1942,7 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourMetadata(
     const tarch::la::Vector<DIMENSIONS, double>& h) {
   const int neighbourAugmentationStatus  = neighbourMetadata[exahype::NeighbourCommunicationMetadataAugmentationStatus  ];
   const int neighbourCommunicationStatus = neighbourMetadata[exahype::NeighbourCommunicationMetadataCommunicationStatus ];
-  const int neighbourRefinementStatus    = neighbourMetadata[exahype::NeighbourCommunicationMetadataLimiterStatus       ];
+  const int neighbourRefinementStatus    = neighbourMetadata[exahype::NeighbourCommunicationMetadataRefinementStatus    ];
 
   mergeWithNeighbourMetadata(solverNumber,cellInfo,
       neighbourAugmentationStatus,neighbourCommunicationStatus,neighbourRefinementStatus,

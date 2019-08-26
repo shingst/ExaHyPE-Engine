@@ -35,7 +35,7 @@ void exahype::solvers::ADERDGSolver::mergeWithEmptyNeighbourDuringMeshRefinement
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h) {
   mergeWithNeighbourMetadata(solverNumber,cellInfo,
-      0,0,Pending, // default values
+      0,0,Pending, // TODO(Dominic): Add different values
       pos,posNeighbour,x,h);
 }
 
@@ -583,11 +583,6 @@ void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinement(
   const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( element != NotFound ) {
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
-
-    // reset face-wise flags
-    cellDescription.setFacewiseAugmentationStatus(0);
-    cellDescription.setFacewiseCommunicationStatus(0);
-    cellDescription.setFacewiseRefinementStatus(Pending);
 
     synchroniseTimeStepping(cellDescription);
 

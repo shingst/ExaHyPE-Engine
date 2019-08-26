@@ -195,7 +195,13 @@ void exahype::Vertex::mergeOnlyNeighboursMetadataLoopBody(
 
     mergeOnlyNeighboursMetadataLoopBodyHelper(cellInfo1,cellInfo2,pos1,pos2,x,h,section);
     mergeOnlyNeighboursMetadataLoopBodyHelper(cellInfo2,cellInfo1,pos2,pos1,x,h,section);
-  } else if ( validIndex1 != validIndex2 ) {
+  } else if (
+      validIndex1 != validIndex2 &&
+      cellDescriptionsIndex1 != multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex &&
+      cellDescriptionsIndex2 != multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex
+      // make sure this is not an MPI boundary as touchVertexFirstTime
+      // is called after mergeWithNeighbour
+  ) {
     const int cellDescriptionsIndex = validIndex1 ? cellDescriptionsIndex1 : cellDescriptionsIndex2;
     tarch::la::Vector<DIMENSIONS,int> pos      = validIndex1 ? pos1 : pos2;
     tarch::la::Vector<DIMENSIONS,int> posEmpty = validIndex1 ? pos2 : pos1;
