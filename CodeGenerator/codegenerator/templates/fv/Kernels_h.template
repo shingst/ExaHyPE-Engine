@@ -47,15 +47,15 @@ namespace {{namespaceName}} {
     const double dx //Assume dx[0] == dx[1] == dx[2]
   );
 
-/*
+
   void boundaryLayerExtraction(
     {{solverName}}& solver,
     double* luhbnd,
     const double* luh,
-    const double* const boundaryPosition
+    const int* const boundaryPosition
   );
 
-
+/*
   void boundaryConditions(
     {{solverName}}& solver,
     double* stateOut,

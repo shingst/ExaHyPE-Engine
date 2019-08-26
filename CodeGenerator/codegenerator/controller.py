@@ -242,6 +242,7 @@ class Controller:
         if self.config["kernelType"] == "fv":
             modelList.append(("ghostLayerFilling",           fvGhostLayerFillingModel.FVGhostLayerFillingModel(self.baseContext)))
             modelList.append(("ghostLayerFillingAtBoundary", fvGhostLayerFillingAtBoundaryModel.FVGhostLayerFillingAtBoundaryModel(self.baseContext)))
+            modelList.append(("boundaryLayerExtraction",     fvBoundaryLayerExtractionModel.FVBoundaryLayerExtractionModel(self.baseContext)))
         
         if self.config["kernelType"] in ["aderdg", "fv"]:
             modelList.append(("stableTimeStepSize",          stableTimeStepSizeModel.StableTimeStepSizeModel(self.baseContext)))

@@ -112,7 +112,8 @@ void {{project}}::{{abstractSolver}}::ghostLayerFillingAtBoundary(double* const 
 }
 
 void {{project}}::{{abstractSolver}}::boundaryLayerExtraction(double* const luhbnd,const double* const luh,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) {
-  kernels::finitevolumes::commons::c::boundaryLayerExtraction<{{solver}}>(*static_cast<{{solver}}*>(this),luhbnd,luh,boundaryPosition);
+  //kernels::finitevolumes::commons::c::boundaryLayerExtraction<{{solver}}>(*static_cast<{{solver}}*>(this),luhbnd,luh,boundaryPosition);
+  {{optNamespace}}::boundaryLayerExtraction(*static_cast<{{solver}}*>(this),luhbnd,luh,&boundaryPosition[0]);
 }
 
 double {{project}}::{{abstractSolver}}::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, const double* gradQL, const double* gradQR, const double* cellSize, int direction) {
