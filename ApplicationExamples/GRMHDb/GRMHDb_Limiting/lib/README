@@ -1,3 +1,0 @@
-put here your libtecio.a
-tested with tecio2013: 
- - update the function-interfaces in TECPLOTPLOTTER.f90 accordingly to the version of tecio library:

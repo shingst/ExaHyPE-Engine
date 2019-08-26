@@ -36,8 +36,8 @@ void GRMHDb::PrimitiveWriter::mapQuantities(
 ) {
   int iErr = 0;
   pdecons2prim_(outputQuantities, Q, &iErr);
-  //const int writtenUnknowns = 19;
-  //for (int i=0; i<writtenUnknowns; i++){ 
-  //  outputQuantities[i] = Q[i];
-  //}
+  const int writtenUnknowns = 1;
+  for (int i=0; i<writtenUnknowns; i++){ 
+    outputQuantities[i] = Q[i];
+  }
 }

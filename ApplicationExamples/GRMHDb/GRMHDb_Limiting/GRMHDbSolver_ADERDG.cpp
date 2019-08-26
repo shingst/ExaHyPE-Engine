@@ -111,31 +111,26 @@ void GRMHDb::GRMHDbSolver_ADERDG::boundaryValues(const double* const x, const do
  }
 }
 
-exahype::solvers::Solver::RefinementControl GRMHDb::GRMHDbSolver_ADERDG::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
-	double dr;
-        dr = dx[0] * dx[0] + dx[1] * dx[1] + dx[2] * dx[2];
-        dr = sqrt(dr);
-        
-        double radiusC;
-        radiusC = center[0] * center[0] + center[1] * center[1] + center[2] * center[2];
+bool isInRefinementZone(const tarch::la::Vector<DIMENSIONS,double>& center){
+	double radius = 8.12514;
+	// lower left, upper right radius of cell
+	double cen = tarch::la::norm2(center);
+	double dr = 0.5;
+  bool shouldRefine = (cen > (radius -dr) ) && ( cen  <= (radius+dr) ); 
+  return shouldRefine;
+}
 
-        if(radiusC > 0.)
-                radiusC = sqrt(radiusC);
-        if (radiusC-0.5*dr < 8.33) {
-          if (radiusC + 0.5*dr > 7.95)
-            return exahype::solvers::Solver::RefinementControl::Refine;
-	  if (level <= getCoarsestMeshLevel()+1)
-                 return exahype::solvers::Solver::RefinementControl::Refine;
-	  return exahype::solvers::Solver::RefinementControl::Erase; 
-	}
-	return exahype::solvers::Solver::RefinementControl::Erase;
+exahype::solvers::Solver::RefinementControl GRMHDb::GRMHDbSolver_ADERDG::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
+    if(isInRefinementZone(center))
+        return exahype::solvers::Solver::RefinementControl::Refine;
+    return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
 
 //*****************************************************************************
 //******************************** PDE ****************************************
 // To use other PDE terms, specify them in the specification file, delete this 
-// file and its header and rerun the toolkit
+/// file and its header and rerun the toolkit
 //*****************************************************************************
 void GRMHDb::GRMHDbSolver_ADERDG::eigenvalues(const double* const Q,const int d,double* const lambda) {
   // Dimensions                        = 3
@@ -186,12 +181,10 @@ void  GRMHDb::GRMHDbSolver_ADERDG::nonConservativeProduct(const double* const Q,
 void GRMHDb::GRMHDbSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
 	double* const observables,
 	const double* const Q) const {
-                if (NumberOfDMPObservables>0) {
-                        std::copy_n(Q,NumberOfDMPObservables,observables);
-                }
+	if (NumberOfDMPObservables>0) {
+		std::copy_n(Q,NumberOfDMPObservables,observables);
+	}
 }
-
-
 
 bool GRMHDb::GRMHDbSolver_ADERDG::vetoDiscreteMaximumPrincipleDecision(
 		const double* const                         solution,
@@ -204,6 +197,7 @@ bool GRMHDb::GRMHDbSolver_ADERDG::vetoDiscreteMaximumPrincipleDecision(
 	return false; // do not veto = false; veto = true;	
 }
 
+
 bool GRMHDb::GRMHDbSolver_ADERDG::isPhysicallyAdmissible(
 	const double* const solution,
 	const double* const observablesMin, const double* const observablesMax,
@@ -211,17 +205,24 @@ bool GRMHDb::GRMHDbSolver_ADERDG::isPhysicallyAdmissible(
 	const tarch::la::Vector<DIMENSIONS, double>& center,
 	const tarch::la::Vector<DIMENSIONS, double>& dx,
 	const double t) const {
-	//return false; // false = limit all
-	double dr;
-	dr = dx[0] * dx[0] + dx[1] * dx[1] + dx[2] * dx[2];
-	dr = sqrt(dr);
-	double radiusC;
-	radiusC = center[0] * center[0] + center[1] * center[1] + center[2] * center[2];
-	if (radiusC > 0.)
-		radiusC = sqrt(radiusC);
-	if (radiusC + 0.5*dr > 8.05 && radiusC - 0.5*dr < 8.35)
-		return false;
-	return true;
+
+	double radius = 8.12514;
+	double cen = tarch::la::norm2(center);
+	double dr = 1.5;
+
+	bool shouldLimit = (cen > (radius -dr) ) && ( cen  <= (radius+dr) ); 
+	// return TRUE if the cell does not need limited
+	return !shouldLimit;
+}
+
+int getGeometricLoadBalancingWeight(
+        const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+        const tarch::la::Vector<DIMENSIONS,double>& cellSize) {
+  double cen = tarch::la::norm2(cellCentre);
+  double dr = std::max(0.1, tarch::la::norm2(cellSize));
+  if(cen < 8.12514+dr)
+    return 27;
+  return 1;
 }
 
 #ifdef OPT_KERNELS
@@ -281,23 +282,6 @@ void GRMHDb::GRMHDbSolver_ADERDG::riemannSolver(double* const FL, double* const 
 	constexpr int order = GRMHDb::AbstractGRMHDbSolver_ADERDG::Order;
 	constexpr int basisSize = order + 1;
 	constexpr int numberOfVariables = AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
-	// avoid spurious numerical diffusion (ony for Cowling approximation)
-	
-	//printf("\n******* RIEMANN SOLVER *****************");
-	
-#ifdef Dim2	
-	kernels::idx2 idx_FLR(basisSize, numberOfVariables);
-	for (int i = 0; i < basisSize; i++) {
-			//resetNumericalDiffusionOnADM(FL + idx_FLR(i, j, 0));
-			//resetNumericalDiffusionOnADM(FR + idx_FLR(i, j, 0));
-			double* FLL = FL + idx_FLR(i, 0);
-			double* FRR = FR + idx_FLR(i, 0);
-			for (int m = 9; m < numberOfVariables; m++) {
-				FLL[m] = 0.0;
-				FRR[m] = 0.0;
-		}
-	}
-#else
 	kernels::idx3 idx_FLR(basisSize, basisSize, numberOfVariables);
 	for (int i = 0; i < basisSize; i++) {
 		for (int j = 0; j < basisSize; j++) {
@@ -311,9 +295,6 @@ void GRMHDb::GRMHDbSolver_ADERDG::riemannSolver(double* const FL, double* const 
 			}
 		}
 	}
-#endif
-
-
 }
 #endif
 

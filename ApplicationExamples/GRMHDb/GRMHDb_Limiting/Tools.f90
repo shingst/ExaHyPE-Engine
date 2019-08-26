@@ -16,8 +16,8 @@ END SUBROUTINE PDECons2PrimFix
 RECURSIVE SUBROUTINE getNumericalSolution(V,Q) 
   USE Parameters, ONLY: nVar  
   IMPLICIT NONE     
-  REAL				:: V(nVar), Q(nVar)
-  INTEGER 			:: iErr
+  REAL:: V(nVar), Q(nVar)
+  INTEGER :: iErr
   !
   CALL PDECons2Prim(V,Q,iErr)
   !
@@ -27,8 +27,8 @@ RECURSIVE SUBROUTINE getExactSolution(x,timeStamp,V)
   USE Parameters, ONLY: nAux,nVar,nDim
   USE GRMHD_Mod  
   IMPLICIT NONE     
-  REAL				:: V(nVar), Q(nVar), x(nDim), timeStamp
-  INTEGER 			:: iErr
+  REAL:: V(nVar), Q(nVar), x(nDim), timeStamp
+  INTEGER :: iErr
   !
   call InitialData(x, timeStamp, Q)
   CALL PDECons2Prim(V,Q,iErr)
