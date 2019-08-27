@@ -165,7 +165,7 @@ namespace {{namespaceName}} {
     const double* restrict const QR,
     const double t,
     const double dt,
-    const tarch::la::Vector<{{nDim}}, double>& dx,
+    const double dx,
     const int direction
   );
 

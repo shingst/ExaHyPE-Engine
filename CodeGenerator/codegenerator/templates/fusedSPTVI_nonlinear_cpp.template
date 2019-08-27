@@ -186,7 +186,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 
 
 {% if useNCP or useViscousFlux %}
-      // TODO(Lukas): Time-averaged gradQ
       //set gradQ to 0
       std::memset(gradQ, 0, {{(nDof**nDim)*nVarPad*nDim}} * sizeof(double));
 {% endif %}

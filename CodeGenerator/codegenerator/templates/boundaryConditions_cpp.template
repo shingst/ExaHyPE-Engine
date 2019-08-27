@@ -60,7 +60,6 @@ void {{codeNamespace}}::boundaryConditions(
 {% endif %}
 {% endif %}{# useNCP #}
 
-    // TODO(JMG): Pass gradient here in case of viscous flux
 #ifdef USE_IPO
     #pragma forceinline recursive
 #endif

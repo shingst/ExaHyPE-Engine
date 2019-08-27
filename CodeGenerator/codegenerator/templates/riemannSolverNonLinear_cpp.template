@@ -28,7 +28,7 @@ void {{codeNamespace}}::riemannSolver(
   const double* restrict const QL, const double* restrict const QR,
   const double t,
   const double dt,
-  const tarch::la::Vector<DIMENSIONS, double>& dx,
+  const double dx,
   const int direction
 {% if useDeepProfiler %}
   , exahype::profilers::Profiler* profiler
@@ -87,7 +87,7 @@ void {{codeNamespace}}::riemannSolver(
     maxViscousEigenvalue = std::max(maxViscousEigenvalue, std::max(fabs(lambdaL[ivar]), fabs(lambdaR[ivar])));
   }
   const auto pi = std::acos(-1); // not constexpr for intel compilers
-  const double factor = 2 * (2 * {{nDof - 1}} + 1) / (dx[direction] * std::sqrt(0.5 * pi));
+  const double factor = 2 * (2 * {{nDof - 1}} + 1) / (dx * std::sqrt(0.5 * pi));
   smax += factor * maxViscousEigenvalue;
   {% endif %}{# useViscousFlux #} 
   
