@@ -2464,8 +2464,11 @@ void exahype::solvers::ADERDGSolver::sendReplicatedSTPToOtherTeams(StealablePred
 	int j = 0;
 	for(int i=0; i<teams; i++) {
 		if(i!=interCommRank) {
-		  logInfo("notifyReplicasSTPCompleted"," cell "<<job->_cellDescriptionsIndex<<" element "<<job->_element
-				                                <<" timestamp "<<job->_predictorTimeStamp
+		  logInfo("sendReplicatedSTPToOtherTeams"," team "<< interCommRank
+                                                <<" send replica job: center[0] = "<<data->_metadata[0]
+			                                    <<" center[1] = "<<data->_metadata[1]
+				                                <<" center[2] = "<<data->_metadata[2]
+				                                <<" time stamp = "<<job->_predictorTimeStamp
 												<<" to team "<<i);
 	      //MPI_Isend(buffer, size, MPI_BYTE, i, tag, teamInterComm, requests[j]);
           isendStealablePredictionJob(&data->_luh[0],

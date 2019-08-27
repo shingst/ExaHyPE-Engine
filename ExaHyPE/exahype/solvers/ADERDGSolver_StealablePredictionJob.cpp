@@ -114,23 +114,26 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
     double *lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
     double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
 
-    logInfo("handleLocalExecution()", "cellDescriptionIndex"<<_cellDescriptionsIndex<<" element: "<<_element<<" time stamp: "<<_predictorTimeStamp);
+    logInfo("handleLocalExecution()", "cellDescriptionIndex "<<_cellDescriptionsIndex<<" element: "<<_element<<" time stamp: "<<_predictorTimeStamp);
 
 #if defined(ReplicationSaving)
     double *center;
     center = (cellDescription.getOffset()+0.5*cellDescription.getSize()).data();
     JobTableKey  key  = {center, _predictorTimeStamp, _element};
-    logInfo("handleLocalExecution()", "looking for replica center[0] = "<< center[0]
-						              <<"center[1] = "<< center[1]
-			                          <<"center[2] = "<< center[2]
-								      <<"time stamp = "<<_predictorTimeStamp);
+    logInfo("handleLocalExecution()", "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
+    	                          	  <<" looking for replica center[0] = "<< center[0]
+						              <<" center[1] = "<< center[1]
+			                          <<" center[2] = "<< center[2]
+								      <<" time stamp = "<<_predictorTimeStamp
+									  <<" hash = "<<(size_t) key);
     tbb::concurrent_hash_map<JobTableKey, StealablePredictionJobData*>::accessor a_jobToData;
     bool found = _solver._mapJobToData.find(a_jobToData, key);
     if(found) {
     	StealablePredictionJobData *data = a_jobToData->second;
     	assert(data->_metadata[2*DIMENSIONS]==_predictorTimeStamp);
-    	logInfo("handleLocalExecution()", "found STP in received replica jobs:"
-    			                           <<"center[0] = "<<data->_metadata[0]
+    	logInfo("handleLocalExecution()", "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
+    			                           <<" found STP in received replica jobs:"
+    			                           <<" center[0] = "<<data->_metadata[0]
 										   <<" center[1] = "<<data->_metadata[1]
 										   <<" center[2] = "<<data->_metadata[2]
 										   <<" time stamp = "<<data->_metadata[2*DIMENSIONS]
@@ -142,7 +145,12 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
 	    cellDescription.setHasCompletedLastStep(true);
     }
     else {
-    	logInfo("handleLocalExecution()", " Data not available, gotta do it on my own!");
+    	logInfo("handleLocalExecution()",   "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
+    			                            <<" Data not available, gotta do it on my own!"
+											<<" center[0] = "<<center[0]
+											<<" center[1] = "<<center[1]
+											<<" center[2] = "<<center[2]
+											<<" time stamp = "<<_predictorTimeStamp);
 #endif
 
       //TODO: add support for lGradQhbnd
@@ -265,13 +273,16 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveHandlerRepli
   data = a_tagRankToData->second;
   a_tagRankToData.release();
 
-  logInfo("receiveHandlerReplica", "received replica job: center[0] = "<<data->_metadata[0]
-												        <<" center[1] = "<<data->_metadata[1]
-														<<" center[2] = "<<data->_metadata[2]
-														<<" time stamp = "<<data->_metadata[2*DIMENSIONS]
-														<<" element = "<<(int) data->_metadata[2*DIMENSIONS+2]);
+
   JobTableKey key{&data->_metadata[0], data->_metadata[2*DIMENSIONS], (int) data->_metadata[2*DIMENSIONS+2] };
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapJobToData.insert(std::make_pair(key,data));
+  logInfo("receiveHandlerReplica", "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
+		                           <<" received replica job: center[0] = "<<data->_metadata[0]
+							       <<" center[1] = "<<data->_metadata[1]
+								   <<" center[2] = "<<data->_metadata[2]
+								   <<" time stamp = "<<data->_metadata[2*DIMENSIONS]
+								   <<" element = "<<(int) data->_metadata[2*DIMENSIONS+2]
+                                   <<" hash = "<<(size_t) key);
   //exahype::offloading::OffloadingAnalyser::getInstance().notifyReceivedSTPJob();
   //StealablePredictionJob *job= static_cast<exahype::solvers::ADERDGSolver*> (solver)->createFromData(data, remoteRank, tag);
   //peano::datatraversal::TaskSet spawnedSet(job);

@@ -1136,14 +1136,22 @@ private:
 
 	  operator std::size_t() const {
 		  using std::hash;
-		  std::size_t result;
+		  std::size_t result = 0;
 		  std::hash<double> hash_fn_db;
 		  std::hash<int> hash_fn_int;
 		    //size_t str_hash = hash_fn(str);
-		  for( int i=0; i<DIMENSIONS; i++)
+		  for( int i=0; i<DIMENSIONS; i++) {
 			result ^= hash_fn_db(center[i]);
+			//logInfo("hash "<<center[i]<<" = "<<)
+		  }
 		  result ^= hash_fn_db(timestamp);
 		  result ^= hash_fn_int(element);
+		  logInfo("hash()", " center[0] = "<< center[0]
+							<<" center[1] = "<< center[1]
+					        <<" center[2] = "<< center[2]
+							<<" time stamp = "<< timestamp
+							<<" element = "<< element
+							<<" hash = "<< result);
 		  return result;
 	  }
   };
