@@ -3041,7 +3041,7 @@ public:
  #endif
 
    const CellDescription& cellDescription = *((const CellDescription*) cellDescripPtr);
-   bool hasProcessed = false;
+   //bool hasProcessed = false;
    bool hasTriggeredEmergency = false;
    bool offloadingTreatment = true;
 
@@ -3092,10 +3092,10 @@ public:
 
       switch ( JobSystemWaitBehaviour ) {
          case JobSystemWaitBehaviourType::ProcessJobsWithSamePriority:
-           hasProcessed = tarch::multicore::jobs::processBackgroundJobs( 1, getTaskPriority(waitForHighPriorityJob), true );
+           tarch::multicore::jobs::processBackgroundJobs( 1, getTaskPriority(waitForHighPriorityJob), true );
            break;
          case JobSystemWaitBehaviourType::ProcessAnyJobs:
-           hasProcessed = tarch::multicore::jobs::processBackgroundJobs( 1, -1, true );
+           tarch::multicore::jobs::processBackgroundJobs( 1, -1, true );
            break;
          default:
            break;
@@ -3156,7 +3156,7 @@ public:
     VT_end(waitUntilCompletedLastStepHandle);
  #endif
   }
-};
 #endif
+};
 
 #endif

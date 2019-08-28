@@ -130,11 +130,11 @@ tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::CoarseGridSem
 tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::OffloadingSemaphore;
 
 //ToDo (Philipp): may no longer be necessary
-std::atomic<int> exahype::solvers::ADERDGSolver::MaxIprobesInOffloadingProgress = std::numeric_limits<int>::max();
+std::atomic<int> exahype::solvers::ADERDGSolver::MaxIprobesInOffloadingProgress (std::numeric_limits<int>::max());
 
-std::atomic<int> exahype::solvers::ADERDGSolver::StealablePredictionJob::JobCounter = 0;
-std::atomic<int> exahype::solvers::ADERDGSolver::NumberOfReceiveJobs = 0;
-std::atomic<int> exahype::solvers::ADERDGSolver::NumberOfReceiveBackJobs = 0;
+std::atomic<int> exahype::solvers::ADERDGSolver::StealablePredictionJob::JobCounter (0);
+std::atomic<int> exahype::solvers::ADERDGSolver::NumberOfReceiveJobs (0);
+std::atomic<int> exahype::solvers::ADERDGSolver::NumberOfReceiveBackJobs (0);
 
 #ifdef OffloadingUseProgressTask
 std::unordered_set<int> exahype::solvers::ADERDGSolver::ActiveSenders;
@@ -2634,9 +2634,11 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
 
   //static std::atomic<int> postedReceives=0;
 
-  MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
+  int ierr = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
+  assert(ierr==MPI_SUCCESS);
 #if defined(OffloadingNoEarlyReceiveBacks)
-  MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, commMapped, &receivedTaskBack, &statMapped);
+  ierr = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, commMapped, &receivedTaskBack, &statMapped);
+  assert(ierr==MPI_SUCCESS);
 #endif
   double time = -MPI_Wtime();
 
@@ -2672,7 +2674,8 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
           exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveBackHandler,
           exahype::offloading::RequestType::receiveBack, solver, false);
     }
-    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, commMapped, &receivedTaskBack, &statMapped);
+    ierr = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, commMapped, &receivedTaskBack, &statMapped);
+    assert(ierr==MPI_SUCCESS);
 #endif
 
 //    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
@@ -2683,7 +2686,8 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
        logInfo("run()","active sender "<<terminatedSender<<" has sent termination signal ");
        exahype::offloading::OffloadingManager::getInstance().receiveCompleted(terminatedSender);
        ActiveSenders.erase(terminatedSender);
-       MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
+       ierr = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
+       assert(ierr==MPI_SUCCESS);
     }
 #endif
 
@@ -2727,7 +2731,8 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
 		         &(data->_metadata[0]));
          //double wtime = -MPI_Wtime();
         int canComplete = 0;
-        MPI_Testall(5, &receiveRequests[0], &canComplete, MPI_STATUSES_IGNORE);
+        int ierr = MPI_Testall(5, &receiveRequests[0], &canComplete, MPI_STATUSES_IGNORE);
+        assert(ierr==MPI_SUCCESS);
 //         solver->recvStealablePredictionJob(
 //             data->_luh.data(),
 //             data->_lduh.data(),
@@ -2772,7 +2777,8 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
    //   exahype::offloading::OffloadingManager::getInstance().progressRequests();
     }
 
-    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
+    ierr = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
+    assert(ierr==MPI_SUCCESS);
     //tarch::parallel::Node::getInstance().receiveDanglingMessages();  -> does lead to problems with lock!
   }
   time+= MPI_Wtime();
@@ -2847,7 +2853,8 @@ bool exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(exahype::solvers::ADER
   int receivedTaskBack = 0;
   MPI_Status statMapped;
   MPI_Comm commMapped = exahype::offloading::OffloadingManager::getInstance().getMPICommunicatorMapped();
-  MPI_Iprobe(srcRank, tag, commMapped, &receivedTaskBack, &statMapped);
+  int ierr = MPI_Iprobe(srcRank, tag, commMapped, &receivedTaskBack, &statMapped);
+  assert(ierr==MPI_SUCCESS);
   if(receivedTaskBack) {
       //exahype::offloading::OffloadingManager::getInstance().setRunningAndReceivingBack();
       tbb::concurrent_hash_map<int, CellDescription*>::accessor a_tagToCellDesc;
@@ -2921,14 +2928,16 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::run( bool isCalledOnMaster ) {
          ActiveSenders.erase(terminatedSender);
        }*/
 
-       MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
+       int ierr = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
+       assert(ierr==MPI_SUCCESS);
      
        if(receivedTask && stat.MPI_TAG==0) {
          int terminatedSender = stat.MPI_SOURCE;
          logInfo("run()","active sender "<<terminatedSender<<" has sent termination signal ");
          exahype::offloading::OffloadingManager::getInstance().receiveCompleted(terminatedSender);
          ActiveSenders.erase(terminatedSender);
-         MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
+         ierr = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
+         assert(ierr==MPI_SUCCESS);
        }
  
        if(receivedTask) {
@@ -2989,7 +2998,7 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::run( bool isCalledOnMaster ) {
          }
        
       }
-      MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
+      ierr = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat); assert(ierr==MPI_SUCCESS);
       itcount++;
   }
   logDebug("run()","terminated receive job after "<<itcount<<" iterations");
@@ -3025,7 +3034,8 @@ bool exahype::solvers::ADERDGSolver::ReceiveBackJob::run( bool isCalledOnMaster 
     int receivedTaskBack = 1;
     MPI_Status statMapped;
     MPI_Comm commMapped = exahype::offloading::OffloadingManager::getInstance().getMPICommunicatorMapped();
-    MPI_Iprobe(srcRank, tag, commMapped, &receivedTaskBack, &statMapped);
+    int ierr = MPI_Iprobe(srcRank, tag, commMapped, &receivedTaskBack, &statMapped);
+    assert(ierr==MPI_SUCCESS);
     if(receivedTaskBack) {
       //exahype::offloading::OffloadingManager::getInstance().setRunningAndReceivingBack();
       tbb::concurrent_hash_map<int, CellDescription*>::accessor a_tagToCellDesc;
@@ -3135,20 +3145,20 @@ bool exahype::solvers::ADERDGSolver::OffloadingManagerJob::run( bool isCalledOnM
 //  VT_end(event_offloadingManager);
 #endif
   return result;
-};
+}
 
 void exahype::solvers::ADERDGSolver::OffloadingManagerJob::terminate() {
   _state = State::Terminate;
-};
+}
 
 #ifndef OffloadingUseProgressThread
 void exahype::solvers::ADERDGSolver::OffloadingManagerJob::pause() {
   _state = State::Paused;
-};
+}
 
 void exahype::solvers::ADERDGSolver::OffloadingManagerJob::resume() {
   _state = State::Resume;
-};
+}
 #endif
 
 void exahype::solvers::ADERDGSolver::startOffloadingManager(bool spawn) {
@@ -3307,29 +3317,29 @@ void exahype::solvers::ADERDGSolver::isendStealablePredictionJob(
 
   if(metadata != nullptr) {
     ierr = MPI_Isend(metadata, 2*DIMENSIONS+2, MPI_DOUBLE, dest, tag, comm, &requests[i++]);
-    assertion(ierr==MPI_SUCCESS);
-    assertion(requests[i-1]!=MPI_REQUEST_NULL);
+    assert(ierr==MPI_SUCCESS);
+    assert(requests[i-1]!=MPI_REQUEST_NULL);
   }
 
-  assertion(luh!=NULL);
+  assert(luh!=NULL);
   ierr = MPI_Isend(luh, getDataPerCell(), MPI_DOUBLE, dest, tag, comm, &requests[i++]);
-  assertion(ierr==MPI_SUCCESS);
-  assertion(requests[i-1]!=MPI_REQUEST_NULL);
+  assert(ierr==MPI_SUCCESS);
+  assert(requests[i-1]!=MPI_REQUEST_NULL);
 
-  assertion(lduh!=NULL);
+  assert(lduh!=NULL);
   ierr = MPI_Isend(lduh, getUpdateSize(), MPI_DOUBLE, dest, tag, comm, &requests[i++]);
-  assertion(ierr==MPI_SUCCESS);
-  assertion(requests[i-1]!=MPI_REQUEST_NULL);
+  assert(ierr==MPI_SUCCESS);
+  assert(requests[i-1]!=MPI_REQUEST_NULL);
 
-  assertion(lQhbnd!=NULL);
+  assert(lQhbnd!=NULL);
   ierr = MPI_Isend(lQhbnd, getBndTotalSize(), MPI_DOUBLE, dest, tag, comm, &requests[i++]);
-  assertion(ierr==MPI_SUCCESS);
-  assertion(requests[i-1]!=MPI_REQUEST_NULL);
+  assert(ierr==MPI_SUCCESS);
+  assert(requests[i-1]!=MPI_REQUEST_NULL);
 
-  assertion(lFhbnd!=NULL);
+  assert(lFhbnd!=NULL);
   ierr = MPI_Isend(lFhbnd, getBndFluxTotalSize(), MPI_DOUBLE, dest, tag, comm, &requests[i++]);
-  assertion(ierr==MPI_SUCCESS);
-  assertion(requests[i-1]!=MPI_REQUEST_NULL);
+  assert(ierr==MPI_SUCCESS);
+  assert(requests[i-1]!=MPI_REQUEST_NULL);
 
 };
 
@@ -3346,6 +3356,8 @@ void exahype::solvers::ADERDGSolver::irecvStealablePredictionJob(
   int ierr;
   //MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
   int i = 0;
+  
+  logInfo("irecvStealablePredictionJob", "receiving job "<<tag<<" from srcRank "<<srcRank);
 
   if(metadata != nullptr) {
     ierr = MPI_Irecv(metadata, 2*DIMENSIONS+2, MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
@@ -3353,21 +3365,37 @@ void exahype::solvers::ADERDGSolver::irecvStealablePredictionJob(
     assert(requests[i-1]!=MPI_REQUEST_NULL);
   }
 
+  luh[5]++;
+  //std::cout<<"luh[5]: "<<luh[5];
+  //std::memset( luh, 0, getDataPerCell()*sizeof(double));
+  logInfo("irecvStealablePredictionJob","posting Irecv luh "<<luh<<" size "<<getDataPerCell());
   assert(luh!=NULL);
   ierr = MPI_Irecv(luh, getDataPerCell(), MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
   assert(ierr==MPI_SUCCESS);
   assert(requests[i-1]!=MPI_REQUEST_NULL);
 
+  lduh[5]++;
+  //std::cout<<"lduh[5]: "<<lduh[5];
+  //std::memset( lduh, 0, getUpdateSize()*sizeof(double));
+  logInfo("irecvStealablePredictionJob","posting Irecv lduh "<<lduh<<" size "<<getUpdateSize());
   assert(lduh!=NULL);
   ierr = MPI_Irecv(lduh, getUpdateSize(), MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
   assert(ierr==MPI_SUCCESS);
   assert(requests[i-1]!=MPI_REQUEST_NULL);
 
+  lQhbnd[5]++;
+  //std::cout<<"lQhbnd[5]: "<<lQhbnd[5];
+  //std::memset( lQhbnd, 0, getBndTotalSize()*sizeof(double));
+  logInfo("irecvStealablePredictionJob","posting Irecv lQhbnd "<<lQhbnd<<" size "<<getBndTotalSize());
   assert(lQhbnd!=NULL);
   ierr = MPI_Irecv(lQhbnd, getBndTotalSize(), MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
   assert(ierr==MPI_SUCCESS);
   assert(requests[i-1]!=MPI_REQUEST_NULL);
 
+  lFhbnd[5]++;
+  //std::memset( lFhbnd, 0, getBndFluxTotalSize()*sizeof(double));
+  //std::cout<<"lFhbnd[5]: "<<lFhbnd[5];
+  logInfo("irecvStealablePredictionJob","posting Irecv lFhbnd "<<lFhbnd<<" size "<<getBndFluxTotalSize());
   assert(lFhbnd!=NULL);
   ierr = MPI_Irecv(lFhbnd, getBndFluxTotalSize(), MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
   assert(ierr==MPI_SUCCESS);

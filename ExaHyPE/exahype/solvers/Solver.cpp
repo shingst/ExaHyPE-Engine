@@ -126,12 +126,12 @@ bool exahype::solvers::Solver::SpawnCompressionAsBackgroundJob = false;
 
 exahype::solvers::Solver::JobSystemWaitBehaviourType exahype::solvers::Solver::JobSystemWaitBehaviour;
 
-std::atomic<int> exahype::solvers::Solver::NumberOfAMRBackgroundJobs = 0;
-std::atomic<int> exahype::solvers::Solver::NumberOfReductionJobs = 0;
-std::atomic<int> exahype::solvers::Solver::NumberOfEnclaveJobs = 0;
-std::atomic<int> exahype::solvers::Solver::NumberOfSkeletonJobs = 0;
-std::atomic<int> exahype::solvers::Solver::NumberOfRemoteJobs = 0;
-std::atomic<int> exahype::solvers::Solver::NumberOfStolenJobs = 0;
+std::atomic<int> exahype::solvers::Solver::NumberOfAMRBackgroundJobs (0);
+std::atomic<int> exahype::solvers::Solver::NumberOfReductionJobs (0);
+std::atomic<int> exahype::solvers::Solver::NumberOfEnclaveJobs (0);
+std::atomic<int> exahype::solvers::Solver::NumberOfSkeletonJobs (0);
+std::atomic<int> exahype::solvers::Solver::NumberOfRemoteJobs (0);
+std::atomic<int> exahype::solvers::Solver::NumberOfStolenJobs (0);
 
 #ifdef USE_ITAC
 int event_wait = -1;
