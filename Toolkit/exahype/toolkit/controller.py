@@ -302,9 +302,11 @@ class Controller:
         if context["useDistributedMem"]:
             context["stealing"]  = self.spec["distributed_memory"]["stealing"]
             context["stealingProgress"] = self.spec["distributed_memory"]["stealing_progress"]
+            context["useReplicationSaving"] = self.spec["distributed_memory"]["replication_saving"]
         else:
             context["stealing"] = "none"
             context["stealingProgress"] = "none"
+            context["useReplicationSaving"] = false
 
         # kernels
         useOptKernel = False

@@ -90,6 +90,11 @@ PROJECT_CFLAGS += -DDistributedOffloading -DOffloadingStrategyStaticHardcoded
 {% elif stealing=="none" %}
 PROJECT_CFLAGS += -DAnalyseWaitingTimes
 {% endif %}
+
+{% if useReplicationSaving %}
+PROJECT_CFLAGS += -DDistributedOffloading -DReplicationSaving 
+{% endif %}
+
 {% if stealingProgress=="progress_thread" %}
 PROJECT_CFLAGS += -DOffloadingUseProgressThread
 {% elif stealingProgress=="progress_task" %}

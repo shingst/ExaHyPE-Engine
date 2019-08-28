@@ -628,9 +628,9 @@ bool exahype::offloading::OffloadingManager::selectVictimRank(int& victim, bool&
 #elif defined(OffloadingStrategyAggressiveHybrid)
   return exahype::offloading::AggressiveHybridDistributor::getInstance().selectVictimRank(victim, last);
 #else
-  double remainingLoadRatio = static_cast<double> (exahype::offloading::PerformanceMonitor::getInstance().getRemainingLocalLoad())
+  double remainingLoadRatio = static_cast<double> (exahype::offloading::PerformanceMonitor::getInstance().getRemainingTasks())
   /
-  exahype::offloading::PerformanceMonitor::getInstance().getLocalLoadPerTimestep();
+  exahype::offloading::PerformanceMonitor::getInstance().getTasksPerTimestep();
   // this is currently hardcoded: the goal is to refrain from giving tasks away if there is not enough work left
   // for overlap of communication and computation
   if(remainingLoadRatio>0.1) {
@@ -646,7 +646,7 @@ bool exahype::offloading::OffloadingManager::selectVictimRank(int& victim, bool&
     }
     return false;
 #else
-# error "Wrong offloading strategy specified!"
+    return false;
 #endif
   }
   else {

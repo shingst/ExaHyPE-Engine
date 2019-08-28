@@ -439,6 +439,11 @@
           "title" : "Timeout for MPI packages in seconds before the simulation is killed", 
           "default" : 60,
           "old_format" : { "token_after" : "timeout" }
+        },
+        "replication_saving": {
+          "type" : "boolean",
+          "title" : "If active, tasks are migrated between MPI ranks to save on computation redundancy.",
+          "default" : false
         }, 
         "stealing" : {
           "type" : "string", 

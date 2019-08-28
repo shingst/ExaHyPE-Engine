@@ -1142,7 +1142,6 @@ private:
 		    //size_t str_hash = hash_fn(str);
 		  for( int i=0; i<DIMENSIONS; i++) {
 			result ^= hash_fn_db(center[i]);
-			//logInfo("hash "<<center[i]<<" = "<<)
 		  }
 		  result ^= hash_fn_db(timestamp);
 		  result ^= hash_fn_int(element);
