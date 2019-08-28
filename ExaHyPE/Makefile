@@ -200,8 +200,7 @@ ifeq ($(call tolower,$(COMPILER)),intel)
 		COMPILER_LFLAGS += -g3
 	else ifeq ($(call tolower,$(MODE)),profile)
 		#COMPILER_CFLAGS += -p -pg -g3 -fast -ip
-		#COMPILER_CFLAGS += -p -pg -g3 -O3 -ip
-		COMPILER_CFLAGS += -p -pg -g3  
+		COMPILER_CFLAGS += -p -pg -g3 -O3 -ip
 		COMPILER_LFLAGS += -p -pg 
 	else
 		FCOMPILER_CFLAGS  += -O2
