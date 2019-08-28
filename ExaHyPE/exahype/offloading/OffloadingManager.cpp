@@ -115,16 +115,16 @@ int exahype::offloading::OffloadingManager::getTMPIInterTeamRank(){
 
 void exahype::offloading::OffloadingManager::createMPICommunicator() {
   int ierr = MPI_Comm_dup(MPI_COMM_WORLD, &_offloadingComm);
-  assertion(ierr==MPI_SUCCESS);
+  assert(ierr==MPI_SUCCESS);
   ierr = MPI_Comm_dup(MPI_COMM_WORLD, &_offloadingCommMapped);
-  assertion(ierr==MPI_SUCCESS);
+  assert(ierr==MPI_SUCCESS);
 }
 
 void exahype::offloading::OffloadingManager::destroyMPICommunicator() {
   int ierr = MPI_Comm_free( &_offloadingComm);
-  assertion(ierr==MPI_SUCCESS);
-  ierr = MPI_Comm_free(&_offloadingCommMapped);
-  assertion(ierr==MPI_SUCCESS);
+  assert(ierr==MPI_SUCCESS);
+  ierr =MPI_Comm_free(&_offloadingCommMapped);
+  assert(ierr==MPI_SUCCESS);
 }
 
 void exahype::offloading::OffloadingManager::resetPostedRequests() {
@@ -176,7 +176,7 @@ int exahype::offloading::OffloadingManager::requestTypeToMsgQueueIdx( RequestTyp
 }
 
 int exahype::offloading::OffloadingManager::getOffloadingTag() {
-  static std::atomic<int> counter = 1; //0 is reserved for status
+  static std::atomic<int> counter(1); //0 is reserved for status
   return counter.fetch_add(1);
 }
 
@@ -202,14 +202,16 @@ void exahype::offloading::OffloadingManager::submitRequests(
   }
 
   int finished = -1;
-  MPI_Testall(nRequests, requests, &finished, MPI_STATUSES_IGNORE);
+  int ierr = MPI_Testall(nRequests, requests, &finished, MPI_STATUSES_IGNORE);
+  assert(ierr==MPI_SUCCESS);
   if(finished) {
     handler(solver, tag, remoteRank);
     return;
   }
 
   if(block) {
-    MPI_Waitall(nRequests, requests, MPI_STATUSES_IGNORE);
+    int ierr = MPI_Waitall(nRequests, requests, MPI_STATUSES_IGNORE);
+    assert(ierr==MPI_SUCCESS);
     handler(solver, tag, remoteRank);
     return;
   }
@@ -446,21 +448,22 @@ bool exahype::offloading::OffloadingManager::progressRequestsOfType( RequestType
 
   int ierr = MPI_Testsome(nRequests,&_activeRequests[mapId][0], &outcount, &arrOfIndices[0], MPI_STATUSES_IGNORE);
 
-//  if(ierr != MPI_SUCCESS) {
-//    for(int i=0;i<nRequests;i++) {
-//      int ierrstatus = stats[i].MPI_ERROR;
-//      if(ierrstatus!=MPI_SUCCESS) {
-//        logInfo("offloadingManager", "error "<<ierrstatus<<" for request "<<vecIdToReqId[i]<< " source "<<stats[i].MPI_SOURCE<<" tag "<<stats[i].MPI_TAG);
-//      }
-//      char err_buffer[MPI_MAX_ERROR_STRING];
-//      int resultlen = 0;
-//      if(ierrstatus!=MPI_SUCCESS) {
-//        MPI_Error_string(ierrstatus,err_buffer,&resultlen);
-//        fprintf(stderr,err_buffer);
-//      }
-//    }
-//    MPI_Abort(MPI_COMM_WORLD, ierr); /* abort*/
-//  }
+  if(ierr != MPI_SUCCESS) {
+    for(int i=0;i<nRequests;i++) {
+      int ierrstatus = stats[i].MPI_ERROR;
+      if(ierrstatus!=MPI_SUCCESS) {
+        logInfo("offloadingManager", "error "<<ierrstatus<<" for request "<<_internalIdsOfActiveRequests[mapId][i]<< " source "<<stats[i].MPI_SOURCE<<" tag "<<stats[i].MPI_TAG);
+      }
+      char err_buffer[MPI_MAX_ERROR_STRING];
+      int resultlen = 0;
+      if(ierrstatus!=MPI_SUCCESS) {
+        MPI_Error_string(ierrstatus,err_buffer,&resultlen);
+        fprintf(stderr,err_buffer);
+      }
+    }
+    MPI_Abort(MPI_COMM_WORLD, ierr); /* abort*/
+  }
+  assert(ierr==MPI_SUCCESS);
   time += MPI_Wtime();
 
   if(outcount>0)
@@ -475,19 +478,19 @@ bool exahype::offloading::OffloadingManager::progressRequestsOfType( RequestType
   for(int i=0; i<outcount; i++) {
     int reqIdx = arrOfIndices[i];
     int reqId = _internalIdsOfActiveRequests[mapId][reqIdx];
-    assertion(_activeRequests[mapId][reqIdx]==MPI_REQUEST_NULL);
+    assert(_activeRequests[mapId][reqIdx]==MPI_REQUEST_NULL);
 
     _reqIdToReqHandle[mapId].erase(reqId);
     int groupId;
     found = _reqIdToGroup[mapId].find(a_groupId, reqId);
 
-    assertion(found);
+    assert(found);
     groupId = a_groupId->second;
     _reqIdToGroup[mapId].erase(a_groupId);
     a_groupId.release();
 
     found = _outstandingReqsForGroup[mapId].find(a_outstandingGroup, groupId);
-    assertion(found);
+    assert(found);
     a_outstandingGroup->second--;
     bool finished = a_outstandingGroup->second==0;
     a_outstandingGroup.release();
@@ -495,23 +498,23 @@ bool exahype::offloading::OffloadingManager::progressRequestsOfType( RequestType
     if(finished) {
       std::function<void(exahype::solvers::Solver*, int ,int)> handler;
       found = _handlers[mapId].find(a_handler, groupId);
-      assertion(found);
+      assert(found);
       handler=a_handler->second;
       a_handler.release();
       exahype::solvers::Solver *solver;
       found=_solvers[mapId].find(a_solver, groupId);
-      assertion(found);
+      assert(found);
       solver = a_solver->second;
       a_solver.release();
       int remoteRank = -1;
       found= _groupIdToRank[mapId].find(a_remoteRank, groupId);
       remoteRank = a_remoteRank->second;
-      assertion(found);
+      assert(found);
       a_remoteRank.release();
       int remoteTag = -1;
       found= _groupIdToTag[mapId].find(a_remoteTag, groupId);
       remoteTag = a_remoteTag->second;
-      assertion(found);
+      assert(found);
       a_remoteTag.release();
 
       handler(solver, remoteTag, remoteRank);
@@ -612,7 +615,7 @@ bool exahype::offloading::OffloadingManager::isEmergencyTriggered() {
 }
 
 bool exahype::offloading::OffloadingManager::isEmergencyTriggeredOnRank(int rank) {
-  return !_localBlacklist[rank]<0.5;
+  return !(_localBlacklist[rank]<0.5);
 }
 
 bool exahype::offloading::OffloadingManager::selectVictimRank(int& victim, bool& last) {
@@ -699,7 +702,7 @@ exahype::offloading::OffloadingManager::RequestHandlerJob::RequestHandlerJob(
   _solver(solver),
   _tag(tag),
   _remoteRank(remoteRank)
-{};
+{}
 
 bool exahype::offloading::OffloadingManager::RequestHandlerJob::operator()() {
 #ifdef USE_ITAC
@@ -741,7 +744,7 @@ bool exahype::offloading::OffloadingManager::ProgressJob::run( bool calledFromMa
 
   OffloadingManager::getInstance()._numProgressJobs--;
   return false;
-};
+}
 
 exahype::offloading::OffloadingManager::ProgressSendJob::ProgressSendJob() {}
 
@@ -757,7 +760,7 @@ bool exahype::offloading::OffloadingManager::ProgressSendJob::operator()() {
 //   if(!reschedule)
   OffloadingManager::getInstance()._numProgressSendJobs--;
   return false;
-};
+}
 
 exahype::offloading::OffloadingManager::ProgressReceiveJob::ProgressReceiveJob() {}
 
@@ -771,7 +774,7 @@ bool exahype::offloading::OffloadingManager::ProgressReceiveJob::operator()() {
 
   OffloadingManager::getInstance()._numProgressReceiveJobs--;
   return false;
-};
+}
 
 exahype::offloading::OffloadingManager::ProgressReceiveBackJob::ProgressReceiveBackJob() {}
 
@@ -785,7 +788,7 @@ bool exahype::offloading::OffloadingManager::ProgressReceiveBackJob::operator()(
 
   OffloadingManager::getInstance()._numProgressReceiveBackJobs--;
   return false;
-};
+}
 #endif
 
 #endif

@@ -503,7 +503,7 @@ bool exahype::offloading::AggressiveHybridDistributor::selectVictimRank(int& vic
   int myRank = tarch::parallel::Node::getInstance().getRank();
   victim = myRank;
 
-  static std::atomic<int> rank_cnt = 0;
+  static std::atomic<int> rank_cnt (0);
 
   int l_rank = rank_cnt;
 

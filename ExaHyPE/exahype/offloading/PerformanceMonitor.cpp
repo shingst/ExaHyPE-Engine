@@ -178,6 +178,7 @@ void exahype::offloading::PerformanceMonitor::progressGather() {
 
   if( !isGloballyTerminated() && _fusedGatherRequest!=MPI_REQUEST_NULL) {
     int err = MPI_Test(&_fusedGatherRequest, &completed_fused, MPI_STATUS_IGNORE);
+    assert(err==MPI_SUCCESS);
   }
  
   if(completed_fused) {
@@ -242,6 +243,7 @@ void exahype::offloading::PerformanceMonitor::postFusedRequest() {
     int err = MPI_Iallgather(&_currentFusedDataSendBuffer[0], 2*nnodes+2, MPI_DOUBLE, &_currentFusedDataReceiveBuffer[0],
                    2*nnodes+2, MPI_DOUBLE, comm,
                    &_fusedGatherRequest); assertion(err==MPI_SUCCESS);
+    assert(err==MPI_SUCCESS);
   }
 }
 

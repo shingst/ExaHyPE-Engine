@@ -21,9 +21,9 @@ registerService(exahype::offloading::OffloadingProgressService);
 tarch::logging::Log exahype::offloading::OffloadingProgressService::_log("exahype::offloading::OffloadingProgressService");
 
 exahype::offloading::OffloadingProgressService::OffloadingProgressService()
-: _isSet(false), _isEnabled(false), _solver(nullptr) {};
+: _isSet(false), _isEnabled(false), _solver(nullptr) {}
 
-exahype::offloading::OffloadingProgressService::~OffloadingProgressService() {};
+exahype::offloading::OffloadingProgressService::~OffloadingProgressService() {}
 
 void exahype::offloading::OffloadingProgressService::enable() {
   _isEnabled = true;
