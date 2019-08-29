@@ -40,7 +40,9 @@ class exahype::offloading::PerformanceMonitor {
      * Status flag, if false then a rank has stopped
      * the PerformanceMonitor locally.
      */
-    bool _isStarted;
+    bool _isRankActive;
+
+    bool _isDisabled;
 
     /**
      * Indicates if all ranks have terminated.
@@ -178,6 +180,8 @@ class exahype::offloading::PerformanceMonitor {
      * through the system.
      */
     void run();
+
+    void disable();
 
     static PerformanceMonitor& getInstance();
     virtual ~PerformanceMonitor();

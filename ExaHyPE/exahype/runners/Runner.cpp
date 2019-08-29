@@ -321,6 +321,15 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
 
     logInfo("initDistributedMemoryConfiguration()", " teams: "<<nteams<<", rank in team "
     		                                         <<team<<" : "<<rank<<", team rank in intercomm: "<<rankInterComm);
+
+  #if !( defined(OffloadingStrategyStaticHardcoded) \
+      || defined(OffloadingStrategyStatic) \
+	  || defined(OffloadingStrategyDynamic) \
+	  || defined(OffloadingStrategyAggressiveHybrid) \
+	  || defined(OffloadingStrategyAggressive) \
+	  || defined(OffloadingStrategyAggressiveCCP))
+    exahype::offloading::PerformanceMonitor::getInstance().disable();
+  #endif
 #endif
 
 #if defined(OffloadingStrategyStaticHardcoded)

@@ -32,7 +32,8 @@
 tarch::logging::Log exahype::offloading::PerformanceMonitor::_log( "exahype::offloading::PerformanceMonitor" );
 
 exahype::offloading::PerformanceMonitor::PerformanceMonitor() :
-    _isStarted(true),
+    _isRankActive(true),
+	_isDisabled(false),
     _fusedGatherRequest(MPI_REQUEST_NULL),
     _currentTasksLocal(0),
     _remainingTasks(0),
@@ -126,7 +127,7 @@ exahype::offloading::PerformanceMonitor& exahype::offloading::PerformanceMonitor
 }
 
 void exahype::offloading::PerformanceMonitor::stop() {
-  _isStarted=false;
+  _isRankActive=false;
 }
 
 void exahype::offloading::PerformanceMonitor::setCurrentTasks(int num) {
@@ -158,8 +159,13 @@ void exahype::offloading::PerformanceMonitor::decRemainingTasks() {
   assertion(_remainingTasks>=0);
 }
 
+void exahype::offloading::PerformanceMonitor::disable() {
+	_isDisabled = true;
+}
+
 void exahype::offloading::PerformanceMonitor::run() {
-  progressGather();
+  if(!_isDisabled)
+    progressGather();
 }
 
 void exahype::offloading::PerformanceMonitor::progressGather() {
@@ -224,7 +230,7 @@ void exahype::offloading::PerformanceMonitor::postFusedRequest() {
   std::copy(&_currentWaitingTimes[0], &_currentWaitingTimes[nnodes], &_currentFusedDataSendBuffer[0]);
   std::copy(&_currentBlacklist[0], &_currentBlacklist[nnodes], &_currentFusedDataSendBuffer[nnodes]);
   _currentFusedDataSendBuffer[2*nnodes]= static_cast<double> (_currentTasksLocal.load());
-  _currentFusedDataSendBuffer[2*nnodes+1]= !_isStarted ? TERMINATE_SIGNAL : 0; //0 means running
+  _currentFusedDataSendBuffer[2*nnodes+1]= !_isRankActive ? TERMINATE_SIGNAL : 0; //0 means running
 
   assertion(_fusedGatherRequest==MPI_REQUEST_NULL);
  
