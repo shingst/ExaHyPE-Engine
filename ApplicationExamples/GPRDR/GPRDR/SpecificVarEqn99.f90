@@ -2651,6 +2651,12 @@ subroutine A2sigmaJacobianSGEOS(J,sig,theta,lambda1,mu1,rho0,g,s,cv,p0,EOS_mode,
             Ypos    = ODE%Yeq_B*abs(Yp)+xi*ODE%Yeq_A*(Ydev - ODE%Yeq_s0)
             Yneg    = ODE%Yeq_C*abs(Yp)+ODE%Yeq_A*(Ydev - ODE%Yeq_s0)
             xi      = 0.5d0*(1.0d0 + erf(Yp/min(1.e+5,ODE%Y0*1.e-3)))                ! Smooth the positive/negative pressure corner
+			!if(Yp>0) then
+			!	xi=1.
+			!else
+			!	xi=0.
+			!end if
+			!print *, 'Here', ODE%Yeq_C
             Y       = xi*Ypos+(1.-xi)*Yneg
             Y = Y*ODE%alpha
         ELSE IF (ODE%Yeq_mode .eq. 5) THEN
@@ -2660,6 +2666,7 @@ subroutine A2sigmaJacobianSGEOS(J,sig,theta,lambda1,mu1,rho0,g,s,cv,p0,EOS_mode,
         ELSE
             Y = -1.0d300
         END IF
+			!Y=max(0., Y)
     END SUBROUTINE compute_total_stress
     ! *******************************************************************************************************
     subroutine StaticLimiterEQ99(dmpresult,lxb,ldx)
