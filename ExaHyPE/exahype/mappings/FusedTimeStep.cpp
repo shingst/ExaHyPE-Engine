@@ -94,23 +94,7 @@ exahype::mappings::FusedTimeStep::leaveCellSpecification(int level) const {
 
 peano::MappingSpecification
 exahype::mappings::FusedTimeStep::touchVertexFirstTimeSpecification(int level) const {
-  #ifdef Parallel
-  return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true); // counter
-  #else
-
-  const int coarsestSolverLevel = solvers::Solver::getCoarsestMeshLevelOfAllSolvers();
-  if ( std::abs(level)>=coarsestSolverLevel && issuePredictionJobsInThisIteration() ) {
-    return peano::MappingSpecification(
-          peano::MappingSpecification::WholeTree,
-          peano::MappingSpecification::RunConcurrentlyOnFineGrid,true); // counter
-  } else {
-    return peano::MappingSpecification(
-          peano::MappingSpecification::Nop,
-          peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
-  }
-  #endif
+  return Vertex::getNeighbourMergeSpecification(level);
 }
 
 /**

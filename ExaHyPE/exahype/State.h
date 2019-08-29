@@ -89,8 +89,8 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    *
    * All other adapters and their mappings let Peano control the communication.
    *
-   * @param action                           indicates the current algorithmic phase (Prediction, FusedTimeStep, ...)
-   * @param predictionFusedTimeStepCondition a condition derived from the current iteration or the number of iterations.
+   * @param action                            indicates the current algorithmic phase (Prediction, FusedTimeStep, ...)
+   * @param predictionFusedTimeStepCondition  a condition derived from the current iteration or the number of iterations.
    */
   static bool startAndFinishNeighbourExchangeManually(const exahype::records::RepositoryState::Action& action,const bool predictionFusedTimeStepCondition);
 

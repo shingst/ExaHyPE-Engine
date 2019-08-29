@@ -1056,10 +1056,12 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
     logInfo( "runAsMaster(...)", "finished building up uniform base mesh" );
   }
 
-
   // adaptive mesh refinement
   //repository.switchToMeshRefinementAndPlotTree();
   repository.switchToMeshRefinement();
+  if ( exahype::solvers::Solver::getMinTimeStampOfAllSolvers() > 0.78 ) {
+    repository.switchToMeshRefinementAndPlotTree();
+  }
   repository.getState().setAllSolversAttainedStableState(false);
   repository.getState().setStableIterationsInARow(0);
   while (
@@ -1531,16 +1533,23 @@ void exahype::runners::Runner::initialiseMesh(exahype::repositories::Repository&
 
 void exahype::runners::Runner::updateMeshOrLimiterDomain(
     exahype::repositories::Repository& repository, const bool fusedTimeStepping) {
+
+  // @note: The global communication associated with some of the adapters
+  // is realised in the exahype::State::kickOffIteration(...) and exahype::State::wrapUpIteration(...)
+
   // 1. All solvers drop their MPI messages and broadcast time step data
   repository.switchToBroadcastAndDropNeighbourMessages();
   repository.iterate(1,false);
 
   // 2. Only the solvers with irregular limiter domain change do the limiter status spreading.
   if ( exahype::solvers::Solver::oneSolverRequestedRefinementStatusSpreading() ) {
-    logInfo("updateMeshAndSubdomains(...)","pre-spreading of limiter status");
-    repository.switchToRefinementStatusSpreading();
-    repository.iterate(
-        exahype::solvers::Solver::getMaxRefinementStatus()+1,false);
+    const int iterationsToRun = std::max(2,exahype::solvers::Solver::getMaxRefinementStatus()+1); // at least two iterations required when using MPI
+    repository.switchToRefinementStatusSpreading(); // see exahype::State for the realisation of the broadcast at the begin and reduction at the end
+    repository.getState().setAllSolversAttainedStableState(false);
+    while ( !repository.getState().getAllSolversAttainedStableState() ) {
+      logInfo("updateMeshAndSubdomains(...)","run "<<iterationsToRun<<" iterations of refinement status spreading");
+      repository.iterate(iterationsToRun,false);
+    }
   }
 
   // 2.1 A broadcast is necessary to communicate if the refinement event has

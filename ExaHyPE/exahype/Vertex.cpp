@@ -62,7 +62,7 @@ peano::MappingSpecification exahype::Vertex::getNeighbourMergeSpecification(cons
   if ( std::abs(level)>=coarsestSolverLevel ) {
     return peano::MappingSpecification(
            peano::MappingSpecification::WholeTree,
-           peano::MappingSpecification::AvoidFineGridRaces,false);
+           peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
   } else {
     return peano::MappingSpecification(
           peano::MappingSpecification::Nop,
@@ -202,7 +202,8 @@ void exahype::Vertex::mergeOnlyNeighboursMetadataLoopBody(
       // make sure this is not an MPI boundary as touchVertexFirstTime
       // is called after mergeWithNeighbour
   ) {
-    const int cellDescriptionsIndex = validIndex1 ? cellDescriptionsIndex1 : cellDescriptionsIndex2;
+    const int cellDescriptionsIndex      = validIndex1 ? cellDescriptionsIndex1 : cellDescriptionsIndex2;
+    const int otherCellDescriptionsIndex = validIndex1 ? cellDescriptionsIndex2 : cellDescriptionsIndex1;
     tarch::la::Vector<DIMENSIONS,int> pos      = validIndex1 ? pos1 : pos2;
     tarch::la::Vector<DIMENSIONS,int> posEmpty = validIndex1 ? pos2 : pos1;
 
@@ -210,7 +211,10 @@ void exahype::Vertex::mergeOnlyNeighboursMetadataLoopBody(
     for ( auto& patch : cellInfo._ADERDGCellDescriptions) {
       auto* solver = solvers::RegisteredSolvers[patch.getSolverNumber()];
       if ( solver->isMergingMetadata(section) ) {
-        solvers::ADERDGSolver::mergeWithEmptyNeighbourDuringMeshRefinement(patch.getSolverNumber(),cellInfo,pos,posEmpty,x,h);
+        solvers::ADERDGSolver::mergeWithEmptyNeighbourDuringMeshRefinement(
+            patch.getSolverNumber(),cellInfo,pos,posEmpty,
+            otherCellDescriptionsIndex==multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex,
+            x,h);
       }
     }
   }

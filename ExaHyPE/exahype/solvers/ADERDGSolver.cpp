@@ -627,7 +627,7 @@ void exahype::solvers::ADERDGSolver::validateCellDescriptionData(
 exahype::solvers::Solver::MeshUpdateEvent
 exahype::solvers::ADERDGSolver::evaluateRefinementCriteriaAfterSolutionUpdate(
     CellDescription&                                           cellDescription,
-    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed // TODO(Dominic): Not needed anymore
 ) {
   if ( OnlyInitialMeshRefinement ) {
     return MeshUpdateEvent::None;
@@ -663,7 +663,7 @@ exahype::solvers::ADERDGSolver::evaluateRefinementCriteriaAfterSolutionUpdate(
     }
 
     // update refinement status after prescribing refinement values
-    updateRefinementStatus(cellDescription,neighbourMergePerformed);
+    updateRefinementStatus(cellDescription);
 
     return
         (cellDescription.getLevel() < getMaximumAdaptiveMeshLevel() &&
@@ -673,7 +673,7 @@ exahype::solvers::ADERDGSolver::evaluateRefinementCriteriaAfterSolutionUpdate(
     // bottom up refinement criterion TODO(Dominic): Add to docu
     // We allow the halo region to diffuse into the virtual subcells
     // up to some point.
-    updateRefinementStatus(cellDescription,neighbourMergePerformed);
+    updateRefinementStatus(cellDescription);
     if (
         cellDescription.getRefinementStatus() > _refineOrKeepOnFineGrid-1 &&
         cellDescription.getLevel()==getMaximumAdaptiveMeshLevel()
@@ -684,7 +684,7 @@ exahype::solvers::ADERDGSolver::evaluateRefinementCriteriaAfterSolutionUpdate(
       return MeshUpdateEvent::None;
     }
   } else {
-    cellDescription.setRefinementStatus(Pending); // Cannot override the refinement / limiter status in other cells
+    cellDescription.setRefinementStatus(Erase); // Cannot override the refinement / limiter status in other cells
     return MeshUpdateEvent::None;
   }
 }
@@ -1627,20 +1627,20 @@ void exahype::solvers::ADERDGSolver::mergeNeighboursMetadata(
     }
     if ( mergeMetadata ) {
       mergeWithCommunicationStatus(cellDescription1,face._faceIndex1,cellDescription2.getCommunicationStatus());
-      mergeWithAugmentationStatus(cellDescription1,face._faceIndex1,cellDescription2.getAugmentationStatus());
-      mergeWithRefinementStatus(cellDescription1,face._faceIndex1,cellDescription2.getRefinementStatus());
+      mergeWithAugmentationStatus( cellDescription1,face._faceIndex1,cellDescription2.getAugmentationStatus());
+      mergeWithRefinementStatus(   cellDescription1,face._faceIndex1,cellDescription2.getRefinementStatus());
 
       mergeWithCommunicationStatus(cellDescription2,face._faceIndex2,cellDescription1.getCommunicationStatus());
-      mergeWithAugmentationStatus(cellDescription2,face._faceIndex2,cellDescription1.getAugmentationStatus());
-      mergeWithRefinementStatus(cellDescription2,face._faceIndex2,cellDescription1.getRefinementStatus());
+      mergeWithAugmentationStatus( cellDescription2,face._faceIndex2,cellDescription1.getAugmentationStatus());
+      mergeWithRefinementStatus(   cellDescription2,face._faceIndex2,cellDescription1.getRefinementStatus());
     } else {
-      mergeWithCommunicationStatus(cellDescription1,face._faceIndex1,-1); // TODO(Dominic): Use constants
-      mergeWithAugmentationStatus(cellDescription1,face._faceIndex1,-1);
-      mergeWithRefinementStatus(cellDescription1,face._faceIndex1,Pending);
+      mergeWithCommunicationStatus(cellDescription1,face._faceIndex1,0); // TODO(Dominic): Use constants
+      mergeWithAugmentationStatus( cellDescription1,face._faceIndex1,0);
+      mergeWithRefinementStatus(   cellDescription1,face._faceIndex1,Erase);
 
-      mergeWithCommunicationStatus(cellDescription2,face._faceIndex2,-1);
-      mergeWithAugmentationStatus(cellDescription2,face._faceIndex2,-1);
-      mergeWithRefinementStatus(cellDescription2,face._faceIndex2,Pending);
+      mergeWithCommunicationStatus(cellDescription2,face._faceIndex2,0);
+      mergeWithAugmentationStatus( cellDescription2,face._faceIndex2,0);
+      mergeWithRefinementStatus(   cellDescription2,face._faceIndex2,Erase);
     }
 
     cellDescription1.setNeighbourMergePerformed(face._faceIndex1,true); // here we only set, doesn't matter if operation is done twice.

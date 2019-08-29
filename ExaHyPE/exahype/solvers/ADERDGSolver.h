@@ -422,7 +422,7 @@ private:
    *
    * @note This operations is thread-safe
    */
-  void addNewCell(
+  void addNewLeafCell(
       exahype::Cell& fineGridCell,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       const int coarseGridCellDescriptionsIndex,
@@ -783,6 +783,17 @@ private:
       CellInfo&                                                  cellInfo,
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
       const bool                                                 isAtRemoteBoundary);
+
+  /**
+   * @return if the gradient of integer flags from opposite faces is smaller than or equal to 2.
+   *
+   * @param neighbourFlags     flags copied/received from the neighbours.
+   * @param minValueToConsider A minimum value to consider in the convergence check. We typically use a negative BoundaryStatus when
+   *                           "merging" with the boundary. Using this value, these boundary values can be ignored.
+   */
+  static bool checkIfStatusFlaggingHasConverged(
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& neighbourFlags,
+      const int                                          minValueToConsider);
 
 #ifdef Parallel
   /**
@@ -1296,9 +1307,7 @@ public:
    * and any refinement criterion has been evaluated before
    * calling this function.
    */
-  void updateRefinementStatus(
-      CellDescription&                                           cellDescription,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) const;
+  void updateRefinementStatus(CellDescription& cellDescription) const;
 
   /**
    * Updates the status flags and sets the stability criterion to
@@ -1949,6 +1958,7 @@ public:
       Solver::CellInfo&                            cellInfo, // corresponds to dest
       const tarch::la::Vector<DIMENSIONS, int>&    pos,
       const tarch::la::Vector<DIMENSIONS, int>&    posNeighbour,
+      const bool                                   isAtBoundary,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const tarch::la::Vector<DIMENSIONS, double>& h);
 

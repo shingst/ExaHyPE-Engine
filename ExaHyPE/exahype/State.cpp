@@ -276,7 +276,10 @@ bool exahype::State::startAndFinishSynchronousExchangeManually(const exahype::re
       predictionFusedTimeStepCondition)
       ||
       action==exahype::records::RepositoryState::UseAdapterBroadcast ||
-      action==exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages;
+      action==exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages
+      ||
+      (action==exahype::records::RepositoryState::UseAdapterRefinementStatusSpreading &&
+      predictionFusedTimeStepCondition); // start at begin of batch, finish at the end of batch just like FusedTimeStep adapter and Co.
 }
 
 bool exahype::State::startAndFinishNeighbourExchangeManually(const exahype::records::RepositoryState::Action& action,bool predictionFusedTimeStepCondition) {
@@ -289,7 +292,9 @@ bool exahype::State::startAndFinishNeighbourExchangeManually(const exahype::reco
       predictionFusedTimeStepCondition)
       ||
       action==exahype::records::RepositoryState::UseAdapterBroadcast ||
-      action==exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages;
+      action==exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages
+      ||
+      action==exahype::records::RepositoryState::UseAdapterRefinementStatusSpreading;
 }
 
 void exahype::State::kickOffIteration(exahype::records::RepositoryState& repositoryState, exahype::State& solverState,const int currentBatchIteration) {
@@ -338,8 +343,6 @@ void exahype::State::wrapUpIteration(exahype::records::RepositoryState& reposito
   #ifdef Parallel
   const bool manualSychronousExchange = startAndFinishSynchronousExchangeManually(repositoryState.getAction(),CurrentBatchIteration == NumberOfBatchIterations-1);
   const bool manuaNeighbourExchange   = startAndFinishNeighbourExchangeManually  (repositoryState.getAction(),CurrentBatchIteration == NumberOfBatchIterations-1 || CurrentBatchIteration % 2 != 0);
-
-  // TODO check if the order of the calls (boundary,synchronous) makes a difference
 
   if ( manuaNeighbourExchange ) {
     bool isTraversalInverted = solverState.isTraversalInverted(); // is not broadcasted anymore

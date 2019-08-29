@@ -283,7 +283,7 @@ private:
    * if feature-based refinement was requested by the user.
    * Returns MeshUpdateEvent::None in all other cases.
    */
-  MeshUpdateEvent determineRefinementStatusAfterSolutionUpdate(
+  MeshUpdateEvent updateRefinementStatusAfterSolutionUpdate(
       SolverPatch&                                               solverPatch,
       CellInfo&                                                  cellInfo,
       const bool                                                 isTroubled,
@@ -409,6 +409,18 @@ private:
       const bool                                                 isLastTimeStepOfBatch,
       const bool                                                 isSkeletonCell,
       const bool                                                 mustBeDoneImmediately);
+
+  /**
+   * @return Computes a merged limiter status as a maximum of
+   * the current cell value and the neighbours' values decremented by 1.
+   *
+   * @note This method is required as we cure troubled cells
+   * on the fly by lowering their limiter status by 2.
+   * If the
+   *
+   * @param[in] solverPatch A solver patch.
+   */
+  static int computeMergedRefinementStatus(const SolverPatch& solverPatch);
 
   /**
    * Body of LimitingADERDGSolver::updateOrRestrict(...).
@@ -984,20 +996,6 @@ public:
       const bool isAtRemoteBoundary) const final override;
 
   void adjustSolutionDuringMeshRefinement(const int solverNumber,CellInfo& cellInfo) final override;
-
-
-  /**
-   * TODO make prviate
-   *
-   * @return the maximum out of the solver patch's refinement
-   * status and of the maximum refinement status of its neighbours minus one.
-   *
-   * @param solverPatch a solver patch
-   * @param neighbourMergePerformed a flag per face indicating if a neighbour/boudnary merge was performed
-   */
-  int getMaxiumRefinementStatusInNeighbourhood(
-      SolverPatch& solverPatch,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) const;
 
   /**
    * Update the solution of a solver patch and or
