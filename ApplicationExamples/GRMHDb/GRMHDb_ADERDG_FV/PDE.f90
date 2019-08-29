@@ -424,6 +424,7 @@ END SUBROUTINE RoeMatrix
 RECURSIVE SUBROUTINE HLLEMFluxFV(FL,FR,QL,QR,QavL,QavR,NormalNonZero) 
   USE Parameters, ONLY : nVar, nDim, nLin
   USE iso_c_binding 
+  IMPLICIT NONE
   ! Local variables
   INTEGER, INTENT(IN)   :: NormalNonZero
   REAL, INTENT(IN)     :: QL(nVar)
@@ -433,7 +434,7 @@ RECURSIVE SUBROUTINE HLLEMFluxFV(FL,FR,QL,QR,QavL,QavR,NormalNonZero)
   REAL    :: QavL(nVar), QavR(nVar)  
     ! Local variables 
   INTEGER           :: i,j,k,l, ml(1)  
-  REAL              :: smax, Qav(nVar)
+  REAL              :: smax, Qav(nVar),sL,sR
   REAL              ::  nv(nDim), flattener(nLin)
   REAL    :: absA(nVar,nVar), amax  
   REAL    :: QM(nVar),LL(nVar),LR(nVar),LM(nVar)
