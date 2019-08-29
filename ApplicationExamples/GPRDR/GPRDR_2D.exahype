@@ -155,7 +155,7 @@
           "type": "user::defined",
           "name": "TecplotWriter",
           "time": 0.0,
-          "repeat": 0.1,
+          "repeat": 0.01,
           "output": "./output/tecplot",
           "variables": 9
         }

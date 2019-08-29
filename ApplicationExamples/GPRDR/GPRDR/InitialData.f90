@@ -68,7 +68,7 @@ RECURSIVE SUBROUTINE InitParameters(STRLEN,PARSETUP)
 			!EQN%MATERIALS(1)='ROCK1'
 			!EQN%MATERIALS(2)='UNBREAKABLE'
 			EQN%MATERIALS(1)='ROCKP'
-			EQN%MATERIALS(2)='ROCKP'
+			EQN%MATERIALS(2)='UNBREAKABLE'
 	end select
 END SUBROUTINE InitParameters
 
@@ -304,6 +304,7 @@ RECURSIVE SUBROUTINE InitialData(xGP, tGp, Q)
 		up=0.
 #ifdef EQNTYPED99
         rr=xGP(2)-2.0*xGP(1)-4000.0
+		rr=xGP(2)-4000.0
         xi = 0.5+0.5*ERF(rr/300.0)
         up(22)=1-xi
 		!up(22)=1
@@ -377,9 +378,15 @@ RECURSIVE SUBROUTINE InitialData(xGP, tGp, Q)
         up(21)=0.0
 
         if(nDim .eq. 3) then
-            if(abs(xGP(1)) .le. 100.0/1.0 .and. abs(xGP(2)) .le. 100.0/1.0 .and. abs(xGP(3)) .le. 100.0/1.0) then 
-                up(21)=0.5    
-            end if            
+            up(21)=0.0
+            x1=0.5*sqrt(2.0)*(xGP(1)+xGP(2))
+		    y1=0.5*sqrt(2.0)*(-xGP(1)+xGP(2))
+		    if(abs(x1)<1000.0*sqrt(2.0) .and. abs(y1)<100.0/3.0.and. abs(xGP(3))<1000.0) then
+		    	up(21)=1.0
+		    end if
+            if(abs(xGP(1)-3000.0) .le. 200.0 .and. abs(xGP(2)+2000.0) .le. 200.0.and. abs(xGP(3)) .le. 200.0) then 
+                up(21)=1.0    
+            end if         
         else
             up(21)=0.0
             x1=0.5*sqrt(2.0)*(xGP(1)+xGP(2))
@@ -394,16 +401,22 @@ RECURSIVE SUBROUTINE InitialData(xGP, tGp, Q)
         ! -----------------------------------------------------------------------------------------------------------
         ! Complex geometry ------------------------------------------------------------------------------------------
         up(18)=1     ! alpha
-		up(18)=SmoothInterface(-6000.0+xGP(2)+500*sin(1.e-3*xGP(1)),100.0,0.0,1.0)
+
         up(5)=0     ! alpha
         ! -----------------------------------------------------------------------------------------------------------
+		if(nDim .eq. 3) then
         if(USECG) then
-			rr = DistanceFromSurfaceCG(xGP(1),xGP(2),xGP(3),100.0)
+			rr = DistanceFromSurfaceCG(xGP(1),xGP(3),xGP(2)-4000.0,100.0)
 			up(18)=SmoothInterface(rr,100.0,0.0,1.0)
 			if(rr>0) then
 			!print *,rr
 			end if
 		end if
+		else
+		up(18)=SmoothInterface(-6000.0+xGP(2)+500*sin(1.e-3*xGP(1)),300.0,0.0,1.0)		
+		end if
+		up(3)=up(3)*up(18)
+		up(9:17)= GPRsigma2ASGEOS(LEsigma*up(18),0.0,LL_GPR,MM_GPR,up(1),EQN%gamma,up(5),EQN%cv,EQN%p0,1.e-3,EQN%EOS,EQN%T0)
 #endif
 	CASE DEFAULT
 		PRINT *, 'NOT IMPLEMENTED'
