@@ -94,6 +94,7 @@
 #include "exahype/offloading/OffloadingAnalyser.h"
 
 #if defined(DistributedOffloading)
+#include "exahype/offloading/ReplicationStatistics.h"
 #include "exahype/offloading/PerformanceMonitor.h"
 
 #if defined(OffloadingStrategyStaticHardcoded)
@@ -1019,18 +1020,11 @@ int exahype::runners::Runner::run() {
       shutdownDistributedMemoryConfiguration();
       
 #if defined(DistributedOffloading)
-  for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
- //     static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopOffloadingManager();
-    }
-    if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-  //    static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->stopOffloadingManager();
-    }
-  }
-
-  logInfo("shutdownDistributedMemoryConfiguration()","stopped offloading manager");
   exahype::offloading::OffloadingManager::getInstance().destroyMPICommunicator(); 
   logInfo("shutdownDistributedMemoryConfiguration()","destroyed MPI communicators");
+#if defined(ReplicationSaving)
+  exahype::offloading::ReplicationStatistics::getInstance().printStatistics();
+#endif
 //  exahype::offloading::OffloadingProfiler::getInstance().endPhase();
 //  logInfo("shutdownDistributedMemoryConfiguration()","ended profiling phase");
 //  exahype::offloading::OffloadingProfiler::getInstance().printStatistics();

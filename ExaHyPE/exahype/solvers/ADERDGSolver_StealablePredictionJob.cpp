@@ -5,6 +5,7 @@
 #include "exahype/offloading/PerformanceMonitor.h"
 #include "exahype/offloading/OffloadingAnalyser.h"
 #include "exahype/offloading/OffloadingProfiler.h"
+#include "exahype/offloading/ReplicationStatistics.h"
 
 exahype::solvers::ADERDGSolver::StealablePredictionJob::StealablePredictionJob(
     ADERDGSolver& solver,
@@ -24,6 +25,7 @@ exahype::solvers::ADERDGSolver::StealablePredictionJob::StealablePredictionJob(
 {
   LocalStealableSTPCounter++;
   NumberOfEnclaveJobs++;
+  exahype::offloading::ReplicationStatistics::getInstance().notifySpawnedTask();
   exahype::offloading::PerformanceMonitor::getInstance().incCurrentTasks();
 };
 
@@ -142,6 +144,7 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
         std::memcpy(lduh, &data->_lduh[0], data->_lduh.size()*sizeof(double));
         std::memcpy(lQhbnd, &data->_lQhbnd[0], data->_lQhbnd.size()*sizeof(double));
         std::memcpy(lFhbnd, &data->_lFhbnd[0], data->_lFhbnd.size()*sizeof(double));
+        exahype::offloading::ReplicationStatistics::getInstance().notifySavedTask();
 	    cellDescription.setHasCompletedLastStep(true);
     }
     else {
@@ -151,6 +154,7 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
 											<<" center[1] = "<<center[1]
 											<<" center[2] = "<<center[2]
 											<<" time stamp = "<<_predictorTimeStamp);
+        exahype::offloading::ReplicationStatistics::getInstance().notifyExecutedTask();
 #endif
 
       //TODO: add support for lGradQhbnd
@@ -283,11 +287,8 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveHandlerRepli
 								   <<" time stamp = "<<data->_metadata[2*DIMENSIONS]
 								   <<" element = "<<(int) data->_metadata[2*DIMENSIONS+2]
                                    <<" hash = "<<(size_t) key);
-  //exahype::offloading::OffloadingAnalyser::getInstance().notifyReceivedSTPJob();
-  //StealablePredictionJob *job= static_cast<exahype::solvers::ADERDGSolver*> (solver)->createFromData(data, remoteRank, tag);
-  //peano::datatraversal::TaskSet spawnedSet(job);
+  exahype::offloading::ReplicationStatistics::getInstance().notifyReceivedTask();
 
-  //exahype::offloading::OffloadingProfiler::getInstance().notifyReceivedTask(remoteRank);
 }
 #endif
 
@@ -356,6 +357,7 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendHandlerReplicat
 {
 
   logInfo("sendHandlerReplication","successfully completed send to other teams");
+  exahype::offloading::ReplicationStatistics::getInstance().notifySentTask();
   tbb::concurrent_hash_map<int, StealablePredictionJobData*>::accessor a_tagToData;
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToReplicationSendData.find(a_tagToData, tag);
   StealablePredictionJobData *data = a_tagToData->second;
