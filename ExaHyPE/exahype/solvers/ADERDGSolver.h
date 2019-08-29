@@ -1118,6 +1118,8 @@ private:
   };
 
 #if defined(ReplicationSaving)
+  void cleanUpStaleReplicatedSTPs();
+
   void sendReplicatedSTPToOtherTeams(StealablePredictionJob *job);
 
   struct JobTableKey {
@@ -1145,17 +1147,17 @@ private:
 		  }
 		  result ^= hash_fn_db(timestamp);
 		  result ^= hash_fn_int(element);
-		  logInfo("hash()", " center[0] = "<< center[0]
-							<<" center[1] = "<< center[1]
-					        <<" center[2] = "<< center[2]
-							<<" time stamp = "<< timestamp
-							<<" element = "<< element
-							<<" hash = "<< result);
+		  //logInfo("hash()", " center[0] = "<< center[0]
+		  //					<<" center[1] = "<< center[1]
+		  //		        <<" center[2] = "<< center[2]
+		  //				<<" time stamp = "<< timestamp
+		  //				<<" element = "<< element
+		  //     			<<" hash = "<< result);
 		  return result;
 	  }
   };
   tbb::concurrent_hash_map<JobTableKey, StealablePredictionJobData*> _mapJobToData;
-
+  tbb::concurrent_queue<JobTableKey> _allocatedJobs;
 #endif
 
   /**

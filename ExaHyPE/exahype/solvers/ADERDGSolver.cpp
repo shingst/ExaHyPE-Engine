@@ -250,6 +250,9 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
         ,_lastReceiveTag(tarch::parallel::Node::getInstance().getNumberOfNodes()),
          _lastReceiveBackTag(tarch::parallel::Node::getInstance().getNumberOfNodes()),
         _offloadingManagerJob(nullptr)
+#if defined(ReplicationSaving)
+        ,_allocatedJobs()
+#endif
 #endif
 {
   // register tags with profiler
@@ -453,6 +456,10 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
 
   // call user code
   endTimeStep(_minTimeStamp,isLastTimeStepOfBatchOrNoBatch);
+
+#if defined(DistributedOffloading) && defined(ReplicationSaving)
+  cleanUpStaleReplicatedSTPs();
+#endif
 }
 
 void exahype::solvers::ADERDGSolver::updateTimeStepSize() {
@@ -2414,6 +2421,48 @@ void exahype::solvers::ADERDGSolver::toString (std::ostream& out) const {
 #if defined(DistributedOffloading)
 
 #if defined (ReplicationSaving)
+
+void exahype::solvers::ADERDGSolver::cleanUpStaleReplicatedSTPs() {
+  int unsafe_size = _allocatedJobs.unsafe_size();
+  assert(unsafe_size>=0);
+  bool gotOne = true;
+  int i = 0;
+
+  while( i< unsafe_size && gotOne) {
+	JobTableKey key;
+	gotOne = _allocatedJobs.try_pop(key);
+
+	if(!gotOne) break;
+
+	i++;
+
+    tbb::concurrent_hash_map<JobTableKey, StealablePredictionJobData*>::accessor a_jobToData;
+
+	bool found = _mapJobToData.find(a_jobToData, key);
+
+    if(found && a_jobToData->first.timestamp <_minTimeStamp) {
+
+      logInfo("cleanUpStaleReplicatedSTPs()", " time stamp "<<a_jobToData->first.timestamp<< " _minTimeStamp "<<_minTimeStamp);
+
+      StealablePredictionJobData * data = a_jobToData->second;
+      _mapJobToData.erase(a_jobToData);
+      logInfo("cleanUpStaleReplicatedSTPs()", " center[0] = "<<data->_metadata[0]
+											   <<" center[1] = "<<data->_metadata[1]
+											   <<" center[2] = "<<data->_metadata[2]
+											   <<" time stamp = "<<data->_metadata[2*DIMENSIONS]
+											   <<" element = "<<(int) data->_metadata[2*DIMENSIONS+2]);
+      assert(data!=nullptr);
+      delete data;
+    }
+    else if (found) {
+      _allocatedJobs.push(key); // the job is in the map but it contains data that may be used later
+    }
+    else {
+    	//do nothing -> job was already deallocated earlier
+    }
+  }
+}
+
 void exahype::solvers::ADERDGSolver::sendReplicatedSTPToOtherTeams(StealablePredictionJob *job) {
 
 /*	int size = sizeof(double)+2*sizeof(int);
@@ -2453,7 +2502,6 @@ void exahype::solvers::ADERDGSolver::sendReplicatedSTPToOtherTeams(StealablePred
     std::memcpy(&data->_lFhbnd[0], lFhbnd, data->_lFhbnd.size()*sizeof(double));
     //double *metadata = new double[2*DIMENSIONS+2];
     packMetadataToBuffer(entry, data->_metadata);
-
 
     MPI_Request *sendRequests= new MPI_Request[5*(teams-1)];
 

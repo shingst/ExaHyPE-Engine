@@ -145,6 +145,11 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
         std::memcpy(lQhbnd, &data->_lQhbnd[0], data->_lQhbnd.size()*sizeof(double));
         std::memcpy(lFhbnd, &data->_lFhbnd[0], data->_lFhbnd.size()*sizeof(double));
         exahype::offloading::ReplicationStatistics::getInstance().notifySavedTask();
+
+        _solver._mapJobToData.erase(a_jobToData);
+        a_jobToData.release();
+        delete data;
+
 	    cellDescription.setHasCompletedLastStep(true);
     }
     else {
@@ -275,11 +280,13 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveHandlerRepli
   StealablePredictionJobData *data;
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagRankToReplicaData.find(a_tagRankToData, std::make_pair(remoteRank, tag));
   data = a_tagRankToData->second;
+  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagRankToReplicaData.erase(a_tagRankToData);
   a_tagRankToData.release();
 
 
   JobTableKey key{&data->_metadata[0], data->_metadata[2*DIMENSIONS], (int) data->_metadata[2*DIMENSIONS+2] };
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapJobToData.insert(std::make_pair(key,data));
+  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_allocatedJobs.push(key);
   logInfo("receiveHandlerReplica", "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
 		                           <<" received replica job: center[0] = "<<data->_metadata[0]
 							       <<" center[1] = "<<data->_metadata[1]
