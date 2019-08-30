@@ -268,7 +268,7 @@ private:
    *
    * This value is computed as the sum of 1 + #haloCells + #haloBufferCells.
    */
-  int _refineOrKeepOnFineGrid; // can be configured by the user
+  const int _refineOrKeepOnFineGrid; // can be configured by the user
 
   /**
    * !!! LimitingADERDGSolver functionality !!!

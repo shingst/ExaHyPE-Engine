@@ -204,7 +204,7 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
      _estimatedTimeStepSize( std::numeric_limits<double>::infinity() ),
      _admissibleTimeStepSize( std::numeric_limits<double>::infinity() ),
      _stabilityConditionWasViolated( false ),
-     _minimumRefinementStatusToRequestMeshRefinementInVirtualCell(haloBufferCells),
+     _minimumRefinementStatusToRequestMeshRefinementInVirtualCell(1+haloBufferCells),
      _refineOrKeepOnFineGrid(1+haloCells+haloBufferCells),
      _DMPObservables(DMPObservables),
      _minRefinementStatusForTroubledCell(_refineOrKeepOnFineGrid+3),
@@ -633,6 +633,7 @@ exahype::solvers::ADERDGSolver::updateRefinementStatusAfterSolutionUpdate(
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed // TODO(Dominic): Not needed anymore
 ) {
   if ( OnlyInitialMeshRefinement ) {
+    updateRefinementStatus(cellDescription);
     return MeshUpdateEvent::None;
   }
 
@@ -678,8 +679,8 @@ exahype::solvers::ADERDGSolver::updateRefinementStatusAfterSolutionUpdate(
     // up to some point.
     updateRefinementStatus(cellDescription);
     if (
-        cellDescription.getRefinementStatus() >= _minimumRefinementStatusToRequestMeshRefinementInVirtualCell &&
-        cellDescription.getLevel()==getMaximumAdaptiveMeshLevel()
+        cellDescription.getLevel()==getMaximumAdaptiveMeshLevel() &&
+        cellDescription.getRefinementStatus() >= _minimumRefinementStatusToRequestMeshRefinementInVirtualCell
     ) {
       return MeshUpdateEvent::RefinementRequested;
     } else {
@@ -782,7 +783,7 @@ void exahype::solvers::ADERDGSolver::fusedTimeStepOrRestrict(
         cellDescription.getType()==CellDescription::Type::Virtual &&
         cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication
     ) {
-      restrictToTopMostParent(cellDescription,false/*effect: add face integral result directly to solution*/);
+      restrictToTopMostParent(cellDescription,isFirstTimeStepOfBatch/*addToCoarseGridUpdate*/);
       updateMeshUpdateEvent(
           updateRefinementStatusAfterSolutionUpdate(cellDescription,cellDescription.getNeighbourMergePerformed())
       );
