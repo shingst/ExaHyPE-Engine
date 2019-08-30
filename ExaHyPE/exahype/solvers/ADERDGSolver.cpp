@@ -2503,7 +2503,7 @@ void exahype::solvers::ADERDGSolver::sendReplicatedSTPToOtherTeams(StealablePred
     //double *metadata = new double[2*DIMENSIONS+2];
     packMetadataToBuffer(entry, data->_metadata);
 
-    MPI_Request *sendRequests= new MPI_Request[5*(teams-1)];
+    MPI_Request *sendRequests = new MPI_Request[5*(teams-1)];
 
     int tag = exahype::offloading::OffloadingManager::getInstance().getOffloadingTag();
 
