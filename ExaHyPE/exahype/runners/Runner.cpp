@@ -1059,9 +1059,6 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
   // adaptive mesh refinement
   //repository.switchToMeshRefinementAndPlotTree();
   repository.switchToMeshRefinement();
-  if ( exahype::solvers::Solver::getMinTimeStampOfAllSolvers() > 0.78 ) {
-    repository.switchToMeshRefinementAndPlotTree();
-  }
   repository.getState().setAllSolversAttainedStableState(false);
   repository.getState().setStableIterationsInARow(0);
   while (
