@@ -28,6 +28,10 @@
 
 #include "exahype/mappings/Prediction.h"
 
+#ifdef USE_TMPI
+#include "teaMPI.h"
+#endif
+
 #ifdef DistributedOffloading
 #include "exahype/offloading/PerformanceMonitor.h"
 #include "exahype/offloading/StaticDistributor.h"
@@ -347,9 +351,14 @@ void exahype::mappings::FusedTimeStep::leaveCell(
     for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
+#if defined(USE_TMPI)
+  if(TMPI_IsLeadingRank()) {
+#endif
       // this operates only on compute cells
       plotters::plotPatchIfAPlotterIsActive(solverNumber,cellInfo); // TODO(Dominic) potential for IO overlap?
-
+#if defined(USE_TMPI)
+  }
+#endif
       switch ( solver->getType() ) {
         case solvers::Solver::Type::ADERDG:
           static_cast<solvers::ADERDGSolver*>(solver)->fusedTimeStepOrRestrict(
