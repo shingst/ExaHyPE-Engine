@@ -1540,12 +1540,13 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
 
   // 2. Only the solvers with irregular limiter domain change do the limiter status spreading.
   if ( exahype::solvers::Solver::oneSolverRequestedRefinementStatusSpreading() ) {
-    const int iterationsToRun = std::max(2,exahype::solvers::Solver::getMaxRefinementStatus()+1); // at least two iterations required when using MPI
+    int iterationsToRun = std::max(3,exahype::solvers::Solver::getMaxRefinementStatus()+1); // at least two iterations required when using MPI
     repository.switchToRefinementStatusSpreading(); // see exahype::State for the realisation of the broadcast at the begin and reduction at the end
     repository.getState().setAllSolversAttainedStableState(false);
     while ( !repository.getState().getAllSolversAttainedStableState() ) {
       logInfo("updateMeshAndSubdomains(...)","run "<<iterationsToRun<<" iterations of refinement status spreading");
       repository.iterate(iterationsToRun,false);
+      iterationsToRun = std::max(3,iterationsToRun/2);
     }
   }
 
