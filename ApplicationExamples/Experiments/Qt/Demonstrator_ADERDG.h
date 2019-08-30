@@ -31,7 +31,7 @@ class Qt::Demonstrator_ADERDG : public Qt::AbstractDemonstrator_ADERDG {
      */
     static tarch::logging::Log _log;
   public:
-    Demonstrator_ADERDG(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables);
+    Demonstrator_ADERDG(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int haloBufferCells,const int limiterBufferCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables);
 
     /**
      * Initialise the solver.

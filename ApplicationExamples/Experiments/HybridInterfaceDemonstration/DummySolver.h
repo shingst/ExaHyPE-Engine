@@ -31,6 +31,8 @@ class HybridInterfaceDemonstration::DummySolver: public exahype::solvers::Limiti
         const double maximumMeshSize,
         const int maximumMeshDepth,
         const int haloCells,
+        const int haloBufferCells,
+        const int limiterBufferCells,
         const int regularisedFineGridLevels,
         const exahype::solvers::Solver::TimeStepping timeStepping,
         const int DMPObservables,

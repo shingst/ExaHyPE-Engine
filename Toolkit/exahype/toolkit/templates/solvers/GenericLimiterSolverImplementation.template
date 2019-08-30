@@ -17,6 +17,8 @@
         const double maximumMeshSize,
         const int maximumMeshDepth,
         const int haloCells,
+        const int haloBufferCells,
+        const int limiterBufferCells,
         const int regularisedFineGridLevels,
         const exahype::solvers::Solver::TimeStepping timeStepping,
         const int DMPObservables,
@@ -26,7 +28,7 @@
   exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
       "{{solver}}",
     new {{project}}::{{ADERDGSolver}}(
-      maximumMeshSize,maximumMeshDepth,haloCells,regularisedFineGridLevels,timeStepping,DMPObservables),
+      maximumMeshSize,maximumMeshDepth,haloCells,haloBufferCells,limiterBufferCells,regularisedFineGridLevels,timeStepping,DMPObservables),
     new {{project}}::{{FVSolver}}(
       maximumMeshSize, timeStepping),
     DMPRelaxationParameter,

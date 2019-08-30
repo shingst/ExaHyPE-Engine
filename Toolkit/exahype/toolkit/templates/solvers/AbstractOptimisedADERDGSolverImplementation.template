@@ -89,6 +89,8 @@ kernels::UnivariateFunction** {{project}}::{{abstractSolver}}::basisFunctionSeco
     const double maximumMeshSize,
     const int maximumMeshDepth,
     const int haloCells,
+    const int haloBufferCells,
+    const int limiterBufferCells,
     const int regularisedFineGridLevels,
     const exahype::solvers::Solver::TimeStepping timeStepping,
     const int DMPObservables
@@ -97,6 +99,8 @@ kernels::UnivariateFunction** {{project}}::{{abstractSolver}}::basisFunctionSeco
         maximumMeshSize,
         maximumMeshDepth,
         haloCells,
+        haloBufferCells,
+        limiterBufferCells,
         regularisedFineGridLevels,
         timeStepping,
         DMPObservables
@@ -106,6 +110,8 @@ kernels::UnivariateFunction** {{project}}::{{abstractSolver}}::basisFunctionSeco
     const double maximumMeshSize,
     const int maximumMeshDepth,
     const int haloCells,
+    const int haloBufferCells,
+    const int limiterBufferCells,
     const int regularisedFineGridLevels,
     const exahype::solvers::Solver::TimeStepping timeStepping,
     const int DMPObservables
@@ -120,6 +126,8 @@ kernels::UnivariateFunction** {{project}}::{{abstractSolver}}::basisFunctionSeco
         maximumMeshSize,
         maximumMeshDepth,
         haloCells,
+        haloBufferCells,
+        limiterBufferCells,
         regularisedFineGridLevels,
         timeStepping,
         DMPObservables

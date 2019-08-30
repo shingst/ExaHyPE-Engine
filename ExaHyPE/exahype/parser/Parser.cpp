@@ -943,6 +943,34 @@ int exahype::parser::Parser::getHaloCells(int solverNumber) const {
   return result;
 }
 
+int exahype::parser::Parser::getHaloBufferCells(int solverNumber) const {
+  int result = getIntFromPath(sformat("/solvers/%d/halo_buffer_cells", solverNumber),0,isOptional);
+
+  if (tarch::la::smaller(result, 0)) {
+    logError("getHaloBufferCells(int)",
+             "'" << getIdentifier(solverNumber)
+                 << "': 'halo-buffer-cells': Value must be greater than or equal to zero.");
+    invalidate();
+  }
+
+  logDebug("getHaloBufferCells()", "found halo-buffer-cells " << result);
+  return result;
+}
+
+int exahype::parser::Parser::getLimiterBufferCells(int solverNumber) const {
+  int result = getIntFromPath(sformat("/solvers/%d/limiter/limiter_buffer_cells", solverNumber),0,isOptional);
+
+  if (tarch::la::smaller(result, 0)) {
+    logError("getLimiterBufferCells(int)",
+             "'" << getIdentifier(solverNumber)
+                 << "': 'limiter-buffer-cells': Value must be greater than or equal to zero.");
+    invalidate();
+  }
+
+  logDebug("getLimiterBufferCells()", "found limiter-buffer-cells " << result);
+  return result;
+}
+
 int exahype::parser::Parser::getRegularisedFineGridLevels(int solverNumber) const {
   int result = getIntFromPath(sformat("/solvers/%d/regularised_fine_grid_levels", solverNumber),0,isOptional);
   

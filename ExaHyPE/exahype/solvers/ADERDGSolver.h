@@ -1341,6 +1341,8 @@ public:
       const double maximumMeshSize,
       const int maximumAdaptiveMeshDepth,
       const int haloCells,
+      const int haloBufferCells,
+      const int limiterBufferCells,
       const int regularisedFineGridLevels,
       const exahype::solvers::Solver::TimeStepping timeStepping,
       const int DMPObservables,

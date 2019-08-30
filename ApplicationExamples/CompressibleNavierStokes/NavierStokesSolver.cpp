@@ -17,6 +17,8 @@ NavierStokes::NavierStokesSolver::NavierStokesSolver(
         const double maximumMeshSize,
         const int maximumMeshDepth,
         const int haloCells,
+        const int haloBufferCells,
+        const int limiterBufferCells,
         const int regularisedFineGridLevels,
         const exahype::solvers::Solver::TimeStepping timeStepping,
         const int DMPObservables,
@@ -26,7 +28,7 @@ NavierStokes::NavierStokesSolver::NavierStokesSolver(
   exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
       "NavierStokesSolver",
     new NavierStokes::NavierStokesSolver_ADERDG(
-      maximumMeshSize,maximumMeshDepth,haloCells,regularisedFineGridLevels,timeStepping,DMPObservables),
+      maximumMeshSize,maximumMeshDepth,haloCells,haloBufferCells,limiterBufferCells,regularisedFineGridLevels,timeStepping,DMPObservables),
     new NavierStokes::NavierStokesSolver_FV(
       maximumMeshSize, timeStepping),
     DMPRelaxationParameter,
