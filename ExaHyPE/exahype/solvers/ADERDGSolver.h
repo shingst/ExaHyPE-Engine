@@ -253,11 +253,21 @@ private:
   bool _stabilityConditionWasViolated;
 
   /** Special Refinement Status values */
-  static constexpr int BoundaryStatus             = -3;
-  static constexpr int Pending                    = -2;
-  static constexpr int Erase                      = -1; // Erase must be chosen as -1.
-  static constexpr int Keep                       =  0;
+  static constexpr int BoundaryStatus = -3;
+  static constexpr int Pending        = -2;
+  static constexpr int Erase          = -1; // Erase must be chosen as -1.
+  static constexpr int Keep           =  0;
 
+  /**
+   * Threshold when to request a mesh adaptation.
+   */
+  const int _minimumRefinementStatusToRequestMeshRefinementInVirtualCell;
+  /**
+   * Refinement Status that indicates that a cell
+   * requests to be refined or to be kept on the finest grid.
+   *
+   * This value is computed as the sum of 1 + #haloCells + #haloBufferCells.
+   */
   int _refineOrKeepOnFineGrid; // can be configured by the user
 
   /**
@@ -1645,7 +1655,7 @@ public:
    *
    * @note Has no const modifier since kernels are not const functions yet.
    */
-  MeshUpdateEvent evaluateRefinementCriteriaAfterSolutionUpdate(
+  MeshUpdateEvent updateRefinementStatusAfterSolutionUpdate(
       CellDescription&                                           cellDescription,
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
 

@@ -256,7 +256,6 @@ exahype::solvers::Solver::MeshUpdateEvent exahype::solvers::LimitingADERDGSolver
       solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
       solverPatch.getRefinementStatus() > 0
   ) {
-    solverPatch.setRefinementFlag(true);
     return MeshUpdateEvent::RefinementRequested;
   } else {
     return MeshUpdateEvent::None;
@@ -569,11 +568,11 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepOrRestrict(
         _solver->restrictToTopMostParent(solverPatch,isFirstTimeStepOfBatch/*addToCoarseGridUpdate*/);
       }
       ensureNoLimiterPatchIsAllocatedOnHelperCell(solverPatch,cellInfo);
-      _solver->updateRefinementStatus(solverPatch);
-      MeshUpdateEvent meshUpdateEvent = _solver->evaluateRefinementCriteriaAfterSolutionUpdate(
-          solverPatch,solverPatch.getNeighbourMergePerformed()); // must be done by all cell types TODO(Dominic): Clean up
+      updateMeshUpdateEvent(
+          _solver->updateRefinementStatusAfterSolutionUpdate(
+              solverPatch,solverPatch.getNeighbourMergePerformed()
+          ));
       solverPatch.setHasCompletedLastStep(true);
-      updateMeshUpdateEvent(meshUpdateEvent);
     }
   }
 }
@@ -775,10 +774,10 @@ void exahype::solvers::LimitingADERDGSolver::updateOrRestrict(
         _solver->restrictToTopMostParent(solverPatch,areRollbacksPossible()/*effect: add surface integral result to solution*/);
       }
       ensureNoLimiterPatchIsAllocatedOnHelperCell(solverPatch,cellInfo);
-      _solver->updateRefinementStatus(solverPatch);
-      MeshUpdateEvent meshUpdateEvent = _solver->evaluateRefinementCriteriaAfterSolutionUpdate(
-          solverPatch,solverPatch.getNeighbourMergePerformed()); // must be done by all cell types
-      updateMeshUpdateEvent(meshUpdateEvent);
+      updateMeshUpdateEvent(
+          _solver->updateRefinementStatusAfterSolutionUpdate(
+              solverPatch,solverPatch.getNeighbourMergePerformed()
+          ));
       solverPatch.setHasCompletedLastStep(true);
     }
   }
@@ -955,7 +954,7 @@ exahype::solvers::LimitingADERDGSolver::updateRefinementStatusAfterSolutionUpdat
   ) {
     meshUpdateEvent = Solver::mergeMeshUpdateEvents(
         meshUpdateEvent,
-        _solver->evaluateRefinementCriteriaAfterSolutionUpdate(solverPatch,neighbourMergePerformed));
+        _solver->updateRefinementStatusAfterSolutionUpdate(solverPatch,neighbourMergePerformed));
   }
 
   return meshUpdateEvent;

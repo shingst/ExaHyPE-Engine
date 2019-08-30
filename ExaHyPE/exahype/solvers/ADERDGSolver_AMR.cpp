@@ -751,7 +751,10 @@ void exahype::solvers::ADERDGSolver::markForRefinement(CellDescription& cellDesc
           cellDescription,solution,
           cellDescription.getTimeStamp());
 
-  if ( refinementStatus==_refineOrKeepOnFineGrid ) {
+  if (
+      refinementStatus==_refineOrKeepOnFineGrid &&
+      cellDescription.getLevel()==getMaximumAdaptiveMeshLevel()
+  ) {
     cellDescription.setRefinementFlag(true);
   }
   cellDescription.setRefinementStatus( std::max(cellDescription.getRefinementStatus(),refinementStatus) );

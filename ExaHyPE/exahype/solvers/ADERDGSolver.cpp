@@ -204,7 +204,8 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
      _estimatedTimeStepSize( std::numeric_limits<double>::infinity() ),
      _admissibleTimeStepSize( std::numeric_limits<double>::infinity() ),
      _stabilityConditionWasViolated( false ),
-     _refineOrKeepOnFineGrid(1+haloCells),
+     _minimumRefinementStatusToRequestMeshRefinementInVirtualCell(haloBufferCells),
+     _refineOrKeepOnFineGrid(1+haloCells+haloBufferCells),
      _DMPObservables(DMPObservables),
      _minRefinementStatusForTroubledCell(_refineOrKeepOnFineGrid+3),
      _checkForNaNs(true),
@@ -627,7 +628,7 @@ void exahype::solvers::ADERDGSolver::validateCellDescriptionData(
 }
 
 exahype::solvers::Solver::MeshUpdateEvent
-exahype::solvers::ADERDGSolver::evaluateRefinementCriteriaAfterSolutionUpdate(
+exahype::solvers::ADERDGSolver::updateRefinementStatusAfterSolutionUpdate(
     CellDescription&                                           cellDescription,
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed // TODO(Dominic): Not needed anymore
 ) {
@@ -677,10 +678,9 @@ exahype::solvers::ADERDGSolver::evaluateRefinementCriteriaAfterSolutionUpdate(
     // up to some point.
     updateRefinementStatus(cellDescription);
     if (
-        cellDescription.getRefinementStatus() > _refineOrKeepOnFineGrid-1 &&
+        cellDescription.getRefinementStatus() >= _minimumRefinementStatusToRequestMeshRefinementInVirtualCell &&
         cellDescription.getLevel()==getMaximumAdaptiveMeshLevel()
     ) {
-      cellDescription.setRefinementFlag(true);
       return MeshUpdateEvent::RefinementRequested;
     } else {
       return MeshUpdateEvent::None;
@@ -714,7 +714,7 @@ void exahype::solvers::ADERDGSolver::fusedTimeStepBody(
   UpdateResult result;
   result._timeStepSize    = startNewTimeStep(cellDescription,isFirstTimeStepOfBatch);
   cellDescription.setPreviousRefinementStatus(cellDescription.getRefinementStatus());
-  result._meshUpdateEvent = evaluateRefinementCriteriaAfterSolutionUpdate(cellDescription,neighbourMergePerformed);
+  result._meshUpdateEvent = updateRefinementStatusAfterSolutionUpdate(cellDescription,neighbourMergePerformed);
 
   reduce(cellDescription,result);
 
@@ -782,9 +782,11 @@ void exahype::solvers::ADERDGSolver::fusedTimeStepOrRestrict(
         cellDescription.getType()==CellDescription::Type::Virtual &&
         cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication
     ) {
-      restrictToTopMostParent(cellDescription,isFirstTimeStepOfBatch/*addToCoarseGridUpdate*/);
+      restrictToTopMostParent(cellDescription,false/*effect: add face integral result directly to solution*/);
+      updateMeshUpdateEvent(
+          updateRefinementStatusAfterSolutionUpdate(cellDescription,cellDescription.getNeighbourMergePerformed())
+      );
       cellDescription.setHasCompletedLastStep(true);
-      // TODO(Dominic): Evaluate ref crit here too // halos
     } else {
       cellDescription.setHasCompletedLastStep(true);
     }
@@ -825,7 +827,7 @@ void exahype::solvers::ADERDGSolver::updateBody(
   UpdateResult result;
   result._timeStepSize    = startNewTimeStep(cellDescription,true);
   cellDescription.setPreviousRefinementStatus(cellDescription.getRefinementStatus());
-  result._meshUpdateEvent = evaluateRefinementCriteriaAfterSolutionUpdate(cellDescription,neighbourMergePerformed);
+  result._meshUpdateEvent = updateRefinementStatusAfterSolutionUpdate(cellDescription,neighbourMergePerformed);
 
   reduce(cellDescription,result);
 
@@ -854,11 +856,14 @@ void exahype::solvers::ADERDGSolver::updateOrRestrict(
     else if ( cellDescription.getType()==CellDescription::Type::Leaf ) {
       updateBody(cellDescription,cellInfo,cellDescription.getNeighbourMergePerformed(),isAtRemoteBoundary);
     }
-    else if ( // TODO(Dominic): Evaluate ref crit here too // halos
+    else if (
         cellDescription.getType()==CellDescription::Type::Virtual &&
         cellDescription.getCommunicationStatus()>=MinimumCommunicationStatusForNeighbourCommunication
     ) {
       restrictToTopMostParent(cellDescription,false/*effect: add face integral result directly to solution*/);
+      updateMeshUpdateEvent(
+          updateRefinementStatusAfterSolutionUpdate(cellDescription,cellDescription.getNeighbourMergePerformed())
+      );
       cellDescription.setHasCompletedLastStep(true);
     }
     else {
