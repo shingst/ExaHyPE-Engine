@@ -92,7 +92,7 @@ PROJECT_CFLAGS += -DAnalyseWaitingTimes
 {% endif %}
 
 {% if useReplicationSaving %}
-PROJECT_CFLAGS += -DDistributedOffloading -DReplicationSaving 
+PROJECT_CFLAGS += -DUSE_TMPI -DDistributedOffloading -DReplicationSaving 
 {% endif %}
 
 {% if stealingProgress=="progress_thread" %}

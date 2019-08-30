@@ -23,6 +23,10 @@
 
 #include "exahype/plotters/Plotter.h"
 
+#if defined(USE_TMPI)
+#include "teaMPI.h"
+#endif
+
 tarch::logging::Log exahype::mappings::Plot::_log("exahype::mappings::Plot");
 
 peano::CommunicationSpecification
@@ -85,12 +89,19 @@ void exahype::mappings::Plot::enterCell(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  if ( fineGridCell.isInitialised() ) {
-    solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
-    for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-      exahype::plotters::plotPatchIfAPlotterIsActive(solverNumber,cellInfo);
+
+#if defined(USE_TMPI)
+  if ( TMPI_IsLeadingRank() ) {
+#endif
+    if ( fineGridCell.isInitialised() ) {
+      solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
+      for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
+        exahype::plotters::plotPatchIfAPlotterIsActive(solverNumber,cellInfo);
+      }
     }
+#if defined (USE_TMPI)
   }
+#endif
 }
 
 #ifdef Parallel
