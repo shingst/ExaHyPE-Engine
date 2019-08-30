@@ -58,18 +58,20 @@ void ReplicationStatistics::notifySpawnedTask(){
 }
 
 void ReplicationStatistics::notifyExecutedTask(){
-	_executedTasks++;
+    _executedTasks++;
 }
 
 
 void ReplicationStatistics::printStatistics() {
-	int team = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank();
-	logInfo("printStatistics", " team "<<team
+#if defined(ReplicationSaving)	
+     int team = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank();
+     logInfo("printStatistics", " team "<<team
 			                   <<" spawned tasks = "<<_spawnedTasks
 							   <<" executed tasks = "<<_executedTasks
 							   <<" saved tasks =  "<<_savedTasks
 							   <<" sent tasks = "<<_sentTasks
 							   <<" received tasks = "<<_receivedTasks);
+#endif
 }
 
 } /* namespace offloading */
