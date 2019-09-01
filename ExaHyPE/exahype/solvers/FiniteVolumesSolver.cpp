@@ -706,13 +706,12 @@ void exahype::solvers::FiniteVolumesSolver::reduce(
 }
 
 void exahype::solvers::FiniteVolumesSolver::updateBody(
-    CellDescription&                                           cellDescription,
-    CellInfo&                                                  cellInfo,
-    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
-    const bool                                                 isFirstTimeStepOfBatch,
-    const bool                                                 isLastTimeStepOfBatch,
-    const bool                                                 isAtRemoteBoundary,
-    const bool                                                 uncompressBefore) {
+    CellDescription& cellDescription,
+    CellInfo&        cellInfo,
+    const bool       isFirstTimeStepOfBatch,
+    const bool       isLastTimeStepOfBatch,
+    const bool       isAtRemoteBoundary,
+    const bool       uncompressBefore) {
   #ifdef USE_ITAC
   if ( isAtRemoteBoundary ) {
     VT_begin(updateBodyHandleSkeleton);
@@ -723,7 +722,7 @@ void exahype::solvers::FiniteVolumesSolver::updateBody(
 
   if ( uncompressBefore ) { uncompress(cellDescription); }
 
-  updateSolution(cellDescription,neighbourMergePerformed,cellInfo._cellDescriptionsIndex,isFirstTimeStepOfBatch);
+  updateSolution(cellDescription,cellInfo._cellDescriptionsIndex,isFirstTimeStepOfBatch);
   UpdateResult result;
   result._timeStepSize = startNewTimeStep(cellDescription,isFirstTimeStepOfBatch);
 
@@ -768,7 +767,7 @@ void exahype::solvers::FiniteVolumesSolver::fusedTimeStepOrRestrict(
     synchroniseTimeStepping(cellDescription);
     cellDescription.setHasCompletedLastStep(false);
     updateBody(
-        cellDescription,cellInfo,cellDescription.getNeighbourMergePerformed(),
+        cellDescription,cellInfo,
         isFirstTimeStepOfBatch,isLastTimeStepOfBatch,isAtRemoteBoundary,false/*uncompressBefore*/);
   }
 }
@@ -792,7 +791,7 @@ void exahype::solvers::FiniteVolumesSolver::updateOrRestrict(
     cellDescription.setHasCompletedLastStep(false);
 
     updateBody(
-        cellDescription,cellInfo,cellDescription.getNeighbourMergePerformed(),
+        cellDescription,cellInfo,
         true,true,isAtRemoteBoundary,true/*uncompressBefore*/);
   }
 }
@@ -825,15 +824,15 @@ void exahype::solvers::FiniteVolumesSolver::adjustSolutionDuringMeshRefinement(
 }
 
 void exahype::solvers::FiniteVolumesSolver::updateSolution(
-    CellDescription&                                           cellDescription,
-    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
-    const int                                                  cellDescriptionsIndex,
-    const bool                                                 backupPreviousSolution) {
-  assertion1( tarch::la::equals(neighbourMergePerformed,static_cast<signed char>(true)) || ProfileUpdate,cellDescription.toString());
-  if ( !tarch::la::equals(neighbourMergePerformed,static_cast<signed char>(true)) && !ProfileUpdate ) {
+    CellDescription& cellDescription,
+    const int        cellDescriptionsIndex,
+    const bool       backupPreviousSolution) {
+  if ( !tarch::la::equals(cellDescription.getNeighbourMergePerformed(),static_cast<signed char>(true)) && !ProfileUpdate ) {
     logError("updateSolution(...)","Not all ghost layers were copied to cell="<<cellDescription.toString());
     std::terminate();
   }
+  assertion1( tarch::la::equals(cellDescription.getNeighbourMergePerformed(),static_cast<signed char>(true)) || ProfileUpdate,cellDescription.toString());
+  cellDescription.setNeighbourMergePerformed(static_cast<signed char>(false));
 
   #if !defined(SharedMemoryParallelisation) && !defined(Parallel) && defined(Asserts)
     static int counter = 0;
@@ -922,9 +921,9 @@ void exahype::solvers::FiniteVolumesSolver::mergeNeighboursData(
     static int counter = 0;
     static double timeStamp = 0;
     if ( !tarch::la::equals(timeStamp,_minTimeStamp,1e-9) ) {
-     logInfo("mergeNeighboursData(...)","#riemanns="<<counter);
-     timeStamp = _minTimeStamp;
-     counter=0;
+      logInfo("mergeNeighboursData(...)","#riemanns="<<counter);
+      timeStamp = _minTimeStamp;
+      counter=0;
     }
     counter++;
     #endif
@@ -960,6 +959,10 @@ void exahype::solvers::FiniteVolumesSolver::mergeNeighboursData(
 
     ghostLayerFilling(solution1,solution2,pos2-pos1);
     ghostLayerFilling(solution2,solution1,pos1-pos2);
+
+    Solver::InterfaceInfo face(pos1,pos2);
+    cellDescription1.setNeighbourMergePerformed(face._faceIndex1,true);
+    cellDescription2.setNeighbourMergePerformed(face._faceIndex2,true);
   }
 
   #ifdef USE_ITAC
@@ -1006,6 +1009,9 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithBoundaryData(
         cellDescription.getTimeStamp(),
         cellDescription.getTimeStepSize(),
         posCell,posBoundary);
+
+    Solver::BoundaryFaceInfo face(posCell,posBoundary);
+    cellDescription.setNeighbourMergePerformed(face._faceIndex,true);
   }
 
   #ifdef USE_ITAC
@@ -1371,13 +1377,13 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithNeighbourData(
     const int dataPerFace = getDataPerPatchFace();
     double* luhbnd = static_cast<double*>(cellDescription.getExtrapolatedSolution()) + (face._faceIndex * dataPerFace);
  
-    // Send order: minMax,lQhbnd,lFhbnd
-    // Receive order: lFhbnd,lQhbnd,minMax
     DataHeap::getInstance().receiveData(
         luhbnd, dataPerFace, fromRank, x, level,peano::heap::MessageType::NeighbourCommunication);
 
     double* luh = static_cast<double*>(cellDescription.getSolution());
     ghostLayerFillingAtBoundary(luh,luhbnd,src-dest);
+
+    cellDescription.setNeighbourMergePerformed(face._faceIndex,true);
   }
 }
 
@@ -1385,6 +1391,8 @@ void exahype::solvers::FiniteVolumesSolver::dropNeighbourData(
     const int                                     fromRank,
     const tarch::la::Vector<DIMENSIONS, double>&  x,
     const int                                     level) const {
+  logDebug("dropNeighbourData(...)", "drop "<<DataMessagesPerNeighbourCommunication<<" arrays from rank="<<fromRank<<",x="<<x<<",level="<<level);
+
   for(int receives=0; receives<DataMessagesPerNeighbourCommunication; ++receives)
     DataHeap::getInstance().receiveData(
         fromRank, x, level,
@@ -2105,7 +2113,7 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::FiniteVolumesSol
   {
     const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
     for (int it=0; it<numberOfRuns; it++) {
-      updateBody(cellDescription,cellInfo,cellDescription.getNeighbourMergePerformed(),true,true,true,false);
+      updateBody(cellDescription,cellInfo,true,true,true,false);
 
       swapSolutionAndPreviousSolution(cellDescription); // assumed to be very cheap
       rollbackToPreviousTimeStep(cellDescription);

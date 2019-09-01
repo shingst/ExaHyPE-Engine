@@ -284,10 +284,9 @@ private:
    * Returns MeshUpdateEvent::None in all other cases.
    */
   MeshUpdateEvent updateRefinementStatusAfterSolutionUpdate(
-      SolverPatch&                                               solverPatch,
-      CellInfo&                                                  cellInfo,
-      const bool                                                 isTroubled,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
+      SolverPatch& solverPatch,
+      CellInfo&    cellInfo,
+      const bool   isTroubled);
 
   /**
    * Takes the FV solution from the limiter patch and projects it on the
@@ -389,7 +388,6 @@ private:
    *
    * @param solverPatch             an ADER-DG cell description of type Cell
    * @param cellInfo                struct referring to all cell descriptions registered for a cell
-   * @param neighbourMergePerformed flag indicating where a neighbour merge has been performed (at spawn time if run by job)
    * @param isFirstTimeStepOfBatch  if this the first time step in a batch (at spawn time if run by job)
    * @param isLastTimeStepOfBatch   if this the last time step in a batch  (at spawn time if run by job)
    * @param predictionTimeStamp     the time stamp which should be used for the prediction (at spawn time if run by job)
@@ -400,15 +398,14 @@ private:
    * @note Might be called by background task. Do not synchronise time step data here.
    */
   void fusedTimeStepBody(
-      SolverPatch&                                               solverPatch,
-      CellInfo&                                                  cellInfo,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
-      const double                                               predictionTimeStamp,
-      const double                                               predictionTimeStepSize,
-      const bool                                                 isFirstTimeStepOfBatch,
-      const bool                                                 isLastTimeStepOfBatch,
-      const bool                                                 isSkeletonCell,
-      const bool                                                 mustBeDoneImmediately);
+      SolverPatch& solverPatch,
+      CellInfo&    cellInfo,
+      const double predictionTimeStamp,
+      const double predictionTimeStepSize,
+      const bool   isFirstTimeStepOfBatch,
+      const bool   isLastTimeStepOfBatch,
+      const bool   isSkeletonCell,
+      const bool   mustBeDoneImmediately);
 
   /**
    * @return Computes a merged limiter status as a maximum of
@@ -432,10 +429,9 @@ private:
    * @return an admissible time step size and a mesh update event for the solver patch
    */
   void updateBody(
-      SolverPatch&                                               solverPatch,
-      CellInfo&                                                  cellInfo,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
-      const bool                                                 isAtRemoteBoundary);
+      SolverPatch& solverPatch,
+      CellInfo&    cellInfo,
+      const bool   isAtRemoteBoundary);
 
  /**
    * Rollback to the previous time step, i.e,
@@ -482,23 +478,20 @@ private:
    *
    * Legend: O: Ok (ADER-DG cells), T: Troubled (FV cells), NT: FV->DG cells, NNT: DG->FV cells
    *
-   * @param solverPatch                    a solver patch
-   * @param cellInfo                       struct referring to all cell description associated with a cell
-   * @param limiterNeighbourMergePerformed flags indicating in which direction the limiter has performed a neighbour merge.
+   * @param solverPatch a solver patch
+   * @param cellInfo    struct referring to all cell description associated with a cell
    */
   void localRecomputation(
       SolverPatch&                                               solverPatch,
-      CellInfo&                                                  cellInfo,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& limiterNeighbourMergePerformed);
+      CellInfo&                                                  cellInfo);
 
   /**
    * Function Body for public recomputeSolutionLocally function.
    */
   double localRecomputationBody(
-      SolverPatch&                                               solverPatch,
-      Solver::CellInfo&                                          cellInfo,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& limiterNeighbourMergePerformed,
-      const bool                                                 isAtRemoteBoundary);
+      SolverPatch&      solverPatch,
+      Solver::CellInfo& cellInfo,
+      const bool        isAtRemoteBoundary);
 
   /**
    * Veto a coarsening attempt of a Parent cell description if
@@ -572,26 +565,17 @@ private:
    *
    * TODO(Dominic): Minimise time step sizes and refinement requests per patch
    * (->transpose the typical minimisation order)
-   *
-   * @note The state of the neighbourMergePerformed flags is used internally by
-   * some of the kernels, e.g. in order to determine where to perform a face integral.
-   * However, they have to be reset before the next iteration as they indicate on
-   * which face a Riemann solve has already been performed or not (their original usage).
-   * The flags are thus reset directly after spawning a FusedTimeStepJob.
-   * Therefore, we need to copy the neighbourMergePerformed flags when spawning
-   * a FusedTimeStep job.
    */
   class FusedTimeStepJob: public tarch::multicore::jobs::Job {
   private:
-    LimitingADERDGSolver&                                     _solver;
-    SolverPatch&                                              _solverPatch;
-    CellInfo                                                  _cellInfo;                // copy
-    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed; // copy
-    const double                                              _predictionTimeStamp;     // copy
-    const double                                              _predictionTimeStepSize;  // copy
-    const bool                                                _isFirstTimeStepOfBatch;  // copy
-    const bool                                                _isLastTimeStepOfBatch;   // copy
-    const bool                                                _isSkeletonJob;
+    LimitingADERDGSolver& _solver;
+    SolverPatch&          _solverPatch;
+    CellInfo              _cellInfo;                // copy
+    const double          _predictionTimeStamp;     // copy
+    const double          _predictionTimeStepSize;  // copy
+    const bool            _isFirstTimeStepOfBatch;  // copy
+    const bool            _isLastTimeStepOfBatch;   // copy
+    const bool            _isSkeletonJob;
   public:
 
   /**
@@ -629,21 +613,13 @@ private:
    * wait in endIteration(...) on the completion of the job.
    * It further important to flag this job as high priority job to
    * ensure completion before the next reduction.
-   *
-   * @note The state of the neighbourMergePerformed flags is used internally by
-   * some of the kernels, e.g. in order to determine where to perform a face integral.
-   * However, they have to be reset before the next iteration as they indicate on
-   * which face a Riemann solve has already been performed or not (their original usage).
-   * The flags are thus reset directly after spawning the job.
-   * Therefore, we need to copy the neighbourMergePerformed flags them.
    */
   class UpdateJob: public tarch::multicore::jobs::Job {
     private:
-      LimitingADERDGSolver&                                     _solver; // TODO not const because of kernels
-      SolverPatch&                                              _solverPatch;
-      CellInfo                                                  _cellInfo;
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed; // copy
-      const bool                                                _isAtRemoteBoundary;
+      LimitingADERDGSolver& _solver; // TODO not const because of kernels
+      SolverPatch&          _solverPatch;
+      CellInfo              _cellInfo;
+      const bool            _isAtRemoteBoundary;
     public:
       /**
        * Construct an UpdateJob.
@@ -672,20 +648,12 @@ private:
    * wait in endIteration(...) on the completion of the job.
    * It further important to flag this job as high priority job to
    * ensure completion before the next reduction.
-   *
-   * @note The state of the neighbourMergePerformed flags is used internally by
-   * some of the kernels, e.g. in order to determine where to perform a face integral.
-   * However, they have to be reset before the next iteration as they indicate on
-   * which face a Riemann solve has already been performed or not (their original usage).
-   * The flags are thus reset directly after spawning the job.
-   * Therefore, we need to copy the neighbourMergePerformed flags them.
    */
   class LocalRecomputationJob: public tarch::multicore::jobs::Job {
   private:
     LimitingADERDGSolver&                                     _solver; // TODO not const because of kernels
     SolverPatch&                                              _solverPatch;
     CellInfo                                                  _cellInfo;
-    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _limiterNeighbourMergePerformed; // copy
     const bool                                                _isAtRemoteBoundary;
   public:
     /**
@@ -693,18 +661,16 @@ private:
      *
      * @note Job is always spawned as high priority job.
      *
-     * @param solver                         the spawning solver
-     * @param solverPatch                    a cell description
-     * @param cellInfo                       links to all cell descriptions associated with the cell
-     * @param limiterNeighbourMergePerformed flags indicating in which direction the limiter has performed a neighbour merge.
-     * @param isAtRemoteBoundary             if the cell is at boundary to a remote rank
+     * @param solver             the spawning solver
+     * @param solverPatch        a cell description
+     * @param cellInfo           links to all cell descriptions associated with the cell
+     * @param isAtRemoteBoundary if the cell is at boundary to a remote rank
      */
     LocalRecomputationJob(
-        LimitingADERDGSolver&                                      solver,
-        SolverPatch&                                               solverPatch,
-        CellInfo&                                                  cellInfo,
-        const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& limiterNeighbourMergePerformed,
-        const bool                                                 isAtRemoteBoundary);
+        LimitingADERDGSolver& solver,
+        SolverPatch&          solverPatch,
+        CellInfo&             cellInfo,
+        const bool            isAtRemoteBoundary);
 
     bool run(bool runOnMasterThread) override;
     void prefetchData() override;
@@ -1018,11 +984,10 @@ public:
    *                                              (Fused time stepping for nonlinear PDEs is the only time stepping variant where we need to use an update vector.)
    */
   void updateSolution(
-      SolverPatch&                                               solverPatch,
-      CellInfo&                                                  cellInfo,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
-      const bool                                                 isFirstTimeStep,
-      const bool                                                 addSurfaceIntegralResultToSolution);
+      SolverPatch& solverPatch,
+      CellInfo&    cellInfo,
+      const bool   isFirstTimeStep,
+      const bool   addSurfaceIntegralResultToSolution);
 
   /**
    * Evaluate the discrete maximum principle and the physically admissibility detection criterion.

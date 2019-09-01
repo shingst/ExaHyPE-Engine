@@ -1580,8 +1580,8 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
       exahype::solvers::Solver::oneSolverRequestedLocalRecomputation()) {
     logInfo("updateMeshAndSubdomains(...)","recompute solution locally (if applicable) and compute new time step size");
     repository.switchToPredictionOrLocalRecomputation(); // do not roll forward here if global recomp.; we want to stay at the old time step
-    const int sweeps = (exahype::solvers::Solver::FuseAllADERDGPhases) ? exahype::solvers::Solver::PredictionSweeps : 1;
-    repository.iterate( sweeps ,false ); // local recomputation: has now recomputed predictor in interface cells
+    const int sweeps = exahype::solvers::Solver::FuseAllADERDGPhases ? exahype::solvers::Solver::PredictionSweeps : 1;
+    repository.iterate(sweeps, false); // local recomputation: has now recomputed predictor in interface cells
   }
 }
 

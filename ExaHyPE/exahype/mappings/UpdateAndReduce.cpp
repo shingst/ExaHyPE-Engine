@@ -140,8 +140,6 @@ void exahype::mappings::UpdateAndReduce::leaveCell(
           break;
       }
     }
-
-    Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
 }

@@ -92,8 +92,6 @@ void exahype::mappings::DropNeighbourMessages::enterCell(
       //   solvers::Solver::waitUntilCompletedTimeStep(p,waitForHighPriorityJob,false);
       // }
     }
-
-    Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
 }
 

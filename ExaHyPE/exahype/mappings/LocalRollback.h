@@ -67,6 +67,14 @@ private:
    * but no additional mesh refinement was required.
    * This information should be available on all ranks.
    * We ignore other solver types.
+   *
+   * @param toRank     rank to which we send a message
+   * @param srcScalar  linearised relative position of source cell to vertex (src)
+   * @param destScalar linearised relative position of destination cell to vertex (dest)
+   * @param vertex     vertex shared by the two MPI ranks
+   * @param x          position of the shared vertex
+   * @param h          mesh size on the level of the vertex
+   * @param level      level of the vertex
    */
   static void sendDataToNeighbourLoopBody(
       const int                                    toRank,
@@ -74,6 +82,7 @@ private:
       const int                                    destScalar,
       const exahype::Vertex&                       vertex,
       const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h,
       const int                                    level);
 #endif
 

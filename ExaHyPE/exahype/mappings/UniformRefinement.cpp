@@ -114,6 +114,9 @@ void exahype::mappings::UniformRefinement::beginIteration( exahype::State& solve
 void exahype::mappings::UniformRefinement::endIteration(exahype::State& solverState) {
   logTraceInWith1Argument("endIteration(State)", solverState);
 
+  //logInfo("enditeration(...)",peano::parallel::loadbalancing::Oracle::getInstance().isLoadBalancingActivated());
+  // is activated but not all ranks are given away
+
   solverState.setAllSolversAttainedStableState(
       solverState.getMaxLevel()>=exahype::solvers::Solver::getFinestUniformMeshLevelOfAllSolvers() );
 

@@ -17,13 +17,12 @@ exahype::solvers::ADERDGSolver::UpdateJob::UpdateJob(
   _solver(solver),
   _cellDescription(cellDescription),
   _cellInfo(cellInfo),
-  _neighbourMergePerformed(cellDescription.getNeighbourMergePerformed()),
   _isAtRemoteBoundary(isAtRemoteBoundary) {
   NumberOfReductionJobs.fetch_add(1);
 }
 
 bool exahype::solvers::ADERDGSolver::UpdateJob::run(bool runOnMasterThread) {
-  _solver.updateBody(_cellDescription,_cellInfo,_neighbourMergePerformed,_isAtRemoteBoundary);
+  _solver.updateBody(_cellDescription,_cellInfo,_isAtRemoteBoundary);
 
   NumberOfReductionJobs.fetch_sub(1);
   assertion( NumberOfReductionJobs.load()>=0 );

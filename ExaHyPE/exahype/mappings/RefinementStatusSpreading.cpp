@@ -32,9 +32,19 @@ tarch::multicore::BooleanSemaphore exahype::mappings::RefinementStatusSpreading:
 
 peano::CommunicationSpecification
 exahype::mappings::RefinementStatusSpreading::communicationSpecification() const {
-  return peano::CommunicationSpecification(
-      peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,false);
+  if ( State::isFirstIterationOfBatchOrNoBatch() ) { // always more than two iterations
+    return peano::CommunicationSpecification(
+        peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime,
+        peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,true);
+  } else if ( State::isLastIterationOfBatchOrNoBatch() ) {
+    return peano::CommunicationSpecification(
+        peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime,
+        peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,true);
+  } else {
+    return peano::CommunicationSpecification(
+        peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
+        peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,true);
+  }
 }
 
 // Switched on.
@@ -152,8 +162,6 @@ void exahype::mappings::RefinementStatusSpreading::enterCell(
         }
       }
     }
-
-    Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
 
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
@@ -166,6 +174,8 @@ void exahype::mappings::RefinementStatusSpreading::mergeWithNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
   logTraceInWith6Arguments("mergeWithNeighbour(...)", vertex, neighbour,
                            fromRank, fineGridX, fineGridH, level);
+
+  logDebug("mergeWithNeighbour(...)","isFirstIterationOfBatchOrNoBatch()="<<State::isFirstIterationOfBatchOrNoBatch());
 
   if ( !exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
     vertex.mergeOnlyWithNeighbourMetadata(
@@ -182,6 +192,8 @@ void exahype::mappings::RefinementStatusSpreading::prepareSendToNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
   logTraceInWith5Arguments("prepareSendToNeighbour(...)", vertex,
                            toRank, x, h, level);
+
+  logDebug("prepareSendToNeighbour(...)","isLastIterationOfBatchOrNoBatch()="<<State::isLastIterationOfBatchOrNoBatch());
 
   if ( !exahype::State::isLastIterationOfBatchOrNoBatch() ) {
     vertex.sendOnlyMetadataToNeighbour(toRank,x,h,level,false);

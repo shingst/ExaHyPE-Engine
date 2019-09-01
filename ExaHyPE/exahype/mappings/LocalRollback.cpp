@@ -159,10 +159,6 @@ void exahype::mappings::LocalRollback::enterCell(
         }
       }
     }
-
-    // !!! The following has to be done after LocalRollback since we might add new finite volumes patches here.
-    // !!! Has to be done for all solvers (cf. touchVertexFirstTime etc.) // TODO(Dominic): Reassess
-    Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
 }
@@ -176,14 +172,13 @@ void exahype::mappings::LocalRollback::prepareSendToNeighbour(
       OneSolverRequestedLocalRecomputation &&
       vertex.hasToCommunicate(level)
   ) {
-    const tarch::la::Vector<DIMENSIONS,int> lowerLeft(0);
-    sendDataToNeighbourLoopBody(toRank,0,1,vertex,x,level);
-    sendDataToNeighbourLoopBody(toRank,1,0,vertex,x,level);
-    sendDataToNeighbourLoopBody(toRank,0,2,vertex,x,level);
-    sendDataToNeighbourLoopBody(toRank,2,0,vertex,x,level);
+    sendDataToNeighbourLoopBody(toRank,0,1,vertex,x,h,level);
+    sendDataToNeighbourLoopBody(toRank,1,0,vertex,x,h,level);
+    sendDataToNeighbourLoopBody(toRank,0,2,vertex,x,h,level);
+    sendDataToNeighbourLoopBody(toRank,2,0,vertex,x,h,level);
     #if DIMENSIONS==3
-    sendDataToNeighbourLoopBody(toRank,0,4,vertex,x,level);
-    sendDataToNeighbourLoopBody(toRank,4,0,vertex,x,level);
+    sendDataToNeighbourLoopBody(toRank,0,4,vertex,x,h,level);
+    sendDataToNeighbourLoopBody(toRank,4,0,vertex,x,h,level);
     #endif
   }
 }
@@ -194,19 +189,22 @@ void exahype::mappings::LocalRollback::sendDataToNeighbourLoopBody(
     const int                                    destScalar,
     const exahype::Vertex&                       vertex,
     const tarch::la::Vector<DIMENSIONS, double>& x,
+    const tarch::la::Vector<DIMENSIONS, double>& h,
     const int                                    level) {
+  const auto src  = Vertex::delineariseIndex2(srcScalar);
+  const auto dest = Vertex::delineariseIndex2(destScalar);
+
   if ( vertex.hasToSendMetadata(toRank,srcScalar,destScalar,vertex.getAdjacentRanks()) ) {
     const int srcCellDescriptionsIndex = vertex.getCellDescriptionsIndex(srcScalar);
     bool validIndex = srcCellDescriptionsIndex >= 0;
     assertion( !validIndex || exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(srcCellDescriptionsIndex));
 
     if ( validIndex ) {
-      const tarch::la::Vector<DIMENSIONS,int> src = Vertex::delineariseIndex2(srcScalar);
-      const tarch::la::Vector<DIMENSIONS,int> dest = Vertex::delineariseIndex2(destScalar);
       solvers::Solver::CellInfo cellInfo = vertex.createCellInfo(srcScalar);
       solvers::Solver::BoundaryFaceInfo face(src,dest);
+      const auto barycentre = Vertex::computeFaceBarycentre(x,h,face._direction,src);
 
-      for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
+      for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
         auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
         if ( performLocalRecomputation( solver ) ) {
@@ -216,14 +214,14 @@ void exahype::mappings::LocalRollback::sendDataToNeighbourLoopBody(
             break;
           case solvers::Solver::Type::LimitingADERDG:
             static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-              sendDataToNeighbourDuringLocalRecomputation(toRank,solverNumber,cellInfo,src,dest,x,level);
+              sendDataToNeighbourDuringLocalRecomputation(toRank,solverNumber,cellInfo,src,dest,barycentre,level);
             break;
           case solvers::Solver::Type::FiniteVolumes:
             // insert code here
             break;
           default:
             assertionMsg(false,"Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
-            logError("mergeWithBoundaryDataIfNotDoneYet(...)","Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
+            logError("sendDataToNeighbourLoopBody(...)","Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
             std::abort();
             break;
           }

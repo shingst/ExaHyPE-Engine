@@ -474,7 +474,6 @@ void exahype::mappings::MeshRefinement::enterCell(
 
   if ( fineGridCell.isInitialised() ) {
     solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
-    Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
     // shutdown metadata for empty cells (no cell descriptions)
     if ( fineGridCell.isEmpty() ) {
       fineGridCell.shutdownMetaDataAndResetCellDescriptionsIndex();
@@ -506,12 +505,6 @@ void exahype::mappings::MeshRefinement::leaveCell(
           fineGridPositionOfCell,
           solverNumber);
     }
-  }
-
-  if ( fineGridCell.isInitialised() ) {
-    // Must be performed for all cell descriptions
-    solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
-    Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
 
   ensureRegularityAlongBoundary(fineGridVertices,fineGridVerticesEnumerator);

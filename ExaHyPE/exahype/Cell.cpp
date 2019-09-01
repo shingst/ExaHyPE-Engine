@@ -65,25 +65,6 @@ exahype::Cell::Cell(const Base::PersistentCell& argument) : Base(argument) {
   // Do not use it. This would overwrite persistent data.
 }
 
-void exahype::Cell::resetNeighbourMergePerformedFlags(
-    const solvers::Solver::CellInfo& cellInfo,
-    exahype::Vertex* const fineGridVertices,
-    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) {
-  // ADER-DG
-  for (auto& p : cellInfo._ADERDGCellDescriptions) {
-    for (int faceIndex=0; faceIndex<DIMENSIONS_TIMES_TWO; faceIndex++) {
-      p.setNeighbourMergePerformed(faceIndex,static_cast<char>(false));
-    }
-  }
-
-  // Finite-Volumes (loop body can be copied from ADER-DG loop)
-  for (auto& p : cellInfo._FiniteVolumesCellDescriptions) {
-    for (int faceIndex=0; faceIndex<DIMENSIONS_TIMES_TWO; faceIndex++) {
-      p.setNeighbourMergePerformed(faceIndex,static_cast<char>(false));
-    }
-  }
-}
-
 std::bitset<DIMENSIONS_TIMES_TWO> exahype::Cell::determineInsideAndOutsideFaces(
     const exahype::Vertex* const verticesAroundCell,
     const peano::grid::VertexEnumerator& verticesEnumerator) {

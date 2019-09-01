@@ -33,16 +33,15 @@ void exahype::solvers::ADERDGSolver::mergeWithEmptyNeighbourDuringMeshRefinement
     const tarch::la::Vector<DIMENSIONS, int>&    pos,
     const tarch::la::Vector<DIMENSIONS, int>&    posNeighbour,
     const bool                                   isAtBoundary,
-    const tarch::la::Vector<DIMENSIONS, double>& x,
-    const tarch::la::Vector<DIMENSIONS, double>& h) {
+    const tarch::la::Vector<DIMENSIONS, double>& barycentreFromVertex) {
   if ( isAtBoundary ) {
     mergeWithNeighbourMetadata(solverNumber,cellInfo,
           BoundaryStatus,BoundaryStatus,BoundaryStatus,
-          pos,posNeighbour,x,h);
+          pos,posNeighbour,barycentreFromVertex);
   } else {
     mergeWithNeighbourMetadata(solverNumber,cellInfo,
         0,0,Erase,
-        pos,posNeighbour,x,h);
+        pos,posNeighbour,barycentreFromVertex);
   }
 }
 
@@ -1014,7 +1013,7 @@ void exahype::solvers::ADERDGSolver::checkIfCellIsStable(
     if ( !stable ) {
       AllSolversAreStable = false;
 
-      #ifdef MonitorMeshRefinement
+      //#ifdef MonitorMeshRefinement
       logInfo("attainedStableState(...)","cell has not attained stable state (yet):");
       logInfo("attainedStableState(...)","type="<<cellDescription.toString(cellDescription.getType()));
       logInfo("attainedStableState(...)","offset="<<cellDescription.getOffset());
@@ -1034,7 +1033,7 @@ void exahype::solvers::ADERDGSolver::checkIfCellIsStable(
       logInfo("attainedStableState(...)","solver.getCoarsestMeshLevel="<<getCoarsestMeshLevel());
       logInfo("attainedStableState(...)","solver.getMaximumAdaptiveMeshLevel="<<getMaximumAdaptiveMeshLevel());
       logInfo("attainedStableState(...)","solver.getMaximumAdaptiveMeshDepth="<<getMaximumAdaptiveMeshDepth());
-      #endif
+      //#endif
     }
   }
 }
