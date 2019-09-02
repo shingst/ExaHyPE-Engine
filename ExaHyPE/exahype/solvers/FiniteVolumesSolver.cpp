@@ -1302,7 +1302,7 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToNeighbour(
     Solver::CellInfo&                             cellInfo,
     const tarch::la::Vector<DIMENSIONS, int>&     src,
     const tarch::la::Vector<DIMENSIONS, int>&     dest,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
+    const tarch::la::Vector<DIMENSIONS, double>&  barycentre,
     const int                                     level) {
   const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
   if ( element != Solver::NotFound ) {
@@ -1319,31 +1319,29 @@ void exahype::solvers::FiniteVolumesSolver::sendDataToNeighbour(
     const double* luh = static_cast<double*>(cellDescription.getSolution());
     boundaryLayerExtraction(luhbnd,luh,dest-src);
 
-    // Send order: minMax,lQhbnd,lFhbnd
-    // Receive order: lFhbnd,lQhbnd,minMax
-    logDebug("sendDataToNeighbour(...)","send "<<DataMessagesPerNeighbourCommunication<<" arrays to rank=" <<toRank << ",cell="<<cellDescription.getOffset()<<",x="<<x<<",level="<<level);
+    logDebug("sendDataToNeighbour(...)","send "<<DataMessagesPerNeighbourCommunication<<" arrays to rank=" <<toRank << ",cell="<<cellDescription.getOffset()<<",barycentre="<<barycentre<<",level="<<level);
 
     DataHeap::getInstance().sendData(
-        luhbnd, dataPerFace, toRank, x, level,
+        luhbnd, dataPerFace, toRank, barycentre, level,
         peano::heap::MessageType::NeighbourCommunication);
   }
 }
 
 void exahype::solvers::FiniteVolumesSolver::sendEmptyDataToNeighbour(
     const int                                     toRank,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
+    const tarch::la::Vector<DIMENSIONS, double>&  barycentre,
     const int                                     level) const {
   // Send order: lQhbnd,lFhbnd,observablesMin,observablesMax
   // Receive order: observablesMax,observablesMin,lFhbnd,lQhbnd
   // TODO(WORKAROUND)
   #if defined(UsePeanosSymmetricBoundaryExchanger)
   DataHeap::getInstance().sendData(
-      _invalidExtrapolatedSolution, toRank, x, level,
+      _invalidExtrapolatedSolution, toRank, barycentre, level,
       peano::heap::MessageType::NeighbourCommunication);
   #else
   for(int sends=0; sends<DataMessagesPerNeighbourCommunication; ++sends)
     DataHeap::getInstance().sendData(
-        exahype::EmptyDataHeapMessage, toRank, x, level,
+        exahype::EmptyDataHeapMessage, toRank, barycentre, level,
         peano::heap::MessageType::NeighbourCommunication);
   #endif
 }
@@ -1354,7 +1352,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithNeighbourData(
     Solver::CellInfo&                            cellInfo,
     const tarch::la::Vector<DIMENSIONS, int>&    src,
     const tarch::la::Vector<DIMENSIONS, int>&    dest,
-    const tarch::la::Vector<DIMENSIONS, double>& x,
+    const tarch::la::Vector<DIMENSIONS, double>& barycentre,
     const int                                    level) {
   const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
   if ( element != NotFound ) {
@@ -1364,7 +1362,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithNeighbourData(
     assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolutionIndex()));
     assertion(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolutionIndex()));
 
-    logDebug("mergeWithNeighbourData(...)", "receive "<<DataMessagesPerNeighbourCommunication<<" arrays from rank="<<fromRank<<",x="<<x<<",level="<<level);
+    logDebug("mergeWithNeighbourData(...)", "receive "<<DataMessagesPerNeighbourCommunication<<" arrays from rank="<<fromRank<<",x="<<barycentre<<",level="<<level);
 
     // TODO(Dominic): If anarchic time stepping, receive the time step too.
     //
@@ -1378,7 +1376,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithNeighbourData(
     double* luhbnd = static_cast<double*>(cellDescription.getExtrapolatedSolution()) + (face._faceIndex * dataPerFace);
  
     DataHeap::getInstance().receiveData(
-        luhbnd, dataPerFace, fromRank, x, level,peano::heap::MessageType::NeighbourCommunication);
+        luhbnd, dataPerFace, fromRank, barycentre, level,peano::heap::MessageType::NeighbourCommunication);
 
     double* luh = static_cast<double*>(cellDescription.getSolution());
     ghostLayerFillingAtBoundary(luh,luhbnd,src-dest);
@@ -1389,13 +1387,13 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithNeighbourData(
 
 void exahype::solvers::FiniteVolumesSolver::dropNeighbourData(
     const int                                     fromRank,
-    const tarch::la::Vector<DIMENSIONS, double>&  x,
+    const tarch::la::Vector<DIMENSIONS, double>&  barycentre,
     const int                                     level) const {
-  logDebug("dropNeighbourData(...)", "drop "<<DataMessagesPerNeighbourCommunication<<" arrays from rank="<<fromRank<<",x="<<x<<",level="<<level);
+  logDebug("dropNeighbourData(...)", "drop "<<DataMessagesPerNeighbourCommunication<<" arrays from rank="<<fromRank<<",x="<<barycentre<<",level="<<level);
 
   for(int receives=0; receives<DataMessagesPerNeighbourCommunication; ++receives)
     DataHeap::getInstance().receiveData(
-        fromRank, x, level,
+        fromRank, barycentre, level,
         peano::heap::MessageType::NeighbourCommunication);
 }
 

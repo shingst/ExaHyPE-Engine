@@ -784,7 +784,7 @@ public:
    * @param solverNumber   identification number for this solver
    * @param src            relative position of message source      to vertex.
    * @param src            relative position of message destination to vertex.
-   * @param x              vertex' position
+   * @param barycentre     barycentre of the face.
    * @param level          vertex' level
    */
   void mergeWithNeighbourData(
@@ -798,7 +798,7 @@ public:
 
   void dropNeighbourData(
       const int                                     fromRank,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
+      const tarch::la::Vector<DIMENSIONS, double>&  barycentre,
       const int                                     level) const;
 
   ///////////////////////

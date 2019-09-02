@@ -49,12 +49,6 @@ private:
   static tarch::logging::Log _log;
 
   /**
-   * Flag indicating if one solver requested a local recomputation.
-   * Is initialised in beginIteration(...).
-   */
-  static bool OneSolverRequestedLocalRecomputation;
-
-  /**
    * \return if we perform a local recomputation for this solver.
    */
   static bool performLocalRecomputation(exahype::solvers::Solver* solver);

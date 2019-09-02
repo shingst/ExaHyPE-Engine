@@ -87,8 +87,6 @@ exahype::mappings::LocalRollback::descendSpecification(int level) const {
 tarch::logging::Log exahype::mappings::LocalRollback::_log(
     "exahype::mappings::LocalRollback");
 
-bool exahype::mappings::LocalRollback::OneSolverRequestedLocalRecomputation = false;
-
 exahype::mappings::LocalRollback::LocalRollback() {
   // do nothing
 }
@@ -106,8 +104,7 @@ void exahype::mappings::LocalRollback::mergeWithWorkerThread(
 
 void exahype::mappings::LocalRollback::beginIteration(
     exahype::State& solverState) {
-  OneSolverRequestedLocalRecomputation =
-      exahype::solvers::Solver::oneSolverRequestedLocalRecomputation();
+  // do nothing
 }
 
 bool exahype::mappings::LocalRollback::performLocalRecomputation(
@@ -133,7 +130,7 @@ void exahype::mappings::LocalRollback::enterCell(
                            coarseGridCell, fineGridPositionOfCell);
 
   if (
-      OneSolverRequestedLocalRecomputation &&
+      State::hasOneSolverRequestedLocalRecomputation() &&
       fineGridCell.isInitialised()
   ) {
     solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
@@ -169,7 +166,7 @@ void exahype::mappings::LocalRollback::prepareSendToNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
   if (
-      OneSolverRequestedLocalRecomputation &&
+      State::hasOneSolverRequestedLocalRecomputation() &&
       vertex.hasToCommunicate(level)
   ) {
     sendDataToNeighbourLoopBody(toRank,0,1,vertex,x,h,level);
@@ -196,7 +193,7 @@ void exahype::mappings::LocalRollback::sendDataToNeighbourLoopBody(
 
   if ( vertex.hasToSendMetadata(toRank,srcScalar,destScalar,vertex.getAdjacentRanks()) ) {
     const int srcCellDescriptionsIndex = vertex.getCellDescriptionsIndex(srcScalar);
-    bool validIndex = srcCellDescriptionsIndex >= 0;
+    const bool validIndex = srcCellDescriptionsIndex >= 0;
     assertion( !validIndex || exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(srcCellDescriptionsIndex));
 
     if ( validIndex ) {
@@ -208,23 +205,9 @@ void exahype::mappings::LocalRollback::sendDataToNeighbourLoopBody(
         auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
         if ( performLocalRecomputation( solver ) ) {
-          switch ( solver->getType() ) {
-          case solvers::Solver::Type::ADERDG:
-            // do nothing
-            break;
-          case solvers::Solver::Type::LimitingADERDG:
-            static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
+          static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
               sendDataToNeighbourDuringLocalRecomputation(toRank,solverNumber,cellInfo,src,dest,barycentre,level);
-            break;
-          case solvers::Solver::Type::FiniteVolumes:
-            // insert code here
-            break;
-          default:
-            assertionMsg(false,"Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
-            logError("sendDataToNeighbourLoopBody(...)","Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
-            std::abort();
-            break;
-          }
+          assertion1( solver->getType()==solvers::Solver::Type::LimitingADERDG, solver->toString() );
         }
       }
     }

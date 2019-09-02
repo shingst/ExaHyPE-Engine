@@ -32,8 +32,6 @@
 tarch::logging::Log exahype::mappings::PredictionOrLocalRecomputation::_log(
     "exahype::mappings::PredictionOrLocalRecomputation");
 
-bool exahype::mappings::PredictionOrLocalRecomputation::OneSolverRequestedLocalRecomputation = false;
-
 peano::CommunicationSpecification
 exahype::mappings::PredictionOrLocalRecomputation::communicationSpecification() const {
   return peano::CommunicationSpecification(
@@ -93,12 +91,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::beginIteration(
   // enforce reductions from worker side in last step; turns off reductions in other iterations
   solverState.setReduceStateAndCell( exahype::State::isLastIterationOfBatchOrNoBatch() );
   #endif
-
-  if (
-      exahype::State::isFirstIterationOfBatchOrNoBatch()
-  ) {
-    OneSolverRequestedLocalRecomputation = exahype::solvers::Solver::oneSolverRequestedLocalRecomputation();
-  }
 
   if (
       exahype::solvers::Solver::SpawnPredictionAsBackgroundJob &&
@@ -215,7 +207,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeNeighboursDataDurin
     const tarch::la::Vector<DIMENSIONS, double>& h) {
   const auto pos1 = Vertex::delineariseIndex2(pos1Scalar);
   const auto pos2 = Vertex::delineariseIndex2(pos2Scalar);
-  assertion(tarch::la::countEqualEntries(pos1,pos2)==(DIMENSIONS-1));
 
   const int  cellDescriptionsIndex1 = vertex.getCellDescriptionsIndex(pos1Scalar);
   const int  cellDescriptionsIndex2 = vertex.getCellDescriptionsIndex(pos2Scalar);
@@ -269,7 +260,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::touchVertexFirstTime(
 
   if (
       exahype::State::isFirstIterationOfBatchOrNoBatch() &&
-      OneSolverRequestedLocalRecomputation
+      State::hasOneSolverRequestedLocalRecomputation()
   ) {
     mergeNeighboursDataDuringLocalRecomputationLoopBody(0,1,vertex,x,h);
     mergeNeighboursDataDuringLocalRecomputationLoopBody(0,2,vertex,x,h);
@@ -291,10 +282,19 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeWithNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
   logTraceInWith6Arguments( "mergeWithNeighbour(...)", vertex, neighbour, fromRank, fineGridX, fineGridH, level );
-  
+
+  tarch::la::Vector<DIMENSIONS,double> poi(1,0.666667);
+  if ( fromRank > 0 && tarch::la::equals(fineGridX,poi,1e-3)  ) {
+    logInfo("mergeWithNeighbour(...)","touch x="<<fineGridX.toString()<<",vertex="<<vertex.getAdjacentRanks()<<",neighbour="<<neighbour.getAdjacentRanks() <<
+            ",exahype::State::isFirstIterationOfBatchOrNoBatch()=" << exahype::State::isFirstIterationOfBatchOrNoBatch() <<
+            ",State::hasOneSolverRequestedLocalRecomputation()  =" << State::hasOneSolverRequestedLocalRecomputation()   <<
+            ",vertex.hasToCommunicate(level)                    =" << vertex.hasToCommunicate(level)
+    );
+  }
+
   if (
       exahype::State::isFirstIterationOfBatchOrNoBatch() &&
-      OneSolverRequestedLocalRecomputation &&
+      State::hasOneSolverRequestedLocalRecomputation() &&
       vertex.hasToCommunicate(level)
   ) {
     #if DIMENSIONS==3
