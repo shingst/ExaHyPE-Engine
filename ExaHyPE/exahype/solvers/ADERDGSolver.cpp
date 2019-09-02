@@ -134,7 +134,7 @@ std::atomic<int> exahype::solvers::ADERDGSolver::MaxIprobesInOffloadingProgress 
 std::atomic<int> exahype::solvers::ADERDGSolver::StealablePredictionJob::JobCounter (0);
 std::atomic<int> exahype::solvers::ADERDGSolver::NumberOfReceiveJobs (0);
 std::atomic<int> exahype::solvers::ADERDGSolver::NumberOfReceiveBackJobs (0);
-
+std::atomic<int> exahype::solvers::ADERDGSolver::LocalStealableSTPCounter (0);
 #ifdef OffloadingUseProgressTask
 std::unordered_set<int> exahype::solvers::ADERDGSolver::ActiveSenders;
 #endif
@@ -2434,6 +2434,13 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleReplicatedSTPs() {
 	if(!gotOne) break;
 
 	i++;
+  
+        assert(key.center!=nullptr);
+        logInfo("cleanUpStaleReplicatedSTPs()", " trying to find key - "
+                                                <<" center[0] = "<<key.center[0]
+                                                <<" center[1] = "<<key.center[1]
+                                                <<" center[2] = "<<key.center[2]
+                                                <<" time stamp = "<<key.timestamp);
 
     tbb::concurrent_hash_map<JobTableKey, StealablePredictionJobData*>::accessor a_jobToData;
 
