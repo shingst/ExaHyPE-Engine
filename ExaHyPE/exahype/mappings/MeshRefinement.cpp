@@ -27,7 +27,7 @@
 
 #include "tarch/multicore/Lock.h"
 
-#include "multiscalelinkedcell/HangingVertexBookkeeper.h"
+#include "exahype/mappings/LevelwiseAdjacencyBookkeeping.h"
 
 
 #include "exahype/VertexOperations.h"
@@ -317,7 +317,7 @@ void exahype::mappings::MeshRefinement::createCell(
 
   // do nothing
   fineGridCell.setCellDescriptionsIndex(
-      multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+      mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex);
 
   logTraceOutWith1Argument("createCell(...)", fineGridCell);
 }
@@ -619,7 +619,7 @@ void exahype::mappings::MeshRefinement::receiveDataFromMaster(
   // TODO(Dominic): Here, I have to chance to read the coarse grid cell's state.
 
   receivedCell.setCellDescriptionsIndex(
-      multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+      mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex);
   if (
       !exahype::State::isNewWorkerDueToForkOfExistingDomain() &&
       receivedCell.hasToCommunicate( receivedVerticesEnumerator.getLevel())
@@ -845,7 +845,8 @@ void exahype::mappings::MeshRefinement::mergeWithRemoteDataDueToForkOrJoin(
 
   if ( exahype::State::isNewWorkerDueToForkOfExistingDomain() ) {
     exahype::VertexOperations::writeCellDescriptionsIndex(
-        localVertex,multiscalelinkedcell::HangingVertexBookkeeper::getInstance().createVertexLinkMapForNewVertex());
+        localVertex, mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex
+    );
   }
 
   logTraceOut( "mergeWithRemoteDataDueToForkOrJoin(...)" );
@@ -863,7 +864,7 @@ void exahype::mappings::MeshRefinement::mergeWithRemoteDataDueToForkOrJoin(
   ) {
     if ( exahype::State::isNewWorkerDueToForkOfExistingDomain() ) {
       localCell.setCellDescriptionsIndex(
-          multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+          mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex);
       localCell.setupMetaData();
     } else if ( exahype::State::isJoiningWithWorker() ) {
       exahype::solvers::ADERDGSolver::eraseCellDescriptions(localCell.getCellDescriptionsIndex());

@@ -13,8 +13,6 @@
  
 #include "exahype/mappings/FinaliseMeshRefinement.h"
 
-#include "multiscalelinkedcell/HangingVertexBookkeeper.h"
-
 #include "tarch/multicore/Loop.h"
 
 #include "peano/datatraversal/autotuning/Oracle.h"

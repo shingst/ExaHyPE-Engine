@@ -26,7 +26,7 @@
 #include "tarch/la/VectorVectorOperations.h"
 #include "tarch/multicore/Lock.h"
 
-#include "multiscalelinkedcell/HangingVertexBookkeeper.h"
+#include "exahype/mappings/LevelwiseAdjacencyBookkeeping.h"
 
 #include "exahype/amr/AdaptiveMeshRefinement.h"
 
@@ -94,6 +94,7 @@ int exahype::solvers::ADERDGSolver::MinimumAugmentationStatusForRefining        
  * static constexpr need to declared again when following a
  * C++ standard before C++17.
  */
+constexpr int exahype::solvers::ADERDGSolver::EmptyStatus;
 constexpr int exahype::solvers::ADERDGSolver::BoundaryStatus;
 constexpr int exahype::solvers::ADERDGSolver::Pending;
 constexpr int exahype::solvers::ADERDGSolver::Erase; 
@@ -1593,6 +1594,8 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourMetadata(
       mergeWithAugmentationStatus (cellDescription,face._faceIndex,neighbourAugmentationStatus );
       mergeWithCommunicationStatus(cellDescription,face._faceIndex,neighbourCommunicationStatus);
       mergeWithRefinementStatus   (cellDescription,face._faceIndex,neighbourRefinementStatus   );
+
+      cellDescription.setNeighbourMergePerformed(face._faceIndex,true);
     }
   }
 }

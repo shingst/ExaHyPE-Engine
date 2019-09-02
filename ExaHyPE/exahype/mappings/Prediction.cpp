@@ -21,8 +21,6 @@
 #include "peano/datatraversal/autotuning/Oracle.h"
 #include "peano/datatraversal/TaskSet.h"
 
-#include "multiscalelinkedcell/HangingVertexBookkeeper.h"
-
 #include "exahype/solvers/ADERDGSolver.h"
 #include "exahype/solvers/LimitingADERDGSolver.h"
 

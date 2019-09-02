@@ -15,7 +15,7 @@
 
 #include <cmath>
 
-#include "../../../Peano/mpibalancing/HotspotBalancing.h"
+#include "mpibalancing/HotspotBalancing.h"
 
 #include "exahype/records/RepositoryState.h"
 #include "exahype/repositories/Repository.h"

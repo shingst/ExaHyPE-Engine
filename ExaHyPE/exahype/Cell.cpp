@@ -18,7 +18,7 @@
 
 #include "peano/utils/Loop.h"
 
-#include "multiscalelinkedcell/HangingVertexBookkeeper.h"
+#include "exahype/mappings/LevelwiseAdjacencyBookkeeping.h"
 
 #include "kernels/KernelCalls.h"
 
@@ -36,7 +36,7 @@ tarch::logging::Log exahype::Cell::_log("exahype::Cell");
 #ifdef Parallel
 #include <deque>
 
-int exahype::Cell::ReceivedMetadataHeapIndex(multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+int exahype::Cell::ReceivedMetadataHeapIndex(mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex);
 
 std::deque<int> exahype::Cell::ReceivedDataHeapIndices;
 #endif
@@ -47,7 +47,7 @@ exahype::Cell::Cell() : Base() {
   // createCell(...) events of Peano's spacetree traversal automaton
   // with default ("do-nothing") values.
   _cellData.setCellDescriptionsIndex(
-      multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+      mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex);
   _cellData.setADERDGCellDescriptions(nullptr);
   _cellData.setFiniteVolumesCellDescriptions(nullptr);
 }
@@ -55,7 +55,7 @@ exahype::Cell::Cell() : Base() {
 exahype::Cell::Cell(const Base::DoNotCallStandardConstructor& value)
 : Base(value) {
   _cellData.setCellDescriptionsIndex(
-      multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+      mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex);
   _cellData.setADERDGCellDescriptions(nullptr);
   _cellData.setFiniteVolumesCellDescriptions(nullptr);
 }
@@ -138,7 +138,7 @@ void exahype::Cell::setupMetaData() {
 
 void exahype::Cell::shutdownMetaDataAndResetCellDescriptionsIndex() {
   shutdownMetaData();
-  _cellData.setCellDescriptionsIndex(multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+  _cellData.setCellDescriptionsIndex(mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex);
   _cellData.setADERDGCellDescriptions(nullptr);
   _cellData.setFiniteVolumesCellDescriptions(nullptr);
 }
@@ -157,7 +157,7 @@ void exahype::Cell::shutdownMetaData() const {
 }
 
 bool exahype::Cell::isEmpty() const {
-  if (_cellData.getCellDescriptionsIndex()!=multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex) {
+  if (_cellData.getCellDescriptionsIndex()!=mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex) {
     assertion1( exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(_cellData.getCellDescriptionsIndex()),
                 _cellData.getCellDescriptionsIndex());
     assertion1( exahype::solvers::FiniteVolumesSolver::Heap::getInstance().isValidIndex(_cellData.getCellDescriptionsIndex()),
@@ -215,7 +215,7 @@ exahype::solvers::Solver::CellInfo exahype::Cell::addNewCellDescription(
     const int parentIndex,
     const tarch::la::Vector<DIMENSIONS, double>&  cellSize,
     const tarch::la::Vector<DIMENSIONS, double>&  cellOffset) {
-  if (_cellData.getCellDescriptionsIndex() == multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex) {
+  if (_cellData.getCellDescriptionsIndex() == mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex) {
     setupMetaData();
   }
 
@@ -234,7 +234,7 @@ exahype::solvers::Solver::CellInfo exahype::Cell::addNewCellDescription(
     const int                                     parentIndex,
     const tarch::la::Vector<DIMENSIONS, double>&  cellSize,
     const tarch::la::Vector<DIMENSIONS, double>&  cellOffset) {
-  if (_cellData.getCellDescriptionsIndex() == multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex) {
+  if (_cellData.getCellDescriptionsIndex() == mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex) {
     setupMetaData();
   }
 

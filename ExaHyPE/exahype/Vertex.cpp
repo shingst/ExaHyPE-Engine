@@ -23,7 +23,7 @@
 
 #include "peano/datatraversal/autotuning/Oracle.h"
 
-#include "multiscalelinkedcell/HangingVertexBookkeeper.h"
+#include "exahype/mappings/LevelwiseAdjacencyBookkeeping.h"
 
 #include "exahype/State.h"
 
@@ -38,9 +38,7 @@
 tarch::logging::Log exahype::Vertex::_log( "exahype::Vertex");
 
 exahype::Vertex::Vertex() : Base() {
-  _vertexData.setCellDescriptionsIndex(
-      multiscalelinkedcell::HangingVertexBookkeeper::getInstance()
-          .createVertexLinkMapForNewVertex() );
+  _vertexData.setCellDescriptionsIndex(mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex);
   _vertexData.setADERDGCellDescriptions(static_cast<void*>(nullptr));
   _vertexData.setFiniteVolumesCellDescriptions(static_cast<void*>(nullptr));
 }
@@ -158,10 +156,10 @@ void exahype::Vertex::mergeOnlyNeighboursMetadataLoopBodyHelper(
     const tarch::la::Vector<DIMENSIONS,int>&     pos2,
     const tarch::la::Vector<DIMENSIONS, double>& barycentre,
     const exahype::State::AlgorithmSection&      section) {
-  for ( auto& patch1 : cellInfo1._ADERDGCellDescriptions) {
+  for ( auto& patch1 : cellInfo1._ADERDGCellDescriptions ) {
     auto* solver1 = solvers::RegisteredSolvers[patch1.getSolverNumber()];
     if ( solver1->isMergingMetadata(section) ) {
-      for ( auto& patch2 : cellInfo2._ADERDGCellDescriptions) {
+      for ( auto& patch2 : cellInfo2._ADERDGCellDescriptions ) {
         solvers::ADERDGSolver::mergeWithNeighbourMetadata(patch1.getSolverNumber(),cellInfo1,
             patch2.getAugmentationStatus(),patch2.getCommunicationStatus(),patch2.getRefinementStatus(), // patch2 values
             pos1,pos2,barycentre);
@@ -183,8 +181,8 @@ void exahype::Vertex::mergeOnlyNeighboursMetadataLoopBody(
   tarch::la::Vector<DIMENSIONS,int> pos2 = delineariseIndex2(pos2Scalar);
   assertion(tarch::la::countEqualEntries(pos1,pos2)==(DIMENSIONS-1));
 
-  bool validIndex1 = cellDescriptionsIndex1 >= 0;
-  bool validIndex2 = cellDescriptionsIndex2 >= 0;
+  const bool validIndex1 = cellDescriptionsIndex1 >= 0;
+  const bool validIndex2 = cellDescriptionsIndex2 >= 0;
   assertion(cellDescriptionsIndex1 < 0 || exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex1));
   assertion(cellDescriptionsIndex2 < 0 || exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(cellDescriptionsIndex2));
 
@@ -198,10 +196,8 @@ void exahype::Vertex::mergeOnlyNeighboursMetadataLoopBody(
     mergeOnlyNeighboursMetadataLoopBodyHelper(cellInfo2,cellInfo1,pos2,pos1,barycentre,section);
   } else if (
       validIndex1 != validIndex2 &&
-      cellDescriptionsIndex1 != multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex &&
-      cellDescriptionsIndex2 != multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex
-      // make sure this is not an MPI boundary as touchVertexFirstTime
-      // is called after mergeWithNeighbour
+      cellDescriptionsIndex1 != mappings::LevelwiseAdjacencyBookkeeping::RemoteAdjacencyIndex &&
+      cellDescriptionsIndex2 != mappings::LevelwiseAdjacencyBookkeeping::RemoteAdjacencyIndex
   ) {
     const int cellDescriptionsIndex      = validIndex1 ? cellDescriptionsIndex1 : cellDescriptionsIndex2;
     const int otherCellDescriptionsIndex = validIndex1 ? cellDescriptionsIndex2 : cellDescriptionsIndex1;
@@ -217,7 +213,7 @@ void exahype::Vertex::mergeOnlyNeighboursMetadataLoopBody(
         const auto barycentre = computeFaceBarycentre(x,h,face._direction,pos1);
         solvers::ADERDGSolver::mergeWithEmptyNeighbourDuringMeshRefinement(
             patch.getSolverNumber(),cellInfo,pos,posEmpty,
-            otherCellDescriptionsIndex==multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex,
+            otherCellDescriptionsIndex==mappings::LevelwiseAdjacencyBookkeeping::DomainBoundaryAdjacencyIndex,
             barycentre);
       }
     }
@@ -260,7 +256,7 @@ void exahype::Vertex::validateNeighbourhood(
         (solvers::ADERDGSolver::isLeaf(p) ||
          solvers::ADERDGSolver::isParent(p))
         &&
-        cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
+        cellDescriptionsIndex2==mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex
     ) {
       logError("validateNeighbourhood(...)","cell at index="<<cellDescriptionsIndex1<<" is at face="<<face._faceIndex<<" next to empty cell: cell="<<p.toString());
       std::terminate();
@@ -270,7 +266,7 @@ void exahype::Vertex::validateNeighbourhood(
   for (auto& p : cellInfo._FiniteVolumesCellDescriptions) {
     if (
         p.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Leaf &&
-        cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex
+        cellDescriptionsIndex2==mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex
     ) {
       logError("validateNeighbourhood(...)","cell at index="<<cellDescriptionsIndex1<<" is at face="<<face._faceIndex<<" next to empty cell: cell="<<p.toString());
       std::terminate();
@@ -411,11 +407,11 @@ void exahype::Vertex::mergeNeighboursLoopBody(
     solvers::Solver::CellInfo cellInfo2 = vertex.createCellInfo(pos2Scalar);
     mergeNeighboursDataAndMetadata(cellInfo1,cellInfo2,pos1,pos2,x,h);
   }
-  else if ( validIndex1 && cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex ) {
+  else if ( validIndex1 && cellDescriptionsIndex2==mappings::LevelwiseAdjacencyBookkeeping::DomainBoundaryAdjacencyIndex ) {
     solvers::Solver::CellInfo cellInfo1 = vertex.createCellInfo(pos1Scalar);
     mergeWithBoundaryData(cellInfo1,pos1,pos2,x,h);
   }
-  else if ( validIndex2 && cellDescriptionsIndex1==multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex ) {
+  else if ( validIndex2 && cellDescriptionsIndex1==mappings::LevelwiseAdjacencyBookkeeping::DomainBoundaryAdjacencyIndex ) {
     solvers::Solver::CellInfo cellInfo2 = vertex.createCellInfo(pos2Scalar);
     mergeWithBoundaryData(cellInfo2,pos2,pos1,x,h);
   }
@@ -424,8 +420,8 @@ void exahype::Vertex::mergeNeighboursLoopBody(
       &&
       validIndex1 != validIndex2
       &&
-      cellDescriptionsIndex1!=multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex&&
-      cellDescriptionsIndex2!=multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex
+      cellDescriptionsIndex1!=mappings::LevelwiseAdjacencyBookkeeping::RemoteAdjacencyIndex&&
+      cellDescriptionsIndex2!=mappings::LevelwiseAdjacencyBookkeeping::RemoteAdjacencyIndex
   ) {
     validateNeighbourhood(cellDescriptionsIndex1,cellDescriptionsIndex2,vertex,pos1,pos2);
   }

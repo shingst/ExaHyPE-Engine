@@ -23,6 +23,8 @@
 
 #include "peano/grid/aspects/VertexStateAnalysis.h"
 
+#include "exahype/mappings/LevelwiseAdjacencyBookkeeping.h"
+
 ///////////////////////////////////
 // NEIGHBOUR
 ///////////////////////////////////
@@ -40,7 +42,7 @@ void exahype::solvers::ADERDGSolver::mergeWithEmptyNeighbourDuringMeshRefinement
           pos,posNeighbour,barycentreFromVertex);
   } else {
     mergeWithNeighbourMetadata(solverNumber,cellInfo,
-        0,0,Erase,
+        EmptyStatus,EmptyStatus,EmptyStatus,
         pos,posNeighbour,barycentreFromVertex);
   }
 }
@@ -121,13 +123,10 @@ void exahype::solvers::ADERDGSolver::mergeWithAugmentationStatus(
 
 void exahype::solvers::ADERDGSolver::updateRefinementStatus(CellDescription& cellDescription) const {
   if ( cellDescription.getLevel()==getMaximumAdaptiveMeshLevel() ) {
-    int max = Erase;
-    if ( cellDescription.getRefinementFlag() )  {
-      max = _refineOrKeepOnFineGrid;
-    }
-    if ( cellDescription.getRefinementStatus() == getMinRefinementStatusForTroubledCell() ) {
-      max = getMinRefinementStatusForTroubledCell();
-    }
+    int max = cellDescription.getRefinementFlag()  ?
+        _refineOrKeepOnFineGrid : Erase;
+    max = cellDescription.getRefinementStatus() == getMinRefinementStatusForTroubledCell() ?
+        getMinRefinementStatusForTroubledCell() : max;
 
     for (unsigned int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
       max = std::max( max, cellDescription.getFacewiseRefinementStatus(i)-1 );
@@ -654,7 +653,7 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
 
     addNewLeafCell(
         fineGridCell,fineGridVerticesEnumerator,
-        multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex,
+        mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex,
         solverNumber);
     newComputeCell = true;
   }
@@ -995,9 +994,12 @@ void exahype::solvers::ADERDGSolver::checkIfCellIsStable(
         cellDescription.getLevel() < getMaximumAdaptiveMeshLevel() &&
         cellDescription.getRefinementStatus()>=_refineOrKeepOnFineGrid);
     const bool noFinestGridVirtualCellMustBeReplacedByLeafCell =
-        !(isOfType(cellDescription,CellDescription::Type::Virtual) &&
+        !(isVirtual(cellDescription) &&
         cellDescription.getLevel() == getMaximumAdaptiveMeshLevel() &&
         cellDescription.getRefinementStatus() > Keep);
+    const bool noLeafCellIsNextToAnEmptyCell =
+        !(isLeaf(cellDescription) &&
+        tarch::la::min(cellDescription.getFacewiseRefinementStatus())==ADERDGSolver::EmptyStatus);
 
     const bool stable =
       flaggingHasConverged
@@ -1005,6 +1007,8 @@ void exahype::solvers::ADERDGSolver::checkIfCellIsStable(
       (cellDescription.getType()==CellDescription::Type::LeafChecked  ||
       cellDescription.getType()==CellDescription::Type::ParentChecked ||
       cellDescription.getType()==CellDescription::Type::Virtual)
+      &&
+      noLeafCellIsNextToAnEmptyCell
       &&
       noCoarseGridLeafCellMustRequireRefinement
       &&
@@ -1020,6 +1024,7 @@ void exahype::solvers::ADERDGSolver::checkIfCellIsStable(
       logInfo("attainedStableState(...)","size="<<cellDescription.getSize());
       logInfo("attainedStableState(...)","level="<<cellDescription.getLevel());
       logInfo("attainedStableState(...)","flaggingHasConverged="<<flaggingHasConverged);
+      logInfo("attainedStableState(...)","noLeafCellIsNextToAnEmptyCell="<<noLeafCellIsNextToAnEmptyCell);
       logInfo("attainedStableState(...)","noCoarseGridLeafCellMustRequireRefinement="<<noCoarseGridLeafCellMustRequireRefinement);
       logInfo("attainedStableState(...)","noFinestGridVirtualCellMustBeReplacedByLeafCell="<<noFinestGridVirtualCellMustBeReplacedByLeafCell);
       logInfo("attainedStableState(...)","getAugmentationStatus="<<cellDescription.getAugmentationStatus());
@@ -1366,7 +1371,7 @@ void exahype::solvers::ADERDGSolver::restrictVolumeDataIfParentCoarsens(
 void exahype::solvers::ADERDGSolver::ensureFineGridCoarseGridConsistency(
     CellDescription& fineGridCellDescription,
     const int coarseGridCellDescriptionsIndex) {
-  fineGridCellDescription.setParentIndex(multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+  fineGridCellDescription.setParentIndex(mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex);
   if ( isValidCellDescriptionIndex(coarseGridCellDescriptionsIndex) ) {
     fineGridCellDescription.setParentIndex(coarseGridCellDescriptionsIndex);
   }
@@ -1489,7 +1494,7 @@ void exahype::solvers::ADERDGSolver::receiveCellDescriptions(
 
   for (auto& cellDescription : Heap::getInstance().getData(localCell.getCellDescriptionsIndex())) {
     resetIndicesAndFlagsOfReceivedCellDescription(
-        cellDescription,multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+        cellDescription,mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex);
   }
 }
 

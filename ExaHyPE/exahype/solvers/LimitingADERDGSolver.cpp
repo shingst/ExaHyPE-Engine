@@ -248,7 +248,17 @@ exahype::solvers::Solver::MeshUpdateEvent exahype::solvers::LimitingADERDGSolver
        ADERDGSolver::isLeaf(solverPatch) &&
        !ADERDGSolver::checkIfStatusFlaggingHasConverged(solverPatch.getFacewiseRefinementStatus(),ADERDGSolver::Erase)
   ) {
+    #ifdef MonitorMeshRefinement
+    bool converged = ADERDGSolver::checkIfStatusFlaggingHasConverged(solverPatch.getFacewiseRefinementStatus(),ADERDGSolver::Erase);
+    logInfo("updateRefinementStatusDuringRefinementStatusSpreading(...)","converged="<<converged);
+    if ( !converged ) {
+      logInfo("updateRefinementStatusDuringRefinementStatusSpreading(...)","failed for cell="<<solverPatch.toString());
+    }
+    #endif
     AllSolversAreStable = false;
+    if ( tarch::la::min(solverPatch.getFacewiseRefinementStatus())==ADERDGSolver::EmptyStatus ){
+      return MeshUpdateEvent::RefinementRequested;
+    }
   }
 
   if ( 

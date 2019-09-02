@@ -27,7 +27,7 @@
 
 #include "tarch/multicore/Lock.h"
 
-#include "multiscalelinkedcell/HangingVertexBookkeeper.h"
+#include "exahype/mappings/LevelwiseAdjacencyBookkeeping.h"
 
 tarch::logging::Log exahype::mappings::UniformRefinement::_log("exahype::mappings::UniformRefinement");
 
@@ -214,7 +214,7 @@ void exahype::mappings::UniformRefinement::createCell(
     const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
-  fineGridCell.setCellDescriptionsIndex(multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+  fineGridCell.setCellDescriptionsIndex(mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex);
 }
 
 //

@@ -20,8 +20,6 @@
 #include "peano/datatraversal/autotuning/Oracle.h"
 #include "peano/datatraversal/TaskSet.h"
 
-#include "multiscalelinkedcell/HangingVertexBookkeeper.h"
-
 #include "exahype/VertexOperations.h"
 
 #include "exahype/solvers/LimitingADERDGSolver.h"

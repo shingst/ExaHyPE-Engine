@@ -23,7 +23,7 @@
 #include "peano/datatraversal/autotuning/Oracle.h"
 #include "peano/datatraversal/TaskSet.h"
 
-#include "multiscalelinkedcell/HangingVertexBookkeeper.h"
+#include "exahype/mappings/LevelwiseAdjacencyBookkeeping.h"
 
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
@@ -227,8 +227,8 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeNeighboursDataDurin
     }
   } else if (
       validIndex1 != validIndex2 &&
-      (cellDescriptionsIndex1==multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex ||
-       cellDescriptionsIndex2==multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex)
+      (cellDescriptionsIndex1==mappings::LevelwiseAdjacencyBookkeeping::DomainBoundaryAdjacencyIndex ||
+       cellDescriptionsIndex2==mappings::LevelwiseAdjacencyBookkeeping::DomainBoundaryAdjacencyIndex)
   ) {
     const int&                               posCellScalar = validIndex1 ? pos1Scalar : pos2Scalar;
     const tarch::la::Vector<DIMENSIONS,int>& posCell       = validIndex1 ? pos1       : pos2;

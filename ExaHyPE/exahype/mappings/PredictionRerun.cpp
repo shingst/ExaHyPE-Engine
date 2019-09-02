@@ -23,8 +23,6 @@
 
 #include "peano/utils/UserInterface.h"
 
-#include "multiscalelinkedcell/HangingVertexBookkeeper.h"
-
 #include "exahype/solvers/ADERDGSolver.h"
 #include "exahype/solvers/LimitingADERDGSolver.h"
 

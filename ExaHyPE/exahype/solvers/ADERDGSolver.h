@@ -253,6 +253,7 @@ private:
   bool _stabilityConditionWasViolated;
 
   /** Special Refinement Status values */
+  static constexpr int EmptyStatus    = -4;
   static constexpr int BoundaryStatus = -3;
   static constexpr int Pending        = -2;
   static constexpr int Erase          = -1; // Erase must be chosen as -1.

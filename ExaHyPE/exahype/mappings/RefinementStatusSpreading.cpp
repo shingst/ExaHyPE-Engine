@@ -22,8 +22,6 @@
 
 #include "tarch/la/VectorScalarOperations.h"
 
-#include "multiscalelinkedcell/HangingVertexBookkeeper.h"
-
 #include "exahype/VertexOperations.h"
 
 tarch::logging::Log exahype::mappings::RefinementStatusSpreading::_log("exahype::mappings::RefinementStatusSpreading");

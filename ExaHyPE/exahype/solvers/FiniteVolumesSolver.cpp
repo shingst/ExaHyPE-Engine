@@ -37,6 +37,7 @@
 
 #include "tarch/multicore/Jobs.h"
 
+#include "exahype/mappings/LevelwiseAdjacencyBookkeeping.h"
 
 namespace {
 constexpr const char* tags[]{"solutionUpdate", "stableTimeStepSize"};
@@ -321,7 +322,7 @@ bool exahype::solvers::FiniteVolumesSolver::progressMeshRefinementInEnterCell(
     fineGridVerticesEnumerator.getLevel()==_coarsestMeshLevel
   ) {
     addNewCell(fineGridCell,fineGridVertices,fineGridVerticesEnumerator,
-               multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex,
+               mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex,
                solverNumber);
     return true;
     // Fine grid cell based adaptive mesh refinement operations are not implemented.
@@ -1091,7 +1092,7 @@ void exahype::solvers::FiniteVolumesSolver::receiveCellDescriptions(
 
   for (auto& cellDescription : Heap::getInstance().getData(localCell.getCellDescriptionsIndex())) {
     resetIndicesAndFlagsOfReceivedCellDescription(
-        cellDescription,multiscalelinkedcell::HangingVertexBookkeeper::RemoteAdjacencyIndex);
+        cellDescription,mappings::LevelwiseAdjacencyBookkeeping::RemoteAdjacencyIndex);
   }
 }
 
