@@ -1013,7 +1013,7 @@ void exahype::solvers::ADERDGSolver::checkIfCellIsStable(
     if ( !stable ) {
       AllSolversAreStable = false;
 
-      //#ifdef MonitorMeshRefinement
+      #ifdef MonitorMeshRefinement
       logInfo("attainedStableState(...)","cell has not attained stable state (yet):");
       logInfo("attainedStableState(...)","type="<<cellDescription.toString(cellDescription.getType()));
       logInfo("attainedStableState(...)","offset="<<cellDescription.getOffset());
@@ -1033,7 +1033,7 @@ void exahype::solvers::ADERDGSolver::checkIfCellIsStable(
       logInfo("attainedStableState(...)","solver.getCoarsestMeshLevel="<<getCoarsestMeshLevel());
       logInfo("attainedStableState(...)","solver.getMaximumAdaptiveMeshLevel="<<getMaximumAdaptiveMeshLevel());
       logInfo("attainedStableState(...)","solver.getMaximumAdaptiveMeshDepth="<<getMaximumAdaptiveMeshDepth());
-      //#endif
+      #endif
     }
   }
 }

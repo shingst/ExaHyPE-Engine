@@ -317,11 +317,11 @@ void exahype::State::kickOffIteration(exahype::records::RepositoryState& reposit
   const bool manualNeighbourExchange  = startAndFinishNeighbourExchangeManually  (repositoryState.getAction(),CurrentBatchIteration % 2 == 0);
 
   if ( manualNeighbourExchange ) {
-    logInfo("kickOffIteration(...)","all heaps start to send boundary data (adapter="<<repositoryState.toString(repositoryState.getAction())<<",batch iteration="<<currentBatchIteration<<",isTraversalInverted="<<solverState.isTraversalInverted()<<")");
+    logDebug("kickOffIteration(...)","all heaps start to send boundary data (adapter="<<repositoryState.toString(repositoryState.getAction())<<",batch iteration="<<currentBatchIteration<<",isTraversalInverted="<<solverState.isTraversalInverted()<<")");
     peano::heap::AbstractHeap::allHeapsStartToSendBoundaryData(solverState.isTraversalInverted()); // solverState is not broadcasted when we run batch
   }
   if ( manualSychronousExchange ) {
-    logInfo("kickOffIteration(...)","all heaps start to send synchronous data (adapter="<<repositoryState.toString(repositoryState.getAction())<<",batch iteration="<<currentBatchIteration<<")");
+    logDebug("kickOffIteration(...)","all heaps start to send synchronous data (adapter="<<repositoryState.toString(repositoryState.getAction())<<",batch iteration="<<currentBatchIteration<<")");
     peano::heap::AbstractHeap::allHeapsStartToSendSynchronousData();
 
     assertionEquals(tarch::parallel::Node::getGlobalMasterRank(),0);
@@ -354,11 +354,11 @@ void exahype::State::wrapUpIteration(exahype::records::RepositoryState& reposito
     const bool isTraversalInverted = CurrentBatchIteration % 2 == 0 ?  // info is not broadcasted after the first batch iteration
         solverState.isTraversalInverted() : !solverState.isTraversalInverted();
 
-    logInfo("wrapUpIteration(...)","all heaps finish to send boundary data (adapter="<<repositoryState.getAction()<<",batch iteration="<<currentBatchIteration<<",isTraversalInverted="<<isTraversalInverted<<")");
+    logDebug("wrapUpIteration(...)","all heaps finish to send boundary data (adapter="<<repositoryState.getAction()<<",batch iteration="<<currentBatchIteration<<",isTraversalInverted="<<isTraversalInverted<<")");
     peano::heap::AbstractHeap::allHeapsFinishedToSendBoundaryData(isTraversalInverted);
   }
   if ( manualSychronousExchange ) {
-    logInfo("wrapUpIteration(...)","all heaps finish to send synchronous data (batch iteration="<<currentBatchIteration<<")");
+    logDebug("wrapUpIteration(...)","all heaps finish to send synchronous data (batch iteration="<<currentBatchIteration<<")");
     peano::heap::AbstractHeap::allHeapsFinishedToSendSynchronousData();
   }
   #endif
