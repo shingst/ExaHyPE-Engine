@@ -1118,12 +1118,12 @@ private:
   };
 
 #if defined(ReplicationSaving)
-  void cleanUpStaleReplicatedSTPs();
+
 
   void sendReplicatedSTPToOtherTeams(StealablePredictionJob *job);
 
   struct JobTableKey {
-	  double *center;
+	  double center[DIMENSIONS];
 	  double timestamp;
 	  int element;
 
@@ -2701,6 +2701,10 @@ public:
   static void setMaxNumberOfIprobesInProgressOffloading(int maxNumIprobes);
 
   static bool tryToReceiveTaskBack(exahype::solvers::ADERDGSolver* solver, const void* cellDescription = nullptr);
+
+  void finishOutstandingInterTeamCommunication();
+
+  void cleanUpStaleReplicatedSTPs(bool isFinal=false);
   /*
    * Spawns a offloading manager job and submits it as a TBB task.
    */

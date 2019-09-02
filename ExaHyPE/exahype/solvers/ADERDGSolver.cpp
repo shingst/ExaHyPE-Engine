@@ -134,6 +134,7 @@ std::atomic<int> exahype::solvers::ADERDGSolver::MaxIprobesInOffloadingProgress 
 std::atomic<int> exahype::solvers::ADERDGSolver::StealablePredictionJob::JobCounter (0);
 std::atomic<int> exahype::solvers::ADERDGSolver::NumberOfReceiveJobs (0);
 std::atomic<int> exahype::solvers::ADERDGSolver::NumberOfReceiveBackJobs (0);
+std::atomic<int> exahype::solvers::ADERDGSolver::LocalStealableSTPCounter (0);
 
 #ifdef OffloadingUseProgressTask
 std::unordered_set<int> exahype::solvers::ADERDGSolver::ActiveSenders;
@@ -2421,25 +2422,41 @@ void exahype::solvers::ADERDGSolver::toString (std::ostream& out) const {
 
 #if defined (ReplicationSaving)
 
-void exahype::solvers::ADERDGSolver::cleanUpStaleReplicatedSTPs() {
+void exahype::solvers::ADERDGSolver::finishOutstandingInterTeamCommunication () {
+	MPI_Comm interTeamComm = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamCommunicator();
+
+	while(exahype::offloading::OffloadingManager::getInstance().hasOutstandingRequestOfType(exahype::offloading::RequestType::sendReplica)) {
+      progressOffloading(this);
+	}
+	MPI_Request request;
+
+    MPI_Ibarrier(interTeamComm, &request);
+    int finished = 0;
+    while(!finished) {
+        progressOffloading(this);
+        MPI_Test(&request, &finished, MPI_STATUS_IGNORE);
+    }
+}
+
+void exahype::solvers::ADERDGSolver::cleanUpStaleReplicatedSTPs(bool isFinal) {
   int unsafe_size = _allocatedJobs.unsafe_size();
   assert(unsafe_size>=0);
   bool gotOne = true;
   int i = 0;
 
-  while( i< unsafe_size && gotOne) {
+  while( (i< unsafe_size || isFinal) && gotOne) {
 	JobTableKey key;
 	gotOne = _allocatedJobs.try_pop(key);
 
 	if(!gotOne) break;
-
+       logInfo("cleanUpStaleReplicatedSTPs()", " time stamp of key ="<<key.timestamp);
 	i++;
 
     tbb::concurrent_hash_map<JobTableKey, StealablePredictionJobData*>::accessor a_jobToData;
 
 	bool found = _mapJobToData.find(a_jobToData, key);
 
-    if(found && a_jobToData->first.timestamp <_minTimeStamp) {
+    if(found && (a_jobToData->first.timestamp <_minTimeStamp || isFinal)) {
 
       logInfo("cleanUpStaleReplicatedSTPs()", " time stamp "<<a_jobToData->first.timestamp<< " _minTimeStamp "<<_minTimeStamp);
 
@@ -2460,6 +2477,14 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleReplicatedSTPs() {
     	//do nothing -> job was already deallocated earlier
     }
   }
+
+  if(isFinal) {
+	  for(auto & elem: _mapTagToReplicationSendData) {
+		  delete elem.second;
+	  }
+  }
+
+  logInfo("cleanUpStaleReplicatedSTPs()", " there are "<<_allocatedJobs.unsafe_size()<<" allocated received jobs left, "<<_mapTagToReplicationSendData.size());
 }
 
 void exahype::solvers::ADERDGSolver::sendReplicatedSTPToOtherTeams(StealablePredictionJob *job) {
@@ -3533,36 +3558,24 @@ void exahype::solvers::ADERDGSolver::irecvStealablePredictionJob(
   }
 
   luh[5]++;
-  //std::cout<<"luh[5]: "<<luh[5];
-  //std::memset( luh, 0, getDataPerCell()*sizeof(double));
-  logInfo("irecvStealablePredictionJob","posting Irecv luh "<<luh<<" size "<<getDataPerCell());
   assert(luh!=NULL);
   ierr = MPI_Irecv(luh, getDataPerCell(), MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
   assert(ierr==MPI_SUCCESS);
   assert(requests[i-1]!=MPI_REQUEST_NULL);
 
   lduh[5]++;
-  //std::cout<<"lduh[5]: "<<lduh[5];
-  //std::memset( lduh, 0, getUpdateSize()*sizeof(double));
-  logInfo("irecvStealablePredictionJob","posting Irecv lduh "<<lduh<<" size "<<getUpdateSize());
   assert(lduh!=NULL);
   ierr = MPI_Irecv(lduh, getUpdateSize(), MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
   assert(ierr==MPI_SUCCESS);
   assert(requests[i-1]!=MPI_REQUEST_NULL);
 
   lQhbnd[5]++;
-  //std::cout<<"lQhbnd[5]: "<<lQhbnd[5];
-  //std::memset( lQhbnd, 0, getBndTotalSize()*sizeof(double));
-  logInfo("irecvStealablePredictionJob","posting Irecv lQhbnd "<<lQhbnd<<" size "<<getBndTotalSize());
   assert(lQhbnd!=NULL);
   ierr = MPI_Irecv(lQhbnd, getBndTotalSize(), MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
   assert(ierr==MPI_SUCCESS);
   assert(requests[i-1]!=MPI_REQUEST_NULL);
 
   lFhbnd[5]++;
-  //std::memset( lFhbnd, 0, getBndFluxTotalSize()*sizeof(double));
-  //std::cout<<"lFhbnd[5]: "<<lFhbnd[5];
-  logInfo("irecvStealablePredictionJob","posting Irecv lFhbnd "<<lFhbnd<<" size "<<getBndFluxTotalSize());
   assert(lFhbnd!=NULL);
   ierr = MPI_Irecv(lFhbnd, getBndFluxTotalSize(), MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
   assert(ierr==MPI_SUCCESS);

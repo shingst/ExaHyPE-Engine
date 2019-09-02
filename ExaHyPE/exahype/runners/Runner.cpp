@@ -1032,6 +1032,18 @@ int exahype::runners::Runner::run() {
       shutdownDistributedMemoryConfiguration();
       
 #if defined(DistributedOffloading)
+
+  for (auto* solver : exahype::solvers::RegisteredSolvers) {
+    if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
+      //static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopOffloadingManager();
+      static_cast<exahype::solvers::ADERDGSolver*>(solver)->finishOutstandingInterTeamCommunication();
+      static_cast<exahype::solvers::ADERDGSolver*>(solver)->cleanUpStaleReplicatedSTPs(true);
+    }
+    if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+      //static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->stopOffloadingManager();
+    }
+  }
+
   exahype::offloading::OffloadingManager::getInstance().destroyMPICommunicator(); 
   logInfo("shutdownDistributedMemoryConfiguration()","destroyed MPI communicators");
 #if defined(ReplicationSaving)

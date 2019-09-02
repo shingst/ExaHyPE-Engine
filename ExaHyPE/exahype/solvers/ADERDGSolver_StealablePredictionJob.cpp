@@ -121,7 +121,11 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
 #if defined(ReplicationSaving)
     double *center;
     center = (cellDescription.getOffset()+0.5*cellDescription.getSize()).data();
-    JobTableKey  key  = {center, _predictorTimeStamp, _element};
+    JobTableKey  key;
+    for(int i; i<DIMENSIONS; i++)
+       key.center[i] = center[i];
+    key.timestamp = _predictorTimeStamp;
+    key.element = _element;
     logInfo("handleLocalExecution()", "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
     	                          	  <<" looking for replica center[0] = "<< center[0]
 						              <<" center[1] = "<< center[1]
@@ -284,7 +288,12 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveHandlerRepli
   a_tagRankToData.release();
 
 
-  JobTableKey key{&data->_metadata[0], data->_metadata[2*DIMENSIONS], (int) data->_metadata[2*DIMENSIONS+2] };
+  JobTableKey key; //{&data->_metadata[0], data->_metadata[2*DIMENSIONS], (int) data->_metadata[2*DIMENSIONS+2] };
+  for(int i=0; i<DIMENSIONS; i++)
+    key.center[i] = data->_metadata[i];
+  key.timestamp = data->_metadata[2*DIMENSIONS];
+  key.element = data->_metadata[2*DIMENSIONS+2];
+
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapJobToData.insert(std::make_pair(key,data));
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_allocatedJobs.push(key);
   logInfo("receiveHandlerReplica", "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
@@ -366,7 +375,8 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendHandlerReplicat
   logInfo("sendHandlerReplication","successfully completed send to other teams");
   exahype::offloading::ReplicationStatistics::getInstance().notifySentTask();
   tbb::concurrent_hash_map<int, StealablePredictionJobData*>::accessor a_tagToData;
-  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToReplicationSendData.find(a_tagToData, tag);
+  bool found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToReplicationSendData.find(a_tagToData, tag);
+  assert(found);
   StealablePredictionJobData *data = a_tagToData->second;
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToReplicationSendData.erase(a_tagToData);
   delete data;
