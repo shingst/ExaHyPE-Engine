@@ -1611,7 +1611,7 @@ void exahype::solvers::LimitingADERDGSolver::sendDataToNeighbourDuringLocalRecom
       solverElement != NotFound &&
       ADERDGSolver::communicateWithNeighbour(cellInfo._ADERDGCellDescriptions[solverElement],face._faceIndex)
   ) {
-    logInfo("sendDataToNeighbourDuringLocalRecomputation(...)", "send data for solver " << _identifier << " to rank="<<toRank<<",x="<<barycentre<<",level="<<level);
+    logDebug("sendDataToNeighbourDuringLocalRecomputation(...)", "send data for solver " << _identifier << " to rank="<<toRank<<",x="<<barycentre<<",level="<<level);
 
     SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
     if ( solverPatch.getRefinementStatus() >= _solver->_minRefinementStatusForTroubledCell-2 ) {
@@ -1638,7 +1638,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithNeighbourDataDuringLocalRe
       solverElement != NotFound &&
       ADERDGSolver::communicateWithNeighbour(cellInfo._ADERDGCellDescriptions[solverElement],face._faceIndex)
   ) {
-    logInfo("mergeWithNeighbourDataDuringLocalRecomputation(...)", "receive data for solver " << _identifier << " from rank="<<fromRank<<",x="<<barycentre<<",level="<<level);
+    logDebug("mergeWithNeighbourDataDuringLocalRecomputation(...)", "receive data for solver " << _identifier << " from rank="<<fromRank<<",x="<<barycentre<<",level="<<level);
 
     SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
     if ( solverPatch.getRefinementStatus() >= _solver->_minRefinementStatusForTroubledCell-1 ) {
@@ -1706,10 +1706,7 @@ void exahype::solvers::LimitingADERDGSolver::sendDataToNeighbourBasedOnLimiterSt
         const int                                    level) {
   const int solverElement = cellInfo.indexOfADERDGCellDescription(solverNumber);
   BoundaryFaceInfo face(src,dest);
-  if (
-      solverElement != NotFound &&
-      ADERDGSolver::communicateWithNeighbour(cellInfo._ADERDGCellDescriptions[solverElement],face._faceIndex)
-  ) {
+  if ( solverElement != NotFound ) {
     SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
     waitUntilCompletedLastStep<SolverPatch>(solverPatch,true,true); // must come before any other operation
 
@@ -1717,7 +1714,10 @@ void exahype::solvers::LimitingADERDGSolver::sendDataToNeighbourBasedOnLimiterSt
     _solver->sendDataToNeighbour(toRank,solverNumber,cellInfo,src,dest,barycentre,level);
 
     // limiter sends (receive order must be inverted)
-    if ( level==getMaximumAdaptiveMeshLevel() ) {
+    if (
+        ADERDGSolver::communicateWithNeighbour(solverPatch,face._faceIndex) &&
+        level==getMaximumAdaptiveMeshLevel()
+    ) {
       logDebug("sendDataToNeighbourBasedOnLimiterStatus(...)", "send data for solver " << _identifier << " to rank="<<toRank<<",x="<<barycentre<<",level="<<level);
 
       if ( solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell-2 ) {
@@ -1760,15 +1760,14 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithNeighbourDataBasedOnLimite
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
   const int solverElement = cellInfo.indexOfADERDGCellDescription(solverNumber);
-  BoundaryFaceInfo face(dest,src);
-  if (
-      solverElement != NotFound &&
-      ADERDGSolver::communicateWithNeighbour(cellInfo._ADERDGCellDescriptions[solverElement],face._faceIndex)
-  ) {
-    if ( level == getMaximumAdaptiveMeshLevel() ) {
-      SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
-      assertion1(solverPatch.getRefinementStatus()>=ADERDGSolver::Pending,solverPatch.toString());
-
+  if ( solverElement != NotFound ) {
+    SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
+    assertion1(solverPatch.getRefinementStatus()>=ADERDGSolver::Pending,solverPatch.toString());
+    BoundaryFaceInfo face(dest,src);
+    if (
+        ADERDGSolver::communicateWithNeighbour(solverPatch,face._faceIndex) &&
+        level == getMaximumAdaptiveMeshLevel()
+    ) {
       // limiter !!! Receive order must be inverted in neighbour comm.
       if (
           solverPatch.getRefinementStatus()                        >= _solver->_minRefinementStatusForTroubledCell-2 &&
@@ -1788,7 +1787,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithNeighbourDataBasedOnLimite
         _solver->dropNeighbourData(fromRank,solverNumber,cellInfo,src,dest,x,level);
       }
     } else {
-      _solver->mergeWithNeighbourData(fromRank,solverNumber,cellInfo,src,dest,x,level);
+      _solver->mergeWithNeighbourData(fromRank,solverNumber,cellInfo,src,dest,x,level); // checks communicateWithNeighbour(...) internally
     }
   }
 }

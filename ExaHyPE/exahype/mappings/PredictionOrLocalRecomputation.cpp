@@ -283,15 +283,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeWithNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
   logTraceInWith6Arguments( "mergeWithNeighbour(...)", vertex, neighbour, fromRank, fineGridX, fineGridH, level );
 
-  tarch::la::Vector<DIMENSIONS,double> poi(1,0.666667);
-  if ( fromRank > 0 && tarch::la::equals(fineGridX,poi,1e-3)  ) {
-    logInfo("mergeWithNeighbour(...)","touch x="<<fineGridX.toString()<<",vertex="<<vertex.getAdjacentRanks()<<",neighbour="<<neighbour.getAdjacentRanks() <<
-            ",exahype::State::isFirstIterationOfBatchOrNoBatch()=" << exahype::State::isFirstIterationOfBatchOrNoBatch() <<
-            ",State::hasOneSolverRequestedLocalRecomputation()  =" << State::hasOneSolverRequestedLocalRecomputation()   <<
-            ",vertex.hasToCommunicate(level)                    =" << vertex.hasToCommunicate(level)
-    );
-  }
-
   if (
       exahype::State::isFirstIterationOfBatchOrNoBatch() &&
       State::hasOneSolverRequestedLocalRecomputation() &&

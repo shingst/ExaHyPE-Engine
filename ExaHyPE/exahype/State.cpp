@@ -317,11 +317,11 @@ void exahype::State::kickOffIteration(exahype::records::RepositoryState& reposit
   const bool manualNeighbourExchange  = startAndFinishNeighbourExchangeManually  (repositoryState.getAction(),CurrentBatchIteration % 2 == 0);
 
   if ( manualNeighbourExchange ) {
-    logInfo("kickOffIteration(...)","all heaps start to send boundary data (adapter="<<repositoryState.getAction()<<",batch iteration="<<currentBatchIteration<<",isTraversalInverted="<<solverState.isTraversalInverted()<<")");
+    logInfo("kickOffIteration(...)","all heaps start to send boundary data (adapter="<<repositoryState.toString(repositoryState.getAction())<<",batch iteration="<<currentBatchIteration<<",isTraversalInverted="<<solverState.isTraversalInverted()<<")");
     peano::heap::AbstractHeap::allHeapsStartToSendBoundaryData(solverState.isTraversalInverted()); // solverState is not broadcasted when we run batch
   }
   if ( manualSychronousExchange ) {
-    logInfo("kickOffIteration(...)","all heaps start to send synchronous data (batch iteration="<<currentBatchIteration<<")");
+    logInfo("kickOffIteration(...)","all heaps start to send synchronous data (adapter="<<repositoryState.toString(repositoryState.getAction())<<",batch iteration="<<currentBatchIteration<<")");
     peano::heap::AbstractHeap::allHeapsStartToSendSynchronousData();
 
     assertionEquals(tarch::parallel::Node::getGlobalMasterRank(),0);

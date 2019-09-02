@@ -537,7 +537,7 @@ void exahype::Vertex::sendOnlyMetadataToNeighbourLoopBody(
     solvers::Solver::BoundaryFaceInfo face(dest,src);
     const auto barycentre = computeFaceBarycentre(x,h,face._direction,dest);
 
-    logInfo("sendOnlyMetadataToNeighbourLoopBody(...)","to rank="<<toRank<<",barycentre="<<barycentre.toString()<<",level="<<level<<",adjacentRanks="<<adjacentRanks);
+    logDebug("sendOnlyMetadataToNeighbourLoopBody(...)","to rank="<<toRank<<",barycentre="<<barycentre.toString()<<",level="<<level<<",adjacentRanks="<<adjacentRanks);
 
     if ( !checkThoroughly || compareGeometryInformationOfCellDescriptionsAndVertex(src,dest,srcCellDescriptionsIndex,barycentre,h) ) {
       exahype::sendNeighbourCommunicationMetadata(toRank,srcCellDescriptionsIndex,src,dest,barycentre,level);
@@ -605,7 +605,7 @@ void exahype::Vertex::mergeOnlyWithNeighbourMetadataLoopBody(
     solvers::Solver::BoundaryFaceInfo face(dest,src);
     const auto barycentre = computeFaceBarycentre(x,h,face._direction,dest);
 
-    logInfo("mergeOnlyWithNeighbourMetadataLoopBody(...)","from rank="<<fromRank<<",barycentre="<<barycentre.toString()<<",level="<<level<<",adjacentRanks="<<adjacentRanks);
+    logDebug("mergeOnlyWithNeighbourMetadataLoopBody(...)","from rank="<<fromRank<<",barycentre="<<barycentre.toString()<<",level="<<level<<",adjacentRanks="<<adjacentRanks);
 
     exahype::MetadataHeap::HeapEntries receivedMetadata;
     receivedMetadata.clear();
