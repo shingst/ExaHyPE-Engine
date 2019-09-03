@@ -186,6 +186,7 @@ def parseResultFile(filePath):
     try:
         fileHandle=codecs.open(filePath,'r','UTF_8')
         for line in fileHandle:
+            
             if line.startswith("sweep/environment"):
                 value = line.replace("sweep/environment=","")
                 environmentDict=json.loads(value)
@@ -287,7 +288,7 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
 
                 # derived
                 totalCores = str(int(ranks)*int(cores)) # total used CPU cores
-                
+               
                 environmentDict,parameterDict,adapters,stats = parseResultFile(resultsFolderPath + "/" + fileName)
                 if len(environmentDict):
                     # write header

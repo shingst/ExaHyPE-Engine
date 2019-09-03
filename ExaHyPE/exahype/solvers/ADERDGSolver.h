@@ -3043,27 +3043,21 @@ public:
    const CellDescription& cellDescription = *((const CellDescription*) cellDescripPtr);
    //bool hasProcessed = false;
    bool hasTriggeredEmergency = false;
-   bool offloadingTreatment = true;
 
  #if !defined(OffloadingUseProgressThread)
-   if( offloadingTreatment )
-   {
      //exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressOffloading(1);
      setMaxNumberOfIprobesInProgressOffloading(1);
-   }
  #endif
    int myRank = tarch::parallel::Node::getInstance().getRank();
    int responsibleRank = myRank;
-   if( offloadingTreatment)
-     responsibleRank = getResponsibleRankForCellDescription((const void*) &cellDescription);
+   responsibleRank = getResponsibleRankForCellDescription((const void*) &cellDescription);
    bool progress = false;
    double startTime = MPI_Wtime();
 
    if ( !cellDescription.getHasCompletedLastStep() ) {
       peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
  #if !defined(OffloadingUseProgressThread)
-      if ( responsibleRank!=myRank
-          && offloadingTreatment) {
+      if ( responsibleRank!=myRank) {
         pauseOffloadingManager();
         logInfo("waitUntil", "cell missing from responsible rank: "<<responsibleRank);
         tryToReceiveTaskBack(this) ;
@@ -3072,8 +3066,7 @@ public:
     }
     while ( !cellDescription.getHasCompletedLastStep() ) {
  #if !defined(OffloadingUseProgressThread)
-      if ( responsibleRank!=myRank
-         && offloadingTreatment) {
+      if ( responsibleRank!=myRank) {
        tryToReceiveTaskBack(this);
         //solver->spawnReceiveBackJob();
       }
@@ -3090,20 +3083,21 @@ public:
       }
       #endif
 
-      switch ( JobSystemWaitBehaviour ) {
-         case JobSystemWaitBehaviourType::ProcessJobsWithSamePriority:
+      //switch ( JobSystemWaitBehaviour ) {
+      //   case JobSystemWaitBehaviourType::ProcessJobsWithSamePriority:
            tarch::multicore::jobs::processBackgroundJobs( 1, getTaskPriority(waitForHighPriorityJob), true );
            break;
-         case JobSystemWaitBehaviourType::ProcessAnyJobs:
-           tarch::multicore::jobs::processBackgroundJobs( 1, -1, true );
-           break;
-         default:
-           break;
-      }
+      //   case JobSystemWaitBehaviourType::ProcessAnyJobs:
+      //     tarch::multicore::jobs::processBackgroundJobs( 1, -1, true );
+      //     break;
+      //   default:
+      //     break;
+     // }
 
-      if((MPI_Wtime()-startTime)>10.0) { // && responsibleRank!=myRank) {
+      if((MPI_Wtime()-startTime)>0.10) { // && responsibleRank!=myRank) {
         startTime = MPI_Wtime();
-        logInfo("waitUntilCompletedTimeStep()","warning: rank waiting too long for missing task from rank "<<responsibleRank<< " outstanding jobs:"<<NumberOfRemoteJobs);
+        logInfo("waitUntilCompletedTimeStep()","warning: rank waiting too long for missing task from rank "<<responsibleRank<< " outstanding remote jobs:"<<NumberOfRemoteJobs
+                                      <<" outstanding skeleton jobs "<< exahype::solvers::ADERDGSolver::NumberOfSkeletonJobs<< " outstanding enclave jobs:"<<NumberOfEnclaveJobs );
       }
 
 
@@ -3113,7 +3107,6 @@ public:
           && !hasTriggeredEmergency
           && !progress
           && myRank!=responsibleRank
-          && offloadingTreatment
           && ( exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs
               -exahype::solvers::ADERDGSolver::NumberOfRemoteJobs)==0
         )
@@ -3123,7 +3116,6 @@ public:
         if( !cellDescription.getHasCompletedLastStep()
           && !hasTriggeredEmergency
           && myRank!=responsibleRank
-          && offloadingTreatment
           && !hasProcessed)
  #endif
         {
@@ -3140,8 +3132,7 @@ public:
 
     }
  #if !defined(OffloadingUseProgressThread)
-    if ( responsibleRank!=myRank
-       && offloadingTreatment) {
+    if ( responsibleRank!=myRank ) {
       resumeOffloadingManager();
     }
     exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressOffloading( std::numeric_limits<int>::max() );
