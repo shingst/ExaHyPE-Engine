@@ -88,12 +88,22 @@ exahype::offloading::OffloadingManager::~OffloadingManager() {
 
 #if defined(ReplicationSaving)
 
-void exahype::offloading::OffloadingManager::setTMPIInterTeamCommunicator(MPI_Comm comm) {
+void exahype::offloading::OffloadingManager::setTMPIInterTeamCommunicators(MPI_Comm comm, MPI_Comm commKey, MPI_Comm commAck) {
   _interTeamComm = comm;
+  _interTeamCommKey = commKey;
+  _interTeamCommAck = commAck;
 }
 
-MPI_Comm exahype::offloading::OffloadingManager::getTMPIInterTeamCommunicator() {
+MPI_Comm exahype::offloading::OffloadingManager::getTMPIInterTeamCommunicatorData() {
   return _interTeamComm;
+}
+
+MPI_Comm exahype::offloading::OffloadingManager::getTMPIInterTeamCommunicatorKey() {
+  return _interTeamCommKey;
+}
+
+MPI_Comm exahype::offloading::OffloadingManager::getTMPIInterTeamCommunicatorAck() {
+  return _interTeamCommAck;
 }
 
 void exahype::offloading::OffloadingManager::setTMPITeamSize(int team) {

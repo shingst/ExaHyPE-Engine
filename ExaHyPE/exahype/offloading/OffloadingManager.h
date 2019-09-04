@@ -218,9 +218,9 @@ class exahype::offloading::OffloadingManager {
     /**
      * Communicator for communication between replicating ranks.
      */
-    MPI_Comm _interTeamComm;
-	int _team;
-	int _interTeamRank;
+    MPI_Comm _interTeamComm, _interTeamCommKey, _interTeamCommAck; 
+    int _team;
+    int _interTeamRank;
 #endif
 
     /**
@@ -314,8 +314,10 @@ class exahype::offloading::OffloadingManager {
     bool hasOutstandingRequestOfType(RequestType requestType);
 
 #if defined (ReplicationSaving)
-    void setTMPIInterTeamCommunicator(MPI_Comm comm);
-    MPI_Comm getTMPIInterTeamCommunicator();
+    void setTMPIInterTeamCommunicators(MPI_Comm comm, MPI_Comm commKey, MPI_Comm commAck);
+    MPI_Comm getTMPIInterTeamCommunicatorData();
+    MPI_Comm getTMPIInterTeamCommunicatorKey();
+    MPI_Comm getTMPIInterTeamCommunicatorAck();
 
     void setTMPITeamSize(int team);
     int getTMPITeamSize();

@@ -318,9 +318,16 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     PMPI_Comm_rank(interTeamComm, &rankInterComm);
     int team = TMPI_GetTeamNumber();
 
-    exahype::offloading::OffloadingManager::getInstance().setTMPIInterTeamCommunicator(interTeamComm);
     exahype::offloading::OffloadingManager::getInstance().setTMPITeamSize(nteams);
     exahype::offloading::OffloadingManager::getInstance().setTMPIInterTeamRank(rankInterComm);
+
+    MPI_Comm interTeamCommDupKey;
+    MPI_Comm_dup(interTeamComm, &interTeamCommDupKey);
+
+    MPI_Comm interTeamCommDupAck;
+    MPI_Comm_dup(interTeamComm, &interTeamCommDupAck);
+
+    exahype::offloading::OffloadingManager::getInstance().setTMPIInterTeamCommunicators(interTeamComm, interTeamCommDupKey, interTeamCommDupAck);
 
     logInfo("initDistributedMemoryConfiguration()", " teams: "<<nteams<<", rank in team "
     		                                         <<team<<" : "<<rank<<", team rank in intercomm: "<<rankInterComm);
