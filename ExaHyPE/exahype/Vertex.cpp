@@ -208,7 +208,6 @@ void exahype::Vertex::mergeOnlyNeighboursMetadataLoopBody(
     for ( auto& patch : cellInfo._ADERDGCellDescriptions) {
       auto* solver = solvers::RegisteredSolvers[patch.getSolverNumber()];
       if ( solver->isMergingMetadata(section) ) {
-
         solvers::Solver::InterfaceInfo face(pos1,pos2);
         const auto barycentre = computeFaceBarycentre(x,h,face._direction,pos1);
         solvers::ADERDGSolver::mergeWithEmptyNeighbourDuringMeshRefinement(
@@ -789,22 +788,22 @@ void exahype::Vertex::receiveNeighbourDataLoopBody(
 
         switch ( solver->getType() ) {
         case solvers::Solver::Type::ADERDG:
+          if ( receiveNeighbourMetadata ) {
+            MetadataHeap::HeapEntries metadataPortion(receivedMetadata.begin()+begin,receivedMetadata.begin()+end);
+            solvers::ADERDGSolver::mergeWithNeighbourMetadata(solverNumber,cellInfo,metadataPortion,dest,src,barycentre);
+          }
           if ( mergeWithReceivedData ) {
-            if ( receiveNeighbourMetadata ) {
-              MetadataHeap::HeapEntries metadataPortion(receivedMetadata.begin()+begin,receivedMetadata.begin()+end);
-              solvers::ADERDGSolver::mergeWithNeighbourMetadata(solverNumber,cellInfo,metadataPortion,dest,src,barycentre);
-            }
             static_cast<solvers::ADERDGSolver*>(solver)->mergeWithNeighbourData(fromRank,solverNumber,cellInfo,src,dest,barycentre,level);
           } else {
             static_cast<solvers::ADERDGSolver*>(solver)->dropNeighbourData(fromRank,solverNumber,cellInfo,src,dest,barycentre,level);
           }
           break;
         case solvers::Solver::Type::LimitingADERDG:
+          if ( receiveNeighbourMetadata ) {
+            MetadataHeap::HeapEntries metadataPortion(receivedMetadata.begin()+begin,receivedMetadata.begin()+end);
+            solvers::ADERDGSolver::mergeWithNeighbourMetadata(solverNumber,cellInfo,metadataPortion,dest,src,barycentre);
+          }
           if ( mergeWithReceivedData ) {
-            if ( receiveNeighbourMetadata ) {
-              MetadataHeap::HeapEntries metadataPortion(receivedMetadata.begin()+begin,receivedMetadata.begin()+end);
-              solvers::ADERDGSolver::mergeWithNeighbourMetadata(solverNumber,cellInfo,metadataPortion,dest,src,barycentre);
-            }
             static_cast<solvers::LimitingADERDGSolver*>(solver)->mergeWithNeighbourData(fromRank,solverNumber,cellInfo,src,dest,barycentre,level);
           } else {
             static_cast<solvers::LimitingADERDGSolver*>(solver)->dropNeighbourData(fromRank,solverNumber,cellInfo,src,dest,barycentre,level);
