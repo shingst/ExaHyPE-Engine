@@ -124,7 +124,9 @@ void exahype::mappings::LoadBalancing::beginIteration(
   _numberOfLocalCells = 0;
   solverState.setReduceStateAndCell(true);
 
-  logInfo("beginIteration(..)","last level to uniformly populate with MPI ranks is " << LastLevelToPopulateUniformly);
+  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+    logInfo("beginIteration(..)","last level to uniformly populate with MPI ranks is " << LastLevelToPopulateUniformly);
+  }
   #endif
 }
 
