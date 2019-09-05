@@ -1327,19 +1327,6 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>&  x,
       const int                                     level);
 
-  /**
-   * Send data or empty data to the neighbour data based
-   * on the limiter status.
-   */
-  void sendDataToNeighbourBasedOnLimiterStatus(
-        const int                                    toRank,
-        const int                                    solverNumber,
-        Solver::CellInfo&                            cellInfo,
-        const tarch::la::Vector<DIMENSIONS, int>&    src,
-        const tarch::la::Vector<DIMENSIONS, int>&    dest,
-        const tarch::la::Vector<DIMENSIONS, double>& x,
-        const int                                    level);
-
   void mergeWithNeighbourData(
       const int                                    fromRank,
       const int                                    solverNumber,

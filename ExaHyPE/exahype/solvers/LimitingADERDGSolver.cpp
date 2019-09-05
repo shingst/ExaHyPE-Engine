@@ -1660,25 +1660,6 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithNeighbourDataDuringLocalRe
 ///////////////////////////////////
 // NEIGHBOUR - Time marching
 ///////////////////////////////////
-void exahype::solvers::LimitingADERDGSolver::sendDataToNeighbour(
-    const int                                    toRank,
-    const int                                    solverNumber,
-    Solver::CellInfo&                            cellInfo,
-    const tarch::la::Vector<DIMENSIONS, int>&    src,
-    const tarch::la::Vector<DIMENSIONS, int>&    dest,
-    const tarch::la::Vector<DIMENSIONS, double>& barycentre,
-    const int                                    level) {
-  const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
-  if ( element != NotFound ) {
-    sendMinAndMaxToNeighbour(toRank,cellInfo._ADERDGCellDescriptions[element],src,dest,barycentre,level);
-
-    sendDataToNeighbourBasedOnLimiterStatus(
-        toRank,solverNumber,cellInfo,src,dest,barycentre,level);
-  }
-
-  // send order:   minAndMax,solver,limiter
-  // receive order limiter,solver,minAndMax
-}
 
 void exahype::solvers::LimitingADERDGSolver::sendMinAndMaxToNeighbour(
     const int                                    toRank,
@@ -1707,24 +1688,29 @@ void exahype::solvers::LimitingADERDGSolver::sendMinAndMaxToNeighbour(
   }
 }
 
-void exahype::solvers::LimitingADERDGSolver::sendDataToNeighbourBasedOnLimiterStatus(
-        const int                                    toRank,
-        const int                                    solverNumber,
-        CellInfo&                                    cellInfo,
-        const tarch::la::Vector<DIMENSIONS, int>&    src,
-        const tarch::la::Vector<DIMENSIONS, int>&    dest,
-        const tarch::la::Vector<DIMENSIONS, double>& barycentre,
-        const int                                    level) {
+void exahype::solvers::LimitingADERDGSolver::sendDataToNeighbour(
+    const int                                    toRank,
+    const int                                    solverNumber,
+    Solver::CellInfo&                            cellInfo,
+    const tarch::la::Vector<DIMENSIONS, int>&    src,
+    const tarch::la::Vector<DIMENSIONS, int>&    dest,
+    const tarch::la::Vector<DIMENSIONS, double>& barycentre,
+    const int                                    level) {
   BoundaryFaceInfo face(src,dest);
   const int solverElement = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( solverElement != NotFound ) {
     SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
-    waitUntilCompletedLastStep<SolverPatch>(solverPatch,true,true); // must come before any other operation
 
-    // solver sends
+    // wait; must come before any other operation
+    waitUntilCompletedLastStep<SolverPatch>(solverPatch,true,true);
+
+    // send order:   minAndMax,solver,limiter
+    // receive order: limiter,solver,minAndMax
+    // 1. send min and max
+    sendMinAndMaxToNeighbour(toRank,solverPatch,src,dest,barycentre,level);
+    // 2. solver sends
     _solver->sendDataToNeighbour(toRank,solverNumber,cellInfo,src,dest,barycentre,level);
-
-    // limiter sends (receive order must be inverted)
+    // 3. limiter sends (receive order must be inverted)
     if (
         level==getMaximumAdaptiveMeshLevel() &&
         ADERDGSolver::communicateWithNeighbour(solverPatch,face._faceIndex)
@@ -1738,6 +1724,17 @@ void exahype::solvers::LimitingADERDGSolver::sendDataToNeighbourBasedOnLimiterSt
       }
     }
   }
+}
+
+void exahype::solvers::LimitingADERDGSolver::sendDataToNeighbourBasedOnLimiterStatus(
+        const int                                    toRank,
+        const int                                    solverNumber,
+        CellInfo&                                    cellInfo,
+        const tarch::la::Vector<DIMENSIONS, int>&    src,
+        const tarch::la::Vector<DIMENSIONS, int>&    dest,
+        const tarch::la::Vector<DIMENSIONS, double>& barycentre,
+        const int                                    level) {
+
 }
 
 void exahype::solvers::LimitingADERDGSolver::mergeWithNeighbourData(
