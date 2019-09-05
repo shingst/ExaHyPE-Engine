@@ -1943,20 +1943,6 @@ public:
       const int                                    level) = 0;
 
   /**
-   * If a cell description was allocated at heap address @p cellDescriptionsIndex
-   * for solver @p solverNumber, encode metadata of the cell description
-   * and push it to the back of the metadata vector @p metadata.
-   *
-   * Otherwise, push exahype::MasterWorkerCommunicationMetadataPerSolver
-   * times exahype::InvalidMetadataEntry to the back of the vector.
-   *
-   */
-  virtual void appendMasterWorkerCommunicationMetadata(
-      MetadataHeap::HeapEntries& metadata,
-      const int cellDescriptionsIndex,
-      const int solverNumber) const = 0;
-
-  /**
    * Send solver data to master or worker rank. Read the data from
    * the cell description @p element in
    * the cell descriptions vector stored at @p

@@ -1146,18 +1146,6 @@ void exahype::solvers::FiniteVolumesSolver::dropCellDescriptions(
 // MASTER <=> WORKER
 ////////////////////////////////////
 
-void
-exahype::solvers::FiniteVolumesSolver::appendMasterWorkerCommunicationMetadata(
-    exahype::MetadataHeap::HeapEntries& metadata,
-    const int cellDescriptionsIndex,
-    const int solverNumber) const {
-  for (int i = 0; i < exahype::MasterWorkerCommunicationMetadataPerSolver; ++i) {
-    metadata.push_back(exahype::InvalidMetadataEntry); // implicit conversion
-  }
-}
-
-///////////////////////
-
 void exahype::solvers::FiniteVolumesSolver::sendDataToWorkerOrMasterDueToForkOrJoin(
     const int                                     toRank,
     const int                                     cellDescriptionsIndex,

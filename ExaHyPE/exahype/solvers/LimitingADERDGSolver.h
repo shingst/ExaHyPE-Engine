@@ -1442,11 +1442,6 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int  level) final override;
 
-  void appendMasterWorkerCommunicationMetadata(
-      exahype::MetadataHeap::HeapEntries& metadata,
-      const int cellDescriptionsIndex,
-      const int solverNumber) const final override;
-
   void sendDataToWorkerOrMasterDueToForkOrJoin(
       const int                                     toRank,
       const int                                     cellDescriptionsIndex,

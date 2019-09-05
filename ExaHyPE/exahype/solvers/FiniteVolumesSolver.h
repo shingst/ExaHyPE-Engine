@@ -659,11 +659,6 @@ public:
   // MASTER<=>WORKER
   ///////////////////////////////////
 
-  void appendMasterWorkerCommunicationMetadata(
-      exahype::MetadataHeap::HeapEntries& metadata,
-      const int cellDescriptionsIndex,
-      const int solverNumber) const override;
-
   /**
      * Sets heap indices of an FiniteVolumesCellDescription to -1,
      * and the parent index of the cell descriptions to the specified @p

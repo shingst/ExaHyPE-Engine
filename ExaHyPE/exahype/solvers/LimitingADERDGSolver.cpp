@@ -630,12 +630,13 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
       isLastTimeStepOfBatch  // may only spawned in last iteration
   ) {
     const int element = cellInfo.indexOfADERDGCellDescription(solverPatch.getSolverNumber());
-    peano::datatraversal::TaskSet( new ADERDGSolver::PredictionJob(
-        *_solver.get(),solverPatch/*the reductions are delegated to _solver anyway*/,
-        cellInfo._cellDescriptionsIndex,element,
-        predictionTimeStamp,
-        predictionTimeStepSize,
-        false/*is uncompressed*/,isSkeletonCell,isLastTimeStepOfBatch/*addVolumeIntegralResultToUpdate*/));
+    peano::datatraversal::TaskSet(
+        new ADERDGSolver::PredictionJob(
+            *_solver.get(),solverPatch/*the reductions are delegated to _solver anyway*/,
+            cellInfo._cellDescriptionsIndex,element,
+            predictionTimeStamp,
+            predictionTimeStepSize,
+            false/*is uncompressed*/,isSkeletonCell,isLastTimeStepOfBatch/*addVolumeIntegralResultToUpdate*/));
   }
   else if ( solverPatch.getRefinementStatus()<_solver->_minRefinementStatusForTroubledCell ){
     _solver->predictionAndVolumeIntegralBody(
@@ -1942,14 +1943,6 @@ void exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInMergeWithMa
 
   _solver->progressMeshRefinementInMergeWithMaster(
       worker,localCellDescriptionsIndex,localElement,coarseGridCellDescriptionsIndex,x,level);
-}
-
-void exahype::solvers::LimitingADERDGSolver::appendMasterWorkerCommunicationMetadata(
-    exahype::MetadataHeap::HeapEntries& metadata,
-    const int cellDescriptionsIndex,
-    const int solverNumber) const {
-  _solver->appendMasterWorkerCommunicationMetadata(
-      metadata,cellDescriptionsIndex,solverNumber);
 }
 
 void exahype::solvers::LimitingADERDGSolver::sendDataToWorkerOrMasterDueToForkOrJoin(

@@ -1595,27 +1595,6 @@ void exahype::solvers::ADERDGSolver::dropCellDescriptions(
 ////////////////////////////////////
 // MASTER <=> WORKER
 ////////////////////////////////////
-void
-exahype::solvers::ADERDGSolver::appendMasterWorkerCommunicationMetadata(
-    MetadataHeap::HeapEntries& metadata,
-    const int cellDescriptionsIndex,
-    const int solverNumber) const {
-  const int element = tryGetElement(cellDescriptionsIndex,solverNumber);
-
-  if (element!=exahype::solvers::Solver::NotFound)  {
-    CellDescription& cellDescription =
-        getCellDescription(cellDescriptionsIndex,element);
-    metadata.push_back(static_cast<int>(cellDescription.getType()));
-    metadata.push_back(cellDescription.getAugmentationStatus()); // TODO(Dominic): Add to docu: Might be merged multiple times!
-    metadata.push_back(cellDescription.getCommunicationStatus());
-    metadata.push_back(cellDescription.getRefinementStatus());
-    metadata.push_back( belongsToAMRSkeleton(cellDescription) ? 1 : 0 );
-  } else {
-    for (int i = 0; i < exahype::MasterWorkerCommunicationMetadataPerSolver; ++i) {
-      metadata.push_back(exahype::InvalidMetadataEntry); // implicit conversion
-    }
-  }
-}
 
 void exahype::solvers::ADERDGSolver::progressMeshRefinementInPrepareSendToWorker(
     const int workerRank,
