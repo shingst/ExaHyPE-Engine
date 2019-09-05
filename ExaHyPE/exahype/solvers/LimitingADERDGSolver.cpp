@@ -1727,7 +1727,22 @@ void exahype::solvers::LimitingADERDGSolver::sendDataToNeighbour(
   }
 }
 
+void exahype::solvers::LimitingADERDGSolver::mergeSolutionMinMaxOnFace(
+  SolverPatch&  solverPatch,
+  Solver::BoundaryFaceInfo& face,
+  const double* const min,
+  const double* const max) const {
+  assertion1(ADERDGSolver::ADERDGSolver::communicateWithNeighbour(solverPatch,face._faceIndex) ,solverPatch.toString());
 
+  double* solutionMin = static_cast<double*>(solverPatch.getSolutionMin());
+  double* solutionMax = static_cast<double*>(solverPatch.getSolutionMax());
+
+  const int numberOfObservables = _solver->getDMPObservables();
+  for (int i=0; i<numberOfObservables; i++) {
+    solutionMin[i+face._faceIndex*numberOfObservables]  = std::min( solutionMin[i+face._faceIndex*numberOfObservables], min[i] );
+    solutionMax[i+face._faceIndex*numberOfObservables]  = std::max( solutionMax[i+face._faceIndex*numberOfObservables], max[i] );
+  }
+}
 
 void exahype::solvers::LimitingADERDGSolver::mergeWithNeighbourMinAndMax(
     const int                                    fromRank,
@@ -1805,23 +1820,6 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithNeighbourData(
 
     // 3. min and max
     mergeWithNeighbourMinAndMax(fromRank,cellInfo._ADERDGCellDescriptions[solverElement],src,dest,x,level);
-  }
-}
-
-void exahype::solvers::LimitingADERDGSolver::mergeSolutionMinMaxOnFace(
-  SolverPatch&  solverPatch,
-  Solver::BoundaryFaceInfo& face,
-  const double* const min,
-  const double* const max) const {
-  assertion1(ADERDGSolver::ADERDGSolver::communicateWithNeighbour(solverPatch,face._faceIndex) ,solverPatch.toString());
-
-  double* solutionMin = static_cast<double*>(solverPatch.getSolutionMin());
-  double* solutionMax = static_cast<double*>(solverPatch.getSolutionMax());
-
-  const int numberOfObservables = _solver->getDMPObservables();
-  for (int i=0; i<numberOfObservables; i++) {
-    solutionMin[i+face._faceIndex*numberOfObservables]  = std::min( solutionMin[i+face._faceIndex*numberOfObservables], min[i] );
-    solutionMax[i+face._faceIndex*numberOfObservables]  = std::max( solutionMax[i+face._faceIndex*numberOfObservables], max[i] );
   }
 }
 
