@@ -222,9 +222,7 @@ class Controller:
         
         if self.config["kernelType"] == "aderdg":
             self.runModel("converter",                converterModel.ConverterModel(self.baseContext))
-            self.runModel("configurationParameters",  configurationParametersModel.ConfigurationParametersModel(self.baseContext))
             self.runModel("amrRoutines",              amrRoutinesModel.AMRRoutinesModel(self.baseContext, self))
-            self.runModel("boundaryConditions",       boundaryConditionsModel.BoundaryConditionsModel(self.baseContext))
             self.runModel("deltaDistribution",        deltaDistributionModel.DeltaDistributionModel(self.baseContext))
             self.runModel("faceIntegral",             faceIntegralModel.FaceIntegralModel(self.baseContext))
             self.runModel("fusedSTPVI",               fusedSpaceTimePredictorVolumeIntegralModel.FusedSpaceTimePredictorVolumeIntegralModel(self.baseContext, self))
@@ -243,6 +241,8 @@ class Controller:
             self.runModel("boundaryLayerExtraction",  fvBoundaryLayerExtractionModel.FVBoundaryLayerExtractionModel(self.baseContext))
         
         if self.config["kernelType"] in ["aderdg", "fv"]:
+            self.runModel("configurationParameters",  configurationParametersModel.ConfigurationParametersModel(self.baseContext))
+            self.runModel("boundaryConditions",       boundaryConditionsModel.BoundaryConditionsModel(self.baseContext))
             self.runModel("stableTimeStepSize",       stableTimeStepSizeModel.StableTimeStepSizeModel(self.baseContext))
             self.runModel("adjustSolution",           adjustSolutionModel.AdjustSolutionModel(self.baseContext))
         

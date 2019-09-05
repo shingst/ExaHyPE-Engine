@@ -289,6 +289,10 @@ class {{project}}::{{abstractSolver}} : public exahype::solvers::FiniteVolumesSo
      * @param isLastTimeStepOfBatchOrNoBatch   if this is the last time step of a batch or if no batch is run.
      */
     virtual void endTimeStep(const double minTimeStamp,const bool isLastTimeStepOfBatchOrNoBatch)   {}
+    
+    //helper function
+    inline double* allocateArray(const int size) {return ((double* ) _mm_malloc(sizeof(double)*size, ALIGNMENT));}
+    inline void freeArray(double*& array) {_mm_free(array);}
 };
 
 

@@ -67,23 +67,15 @@ void {{project}}::{{abstractSolver}}::adjustSolution(double* const luh,const tar
 }
 
 void {{project}}::{{abstractSolver}}::boundaryConditions(double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const tarch::la::Vector<DIMENSIONS, int>& posCell,const tarch::la::Vector<DIMENSIONS, int>& posBoundary) {
-  {% if dimensions==3 %}
-  constexpr int cellsPerFace = PatchSize*PatchSize*GhostLayerWidth;
-  {% else %}
-  constexpr int cellsPerFace = PatchSize*GhostLayerWidth;
-  {% endif %}
-  {% if tempVarsOnStack %}
-  double luhbndInside [(NumberOfVariables+NumberOfParameters)*cellsPerFace];
-  double luhbndOutside[(NumberOfVariables+NumberOfParameters)*cellsPerFace];
-  {% else %}
-  constexpr int sizeLuhbnd = (NumberOfVariables+NumberOfParameters)*cellsPerFace;
   
-  const int indexLuhbndInside        = exahype::DataHeap::getInstance().createData(
-       sizeLuhbnd,sizeLuhbnd,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
-  const int indexLuhbndOutside       = exahype::DataHeap::getInstance().createData(
-       sizeLuhbnd,sizeLuhbnd,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
-  double* luhbndInside               = exahype::DataHeap::getInstance().getData(indexLuhbndInside).data();
-  double* luhbndOutside              = exahype::DataHeap::getInstance().getData(indexLuhbndOutside).data();
+  constexpr int luhbndSize = {{optNamespace}}::getluhbndSize();
+  {% if tempVarsOnStack %}
+  double luhbndInside [luhbndSize] __attribute__((aligned(ALIGNMENT)));
+  double luhbndOutside[luhbndSize] __attribute__((aligned(ALIGNMENT)));
+  {% else %} 
+  double* memory        = allocateArray(luhbndSize*2);
+  double* luhbndInside  = memory;
+  double* luhbndOutside = memory+luhbndSize;
   {% endif %}
   
   const int direction   = tarch::la::equalsReturnIndex(posCell, posBoundary);
@@ -91,29 +83,29 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* const luh,const
   const int faceIndex   = 2*direction+orientation;
   
   boundaryLayerExtraction(luhbndInside,luh,posBoundary-posCell);
-  kernels::finitevolumes::commons::c::boundaryConditions<{{solver}}>(*static_cast<{{solver}}*>(this),luhbndOutside,luhbndInside,cellCentre,cellSize,t,dt,faceIndex,direction);
+  //kernels::finitevolumes::commons::c::boundaryConditions<{{solver}}>(*static_cast<{{solver}}*>(this),luhbndOutside,luhbndInside,cellCentre,cellSize,t,dt,faceIndex,direction);
+  {{optNamespace}}::boundaryConditions(*static_cast<{{solver}}*>(this),luhbndOutside,luhbndInside,&cellCentre[0],cellSize[0],t,dt,faceIndex,direction);
   ghostLayerFillingAtBoundary(luh,luhbndOutside,posBoundary-posCell);
-  {%if tempVarsOnStack==False %}
   
-  exahype::DataHeap::getInstance().deleteData(indexLuhbndInside,true);
-  exahype::DataHeap::getInstance().deleteData(indexLuhbndOutside,true);
+  {%if not tempVarsOnStack %}
+  freeArray(memory);
   {% endif %}
 }
 
 
 void {{project}}::{{abstractSolver}}::ghostLayerFilling(double* const luh,const double* const luhNeighbour,const tarch::la::Vector<DIMENSIONS,int>& neighbourPosition) {
   //kernels::finitevolumes::commons::c::ghostLayerFilling<{{solver}}>(*static_cast<{{solver}}*>(this),luh,luhNeighbour,neighbourPosition);
-  {{optNamespace}}::ghostLayerFilling(*static_cast<{{solver}}*>(this),luh,luhNeighbour,&neighbourPosition[0]);
+  {{optNamespace}}::ghostLayerFilling(luh,luhNeighbour,&neighbourPosition[0]);
 }
 
 void {{project}}::{{abstractSolver}}::ghostLayerFillingAtBoundary(double* const luh,const double* const luhbnd,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) {
   //kernels::finitevolumes::commons::c::ghostLayerFillingAtBoundary<{{solver}}>(*static_cast<{{solver}}*>(this),luh,luhbnd,boundaryPosition);
-  {{optNamespace}}::ghostLayerFillingAtBoundary(*static_cast<{{solver}}*>(this),luh,luhbnd,&boundaryPosition[0]);
+  {{optNamespace}}::ghostLayerFillingAtBoundary(luh,luhbnd,&boundaryPosition[0]);
 }
 
 void {{project}}::{{abstractSolver}}::boundaryLayerExtraction(double* const luhbnd,const double* const luh,const tarch::la::Vector<DIMENSIONS,int>& boundaryPosition) {
   //kernels::finitevolumes::commons::c::boundaryLayerExtraction<{{solver}}>(*static_cast<{{solver}}*>(this),luhbnd,luh,boundaryPosition);
-  {{optNamespace}}::boundaryLayerExtraction(*static_cast<{{solver}}*>(this),luhbnd,luh,&boundaryPosition[0]);
+  {{optNamespace}}::boundaryLayerExtraction(luhbnd,luh,&boundaryPosition[0]);
 }
 
 double {{project}}::{{abstractSolver}}::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, const double* gradQL, const double* gradQR, const double* cellSize, int direction) {

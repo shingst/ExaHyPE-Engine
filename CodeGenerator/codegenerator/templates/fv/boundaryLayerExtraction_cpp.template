@@ -18,7 +18,6 @@
 #include <algorithm>
 
 void {{codeNamespace}}::boundaryLayerExtraction(
-    {{solverName}}& solver,
     double* luhbnd,const double* luh,
     const int* const boundaryPosition
 ) {

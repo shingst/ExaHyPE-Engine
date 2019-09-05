@@ -19,7 +19,6 @@
 
 
 void {{codeNamespace}}::ghostLayerFillingAtBoundary(
-    {{solverName}}& solver,
     double* luh,
     const double* luhbnd,
     const int* const boundaryPosition

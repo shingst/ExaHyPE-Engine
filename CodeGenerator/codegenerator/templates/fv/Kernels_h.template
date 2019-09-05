@@ -1,4 +1,4 @@
-{# /**
+/**
  * This file is part of the ExaHyPE project.
  * Copyright (c) 2016  http://exahype.eu
  * All rights reserved.
@@ -9,7 +9,7 @@
  *
  * Released under the BSD 3 Open Source License.
  * For the full license text, see LICENSE.txt
- **/ #}
+ **/
 
 #ifndef _EXAHYPE_{{guardNamespace}}_KERNELS_H_
 #define _EXAHYPE_{{guardNamespace}}_KERNELS_H_
@@ -49,27 +49,26 @@ namespace {{namespaceName}} {
 
 
   void boundaryLayerExtraction(
-    {{solverName}}& solver,
     double* luhbnd,
     const double* luh,
     const int* const boundaryPosition
   );
 
-/*
+
   void boundaryConditions(
     {{solverName}}& solver,
     double* stateOut,
     const double* const stateIn,
     const double* const cellCentre,
-    const double* const cellSize,
-    const double t,const double dt,
+    const double dx, //Assume dx[0] == dx[1] == dx[2]
+    const double t,
+    const double dt,
     const int faceIndex,
     const int normalNonZero
   );
-*/
+
 
   void ghostLayerFillingAtBoundary(
-    {{solverName}}& solver,
     double* luh,
     const double* luhbnd,
     const int* const boundaryPosition
@@ -77,7 +76,6 @@ namespace {{namespaceName}} {
 
 
   void ghostLayerFilling(
-    {{solverName}}& solver,
     double* luh,
     const double* luhNeighbour,
     const int* const neighbourPosition
@@ -88,7 +86,7 @@ namespace {{namespaceName}} {
 }
 {% endfor %}
 
-//#include "{{pathToOptKernel}}/ConfigurationParameters.cpph" //TODO JMG
+#include "{{pathToOptKernel}}/ConfigurationParameters.cpph"
 
 
 #endif // _EXAHYPE_{{guardNamespace}}_KERNELS_H_

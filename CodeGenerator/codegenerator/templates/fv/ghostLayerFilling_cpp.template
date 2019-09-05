@@ -18,7 +18,6 @@
 #include <algorithm>
 
 void {{codeNamespace}}::ghostLayerFilling(
-    {{solverName}}& solver,
     double* luh,
     const double* luhNeighbour,
     const int* const neighbourPosition

@@ -820,7 +820,7 @@ void kernels::finitevolumes::commons::c::boundaryConditions(SolverType& solver,
           const double qj = (2.0*j+1.0)/(2.0*patchSize);
           const double qi = (2.0*i+1.0)/(2.0*patchSize);
           xOutside[2] = cellCentre[2] + cellSize[2] * (qj - 0.5);
-          xOutside[1] = cellCentre[1] + cellSize[2] * (qi - 0.5);
+          xOutside[1] = cellCentre[1] + cellSize[1] * (qi - 0.5);
 
           const int K=ghostLayerWidth-k-1; // mirror
           solver.boundaryValues(xOutside,t,dt,faceIndex,normalNonZero, // mirrors stateIn DoF at boundary
