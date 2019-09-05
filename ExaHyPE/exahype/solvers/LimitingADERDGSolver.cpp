@@ -1623,6 +1623,9 @@ void exahype::solvers::LimitingADERDGSolver::sendDataToNeighbourDuringLocalRecom
     logDebug("sendDataToNeighbourDuringLocalRecomputation(...)", "send data for solver " << _identifier << " to rank="<<toRank<<",x="<<barycentre<<",level="<<level);
 
     SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
+
+    waitUntilCompletedLastStep<SolverPatch>(solverPatch,true,true);
+
     if ( solverPatch.getRefinementStatus() >= _solver->_minRefinementStatusForTroubledCell-2 ) {
       _limiter->sendDataToNeighbour(toRank,solverNumber,cellInfo,src,dest,barycentre,level);
     } else {
@@ -1720,7 +1723,7 @@ void exahype::solvers::LimitingADERDGSolver::sendDataToNeighbour(
 
       if (
           solverPatch.getRefinementStatus() >= _solver->_minRefinementStatusForTroubledCell-2 &&
-          cellInfo.indexOfFiniteVolumesCellDescription(solverNumber) != Solver::NotFound
+          cellInfo.indexOfFiniteVolumesCellDescription(solverNumber) != Solver::NotFound // might not be allocated yet
       ) {
         _limiter->sendDataToNeighbour(toRank,solverNumber,cellInfo,src,dest,barycentre,level);
       } else {
