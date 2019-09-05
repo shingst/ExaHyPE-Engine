@@ -208,7 +208,6 @@ void exahype::Vertex::mergeOnlyNeighboursMetadataLoopBody(
     for ( auto& patch : cellInfo._ADERDGCellDescriptions) {
       auto* solver = solvers::RegisteredSolvers[patch.getSolverNumber()];
       if ( solver->isMergingMetadata(section) ) {
-
         solvers::Solver::InterfaceInfo face(pos1,pos2);
         const auto barycentre = computeFaceBarycentre(x,h,face._direction,pos1);
         solvers::ADERDGSolver::mergeWithEmptyNeighbourDuringMeshRefinement(

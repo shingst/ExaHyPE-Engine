@@ -1369,10 +1369,8 @@ void exahype::solvers::LimitingADERDGSolver::localRecomputation(
     // 1. Perform the local recomputation
     SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
 
-    tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> limiterNeighbourMergePerformed(static_cast<signed char>(0));
     if ( isInvolvedInLocalRecomputation(solverPatch) ) {
       LimiterPatch& limiterPatch = getLimiterPatch(solverPatch,cellInfo);
-      limiterNeighbourMergePerformed = limiterPatch.getNeighbourMergePerformed();
     }
     if ( SpawnUpdateAsBackgroundJob ) {
       peano::datatraversal::TaskSet( new LocalRecomputationJob(
@@ -1691,7 +1689,10 @@ void exahype::solvers::LimitingADERDGSolver::sendMinAndMaxToNeighbour(
     const int                                    level) const {
   BoundaryFaceInfo face(src,dest);
   const int numberOfObservables = _solver->getDMPObservables();
-  if ( numberOfObservables>0 && ADERDGSolver::communicateWithNeighbour(solverPatch,face._faceIndex) ) {
+  if (
+      numberOfObservables>0 &&
+      ADERDGSolver::communicateWithNeighbour(solverPatch,face._faceIndex)
+  ) {
     assertion(DataHeap::getInstance().isValidIndex(solverPatch.getSolutionMinIndex()));
     assertion(DataHeap::getInstance().isValidIndex(solverPatch.getSolutionMaxIndex()));
     const double* observablesMin = static_cast<double*>(solverPatch.getSolutionMin()) + (face._faceIndex * numberOfObservables);
@@ -1725,8 +1726,8 @@ void exahype::solvers::LimitingADERDGSolver::sendDataToNeighbourBasedOnLimiterSt
 
     // limiter sends (receive order must be inverted)
     if (
-        ADERDGSolver::communicateWithNeighbour(solverPatch,face._faceIndex) &&
-        level==getMaximumAdaptiveMeshLevel()
+        level==getMaximumAdaptiveMeshLevel() &&
+        ADERDGSolver::communicateWithNeighbour(solverPatch,face._faceIndex)
     ) {
       logDebug("sendDataToNeighbourBasedOnLimiterStatus(...)", "send data for solver " << _identifier << " to rank="<<toRank<<",x="<<barycentre<<",level="<<level);
 
