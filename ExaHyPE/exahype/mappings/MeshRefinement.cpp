@@ -239,7 +239,7 @@ void exahype::mappings::MeshRefinement::touchVertexLastTime(
       fineGridVertex.getRefinementControl()==
           Vertex::Records::RefinementControl::Refined
   ) {
-    //fineGridVertex.erase();
+    fineGridVertex.erase();
   }
 }
 
@@ -374,9 +374,7 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
           ==exahype::Vertex::Records::RefinementControl::Unrefined;
     enddforx
 
-    if ( oneInnerVertexIsRefined
-         //&& _stateCopy.getMeshRefinementIsInRefiningMode()
-    ) {
+    if ( oneInnerVertexIsRefined ) {
       dfor2(v)
         tarch::multicore::Lock lock(BoundarySemaphore);
         if (
@@ -397,9 +395,7 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
         lock.free();
       enddforx
     }
-    else if ( noInnerVertexIsRefined
-        // && !_stateCopy.getMeshRefinementIsInRefiningMode()
-    ) {
+    else if ( noInnerVertexIsRefined ) {
       dfor2(v)
         tarch::multicore::Lock lock(BoundarySemaphore);
         if (
@@ -421,7 +417,7 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
             ==exahype::solvers::Solver::RefinementControl::Erase
 
         ) {
-//          fineGridVertices[fineGridVerticesEnumerator(v)].erase();
+          fineGridVertices[fineGridVerticesEnumerator(v)].erase();
         }
         lock.free();
       enddforx
