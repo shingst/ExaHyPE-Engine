@@ -789,22 +789,22 @@ void exahype::Vertex::receiveNeighbourDataLoopBody(
 
         switch ( solver->getType() ) {
         case solvers::Solver::Type::ADERDG:
+          if ( receiveNeighbourMetadata ) {
+            MetadataHeap::HeapEntries metadataPortion(receivedMetadata.begin()+begin,receivedMetadata.begin()+end);
+            solvers::ADERDGSolver::mergeWithNeighbourMetadata(solverNumber,cellInfo,metadataPortion,dest,src,barycentre);
+          }
           if ( mergeWithReceivedData ) {
-            if ( receiveNeighbourMetadata ) {
-              MetadataHeap::HeapEntries metadataPortion(receivedMetadata.begin()+begin,receivedMetadata.begin()+end);
-              solvers::ADERDGSolver::mergeWithNeighbourMetadata(solverNumber,cellInfo,metadataPortion,dest,src,barycentre);
-            }
             static_cast<solvers::ADERDGSolver*>(solver)->mergeWithNeighbourData(fromRank,solverNumber,cellInfo,src,dest,barycentre,level);
           } else {
             static_cast<solvers::ADERDGSolver*>(solver)->dropNeighbourData(fromRank,solverNumber,cellInfo,src,dest,barycentre,level);
           }
           break;
         case solvers::Solver::Type::LimitingADERDG:
+          if ( receiveNeighbourMetadata ) {
+            MetadataHeap::HeapEntries metadataPortion(receivedMetadata.begin()+begin,receivedMetadata.begin()+end);
+            solvers::ADERDGSolver::mergeWithNeighbourMetadata(solverNumber,cellInfo,metadataPortion,dest,src,barycentre);
+          }
           if ( mergeWithReceivedData ) {
-            if ( receiveNeighbourMetadata ) {
-              MetadataHeap::HeapEntries metadataPortion(receivedMetadata.begin()+begin,receivedMetadata.begin()+end);
-              solvers::ADERDGSolver::mergeWithNeighbourMetadata(solverNumber,cellInfo,metadataPortion,dest,src,barycentre);
-            }
             static_cast<solvers::LimitingADERDGSolver*>(solver)->mergeWithNeighbourData(fromRank,solverNumber,cellInfo,src,dest,barycentre,level);
           } else {
             static_cast<solvers::LimitingADERDGSolver*>(solver)->dropNeighbourData(fromRank,solverNumber,cellInfo,src,dest,barycentre,level);

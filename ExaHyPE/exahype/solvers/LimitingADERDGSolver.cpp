@@ -1689,8 +1689,8 @@ void exahype::solvers::LimitingADERDGSolver::sendMinAndMaxToNeighbour(
     const tarch::la::Vector<DIMENSIONS, int>&    dest,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) const {
-  const int numberOfObservables = _solver->getDMPObservables();
   BoundaryFaceInfo face(src,dest);
+  const int numberOfObservables = _solver->getDMPObservables();
   if ( numberOfObservables>0 && ADERDGSolver::communicateWithNeighbour(solverPatch,face._faceIndex) ) {
     assertion(DataHeap::getInstance().isValidIndex(solverPatch.getSolutionMinIndex()));
     assertion(DataHeap::getInstance().isValidIndex(solverPatch.getSolutionMaxIndex()));
@@ -1714,8 +1714,8 @@ void exahype::solvers::LimitingADERDGSolver::sendDataToNeighbourBasedOnLimiterSt
         const tarch::la::Vector<DIMENSIONS, int>&    dest,
         const tarch::la::Vector<DIMENSIONS, double>& barycentre,
         const int                                    level) {
-  const int solverElement = cellInfo.indexOfADERDGCellDescription(solverNumber);
   BoundaryFaceInfo face(src,dest);
+  const int solverElement = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( solverElement != NotFound ) {
     SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
     waitUntilCompletedLastStep<SolverPatch>(solverPatch,true,true); // must come before any other operation
@@ -1769,11 +1769,11 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithNeighbourDataBasedOnLimite
     const tarch::la::Vector<DIMENSIONS, int>&    dest,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
+  BoundaryFaceInfo face(dest,src);
   const int solverElement = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( solverElement != NotFound ) {
     SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
     assertion1(solverPatch.getRefinementStatus()>=ADERDGSolver::Pending,solverPatch.toString());
-    BoundaryFaceInfo face(dest,src);
     if (
         ADERDGSolver::communicateWithNeighbour(solverPatch,face._faceIndex) &&
         level == getMaximumAdaptiveMeshLevel()
@@ -1790,9 +1790,12 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithNeighbourDataBasedOnLimite
       }
 
       // solver
-      if ( solverPatch.getRefinementStatus() < _solver->_minRefinementStatusForTroubledCell ) {
+      if (
+          solverPatch.getRefinementStatus() < _solver->_minRefinementStatusForTroubledCell &&
+          solverPatch.getFacewiseRefinementStatus(face._faceIndex) < _solver->_minRefinementStatusForTroubledCell
+      ) {
         _solver->mergeWithNeighbourData(fromRank,solverNumber,cellInfo,src,dest,x,level);
-      }
+      } 
       else {
         _solver->dropNeighbourData(fromRank,solverNumber,cellInfo,src,dest,x,level);
       }

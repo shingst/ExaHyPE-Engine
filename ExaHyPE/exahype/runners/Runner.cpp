@@ -1546,7 +1546,7 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
     while ( !repository.getState().getAllSolversAttainedStableState() ) {
       logInfo("updateMeshAndSubdomains(...)","run "<<iterationsToRun<<" iterations of refinement status spreading");
       repository.iterate(iterationsToRun,false);
-      iterationsToRun = std::max(3,iterationsToRun/2);
+      //iterationsToRun = std::max(3,iterationsToRun/2);
     }
   }
 

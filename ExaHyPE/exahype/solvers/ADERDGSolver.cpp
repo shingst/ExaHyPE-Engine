@@ -1633,13 +1633,13 @@ void exahype::solvers::ADERDGSolver::mergeNeighboursMetadata(
       mergeWithAugmentationStatus( cellDescription2,face._faceIndex2,cellDescription1.getAugmentationStatus());
       mergeWithRefinementStatus(   cellDescription2,face._faceIndex2,cellDescription1.getRefinementStatus());
     } else {
-      mergeWithCommunicationStatus(cellDescription1,face._faceIndex1,0); // TODO(Dominic): Use constants
-      mergeWithAugmentationStatus( cellDescription1,face._faceIndex1,0);
-      mergeWithRefinementStatus(   cellDescription1,face._faceIndex1,Erase);
+      mergeWithCommunicationStatus(cellDescription1,face._faceIndex1,EmptyStatus);
+      mergeWithAugmentationStatus( cellDescription1,face._faceIndex1,EmptyStatus);
+      mergeWithRefinementStatus(   cellDescription1,face._faceIndex1,EmptyStatus);
 
-      mergeWithCommunicationStatus(cellDescription2,face._faceIndex2,0);
-      mergeWithAugmentationStatus( cellDescription2,face._faceIndex2,0);
-      mergeWithRefinementStatus(   cellDescription2,face._faceIndex2,Erase);
+      mergeWithCommunicationStatus(cellDescription2,face._faceIndex2,EmptyStatus);
+      mergeWithAugmentationStatus( cellDescription2,face._faceIndex2,EmptyStatus);
+      mergeWithRefinementStatus(   cellDescription2,face._faceIndex2,EmptyStatus);
     }
 
     cellDescription1.setNeighbourMergePerformed(face._faceIndex1,true); // here we only set, doesn't matter if operation is done twice.

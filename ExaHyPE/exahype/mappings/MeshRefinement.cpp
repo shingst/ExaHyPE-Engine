@@ -472,12 +472,8 @@ void exahype::mappings::MeshRefinement::enterCell(
     }
   }
 
-  if ( fineGridCell.isInitialised() ) {
-    solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
-    // shutdown metadata for empty cells (no cell descriptions)
-    if ( fineGridCell.isEmpty() ) {
-      fineGridCell.shutdownMetaDataAndResetCellDescriptionsIndex();
-    }
+  if ( fineGridCell.isInitialised() && fineGridCell.isEmpty() ) {
+    fineGridCell.shutdownMetaDataAndResetCellDescriptionsIndex();
   }
 
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
