@@ -1337,19 +1337,6 @@ public:
       const int                                    level);
 
   /**
-   * Merge or drop received neighbour data based
-   * on the limiter status.
-   */
-  void mergeWithNeighbourDataBasedOnLimiterStatus(
-      const int                                    fromRank,
-      const int                                    solverNumber,
-      Solver::CellInfo&                            cellInfo,
-      const tarch::la::Vector<DIMENSIONS, int>&    src,
-      const tarch::la::Vector<DIMENSIONS, int>&    dest,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level);
-
-  /**
    * @note only used when no recomputation.
    *
    * @param fromRank the rank we expect data from
