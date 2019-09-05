@@ -1718,7 +1718,10 @@ void exahype::solvers::LimitingADERDGSolver::sendDataToNeighbour(
     if ( level==getMaximumAdaptiveMeshLevel() ) {
       logDebug("sendDataToNeighbourBasedOnLimiterStatus(...)", "send data for solver " << _identifier << " to rank="<<toRank<<",x="<<barycentre<<",level="<<level);
 
-      if ( solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell-2 ) {
+      if (
+          solverPatch.getRefinementStatus() >= _solver->_minRefinementStatusForTroubledCell-2 &&
+          cellInfo.indexOfFiniteVolumesCellDescription(solverNumber) != Solver::NotFound
+      ) {
         _limiter->sendDataToNeighbour(toRank,solverNumber,cellInfo,src,dest,barycentre,level);
       } else {
         _limiter->sendEmptyDataToNeighbour(toRank,barycentre,level);
@@ -1813,8 +1816,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithNeighbourData(
         solverPatch.getFacewiseRefinementStatus(face._faceIndex) < _solver->_minRefinementStatusForTroubledCell)
     ) {
       _solver->mergeWithNeighbourData(fromRank,solverNumber,cellInfo,src,dest,x,level);
-    }
-    else {
+    } else {
       _solver->dropNeighbourData(fromRank,solverNumber,cellInfo,src,dest,x,level);
     }
 
@@ -1845,7 +1847,7 @@ void exahype::solvers::LimitingADERDGSolver::dropNeighbourData(
     _solver->dropNeighbourData(fromRank,solverNumber,cellInfo,src,dest,x,level);
 
     const int numberOfObservables = _solver->getDMPObservables();
-    if (numberOfObservables>0) {
+    if ( numberOfObservables>0 ) {
       for(int receives=0; receives<2; ++receives)
         DataHeap::getInstance().receiveData(
             fromRank, x, level,

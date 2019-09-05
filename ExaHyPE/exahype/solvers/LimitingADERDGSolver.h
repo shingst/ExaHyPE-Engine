@@ -1310,13 +1310,25 @@ public:
    * send order:   minAndMax,solver,limiter
    * receive order limiter,solver,minAndMax
    *
+   * @note The limiter is only active on the finest mesh level
+   * in ExaHyPE. All other levels use the ADER-DG solver.
+   * All level send the minimum and maximum DMP
+   * observables around, which are used for
+   * the shock detection.
+   *
+   * @note If we send out data during a fused time step,
+   * a cell might be newly marked as troubled but a new limiter patch
+   * is not allocated yet. This will be
+   * done in the following local recomputation
+   * step. We send an empty limiter message in this case.
+   *
    * @param toRank       the rank we send data to
    * @param solverNumber identification number of this solver
    * @param cellInfo     links to the data assocated with the source cell
    * @param src          relative position of message source to vertex
    * @param dest         relative position of message destination to vertex
-   * @param x            vertex' coordinates
-   * @param level        vertex' level
+   * @param x            face barycentre
+   * @param level        mesh level
    */
   void sendDataToNeighbour(
       const int                                     toRank,
