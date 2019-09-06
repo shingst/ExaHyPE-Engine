@@ -116,7 +116,7 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
     double *lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
     double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
 
-    logInfo("handleLocalExecution()", "cellDescriptionIndex "<<_cellDescriptionsIndex<<" element: "<<_element<<" time stamp: "<<_predictorTimeStamp);
+    logInfo("handleLocalExecution()", "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()<<" cellDescriptionIndex "<<_cellDescriptionsIndex<<" element: "<<_element<<" time stamp: "<<_predictorTimeStamp);
 
 #if defined(ReplicationSaving)
     double *center;
@@ -152,6 +152,7 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
 
         _solver._mapJobToData.erase(a_jobToData);
         a_jobToData.release();
+        AllocatedSTPsReceive--;
         delete data;
 
 	    cellDescription.setHasCompletedLastStep(true);
@@ -289,8 +290,8 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveKeyHandlerRe
   double *key;
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagRankToReplicaKey.find(a_tagRankToData, std::make_pair(remoteRank, tag));
   key = a_tagRankToData->second;
-  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagRankToReplicaKey.erase(a_tagRankToData);
-  a_tagRankToData.release();
+  //static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagRankToReplicaKey.erase(a_tagRankToData);
+  //a_tagRankToData.release();
 
   logInfo("receiveKeyHandlerReplica", "team "
 		                           <<" received replica job key: center[0] = "<<key[0]
@@ -437,6 +438,8 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendHandlerReplicat
   StealablePredictionJobData *data = a_tagToData->second;
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToReplicationSendData.erase(a_tagToData);
   delete data;
+  AllocatedSTPsSend--;
+  logInfo("sendHandlerReplication"," allocated stps send "<<AllocatedSTPsSend);
   a_tagToData.release();
 }
 #endif

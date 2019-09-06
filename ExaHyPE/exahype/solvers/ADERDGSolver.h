@@ -199,6 +199,9 @@ public:
   static std::atomic<int> NumberOfReceiveBackJobs;
 
   static std::atomic<int> LocalStealableSTPCounter;
+
+  static std::atomic<int> AllocatedSTPsSend;
+  static std::atomic<int> AllocatedSTPsReceive;
 #endif
 
   /**
@@ -3250,8 +3253,7 @@ public:
         if( !cellDescription.getHasCompletedLastStep()
           && !hasTriggeredEmergency
           && myRank!=responsibleRank
-          && offloadingTreatment
-          && !hasProcessed)
+          && offloadingTreatment)
  #endif
         {
  #ifdef USE_ITAC
