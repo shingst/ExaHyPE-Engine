@@ -944,7 +944,8 @@ private:
         Running,
         Resume,
         Paused,
-	    Terminate
+	    Terminate,
+		Terminated
       };
 	  OffloadingManagerJob(ADERDGSolver& solver);
 	  ~OffloadingManagerJob();
@@ -957,9 +958,10 @@ private:
       void resume();
 #endif
 	  void terminate();
+    public:
+	  State 	_state;
     private:
 	  ADERDGSolver& _solver;
-	  State 	_state;
   };
 
   class ReceiveJob : public tarch::multicore::jobs::Job {
@@ -1263,6 +1265,7 @@ private:
 
   // offloading manager job associated to the solver
   OffloadingManagerJob *_offloadingManagerJob;
+  std::atomic<bool> _offloadingManagerJobTerminated;
 
   // limit the maximum number of iprobes in progressOffloading()
   static std::atomic<int> MaxIprobesInOffloadingProgress;

@@ -1045,9 +1045,10 @@ int exahype::runners::Runner::run() {
       //static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopOffloadingManager();
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->finishOutstandingInterTeamCommunication();
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->cleanUpStaleReplicatedSTPs(true);
+      static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopOffloadingManager();
     }
     if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-      //static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->stopOffloadingManager();
+      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->stopOffloadingManager();
     }
   }
 

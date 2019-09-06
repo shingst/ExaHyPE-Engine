@@ -3439,11 +3439,12 @@ bool exahype::solvers::ADERDGSolver::OffloadingManagerJob::run( bool isCalledOnM
     case State::Terminate:
     {
       exahype::offloading::PerformanceMonitor::getInstance().stop();
-      if(!exahype::offloading::PerformanceMonitor::getInstance().isGloballyTerminated()) {
-        exahype::solvers::ADERDGSolver::progressOffloading(&_solver);
-        return true;
-      }
+      //if(!exahype::offloading::PerformanceMonitor::getInstance().isGloballyTerminated()) {
+      //  exahype::solvers::ADERDGSolver::progressOffloading(&_solver);
+      //  return true;
+      //}
       logInfo("offloadingManager", " terminated ");
+      _solver._offloadingManagerJobTerminated = true;
       result = false;
 
       break;
@@ -3456,7 +3457,9 @@ bool exahype::solvers::ADERDGSolver::OffloadingManagerJob::run( bool isCalledOnM
 }
 
 void exahype::solvers::ADERDGSolver::OffloadingManagerJob::terminate() {
+  tarch::multicore::Lock lock(OffloadingSemaphore, true);
   _state = State::Terminate;
+  lock.free();
 }
 
 #ifndef OffloadingUseProgressThread
@@ -3471,6 +3474,7 @@ void exahype::solvers::ADERDGSolver::OffloadingManagerJob::resume() {
 
 void exahype::solvers::ADERDGSolver::startOffloadingManager(bool spawn) {
   logInfo("startOffloadingManager", " starting ");
+  _offloadingManagerJobTerminated = false;
 #ifdef OffloadingUseProgressThread
   static tbb::task_group_context  backgroundTaskContext(tbb::task_group_context::isolated);
   _offloadingManagerJob = new( backgroundTaskContext ) OffloadingManagerJob(*this);
@@ -3514,7 +3518,12 @@ void exahype::solvers::ADERDGSolver::stopOffloadingManager() {
   logInfo("stopOffloadingManager", " stopping ");
   //assert(_offloadingManagerJob != nullptr);
   _offloadingManagerJob->terminate();
-  while(!exahype::offloading::PerformanceMonitor::getInstance().isGloballyTerminated()) {tarch::multicore::jobs::finishToProcessBackgroundJobs(); };
+
+#if defined(OffloadingUseProgressThread)
+  while(!_offloadingManagerJobTerminated) {};
+  //delete _offloadingManagerJob;
+#endif
+  //while(!exahype::offloading::PerformanceMonitor::getInstance().isGloballyTerminated()) {tarch::multicore::jobs::finishToProcessBackgroundJobs(); };
   //while(tarch::multicore::jobs::finishToProcessBackgroundJobs()) {};
 
   //assert(_offloadingManagerJob != nullptr);
