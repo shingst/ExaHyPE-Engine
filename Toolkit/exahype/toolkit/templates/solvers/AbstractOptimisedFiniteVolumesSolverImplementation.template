@@ -52,6 +52,7 @@ void {{project}}::{{abstractSolver}}::solutionUpdate(double* luh,const tarch::la
     kernels::finitevolumes::commons::c::{{slopeLimiter}},
     {{solver}}
     >(*static_cast<{{solver}}*>(this),luh,cellCenter,cellSize,t,dt);
+  //maxAdmissibleDt = {{optNamespace}}::solutionUpdate(*static_cast<{{solver}}*>(this),luh,&cellCenter[0],cellSize[0],t,dt);
 }
 
 

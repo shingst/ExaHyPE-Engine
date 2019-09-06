@@ -231,7 +231,8 @@ class SolverController:
         ghostLayerWidth = { "godunov" : 1, "musclhancock" : 2 }
         context["finiteVolumesType"]           = kernel["scheme"].replace("robust","")
         context["ghostLayerWidth"]             = ghostLayerWidth[context["finiteVolumesType"]]
-        context["useRobustDiagonalLimiting_s"] = "true" if "robust" in kernel["scheme"] else "false"
+        context["useRobustDiagonalLimiting"] = ("robust" in kernel["scheme"])
+        context["useRobustDiagonalLimiting_s"] = "true" if context["useRobustDiagonalLimiting"] else "false"
         context["slopeLimiter"]   = kernel.get("slope_limiter","minmod")
 
         context["implementation"]  = kernel.get("implementation","generic")

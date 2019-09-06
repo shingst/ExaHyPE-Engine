@@ -29,6 +29,15 @@ namespace {{solverNamespace}} {
 namespace {{namespaceName}} {
 {% endfor %}
 
+  double solutionUpdate(
+    {{solverName}}& solver,
+    double* luh,
+    const double* const cellCenter,
+    const double dx,
+    const double t,
+    double dt
+  );
+
 //common
 
   void solutionAdjustment(

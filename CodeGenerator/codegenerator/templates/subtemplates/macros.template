@@ -2,7 +2,7 @@
   This subtemplate contain macros used in other template/subtemplate
   
   Include it at the start of a template to be able to use the macros
-  {% import 'subtemplates/macros.template' as m with context %}
+  {% import "subtemplates/macros.template" as m with context %}
   
   To use macros with indentation use {{ m.XXmacr(XXargs...) | indent(XXsize) }}
   and put a jinja comment afterward otherwise you'll get a whitespace after the 
@@ -57,5 +57,14 @@ _mm_free({{name}});
 */
 #}
 {% macro vectPDEsArrays(array, size, blockedDim) %}
-{% include 'subtemplates/vectPDEsArrays.template' %}
+{% include "subtemplates/vectPDEsArrays.template" %}
+{% endmacro %}
+{#
+
+/**
+  output the right slope_limiter function to inline
+*/
+#}
+{% macro printSlopeLimiterFunction() %}
+{% include "subtemplates/slopeLimiter.template" %}
 {% endmacro %}

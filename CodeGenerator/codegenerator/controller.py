@@ -126,11 +126,13 @@ class Controller:
                 "useNCP"                : args["useNCP"],
                 "useSource"             : args["useSource"] or args["useFusedSource"],
                 "useFusedSource"        : args["useFusedSource"],
+                "useRobustDiagLim"      : args["useRobustDiagLim"],
                 "nPointSources"         : args["usePointSources"],
                 "usePointSources"       : args["usePointSources"] >= 0,
                 "useMaterialParam"      : args["useMaterialParam"],
                 "finiteVolumesType"     : args["finiteVolumesType"],
-                "ghostLayerWidth"       : 2 #hard coded musclhancock value
+                "ghostLayerWidth"       : 2, #hard coded musclhancock value
+                "slopeLimiter"          : args["slopeLimiter"]
             })
             
         self.validateConfig(Configuration.simdWidth.keys())
@@ -239,6 +241,7 @@ class Controller:
             self.runModel("ghostLayerFilling",        fvGhostLayerFillingModel.FVGhostLayerFillingModel(self.baseContext))
             self.runModel("ghostLayerFillingAtBoundary", fvGhostLayerFillingAtBoundaryModel.FVGhostLayerFillingAtBoundaryModel(self.baseContext))
             self.runModel("boundaryLayerExtraction",  fvBoundaryLayerExtractionModel.FVBoundaryLayerExtractionModel(self.baseContext))
+            self.runModel("solutionUpdate",           fvSolutionUpdateModel.FVSolutionUpdateModel(self.baseContext, self))
         
         if self.config["kernelType"] in ["aderdg", "fv"]:
             self.runModel("configurationParameters",  configurationParametersModel.ConfigurationParametersModel(self.baseContext))

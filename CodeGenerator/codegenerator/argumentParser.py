@@ -113,6 +113,7 @@ class ArgumentParser:
         ("dimension",           ArgType.MandatoryInt,    "the number of spatial dimensions in the simulation (2 or 3)"),
         ("finiteVolumesType",   ArgType.MandatoryString, "linear or nonlinear"),
         ("architecture",        ArgType.MandatoryString, "the microarchitecture of the target device"),
+        ("slopeLimiter",        ArgType.MandatoryChoice, "slope limiter function for the scheme", ["minmod","koren","superbee","vanalbada","mclim"]),
         # optional arguments       
         ("useFlux",             ArgType.OptionalBool,    "enable flux"),
         ("useViscousFlux",      ArgType.OptionalBool,    "enable viscous flux"),
@@ -120,6 +121,7 @@ class ArgumentParser:
         ("useSource",           ArgType.OptionalBool,    "enable source terms"),
         ("useFusedSource",      ArgType.OptionalBool,    "enable fused source terms (include useSource)"),
         ("useMaterialParam",    ArgType.OptionalBool,    "enable material parameters"),
+        ("useRobustDiagLim",    ArgType.OptionalBool,    "enable robust diagonal limiting in musclhancock scheme"),
         ("usePointSources",     ArgType.OptionalInt ,    "enable numberOfPointSources point sources", -1, "numberOfPointSources"),
         ("tempVarsOnStack",     ArgType.OptionalBool,    "put the big scratch arrays on the stack instead of the heap (you can use ulimit -s to increase the stack size)")
     ]

@@ -80,6 +80,7 @@ class CodegeneratorModel:
                 "dimension"          : solverContext["dimensions"],
                 "finiteVolumesType"  : solverContext["finiteVolumesType"],
                 "architecture"       : solverContext["architecture"],
+                "slopeLimiter"       : solverContext["slopeLimiter"],
                 # Optional bool parameters (may set redundant flags and default false flag)
                 "useFlux"            : solverContext["useFlux"],
                 "useViscousFlux"     : solverContext["useViscousFlux"],
@@ -87,6 +88,7 @@ class CodegeneratorModel:
                 "useSource"          : solverContext["useSource"],
                 "useFusedSource"     : solverContext["useFusedSource"],
                 "useMaterialParam"   : solverContext["useMaterialParameters"],
+                "useRobustDiagLim"   : solverContext["useRobustDiagonalLimiting"],
                 # Optional int parameters (may set redundant flags)
                 "usePointSources"    : solverContext["numberOfPointSources"] if solverContext["numberOfPointSources"] > 0 else -1,
                 "tempVarsOnStack"    : solverContext["tempVarsOnStack"]
