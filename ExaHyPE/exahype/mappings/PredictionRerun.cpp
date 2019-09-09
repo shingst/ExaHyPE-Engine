@@ -109,20 +109,6 @@ void exahype::mappings::PredictionRerun::leaveCell(
 }
 
 #ifdef Parallel
-void exahype::mappings::PredictionRerun::mergeWithNeighbour(
-    exahype::Vertex& vertex, const exahype::Vertex& neighbour, int fromRank,
-    const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
-    const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
-  logTraceIn( "mergeWithMaster(...)" );
-
-  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
-    vertex.receiveNeighbourData(
-        fromRank,false /*no merge*/,true /*no batch*/,
-        fineGridX,fineGridH,level);
-  }
-  logTraceOut( "mergeWithMaster(...)" );
-}
-
 void exahype::mappings::PredictionRerun::prepareSendToNeighbour(
     exahype::Vertex& vertex, int toRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
@@ -139,6 +125,13 @@ void exahype::mappings::PredictionRerun::prepareSendToNeighbour(
 // Below all methods are nop.
 //
 // ====================================
+
+void exahype::mappings::PredictionRerun::mergeWithNeighbour(
+    exahype::Vertex& vertex, const exahype::Vertex& neighbour, int fromRank,
+    const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
+    const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
+  // do nothing
+}
 
 bool exahype::mappings::PredictionRerun::prepareSendToWorker(
     exahype::Cell& fineGridCell, exahype::Vertex* const fineGridVertices,
@@ -240,7 +233,9 @@ exahype::mappings::PredictionRerun::~PredictionRerun() {
 
 void exahype::mappings::PredictionRerun::beginIteration(
     exahype::State& solverState) {
-  // do nothing
+  if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+    peano::heap::AbstractHeap::allHeapsDropReceivedBoundaryData();
+  }
 }
 
 void exahype::mappings::PredictionRerun::endIteration(

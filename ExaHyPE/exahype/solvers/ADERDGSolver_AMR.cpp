@@ -1018,26 +1018,26 @@ void exahype::solvers::ADERDGSolver::checkIfCellIsStable(
       AllSolversAreStable = false;
 
       #ifdef MonitorMeshRefinement
-      logInfo("attainedStableState(...)","cell has not attained stable state (yet):");
-      logInfo("attainedStableState(...)","type="<<cellDescription.toString(cellDescription.getType()));
-      logInfo("attainedStableState(...)","offset="<<cellDescription.getOffset());
-      logInfo("attainedStableState(...)","size="<<cellDescription.getSize());
-      logInfo("attainedStableState(...)","level="<<cellDescription.getLevel());
-      logInfo("attainedStableState(...)","flaggingHasConverged="<<flaggingHasConverged);
-      logInfo("attainedStableState(...)","noLeafCellIsNextToAnEmptyCell="<<noLeafCellIsNextToAnEmptyCell);
-      logInfo("attainedStableState(...)","noCoarseGridLeafCellMustRequireRefinement="<<noCoarseGridLeafCellMustRequireRefinement);
-      logInfo("attainedStableState(...)","noFinestGridVirtualCellMustBeReplacedByLeafCell="<<noFinestGridVirtualCellMustBeReplacedByLeafCell);
-      logInfo("attainedStableState(...)","getAugmentationStatus="<<cellDescription.getAugmentationStatus());
-      logInfo("attainedStableState(...)","getCommunicationStatus="<<cellDescription.getCommunicationStatus());
-      logInfo("attainedStableState(...)","getRefinementStatus="<<cellDescription.getRefinementStatus());
-      logInfo("attainedStableState(...)","getFacewiseAugmentationStatus="<<cellDescription.getFacewiseAugmentationStatus());
-      logInfo("attainedStableState(...)","getFacewiseCommunicationStatus="<<cellDescription.getFacewiseCommunicationStatus());
-      logInfo("attainedStableState(...)","getFacewiseRefinementStatus="<<cellDescription.getFacewiseRefinementStatus());
-      logInfo("attainedStableState(...)","cellDescription.getCreation="<<cellDescription.toString(cellDescription.getCreation()));
-      logInfo("attainedStableState(...)","fineGridCell.getCellDescriptionsIndex="<<fineGridCell.getCellDescriptionsIndex());
-      logInfo("attainedStableState(...)","solver.getCoarsestMeshLevel="<<getCoarsestMeshLevel());
-      logInfo("attainedStableState(...)","solver.getMaximumAdaptiveMeshLevel="<<getMaximumAdaptiveMeshLevel());
-      logInfo("attainedStableState(...)","solver.getMaximumAdaptiveMeshDepth="<<getMaximumAdaptiveMeshDepth());
+      logInfo("checkIfCellIsStable(...)","cell has not attained stable state (yet):");
+      logInfo("checkIfCellIsStable(...)","type="<<cellDescription.toString(cellDescription.getType()));
+      logInfo("checkIfCellIsStable(...)","offset="<<cellDescription.getOffset());
+      logInfo("checkIfCellIsStable(...)","size="<<cellDescription.getSize());
+      logInfo("checkIfCellIsStable(...)","level="<<cellDescription.getLevel());
+      logInfo("checkIfCellIsStable(...)","flaggingHasConverged="<<flaggingHasConverged);
+      logInfo("checkIfCellIsStable(...)","noLeafCellIsNextToAnEmptyCell="<<noLeafCellIsNextToAnEmptyCell);
+      logInfo("checkIfCellIsStable(...)","noCoarseGridLeafCellMustRequireRefinement="<<noCoarseGridLeafCellMustRequireRefinement);
+      logInfo("checkIfCellIsStable(...)","noFinestGridVirtualCellMustBeReplacedByLeafCell="<<noFinestGridVirtualCellMustBeReplacedByLeafCell);
+      logInfo("checkIfCellIsStable(...)","getAugmentationStatus="<<cellDescription.getAugmentationStatus());
+      logInfo("checkIfCellIsStable(...)","getCommunicationStatus="<<cellDescription.getCommunicationStatus());
+      logInfo("checkIfCellIsStable(...)","getRefinementStatus="<<cellDescription.getRefinementStatus());
+      logInfo("checkIfCellIsStable(...)","getFacewiseAugmentationStatus="<<cellDescription.getFacewiseAugmentationStatus());
+      logInfo("checkIfCellIsStable(...)","getFacewiseCommunicationStatus="<<cellDescription.getFacewiseCommunicationStatus());
+      logInfo("checkIfCellIsStable(...)","getFacewiseRefinementStatus="<<cellDescription.getFacewiseRefinementStatus());
+      logInfo("checkIfCellIsStable(...)","cellDescription.getCreation="<<cellDescription.toString(cellDescription.getCreation()));
+      logInfo("checkIfCellIsStable(...)","fineGridCell.getCellDescriptionsIndex="<<fineGridCell.getCellDescriptionsIndex());
+      logInfo("checkIfCellIsStable(...)","solver.getCoarsestMeshLevel="<<getCoarsestMeshLevel());
+      logInfo("checkIfCellIsStable(...)","solver.getMaximumAdaptiveMeshLevel="<<getMaximumAdaptiveMeshLevel());
+      logInfo("checkIfCellIsStable(...)","solver.getMaximumAdaptiveMeshDepth="<<getMaximumAdaptiveMeshDepth());
       #endif
     }
   }
