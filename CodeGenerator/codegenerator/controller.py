@@ -134,6 +134,7 @@ class Controller:
                 "ghostLayerWidth"       : 2, #hard coded musclhancock value
                 "slopeLimiter"          : args["slopeLimiter"]
             })
+            self.config["useSourceOrNCP"] = self.config["useSource"] or self.config["useNCP"]
             
         self.validateConfig(Configuration.simdWidth.keys())
         self.config["vectSize"] = Configuration.simdWidth[self.config["architecture"]] #only initialize once architecture has been validated
@@ -187,6 +188,7 @@ class Controller:
         elif self.config["kernelType"] == "fv":
             context["ghostLayerWidth3D"] = 0 if context["nDim"] == 2 else context["ghostLayerWidth"]
             context["nDofG"] = context["ghostLayerWidth"]*2 + context["nDof"]
+            context["nDofG3D"] = 1 if context["nDim"] == 2 else context["nDofG"]
         return context
 
     def getSizeWithPadding(self, sizeWithoutPadding):

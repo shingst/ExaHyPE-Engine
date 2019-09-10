@@ -19,7 +19,7 @@ inline double slope_limiter(const double a, const double b) {
   if (a * b < 0.0) {  // sign is different (alternative: std::signbit and xor)
     return 0.0;
   } else {
-    if (std::abs(a) < std::abs(b)) {
+    if (std::fabs(a) < std::fabs(b)) {
       return a;
     } else {
       return b;
@@ -29,7 +29,7 @@ inline double slope_limiter(const double a, const double b) {
 {% elif slopeLimiter == "koren" %}
 // koren
 inline double slope_limiter(const double a, const double b) {
-  if(std::abs(b) < 1.e-12) { 
+  if(std::fabs(b) < 1.e-12) { 
     return 0.0;
   } else {
     double r=a/b;
@@ -40,7 +40,7 @@ inline double slope_limiter(const double a, const double b) {
 {% elif slopeLimiter == "superbee" %}
 // superbee
 inline double slope_limiter(const double a, const double b) {
-  if(std::abs(b) < 1.e-12) { 
+  if(std::fabs(b) < 1.e-12) { 
     return 0.0;
   } else {
     double r=a/b;
@@ -51,7 +51,7 @@ inline double slope_limiter(const double a, const double b) {
 {% elif slopeLimiter == "vanalbada" %}
 // vanalbada
 inline double slope_limiter(const double a, const double b) {
-  if(std::abs(b) < 1.e-12) { 
+  if(std::fabs(b) < 1.e-12) { 
     return 0.0;
   } else {
     double r=a/b;
@@ -62,7 +62,7 @@ inline double slope_limiter(const double a, const double b) {
 {% elif slopeLimiter == "mclim" %}
 // mclim
 inline double slope_limiter(const double a, const double b) {
-  if(std::abs(b) < 1.e-12) { 
+  if(std::fabs(b) < 1.e-12) { 
     return 0.0;
   } else {
     double r=a/b;

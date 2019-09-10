@@ -29,6 +29,12 @@ namespace {{solverNamespace}} {
 namespace {{namespaceName}} {
 {% endfor %}
 
+  /**
+   * This is the CFL factor for checking if the time step size estimated at the end of the last iteration is admissible.
+   * It can be chosen very close to one.
+   */
+  constexpr double CFL = 0.99;
+
   double solutionUpdate(
     {{solverName}}& solver,
     double* luh,

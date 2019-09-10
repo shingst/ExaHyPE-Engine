@@ -47,12 +47,12 @@ void {{project}}::{{abstractSolver}}::abortWithMsg(const char* const msg) {
 }
 
 void {{project}}::{{abstractSolver}}::solutionUpdate(double* luh,const tarch::la::Vector<DIMENSIONS,double>& cellCenter,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t, const double dt,double& maxAdmissibleDt) {
-  maxAdmissibleDt = kernels::finitevolumes::{{finiteVolumesType}}::c::solutionUpdate<
-    {{useSource_s}}, {{useNCP_s}}, {{useFlux_s}}, {{useViscousFlux_s}}, {{useRobustDiagonalLimiting_s}},
-    kernels::finitevolumes::commons::c::{{slopeLimiter}},
-    {{solver}}
-    >(*static_cast<{{solver}}*>(this),luh,cellCenter,cellSize,t,dt);
-  //maxAdmissibleDt = {{optNamespace}}::solutionUpdate(*static_cast<{{solver}}*>(this),luh,&cellCenter[0],cellSize[0],t,dt);
+  // maxAdmissibleDt = kernels::finitevolumes::{{finiteVolumesType}}::c::solutionUpdate<
+    // {{useSource_s}}, {{useNCP_s}}, {{useFlux_s}}, {{useViscousFlux_s}}, {{useRobustDiagonalLimiting_s}},
+    // kernels::finitevolumes::commons::c::{{slopeLimiter}},
+    // {{solver}}
+    // >(*static_cast<{{solver}}*>(this),luh,cellCenter,cellSize,t,dt);
+  maxAdmissibleDt = {{optNamespace}}::solutionUpdate(*static_cast<{{solver}}*>(this),luh,&cellCenter[0],cellSize[0],t,dt);
 }
 
 

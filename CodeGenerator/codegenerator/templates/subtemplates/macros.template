@@ -68,3 +68,17 @@ _mm_free({{name}});
 {% macro printSlopeLimiterFunction() %}
 {% include "subtemplates/slopeLimiter.template" %}
 {% endmacro %}
+{#
+
+/**
+  copy for gradQ
+*/
+#}
+{% macro gradQAdapter(gradQ,gradQX,gradQY,gradQZ) %}
+double {{gradQ}}[{{nVar*nDim}}];
+std::copy_n({{gradQX}}, {{nVar}}, gradQ_PDE); //x
+std::copy_n({{gradQY}}, {{nVar}}, gradQ_PDE+{{1*nVar}}); //y
+{% if nDim==3 %}
+std::copy_n({{gradQZ}}, {{nVar}}, gradQ_PDE+{{2*nVar}}); //z
+{% endif %}
+{% endmacro %}
