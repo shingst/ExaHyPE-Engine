@@ -28,7 +28,10 @@ from .abstractModelBaseClass import AbstractModelBaseClass
 class RiemannModel(AbstractModelBaseClass):
 
     def generateCode(self):
-        if(self.context["isLinear"]):
-            self.render(("aderdg", "riemannSolverLinear_cpp.template"),    "riemannSolver.cpp")
-        else:            
-            self.render(("aderdg", "riemannSolverNonLinear_cpp.template"), "riemannSolver.cpp")
+        if self.context["kernelType"] == "aderdg":
+            if(self.context["isLinear"]):
+                self.render(("aderdg", "riemannSolverLinear_cpp.template"),    "riemannSolver.cpp")
+            else:
+                self.render(("aderdg", "riemannSolverNonLinear_cpp.template"), "riemannSolver.cpp")
+        elif self.context["kernelType"] == "fv":
+            self.render(("fv", "riemannSolver_cpp.template"), "riemannSolver.cpp")

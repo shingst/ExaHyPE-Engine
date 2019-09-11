@@ -111,8 +111,8 @@ void {{project}}::{{abstractSolver}}::boundaryLayerExtraction(double* const luhb
 
 double {{project}}::{{abstractSolver}}::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, const double* gradQL, const double* gradQR, const double* cellSize, int direction) {
   // Default FV Riemann Solver
-  return kernels::finitevolumes::riemannsolvers::c::rusanov<{{useNCP_s}}, {{useFlux_s}}, {{useViscousFlux_s}}, {{solver}}>(*static_cast<{{solver}}*>(this), fL,fR,qL,qR,gradQL, gradQR, cellSize, direction);
-
+  //return kernels::finitevolumes::riemannsolvers::c::rusanov<{{useNCP_s}}, {{useFlux_s}}, {{useViscousFlux_s}}, {{solver}}>(*static_cast<{{solver}}*>(this), fL,fR,qL,qR,gradQL, gradQR, cellSize, direction);
+  return {{optNamespace}}::riemannSolver(*static_cast<{{solver}}*>(this), fL, fR, qL, qR, gradQL, gradQR, cellSize[0], direction);
 }
 
 //--------

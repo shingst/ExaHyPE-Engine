@@ -231,7 +231,6 @@ class Controller:
             self.runModel("fusedSTPVI",               fusedSpaceTimePredictorVolumeIntegralModel.FusedSpaceTimePredictorVolumeIntegralModel(self.baseContext, self))
             self.runModel("matrixUtils",              matrixUtilsModel.MatrixUtilsModel(self.baseContext))
             self.runModel("dgMatrix",                 dgMatrixModel.DGMatrixModel(self.baseContext))
-            self.runModel("riemann",                  riemannModel.RiemannModel(self.baseContext))
             self.runModel("solutionUpdate",           solutionUpdateModel.SolutionUpdateModel(self.baseContext))
             self.runModel("surfaceIntegral",          surfaceIntegralModel.SurfaceIntegralModel(self.baseContext))
         
@@ -248,6 +247,7 @@ class Controller:
             self.runModel("boundaryConditions",       boundaryConditionsModel.BoundaryConditionsModel(self.baseContext))
             self.runModel("stableTimeStepSize",       stableTimeStepSizeModel.StableTimeStepSizeModel(self.baseContext))
             self.runModel("adjustSolution",           adjustSolutionModel.AdjustSolutionModel(self.baseContext))
+            self.runModel("riemannSolver",            riemannModel.RiemannModel(self.baseContext))
         
         ## must be run only after all gemm's configurations have been generated
         gemmsContext = copy.copy(self.baseContext)

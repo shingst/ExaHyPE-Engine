@@ -28,7 +28,7 @@ double {{codeNamespace}}::stableTimeStepSize(
 
   //kernels::idx4 idx(patchSize+2*ghostLayerWidth, patchSize+2*ghostLayerWidth, patchSize+2*ghostLayerWidth,numberOfData);
 
-  {{m.allocateArray('lambda', nVar, forceStack=True) | indent(2)}}{##}
+  {{m.allocateArray("lambda", nVar, forceStack=True) | indent(2)}}{##}
   double dt_max_stable = std::numeric_limits<double>::max();
   double maxEigenvalue;
 {% if useViscousFlux %}
