@@ -158,9 +158,9 @@ class Controller:
         if self.config["kernelType"] == "fv":
             if self.config["finiteVolumesType"] != "musclhancock":
                raise ValueError("Only musclhancock scheme is supported")
-        #if self.config["kernelType"] in ["aderdg", "fv"]:
-        #    if self.config["useFlux"] and self.config["useViscousFlux"]:
-        #        raise ValueError("Flux and ViscousFlux are mutually exclusive")
+        if self.config["kernelType"] in ["aderdg", "fv"]:
+           if self.config["useFlux"] and self.config["useViscousFlux"]:
+               raise ValueError("Flux and ViscousFlux are mutually exclusive")
 
 
     def printConfig(self):
