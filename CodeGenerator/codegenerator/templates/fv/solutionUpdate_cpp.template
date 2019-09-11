@@ -247,7 +247,7 @@ double {{codeNamespace}}::solutionUpdate(
           std::memset(ncp, 0, {{nVarPad}}*sizeof(double));
 {% endif %}{# useSource #}
 {% if useNCP %}
-          {{m.gradQAdapter("gradQ", "slopeX+zyx", "slopeY+zyx", "slopeZ+zyx") | indent(10)}}{##}
+          {{m.gradQAdapter("gradQ", "slopeX+zyx", "slopeY+zyx", "slopeZ+zyx", nData) | indent(10)}}{##}
           #ifdef USE_IPO
             #pragma forceinline recursive
           #endif
@@ -261,7 +261,7 @@ double {{codeNamespace}}::solutionUpdate(
 {% endif %}{# useSourceOrNCP #}
 {% if useViscousFlux %}
 {% if not useNCP %}
-          {{m.gradQAdapter("gradQ", "slopeX+zyx", "slopeY+zyx", "slopeZ+zyx") | indent(10)}}{# already allocated by the NCP step if ncp is used #}
+          {{m.gradQAdapter("gradQ", "slopeX+zyx", "slopeY+zyx", "slopeZ+zyx", nData) | indent(10)}}{# already allocated by the NCP step if ncp is used #}
 {% endif %}
           // x fluxes
           #ifdef USE_IPO
@@ -399,8 +399,8 @@ double {{codeNamespace}}::solutionUpdate(
     for (int y = 1; y < {{nDof+1}}; y++) {
       for (int x = 0; x < {{nDof+1}}; x++) {
 {% if useViscousFlux %}
-        {{m.gradQAdapter("gradQL", "slopeX+((z*"~nDofGS~"+y)*"~nDofGS~"+x)*"~nDataPad, "slopeY+((z*"~nDofGS~"+y)*"~nDofGS~"+x)*"~nDataPad, "slopeZ+((z*"~nDofGS~"+y)*"~nDofGS~"+x)*"~nDataPad) | indent(8)}}{##}
-        {{m.gradQAdapter("gradQR", "slopeX+((z*"~nDofGS~"+y)*"~nDofGS~"+x+1)*"~nDataPad, "slopeY+((z*"~nDofGS~"+y)*"~nDofGS~"+x+1)*"~nDataPad, "slopeZ+((z*"~nDofGS~"+y)*"~nDofGS~"+x+1)*"~nDataPad) | indent(8)}}{##}
+        {{m.gradQAdapter("gradQL", "slopeX+((z*"~nDofGS~"+y)*"~nDofGS~"+x)*"~nDataPad, "slopeY+((z*"~nDofGS~"+y)*"~nDofGS~"+x)*"~nDataPad, "slopeZ+((z*"~nDofGS~"+y)*"~nDofGS~"+x)*"~nDataPad, nData) | indent(8)}}{##}
+        {{m.gradQAdapter("gradQR", "slopeX+((z*"~nDofGS~"+y)*"~nDofGS~"+x+1)*"~nDataPad, "slopeY+((z*"~nDofGS~"+y)*"~nDofGS~"+x+1)*"~nDataPad, "slopeZ+((z*"~nDofGS~"+y)*"~nDofGS~"+x+1)*"~nDataPad, nData) | indent(8)}}{##}
         double s_max_x = solver.{{solverName}}::riemannSolver(
                 fL, fR,
                 wRx + ((z*{{nDofGS}}+y)*{{nDofGS}}+x)*{{nDataPad}},
@@ -435,8 +435,8 @@ double {{codeNamespace}}::solutionUpdate(
     for (int y = 0; y < {{nDof+1}}; y++) {
       for (int x = 1; x < {{nDof+1}}; x++) {
 {% if useViscousFlux %}
-        {{m.gradQAdapter("gradQL", "slopeX+((z*"~nDofGS~"+y)*"~nDofGS~"+x)*"~nDataPad, "slopeY+((z*"~nDofGS~"+y)*"~nDofGS~"+x)*"~nDataPad, "slopeZ+((z*"~nDofGS~"+y)*"~nDofGS~"+x)*"~nDataPad) | indent(8)}}{##}
-        {{m.gradQAdapter("gradQR", "slopeX+((z*"~nDofGS~"+y+1)*"~nDofGS~"+x)*"~nDataPad, "slopeY+((z*"~nDofGS~"+y+1)*"~nDofGS~"+x)*"~nDataPad, "slopeZ+((z*"~nDofGS~"+y+1)*"~nDofGS~"+x)*"~nDataPad) | indent(8)}}{##}
+        {{m.gradQAdapter("gradQL", "slopeX+((z*"~nDofGS~"+y)*"~nDofGS~"+x)*"~nDataPad, "slopeY+((z*"~nDofGS~"+y)*"~nDofGS~"+x)*"~nDataPad, "slopeZ+((z*"~nDofGS~"+y)*"~nDofGS~"+x)*"~nDataPad, nData) | indent(8)}}{##}
+        {{m.gradQAdapter("gradQR", "slopeX+((z*"~nDofGS~"+y+1)*"~nDofGS~"+x)*"~nDataPad, "slopeY+((z*"~nDofGS~"+y+1)*"~nDofGS~"+x)*"~nDataPad, "slopeZ+((z*"~nDofGS~"+y+1)*"~nDofGS~"+x)*"~nDataPad, nData) | indent(8)}}{##}
         double s_max_y = solver.{{solverName}}::riemannSolver(
             fL, fR,
             wRy + ((z*{{nDofGS}}+y)*{{nDofGS}}+x)*{{nDataPad}},
@@ -471,8 +471,8 @@ double {{codeNamespace}}::solutionUpdate(
     for (int y = 1; y < {{nDof+1}}; y++) {
       for (int x = 1; x < {{nDof+1}}; x++) {
 {% if useViscousFlux %}
-        {{m.gradQAdapter("gradQL", "slopeX+((z*"~nDofGS~"+y)*"~nDofGS~"+x)*"~nDataPad, "slopeY+((z*"~nDofGS~"+y)*"~nDofGS~"+x)*"~nDataPad, "slopeZ+((z*"~nDofGS~"+y)*"~nDofGS~"+x)*"~nDataPad) | indent(8)}}{##}
-        {{m.gradQAdapter("gradQR", "slopeX+(((z+1)*"~nDofGS~"+y)*"~nDofGS~"+x)*"~nDataPad, "slopeY+(((z+1)*"~nDofGS~"+y)*"~nDofGS~"+x)*"~nDataPad, "slopeZ+(((z+1)*"~nDofGS~"+y)*"~nDofGS~"+x)*"~nDataPad) | indent(8)}}{##}
+        {{m.gradQAdapter("gradQL", "slopeX+((z*"~nDofGS~"+y)*"~nDofGS~"+x)*"~nDataPad, "slopeY+((z*"~nDofGS~"+y)*"~nDofGS~"+x)*"~nDataPad, "slopeZ+((z*"~nDofGS~"+y)*"~nDofGS~"+x)*"~nDataPad, nData) | indent(8)}}{##}
+        {{m.gradQAdapter("gradQR", "slopeX+(((z+1)*"~nDofGS~"+y)*"~nDofGS~"+x)*"~nDataPad, "slopeY+(((z+1)*"~nDofGS~"+y)*"~nDofGS~"+x)*"~nDataPad, "slopeZ+(((z+1)*"~nDofGS~"+y)*"~nDofGS~"+x)*"~nDataPad, nData) | indent(8)}}{##}
         double s_max_z = solver.{{solverName}}::riemannSolver(
             fL, fR,
             wRz + ((z*{{nDofGS}}+y)*{{nDofGS}}+x)*{{nDataPad}},
@@ -526,7 +526,7 @@ double {{codeNamespace}}::solutionUpdate(
         std::memset(src, 0, {{nVarPad}}*sizeof(double));
 {% endif %}
 {% if useNCP %}
-        {{m.gradQAdapter("gradQ", "slopeX+zyx", "slopeY+zyx", "slopeZ+zyx") | indent(8)}}
+        {{m.gradQAdapter("gradQ", "slopeX+zyx", "slopeY+zyx", "slopeZ+zyx", nData) | indent(8)}}
         solver.{{solverName}}::nonConservativeProduct(luhShort+zyx, gradQ, ncp);
         #pragma omp simd aligned(src,ncp:ALIGNMENT)
         for (int n = 0; n < {{nVarPad}}; n++) {
