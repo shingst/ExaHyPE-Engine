@@ -176,8 +176,10 @@ double {{codeNamespace}}::solutionUpdate(
   {{m.allocateArray("wRx", nDofGS3D*nDofGS*nDofGS*nDataPad, setToZero=True) | indent(2)}}{##}
   {{m.allocateArray("wLy", nDofGS3D*nDofGS*nDofGS*nDataPad, setToZero=True) | indent(2)}}{##}
   {{m.allocateArray("wRy", nDofGS3D*nDofGS*nDofGS*nDataPad, setToZero=True) | indent(2)}}{##}
+{% if nDim==3 %}
   {{m.allocateArray("wLz", nDofGS3D*nDofGS*nDofGS*nDataPad, setToZero=True) | indent(2)}}{##}
   {{m.allocateArray("wRz", nDofGS3D*nDofGS*nDofGS*nDataPad, setToZero=True) | indent(2)}}{##}
+{% endif %}
 
   // wx, wy{{", wz" if nDim == 3}}
   #pragma omp simd aligned(luhShort,wLx,wRx,slopeX,wLy,wRy,slopeY{{",wLz,wRz,slopeZ" if nDim == 3}}:ALIGNMENT)

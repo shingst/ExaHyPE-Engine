@@ -157,8 +157,9 @@ class Controller:
         if self.config["kernelType"] == "fv":
             if self.config["finiteVolumesType"] != "musclhancock":
                raise ValueError("Only musclhancock scheme is supported")
-        #if (self.config["useSource"] and not self.config["useSourceVect"] and self.config["useNCPVect"]) or (self.config["useNCP"] and not self.config["useNCPVect"] and self.config["useSourceVect"]) :
-        #    raise ValueError("If using source and NCP, both or neither must be vectorized")
+        #if self.config["kernelType"] in ["aderdg", "fv"]:
+        #    if self.config["useFlux"] and self.config["useViscousFlux"]:
+        #        raise ValueError("Flux and ViscousFlux are mutually exclusive")
 
 
     def printConfig(self):

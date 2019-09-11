@@ -56,7 +56,7 @@ double {{codeNamespace}}::riemannSolver(
   double s_max = maxEigenvalue;
   double s_max_dt = maxEigenvalue;
 
-{% if useViscousFlux %}
+{% if useViscousFlux or True %}
   double maxViscousEigenvalue = 0.0;
 
   // Compute penalty contribution of diffusive eigenvalues
@@ -78,9 +78,8 @@ double {{codeNamespace}}::riemannSolver(
     maxViscousEigenvalue = std::max(maxViscousEigenvalue, std::abs(sR[n]));
   }
 
-//TODO JMG + Lukas : is factor needed (and s_max+s_max_dt)
-  const auto pi = std::acos(-1); // not constexpr for intel compilers
-  const auto factor = std::sqrt(0.5 * pi);
+  //TODO JMG + Lukas : is factor needed (and s_max+s_max_dt)
+  const double factor = {{sqrt_half_Pi}}; //sqrt(Pi/2)
 
   s_max += 2 * factor * maxViscousEigenvalue / (dx * factor);
   s_max_dt += 2 * maxViscousEigenvalue / dx;
@@ -132,7 +131,7 @@ double {{codeNamespace}}::riemannSolver(
 
   for (int n = 0; n < {{nVar}}; n++) {
     fnL[n] = 0.5 * s_max * (qL[n] - qR[n]);
-{% if useFlux %} //TODO Lukas, not if useViscousFlux?
+{% if useFlux or useViscousFlux %} //TODO Lukas, not if useViscousFlux?
     fnL[n] += 0.5 * (FL[normalNonZero][n] + FR[normalNonZero][n]);
 {% endif %}
 

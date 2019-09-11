@@ -23,11 +23,14 @@
 
 
 from .abstractModelBaseClass import AbstractModelBaseClass
+import math
 
 
 class RiemannModel(AbstractModelBaseClass):
 
     def generateCode(self):
+        self.context["sqrt_half_Pi"] = math.sqrt(math.pi/2)
+        
         if self.context["kernelType"] == "aderdg":
             if(self.context["isLinear"]):
                 self.render(("aderdg", "riemannSolverLinear_cpp.template"),    "riemannSolver.cpp")
