@@ -21,6 +21,8 @@ exahype-project Euler
     width                   = 10.0, 3.3, 1.0
     offset                  = -5.0, 0.0, 0.0
     end-time                = 1.81
+    outside_cells_left      = 0
+    outside_cells_right     = 0
   end computational-domain
   
   shared-memory
@@ -39,38 +41,39 @@ exahype-project Euler
   end distributed-memory
   
   global-optimisation
-    fuse-algorithmic-steps          = all
-    fuse-algorithmic-steps-rerun-factor   = 0.99
-    fuse-algorithmic-steps-diffusion-factor   = 0.99
-    spawn-predictor-as-background-thread = on
-    spawn-amr-background-threads = off
+    fuse-algorithmic-steps                          = all
+    fuse-algorithmic-steps-rerun-factor             = 0.99
+    fuse-algorithmic-steps-diffusion-factor         = 0.99
+    spawn-predictor-as-background-thread            = on
+    spawn-amr-background-threads                    = on
     /* 0.0 und 0.8 sind schon mal zwei Faktoren */
-    disable-vertex-exchange-in-time-steps = on
-    time-step-batch-factor           = 0.8
+    disable-vertex-exchange-in-time-steps           = on
+    time-step-batch-factor                          = 0.8
     disable-metadata-exchange-in-batched-time-steps = off
-    double-compression = 0.0
-    spawn-double-compression-as-background-thread = off
+    double-compression                              = 0.0
+    spawn-double-compression-as-background-thread   = off
   end global-optimisation
  
   solver Limiting-ADER-DG EulerSolver
-    variables const            = rho:1,j:3,E:1
-    order const                = 9 
-    maximum-mesh-size          = 1.2
-    maximum-mesh-depth         = 0
-    time-stepping              = global
-    type const                 = nonlinear
-    terms const                = flux
-    optimisation const         = optimised, usestack
-    language const             = C
-    limiter-type const         = musclhancock
-    limiter-optimisation const = generic
-    limiter-language const     = C
-    dmp-observables  const     = 2
-    dmp-relaxation-parameter   = 1e-3
-    dmp-difference-scaling     = 1e-2
-    helper-layers              = 2
+    variables const             = rho:1,j:3,E:1
+    global_observables const    = dgcells:1,fvcells:1
+    order const                 = 5
+    maximum-mesh-size           = 1.2
+    maximum-mesh-depth          = 2
+    time-stepping               = global
+    type const                  = nonlinear
+    terms const                 = flux
+    optimisation const          = optimised, usestack
+    language const              = C
+    limiter-type const          = musclhancock
+    limiter-optimisation const  = generic
+    limiter-slope-limiter const = koren
+    limiter-language const      = C
+    dmp-observables  const      = 2
+    dmp-relaxation-parameter    = 1e-3
+    dmp-difference-scaling      = 1e-2
     // reference either: sod,entropywave,explosion,rarefactionwave
-    constants                  = reference:shuosher
+    constants                   = reference:shuosher
     
     // works only properly for single-node runs
     /*
@@ -82,19 +85,12 @@ exahype-project Euler
     end plot
     */
     
-    plot vtu::Legendre::vertices::ascii ErrorPlotter
+    plot vtu::Cartesian::cells::limited::ascii ErrorPlotter
       // absErrorL1perCell[nvar],Q[nvar],QAnalytical[nvar]
       variables const = 15 
       time            = 0.0
       repeat          = 1e-1
       output          = ./errors
-    end plot
-    
-    plot vtk::Cartesian::subcells::limited::ascii EulerSubcellsWriter
-      variables const = 5
-      time            = 0.0
-      repeat          = 1e-1
-      output          = ./subcells
     end plot
 
   end solver

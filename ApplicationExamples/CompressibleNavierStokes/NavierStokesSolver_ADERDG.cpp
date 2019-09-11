@@ -15,15 +15,15 @@
 
 #include "AMR/Criterion.h"
 
-#include "stableDiffusiveTimeStepSize.h"
-#if DIMENSIONS == 2
-#include "diffusiveRiemannSolver2d.h"
-#elif DIMENSIONS == 3
-#include "diffusiveRiemannSolver3d.h"
-#endif
-
 #include "kernels/aderdg/generic/Kernels.h"
 #include "kernels/KernelUtils.h"
+
+#ifdef OPT_KERNELS
+#include "kernels/NavierStokes_NavierStokesSolver_ADERDG/Kernels.h"
+#include "kernels/NavierStokes_NavierStokesSolver_ADERDG/converter.h"
+
+#endif
+
 
 #include "Scenarios/Atmosphere.h"
 
@@ -41,8 +41,6 @@ void NavierStokes::NavierStokesSolver_ADERDG::init(const std::vector<std::string
 
 void NavierStokes::NavierStokesSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* Q) {
   if (tarch::la::equals(t, 0.0)) {
-    // TODO(Lukas) What happens during refinement?
-    Q[NumberOfVariables + NumberOfParameters - 1] = 0.0; // TODO(Lukas) Remove!
     ns.setHeight(Q, x[DIMENSIONS-1]);
     ns.setBackgroundState(Q, 0.0, 0.0);
 
@@ -51,8 +49,6 @@ void NavierStokes::NavierStokesSolver_ADERDG::adjustPointSolution(const double* 
     for (int i = 0; i < vars.variables(); ++i) {
       assertion2(std::isfinite(Q[i]), i, Q[i]);
     }
-    //Q[NumberOfVariables+NumberOfParameters-1] = -1;
-
   }
 
 }
@@ -63,14 +59,23 @@ void NavierStokes::NavierStokesSolver_ADERDG::algebraicSource(const tarch::la::V
 
 void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) {
   constexpr auto basisSize = Order + 1;
-  constexpr auto gradSize = NumberOfVariables * DIMENSIONS;
   constexpr auto NumberOfData = NumberOfVariables + NumberOfParameters;
 
+#ifdef OPT_KERNELS
+  //constexpr auto NumberOfVariablesPadded = NavierStokes::NavierStokesSolver_ADERDG_kernels::aderdg::getNumberOfVariablePadded();
+  //constexpr auto NumberOfDataPadded = NavierStokes::NavierStokesSolver_ADERDG_kernels::aderdg::getNumberOfDataPadded();
+  constexpr auto NumberOfVariablesPadded = NumberOfVariables;
+  constexpr auto NumberOfDataPadded = NumberOfData;
+#else
+  constexpr auto NumberOfVariablesPadded = NumberOfVariables;
+  constexpr auto NumberOfDataPadded = NumberOfData;
+#endif
+  constexpr auto gradSize = NumberOfVariables * DIMENSIONS;
   auto gradStateOut = std::array<double, gradSize>{{0.0}};
   kernels::idx2 idxGradQ(DIMENSIONS,NumberOfVariables);
 
-  std::fill_n(fluxOut, NumberOfVariables, 0.0);
-  std::fill_n(stateOut, NumberOfData, 0.0);
+  std::fill_n(fluxOut, NumberOfVariablesPadded, 0.0);
+  std::fill_n(stateOut, NumberOfDataPadded, 0.0);
 
   ns.setHeight(stateOut, x[DIMENSIONS-1]);
   ns.setBackgroundState(stateOut, 0.0, 0.0);
@@ -89,7 +94,6 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const
   for (int i = 0; i < NumberOfVariables; i++) {
     assertion2(std::isfinite(stateIn[i]), stateIn[i], i);
   }
-  assertion1(stateIn[0] > 0, stateIn[0]);
 
   if (scenario->getBoundaryType(faceIndex) == NavierStokes::BoundaryType::analytical) {
     // Integrate over time.
@@ -127,7 +131,7 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const
   Variables varsOut(stateOut);
 
   // Rho/E extrapolated, velocity mirrored.
-  std::copy_n(stateIn, NumberOfVariables, stateOut);
+  std::copy_n(stateIn, NumberOfVariablesPadded, stateOut);
   // Extrapolate gradient.
   std::copy_n(gradStateIn, gradSize, gradStateOut.data());
 
@@ -166,7 +170,7 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const
   // The incoming flux is reconstructed in boundaryConditions.
 
   // Then compute the outgoing flux.
-  if ( scenario->getBoundaryType(faceIndex) == BoundaryType::hydrostaticWall) {
+  if (scenario->getBoundaryType(faceIndex) == BoundaryType::hydrostaticWall) {
     // TODO(Lukas): Add support for advection-coupling + hydrostatic flows?
     // We need to reconstruct the temperature gradient here.
     const auto posZ = x[DIMENSIONS-1];
@@ -195,7 +199,6 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const
     // Use no viscous effects and use equilibrium temperature gradient.
     ns.evaluateFlux(stateOut, gradStateOut.data(), F, false, true, equilibriumTemperatureGradient);
   } else {
-    //ns.evaluateFlux(stateOut, gradStateOut.data(), F);
     ns.evaluateFlux(stateOut, gradStateOut.data(), F);
   }
 
@@ -210,6 +213,7 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
       const tarch::la::Vector<DIMENSIONS,double>& center,
       const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t) const {
+  return true;
     // We now need to do a pointwise check for the primitive variables
     // pressure and Z.
     // TODO(Lukas) At least refactor this. And 3D!
@@ -256,7 +260,7 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
   // Now also check if TV is too high!
   double data[NumberOfGlobalObservables];
   GlobalObservables curObs(data);
-  mapGlobalObservables(curObs,solution, 0,dx,0,0);
+  mapGlobalObservables(curObs,solution,center,dx,t,0); // center/dt unused
   const auto *curObsRaw = curObs.data();
   
   const auto curTv = curObsRaw[0];
@@ -319,6 +323,7 @@ exahype::solvers::Solver::RefinementControl NavierStokes::NavierStokesSolver_ADE
     const tarch::la::Vector<DIMENSIONS, double>& dx,
     const double t,
     const int level) {
+
   if (!amrSettings.useAMR) {
     // Default: Delete cells.
     // This is useful when one wants to use limiting-guided refinement
@@ -328,7 +333,7 @@ exahype::solvers::Solver::RefinementControl NavierStokes::NavierStokesSolver_ADE
 
   double data[NumberOfGlobalObservables];
   GlobalObservables curObs(data);
-  mapGlobalObservables(curObs,luh,0,dx,0,0);
+  mapGlobalObservables(curObs,luh,center,dx,t,0); // center/t/dt unused
   const auto *curObsRaw = curObs.data();
   
   const auto curTv = curObsRaw[0];
@@ -338,6 +343,7 @@ exahype::solvers::Solver::RefinementControl NavierStokes::NavierStokesSolver_ADE
 
   const auto countGlobal = gobsRaw[2];
   const auto meanGlobal  = gobsRaw[0];
+
   // Merging computes sample variance (Bessel's correction), we need population variance.
   const auto varianceGlobal = ((countGlobal - 1)/countGlobal) * gobsRaw[1];
   const auto stdGlobal = std::sqrt(varianceGlobal);
@@ -379,18 +385,28 @@ void NavierStokes::NavierStokesSolver_ADERDG::viscousFlux(const double *const Q,
   ns.evaluateFlux(Q, gradQ, F, true);
 }
 
-double NavierStokes::NavierStokesSolver_ADERDG::stableTimeStepSize(const double* const luh, const tarch::la::Vector<DIMENSIONS,double>& dx) {
-  return (0.7/0.9) * kernels::aderdg::generic::c::stableTimeStepSize<NavierStokesSolver_ADERDG,true>(*static_cast<NavierStokesSolver_ADERDG*>(this),luh,dx);
-}
-
-void NavierStokes::NavierStokesSolver_ADERDG::riemannSolver(double* FL,double* FR,const double* const QL,const double* const QR,const double t, const double dt,const tarch::la::Vector<DIMENSIONS, double>& dx, const int direction, bool isBoundaryFace, int faceIndex) {
-  assertion2(direction>=0,dt,direction);
-  assertion2(direction<DIMENSIONS,dt,direction);
-  kernels::aderdg::generic::c::riemannSolverNonlinear<false,true, NavierStokesSolver_ADERDG>(*static_cast<NavierStokesSolver_ADERDG*>(this),FL,FR,QL,QR,t,dt,dx,direction);
-}
-
 void NavierStokes::NavierStokesSolver_ADERDG::boundaryConditions( double* const fluxIn, const double* const stateIn, const double* const gradStateIn, const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& cellCentre, const tarch::la::Vector<DIMENSIONS,double>&  cellSize, const double t,const double dt, const int direction, const int orientation) {
-#if DIMENSIONS == 2
+
+#ifdef OPT_KERNELS
+  double stateOut[NavierStokes::NavierStokesSolver_ADERDG_kernels::aderdg::getBndFaceSize()] __attribute__((aligned(ALIGNMENT))) = {0.0};
+  double fluxOut[ NavierStokes::NavierStokesSolver_ADERDG_kernels::aderdg::getBndFluxSize()] __attribute__((aligned(ALIGNMENT))) = {0.0};
+  const int faceIndex = 2*direction+orientation;
+
+  NavierStokes::NavierStokesSolver_ADERDG_kernels::aderdg::boundaryConditions(*static_cast<NavierStokesSolver_ADERDG*>(this), fluxOut, stateOut, fluxIn, stateIn, gradStateIn, &cellCentre[0], &cellSize[0], t, dt, faceIndex, direction);
+
+
+  if (orientation == 0) {
+    riemannSolver(fluxOut,fluxIn,stateOut,stateIn,t,dt,cellSize,direction,true,faceIndex);
+  }
+  else {
+    riemannSolver(fluxIn,fluxOut,stateIn,stateOut,t,dt,cellSize,direction,true,faceIndex);
+  }
+
+  // TODO(Lukas): Support non hydrostatic wall bcs for opt. kernels
+
+#else // OPT_KERNELS
+
+ #if DIMENSIONS == 2
   constexpr int basisSize     = (Order+1);
 #else
   constexpr int basisSize     = (Order+1) * (Order+1);
@@ -442,10 +458,14 @@ void NavierStokes::NavierStokesSolver_ADERDG::boundaryConditions( double* const 
         fluxIn[idx_F(i, j, NavierStokesSolver_ADERDG_Variables::shortcuts::E)] = 0.0;
       }
     }
-#endif
+#endif // DIMENSIONS == 2
   }
 
   delete[] block;
+
+#endif // OPT_KERNELS
+
+  
 }
 
 void NavierStokes::NavierStokesSolver_ADERDG::resetGlobalObservables(GlobalObservables& globalObservables) const  {
@@ -475,3 +495,42 @@ void NavierStokes::NavierStokesSolver_ADERDG::mergeGlobalObservables(
     ReadOnlyGlobalObservables& otherObservables) const {
   NavierStokes::mergeGlobalObservables(globalObservables,otherObservables);
 }
+
+double NavierStokes::NavierStokesSolver_ADERDG::stableTimeStepSize(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellSize) {
+  #ifdef OPT_KERNELS
+  double dt = NavierStokes::NavierStokesSolver_ADERDG_kernels::aderdg::stableTimeStepSize(*static_cast<NavierStokesSolver_ADERDG*>(this), luh, 1./cellSize[0] );
+  #else
+  double dt = kernels::aderdg::generic::c::stableTimeStepSize<NavierStokesSolver_ADERDG,true>(*static_cast<NavierStokesSolver_ADERDG*>(this),luh,cellSize);
+  #endif
+  
+  return (0.7/0.9) * dt;
+}
+
+void NavierStokes::NavierStokesSolver_ADERDG::riemannSolver(double* FL_,double* FR_,const double* const QL_,const double* const QR_,const double t, const double dt, const tarch::la::Vector<DIMENSIONS, double>& cellSize, const int direction, bool isBoundaryFace, int faceIndex) {
+  // The optimised Riemann solver is broken for some reason, use normal one instead.
+#ifdef OPT_KERNELS
+  using namespace NavierStokes::NavierStokesSolver_ADERDG_kernels::aderdg;
+  double FL[converter::getFFaceGenArraySize()];
+  double FR[converter::getFFaceGenArraySize()];
+  double QL[converter::getQFaceGenArraySize()];
+  double QR[converter::getQFaceGenArraySize()];
+  
+  converter::FFace_optimised2generic(FL_,FL);
+  converter::FFace_optimised2generic(FR_,FR);
+  converter::QFace_optimised2generic(QL_,QL);
+  converter::QFace_optimised2generic(QR_,QR);
+#else
+  double* FL=FL_;
+  double* FR=FR_;
+  const double* QL=QL_;
+  const double* QR=QR_;
+#endif
+
+  kernels::aderdg::generic::c::riemannSolverNonlinear<false,true, NavierStokesSolver_ADERDG>(*static_cast<NavierStokesSolver_ADERDG*>(this),FL,FR,QL,QR,t,dt,cellSize,direction);
+  
+#ifdef OPT_KERNELS
+  converter::FFace_generic2optimised(FL,FL_);
+  converter::FFace_generic2optimised(FR,FR_);
+#endif 
+}
+double ** NavierStokes::NavierStokesSolver_ADERDG::weights = kernels::legendre::weights;

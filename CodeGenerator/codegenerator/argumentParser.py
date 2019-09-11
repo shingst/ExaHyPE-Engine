@@ -63,6 +63,7 @@ class ArgumentParser:
         # optional arguments       
         ("useFlux",             ArgType.OptionalBool,    "enable flux"),
         ("useFluxVect",         ArgType.OptionalBool,    "enable vectorized flux (include useFlux)"),
+        ("useViscousFlux",      ArgType.OptionalBool,    "enable viscous flux"),
         ("useNCP",              ArgType.OptionalBool,    "enable non conservative product"),
         ("useNCPVect",          ArgType.OptionalBool,    "enable vectorized non conservative product (include useNCP)"),
         ("useSource",           ArgType.OptionalBool,    "enable source terms"),

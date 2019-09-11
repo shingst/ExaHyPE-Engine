@@ -69,6 +69,8 @@ void kernels::registerSolvers(exahype::parser::Parser& parser) {
           parser.getMaximumMeshSize({{loop.index0}}),
           parser.getMaximumMeshDepth({{loop.index0}}),
           parser.getHaloCells({{loop.index0}}),
+          parser.getHaloBufferCells({{loop.index0}}),
+          parser.getLimiterBufferCells({{loop.index0}}),
           parser.getRegularisedFineGridLevels({{loop.index0}}),
           parser.getTimeStepping({{loop.index0}}),
           0
@@ -80,6 +82,8 @@ void kernels::registerSolvers(exahype::parser::Parser& parser) {
           parser.getMaximumMeshSize({{loop.index0}}),
           parser.getMaximumMeshDepth({{loop.index0}}),
           parser.getHaloCells({{loop.index0}}),
+          parser.getHaloBufferCells({{loop.index0}}),
+          parser.getLimiterBufferCells({{loop.index0}}),
           parser.getRegularisedFineGridLevels({{loop.index0}}),
           parser.getTimeStepping({{loop.index0}}),
           parser.getDMPObservables({{loop.index0}}),

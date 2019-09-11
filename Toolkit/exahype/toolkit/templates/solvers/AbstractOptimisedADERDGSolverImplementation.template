@@ -89,6 +89,8 @@ kernels::UnivariateFunction** {{project}}::{{abstractSolver}}::basisFunctionSeco
     const double maximumMeshSize,
     const int maximumMeshDepth,
     const int haloCells,
+    const int haloBufferCells,
+    const int limiterBufferCells,
     const int regularisedFineGridLevels,
     const exahype::solvers::Solver::TimeStepping timeStepping,
     const int DMPObservables
@@ -97,6 +99,8 @@ kernels::UnivariateFunction** {{project}}::{{abstractSolver}}::basisFunctionSeco
         maximumMeshSize,
         maximumMeshDepth,
         haloCells,
+        haloBufferCells,
+        limiterBufferCells,
         regularisedFineGridLevels,
         timeStepping,
         DMPObservables
@@ -106,6 +110,8 @@ kernels::UnivariateFunction** {{project}}::{{abstractSolver}}::basisFunctionSeco
     const double maximumMeshSize,
     const int maximumMeshDepth,
     const int haloCells,
+    const int haloBufferCells,
+    const int limiterBufferCells,
     const int regularisedFineGridLevels,
     const exahype::solvers::Solver::TimeStepping timeStepping,
     const int DMPObservables
@@ -120,6 +126,8 @@ kernels::UnivariateFunction** {{project}}::{{abstractSolver}}::basisFunctionSeco
         maximumMeshSize,
         maximumMeshDepth,
         haloCells,
+        haloBufferCells,
+        limiterBufferCells,
         regularisedFineGridLevels,
         timeStepping,
         DMPObservables
@@ -218,12 +226,17 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   constexpr double* lSi = nullptr;
   constexpr double* lShi = nullptr;
   {% endif %}
-  {% if useNCP %}
+  {% if useNCP or useViscousFlux %}
   double* gradQ = memory + {{optNamespace}}::getgradQShift();
   {% else %}
   constexpr double* gradQ = nullptr;
   {% endif %}
-  {% endif %}
+    {% if useViscousFlux %}
+  double* gradQAvg = memory + {{optNamespace}}::getgradQAvgShift();
+    {% else %}
+  double* gradQAvg = nullptr;
+    {% endif %}
+  {% endif %}{# if case useNCP or useViscousFlux #}
 
   // this switch should probably moved into the fusedSpaceTimePredictorVolumeIntegral kernel
   double  tempUpdate[{{optNamespace}}::getUpdateSize()] __attribute__((aligned(ALIGNMENT))); // TODO no heap variant implemented
@@ -253,7 +266,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   {% endif %}
 
   {% else %}{# case non linear #}
-  const int picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), update, lQhbnd, lFhbnd, lQi, rhs, lFi, lSi, lQhi, lFhi, lShi, gradQ, luh, 1./cellSize[0] /*inverseDx*/, dt);
+  const int picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), update, lQhbnd, lGradQhbnd, lFhbnd, lQi, rhs, lFi, lSi, lQhi, lFhi, lShi, gradQ, gradQAvg, luh, 1./cellSize[0] /*inverseDx*/, dt);
   {% endif %}
 
   // this switch should probably moved into the fusedSpaceTimePredictorVolumeIntegral kernel
@@ -410,7 +423,7 @@ void {{project}}::{{abstractSolver}}::riemannSolver(double* FL,double* FR,const 
   {% if countFlops %}
   const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
   {% endif %}
-  {{optNamespace}}::riemannSolver(*static_cast<{{solver}}*>(this), FL, FR, QL, QR, t, dt, direction);
+  {{optNamespace}}::riemannSolver(*static_cast<{{solver}}*>(this), FL, FR, QL, QR, t, dt, cellSize[direction], direction);
   {% if countFlops %}
   double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();
   {% if isLinear %}
@@ -454,8 +467,7 @@ void {{project}}::{{abstractSolver}}::boundaryConditions(double* const fluxIn,co
 
   const int faceIndex = 2*direction+orientation;
 
-  // TODO(JMG): Pass gradient here for viscous flux.
-  {{optNamespace}}::boundaryConditions(*static_cast<{{solver}}*>(this), fluxOut, stateOut, fluxIn, stateIn, &cellCentre[0], &cellSize[0], t, dt, faceIndex, direction);
+  {{optNamespace}}::boundaryConditions(*static_cast<{{solver}}*>(this), fluxOut, stateOut, fluxIn, stateIn, gradStateIn, &cellCentre[0], &cellSize[0], t, dt, faceIndex, direction);
 
   {% if countFlops %}
   double time = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()-timeStart).count();

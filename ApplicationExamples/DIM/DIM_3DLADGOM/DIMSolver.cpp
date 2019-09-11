@@ -16,6 +16,8 @@ DIM::DIMSolver::DIMSolver(
         const double maximumMeshSize,
         const int maximumMeshDepth,
         const int haloCells,
+        const int haloBufferCells,
+        const int limiterBufferCells,
         const int regularisedFineGridLevels,
         const exahype::solvers::Solver::TimeStepping timeStepping,
         const int DMPObservables,
@@ -26,7 +28,7 @@ DIM::DIMSolver::DIMSolver(
   exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
       "DIMSolver",
     new DIM::DIMSolver_ADERDG(
-      maximumMeshSize,maximumMeshDepth,haloCells,regularisedFineGridLevels,timeStepping,DMPObservables),
+      maximumMeshSize,maximumMeshDepth,haloCells,haloBufferCells,limiterBufferCells,regularisedFineGridLevels,timeStepping,DMPObservables),
     new DIM::DIMSolver_FV(
       maximumMeshSize, timeStepping),
     DMPRelaxationParameter,

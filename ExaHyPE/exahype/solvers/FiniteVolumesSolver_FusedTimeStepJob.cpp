@@ -15,7 +15,6 @@ exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::FusedTimeStepJob(
   _solver(solver),
   _cellDescription(cellDescription),
   _cellInfo(cellInfo),
-  _neighbourMergePerformed(cellDescription.getNeighbourMergePerformed()),
   _isFirstTimeStepOfBatch(isFirstTimeStepOfBatch),
   _isLastTimeStepOfBatch(isLastTimeStepOfBatch),
   _isSkeletonJob(isSkeletonJob) {
@@ -29,7 +28,7 @@ exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::FusedTimeStepJob(
 
 bool exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::run(bool runOnMasterThread) {
   _solver.updateBody(
-      _cellDescription,_cellInfo,_neighbourMergePerformed,
+      _cellDescription,_cellInfo,
       _isFirstTimeStepOfBatch,_isLastTimeStepOfBatch,
       _isSkeletonJob,false/*uncompressBefore*/);
 

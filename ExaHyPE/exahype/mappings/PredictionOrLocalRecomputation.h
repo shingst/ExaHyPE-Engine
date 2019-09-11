@@ -72,12 +72,6 @@ class exahype::mappings::PredictionOrLocalRecomputation {
   static tarch::logging::Log _log;
 
   /**
-   * Flag indicating if one solver requested a local recomputation.
-   * Is set in beginIteration(...).
-   */
-  static bool OneSolverRequestedLocalRecomputation;
-
-  /**
    * \return true if we perform a local recomputation for this solver.
    */
   static bool performLocalRecomputation(exahype::solvers::Solver* solver);
@@ -113,10 +107,11 @@ class exahype::mappings::PredictionOrLocalRecomputation {
    * Loop body for mergeWithNeighbour.
    *
    * @param fromRank   rank from which we expect a message
-   * @param pos1Scalar linearised relative position of cell to vertex (pos1)
-   * @param pos2Scalar linearised relative position of cell to vertex (pos2)
-   * @param vertex     vertex
+   * @param srcScalar  linearised relative position of source cell to vertex (src)
+   * @param destScalar linearised relative position of destination cell to vertex (dest)
+   * @param vertex     vertex shared by the two MPI ranks
    * @param x          position of the shared vertex
+   * @param h          mesh size on the level of the vertex
    * @param level      level of the vertex
    */
  static void receiveNeighbourDataLoopBody(
@@ -125,6 +120,7 @@ class exahype::mappings::PredictionOrLocalRecomputation {
       const int                                    destScalar,
       const exahype::Vertex&                       vertex,
       const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h,
       const int                                    level);
 
   #ifdef Parallel

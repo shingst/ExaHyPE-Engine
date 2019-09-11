@@ -28,6 +28,7 @@ void {{codeNamespace}}::riemannSolver(
   const double* restrict const QL, const double* restrict const QR,
   const double t,
   const double dt,
+  const double dx,
   const int direction
 {% if useDeepProfiler %}
   , exahype::profilers::Profiler* profiler
@@ -54,6 +55,7 @@ void {{codeNamespace}}::riemannSolver(
     }
   }
   
+  // Check hyperbolic eigenvalues.
   double lambdaL[{{nVarPad}}] __attribute__((aligned(ALIGNMENT)));
 #ifdef USE_IPO
   #pragma forceinline recursive
@@ -69,6 +71,26 @@ void {{codeNamespace}}::riemannSolver(
   for (int ivar = 0; ivar < {{nVar}}; ivar++) {
     smax = std::max(smax, std::max(fabs(lambdaL[ivar]), fabs(lambdaR[ivar])));
   }
+  
+  {% if useViscousFlux %}
+  // Check viscous eigenvalues.
+  double maxViscousEigenvalue = 0.0;
+#ifdef USE_IPO
+  #pragma forceinline recursive
+#endif
+  solver.{{solverName}}::viscousEigenvalues(&QavL[0], direction, &lambdaL[0]);
+#ifdef USE_IPO
+  #pragma forceinline recursive
+#endif
+  solver.{{solverName}}::viscousEigenvalues(&QavR[0], direction, &lambdaR[0]);
+  for (int ivar = 0; ivar < {{nVar}}; ivar++) {
+    maxViscousEigenvalue = std::max(maxViscousEigenvalue, std::max(fabs(lambdaL[ivar]), fabs(lambdaR[ivar])));
+  }
+  const auto pi = std::acos(-1); // not constexpr for intel compilers
+  const double factor = 2 * (2 * {{nDof - 1}} + 1) / (dx * std::sqrt(0.5 * pi));
+  smax += factor * maxViscousEigenvalue;
+  {% endif %}{# useViscousFlux #} 
+  
   
   for (int xy = 0; xy < {{nDof*nDof3D}}; xy++){
     #pragma omp simd aligned(tmp_bnd,QL,QR:ALIGNMENT)

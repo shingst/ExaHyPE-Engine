@@ -27,6 +27,7 @@ void {{codeNamespace}}::riemannSolver(
                           const double* const restrict QL, const double* const restrict QR,
                           const double t,
                           const double dt,
+			  const double dx,
                           const int direction
 ) {
   /*

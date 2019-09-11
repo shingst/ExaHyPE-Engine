@@ -35,6 +35,8 @@ class GPRDR::GPRDRSolver_ADERDG : public GPRDR::AbstractGPRDRSolver_ADERDG {
         const double maximumMeshSize,
         const int maximumMeshDepth,
         const int haloCells,
+        const int haloBufferCells,
+        const int limiterBufferCells,
         const int regularisedFineGridLevels,
         const exahype::solvers::Solver::TimeStepping timeStepping,
         const int DMPObservables

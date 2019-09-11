@@ -347,7 +347,7 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
   for(int i = patchBegin; i < patchEnd; i++) {
     for (int j = patchBegin; j < patchEnd; j++) {
       for (int k = patchBegin-1; k < patchEnd; k++) {
-        double s_max_x =
+        double s_max =
             solver.riemannSolver(
                 fL, fR,
                 wRx + idx_w(i, j, k, 0),
@@ -358,7 +358,7 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
                 0
             );
         dt_max_allowed = std::min(
-            dt_max_allowed, cflFactor / DIMENSIONS * cellSize[0] / s_max_x);
+            dt_max_allowed, cflFactor / DIMENSIONS * cellSize[0] / s_max );
 
         for (int l=0; l<numberOfVariables; ++l) {
           luh[idx(i, j, k, l)]   -= invCellSizeTimesDt[0] * fL[l];  
@@ -372,7 +372,7 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
   for(int i = patchBegin; i < patchEnd; i++) {
     for (int j = patchBegin-1; j < patchEnd; j++) {
       for (int k = patchBegin; k < patchEnd; k++) {
-        double s_max_y = solver.riemannSolver(
+        double s_max = solver.riemannSolver(
             fL, fR,
             wRy + idx_w(i, j, k, 0),
             wLy + idx_w(i, j+1, k, 0),
@@ -382,7 +382,7 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
             1
         );
         dt_max_allowed = std::min(
-            dt_max_allowed, cflFactor / DIMENSIONS * cellSize[1] / s_max_y);
+            dt_max_allowed, cflFactor / DIMENSIONS * cellSize[1] / s_max );
 
         for (int l=0; l<numberOfVariables; ++l) {
           luh[idx(i, j, k, l)]   -= invCellSizeTimesDt[1] * fL[l];  
@@ -396,7 +396,7 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
   for(int i = patchBegin-1; i < patchEnd; i++) {
     for (int j = patchBegin; j < patchEnd; j++) {
       for (int k = patchBegin; k < patchEnd; k++) {
-        double s_max_y = solver.riemannSolver(
+        double s_max = solver.riemannSolver(
             fL, fR,
             wRz + idx_w(i, j, k, 0),
             wLz + idx_w(i+1, j, k, 0),
@@ -406,7 +406,7 @@ double kernels::finitevolumes::musclhancock::c::solutionUpdate(
             2
         );
         dt_max_allowed = std::min(
-            dt_max_allowed, cflFactor / DIMENSIONS * cellSize[2] / s_max_y);
+            dt_max_allowed, cflFactor / DIMENSIONS * cellSize[2] / s_max );
 
         for (int l=0; l<numberOfVariables; ++l) {
           luh[idx(i, j, k, l)]   -= invCellSizeTimesDt[2] * fL[l];  

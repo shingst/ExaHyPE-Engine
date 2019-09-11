@@ -137,7 +137,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                     self.context["matmulConfigs"]["gradF_y_RKLoop"] =     MatmulConfig(nVar, nDof, nDof, nVarPad*nDof , nDofPad, nVarPad*nDof , 1, 1, 1, 1, "gradF_y_RKLoop", "nopf", "gemm")
                     if(self.context["nDim"]>=3):
                         self.context["matmulConfigs"]["gradF_z_RKLoop"] = MatmulConfig(nVar, nDof, nDof, nVarPad*nDof2, nDofPad, nVarPad*nDof2, 1, 1, 1, 1, "gradF_z_RKLoop", "nopf", "gemm")
-            if(self.context["useNCP"]):
+            if(self.context["useNCP"] or self.context['useViscousFlux']):
                 self.context["matmulConfigs"]["gradQ_x"] =     MatmulConfig(nVar, nDof, nDof, nDataPad , nDofPad, nVarPad      , 1, 1, 0, 1, "gradQ_x", "nopf", "gemm")
                 self.context["matmulConfigs"]["gradQ_y"] =     MatmulConfig(nVar, nDof, nDof, nDataPad*nDof, nDofPad, nVarPad*nDof , 1, 1, 0, 1, "gradQ_y", "nopf", "gemm")
                 if(self.context["nDim"]>=3):

@@ -284,7 +284,7 @@ namespace exahype {
   static constexpr int NeighbourCommunicationMetadataCellType            = 0;
   static constexpr int NeighbourCommunicationMetadataAugmentationStatus  = 1;
   static constexpr int NeighbourCommunicationMetadataCommunicationStatus = 2;
-  static constexpr int NeighbourCommunicationMetadataLimiterStatus       = 3;
+  static constexpr int NeighbourCommunicationMetadataRefinementStatus    = 3;
 
   static constexpr int MasterWorkerCommunicationMetadataPerSolver        = 5;
 
@@ -1941,20 +1941,6 @@ public:
       const int coarseGridCellDescriptionsIndex,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) = 0;
-
-  /**
-   * If a cell description was allocated at heap address @p cellDescriptionsIndex
-   * for solver @p solverNumber, encode metadata of the cell description
-   * and push it to the back of the metadata vector @p metadata.
-   *
-   * Otherwise, push exahype::MasterWorkerCommunicationMetadataPerSolver
-   * times exahype::InvalidMetadataEntry to the back of the vector.
-   *
-   */
-  virtual void appendMasterWorkerCommunicationMetadata(
-      MetadataHeap::HeapEntries& metadata,
-      const int cellDescriptionsIndex,
-      const int solverNumber) const = 0;
 
   /**
    * Send solver data to master or worker rank. Read the data from

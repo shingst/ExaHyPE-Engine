@@ -28,7 +28,7 @@ class Euler::LimitingADERDG_ADERDG : public Euler::AbstractLimitingADERDG_ADERDG
      */
     static tarch::logging::Log _log;
   public:
-    LimitingADERDG_ADERDG(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables);
+    LimitingADERDG_ADERDG(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int haloBufferCells,const int limiterBufferCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables);
 
     /**
      * Initialise the solver.

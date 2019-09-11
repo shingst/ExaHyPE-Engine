@@ -15,7 +15,7 @@
 
 #include <cmath>
 
-#include "../../../Peano/mpibalancing/HotspotBalancing.h"
+#include "mpibalancing/HotspotBalancing.h"
 
 #include "exahype/records/RepositoryState.h"
 #include "exahype/repositories/Repository.h"
@@ -1056,7 +1056,6 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
     logInfo( "runAsMaster(...)", "finished building up uniform base mesh" );
   }
 
-
   // adaptive mesh refinement
   //repository.switchToMeshRefinementAndPlotTree();
   repository.switchToMeshRefinement();
@@ -1531,16 +1530,24 @@ void exahype::runners::Runner::initialiseMesh(exahype::repositories::Repository&
 
 void exahype::runners::Runner::updateMeshOrLimiterDomain(
     exahype::repositories::Repository& repository, const bool fusedTimeStepping) {
+
+  // @note: The global communication associated with some of the adapters
+  // is realised in the exahype::State::kickOffIteration(...) and exahype::State::wrapUpIteration(...)
+
   // 1. All solvers drop their MPI messages and broadcast time step data
   repository.switchToBroadcastAndDropNeighbourMessages();
   repository.iterate(1,false);
 
   // 2. Only the solvers with irregular limiter domain change do the limiter status spreading.
   if ( exahype::solvers::Solver::oneSolverRequestedRefinementStatusSpreading() ) {
-    logInfo("updateMeshAndSubdomains(...)","pre-spreading of limiter status");
-    repository.switchToRefinementStatusSpreading();
-    repository.iterate(
-        exahype::solvers::Solver::getMaxRefinementStatus()+1,false);
+    int iterationsToRun = std::max(3,exahype::solvers::Solver::getMaxRefinementStatus()+1); // at least two iterations required when using MPI
+    repository.switchToRefinementStatusSpreading(); // see exahype::State for the realisation of the broadcast at the begin and reduction at the end
+    repository.getState().setAllSolversAttainedStableState(false);
+    while ( !repository.getState().getAllSolversAttainedStableState() ) {
+      logInfo("updateMeshAndSubdomains(...)","run "<<iterationsToRun<<" iterations of refinement status spreading");
+      repository.iterate(iterationsToRun,false);
+      //iterationsToRun = std::max(3,iterationsToRun/2);
+    }
   }
 
   // 2.1 A broadcast is necessary to communicate if the refinement event has
@@ -1573,8 +1580,8 @@ void exahype::runners::Runner::updateMeshOrLimiterDomain(
       exahype::solvers::Solver::oneSolverRequestedLocalRecomputation()) {
     logInfo("updateMeshAndSubdomains(...)","recompute solution locally (if applicable) and compute new time step size");
     repository.switchToPredictionOrLocalRecomputation(); // do not roll forward here if global recomp.; we want to stay at the old time step
-    const int sweeps = (exahype::solvers::Solver::FuseAllADERDGPhases) ? exahype::solvers::Solver::PredictionSweeps : 1;
-    repository.iterate( sweeps ,false ); // local recomputation: has now recomputed predictor in interface cells
+    const int sweeps = exahype::solvers::Solver::FuseAllADERDGPhases ? exahype::solvers::Solver::PredictionSweeps : 1;
+    repository.iterate(sweeps, false); // local recomputation: has now recomputed predictor in interface cells
   }
 }
 

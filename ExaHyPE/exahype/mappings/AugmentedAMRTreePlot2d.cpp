@@ -93,6 +93,7 @@ exahype::mappings::AugmentedAMRTreePlot2d::AugmentedAMRTreePlot2d()
       _cellWriter(nullptr),
       _cellNumberWriter(nullptr),
       _cellTypeWriter(nullptr),
+      _cellVariantWriter(nullptr),
       _cellDescriptionIndexWriter(nullptr),
       _cellDataWriter(nullptr),
       _augmentationStatusWriter(nullptr),
@@ -111,6 +112,7 @@ exahype::mappings::AugmentedAMRTreePlot2d::AugmentedAMRTreePlot2d(
       _cellWriter(masterThread._cellWriter),
       _cellNumberWriter(masterThread._cellNumberWriter),
       _cellTypeWriter(masterThread._cellTypeWriter),
+      _cellVariantWriter(masterThread._cellVariantWriter),
       _cellDescriptionIndexWriter(masterThread._cellDescriptionIndexWriter),
       _cellDataWriter(masterThread._cellDataWriter),
       _augmentationStatusWriter(masterThread._augmentationStatusWriter),
@@ -372,7 +374,12 @@ void exahype::mappings::AugmentedAMRTreePlot2d::enterCell(
       for (auto& pFine : exahype::solvers::ADERDGSolver::Heap::getInstance().getData(
                fineGridCell.getCellDescriptionsIndex())) {
         if (pFine.getSolverNumber() == solverNumber) {
+          const int cellVariant = solvers::ADERDGSolver::isLeaf(pFine) ? 2 :
+              solvers::ADERDGSolver::isParent(pFine) ? 1 :
+              solvers::ADERDGSolver::isVirtual(pFine) ? 0 : -1;
+
           _cellTypeWriter->plotCell(              cellIndex, static_cast<int>(pFine.getType()));
+          _cellVariantWriter->plotCell(           cellIndex, cellVariant);
           _cellDataWriter->plotCell(              cellIndex, 2 * static_cast<int>(pFine.getSolutionIndex() > -1) +
                                                                  static_cast<int>(pFine.getExtrapolatedPredictorIndex() > -1));
           _augmentationStatusWriter->plotCell(    cellIndex, pFine.getAugmentationStatus());
@@ -385,6 +392,7 @@ void exahype::mappings::AugmentedAMRTreePlot2d::enterCell(
 
       if (!solverFound) {
         _cellTypeWriter->plotCell(             cellIndex, -1);
+        _cellVariantWriter->plotCell(             cellIndex, -1);
         _cellDataWriter->plotCell(             cellIndex,  0);
         _augmentationStatusWriter->plotCell(   cellIndex, -1);
         _communicationStatusWriter->plotCell(  cellIndex, -1);
@@ -394,6 +402,7 @@ void exahype::mappings::AugmentedAMRTreePlot2d::enterCell(
 
     } else {
       _cellTypeWriter->plotCell(             cellIndex, static_cast<int>(fineGridCell.getCellDescriptionsIndex()));
+      _cellVariantWriter->plotCell(             cellIndex, -1);
       _cellDataWriter->plotCell(             cellIndex,  0);
       _augmentationStatusWriter->plotCell(   cellIndex, -1);
       _communicationStatusWriter->plotCell(         cellIndex, -1);
@@ -426,7 +435,10 @@ void exahype::mappings::AugmentedAMRTreePlot2d::beginIteration(
 
   _cellNumberWriter = _vtkWriter->createCellDataWriter("cell-number", 1);
   _cellTypeWriter   = _vtkWriter->createCellDataWriter(
-      "type(NoPatch=-1,Leaf=0,LeafCheck=1,LeafInitRef=2,LeafRef=3,LeafProlong=4,Parent=5,ParentCheck=6,ParentReqCoars=7,ParentCoars=8,Virtual=9,Erased=10)",
+      "type(NoPatch=-1,Leaf=0,LeafCheck=1,LeafInitRef=2,LeafRef=3,LeafProlong=4,Parent=5,ParentCheck=6,ParentReqCoarsA=7,...CoarsB=8,ParentCoars=9,Virtual=10,Erased=11)",
+      1);
+  _cellVariantWriter= _vtkWriter->createCellDataWriter(
+      "type(NoPatch=-1,Virtual=0,Parent=1,Leaf=2",
       1);
   _cellDescriptionIndexWriter =
       _vtkWriter->createCellDataWriter("NoPatch=-1,ValidPatch>=0", 1);
@@ -448,6 +460,7 @@ void exahype::mappings::AugmentedAMRTreePlot2d::endIteration(
   _cellWriter->close();
 
   _cellTypeWriter->close();
+  _cellVariantWriter->close();
   _cellDescriptionIndexWriter->close();
   _cellDataWriter->close();
   _augmentationStatusWriter->close();
@@ -460,6 +473,7 @@ void exahype::mappings::AugmentedAMRTreePlot2d::endIteration(
   delete _cellWriter;
 
   delete _cellTypeWriter;
+  delete _cellVariantWriter;
   delete _cellDescriptionIndexWriter;
   delete _cellNumberWriter;
   delete _cellDataWriter;
@@ -473,6 +487,7 @@ void exahype::mappings::AugmentedAMRTreePlot2d::endIteration(
 
   _cellNumberWriter            = nullptr;
   _cellTypeWriter              = nullptr;
+  _cellVariantWriter           = nullptr;
   _cellDescriptionIndexWriter  = nullptr;
   _cellDataWriter              = nullptr;
   _augmentationStatusWriter    = nullptr;

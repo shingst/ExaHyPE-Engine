@@ -19,8 +19,6 @@
 
 #include "peano/datatraversal/autotuning/Oracle.h"
 
-#include "multiscalelinkedcell/HangingVertexBookkeeper.h"
-
 #include "exahype/VertexOperations.h"
 
 #include "exahype/solvers/LimitingADERDGSolver.h"
@@ -140,8 +138,6 @@ void exahype::mappings::UpdateAndReduce::leaveCell(
           break;
       }
     }
-
-    Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
 }

@@ -31,7 +31,7 @@ class CCZ4::CCZ4Solver_ADERDG : public CCZ4::AbstractCCZ4Solver_ADERDG {
      */
     static tarch::logging::Log _log;
   public:
-    CCZ4Solver_ADERDG(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables);
+    CCZ4Solver_ADERDG(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int haloBufferCells,const int limiterBufferCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables);
 
     /**
      * Initialise the solver.

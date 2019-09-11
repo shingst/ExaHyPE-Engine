@@ -28,7 +28,7 @@ class GridDemonstrator::GridDemonstrator_ADERDG : public GridDemonstrator::Abstr
      */
     static tarch::logging::Log _log;
   public:
-    GridDemonstrator_ADERDG(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables);
+    GridDemonstrator_ADERDG(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int haloBufferCells,const int limiterBufferCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables);
 
     /**
      * Initialise the solver.

@@ -17,14 +17,13 @@ exahype::solvers::FiniteVolumesSolver::UpdateJob::UpdateJob(
   _solver(solver),
   _cellDescription(cellDescription),
   _cellInfo(cellInfo),
-  _neighbourMergePerformed(cellDescription.getNeighbourMergePerformed()),
   _isAtRemoteBoundary(isAtRemoteBoundary) {
   NumberOfReductionJobs.fetch_add(1);
 }
 
 bool exahype::solvers::FiniteVolumesSolver::UpdateJob::run(bool runOnMasterThread) {
   _solver.updateBody(
-      _cellDescription,_cellInfo,_neighbourMergePerformed,
+      _cellDescription,_cellInfo,
       true,true,_isAtRemoteBoundary,true);
 
   NumberOfReductionJobs.fetch_sub(1);

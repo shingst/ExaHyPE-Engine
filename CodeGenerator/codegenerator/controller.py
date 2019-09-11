@@ -85,6 +85,7 @@ class Controller:
                 "nDim"                  : args["dimension"],
                 "useFlux"               : (args["useFlux"] or args["useFluxVect"]),
                 "useFluxVect"           : args["useFluxVect"],
+                "useViscousFlux"        : args["useViscousFlux"],
                 "useNCP"                : (args["useNCP"] or args["useNCPVect"]),
                 "useNCPVect"            : args["useNCPVect"],
                 "useSource"             : (args["useSource"] or args["useSourceVect"] or args["useFusedSource"] or args["useFusedSourceVect"]),

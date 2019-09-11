@@ -897,7 +897,18 @@
           "halo_cells" : {
             "type" : "integer", 
             "title" : "Number of halo cells around finest grid cell which requests further refinement or wants to be kept.",
-            "scope" : "run-time"
+            "scope" : "run-time",
+            "default": 0,
+            "minimum": 0,
+            "exclusiveMinimum": false
+          },
+          "halo_buffer_cells" : {
+            "type" : "integer", 
+            "title" : "Additional halo cells that are created during the mesh refinement iterations but it is not ensured these cells exist during the mesh refinement iterations.",
+            "scope" : "run-time",
+            "default": 0,
+            "minimum": 0,
+            "exclusiveMinimum": false
           },
           "regularised_fine_grid_levels" : {
             "type" : "integer", 
@@ -935,7 +946,15 @@
                 "title" : "The discrete maximum principle relaxation parameter (only Limiting-ADER-DG solver)",
                 "scope" : "run-time",
                 "default" : 1e-4
-              }
+              },
+              "limiter_buffer_cells" : {
+                "type" : "integer", 
+                "title" : "Number of cells around a troubled cell that we additionally flag as FV-to-DG projection cells. The layers of DG-to-FV cells are increased the same way. Note that this will enlarge the limiter refinement stencil.",
+                "scope" : "run-time",
+                "default": 1,
+                "minimum": 1,
+                "exclusiveMinimum": false
+              }    
             }
           },
           "time_stepping" : {

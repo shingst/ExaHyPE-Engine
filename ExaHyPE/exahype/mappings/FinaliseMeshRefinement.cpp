@@ -13,8 +13,6 @@
  
 #include "exahype/mappings/FinaliseMeshRefinement.h"
 
-#include "multiscalelinkedcell/HangingVertexBookkeeper.h"
-
 #include "tarch/multicore/Loop.h"
 
 #include "peano/datatraversal/autotuning/Oracle.h"
@@ -171,8 +169,6 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
         }
       }
     }
-
-    Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
 }
 

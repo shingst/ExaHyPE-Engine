@@ -20,8 +20,6 @@
 #include "peano/datatraversal/autotuning/Oracle.h"
 #include "peano/datatraversal/TaskSet.h"
 
-#include "multiscalelinkedcell/HangingVertexBookkeeper.h"
-
 #include "exahype/VertexOperations.h"
 
 #include "exahype/solvers/LimitingADERDGSolver.h"
@@ -94,23 +92,7 @@ exahype::mappings::FusedTimeStep::leaveCellSpecification(int level) const {
 
 peano::MappingSpecification
 exahype::mappings::FusedTimeStep::touchVertexFirstTimeSpecification(int level) const {
-  #ifdef Parallel
-  return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true); // counter
-  #else
-
-  const int coarsestSolverLevel = solvers::Solver::getCoarsestMeshLevelOfAllSolvers();
-  if ( std::abs(level)>=coarsestSolverLevel && issuePredictionJobsInThisIteration() ) {
-    return peano::MappingSpecification(
-          peano::MappingSpecification::WholeTree,
-          peano::MappingSpecification::RunConcurrentlyOnFineGrid,true); // counter
-  } else {
-    return peano::MappingSpecification(
-          peano::MappingSpecification::Nop,
-          peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
-  }
-  #endif
+  return Vertex::getNeighbourMergeSpecification(level);
 }
 
 /**
@@ -293,9 +275,6 @@ void exahype::mappings::FusedTimeStep::leaveCell(
           break;
       }
     }
-
-    // Must be performed for all cell descriptions
-    Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
 
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);

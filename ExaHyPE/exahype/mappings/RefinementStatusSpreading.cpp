@@ -22,8 +22,6 @@
 
 #include "tarch/la/VectorScalarOperations.h"
 
-#include "multiscalelinkedcell/HangingVertexBookkeeper.h"
-
 #include "exahype/VertexOperations.h"
 
 tarch::logging::Log exahype::mappings::RefinementStatusSpreading::_log("exahype::mappings::RefinementStatusSpreading");
@@ -32,9 +30,19 @@ tarch::multicore::BooleanSemaphore exahype::mappings::RefinementStatusSpreading:
 
 peano::CommunicationSpecification
 exahype::mappings::RefinementStatusSpreading::communicationSpecification() const {
-  return peano::CommunicationSpecification(
-      peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
-      peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,true);
+  if ( State::isFirstIterationOfBatchOrNoBatch() ) { // always more than two iterations
+    return peano::CommunicationSpecification(
+        peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime,
+        peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,true);
+  } else if ( State::isLastIterationOfBatchOrNoBatch() ) {
+    return peano::CommunicationSpecification(
+        peano::CommunicationSpecification::ExchangeMasterWorkerData::SendDataAndStateBeforeFirstTouchVertexFirstTime,
+        peano::CommunicationSpecification::ExchangeWorkerMasterData::SendDataAndStateAfterLastTouchVertexLastTime,true);
+  } else {
+    return peano::CommunicationSpecification(
+        peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
+        peano::CommunicationSpecification::ExchangeWorkerMasterData::MaskOutWorkerMasterDataAndStateExchange,true);
+  }
 }
 
 // Switched on.
@@ -87,6 +95,11 @@ void exahype::mappings::RefinementStatusSpreading::beginIteration(exahype::State
   // enforce reductions from worker side in last step; turns off reductions in other iterations
   solverState.setReduceStateAndCell( exahype::State::isLastIterationOfBatchOrNoBatch() );
   #endif
+  solvers::Solver::AllSolversAreStable = true;
+}
+
+void exahype::mappings::RefinementStatusSpreading::endIteration(exahype::State& solverState) {
+  solverState.setAllSolversAttainedStableState(solvers::Solver::AllSolversAreStable.load());
 }
 
 void exahype::mappings::RefinementStatusSpreading::touchVertexFirstTime(
@@ -125,12 +138,14 @@ void exahype::mappings::RefinementStatusSpreading::enterCell(
     for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
-      if ( element!=solvers::Solver::NotFound ) {
+      if (
+          solver->isMergingMetadata(exahype::State::AlgorithmSection::RefinementStatusSpreading)
+          && element!=solvers::Solver::NotFound
+      ) {
         switch (solver->getType()) {
           case exahype::solvers::Solver::Type::ADERDG: {
             auto& cellDescription = cellInfo._ADERDGCellDescriptions[element];
-            static_cast<exahype::solvers::ADERDGSolver*>(solver)->
-                updateRefinementStatus(cellDescription,cellDescription.getNeighbourMergePerformed());
+            static_cast<exahype::solvers::ADERDGSolver*>(solver)->updateRefinementStatus(cellDescription);
           } break;
           case exahype::solvers::Solver::Type::LimitingADERDG: {
             auto& cellDescription = cellInfo._ADERDGCellDescriptions[element];
@@ -138,17 +153,13 @@ void exahype::mappings::RefinementStatusSpreading::enterCell(
                 static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
                 updateRefinementStatusDuringRefinementStatusSpreading(cellDescription);
 
-            tarch::multicore::Lock lock(Semaphore);
             solver->updateMeshUpdateEvent(meshUpdateEvent);
-            lock.free();
           } break;
           default:
             break;
         }
       }
     }
-
-    Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
 
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
@@ -161,6 +172,8 @@ void exahype::mappings::RefinementStatusSpreading::mergeWithNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
   logTraceInWith6Arguments("mergeWithNeighbour(...)", vertex, neighbour,
                            fromRank, fineGridX, fineGridH, level);
+
+  logDebug("mergeWithNeighbour(...)","isFirstIterationOfBatchOrNoBatch()="<<State::isFirstIterationOfBatchOrNoBatch());
 
   if ( !exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
     vertex.mergeOnlyWithNeighbourMetadata(
@@ -177,6 +190,8 @@ void exahype::mappings::RefinementStatusSpreading::prepareSendToNeighbour(
     const tarch::la::Vector<DIMENSIONS, double>& h, int level) {
   logTraceInWith5Arguments("prepareSendToNeighbour(...)", vertex,
                            toRank, x, h, level);
+
+  logDebug("prepareSendToNeighbour(...)","isLastIterationOfBatchOrNoBatch()="<<State::isLastIterationOfBatchOrNoBatch());
 
   if ( !exahype::State::isLastIterationOfBatchOrNoBatch() ) {
     vertex.sendOnlyMetadataToNeighbour(toRank,x,h,level,false);
@@ -197,12 +212,6 @@ bool exahype::mappings::RefinementStatusSpreading::prepareSendToWorker(
   logTraceOutWith1Argument( "prepareSendToWorker(...)", true );
   return exahype::State::isLastIterationOfBatchOrNoBatch(); // tells master this worker wants to reduce
 }
-
-
-//
-// All methods below are nop,
-//
-// ==================================
 
 void exahype::mappings::RefinementStatusSpreading::prepareSendToMaster(
     exahype::Cell& localCell, exahype::Vertex* vertices,
@@ -233,12 +242,26 @@ void exahype::mappings::RefinementStatusSpreading::mergeWithMaster(
     int workerRank, const exahype::State& workerState,
     exahype::State& masterState) {
   assertion( exahype::State::isLastIterationOfBatchOrNoBatch() );
+
+  solvers::Solver::AllSolversAreStable =
+      solvers::Solver::AllSolversAreStable.load() &&
+      workerState.getAllSolversAttainedStableState();
+
+  masterState.setAllSolversAttainedStableState(
+      masterState.getAllSolversAttainedStableState() ||
+      workerState.getAllSolversAttainedStableState());
+
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
     if ( solver->getMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::None ) {
       solver->mergeWithWorkerMeshUpdateEvent(workerRank,0.0,0);
     }
   }
 }
+
+//
+// All methods below are nop,
+//
+// ==================================
 
 void exahype::mappings::RefinementStatusSpreading::prepareCopyToRemoteNode(
     exahype::Cell& localCell, int toRank,
@@ -309,10 +332,6 @@ void exahype::mappings::RefinementStatusSpreading::mergeWithWorkerThread(
 #endif
 
 exahype::mappings::RefinementStatusSpreading::~RefinementStatusSpreading() {
-  // do nothing
-}
-
-void exahype::mappings::RefinementStatusSpreading::endIteration(exahype::State& solverState) {
   // do nothing
 }
 

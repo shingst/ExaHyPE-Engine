@@ -23,14 +23,34 @@
 
 #include "peano/grid/aspects/VertexStateAnalysis.h"
 
+#include "exahype/mappings/LevelwiseAdjacencyBookkeeping.h"
+
 ///////////////////////////////////
 // NEIGHBOUR
 ///////////////////////////////////
 
+void exahype::solvers::ADERDGSolver::mergeWithEmptyNeighbourDuringMeshRefinement(
+    const int                                    solverNumber,
+    Solver::CellInfo&                            cellInfo, // corresponds to dest
+    const tarch::la::Vector<DIMENSIONS, int>&    pos,
+    const tarch::la::Vector<DIMENSIONS, int>&    posNeighbour,
+    const bool                                   isAtBoundary,
+    const tarch::la::Vector<DIMENSIONS, double>& barycentreFromVertex) {
+  if ( isAtBoundary ) {
+    mergeWithNeighbourMetadata(solverNumber,cellInfo,
+          BoundaryStatus,BoundaryStatus,BoundaryStatus,
+          pos,posNeighbour,barycentreFromVertex);
+  } else {
+    mergeWithNeighbourMetadata(solverNumber,cellInfo,
+        EmptyStatus,EmptyStatus,EmptyStatus,
+        pos,posNeighbour,barycentreFromVertex);
+  }
+}
+
 void exahype::solvers::ADERDGSolver::mergeWithRefinementStatus(
     CellDescription& cellDescription,
-    const int faceIndex,
-    const int otherRefinementStatus) const {
+    const int        faceIndex,
+    const int        otherRefinementStatus) {
   cellDescription.setFacewiseRefinementStatus( faceIndex, otherRefinementStatus );
 }
 
@@ -51,9 +71,7 @@ exahype::solvers::ADERDGSolver::determineCommunicationStatus(
   } else {
     int max = 0;
     for (unsigned int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
-      if ( cellDescription.getNeighbourMergePerformed(i) ) {
-        max = std::max( max, cellDescription.getFacewiseCommunicationStatus(i)-1 );
-      }
+      max = std::max( max, cellDescription.getFacewiseCommunicationStatus(i)-1 );
     }
     return max;
   }
@@ -62,7 +80,7 @@ exahype::solvers::ADERDGSolver::determineCommunicationStatus(
 void exahype::solvers::ADERDGSolver::mergeWithCommunicationStatus(
     CellDescription& cellDescription,
     const int faceIndex,
-    const int otherCommunicationStatus) const {
+    const int otherCommunicationStatus) {
   assertion3(cellDescription.getCommunicationStatus()<=LeafCommunicationStatus,
              cellDescription.getCommunicationStatus(),otherCommunicationStatus,
              cellDescription.getCommunicationStatus());
@@ -86,9 +104,7 @@ exahype::solvers::ADERDGSolver::determineAugmentationStatus(
   } else {
     int max = 0;
     for (unsigned int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
-      if ( cellDescription.getNeighbourMergePerformed(i) ) {
-        max = std::max( max, cellDescription.getFacewiseAugmentationStatus(i)-1 );
-      }
+      max = std::max( max, cellDescription.getFacewiseAugmentationStatus(i)-1 );
     }
     return max;
   }
@@ -97,7 +113,7 @@ exahype::solvers::ADERDGSolver::determineAugmentationStatus(
 void exahype::solvers::ADERDGSolver::mergeWithAugmentationStatus(
     CellDescription& cellDescription,
     const int faceIndex,
-    const int otherAugmentationStatus) const {
+    const int otherAugmentationStatus) {
   assertion3(
       cellDescription.getAugmentationStatus()<=MaximumAugmentationStatus,
       cellDescription.getAugmentationStatus(),otherAugmentationStatus,
@@ -105,22 +121,15 @@ void exahype::solvers::ADERDGSolver::mergeWithAugmentationStatus(
   cellDescription.setFacewiseAugmentationStatus( faceIndex, otherAugmentationStatus );
 }
 
-void exahype::solvers::ADERDGSolver::updateRefinementStatus(
-    CellDescription&                                           cellDescription,
-    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) const {
+void exahype::solvers::ADERDGSolver::updateRefinementStatus(CellDescription& cellDescription) const {
   if ( cellDescription.getLevel()==getMaximumAdaptiveMeshLevel() ) {
-    int max = Erase;
-    if ( cellDescription.getRefinementFlag() )  {
-      max = _refineOrKeepOnFineGrid;
-    }
-    if ( cellDescription.getRefinementStatus() == getMinRefinementStatusForTroubledCell() ) {
-      max = cellDescription.getRefinementStatus();
-    }
+    int max = cellDescription.getRefinementFlag()  ?
+        _refineOrKeepOnFineGrid : Erase;
+    max = cellDescription.getRefinementStatus() == getMinRefinementStatusForTroubledCell() ?
+        getMinRefinementStatusForTroubledCell() : max;
 
     for (unsigned int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
-      if ( neighbourMergePerformed[i] ) {
-        max = std::max( max, cellDescription.getFacewiseRefinementStatus(i)-1 );
-      }
+      max = std::max( max, cellDescription.getFacewiseRefinementStatus(i)-1 );
     }
     cellDescription.setRefinementStatus(max);
   }
@@ -132,31 +141,39 @@ void exahype::solvers::ADERDGSolver::vetoParentCoarseningRequestIfNecessary(
     CellDescription& coarseGridCellDescription) {
   tarch::multicore::Lock lock(CoarseGridSemaphore);
   const bool coarseGridCellDescriptionMighRequestCoarsening  =
+      coarseGridCellDescription.getType()==CellDescription::Type::Parent ||
       coarseGridCellDescription.getType()==CellDescription::Type::ParentRequestsCoarseningA ||
       coarseGridCellDescription.getType()==CellDescription::Type::ParentRequestsCoarseningB;
   if (
       coarseGridCellDescriptionMighRequestCoarsening &&
-      isLeaf(fineGridCellDescription) &&
-      (fineGridCellDescription.getRefinementStatus() >= Keep ||
-      fineGridCellDescription.getPreviousRefinementStatus() >= Keep)
+      isLeaf(fineGridCellDescription)
   ) {
-    coarseGridCellDescription.setType(CellDescription::Type::ParentChecked); // do not request coarsening again
+    if (
+        fineGridCellDescription.getType()==CellDescription::Type::LeafInitiatesRefining ||
+        fineGridCellDescription.getType()==CellDescription::Type::LeafRefines ||
+        fineGridCellDescription.getRefinementStatus() >= Keep ||
+        fineGridCellDescription.getPreviousRefinementStatus() >= Keep
+    ) {
+      coarseGridCellDescription.setType(CellDescription::Type::ParentChecked); // do not request coarsening again
+    } else if (
+        fineGridCellDescription.getRefinementStatus() == Pending ||
+        fineGridCellDescription.getType()!=CellDescription::Type::LeafChecked ) {
+      coarseGridCellDescription.setType(CellDescription::Type::Parent); // allows to request coarsening again
+    }
   } else if (
       coarseGridCellDescriptionMighRequestCoarsening &&
       isParent(fineGridCellDescription)
   ) {
     if ( fineGridCellDescription.getType()==CellDescription::Type::ParentChecked ) { // do not request coarsening again
       coarseGridCellDescription.setType(CellDescription::Type::ParentChecked);
-    } else { // allows to request coarsening again
-      coarseGridCellDescription.setType(CellDescription::Type::Parent);
+    } else {
+      coarseGridCellDescription.setType(CellDescription::Type::Parent); // allows to request coarsening again
     }
   }
   lock.free();
 }
 
 // Allocate / deallocate
-
-
 
 void exahype::solvers::ADERDGSolver::addNewCellDescription(
     const int                                    solverNumber,
@@ -181,6 +198,7 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
   // Default AMR settings
   newCellDescription.setType(cellType);
   newCellDescription.setParentIndex(parentIndex);
+  newCellDescription.setParentType(static_cast<CellDescription::Type>(-1));
   newCellDescription.setLevel(level);
 
   newCellDescription.setAugmentationStatus(0);
@@ -250,9 +268,7 @@ void exahype::solvers::ADERDGSolver::addNewCellDescription(
   newCellDescription.setBytesPerDoFInSolution(-1);
   newCellDescription.setBytesPerDoFInUpdate(-1);
 
-  #ifdef Asserts
   newCellDescription.setCreation(CellDescription::Creation::NotSpecified);
-  #endif
 
   tarch::multicore::Lock lock(exahype::HeapSemaphore);
   cellInfo._ADERDGCellDescriptions.push_back(newCellDescription);
@@ -339,7 +355,7 @@ void exahype::solvers::ADERDGSolver::ensureNecessaryMemoryIsAllocated(
 
     if (isUseViscousFlux()) {
       // gradients of extrapolated predictor
-      const int gradientSizePerBnd = _numberOfVariables * power(_nodesPerCoordinateAxis, DIMENSIONS - 1) * DIMENSIONS_TIMES_TWO * DIMENSIONS;
+      const int gradientSizePerBnd = getBndGradQTotalSize();
       cellDescription.setExtrapolatedPredictorGradientIndex( DataHeap::getInstance().createData(gradientSizePerBnd, gradientSizePerBnd) );
       cellDescription.setExtrapolatedPredictorGradient( getDataHeapEntries(cellDescription.getExtrapolatedPredictorGradientIndex()).data() ) ;
       // touch the memory
@@ -564,6 +580,7 @@ void exahype::solvers::ADERDGSolver::adjustSolutionDuringMeshRefinement(
   const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( element != NotFound ) {
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
+
     synchroniseTimeStepping(cellDescription);
 
     const bool isInitialMeshRefinement = getMeshUpdateEvent()==MeshUpdateEvent::InitialRefinementRequested;
@@ -610,7 +627,7 @@ void exahype::solvers::ADERDGSolver::updateStatusFlags(CellDescription& cellDesc
 
   updateCommunicationStatus(cellDescription);
   updateAugmentationStatus(cellDescription);
-  updateRefinementStatus(cellDescription,cellDescription.getNeighbourMergePerformed());
+  updateRefinementStatus(cellDescription);
 
   if ( preUpdateRefinementStatus    != cellDescription.getRefinementStatus()    ) { AllSolversAreStable = false; }
   if ( preUpdateAugmentationStatus  != cellDescription.getAugmentationStatus()  ) { AllSolversAreStable = false; }
@@ -628,52 +645,53 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInEnterCell(
 
   // Fine grid cell based uniform mesh refinement.
   const int fineGridElement   = tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
-  const int coarseGridElement = tryGetElement(coarseGridCell.getCellDescriptionsIndex(),solverNumber);
   if (
       fineGridElement==exahype::solvers::Solver::NotFound &&
       fineGridVerticesEnumerator.getLevel()==_coarsestMeshLevel
   ) {
     logDebug("progressMeshRefinementInEnterCell(...)","Add new uniform grid cell at centre="<<fineGridVerticesEnumerator.getCellCenter() <<", level="<<fineGridVerticesEnumerator.getLevel() << " for solver=" << solverNumber);
 
-    addNewCell(
+    addNewLeafCell(
         fineGridCell,fineGridVerticesEnumerator,
-        multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex,
+        mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex,
         solverNumber);
     newComputeCell = true;
   }
   else if ( fineGridElement!=exahype::solvers::Solver::NotFound ) {
     CellDescription& fineGridCellDescription = getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
-
-    #ifdef Asserts
-    const tarch::la::Vector<DIMENSIONS,double> center = fineGridCellDescription.getOffset()+0.5*fineGridCellDescription.getSize();
-    #endif
-    assertion5(Vertex::equalUpToRelativeTolerance(fineGridVerticesEnumerator.getCellCenter(),center),
-               fineGridVerticesEnumerator.getCellCenter(),center,fineGridVerticesEnumerator.getLevel(),fineGridCellDescription.getLevel(),tarch::parallel::Node::getInstance().getRank());
-    assertionEquals3(fineGridVerticesEnumerator.getLevel(),fineGridCellDescription.getLevel(),fineGridVerticesEnumerator.getCellCenter(),fineGridCellDescription.getOffset()+0.5*fineGridCellDescription.getSize(),tarch::parallel::Node::getInstance().getRank());
+    ensureFineGridCoarseGridConsistency(fineGridCellDescription,coarseGridCell.getCellDescriptionsIndex()); // must come after refinement status update
 
     waitUntilCompletedLastStep(fineGridCellDescription,false,false); // wait for background jobs to complete
 
     // Update the status flags, allocate / deallocate memory
     updateStatusFlags(fineGridCellDescription);
-
-    // allocate / deallocate memory
     ensureNecessaryMemoryIsAllocated(fineGridCellDescription);
     ensureNoUnnecessaryMemoryIsAllocated(fineGridCellDescription);
 
+    finishRefinementOperation(fineGridCellDescription);
+    decideOnRefinement(fineGridCellDescription);
+
+    const int coarseGridElement = tryGetElement(coarseGridCell.getCellDescriptionsIndex(),solverNumber);
     if ( coarseGridElement != exahype::solvers::Solver::NotFound ) {
-      ensureFineGridCoarseGridConsistency(fineGridCellDescription,coarseGridCell.getCellDescriptionsIndex()); // must come after refinement status update
       CellDescription& coarseGridCellDescription = getCellDescription(
           coarseGridCell.getCellDescriptionsIndex(),coarseGridElement);
       vetoParentCoarseningRequestIfNecessary(fineGridCellDescription,coarseGridCellDescription);
     }
 
-    finishRefinementOperation(fineGridCellDescription);
-    decideOnRefinement(fineGridCellDescription);
+    // only assertions below
+    // ...
+    #ifdef Asserts
+    const tarch::la::Vector<DIMENSIONS,double> center = fineGridCellDescription.getOffset()+0.5*fineGridCellDescription.getSize();
+    #endif
+    assertion5(Vertex::equalUpToRelativeTolerance(fineGridVerticesEnumerator.getCellCenter(),center),
+        fineGridVerticesEnumerator.getCellCenter(),center,fineGridVerticesEnumerator.getLevel(),fineGridCellDescription.getLevel(),tarch::parallel::Node::getInstance().getRank());
+    assertionEquals3(fineGridVerticesEnumerator.getLevel(),fineGridCellDescription.getLevel(),fineGridVerticesEnumerator.getCellCenter(),fineGridCellDescription.getOffset()+0.5*fineGridCellDescription.getSize(),tarch::parallel::Node::getInstance().getRank());
   }
 
   // Coarse grid cell based adaptive mesh refinement operations.
   // Add new cells to the grid and veto erasing or erasing virtual children
   // requests if there are cells on the fine level.
+  const int coarseGridElement = tryGetElement(coarseGridCell.getCellDescriptionsIndex(),solverNumber);
   if ( coarseGridElement!=exahype::solvers::Solver::NotFound ) {
     CellDescription& coarseGridCellDescription = getCellDescription(
         coarseGridCell.getCellDescriptionsIndex(),coarseGridElement);
@@ -708,18 +726,18 @@ int exahype::solvers::ADERDGSolver::evaluateRefinementCriterion(
           cellDescription.getLevel());
 
   switch ( refinementControl ) {
-  case exahype::solvers::Solver::RefinementControl::Refine:
-      return _refineOrKeepOnFineGrid;
-  case exahype::solvers::Solver::RefinementControl::Keep:
-    return ( cellDescription.getLevel()==getMaximumAdaptiveMeshLevel() ) ? _refineOrKeepOnFineGrid : Keep;
-  case exahype::solvers::Solver::RefinementControl::Erase:
-    return Erase;
-  default:
-    logError("adjustSolutionDuringMeshRefinementBody(...)",
-        "unknown refinement control value=" << static_cast<int>(refinementControl) <<
-        ". Please check the return values of your refinement criterion.");
-    std::abort();
-    return Pending-1;
+    case exahype::solvers::Solver::RefinementControl::Refine:
+        return _refineOrKeepOnFineGrid;
+    case exahype::solvers::Solver::RefinementControl::Keep:
+      return ( cellDescription.getLevel()==getMaximumAdaptiveMeshLevel() ) ? _refineOrKeepOnFineGrid : Keep;
+    case exahype::solvers::Solver::RefinementControl::Erase:
+      return Erase;
+    default:
+      logError("adjustSolutionDuringMeshRefinementBody(...)",
+          "unknown refinement control value=" << static_cast<int>(refinementControl) <<
+          ". Please check the return values of your refinement criterion.");
+      std::abort();
+      return Pending-1;
   }
 }
 
@@ -731,7 +749,10 @@ void exahype::solvers::ADERDGSolver::markForRefinement(CellDescription& cellDesc
           cellDescription,solution,
           cellDescription.getTimeStamp());
 
-  if ( refinementStatus==_refineOrKeepOnFineGrid ) {
+  if (
+      refinementStatus==_refineOrKeepOnFineGrid &&
+      cellDescription.getLevel()==getMaximumAdaptiveMeshLevel()
+  ) {
     cellDescription.setRefinementFlag(true);
   }
   cellDescription.setRefinementStatus( std::max(cellDescription.getRefinementStatus(),refinementStatus) );
@@ -756,24 +777,29 @@ void exahype::solvers::ADERDGSolver::decideOnRefinement(CellDescription& fineGri
      fineGridCellDescription.getPreviousRefinementStatus() > Keep)
   ) {
     Solver::SubcellPosition subcellPosition = amr::computeSubcellPositionOfVirtualCell<CellDescription,Heap>(fineGridCellDescription);
-    CellDescription& topMostParent =
-      getCellDescription(subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
-    tarch::multicore::Lock lock(ADERDGSolver::CoarseGridSemaphore);
-    if ( topMostParent.getType()==CellDescription::Type::LeafChecked ) {
-      topMostParent.setRefinementStatus(_refineOrKeepOnFineGrid);
-      AllSolversAreStable = false;
+    // top-most parent might have been erased
+    if ( subcellPosition.parentElement != NotFound ) {
+      CellDescription& topMostParent =
+          getCellDescription(subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
+      tarch::multicore::Lock lock(ADERDGSolver::CoarseGridSemaphore);
+      if ( topMostParent.getType()==CellDescription::Type::LeafChecked ) {
+        topMostParent.setRefinementStatus(_refineOrKeepOnFineGrid);
+        AllSolversAreStable = false;
+      }
+      lock.free();
     }
-    lock.free();
   }
 }
 
-void exahype::solvers::ADERDGSolver::addNewCell(
+void exahype::solvers::ADERDGSolver::addNewLeafCell(
     exahype::Cell& fineGridCell,
     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
     const int coarseGridCellDescriptionsIndex,
     const int solverNumber) {
   logDebug("addNewCell(...)","Add new grid cell with center "<<fineGridVerticesEnumerator.getCellCenter() <<
               " at level "<<fineGridVerticesEnumerator.getLevel());
+
+  AllSolversAreStable = false;
 
   CellInfo cellInfo = fineGridCell.addNewCellDescription(
       solverNumber,
@@ -786,12 +812,10 @@ void exahype::solvers::ADERDGSolver::addNewCell(
   const int fineGridElement = cellInfo.indexOfADERDGCellDescription(solverNumber);
   CellDescription& fineGridCellDescription = cellInfo._ADERDGCellDescriptions[fineGridElement]; //TODO(Dominic): Multi-solvers: Might need to lock this?
 
-  fineGridCellDescription.setPreviousRefinementStatus(Keep);
   fineGridCellDescription.setRefinementStatus(Pending);
+  fineGridCellDescription.setPreviousRefinementStatus(Keep);
 
-  #ifdef Asserts
   fineGridCellDescription.setCreation(CellDescription::Creation::UniformRefinement);
-  #endif
 }
 
 void exahype::solvers::ADERDGSolver::addNewVirtualCellIfVirtualRefiningRequested(
@@ -800,21 +824,23 @@ void exahype::solvers::ADERDGSolver::addNewVirtualCellIfVirtualRefiningRequested
      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
      CellDescription& coarseGridCellDescription,
      const int coarseGridCellDescriptionsIndex) {
-  const int fineGridElement = tryGetElement(
-      fineGridCell.getCellDescriptionsIndex(),coarseGridCellDescription.getSolverNumber());
   // read from coarse grid
   tarch::multicore::Lock lock(CoarseGridSemaphore);
-  const bool refineVirtualCell =
+  const bool addVirtualCell =
       (coarseGridCellDescription.getType()==CellDescription::Type::LeafChecked
       || isVirtual(coarseGridCellDescription)) &&
       coarseGridCellDescription.getAugmentationStatus() >= MinimumAugmentationStatusForVirtualRefining;
   lock.free();
 
   // work on fine grid
+  const int fineGridElement = tryGetElement(
+      fineGridCell.getCellDescriptionsIndex(),coarseGridCellDescription.getSolverNumber());
   if (
-      refineVirtualCell &&
+      addVirtualCell &&
       fineGridElement == exahype::solvers::Solver::NotFound
   ) {
+    AllSolversAreStable = false;
+
     fineGridCell.addNewCellDescription( // (EmptyDescendant),None
         coarseGridCellDescription.getSolverNumber(),
         CellDescription::Type::Virtual,
@@ -852,15 +878,13 @@ bool exahype::solvers::ADERDGSolver::addNewLeafIfRefinementRequested(
         fineGridCell.getCellDescriptionsIndex(),coarseGridCellDescription.getSolverNumber());
 
     if ( fineGridElement==exahype::solvers::Solver::NotFound ) {
-      addNewCell(fineGridCell,fineGridVerticesEnumerator,
+      addNewLeafCell(fineGridCell,fineGridVerticesEnumerator,
                  coarseGridCellDescriptionsIndex,
                  coarseGridCellDescription.getSolverNumber());
       CellDescription& fineGridCellDescription =
           getCellDescriptions(fineGridCell.getCellDescriptionsIndex()).back();
       fineGridCellDescription.setType(CellDescription::LeafProlongates);
-      #ifdef Asserts
       fineGridCellDescription.setCreation(CellDescription::Creation::AdaptiveRefinement);
-      #endif
     } else {
       CellDescription& fineGridCellDescription = getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
 
@@ -883,11 +907,9 @@ bool exahype::solvers::ADERDGSolver::addNewLeafIfRefinementRequested(
       fineGridCellDescription.setCommunicationStatus(LeafCommunicationStatus);
       fineGridCellDescription.setFacewiseCommunicationStatus(0); // implicit conversion
       ensureNecessaryMemoryIsAllocated(fineGridCellDescription);
-      fineGridCellDescription.setRefinementStatus(Pending);
-      fineGridCellDescription.setPreviousRefinementStatus(Keep); // prevents that this cell is erased again
-      #ifdef Asserts
+      fineGridCellDescription.setRefinementStatus(Pending); // prevents that this cell is erased again
+      fineGridCellDescription.setPreviousRefinementStatus(Keep);
       fineGridCellDescription.setCreation(CellDescription::Creation::AdaptiveRefinement);
-      #endif
     }
     return true;
   }
@@ -931,21 +953,12 @@ void exahype::solvers::ADERDGSolver::prolongateVolumeData(
 
   fineGridCellDescription.setTimeStamp(coarseGridCellDescription.getTimeStamp());
   fineGridCellDescription.setTimeStepSize(coarseGridCellDescription.getTimeStepSize());
-
-  // TODO Dominic:
-  // During the inital mesh build where we only refine
-  // according to the PAD, we don't want to have a too broad refined area.
-  // We thus do not flag children with troubled
-  if (
-      !initialGrid &&
-      coarseGridCellDescription.getRefinementStatus()>=_minRefinementStatusForTroubledCell
-  ) {
-    fineGridCellDescription.setRefinementStatus(_minRefinementStatusForTroubledCell);
-  }
-  fineGridCellDescription.setFacewiseRefinementStatus(Pending);
 }
 
-bool checkIfStatusFlaggingHasConverged(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,unsigned char>& neighbourFlags,const int minValueToConsider) {
+// TODO(Dominic): Add to docu: Do not compute gradient via cell-centered value as virtual cell might be surrounded by empty cells
+bool exahype::solvers::ADERDGSolver::checkIfStatusFlaggingHasConverged(
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& neighbourFlags,
+    const int                                          minValueToConsider) {
   bool flaggingHasConverged = true;
   for (int d=0; d<DIMENSIONS; d++) {
     if ( neighbourFlags(2*d+1) >= minValueToConsider && neighbourFlags(2*d+0) >= minValueToConsider ) {
@@ -966,14 +979,14 @@ void exahype::solvers::ADERDGSolver::checkIfCellIsStable(
     CellDescription& cellDescription = getCellDescription(fineGridCell.getCellDescriptionsIndex(),element);
     // compute flagging gradients in inside cells
     bool flaggingHasConverged =
-        checkIfStatusFlaggingHasConverged(cellDescription.getAugmentationStatus(),0)  &&
-        checkIfStatusFlaggingHasConverged(cellDescription.getCommunicationStatus(),0);
+        checkIfStatusFlaggingHasConverged(cellDescription.getFacewiseAugmentationStatus(),0)  &&
+        checkIfStatusFlaggingHasConverged(cellDescription.getFacewiseCommunicationStatus(),0);
     // refinement status is only spread on finest level
     if (
         ( isLeaf(cellDescription) || isVirtual(cellDescription) ) &&
         cellDescription.getLevel() == getMaximumAdaptiveMeshLevel()
     ) {
-      flaggingHasConverged &= checkIfStatusFlaggingHasConverged(cellDescription.getRefinementStatus(),Pending);
+      flaggingHasConverged &= checkIfStatusFlaggingHasConverged(cellDescription.getFacewiseRefinementStatus(),Erase);
     }
 
     const bool noCoarseGridLeafCellMustRequireRefinement =
@@ -981,9 +994,12 @@ void exahype::solvers::ADERDGSolver::checkIfCellIsStable(
         cellDescription.getLevel() < getMaximumAdaptiveMeshLevel() &&
         cellDescription.getRefinementStatus()>=_refineOrKeepOnFineGrid);
     const bool noFinestGridVirtualCellMustBeReplacedByLeafCell =
-        !(isOfType(cellDescription,CellDescription::Type::Virtual) &&
+        !(isVirtual(cellDescription) &&
         cellDescription.getLevel() == getMaximumAdaptiveMeshLevel() &&
         cellDescription.getRefinementStatus() > Keep);
+    const bool noLeafCellIsNextToAnEmptyCell =
+        !(isLeaf(cellDescription) &&
+        tarch::la::min(cellDescription.getFacewiseRefinementStatus())==ADERDGSolver::EmptyStatus);
 
     const bool stable =
       flaggingHasConverged
@@ -991,6 +1007,8 @@ void exahype::solvers::ADERDGSolver::checkIfCellIsStable(
       (cellDescription.getType()==CellDescription::Type::LeafChecked  ||
       cellDescription.getType()==CellDescription::Type::ParentChecked ||
       cellDescription.getType()==CellDescription::Type::Virtual)
+      &&
+      noLeafCellIsNextToAnEmptyCell
       &&
       noCoarseGridLeafCellMustRequireRefinement
       &&
@@ -1000,22 +1018,26 @@ void exahype::solvers::ADERDGSolver::checkIfCellIsStable(
       AllSolversAreStable = false;
 
       #ifdef MonitorMeshRefinement
-      logInfo("attainedStableState(...)","cell has not attained stable state (yet):");
-      logInfo("attainedStableState(...)","type="<<cellDescription.toString(cellDescription.getType()));
-      logInfo("attainedStableState(...)","x="<<cellDescription.getOffset());
-      logInfo("attainedStableState(...)","level="<<cellDescription.getLevel());
-      logInfo("attainedStableState(...)","flaggingHasConverged="<<flaggingHasConverged);
-      logInfo("attainedStableState(...)","noCoarseGridLeafCellMustRequireRefinement="<<noCoarseGridLeafCellMustRequireRefinement);
-      logInfo("attainedStableState(...)","noFinestGridVirtualCellMustBeReplacedByLeafCell="<<noFinestGridVirtualCellMustBeReplacedByLeafCell);
-      logInfo("attainedStableState(...)","refinementStatus="<<cellDescription.getRefinementStatus());
-      logInfo("attainedStableState(...)","getFacewiseAugmentationStatus="<<cellDescription.getFacewiseAugmentationStatus());
-      logInfo("attainedStableState(...)","getFacewiseCommunicationStatus="<<cellDescription.getFacewiseCommunicationStatus());
-      logInfo("attainedStableState(...)","getFacewiseRefinementStatus="<<cellDescription.getFacewiseRefinementStatus());
-      logInfo("attainedStableState(...)","cellDescription.getCreation()="<<cellDescription.toString(cellDescription.getCreation()));
-      logInfo("attainedStableState(...)","fineGridCell.getCellDescriptionsIndex()="<<fineGridCell.getCellDescriptionsIndex());
-      logInfo("attainedStableState(...)","solver.getCoarsestMeshLevel="<<getCoarsestMeshLevel());
-      logInfo("attainedStableState(...)","solver.getMaximumAdaptiveMeshLevel="<<getMaximumAdaptiveMeshLevel());
-      logInfo("attainedStableState(...)","solver.getMaximumAdaptiveMeshDepth="<<getMaximumAdaptiveMeshDepth());
+      logInfo("checkIfCellIsStable(...)","cell has not attained stable state (yet):");
+      logInfo("checkIfCellIsStable(...)","type="<<cellDescription.toString(cellDescription.getType()));
+      logInfo("checkIfCellIsStable(...)","offset="<<cellDescription.getOffset());
+      logInfo("checkIfCellIsStable(...)","size="<<cellDescription.getSize());
+      logInfo("checkIfCellIsStable(...)","level="<<cellDescription.getLevel());
+      logInfo("checkIfCellIsStable(...)","flaggingHasConverged="<<flaggingHasConverged);
+      logInfo("checkIfCellIsStable(...)","noLeafCellIsNextToAnEmptyCell="<<noLeafCellIsNextToAnEmptyCell);
+      logInfo("checkIfCellIsStable(...)","noCoarseGridLeafCellMustRequireRefinement="<<noCoarseGridLeafCellMustRequireRefinement);
+      logInfo("checkIfCellIsStable(...)","noFinestGridVirtualCellMustBeReplacedByLeafCell="<<noFinestGridVirtualCellMustBeReplacedByLeafCell);
+      logInfo("checkIfCellIsStable(...)","getAugmentationStatus="<<cellDescription.getAugmentationStatus());
+      logInfo("checkIfCellIsStable(...)","getCommunicationStatus="<<cellDescription.getCommunicationStatus());
+      logInfo("checkIfCellIsStable(...)","getRefinementStatus="<<cellDescription.getRefinementStatus());
+      logInfo("checkIfCellIsStable(...)","getFacewiseAugmentationStatus="<<cellDescription.getFacewiseAugmentationStatus());
+      logInfo("checkIfCellIsStable(...)","getFacewiseCommunicationStatus="<<cellDescription.getFacewiseCommunicationStatus());
+      logInfo("checkIfCellIsStable(...)","getFacewiseRefinementStatus="<<cellDescription.getFacewiseRefinementStatus());
+      logInfo("checkIfCellIsStable(...)","cellDescription.getCreation="<<cellDescription.toString(cellDescription.getCreation()));
+      logInfo("checkIfCellIsStable(...)","fineGridCell.getCellDescriptionsIndex="<<fineGridCell.getCellDescriptionsIndex());
+      logInfo("checkIfCellIsStable(...)","solver.getCoarsestMeshLevel="<<getCoarsestMeshLevel());
+      logInfo("checkIfCellIsStable(...)","solver.getMaximumAdaptiveMeshLevel="<<getMaximumAdaptiveMeshLevel());
+      logInfo("checkIfCellIsStable(...)","solver.getMaximumAdaptiveMeshDepth="<<getMaximumAdaptiveMeshDepth());
       #endif
     }
   }
@@ -1028,8 +1050,7 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInLeaveCell(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
     const int solverNumber) {
-  const int fineGridElement =
-      tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
+  const int fineGridElement = tryGetElement(fineGridCell.getCellDescriptionsIndex(),solverNumber);
   if ( fineGridElement!=exahype::solvers::Solver::NotFound ) {
     CellDescription& fineGridCellDescription = getCellDescription(fineGridCell.getCellDescriptionsIndex(),fineGridElement);
 
@@ -1039,8 +1060,9 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInLeaveCell(
     // skip remainder if the refinement criterion has not been evaluated yet for a Cell
     // Reading the refinement request might result into data race but this is accepted at this point
     // as we only read and not write
-    const int coarseGridElement =
-        tryGetElement(coarseGridCell.getCellDescriptionsIndex(),solverNumber);
+    CellDescription::Type parentType = CellDescription::Type::Erased;
+    int parentAugmentationStatus     = 0;
+    const int coarseGridElement = tryGetElement(coarseGridCell.getCellDescriptionsIndex(),solverNumber);
     if ( coarseGridElement!=exahype::solvers::Solver::NotFound ) {
       assertion3(fineGridCellDescription.getParentIndex()==coarseGridCell.getCellDescriptionsIndex(),fineGridCellDescription.toString(),fineGridCell.toString(),coarseGridCell.toString()); // see mergeCellDescriptionsWithRemoteData.
 
@@ -1051,13 +1073,16 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInLeaveCell(
       restrictVolumeDataIfParentCoarsens(
           fineGridCellDescription,coarseGridCellDescription);
 
-      eraseCellDescriptionIfNecessary(
-          fineGridCellDescription,
-          fineGridCell.getCellDescriptionsIndex(),
-          fineGridElement,
-          coarseGridCellDescription.getType(),
-          coarseGridCellDescription.getAugmentationStatus());
+      parentType               = coarseGridCellDescription.getType();
+      parentAugmentationStatus = coarseGridCellDescription.getAugmentationStatus();
     }
+
+    eraseCellDescriptionIfNecessary(
+        fineGridCellDescription,
+        fineGridCell.getCellDescriptionsIndex(),
+        fineGridElement,
+        parentType,
+        parentAugmentationStatus);
   }
 
   checkIfCellIsStable(fineGridCell,fineGridVertices,fineGridVerticesEnumerator,solverNumber);
@@ -1230,27 +1255,34 @@ void exahype::solvers::ADERDGSolver::progressCoarseningOperationsInLeaveCell(Cel
   }
 }
 
+// TODO(Dominic): Assumes existence of parent
+// Must not exist in case of
+
 void exahype::solvers::ADERDGSolver::eraseCellDescriptionIfNecessary(
     CellDescription&             cellDescription,
     const int                    cellDescriptionsIndex,
     const int                    fineGridElement,
     const CellDescription::Type& parentType,
     const int                    parentAugmentationStatus) const {
-  const bool eraseVirtualCell =
+  bool eraseVirtualCell =
+      cellDescription.getType() == CellDescription::Type::Virtual &&
+      parentType==CellDescription::Type::Erased;
+  eraseVirtualCell |=
+      parentAugmentationStatus<MinimumAugmentationStatusForVirtualRefining
+      &&
+      cellDescription.getType() == CellDescription::Type::Virtual                                    &&
+      cellDescription.getCommunicationStatus() < MinimumCommunicationStatusForNeighbourCommunication
+      &&
       (cellDescription.getLevel() != getMaximumAdaptiveMeshLevel() ||
-      (cellDescription.getRefinementStatus() < Keep &&
-      cellDescription.getPreviousRefinementStatus() < Keep))
-      &&
-      cellDescription.getType() == CellDescription::Type::Virtual
-      &&
-      parentAugmentationStatus<MinimumAugmentationStatusForVirtualRefining;
-  tarch::multicore::Lock lock(CoarseGridSemaphore);
-  const bool erasingLeafCell =
+      cellDescription.getRefinementStatus() < Keep);
+
+  const bool erasingLeafCell = // see progressCoarseningOperationsInLeaveCell
       cellDescription.getType() == CellDescription::Type::LeafChecked &&
       parentType == CellDescription::Type::LeafChecked;
-  lock.free();
 
   if ( erasingLeafCell || eraseVirtualCell ) {
+    AllSolversAreStable = false;
+
     cellDescription.setType(CellDescription::Erased);
     cellDescription.setCommunicationStatus(0);
     cellDescription.setFacewiseCommunicationStatus(0); // implicit conversion
@@ -1339,23 +1371,9 @@ void exahype::solvers::ADERDGSolver::restrictVolumeDataIfParentCoarsens(
 void exahype::solvers::ADERDGSolver::ensureFineGridCoarseGridConsistency(
     CellDescription& fineGridCellDescription,
     const int coarseGridCellDescriptionsIndex) {
-
-  const int coarseGridElement = tryGetElement(coarseGridCellDescriptionsIndex,fineGridCellDescription.getSolverNumber());
-  if ( coarseGridElement!=exahype::solvers::Solver::NotFound ) {
-    assertion2(
-        fineGridCellDescription.getParentIndex()==coarseGridCellDescriptionsIndex ||
-        fineGridCellDescription.getParentIndex()==multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex,
-        coarseGridCellDescriptionsIndex,
-        fineGridCellDescription.toString());
+  fineGridCellDescription.setParentIndex(mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex);
+  if ( isValidCellDescriptionIndex(coarseGridCellDescriptionsIndex) ) {
     fineGridCellDescription.setParentIndex(coarseGridCellDescriptionsIndex);
-
-    #if defined(Asserts) || defined(Debug)
-    assertion2(coarseGridElement==exahype::solvers::Solver::NotFound || fineGridCellDescription.getParentIndex()==coarseGridCellDescriptionsIndex,
-        fineGridCellDescription.toString(), getCellDescription(coarseGridCellDescriptionsIndex,coarseGridElement).toString());
-    #endif
-
-  } else {
-    fineGridCellDescription.setParentIndex(multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
   }
 }
 
@@ -1476,7 +1494,7 @@ void exahype::solvers::ADERDGSolver::receiveCellDescriptions(
 
   for (auto& cellDescription : Heap::getInstance().getData(localCell.getCellDescriptionsIndex())) {
     resetIndicesAndFlagsOfReceivedCellDescription(
-        cellDescription,multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+        cellDescription,mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex);
   }
 }
 
@@ -1538,9 +1556,7 @@ void exahype::solvers::ADERDGSolver::resetIndicesAndFlagsOfReceivedCellDescripti
 
   cellDescription.setFacewiseRefinementStatus(Pending);
 
-  #ifdef Asserts
   cellDescription.setCreation(CellDescription::Creation::ReceivedDueToForkOrJoin);
-  #endif
 
   // background jobs
   cellDescription.setHasCompletedLastStep(true);
@@ -1579,27 +1595,6 @@ void exahype::solvers::ADERDGSolver::dropCellDescriptions(
 ////////////////////////////////////
 // MASTER <=> WORKER
 ////////////////////////////////////
-void
-exahype::solvers::ADERDGSolver::appendMasterWorkerCommunicationMetadata(
-    MetadataHeap::HeapEntries& metadata,
-    const int cellDescriptionsIndex,
-    const int solverNumber) const {
-  const int element = tryGetElement(cellDescriptionsIndex,solverNumber);
-
-  if (element!=exahype::solvers::Solver::NotFound)  {
-    CellDescription& cellDescription =
-        getCellDescription(cellDescriptionsIndex,element);
-    metadata.push_back(static_cast<int>(cellDescription.getType()));
-    metadata.push_back(cellDescription.getAugmentationStatus()); // TODO(Dominic): Add to docu: Might be merged multiple times!
-    metadata.push_back(cellDescription.getCommunicationStatus());
-    metadata.push_back(cellDescription.getRefinementStatus());
-    metadata.push_back( belongsToAMRSkeleton(cellDescription) ? 1 : 0 );
-  } else {
-    for (int i = 0; i < exahype::MasterWorkerCommunicationMetadataPerSolver; ++i) {
-      metadata.push_back(exahype::InvalidMetadataEntry); // implicit conversion
-    }
-  }
-}
 
 void exahype::solvers::ADERDGSolver::progressMeshRefinementInPrepareSendToWorker(
     const int workerRank,
@@ -1723,7 +1718,8 @@ bool exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithWorker(
 
       // we know we have received data in this case
       localCellDescription.setType(CellDescription::Type::LeafProlongates);
-      localCellDescription.setPreviousRefinementStatus(Pending);
+      localCellDescription.setRefinementStatus(receivedCellDescription.getRefinementStatus());
+      localCellDescription.setPreviousRefinementStatus(receivedCellDescription.getPreviousRefinementStatus());
       localCellDescription.setCommunicationStatus(LeafCommunicationStatus);
       localCellDescription.setFacewiseCommunicationStatus(0); // implicit conversion
 
@@ -1768,21 +1764,25 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithMaster(
     const int                                    level) {
   CellDescription& cellDescription = getCellDescription(localCellDescriptionsIndex,localElement);
   ensureFineGridCoarseGridConsistency(cellDescription,coarseGridCellDescriptionsIndex);
-  #ifdef Asserts
   cellDescription.setCreation(CellDescription::Creation::ReceivedFromWorker);
-  #endif
 
+  CellDescription::Type parentType = CellDescription::Type::Erased;
+  int parentAugmentationStatus     = 0;
   const int coarseGridElement = tryGetElement(cellDescription.getParentIndex(),cellDescription.getSolverNumber());
-  assertion1(coarseGridElement!=exahype::solvers::Solver::NotFound,cellDescription.toString());
-  CellDescription& coarseGridCellDescription = getCellDescription(cellDescription.getParentIndex(),coarseGridElement);
+  if ( coarseGridElement!=exahype::solvers::Solver::NotFound ) {
+    CellDescription& coarseGridCellDescription = getCellDescription(cellDescription.getParentIndex(),coarseGridElement);
 
-  if ( coarseGridCellDescription.getType()==CellDescription::Type::ParentCoarsens ) {
-    mergeWithWorkerOrMasterDataDueToForkOrJoin(worker,localCellDescriptionsIndex,localElement,
-        peano::heap::MessageType::MasterWorkerCommunication,x,level); // assumes blocking/copy
+      if ( coarseGridCellDescription.getType()==CellDescription::Type::ParentCoarsens ) {
+        mergeWithWorkerOrMasterDataDueToForkOrJoin(worker,localCellDescriptionsIndex,localElement,
+            peano::heap::MessageType::MasterWorkerCommunication,x,level); // assumes blocking/copy
+      }
+      restrictVolumeDataIfParentCoarsens(cellDescription,coarseGridCellDescription);
+
+      parentType               = coarseGridCellDescription.getType();
+      parentAugmentationStatus = coarseGridCellDescription.getAugmentationStatus();
   }
-  restrictVolumeDataIfParentCoarsens(cellDescription,coarseGridCellDescription);
   eraseCellDescriptionIfNecessary(cellDescription,localCellDescriptionsIndex,localElement,
-      coarseGridCellDescription.getType(),coarseGridCellDescription.getAugmentationStatus());
+      parentType,parentAugmentationStatus);
 
   // veto coarsening attempts of coarse grid cell
   if ( coarseGridElement != exahype::solvers::Solver::NotFound ) {
@@ -1795,7 +1795,8 @@ void exahype::solvers::ADERDGSolver::progressMeshRefinementInMergeWithMaster(
         cellDescription.getAugmentationStatus()>MinimumAugmentationStatusForVirtualRefining;
 
     if (
-      (coarseGridCellDescription.getType()==CellDescription::Type::ParentRequestsCoarseningA ||
+      (coarseGridCellDescription.getType()==CellDescription::Type::Parent                   ||
+      coarseGridCellDescription.getType()==CellDescription::Type::ParentRequestsCoarseningA ||
       coarseGridCellDescription.getType()==CellDescription::Type::ParentRequestsCoarseningB)
       &&
       solverRequiresVerticalCommunication

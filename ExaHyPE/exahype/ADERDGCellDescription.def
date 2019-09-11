@@ -335,9 +335,8 @@ class exahype::records::ADERDGCellDescription {
   parallelise persistent int previousRefinementStatus;
  
   /**
-   * A flag indicating cells marked by a normal refinement criterion
-   * during the time stepping. This is used as a marker for
-   * halo cell diffusion heat sources.
+   * A flag indicating cells on the finest grid that have been marked by a normal refinement criterion
+   * during the time stepping. This is used as a marker for halo cell diffusion heat sources.
    */
   parallelise persistent bool refinementFlag;
   

@@ -21,10 +21,10 @@
     ]
   },
   "shared_memory": {
-    "cores": 4,
+    "cores": 16,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
-    "background_job_consumers": 3
+    "background_job_consumers": 15
   },
   "distributed_memory": {
     "timeout": 6000,
@@ -32,7 +32,7 @@
     "buffer_size": 6400,
     "load_balancing_strategy": "hotspot",
     "node_pool_strategy": "fair",
-    "ranks_per_node": 4
+    "ranks_per_node": 16
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",
@@ -138,7 +138,7 @@
         }
       ],
     "parameters": {
-        "reference": "NLOPRUPTURE"
+        "reference": "NLOPRUPTUREPW"
       },
 
 
@@ -146,7 +146,7 @@
          {
           "type": "vtu::Cartesian::Cells::limited::Ascii",
           "name": "ConservedWriter",
-          "time": 0.0,
+          "time": 1000.0,
           "repeat": 0.1,
           "output": "./output/conserved",
           "variables": 39
@@ -155,7 +155,7 @@
           "type": "user::defined",
           "name": "TecplotWriter",
           "time": 0.0,
-          "repeat": 0.15,
+          "repeat": 0.01,
           "output": "./output/tecplot",
           "variables": 9
         }

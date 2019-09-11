@@ -5,10 +5,15 @@
 #include "peano/utils/Loop.h"
 #include "peano/grid/CellFlags.h"
 
-
-#include "multiscalelinkedcell/HangingVertexBookkeeper.h"
 #include "exahype/VertexOperations.h"
 
+/**
+ * static constexpr need to declared again when following a
+ * C++ standard before C++17.
+ */
+constexpr int exahype::mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex;
+constexpr int exahype::mappings::LevelwiseAdjacencyBookkeeping::RemoteAdjacencyIndex;
+constexpr int exahype::mappings::LevelwiseAdjacencyBookkeeping::DomainBoundaryAdjacencyIndex;
 
 peano::CommunicationSpecification   exahype::mappings::LevelwiseAdjacencyBookkeeping::communicationSpecification() const {
   return peano::CommunicationSpecification::getMinimalSpecification(true);
@@ -64,7 +69,7 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::createHangingVertex(
   const tarch::la::Vector<DIMENSIONS,int>&                   fineGridPositionOfVertex
 ) {
   VertexOperations::writeCellDescriptionsIndex(
-      fineGridVertex,multiscalelinkedcell::HangingVertexBookkeeper::createVertexLinkMapForNewVertex());
+      fineGridVertex,InvalidAdjacencyIndex);
   VertexOperations::writeADERDGCellDescriptions(
       fineGridVertex,static_cast<void*>(nullptr));
   VertexOperations::writeFiniteVolumesCellDescriptions(
@@ -82,7 +87,7 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::createInnerVertex(
   const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfVertex
 ) {
   VertexOperations::writeCellDescriptionsIndex(
-      fineGridVertex,multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+      fineGridVertex,InvalidAdjacencyIndex);
   VertexOperations::writeADERDGCellDescriptions(
       fineGridVertex,static_cast<void*>(nullptr));
   VertexOperations::writeFiniteVolumesCellDescriptions(
@@ -100,7 +105,7 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::createBoundaryVertex(
   const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfVertex
 ) {
   VertexOperations::writeCellDescriptionsIndex(
-      fineGridVertex,multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex);
+      fineGridVertex,DomainBoundaryAdjacencyIndex);
   VertexOperations::writeADERDGCellDescriptions(
       fineGridVertex,static_cast<void*>(nullptr));
   VertexOperations::writeFiniteVolumesCellDescriptions(
@@ -117,7 +122,7 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::createCell(
   const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
 ) {
   fineGridCell.setCellDescriptionsIndex(
-      multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+      InvalidAdjacencyIndex);
 }
 
 
@@ -165,7 +170,7 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::leaveCell(
 
             VertexOperations::writeCellDescriptionsIndex(
                 fineGridVertices[ fineGridVerticesEnumerator(v) ], cScalar,
-                multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex);
+                DomainBoundaryAdjacencyIndex);
           }
         enddforx
         enddforx
@@ -175,6 +180,25 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::leaveCell(
 }
 
 #ifdef Parallel
+
+tarch::la::Vector<TWO_POWER_D,int> exahype::mappings::LevelwiseAdjacencyBookkeeping::updateCellIndicesInMergeWithNeighbour(
+    const tarch::la::Vector<TWO_POWER_D,int>&  adjacentRanks,
+    const tarch::la::Vector<TWO_POWER_D,int>&  oldAdjacencyEntries) {
+  tarch::la::Vector<TWO_POWER_D,int> result;
+  for (int i=0; i<TWO_POWER_D; i++) {
+    if ( adjacentRanks(i)==tarch::parallel::Node::getInstance().getGlobalMasterRank() ) {
+      result(i) = DomainBoundaryAdjacencyIndex;
+    }
+    else if ( adjacentRanks(i)!=tarch::parallel::Node::getInstance().getRank() ) {
+      result(i) = RemoteAdjacencyIndex;
+    }
+    else {
+      result(i) = oldAdjacencyEntries(i);
+    }
+  }
+  return result;
+}
+
 void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithNeighbour(
   exahype::Vertex&  vertex,
   const exahype::Vertex&  neighbour,
@@ -185,7 +209,7 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithNeighbour(
 ) {
   VertexOperations::writeCellDescriptionsIndex(
     vertex,
-    multiscalelinkedcell::HangingVertexBookkeeper::updateCellIndicesInMergeWithNeighbour(
+    updateCellIndicesInMergeWithNeighbour(
       vertex.getAdjacentRanks(),
       VertexOperations::readCellDescriptionsIndex(vertex)
     )
@@ -210,7 +234,7 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithMaster(
   dfor2(k)
     VertexOperations::writeCellDescriptionsIndex(
       fineGridVertices[ fineGridVerticesEnumerator(k) ],
-      multiscalelinkedcell::HangingVertexBookkeeper::updateCellIndicesInMergeWithNeighbour(
+      updateCellIndicesInMergeWithNeighbour(
         fineGridVertices[ fineGridVerticesEnumerator(k) ].getAdjacentRanks(),
         VertexOperations::readCellDescriptionsIndex(fineGridVertices[ fineGridVerticesEnumerator(k) ])
       )
@@ -227,7 +251,7 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithWorker(
 ) {
   VertexOperations::writeCellDescriptionsIndex(
     localVertex,
-    multiscalelinkedcell::HangingVertexBookkeeper::updateCellIndicesInMergeWithNeighbour(
+    updateCellIndicesInMergeWithNeighbour(
       localVertex.getAdjacentRanks(),
       VertexOperations::readCellDescriptionsIndex(localVertex)
     )
@@ -256,11 +280,11 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::mergeWithRemoteDataDueToF
 ) {
   if ( exahype::State::isNewWorkerDueToForkOfExistingDomain() ) {
     dfor2(c)
-      if ( localVertex.getCellDescriptionsIndex()[cScalar] != multiscalelinkedcell::HangingVertexBookkeeper::DomainBoundaryAdjacencyIndex ) {
+      if ( localVertex.getCellDescriptionsIndex()[cScalar] != DomainBoundaryAdjacencyIndex ) {
         exahype::VertexOperations::writeCellDescriptionsIndex(
             localVertex,
             cScalar,
-            multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+            InvalidAdjacencyIndex);
         exahype::VertexOperations::writeADERDGCellDescriptions(
             localVertex,
             cScalar,
@@ -392,7 +416,7 @@ void exahype::mappings::LevelwiseAdjacencyBookkeeping::destroyCell(
     if ( !fineGridVertices[fineGridVerticesEnumerator(k) ].isHangingNode() ) {
       VertexOperations::writeCellDescriptionsIndex(
           fineGridVertices[fineGridVerticesEnumerator(k)], TWO_POWER_D-kScalar-1,
-              multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+              InvalidAdjacencyIndex);
       VertexOperations::writeADERDGCellDescriptions(
           fineGridVertices[fineGridVerticesEnumerator(k)], TWO_POWER_D-kScalar-1,nullptr);
       VertexOperations::writeFiniteVolumesCellDescriptions(

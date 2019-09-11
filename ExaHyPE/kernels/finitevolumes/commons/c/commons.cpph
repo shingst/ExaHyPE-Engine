@@ -602,7 +602,7 @@ void kernels::finitevolumes::commons::c::boundaryLayerExtraction(
       for (int i=patchBegin; i<patchEnd; ++i) {
         for (int k=0; k<ghostLayerWidth; k++) {
           std::copy_n(
-              luh+idx(j,patchBegin,i,0),
+              luh+idx(j,patchBegin+k,i,0),
               numberOfData,
               luhbnd+idx_bnd_y(j-patchBegin,k,i-patchBegin,0));
         }
@@ -632,7 +632,7 @@ void kernels::finitevolumes::commons::c::boundaryLayerExtraction(
       for (int i=patchBegin; i<patchEnd; ++i) {
         for (int k=0; k<ghostLayerWidth; k++) {
           std::copy_n(
-              luh+idx(patchBegin,j,i,0),
+              luh+idx(patchBegin+k,j,i,0),
               numberOfData,
               luhbnd+idx_bnd_z(k,j-patchBegin,i-patchBegin,0));
         }

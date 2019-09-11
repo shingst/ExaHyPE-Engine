@@ -141,15 +141,15 @@ void GPRDR::GPRDRSolver_ADERDG::boundaryValues(const double* const x,const doubl
       fluxOut[m] += weight * Fs[direction][m];
     }
   }
-  std::copy_n(stateIn,nVar,stateOut);
-  std::copy_n(fluxIn,nVar,fluxOut);
+  //std::copy_n(stateIn,nVar,stateOut);
+  //std::copy_n(fluxIn,nVar,fluxOut);
 }
 
 exahype::solvers::Solver::RefinementControl GPRDR::GPRDRSolver_ADERDG::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,double t,const int level) {
   if (tarch::la::equals(t,0.0)) {
   if(DIMENSIONS == 2){
     if(std::abs(cellCentre[0]) < 1000){
-      if(std::abs(cellCentre[1]) < 50){
+      if(std::abs(cellCentre[1]) < 1000){
 	return exahype::solvers::Solver::RefinementControl::Refine;
       }
     }

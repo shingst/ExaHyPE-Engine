@@ -29,6 +29,7 @@ class CodegeneratorModel:
                 # Optional bool parameters (may set redundant flags and default false flag)
                 "useFlux"            : solverContext["useFlux"],
                 "useFluxVect"        : solverContext["useFluxVect"],
+                "useViscousFlux"     : solverContext["useViscousFlux"],
                 "useNCP"             : solverContext["useNCP"],
                 "useNCPVect"         : solverContext["useNCPVect"],
                 "useSource"          : solverContext["useSource"],

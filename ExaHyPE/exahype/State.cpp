@@ -31,6 +31,8 @@ tarch::logging::Log exahype::State::_log("exahype::State");
 int exahype::State::CurrentBatchIteration   = 0;
 int exahype::State::NumberOfBatchIterations = 1;
 
+bool exahype::State::OneSolverRequestedLocalRecomputation = false;
+
 exahype::State::State() : Base() {
   _stateData.setMaxRefinementLevelAllowed(3);
   // I want the code to lb more aggressively, so it should not wait more than
@@ -230,10 +232,20 @@ bool exahype::State::isSecondToLastIterationOfBatchOrNoBatch()  {
   return NumberOfBatchIterations==1 || CurrentBatchIteration==NumberOfBatchIterations-2;
 }
 
+bool exahype::State::hasOneSolverRequestedLocalRecomputation() {
+  return OneSolverRequestedLocalRecomputation;
+}
+
 void exahype::State::kickOffIteration(const exahype::records::RepositoryState::Action& action,const int currentBatchIteration,const int numberOfBatchIterations) {
   switch ( action ) {
+  case exahype::records::RepositoryState::UseAdapterPredictionOrLocalRecomputation:
+    // placed here as touchVertexFirstTime might be called before beginIteration in respective mappings
+    OneSolverRequestedLocalRecomputation = exahype::solvers::Solver::oneSolverRequestedLocalRecomputation();
+    break;
   case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinement:
   case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinementOrLocalRollback:
+    // placed here as touchVertexFirstTime might be called before beginIteration in respective mappings
+    OneSolverRequestedLocalRecomputation = exahype::solvers::Solver::oneSolverRequestedLocalRecomputation();
     for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       if ( solver->getMeshUpdateEvent()==exahype::solvers::Solver::MeshUpdateEvent::RefinementRequested ) {
@@ -288,7 +300,6 @@ bool exahype::State::startAndFinishNeighbourExchangeManually(const exahype::reco
       action==exahype::records::RepositoryState::UseAdapterFusedTimeStep) &&
       predictionFusedTimeStepCondition)
       ||
-      action==exahype::records::RepositoryState::UseAdapterBroadcast ||
       action==exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages;
 }
 
@@ -306,11 +317,11 @@ void exahype::State::kickOffIteration(exahype::records::RepositoryState& reposit
   const bool manualNeighbourExchange  = startAndFinishNeighbourExchangeManually  (repositoryState.getAction(),CurrentBatchIteration % 2 == 0);
 
   if ( manualNeighbourExchange ) {
-    logDebug("kickOffIteration(...)","all heaps start to send boundary data (batch iteration="<<currentBatchIteration<<")");
-    peano::heap::AbstractHeap::allHeapsStartToSendBoundaryData(solverState.isTraversalInverted());
+    logDebug("kickOffIteration(...)","all heaps start to send boundary data (adapter="<<repositoryState.toString(repositoryState.getAction())<<",batch iteration="<<currentBatchIteration<<",isTraversalInverted="<<solverState.isTraversalInverted()<<")");
+    peano::heap::AbstractHeap::allHeapsStartToSendBoundaryData(solverState.isTraversalInverted()); // solverState is not broadcasted when we run batch
   }
   if ( manualSychronousExchange ) {
-    logDebug("kickOffIteration(...)","all heaps start to send synchronous data (batch iteration="<<currentBatchIteration<<")");
+    logDebug("kickOffIteration(...)","all heaps start to send synchronous data (adapter="<<repositoryState.toString(repositoryState.getAction())<<",batch iteration="<<currentBatchIteration<<")");
     peano::heap::AbstractHeap::allHeapsStartToSendSynchronousData();
 
     assertionEquals(tarch::parallel::Node::getGlobalMasterRank(),0);
@@ -328,7 +339,7 @@ void exahype::State::kickOffIteration(exahype::records::RepositoryState& reposit
 
   // kick off on other ranks
   if ( !tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-    kickOffIteration(repositoryState.getAction(),currentBatchIteration,repositoryState.getNumberOfIterations());
+    kickOffIteration(repositoryState.getAction(),CurrentBatchIteration,NumberOfBatchIterations);
   }
   #endif
 }
@@ -337,16 +348,13 @@ void exahype::State::kickOffIteration(exahype::records::RepositoryState& reposit
 void exahype::State::wrapUpIteration(exahype::records::RepositoryState& repositoryState, exahype::State& solverState, const int currentBatchIteration) {
   #ifdef Parallel
   const bool manualSychronousExchange = startAndFinishSynchronousExchangeManually(repositoryState.getAction(),CurrentBatchIteration == NumberOfBatchIterations-1);
-  const bool manuaNeighbourExchange   = startAndFinishNeighbourExchangeManually  (repositoryState.getAction(),CurrentBatchIteration == NumberOfBatchIterations-1 || CurrentBatchIteration % 2 != 0);
+  const bool manualNeighbourExchange   = startAndFinishNeighbourExchangeManually  (repositoryState.getAction(),CurrentBatchIteration == NumberOfBatchIterations-1 || CurrentBatchIteration % 2 != 0);
 
-  // TODO check if the order of the calls (boundary,synchronous) makes a difference
+  if ( manualNeighbourExchange ) {
+    const bool isTraversalInverted = CurrentBatchIteration % 2 == 0 ?  // info is not broadcasted after the first batch iteration
+        solverState.isTraversalInverted() : !solverState.isTraversalInverted();
 
-  if ( manuaNeighbourExchange ) {
-    bool isTraversalInverted = solverState.isTraversalInverted(); // is not broadcasted anymore
-    if ( CurrentBatchIteration % 2 != 0 ) {
-      isTraversalInverted = !isTraversalInverted;
-    }
-    logDebug("wrapUpIteration(...)","all heaps finish to send boundary data (batch iteration="<<currentBatchIteration<<")");
+    logDebug("wrapUpIteration(...)","all heaps finish to send boundary data (adapter="<<repositoryState.getAction()<<",batch iteration="<<currentBatchIteration<<",isTraversalInverted="<<isTraversalInverted<<")");
     peano::heap::AbstractHeap::allHeapsFinishedToSendBoundaryData(isTraversalInverted);
   }
   if ( manualSychronousExchange ) {

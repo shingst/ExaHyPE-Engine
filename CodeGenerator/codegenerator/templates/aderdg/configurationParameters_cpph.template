@@ -46,6 +46,8 @@ namespace {{namespaceName}} {
 
   constexpr int getBndFaceSize()      {return {{BndFaceSize}};} // == QR/QL size
   constexpr int getBndFaceTotalSize() {return {{BndFaceTotalSize}};} // == lQhbnd size
+  constexpr int getBndGradQSize()     {return {{BndFluxSize * nDim}};} // == gradQ size
+  constexpr int getBndGradQTotalSize(){return {{BndFluxTotalSize * nDim}};} // == gradQhbnd size
   constexpr int getBndFluxSize()      {return {{BndFluxSize}};} // == FR/FL size
   constexpr int getBndFluxTotalSize() {return {{BndFluxTotalSize}};} // == lFhbnd size
   
@@ -71,6 +73,10 @@ namespace {{namespaceName}} {
 {% endif %}
 {% if gradQSize > 0 %}
   constexpr int getgradQShift() {return {{shift}};}
+{% set shift = shift+gradQSize %}
+{% endif %}
+{% if gradQSize > 0 and useViscousFlux %}
+  constexpr int getgradQAvgShift() {return {{shift}};}
 {% set shift = shift+gradQSize %}
 {% endif %}
 {% if lFiSize > 0 %}
