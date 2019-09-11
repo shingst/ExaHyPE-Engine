@@ -14,4 +14,4 @@
 #include "{{pathToOptKernel}}/gemmsCPP.h"
 #include "{{pathToOptKernel}}/Kernels.h" //for the libxsmm flop counter
 
-//TODO JMG
+//No gemms used

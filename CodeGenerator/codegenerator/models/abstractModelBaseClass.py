@@ -76,11 +76,11 @@ class AbstractModelBaseClass():
         # set default context to local context if none given
         if context == None:
             context = self.context
-        loader = jinja2.FileSystemLoader(os.path.realpath(os.path.join(os.path.dirname(__file__),'..','templates')))
+        loader = jinja2.FileSystemLoader(os.path.realpath(os.path.join(os.path.dirname(__file__),"..","templates")))
         env = jinja2.Environment(loader=loader, trim_blocks=True, lstrip_blocks=True)
         if isinstance(templateName, str):
             template = env.get_template(templateName)
         else:
             template = env.get_template(os.path.join(*templateName))
-        with open(os.path.join(context['pathToOutputDirectory'],outputFilename), 'w') as output:
+        with open(os.path.join(context["pathToOutputDirectory"],outputFilename), "w") as output:
             output.write(template.render(context))

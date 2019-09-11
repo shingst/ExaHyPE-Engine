@@ -101,7 +101,6 @@ class Controller:
                 "useSplitCKVect"        : args["useSplitCKVect"]
             })
             self.config["useSourceOrNCP"] = self.config["useSource"] or self.config["useNCP"]
-            self.config["useLimiter"] = False #TODO JMG
         elif self.config["kernelType"] == "limiter":
             self.config.update( {
                 "nVar"                  : args["numberOfVariables"],
@@ -110,7 +109,6 @@ class Controller:
                 "nDof"                  : (args["order"])+1,
                 "nDofLim"               : args["limPatchSize"] if args["limPatchSize"] >=0 else 2*args["order"]+1,
                 "nDim"                  : args["dimension"],
-                "useLimiter"            : True, #TODO JMG
                 "nObs"                  : args["numberOfObservable"],
                 "ghostLayerWidth"       : args["ghostLayerWidth"],
                 "quadratureType"        : ("Gauss-Lobatto" if args["useGaussLobatto"] else "Gauss-Legendre")
@@ -206,20 +204,21 @@ class Controller:
         
         # create directory for output files if not existing
         try:
-            os.makedirs(self.config['pathToOutputDirectory'])
+            os.makedirs(self.config["pathToOutputDirectory"])
         except OSError as exception:
             if exception.errno != errno.EEXIST:
                 raise
         
         # remove all .cpp, .cpph, .c and .h files (we are in append mode!)
-        for fileName in os.listdir(self.config['pathToOutputDirectory']):
+        for fileName in os.listdir(self.config["pathToOutputDirectory"]):
             _ , ext = os.path.splitext(fileName)
             if(ext in [".cpp", ".cpph", ".c", ".h"]):
-                os.remove(self.config['pathToOutputDirectory'] + "/" + fileName)
+                os.remove(self.config["pathToOutputDirectory"] + "/" + fileName)
         
         # run the models new files
         
         self.runModel(    "kernelsHeader",            kernelsHeaderModel.KernelsHeaderModel(self.baseContext))
+        self.runModel(    "configurationParameters",  configurationParametersModel.ConfigurationParametersModel(self.baseContext))
         
         if self.config["kernelType"] in ["aderdg", "limiter"]:
             self.runModel("quadrature",               quadratureModel.QuadratureModel(self.baseContext, self))
@@ -246,12 +245,11 @@ class Controller:
             self.runModel("solutionUpdate",           fvSolutionUpdateModel.FVSolutionUpdateModel(self.baseContext, self))
         
         if self.config["kernelType"] in ["aderdg", "fv"]:
-            self.runModel("configurationParameters",  configurationParametersModel.ConfigurationParametersModel(self.baseContext))
             self.runModel("boundaryConditions",       boundaryConditionsModel.BoundaryConditionsModel(self.baseContext))
             self.runModel("stableTimeStepSize",       stableTimeStepSizeModel.StableTimeStepSizeModel(self.baseContext))
             self.runModel("adjustSolution",           adjustSolutionModel.AdjustSolutionModel(self.baseContext))
         
-        ## must be run only after all gemm have been generated
+        ## must be run only after all gemm's configurations have been generated
         gemmsContext = copy.copy(self.baseContext)
         gemmsContext["gemmList"] = self.gemmList
         self.runModel(    "gemmsCPP",                 gemmsCPPModel.GemmsCPPModel(gemmsContext))
@@ -261,7 +259,7 @@ class Controller:
         """Run the given model and if debug then print runtime"""
         start = time.perf_counter()
         model.generateCode()
-        if self.config['runtimeDebug']:
+        if self.config["runtimeDebug"]:
             t = time.perf_counter() - start
             print(name+": "+str(value))
 

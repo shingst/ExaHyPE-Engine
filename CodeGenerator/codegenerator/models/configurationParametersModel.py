@@ -118,6 +118,5 @@ class ConfigurationParametersModel(AbstractModelBaseClass):
             
             # Ghostlayer bnd buffer size (BoundaryCondition)
             self.context["luhbndSize"] = nData*nDof*nDof3D*ghostLayerWidth
-
         
         self.render((self.context["kernelType"], "configurationParameters_cpph.template"), "ConfigurationParameters.cpph")

@@ -81,7 +81,7 @@ class QuadratureModel(AbstractModelBaseClass):
         self.context["QuadratureWeights"], self.context["QuadratureNodes"] = QuadratureWeights, QuadratureNodes
         self.context["quadrature_seq"] = range(self.context["nDof"])
         
-        if(self.context["useLimiter"]):
+        if(self.context["kernelType"]=="limiter"):
             l_padSize = self.context["nDofPad"] - self.context["nDof"]
             uh2lob = MathsUtils.assembleQuadratureConversion(QuadratureNodes, OtherQuadratureNodes, self.context["nDof"]) #TODO JMG adapt when allowing Lobatto as node
             self.context["uh2lob"] = MathsUtils.matrixPadAndFlatten_ColMajor(uh2lob,l_padSize)
