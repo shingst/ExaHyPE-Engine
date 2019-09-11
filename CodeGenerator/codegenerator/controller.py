@@ -83,7 +83,7 @@ class Controller:
                 "nData"                 : args["numberOfVariables"] + args["numberOfParameters"],
                 "nDof"                  : (args["order"])+1,
                 "nDim"                  : args["dimension"],
-                "useFlux"               : (args["useFlux"] or args["useFluxVect"]),
+                "useFlux"               : (args["useFlux"] or args["useFluxVect"]) or args["useViscousFlux"],
                 "useFluxVect"           : args["useFluxVect"],
                 "useViscousFlux"        : args["useViscousFlux"],
                 "useNCP"                : (args["useNCP"] or args["useNCPVect"]),
@@ -121,7 +121,8 @@ class Controller:
                 "nData"                 : args["numberOfVariables"] + args["numberOfParameters"],
                 "nDof"                  : args["patchSize"],
                 "nDim"                  : args["dimension"],
-                "useFlux"               : args["useFlux"],
+                "useFlux"               : args["useFlux"] or args["useViscousFlux"],
+                "useViscousFlux"        : args["useViscousFlux"],
                 "useNCP"                : args["useNCP"],
                 "useSource"             : args["useSource"] or args["useFusedSource"],
                 "useFusedSource"        : args["useFusedSource"],
@@ -158,9 +159,6 @@ class Controller:
         if self.config["kernelType"] == "fv":
             if self.config["finiteVolumesType"] != "musclhancock":
                raise ValueError("Only musclhancock scheme is supported")
-        if self.config["kernelType"] in ["aderdg", "fv"]:
-           if self.config["useFlux"] and self.config["useViscousFlux"]:
-               raise ValueError("Flux and ViscousFlux are mutually exclusive")
 
 
     def printConfig(self):

@@ -195,7 +195,7 @@ double {{codeNamespace}}::solutionUpdate(
   }
 
   // 4. Source evaluation, half time step evolution increment
-{% if useFlux or useViscousFlux %}
+{% if useFlux %}
   {{m.allocateArray("tmp_F", nVarPad*nDim, setToZero=True, forceStack=True) | indent(2)}}{##}
   double* F[{{nDim}}] = {tmp_F, tmp_F + {{nVarPad}}{{", tmp_F + "~2*nVarPad if nDim==3}} };
 {% endif %}
@@ -316,8 +316,7 @@ double {{codeNamespace}}::solutionUpdate(
             Qt[n] -= tmp_F[n+{{2*nVarPad}}] * invCellSize;
           }
 {% endif %}{# nDim==3 #}
-{% endif %}{# useViscousFlux #}
-{% if useFlux %}
+{% elif useFlux %}{# useFlux but not useViscousFlux#}
           // x fluxes
           #ifdef USE_IPO
             #pragma forceinline recursive
@@ -371,7 +370,7 @@ double {{codeNamespace}}::solutionUpdate(
             Qt[n] -= tmp_F[n+{{2*nVarPad}}] * invCellSize;
           }
 {% endif %}{# nDim==3 #}
-{% endif %}{# useFlux #}
+{% endif %}{# useViscousFlux or useFlux #}
 
           // evolve boundary states
           #pragma omp simd aligned(Qt,wLx,wRx,wLy,wRy{{",wLz,wRz" if nDim == 3}}:ALIGNMENT)

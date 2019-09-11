@@ -56,7 +56,7 @@ double {{codeNamespace}}::riemannSolver(
   double s_max = maxEigenvalue;
   double s_max_dt = maxEigenvalue;
 
-{% if useViscousFlux or True %}
+{% if useViscousFlux %}
   double maxViscousEigenvalue = 0.0;
 
   // Compute penalty contribution of diffusive eigenvalues
@@ -102,7 +102,7 @@ double {{codeNamespace}}::riemannSolver(
     solver.{{solverName}}::nonConservativeProduct(Qavg, gradQ, ncp);
 {% endif %}
 
-{% if useFlux or useViscousFlux %}
+{% if useFlux %}
   {{m.allocateArray("FL_tmp", nVarPad*nDim, setToZero=True, forceStack=True) | indent(2)}}{##}
   {{m.allocateArray("FR_tmp", nVarPad*nDim, setToZero=True, forceStack=True) | indent(2)}}{##}
   double* FL[{{nDim}}]={ FL_tmp, FL_tmp+{{nVarPad}}{{", FL_tmp+"~2*nVarPad if nDim==3}} };
@@ -116,8 +116,7 @@ double {{codeNamespace}}::riemannSolver(
     #pragma forceinline recursive
   #endif
   solver.{{solverName}}::viscousFlux(qR, gradQR, FR);
-{% endif %}
-{% if useFlux %}
+{% else %}{# useFlux but not useViscousFlux #}
   #ifdef USE_IPO
     #pragma forceinline recursive
   #endif
@@ -126,12 +125,12 @@ double {{codeNamespace}}::riemannSolver(
     #pragma forceinline recursive
   #endif
   solver.{{solverName}}::flux(qR, FR);
-{% endif %}{# useFlux #}
+{% endif %}
 {% endif %}{# useFlux or useViscousFlux #}
 
   for (int n = 0; n < {{nVar}}; n++) {
     fnL[n] = 0.5 * s_max * (qL[n] - qR[n]);
-{% if useFlux or useViscousFlux %} //TODO Lukas, not if useViscousFlux?
+{% if useFlux %}
     fnL[n] += 0.5 * (FL[normalNonZero][n] + FR[normalNonZero][n]);
 {% endif %}
 
