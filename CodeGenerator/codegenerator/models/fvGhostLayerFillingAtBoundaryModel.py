@@ -17,15 +17,14 @@
 #
 # @section DESCRIPTION
 #
-# Generate the a cpp+h to include the libxsmm gemm properly
+# Generates the ghostLayerFillingAtBoundary Kernels
 #
 
 
 from .abstractModelBaseClass import AbstractModelBaseClass
 
 
-class GemmsCPPModel(AbstractModelBaseClass):
+class FVGhostLayerFillingAtBoundaryModel(AbstractModelBaseClass):
 
     def generateCode(self):
-        self.render((self.context["kernelType"], "gemmsCPP_h.template"),   "gemmsCPP.h")
-        self.render((self.context["kernelType"], "gemmsCPP_cpp.template"), "gemmsCPP.cpp")
+        self.render(("fv", "ghostLayerFillingAtBoundary_cpp.template"), "ghostLayerFillingAtBoundary.cpp")

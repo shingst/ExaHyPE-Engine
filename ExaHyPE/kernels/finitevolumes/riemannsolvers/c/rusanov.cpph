@@ -67,6 +67,7 @@ double kernels::finitevolumes::riemannsolvers::c::rusanov(
       maxViscousEigenvalue = std::max(maxViscousEigenvalue, std::abs(sR[i]));
     }
 
+    //TODO Lukas : is factor needed (and s_max+s_max_dt)
     const auto pi = std::acos(-1); // not constexpr for intel compilers
     const auto factor = std::sqrt(0.5 * pi);
 
@@ -169,7 +170,7 @@ double kernels::finitevolumes::riemannsolvers::c::rusanov(
     for (int i = 0; i < numberOfVariables; i++) {
       maxViscousEigenvalue = std::max(maxViscousEigenvalue, std::abs(sR[i]));
     }
-
+    //TODO Lukas : is factor needed (and s_max+s_max_dt)
     const auto pi = std::acos(-1); // not constexpr for intel compilers
     const auto factor = std::sqrt(0.5 * pi);
 

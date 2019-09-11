@@ -17,15 +17,16 @@
 #
 # @section DESCRIPTION
 #
-# Generate the a cpp+h to include the libxsmm gemm properly
+# Generates the solutionUpdate Kernel
 #
 
 
 from .abstractModelBaseClass import AbstractModelBaseClass
 
 
-class GemmsCPPModel(AbstractModelBaseClass):
+class FVSolutionUpdateModel(AbstractModelBaseClass):
 
     def generateCode(self):
-        self.render((self.context["kernelType"], "gemmsCPP_h.template"),   "gemmsCPP.h")
-        self.render((self.context["kernelType"], "gemmsCPP_cpp.template"), "gemmsCPP.cpp")
+        self.context["nDofGS"] = self.context["nDof"]+2*(self.context["ghostLayerWidth"]-1); # patchsize + (ghostlayers - outermost ghostlayer)
+        self.context["nDofGS3D"] = 1 if self.context["nDim"] == 2 else self.context["nDofGS"]
+        self.render(("fv", "solutionUpdate_cpp.template"), "solutionUpdate.cpp")

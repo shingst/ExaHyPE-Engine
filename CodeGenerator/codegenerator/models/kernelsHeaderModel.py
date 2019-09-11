@@ -29,5 +29,5 @@ class KernelsHeaderModel(AbstractModelBaseClass):
     def generateCode(self):
         self.context["solverNamespace"] = self.context["solverName"].split("::")[0]
         self.context["solverClass"] = self.context["solverName"].split("::")[1]
-        
-        self.render("Kernels_h.template", "Kernels.h")
+
+        self.render((self.context["kernelType"], "Kernels_h.template"), "Kernels.h")

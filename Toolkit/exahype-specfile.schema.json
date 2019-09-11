@@ -743,8 +743,8 @@
             "properties" : {
               "implementation" : {
                 "type" : "string",
-                "title" : "Use generic kernels, or implement your own kernels",
-                "enum" : ["generic", "user" ],
+                "title" : "Use generic or optimised kernels, or implement your own kernels",
+                "enum" : ["generic", "optimised", "user" ],
                 "default" : "generic"
               },
               "adjust_solution" : {
@@ -785,6 +785,14 @@
                 "title" : "Slope/Flux limiter for high order FV (not applicable with godunov scheme)",
                 "enum" : ["minmod","koren","superbee","vanalbada","mclim"],
                 "default" : "minmod"
+              },
+              "optimised_terms" : {
+                "type" : "array",
+                "title" : "Only optimised kernels: For which PDE terms should be code generated",
+                "items" : {
+                  "type" : "string",
+                  "enum" : ["fusedsource"]
+                }
               }
             }
           }, 

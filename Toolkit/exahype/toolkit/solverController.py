@@ -27,7 +27,7 @@ class SolverController:
         self.cflSafetyFactor = 0.9
 
 
-    def processModelOutput(self, output, contextsList, logger, silentCodeGen = False):
+    def processModelOutput(self, output, contextsList, logger):
         """Standard model output is (paths, context)
         
         Log the path of the generated file (== not None) using the logger and
@@ -38,7 +38,7 @@ class SolverController:
         paths, context = output
         for path in filter(None, paths):
             logger.info("Generated '"+path+"'")
-        if "codegeneratorContext" in context and not silentCodeGen:
+        if "codegeneratorContext" in context:
             logger.info("Codegenerator used, command line to get the same result: "+context["codegeneratorContext"]["commandLine"])
         contextsList.append(context)
         
@@ -78,15 +78,18 @@ class SolverController:
                     # scale the ADER-DG method's CFL safety factor according to the chosen patch size
                     aderdgContext["CFL"] = aderdgContext["CFL"] * min(self.cflADER[order], 1.0/fvContext["patchSize"]) / self.cflADER[order];
 
-                # forward patchSize information to JM's code generator that works with ADER-DG context
-                aderdgContext["patchSize"] = fvContext["patchSize"]
+                # forward informations
+                context["patchSize"] = fvContext["patchSize"]
+                context["ghostLayerWidth"] = fvContext["ghostLayerWidth"]
 
                 aderdgContext["solver"]                 = context["ADERDGSolver"]
                 aderdgContext["solverType"]             = "ADER-DG"
                 aderdgContext["abstractSolver"]         = context["ADERDGAbstractSolver"]
                 aderdgContext["numberOfDMPObservables"] = context["numberOfDMPObservables"]
                 aderdgContext["ghostLayerWidth"]        = fvContext["ghostLayerWidth"]
+                
                 self.addCodegeneratorPathAndNamespace(aderdgContext) # refresh path and namespace
+                self.addCodegeneratorPathAndNamespace(fvContext) # refresh path and namespace
                 
                 # generate all solver files
                 model = solverModel.SolverModel(fvContext)
@@ -95,8 +98,11 @@ class SolverController:
                 context["aderdgContext"] = self.processModelOutput(model.generateCode(), [], logger) #don't register context
                 if "codegeneratorContext" in context["aderdgContext"]:
                     context["codegeneratorContext"] = context["aderdgContext"]["codegeneratorContext"] #move codegencontext one up if it exists
+                    # Add missing, TODO JMG make cleaner
+                    context["basis"] = context["aderdgContext"]["basis"] 
+                    context["tempVarsOnStack"] = context["aderdgContext"]["tempVarsOnStack"]
                 model = solverModel.SolverModel(context)
-                solverContext = self.processModelOutput(model.generateCode(), solverContextsList, logger, True) # silence the code gen output since it happend earlier
+                solverContext = self.processModelOutput(model.generateCode(), solverContextsList, logger)
                 
             solverContext["plotters"] = []
             for j, plotter in enumerate(solver.get("plotters",[])):
@@ -166,7 +172,7 @@ class SolverController:
             logger.warning("Support for orders greater than 9 is currently only experimental!")
 
         context["PNPM"]                   = self.cflADER[int(solver["order"])]
-        context["numberOfDMPObservables"] = 0 # overwrite if called from LimitingADERDGSolver creation
+        context["numberOfDMPObservables"] = -1 # overwrite if called from LimitingADERDGSolver creation
 
         return context
 
@@ -181,6 +187,7 @@ class SolverController:
         context["FVSolver"]               = solver["name"]+"_FV"
         context["ADERDGAbstractSolver"]   = "Abstract"+solver["name"]+"_ADERDG"
         context["FVAbstractSolver"]       = "Abstract"+solver["name"]+"_FV"
+        self.addCodegeneratorPathAndNamespace(context)
         
         return context
 
@@ -189,7 +196,9 @@ class SolverController:
         context = self.buildBaseSolverContext(solver)
         context["type"] = "Finite-Volumes"
         context.update(self.buildFVKernelContext(solver["fv_kernel"]))
+        context.update(self.buildKernelOptimizationContext(solver["fv_kernel"], context))
         context["patchSize"] = solver.get("patch_size","default") # overwrite if called from LimitingADERDGSolver creation
+        self.addCodegeneratorPathAndNamespace(context)
         
         return context
 
@@ -222,7 +231,8 @@ class SolverController:
         ghostLayerWidth = { "godunov" : 1, "musclhancock" : 2 }
         context["finiteVolumesType"]           = kernel["scheme"].replace("robust","")
         context["ghostLayerWidth"]             = ghostLayerWidth[context["finiteVolumesType"]]
-        context["useRobustDiagonalLimiting_s"] = "true" if "robust" in kernel["scheme"] else "false"
+        context["useRobustDiagonalLimiting"] = ("robust" in kernel["scheme"])
+        context["useRobustDiagonalLimiting_s"] = "true" if context["useRobustDiagonalLimiting"] else "false"
         context["slopeLimiter"]   = kernel.get("slope_limiter","minmod")
 
         context["implementation"]  = kernel.get("implementation","generic")
@@ -282,5 +292,7 @@ class SolverController:
         return context
         
     def addCodegeneratorPathAndNamespace(self, context):
-        context["optKernelPath"]      = os.path.join("kernels", context["project"] + "_" + context["solver"])
-        context["optNamespace"]       = context["project"] + "::" + context["solver"] + "_kernels::aderdg"
+        kernelType = "aderdg" if context["type"] == "ADER-DG" else ("limiter" if context["type"] == "Limiting-ADER-DG" else "fv")
+        context["kernelType"]         = kernelType
+        context["optKernelPath"]      = os.path.join("kernels", context["project"] + "_" + context["solver"], kernelType)
+        context["optNamespace"]       = context["project"] + "::" + context["solver"] + "_kernels::"+kernelType

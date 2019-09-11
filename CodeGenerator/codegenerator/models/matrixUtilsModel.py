@@ -27,5 +27,5 @@ from .abstractModelBaseClass import AbstractModelBaseClass
 class MatrixUtilsModel(AbstractModelBaseClass):
 
     def generateCode(self):
-        if(self.context['useVectPDEs']):
-            self.render("matrixUtils_cpph.template", "matrixUtils.cpph")
+        if(self.context["useVectPDEs"]):
+            self.render(("common", "matrixUtils_cpph.template"), "matrixUtils.cpph")
