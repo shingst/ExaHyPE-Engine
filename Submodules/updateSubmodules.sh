@@ -78,11 +78,10 @@ update_others() {
 	if [ ! -d markupsafe ]; then
 		mkdir markupsafe
 	fi
-	rm -r markupsafe # there seems to be a dependency issue with jinja otherwise
 	if [ ! -f markupsafe/.git ]; then
 		echo "Initialize markupsafe submodule"
 		cd "$pathToTopLevel" # move to the top level (required for git version below 1.8.4)
-                git submodule update --init Submodules/markupsafe
+		git submodule update --init Submodules/markupsafe
 		cd "$scriptDir" #move back
 	else
 		echo "Update markupsafe submodule"
