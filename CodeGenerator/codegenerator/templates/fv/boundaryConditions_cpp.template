@@ -10,6 +10,12 @@
  * Released under the BSD 3 Open Source License.
  * For the full license text, see LICENSE.txt
  **/ #}
+{% import "subtemplates/index.template" as i with context %}
+{% macro idxX(z,y,x,n) %}{{i.index_4(z,y,x,n,nDof,ghostLayerWidth,nData)}}{% endmacro %}
+{% macro idxY(z,y,x,n) %}{{i.index_4(z,y,x,n,ghostLayerWidth,nDof,nData)}}{% endmacro %}
+{% macro idxZ(z,y,x,n) %}{{i.index_4(z,y,x,n,nDof,nDof,nData)}}{% endmacro %}
+{% set x,y,z,xM,yM,zM="x","y","z","xM","yM","zM" %}{# shortcut for the idx #}
+
 
 #include "{{pathToOptKernel}}/Kernels.h"
 
@@ -27,12 +33,6 @@ void {{codeNamespace}}::boundaryConditions(
     const int faceIndex,
     const int normalNonZero
 ) {
-  // constexpr int numberOfVariables  = SolverType::NumberOfVariables;
-  // constexpr int numberOfParameters = SolverType::NumberOfParameters;
-  // constexpr int numberOfData       = numberOfVariables+numberOfParameters;
-  // constexpr int patchSize          = SolverType::PatchSize;
-  // constexpr int ghostLayerWidth    = SolverType::GhostLayerWidth;
-
   const int orientation = faceIndex % 2; // orientation=1 if face normal follows the direction
   const int direction   = (faceIndex-orientation) / 2;
 
@@ -48,7 +48,7 @@ void {{codeNamespace}}::boundaryConditions(
           const int xM = {{ghostLayerWidth-1}}-x; // mirror index x as x=0 is (in general) further away from patch than x=ghostLayerWidth-1
           xOutside[0] = cellCentre[0] - dx * (xM*{{1.0/nDof}} + {{0.5+0.5/nDof}}); // - sign and xM
           solver.{{solverName}}::boundaryValues(xOutside, t, dt, faceIndex, normalNonZero, // mirrors stateIn DoF at boundary
-              stateIn+(((z*{{nDof}}+y)*{{ghostLayerWidth}})+xM)*{{nData}}, stateOut+(((z*{{nDof}}+y)*{{ghostLayerWidth}})+x)*{{nData}});
+              stateIn+{{idxX(z,y,xM,0)}}, stateOut+{{idxX(z,y,x,0)}});
         }
       }
     }
@@ -63,7 +63,7 @@ void {{codeNamespace}}::boundaryConditions(
           const int xM = {{ghostLayerWidth-1}}-x; // mirror index x as x=0 is (in general) further away from patch than x=ghostLayerWidth-1
           xOutside[0] = cellCentre[0] + dx * (x*{{1.0/nDof}} + {{0.5+0.5/nDof}}); // + sign and x
           solver.{{solverName}}::boundaryValues(xOutside, t, dt, faceIndex, normalNonZero, // mirrors stateIn DoF at boundary
-              stateIn+(((z*{{nDof}}+y)*{{ghostLayerWidth}})+xM)*{{nData}}, stateOut+(((z*{{nDof}}+y)*{{ghostLayerWidth}})+x)*{{nData}});
+              stateIn+{{idxX(z,y,xM,0)}}, stateOut+{{idxX(z,y,x,0)}});
         }
       }
     }
@@ -78,7 +78,7 @@ void {{codeNamespace}}::boundaryConditions(
         for (int x = 0; x < {{nDof}}; x++) {
           xOutside[0] = cellCentre[0] + dx * (x*{{1.0/nDof}} - {{0.5-0.5/nDof}});
           solver.{{solverName}}::boundaryValues(xOutside, t, dt, faceIndex, normalNonZero, // mirrors stateIn DoF at boundary
-              stateIn+(((z*{{ghostLayerWidth}}+yM)*{{nDof}})+x)*{{nData}}, stateOut+(((z*{{ghostLayerWidth}}+y)*{{nDof}})+x)*{{nData}});
+              stateIn+{{idxY(z,yM,x,0)}}, stateOut+{{idxY(z,y,x,0)}});
         }
       }
     }
@@ -93,7 +93,7 @@ void {{codeNamespace}}::boundaryConditions(
         for (int x = 0; x < {{nDof}}; x++) {
           xOutside[0] = cellCentre[0] + dx * (x*{{1.0/nDof}} - {{0.5-0.5/nDof}});
           solver.{{solverName}}::boundaryValues(xOutside, t, dt, faceIndex, normalNonZero, // mirrors stateIn DoF at boundary
-              stateIn+(((z*{{ghostLayerWidth}}+yM)*{{nDof}})+x)*{{nData}}, stateOut+(((z*{{ghostLayerWidth}}+y)*{{nDof}})+x)*{{nData}});
+              stateIn+{{idxY(z,yM,x,0)}}, stateOut+{{idxY(z,y,x,0)}});
         }
       }
     }
@@ -109,7 +109,7 @@ void {{codeNamespace}}::boundaryConditions(
         for (int x = 0; x < {{nDof}}; x++) {
           xOutside[0] = cellCentre[0] + dx * (x*{{1.0/nDof}} - {{0.5-0.5/nDof}});
           solver.{{solverName}}::boundaryValues(xOutside,t,dt,faceIndex,normalNonZero, // mirrors stateIn DoF at boundary
-              stateIn + (((zM*{{nDof}}+y)*{{nDof}})+x)*{{nData}}, stateOut+(((z*{{nDof}}+y)*{{nDof}})+x)*{{nData}});
+              stateIn+{{idxZ(zM,y,x,0)}}, stateOut+{{idxZ(z,y,x,0)}});
         }
       }
     }
@@ -124,7 +124,7 @@ void {{codeNamespace}}::boundaryConditions(
         for (int x = 0; x < {{nDof}}; x++) {
           xOutside[0] = cellCentre[0] + dx * (x*{{1.0/nDof}} - {{0.5-0.5/nDof}});
           solver.{{solverName}}::boundaryValues(xOutside,t,dt,faceIndex,normalNonZero, // mirrors stateIn DoF at boundary
-              stateIn + (((zM*{{nDof}}+y)*{{nDof}})+x)*{{nData}}, stateOut+(((z*{{nDof}}+y)*{{nDof}})+x)*{{nData}});
+              stateIn+{{idxZ(zM,y,x,0)}}, stateOut+{{idxZ(z,y,x,0)}});
         }
       }
   } 
