@@ -318,9 +318,16 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     PMPI_Comm_rank(interTeamComm, &rankInterComm);
     int team = TMPI_GetTeamNumber();
 
-    exahype::offloading::OffloadingManager::getInstance().setTMPIInterTeamCommunicator(interTeamComm);
     exahype::offloading::OffloadingManager::getInstance().setTMPITeamSize(nteams);
     exahype::offloading::OffloadingManager::getInstance().setTMPIInterTeamRank(rankInterComm);
+
+    MPI_Comm interTeamCommDupKey;
+    MPI_Comm_dup(interTeamComm, &interTeamCommDupKey);
+
+    MPI_Comm interTeamCommDupAck;
+    MPI_Comm_dup(interTeamComm, &interTeamCommDupAck);
+
+    exahype::offloading::OffloadingManager::getInstance().setTMPIInterTeamCommunicators(interTeamComm, interTeamCommDupKey, interTeamCommDupAck);
 
     logInfo("initDistributedMemoryConfiguration()", " teams: "<<nteams<<", rank in team "
     		                                         <<team<<" : "<<rank<<", team rank in intercomm: "<<rankInterComm);
@@ -1032,6 +1039,19 @@ int exahype::runners::Runner::run() {
       shutdownDistributedMemoryConfiguration();
       
 #if defined(DistributedOffloading)
+
+  for (auto* solver : exahype::solvers::RegisteredSolvers) {
+    if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
+      //static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopOffloadingManager();
+      static_cast<exahype::solvers::ADERDGSolver*>(solver)->finishOutstandingInterTeamCommunication();
+      static_cast<exahype::solvers::ADERDGSolver*>(solver)->cleanUpStaleReplicatedSTPs(true);
+      static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopOffloadingManager();
+    }
+    if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->stopOffloadingManager();
+    }
+  }
+
   exahype::offloading::OffloadingManager::getInstance().destroyMPICommunicator(); 
   logInfo("shutdownDistributedMemoryConfiguration()","destroyed MPI communicators");
 #if defined(ReplicationSaving)

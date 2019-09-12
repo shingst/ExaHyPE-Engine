@@ -199,6 +199,9 @@ public:
   static std::atomic<int> NumberOfReceiveBackJobs;
 
   static std::atomic<int> LocalStealableSTPCounter;
+
+  static std::atomic<int> AllocatedSTPsSend;
+  static std::atomic<int> AllocatedSTPsReceive;
 #endif
 
   /**
@@ -941,7 +944,8 @@ private:
         Running,
         Resume,
         Paused,
-	    Terminate
+	    Terminate,
+		Terminated
       };
 	  OffloadingManagerJob(ADERDGSolver& solver);
 	  ~OffloadingManagerJob();
@@ -954,9 +958,10 @@ private:
       void resume();
 #endif
 	  void terminate();
+    public:
+	  State 	_state;
     private:
 	  ADERDGSolver& _solver;
-	  State 	_state;
   };
 
   class ReceiveJob : public tarch::multicore::jobs::Job {
@@ -1006,6 +1011,7 @@ private:
   tbb::concurrent_hash_map<std::pair<int,int>, StealablePredictionJobData*> _mapTagRankToStolenData;
 #if defined(ReplicationSaving)
   tbb::concurrent_hash_map<std::pair<int,int>, StealablePredictionJobData*> _mapTagRankToReplicaData;
+  tbb::concurrent_hash_map<std::pair<int,int>, double*> _mapTagRankToReplicaKey;
 #endif
   tbb::concurrent_hash_map<int, CellDescription*> _mapTagToCellDesc;
   tbb::concurrent_hash_map<const CellDescription*, std::pair<int,int>> _mapCellDescToTagRank;
@@ -1089,6 +1095,16 @@ private:
 		  int tag,
 		  int rank);
 #if defined(ReplicationSaving)
+      static void sendKeyHandlerReplication(
+    	  exahype::solvers::Solver* solver,
+		  int tag,
+		  int rank);
+
+      static void sendAckHandlerReplication(
+    	  exahype::solvers::Solver* solver,
+		  int tag,
+		  int rank);
+
       static void sendHandlerReplication(
     	  exahype::solvers::Solver* solver,
 		  int tag,
@@ -1107,6 +1123,10 @@ private:
 		  int rank);
 
 #if defined(ReplicationSaving)
+      static void receiveKeyHandlerReplication(
+    	  exahype::solvers::Solver* solver,
+		  int tag,
+		  int rank);
       // call-back method: called when a job has been received from another rank
       static void receiveHandlerReplication(
     	  exahype::solvers::Solver* solver,
@@ -1118,12 +1138,18 @@ private:
   };
 
 #if defined(ReplicationSaving)
-  void cleanUpStaleReplicatedSTPs();
 
-  void sendReplicatedSTPToOtherTeams(StealablePredictionJob *job);
+  static int REQUEST_JOB_CANCEL;
+  static int REQUEST_JOB_ACK;
+
+  void sendRequestForJobAndReceive(int tag, int rank, double *key);
+
+  void sendKeyOfReplicatedSTPToOtherTeams(StealablePredictionJob *job);
+
+  void sendFullReplicatedSTPToOtherTeams(StealablePredictionJob *job);
 
   struct JobTableKey {
-	  double *center;
+	  double center[DIMENSIONS];
 	  double timestamp;
 	  int element;
 
@@ -1239,6 +1265,7 @@ private:
 
   // offloading manager job associated to the solver
   OffloadingManagerJob *_offloadingManagerJob;
+  std::atomic<bool> _offloadingManagerJobTerminated;
 
   // limit the maximum number of iprobes in progressOffloading()
   static std::atomic<int> MaxIprobesInOffloadingProgress;
@@ -2701,6 +2728,10 @@ public:
   static void setMaxNumberOfIprobesInProgressOffloading(int maxNumIprobes);
 
   static bool tryToReceiveTaskBack(exahype::solvers::ADERDGSolver* solver, const void* cellDescription = nullptr);
+
+  void finishOutstandingInterTeamCommunication();
+
+  void cleanUpStaleReplicatedSTPs(bool isFinal=false);
   /*
    * Spawns a offloading manager job and submits it as a TBB task.
    */
@@ -3225,8 +3256,7 @@ public:
         if( !cellDescription.getHasCompletedLastStep()
           && !hasTriggeredEmergency
           && myRank!=responsibleRank
-          && offloadingTreatment
-          && !hasProcessed)
+          && offloadingTreatment)
  #endif
         {
  #ifdef USE_ITAC

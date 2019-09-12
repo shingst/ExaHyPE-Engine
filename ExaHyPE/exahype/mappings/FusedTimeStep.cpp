@@ -189,7 +189,9 @@ void exahype::mappings::FusedTimeStep::beginIteration(
   {
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
       if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
+#if !defined(OffloadingUseProgressThread)
         static_cast<exahype::solvers::ADERDGSolver*>(solver)->resumeOffloadingManager();
+#endif
       }
     // Todo:
     //  if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
@@ -252,7 +254,9 @@ void exahype::mappings::FusedTimeStep::endIteration(
   {
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
       if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
+#if !defined(OffloadingUseProgressThread)
         static_cast<exahype::solvers::ADERDGSolver*>(solver)->pauseOffloadingManager();
+#endif
       }
     // Todo:
     //  if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
