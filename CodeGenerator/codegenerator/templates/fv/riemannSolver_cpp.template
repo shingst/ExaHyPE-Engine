@@ -78,10 +78,9 @@ double {{codeNamespace}}::riemannSolver(
     maxViscousEigenvalue = std::max(maxViscousEigenvalue, std::abs(sR[n]));
   }
 
-  //TODO JMG + Lukas : is factor needed (and s_max+s_max_dt)
-  const double factor = {{sqrt_half_Pi}}; //sqrt(Pi/2)
+  constexpr double factor = 1.0 / {{sqrt_half_Pi}};
 
-  s_max += 2 * factor * maxViscousEigenvalue / (dx * factor);
+  s_max += 2 * factor * maxViscousEigenvalue / dx;
   s_max_dt += 2 * maxViscousEigenvalue / dx;
 {% endif %}
 

@@ -68,7 +68,6 @@ void riemannSolverNonlinear(SolverType& solver, double* FL, double* FR,
   const double maxHyperbolicEigenvalueL = *std::max_element(LL, LL + numberOfVariables);
   const double maxHyperbolicEigenvalueR = *std::max_element(LR, LR + numberOfVariables);
   const double maxHyperbolicEigenvalue = std::max(maxHyperbolicEigenvalueL, maxHyperbolicEigenvalueR);
-  //assertion2(std::isfinite(maxHyperbolicEigenvalue), maxHyperbolicEigenvalueL, maxHyperbolicEigenvalueR);
 
   double smax = maxHyperbolicEigenvalue;
   if (useViscousFlux) {
@@ -80,7 +79,6 @@ void riemannSolverNonlinear(SolverType& solver, double* FL, double* FR,
     const double maxViscousEigenvalueL = *std::max_element(LL, LL + numberOfVariables);
     const double maxViscousEigenvalueR = *std::max_element(LR, LR + numberOfVariables);
     const double maxViscousEigenvalue  = std::max(maxViscousEigenvalueL, maxViscousEigenvalueR);
-    //assertion2(std::isfinite(maxViscousEigenvalue), maxViscousEigenvalueL, maxViscousEigenvalueR);
 
     const auto pi = std::acos(-1); // not constexpr for intel compilers
     const double factor = 2 * (2 * order + 1) / (dx[direction] * std::sqrt(0.5 * pi));
