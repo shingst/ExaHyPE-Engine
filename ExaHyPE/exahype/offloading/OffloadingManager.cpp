@@ -350,11 +350,11 @@ void exahype::offloading::OffloadingManager::progressRequests() {
 #endif
   }
 #if defined(ReplicationSaving)
-  else if (hasOutstandingRequestOfType(RequestType::sendReplica)) {
-	 progressRequestsOfType(RequestType::sendReplica);
-  }
-  else if (hasOutstandingRequestOfType(RequestType::receiveReplica)) {
+  if (hasOutstandingRequestOfType(RequestType::receiveReplica)) {
      progressRequestsOfType(RequestType::receiveReplica);
+  }
+  if (hasOutstandingRequestOfType(RequestType::sendReplica)) {
+	 progressRequestsOfType(RequestType::sendReplica);
   }
 #endif
 }
@@ -397,6 +397,15 @@ void exahype::offloading::OffloadingManager::progressAnyRequests() {
     VT_end(event_progress_sendBack);
 #endif
   }
+#if defined(ReplicationSaving)
+  //always progress both sends and receives for replica tasks!
+  if (hasOutstandingRequestOfType(RequestType::receiveReplica)) {
+     progressRequestsOfType(RequestType::receiveReplica);
+  }
+  if (hasOutstandingRequestOfType(RequestType::sendReplica)) {
+	 progressRequestsOfType(RequestType::sendReplica);
+  }
+#endif
 }
 
 bool exahype::offloading::OffloadingManager::progressReceiveBackRequests() {
@@ -440,8 +449,8 @@ bool exahype::offloading::OffloadingManager::progressRequestsOfType( RequestType
   int nRequests = _activeRequests[mapId].size();
   if(nRequests==0) {
     //logInfo("progressRequestsOfType()", "begin create req array");
-    if(type==RequestType::receiveBack)
-    createRequestArray( type, _activeRequests[mapId], _internalIdsOfActiveRequests[mapId], 10 );
+    if(type==RequestType::receiveBack || type==RequestType::sendReplica)
+      createRequestArray( type, _activeRequests[mapId], _internalIdsOfActiveRequests[mapId], 10 );
     else {
       createRequestArray( type, _activeRequests[mapId], _internalIdsOfActiveRequests[mapId] );
     }
@@ -455,6 +464,8 @@ bool exahype::offloading::OffloadingManager::progressRequestsOfType( RequestType
 
   double time = -MPI_Wtime();
   exahype::offloading::OffloadingProfiler::getInstance().beginCommunication();
+
+  logInfo("progressRequestsOfType()"," type: "<<mapId<< " nreq "<<nRequests);
 
   int ierr = MPI_Testsome(nRequests,&_activeRequests[mapId][0], &outcount, &arrOfIndices[0], MPI_STATUSES_IGNORE);
 

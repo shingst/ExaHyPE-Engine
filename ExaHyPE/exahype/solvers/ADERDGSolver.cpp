@@ -136,6 +136,9 @@ std::atomic<int> exahype::solvers::ADERDGSolver::NumberOfReceiveJobs (0);
 std::atomic<int> exahype::solvers::ADERDGSolver::NumberOfReceiveBackJobs (0);
 std::atomic<int> exahype::solvers::ADERDGSolver::LocalStealableSTPCounter (0);
 
+std::atomic<int> exahype::solvers::ADERDGSolver::CompletedSentSTPs(0);
+std::atomic<int> exahype::solvers::ADERDGSolver::SentSTPs (0);
+std::atomic<int> exahype::solvers::ADERDGSolver::AllocatedSTPs (0);
 std::atomic<int> exahype::solvers::ADERDGSolver::AllocatedSTPsSend (0);
 std::atomic<int> exahype::solvers::ADERDGSolver::AllocatedSTPsReceive (0);
 
@@ -257,8 +260,9 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
          _lastReceiveBackTag(tarch::parallel::Node::getInstance().getNumberOfNodes()),
         _offloadingManagerJob(nullptr)
 #if defined(ReplicationSaving)
-        ,_allocatedJobs(),
-	_mapJobToData()
+        ,_lastReceiveReplicaTag(tarch::parallel::Node::getInstance().getNumberOfNodes()),
+        _allocatedJobs(),
+	    _mapJobToData()
 #endif
 #endif
 {
@@ -2429,18 +2433,25 @@ void exahype::solvers::ADERDGSolver::toString (std::ostream& out) const {
 
 #if defined (ReplicationSaving)
 
+size_t exahype::solvers::ADERDGSolver::getAdditionalCurrentMemoryUsageReplication() {
+	size_t sizePerSTP = sizeof(StealablePredictionJobData) + sizeof(double) * ( getDataPerCell() + getUpdateSize() + getBndTotalSize() + getBndFluxTotalSize() );
+
+	return (AllocatedSTPsSend + AllocatedSTPsReceive) * sizePerSTP;
+}
+
 void exahype::solvers::ADERDGSolver::finishOutstandingInterTeamCommunication () {
 	MPI_Comm interTeamComm = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamCommunicatorData();
 
-	while(exahype::offloading::OffloadingManager::getInstance().hasOutstandingRequestOfType(exahype::offloading::RequestType::sendReplica)) {
-      progressOffloading(this);
+	while(exahype::offloading::OffloadingManager::getInstance().hasOutstandingRequestOfType(exahype::offloading::RequestType::sendReplica)
+	   || exahype::offloading::OffloadingManager::getInstance().hasOutstandingRequestOfType(exahype::offloading::RequestType::receiveReplica) ) {
+      progressOffloading(this, false);
 	}
 	MPI_Request request;
 
     MPI_Ibarrier(interTeamComm, &request);
     int finished = 0;
     while(!finished) {
-        progressOffloading(this);
+        progressOffloading(this, false);
         MPI_Test(&request, &finished, MPI_STATUS_IGNORE);
     }
 }
@@ -2452,7 +2463,14 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleReplicatedSTPs(bool isFinal) {
   int i = 0;
 
   logInfo("cleanUpStaleReplicatedSTPs()", "before cleanup there are "<<_allocatedJobs.unsafe_size()<<" allocated received jobs left, "<<_mapTagToReplicationSendData.size()<<" jobs to send,"
-                                            <<" allocated jobs send "<<AllocatedSTPsSend<<" allocated jobs receive "<<AllocatedSTPsReceive);
+                                            <<" allocated jobs send "<<AllocatedSTPsSend<<" allocated jobs receive "<<AllocatedSTPsReceive<<" estimated mem consumption "<<(double) getAdditionalCurrentMemoryUsageReplication()/1E9<<"GB"
+											<<" allocated stps (constructor) "<<AllocatedSTPs
+											<<" entrys in hash map "<<_mapJobToData.size()
+											<<" sent STPs "<<SentSTPs
+											<<" completed sends "<<CompletedSentSTPs
+											<<" outstanding requests "<<exahype::offloading::OffloadingManager::getInstance().getNumberOfOutstandingRequests(exahype::offloading::RequestType::sendReplica)
+											                           +exahype::offloading::OffloadingManager::getInstance().getNumberOfOutstandingRequests(exahype::offloading::RequestType::receiveReplica)
+																	   );
 
 
   while( (i< unsafe_size || isFinal) && gotOne) {
@@ -2792,12 +2810,21 @@ void exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressOffloading(i
   MaxIprobesInOffloadingProgress = maxIprobes;
 }
 
-void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDGSolver* solver) {
+void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDGSolver* solver, bool runOnMaster) {
 
+  bool canRun;
+  tarch::multicore::Lock lock(OffloadingSemaphore, false);
+#if defined(OffloadingUseProgressThread)
+  if(runOnMaster)
+    canRun = false;
+  else 
+    canRun = lock.tryLock();
+#else
   // First, we ensure here that only one thread at a time progresses offloading
   // this avoids multithreaded MPI problems
-  tarch::multicore::Lock lock(OffloadingSemaphore, false);
-  bool canRun = lock.tryLock();
+  canRun = lock.tryLock();
+#endif
+
   if(!canRun) {
 #if defined(PerformanceAnalysisOffloadingDetailed)
     watch.stopTimer();
@@ -2820,6 +2847,7 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
 
 
   // 2. make progress on any outstanding MPI communication
+  //if(!runOnMaster)
   exahype::offloading::OffloadingManager::getInstance().progressRequests();
 
   // 3. progress on performance monitor
@@ -3001,13 +3029,16 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
 #if defined(ReplicationSaving)
 #if !defined(ReplicationSavingUseHandshake)
     if(receivedReplicaTask) {
-      logInfo("progressOffloading","received replica task");
 
       int msgLenDouble = -1;
       MPI_Get_count(&statRepData, MPI_DOUBLE, &msgLenDouble);
 
       // is this message metadata? -> if true, we are about to receive a new STP task
       if(msgLenDouble==2*DIMENSIONS+3) {
+
+    	 assert(solver->_lastReceiveReplicaTag[statRepData.MPI_SOURCE]!=statRepData.MPI_TAG);
+    	 solver->_lastReceiveReplicaTag[statRepData.MPI_SOURCE] = statRepData.MPI_TAG;
+         //logInfo("progressOffloading","received replica task from "<<statRepData.MPI_SOURCE<<" , tag "<<statRepData.MPI_TAG);
          StealablePredictionJobData *data = new StealablePredictionJobData(*solver);
          AllocatedSTPsReceive++;
          MPI_Request receiveReplicaRequests[5];
@@ -3100,6 +3131,7 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
      ierr = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamCommAck, &receivedReplicaAck, &statRepAck );
      assert( ierr==MPI_SUCCESS );
 #endif
+     exahype::offloading::OffloadingManager::getInstance().progressRequests();
 #endif
   }
   time+= MPI_Wtime();
@@ -3434,7 +3466,7 @@ bool exahype::solvers::ADERDGSolver::OffloadingManagerJob::run( bool isCalledOnM
       if( isCalledOnMaster ) {
           return true; 
       }
-      exahype::solvers::ADERDGSolver::progressOffloading(&_solver);
+      exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false);
       
       //exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressOffloading( std::numeric_limits<int>::max() );
 

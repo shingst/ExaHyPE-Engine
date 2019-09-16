@@ -273,7 +273,6 @@ class exahype::offloading::OffloadingManager {
     };
   #endif
 
-    int getNumberOfOutstandingRequests(RequestType type);
 
     inline int getNextRequestId() {
       // Todo: Deal with overflow
@@ -286,6 +285,8 @@ class exahype::offloading::OffloadingManager {
     }
 
   public:
+    int getNumberOfOutstandingRequests(RequestType type);
+
 
     void printPostedRequests();
     void resetPostedRequests();

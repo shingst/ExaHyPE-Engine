@@ -200,6 +200,9 @@ public:
 
   static std::atomic<int> LocalStealableSTPCounter;
 
+  static std::atomic<int> CompletedSentSTPs;
+  static std::atomic<int> SentSTPs;
+  static std::atomic<int> AllocatedSTPs;
   static std::atomic<int> AllocatedSTPsSend;
   static std::atomic<int> AllocatedSTPsReceive;
 #endif
@@ -1000,6 +1003,8 @@ private:
 
 	  StealablePredictionJobData(ADERDGSolver& solver);
       ~StealablePredictionJobData();
+      StealablePredictionJobData(const StealablePredictionJobData&) = delete;                                      //deleted copy constructor
+      StealablePredictionJobData& operator = (const StealablePredictionJobData &) = delete;                //deleted copy assignment operator
   };
 
 
@@ -1027,6 +1032,11 @@ private:
    * receives that may be induced by MPI_Iprobe.
    */
   std::vector<int> _lastReceiveTag;
+
+#if defined(ReplicationSaving)
+  std::vector<int> _lastReceiveReplicaTag;
+#endif
+
   /**
    * See doc on _lastReceiveTag
    */
@@ -2723,11 +2733,13 @@ public:
   /*
    * Makes progress on all offloading-related MPI communication.
    */
-  static void progressOffloading(exahype::solvers::ADERDGSolver* solver);
+  static void progressOffloading(exahype::solvers::ADERDGSolver* solver, bool isCalledOnMaster);
 
   static void setMaxNumberOfIprobesInProgressOffloading(int maxNumIprobes);
 
   static bool tryToReceiveTaskBack(exahype::solvers::ADERDGSolver* solver, const void* cellDescription = nullptr);
+
+  size_t getAdditionalCurrentMemoryUsageReplication();
 
   void finishOutstandingInterTeamCommunication();
 

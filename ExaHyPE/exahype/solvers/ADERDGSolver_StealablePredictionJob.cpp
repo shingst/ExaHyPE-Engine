@@ -183,8 +183,10 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
 #if defined(ReplicationSavingUseHandshake)
       _solver.sendKeyOfReplicatedSTPToOtherTeams(this);
 #else
-    if(AllocatedSTPsSend<=exahype::offloading::PerformanceMonitor::getInstance().getTasksPerTimestep())
+    if(AllocatedSTPsSend<=exahype::offloading::PerformanceMonitor::getInstance().getTasksPerTimestep()) {
+      SentSTPs++;
       _solver.sendFullReplicatedSTPToOtherTeams(this);
+    }
 #endif
     }
     // TODO: send STP here
@@ -440,6 +442,7 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendHandlerReplicat
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToReplicationSendData.erase(a_tagToData);
   delete data;
   AllocatedSTPsSend--;
+  CompletedSentSTPs++;
   logInfo("sendHandlerReplication"," allocated stps send "<<AllocatedSTPsSend);
   a_tagToData.release();
 }
@@ -491,8 +494,12 @@ exahype::solvers::ADERDGSolver::StealablePredictionJobData::StealablePredictionJ
   _lduh(solver.getUpdateSize()),
   _lQhbnd(solver.getBndTotalSize()),
   _lFhbnd(solver.getBndFluxTotalSize())
-{};
+{
+  AllocatedSTPs++;
+};
 
-exahype::solvers::ADERDGSolver::StealablePredictionJobData::~StealablePredictionJobData() {};
+exahype::solvers::ADERDGSolver::StealablePredictionJobData::~StealablePredictionJobData() {
+  AllocatedSTPs--;
+};
 
 #endif
