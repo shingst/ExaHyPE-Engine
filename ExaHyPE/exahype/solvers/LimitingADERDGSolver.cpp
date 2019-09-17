@@ -2065,6 +2065,7 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::LimitingADERDGSo
 
       solverPatch.setTimeStamp(0);
       solverPatch.setTimeStepSize(dt);
+      solverPatch.setNeighbourMergePerformed(static_cast<unsigned char>(true));
       updateBody(solverPatch,cellInfo,true);
 
       _solver->swapSolutionAndPreviousSolution(solverPatch); // assumed  to be very cheap
@@ -2100,6 +2101,8 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::LimitingADERDGSo
 
       solverPatch.setTimeStamp(0);
       solverPatch.setTimeStepSize(dt);
+      solverPatch.setNeighbourMergePerformed(static_cast<unsigned char>(true));
+      limiterPatch.setNeighbourMergePerformed(static_cast<unsigned char>(true));
       updateBody(solverPatch,cellInfo,true);
 
       _solver->swapSolutionAndPreviousSolution(solverPatch); // assumed  to be very cheap
@@ -2136,6 +2139,8 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::LimitingADERDGSo
 
       solverPatch.setTimeStamp(0);
       solverPatch.setTimeStepSize(dt);
+      solverPatch.setNeighbourMergePerformed(static_cast<unsigned char>(true));
+      limiterPatch.setNeighbourMergePerformed(static_cast<unsigned char>(true));
       updateBody(solverPatch,cellInfo,true);
 
       _solver->swapSolutionAndPreviousSolution(solverPatch);
@@ -2172,6 +2177,8 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::LimitingADERDGSo
 
       solverPatch.setTimeStamp(0);
       solverPatch.setTimeStepSize(dt);
+      solverPatch.setNeighbourMergePerformed(static_cast<unsigned char>(true));
+      limiterPatch.setNeighbourMergePerformed(static_cast<unsigned char>(true));
       updateBody(solverPatch,cellInfo,true);
 
       _solver->swapSolutionAndPreviousSolution(solverPatch);

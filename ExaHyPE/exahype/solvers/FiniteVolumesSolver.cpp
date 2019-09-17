@@ -2100,6 +2100,7 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::FiniteVolumesSol
   {
     const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
     for (int it=0; it<numberOfRuns; it++) {
+      cellDescription.setNeighbourMergePerformed(static_cast<unsigned char>(true));
       updateBody(cellDescription,cellInfo,true,true,true,false);
 
       swapSolutionAndPreviousSolution(cellDescription); // assumed to be very cheap

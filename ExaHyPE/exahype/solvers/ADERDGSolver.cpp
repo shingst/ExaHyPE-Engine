@@ -3014,7 +3014,6 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::ADERDGSolver::me
   const double dt = cellDescription.getTimeStepSize();
 
   // ADER-DG specific setup ( all Riemanns have been performed, cell is surrounded by other Cell type cells )
-  cellDescription.setNeighbourMergePerformed(true);
   cellDescription.setAugmentationStatus(0);
   cellDescription.setFacewiseAugmentationStatus(0);
   cellDescription.setCommunicationStatus(ADERDGSolver::LeafCommunicationStatus);
@@ -3045,6 +3044,7 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::ADERDGSolver::me
   {
     const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
     for (int it=0; it<numberOfRuns; it++) {
+      cellDescription.setNeighbourMergePerformed(static_cast<unsigned char>(true));
       updateBody(cellDescription,cellInfo,true);
 
       swapSolutionAndPreviousSolution(cellDescription); // assumed to be very cheap
