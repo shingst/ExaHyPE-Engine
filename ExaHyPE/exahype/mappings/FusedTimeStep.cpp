@@ -174,6 +174,10 @@ void exahype::mappings::FusedTimeStep::beginIteration(
   }
 
   if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
+    if ( issuePredictionJobsInThisIteration() ) {
+      MPI_Sendrecv(MPI_IN_PLACE, 0, MPI_BYTE, MPI_PROC_NULL, 1, MPI_IN_PLACE, 0, MPI_BYTE, MPI_PROC_NULL, 0, MPI_COMM_SELF, MPI_STATUS_IGNORE);
+    }
+
     exahype::plotters::startPlottingIfAPlotterIsActive(
         solvers::Solver::getMinTimeStampOfAllSolvers());
   }
@@ -222,6 +226,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
   logTraceInWith1Argument("endIteration(State)", state);
 
   if ( sendOutRiemannDataInThisIteration() ) {
+    MPI_Sendrecv(MPI_IN_PLACE, 0, MPI_BYTE, MPI_PROC_NULL, -1, MPI_IN_PLACE, 0, MPI_BYTE, MPI_PROC_NULL, 0, MPI_COMM_SELF, MPI_STATUS_IGNORE);
     exahype::plotters::finishedPlotting();
 
     if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
@@ -284,6 +289,9 @@ void exahype::mappings::FusedTimeStep::touchVertexFirstTime(
                            coarseGridCell, fineGridPositionOfVertex);
 
   if ( issuePredictionJobsInThisIteration() ) {
+
+    MPI_Sendrecv(MPI_IN_PLACE, 0, MPI_BYTE, MPI_PROC_NULL, 1, MPI_IN_PLACE, 0, MPI_BYTE, MPI_PROC_NULL, 0, MPI_COMM_SELF, MPI_STATUS_IGNORE);
+
     fineGridVertex.mergeNeighbours(fineGridX,fineGridH);
   }
 
@@ -399,6 +407,9 @@ void exahype::mappings::FusedTimeStep::mergeWithNeighbour(
   logTraceInWith6Arguments( "mergeWithNeighbour(...)", vertex, neighbour, fromRank, fineGridX, fineGridH, level );
 
   if ( issuePredictionJobsInThisIteration() ) {
+ 
+    MPI_Sendrecv(MPI_IN_PLACE, 0, MPI_BYTE, MPI_PROC_NULL, 1, MPI_IN_PLACE, 0, MPI_BYTE, MPI_PROC_NULL, 0, MPI_COMM_SELF, MPI_STATUS_IGNORE);
+
     vertex.receiveNeighbourData(
         fromRank, true/*merge with data*/,exahype::State::isFirstIterationOfBatchOrNoBatch(),
         fineGridX,fineGridH,level);
