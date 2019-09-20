@@ -260,6 +260,7 @@ void exahype::State::kickOffIteration(const exahype::records::RepositoryState::A
   case exahype::records::RepositoryState::UseAdapterFusedTimeStep: {
     const bool beginFusedTimeStep = exahype::solvers::Solver::PredictionSweeps==1 || (currentBatchIteration % 2 == 0);
     if ( beginFusedTimeStep ) {
+      MPI_Sendrecv(MPI_IN_PLACE, 0, MPI_BYTE, MPI_PROC_NULL, 1, MPI_IN_PLACE, 0, MPI_BYTE, MPI_PROC_NULL, 0, MPI_COMM_SELF, MPI_STATUS_IGNORE);
       for (auto* solver : exahype::solvers::RegisteredSolvers) {
         solver->kickOffTimeStep(currentBatchIteration==0);
       }
