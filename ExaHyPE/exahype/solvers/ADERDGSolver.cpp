@@ -3469,6 +3469,10 @@ bool exahype::solvers::ADERDGSolver::OffloadingManagerJob::run( bool isCalledOnM
       }
       exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false);
       
+      if(_solver._offloadingManagerJobTriggerTerminate) {
+    	  _state = State::Terminate;
+      }
+
       //exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressOffloading( std::numeric_limits<int>::max() );
 
     //  logInfo("run()", "reschedule... ");
@@ -3521,6 +3525,7 @@ void exahype::solvers::ADERDGSolver::OffloadingManagerJob::resume() {
 void exahype::solvers::ADERDGSolver::startOffloadingManager(bool spawn) {
   logInfo("startOffloadingManager", " starting ");
   _offloadingManagerJobTerminated = false;
+  _offloadingManagerJobTriggerTerminate = false;
 #ifdef OffloadingUseProgressThread
   static tbb::task_group_context  backgroundTaskContext(tbb::task_group_context::isolated);
   _offloadingManagerJob = new( backgroundTaskContext ) OffloadingManagerJob(*this);
@@ -3563,7 +3568,8 @@ void exahype::solvers::ADERDGSolver::resumeOffloadingManager() {
 void exahype::solvers::ADERDGSolver::stopOffloadingManager() {
   logInfo("stopOffloadingManager", " stopping ");
   //assert(_offloadingManagerJob != nullptr);
-  _offloadingManagerJob->terminate();
+  _offloadingManagerJobTriggerTerminate = true;
+  //_offloadingManagerJob->terminate();
 
 #if defined(OffloadingUseProgressThread)
   while(!_offloadingManagerJobTerminated) {};

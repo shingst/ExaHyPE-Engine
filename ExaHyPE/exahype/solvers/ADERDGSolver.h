@@ -1276,6 +1276,7 @@ private:
   // offloading manager job associated to the solver
   OffloadingManagerJob *_offloadingManagerJob;
   std::atomic<bool> _offloadingManagerJobTerminated;
+  std::atomic<bool> _offloadingManagerJobTriggerTerminate;
 
   // limit the maximum number of iprobes in progressOffloading()
   static std::atomic<int> MaxIprobesInOffloadingProgress;
