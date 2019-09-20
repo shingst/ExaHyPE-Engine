@@ -52,7 +52,7 @@ double kernels::finitevolumes::godunov::c::solutionUpdate(
   constexpr int ghostLayerWidth    = SolverType::GhostLayerWidth;
   constexpr int patchBegin         = ghostLayerWidth;
   constexpr int patchEnd           = patchBegin+patchSize;
-  constexpr double cflFactor       = SolverType::CFL;
+  constexpr double cflFactor       = CFL; // This is not SolverType::CFL; see the docu.
   
   // copy old solution into temporary variable
   constexpr int sizeOfDataOnPatch = numberOfData*(patchSize+2*ghostLayerWidth)*(patchSize+2*ghostLayerWidth)*(patchSize+2*ghostLayerWidth);

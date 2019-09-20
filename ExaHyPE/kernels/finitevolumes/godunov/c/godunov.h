@@ -22,6 +22,14 @@ namespace finitevolumes {
 namespace godunov {
 namespace c {
 
+  /**
+   * This is the CFL factor for checking
+   * if the time step size estimated at the
+   * end of the last iteration is admissible.
+   *
+   * It can be chosen very close to one.
+   */
+  constexpr double CFL = 0.99;
 
   /**
    * The classic unsplit first-order (in terms of local truncation error) Godunov Finite Volumes scheme.
