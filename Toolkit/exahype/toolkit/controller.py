@@ -85,7 +85,7 @@ class Controller:
        
             self.log.info(self.header())
             logging.raiseExceptions = True # development mode
-            codegeneratorModel.CodegeneratorModel.logger = self.log #codegeneratorModel will print the associated command line
+            kernelgeneratorModel.KernelgeneratorModel.logger = self.log #kernelgeneratorModel will print the associated command line
         else:
             logging.raiseExceptions = False # production mode
         
@@ -319,8 +319,8 @@ class Controller:
         """Generate context for the KernelCalls model"""
         context = self.buildBaseContext()
         context["solvers"] = solverContextsList
-        context["codegeneratorContextsList"] = [solverContext["codegeneratorContext"] for solverContext in solverContextsList if "codegeneratorContext" in solverContext] \
-                                               + [solverContext["aderdgContext"]["codegeneratorContext"] for solverContext in solverContextsList if ("aderdgContext" in solverContext and "codegeneratorContext" in solverContext["aderdgContext"])]
+        context["kernelgeneratorContextsList"] = [solverContext["kernelgeneratorContext"] for solverContext in solverContextsList if "kernelgeneratorContext" in solverContext] \
+                                               + [solverContext["aderdgContext"]["kernelgeneratorContext"] for solverContext in solverContextsList if ("aderdgContext" in solverContext and "kernelgeneratorContext" in solverContext["aderdgContext"])]
         context["strictJSON"]            = self.strict_json
         context["specfileName"]          = self.specfileName
         context["specFileAsHex"]         = self.specfileAsHex(self.spec)

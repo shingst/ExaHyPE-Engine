@@ -1,19 +1,41 @@
+##
+# @file This file is part of the ExaHyPE project.
+# @author ExaHyPE Group (exahype@lists.lrz.de)
+#
+# @section LICENSE
+#
+# Copyright (c) 2016  http://exahype.eu
+# All rights reserved.
+#
+# The project has received funding from the European Union's Horizon
+# 2020 research and innovation programme under grant agreement
+# No 671698. For copyrights and licensing, please consult the webpage.
+#
+# Released under the BSD 3 Open Source License.
+# For the full license text, see LICENSE.txt
+#
+#
+# @section DESCRIPTION
+#
+# Generates the application-specific Makefile
+#
+
 
 import sys
 
 # add path to dependencies
 from ..configuration import Configuration
-sys.path.insert(1, Configuration.pathToCodegenerator)
-import codegenerator
+sys.path.insert(1, Configuration.pathToKernelgenerator)
+import kernelgenerator
 
 
-class CodegeneratorModel:
+class KernelgeneratorModel:
 
 
     def generateCode(self, solverContext):
-        #translation from solverContext to codegeneratorContext
+        #translation from solverContext to kernelgeneratorContext
         if solverContext["kernelType"] == "aderdg":
-            codegeneratorContext = {
+            kernelgeneratorContext = {
                 # Mandatory parameters
                 "kernelType"         : "aderdg",
                 "pathToApplication"  : solverContext["outputPath"],
@@ -47,7 +69,7 @@ class CodegeneratorModel:
                 "tempVarsOnStack"    : solverContext["tempVarsOnStack"]
             }
         elif solverContext["kernelType"] == "limiter":
-            codegeneratorContext = {
+            kernelgeneratorContext = {
                 # Mandatory parameters
                 "kernelType"         : "limiter",
                 "pathToApplication"  : solverContext["outputPath"],
@@ -68,7 +90,7 @@ class CodegeneratorModel:
                 "tempVarsOnStack"    : solverContext["tempVarsOnStack"]
             }
         elif solverContext["kernelType"] == "fv":
-            codegeneratorContext = {
+            kernelgeneratorContext = {
                 # Mandatory parameters
                 "kernelType"         : "fv",
                 "pathToApplication"  : solverContext["outputPath"],
@@ -95,12 +117,12 @@ class CodegeneratorModel:
                 "tempVarsOnStack"    : solverContext["tempVarsOnStack"]
             }
         else:
-            raise ValueError("KernelType '"+context["kernelType"]+"' not supported by the codegenerator")
-        # call the codegenerator with the given context
-        codegeneratorController = codegenerator.Controller(codegeneratorContext)
-        codegeneratorController.generateCode()
+            raise ValueError("KernelType '"+context["kernelType"]+"' not supported by the kernelgenerator")
+        # call the kernelgenerator with the given context
+        kernelgeneratorController = kernelgenerator.Controller(kernelgeneratorContext)
+        kernelgeneratorController.generateCode()
         
         # if verbose print the associated command line
-        codegeneratorContext["commandLine"] = codegeneratorController.commandLine
+        kernelgeneratorContext["commandLine"] = kernelgeneratorController.commandLine
         
-        return solverContext["optKernelPath"], codegeneratorContext
+        return solverContext["optKernelPath"], kernelgeneratorContext

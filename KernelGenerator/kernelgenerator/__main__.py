@@ -18,7 +18,7 @@
 #
 # @section DESCRIPTION
 #
-# Starting point of the code generator
+# Starting point of the kernel generator
 #
 # @note
 # requires python3
@@ -28,7 +28,7 @@ import os
 
 def main():
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),"..")))
-    from codegenerator import Controller
+    from kernelgenerator import Controller
     control = Controller()
     control.generateCode()
 

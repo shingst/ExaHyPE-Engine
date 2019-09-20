@@ -18,7 +18,7 @@
 #
 # @section DESCRIPTION
 #
-# Controller of the code generator
+# Controller of the kernel generator
 #
 # @note
 # requires python3

@@ -17,7 +17,7 @@
 #
 # @section DESCRIPTION
 #
-# Generate a ccph with getter to the parameters used by the code generator
+# Generate a ccph with getter to the parameters used by the kernel generator
 #
 
 

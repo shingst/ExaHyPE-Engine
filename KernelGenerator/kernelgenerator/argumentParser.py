@@ -133,7 +133,7 @@ class ArgumentParser:
         if len(sys.argv) < 2: # help by default
             sys.argv.append("--help")
         args = ArgumentParser.chooseArgs(sys.argv[1])
-        parser = argparse.ArgumentParser(description="This is the front end of the ExaHyPE code generator.")
+        parser = argparse.ArgumentParser(description="This is the front end of the ExaHyPE kernel generator.")
         for arg in args:
             key = arg[0]
             type = arg[1]
@@ -156,22 +156,22 @@ class ArgumentParser:
     def validateInputConfig(inputConfig):
         """Validate a config and add the default value of missing optional arguments"""
         if "kernelType" not in inputConfig:
-            raise ValueError("Cannot validate codegenerator input, kernelType missing")
+            raise ValueError("Cannot validate kernelgenerator input, kernelType missing")
         for arg in ArgumentParser.chooseArgs(inputConfig["kernelType"]):
             key  = arg[0]
             type = arg[1]
             #check mandatory and raise error if not set or wrong type
             if   type == ArgumentParser.ArgType.MandatoryString:
                 if key not in inputConfig or not isinstance(inputConfig[key], str):
-                    raise ValueError("Invalid codegenerator configuration, argument "+key+" missing or of wrong type (string expected)")
+                    raise ValueError("Invalid kernelgenerator configuration, argument "+key+" missing or of wrong type (string expected)")
             elif type == ArgumentParser.ArgType.MandatoryInt:
                 if key not in inputConfig or not isinstance(inputConfig[key], int):
-                    raise ValueError("Invalid codegenerator configuration, argument "+key+" missing or of wrong type (int expected)")
+                    raise ValueError("Invalid kernelgenerator configuration, argument "+key+" missing or of wrong type (int expected)")
             elif type == ArgumentParser.ArgType.MandatoryChoice:
                 if key not in inputConfig or not isinstance(inputConfig[key], str):
-                    raise ValueError("Invalid codegenerator configuration, argument "+key+" missing or of wrong type (int expected)")
+                    raise ValueError("Invalid kernelgenerator configuration, argument "+key+" missing or of wrong type (int expected)")
                 if inputConfig[key] not in arg[3]: #possible values
-                    raise ValueError("Invalid codegenerator configuration, argument "+key+" value not allowed, must be one of "+str(arg[3]))
+                    raise ValueError("Invalid kernelgenerator configuration, argument "+key+" value not allowed, must be one of "+str(arg[3]))
             #check optional and set it to default if not set
             elif type == ArgumentParser.ArgType.OptionalBool:
                 if key not in inputConfig:
@@ -184,9 +184,9 @@ class ArgumentParser:
     @staticmethod
     def buildCommandLineFromConfig(inputConfig):
         """Build a valid command line for the given config"""
-        commandLine = "codegenerator "
+        commandLine = "kernelgenerator "
         if "kernelType" not in inputConfig:
-            raise ValueError("Cannot validate codegenerator input, kernelType missing")
+            raise ValueError("Cannot validate kernelgenerator input, kernelType missing")
         for arg in ArgumentParser.chooseArgs(inputConfig["kernelType"]):
             key  = arg[0]
             type = arg[1]
@@ -216,4 +216,4 @@ class ArgumentParser:
             return ArgumentParser.limiterArgs
         elif kernelType == "fv":
             return ArgumentParser.fvArgs
-        raise ValueError("Cannot validate codegenerator input, kernelType '"+kernelType+"' not recognized, use -h or --help")
+        raise ValueError("Cannot validate kernelgenerator input, kernelType '"+kernelType+"' not recognized, use -h or --help")
