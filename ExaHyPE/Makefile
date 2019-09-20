@@ -516,10 +516,10 @@ ffiles.mk:
 #	ALLOW mixed language Fortran applications! C.f. SRHD, MHD, Z4
 #	To resolve the dependency problem  (compile fortran modules first), we detect them heuristically.
 	echo -n FMODULESOURCES= >> ffiles.mk
-	find -L $(PROJECT_PATH) -name '*.f90' -exec grep -il module {} \+ | tr '\n'  ' ' >> ffiles.mk
+	find -L $(PROJECT_PATH) -name '*.f90' -exec grep -il "end module" {} \+ | tr '\n'  ' ' >> ffiles.mk
 	echo >> ffiles.mk
 	echo -n FSOURCES= >> ffiles.mk
-	find -L $(PROJECT_PATH) -name '*.f90' -exec grep -iL module {} \+ | tr '\n' ' ' >> ffiles.mk
+	find -L $(PROJECT_PATH) -name '*.f90' -exec grep -iL "end module" {} \+ | tr '\n' ' ' >> ffiles.mk
 #	 only for the projects which use the old fortran kernels:
 ifneq (,$(findstring Yes, $(MIXEDLANG) ))
 	find -L $(EXAHYPE_PATH) -name '*.f90' | tr '\n' ' ' >> ffiles.mk

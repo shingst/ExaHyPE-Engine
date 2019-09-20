@@ -56,6 +56,7 @@
 #include "exahype/offloading/OffloadingAnalyser.h"
 #include "exahype/offloading/OffloadingProgressService.h"
 #include "exahype/offloading/OffloadingProfiler.h"
+#include "exahype/offloading/ReplicationStatistics.h"
 #endif
 
 #include "tarch/timing/Watch.h"
@@ -2506,6 +2507,7 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleReplicatedSTPs(bool isFinal) {
       assert(data!=nullptr);
       delete data;
       AllocatedSTPsReceive--;
+      exahype::offloading::ReplicationStatistics::getInstance().notifyLateTask();
     }
     else if (found) {
       _allocatedJobs.push(key); // the job is in the map but it contains data that may be used later
@@ -2607,7 +2609,7 @@ void exahype::solvers::ADERDGSolver::sendKeyOfReplicatedSTPToOtherTeams(Stealabl
     std::memcpy(&data->_lFhbnd[0], lFhbnd, data->_lFhbnd.size()*sizeof(double));
 
     AllocatedSTPsSend++;
-    logInfo("sendFullReplicatedSTPToOtherTeams","allocated STPs send "<<AllocatedSTPsSend );
+    logInfo("sendKeyOfReplicatedSTPToOtherTeams","allocated STPs send "<<AllocatedSTPsSend );
 
     //double *metadata = new double[2*DIMENSIONS+3];
     packMetadataToBuffer(entry, data->_metadata);
@@ -3097,21 +3099,21 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
 
     	 logInfo("progressOffloading()", "received ack handshake message: "<<buffer<<" for "
     			                       <<" center[0] = "<<data->_metadata[0]
-					       <<" center[1] = "<<data->_metadata[1]
-					       <<" center[2] = "<<data->_metadata[2]
-				               <<" time stamp = "<<data->_metadata[2*DIMENSIONS]
-					       <<" element = "<<(int) data->_metadata[2*DIMENSIONS+2]);
+					                   <<" center[1] = "<<data->_metadata[1]
+					                   <<" center[2] = "<<data->_metadata[2]
+				                       <<" time stamp = "<<data->_metadata[2*DIMENSIONS]
+					                   <<" element = "<<(int) data->_metadata[2*DIMENSIONS+2]);
 
     	 if(buffer==REQUEST_JOB_ACK) {
 
            MPI_Request *sendRequests = new MPI_Request[4];
 
            solver->isendStealablePredictionJob(&data->_luh[0],
-         		                       &data->_lduh[0],
+         		                               &data->_lduh[0],
                                                &data->_lQhbnd[0],
                                                &data->_lFhbnd[0],
                                                statRepAck.MPI_SOURCE,
-					       statRepAck.MPI_TAG,
+					                           statRepAck.MPI_TAG,
                                                interTeamComm,
                                                &sendRequests[0],
                                                nullptr);

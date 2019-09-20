@@ -26,7 +26,9 @@ ReplicationStatistics::ReplicationStatistics() :
   _executedTasks(0),
   _savedTasks(0),
   _receivedTasks(0),
-  _sentTasks(0)
+  _sentTasks(0),
+  _declinedTasks(0),
+  _lateTasks(0)
 {
 	// TODO Auto-generated constructor stub
 
@@ -39,6 +41,14 @@ ReplicationStatistics::~ReplicationStatistics() {
 ReplicationStatistics& ReplicationStatistics::getInstance() {
 	static ReplicationStatistics replicationStats;
 	return replicationStats;
+}
+
+void ReplicationStatistics::notifyLateTask() {
+	_lateTasks++;
+}
+
+void ReplicationStatistics::notifyDeclinedTask() {
+	_declinedTasks++;
 }
 
 void ReplicationStatistics::notifyReceivedTask(){
@@ -70,7 +80,9 @@ void ReplicationStatistics::printStatistics() {
 							   <<" executed tasks = "<<_executedTasks
 							   <<" saved tasks =  "<<_savedTasks
 							   <<" sent tasks = "<<_sentTasks
-							   <<" received tasks = "<<_receivedTasks);
+							   <<" received tasks = "<<_receivedTasks
+							   <<" declined tasks = "<<_declinedTasks
+							   <<" late tasks = "<<_lateTasks);
 #endif
 }
 
