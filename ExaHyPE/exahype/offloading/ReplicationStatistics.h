@@ -31,6 +31,8 @@ private:
 	std::atomic<int> _savedTasks;
 	std::atomic<int> _receivedTasks;
 	std::atomic<int> _sentTasks;
+    std::atomic<int> _declinedTasks;
+    std::atomic<int> _lateTasks;
 
 	ReplicationStatistics();
 	virtual ~ReplicationStatistics();
@@ -40,6 +42,8 @@ public:
 
     void printStatistics();
 
+    void notifyLateTask();
+    void notifyDeclinedTask();
     void notifyReceivedTask();
     void notifySentTask();
     void notifySavedTask();
