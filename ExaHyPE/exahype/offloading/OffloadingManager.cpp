@@ -307,10 +307,12 @@ void exahype::offloading::OffloadingManager::progressRequests() {
   if(lastOutputTimeStamp==0 || (MPI_Wtime()-lastOutputTimeStamp)>10) {
     lastOutputTimeStamp = MPI_Wtime();
     printPostedRequests();
-    logDebug("progressRequests()", "there are "<<getNumberOfOutstandingRequests(RequestType::send)<< " send requests remaining "
+    logInfo("progressRequests()", "there are "<<getNumberOfOutstandingRequests(RequestType::send)<< " send requests remaining "
         <<","<<getNumberOfOutstandingRequests(RequestType::receive)<<" receive requests remaining"
         <<","<<getNumberOfOutstandingRequests(RequestType::sendBack)<<" sendBack requests remaining"
-        <<","<<getNumberOfOutstandingRequests(RequestType::receiveBack)<<" receiveBack requests remaining" );
+        <<","<<getNumberOfOutstandingRequests(RequestType::receiveBack)<<" receiveBack requests remaining"
+		<<","<<getNumberOfOutstandingRequests(RequestType::sendReplica)<<" replica send requests remaining"
+		<<","<<getNumberOfOutstandingRequests(RequestType::receiveReplica)<<" replica receive requests remaining");
   }
 
   if(hasOutstandingRequestOfType(RequestType::send)) {
@@ -450,7 +452,8 @@ bool exahype::offloading::OffloadingManager::progressRequestsOfType( RequestType
   if(nRequests==0) {
     //logInfo("progressRequestsOfType()", "begin create req array");
     if(type==RequestType::receiveBack || type==RequestType::sendReplica)
-      createRequestArray( type, _activeRequests[mapId], _internalIdsOfActiveRequests[mapId], 10 );
+      createRequestArray( type, _activeRequests[mapId], _internalIdsOfActiveRequests[mapId] );
+      //createRequestArray( type, _activeRequests[mapId], _internalIdsOfActiveRequests[mapId], 10 );
     else {
       createRequestArray( type, _activeRequests[mapId], _internalIdsOfActiveRequests[mapId] );
     }

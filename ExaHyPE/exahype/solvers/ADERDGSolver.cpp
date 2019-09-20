@@ -3038,9 +3038,10 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
 
     	 assert(solver->_lastReceiveReplicaTag[statRepData.MPI_SOURCE]!=statRepData.MPI_TAG);
     	 solver->_lastReceiveReplicaTag[statRepData.MPI_SOURCE] = statRepData.MPI_TAG;
-         //logInfo("progressOffloading","received replica task from "<<statRepData.MPI_SOURCE<<" , tag "<<statRepData.MPI_TAG);
+         logInfo("progressOffloading","received replica task from "<<statRepData.MPI_SOURCE<<" , tag "<<statRepData.MPI_TAG);
          StealablePredictionJobData *data = new StealablePredictionJobData(*solver);
          AllocatedSTPsReceive++;
+         logInfo("progressOffloading", "allocated stps receive"<<AllocatedSTPsReceive);
          MPI_Request receiveReplicaRequests[5];
          solver->irecvStealablePredictionJob(
  		         data->_luh.data(),
