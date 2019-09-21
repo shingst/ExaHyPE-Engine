@@ -79,16 +79,16 @@ void exahype::mappings::DropNeighbourMessages::enterCell(
 
     // wait for completion of jobs
     if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ) {
-      const bool isAtRemoteBoundary = Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator);
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> boundaryMarkers = exahype::Cell::collectBoundaryMarkers(fineGridVertices,fineGridVerticesEnumerator);
       // ADER-DG
       for (auto& p : cellInfo._ADERDGCellDescriptions) {
         const bool waitForHighPriorityJob =
-            isAtRemoteBoundary || p.getAugmentationStatus()>=exahype::solvers::ADERDGSolver::MinimumAugmentationStatusForVirtualRefining;
+            boundaryMarkers || p.getAugmentationStatus()>=exahype::solvers::ADERDGSolver::MinimumAugmentationStatusForVirtualRefining;
         solvers::RegisteredSolvers[p.getSolverNumber()]->waitUntilCompletedLastStep(p,waitForHighPriorityJob,false);
       }
       // // FV - fused time step jobs are only spawned within batches
       // for (auto& p : cellInfo._FiniteVolumesCellDescriptions) {
-      //   const bool waitForHighPriorityJob = isAtRemoteBoundary;
+      //   const bool waitForHighPriorityJob = boundaryMarkers;
       //   solvers::Solver::waitUntilCompletedTimeStep(p,waitForHighPriorityJob,false);
       // }
     }

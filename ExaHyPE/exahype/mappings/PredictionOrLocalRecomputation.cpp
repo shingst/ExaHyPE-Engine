@@ -139,13 +139,13 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
 
   if ( fineGridCell.isInitialised() ) {
     solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
-    const bool isAtRemoteBoundary = exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator);
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> boundaryMarkers = exahype::Cell::collectBoundaryMarkers(fineGridVertices,fineGridVerticesEnumerator);
 
     for (unsigned int solverNumber=0; solverNumber<exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       if ( performLocalRecomputation( solver ) && exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
         auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-        limitingADERDG->localRecomputation(solverNumber,cellInfo,isAtRemoteBoundary);
+        limitingADERDG->localRecomputation(solverNumber,cellInfo,boundaryMarkers);
       }
       else if ( performPrediction(solver) && exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
         switch ( solver->getType() ) {

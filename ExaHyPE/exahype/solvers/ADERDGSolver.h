@@ -705,8 +705,9 @@ private:
    * @param addToUpdate add the result to the update vector
    */
   void surfaceIntegral(
-      CellDescription& cellDescription,
-      const bool       addToUpdate);
+      CellDescription&                                   cellDescription,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers,
+      const bool                                         addToUpdate);
 
   /**
    * Add the update vector to the solution vector.
@@ -762,20 +763,22 @@ private:
    * @param isLastTimeStepOfBatch   if this the last time step in a batch  (at spawn time if run by job)
    * @param predictionTimeStamp     the time stamp which should be used for the prediction (at spawn time if run by job)
    * @param predictionTimeStepSize  the time step size which should be used for the prediction (at spawn time if run by job)
+   * @param boundaryMarkers         markers that indicate where a domain or remote boundary is (see mappings::LevelwiseAdjacencyBookkeeping)
    * @param isSkeletonCell          if this cell description belongs to the MPI or AMR skeleton.
    * @param mustBeDoneImmediately   if the prediction has to be performed immediately and cannot be spawned as background job
    *
    * @note Might be called by background task. Do not synchronise time step data here.
    */
   void fusedTimeStepBody(
-      CellDescription& cellDescription,
-      CellInfo&        cellInfo,
-      const double     predictionTimeStamp,
-      const double     predictionTimeStepSize,
-      const bool       isFirstTimeStepOfBatch,
-      const bool       isLastTimeStepOfBatch,
-      const bool       isSkeletonCell,
-      const bool       mustBeDoneImmediately);
+      CellDescription&                                   cellDescription,
+      CellInfo&                                          cellInfo,
+      const double                                       predictionTimeStamp,
+      const double                                       predictionTimeStepSize,
+      const bool                                         isFirstTimeStepOfBatch,
+      const bool                                         isLastTimeStepOfBatch,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers,
+      const bool                                         isSkeletonCell,
+      const bool                                         mustBeDoneImmediately);
 
   /**
    * If the cell description is of type Leaf, update the solution, evaluate the refinement criterion,
@@ -783,14 +786,18 @@ private:
    *
    * @note Not const as kernels are not const.
    *
-   * @param cellDescription a cell description
+   * @param cellDescription         an ADER-DG cell description of type Leaf
+   * @param cellInfo                struct referring to all cell descriptions registered for a cell
+   * @param boundaryMarkers         markers that indicate where a domain or remote boundary is (see mappings::LevelwiseAdjacencyBookkeeping)
+   * @param isSkeletonCell          if this cell description belongs to the MPI or AMR skeleton.
+   * @param mustBeDoneImmediately   if the prediction has to be performed immediately and cannot be spawned as background job
    *
    * @note Might be called by background task. Do not synchronise time step data here.
    */
   void updateBody(
-      CellDescription& cellDescription,
-      CellInfo&        cellInfo,
-      const bool       isAtRemoteBoundary);
+      CellDescription&                                   cellDescription,
+      CellInfo&                                          cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers);
 
   /**
    * @return if the gradient of integer flags from opposite faces is smaller than or equal to 2.
@@ -1020,14 +1027,15 @@ private:
    */
   class FusedTimeStepJob: public tarch::multicore::jobs::Job {
     private:
-      ADERDGSolver&                                             _solver; // TODO not const because of kernels
-      CellDescription&                                          _cellDescription;
-      CellInfo                                                  _cellInfo;                // copy
-      const double                                              _predictionTimeStamp;     // copy
-      const double                                              _predictionTimeStepSize;  // copy
-      const bool                                                _isFirstTimeStepOfBatch;
-      const bool                                                _isLastTimeStepOfBatch;
-      const bool                                                _isSkeletonJob;
+      ADERDGSolver&                                      _solver; // TODO not const because of kernels
+      CellDescription&                                   _cellDescription;
+      CellInfo                                           _cellInfo;                // copy
+      const double                                       _predictionTimeStamp;     // copy
+      const double                                       _predictionTimeStepSize;  // copy
+      const bool                                         _isFirstTimeStepOfBatch;
+      const bool                                         _isLastTimeStepOfBatch;
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>  _boundaryMarkers;         // copy
+      const bool                                         _isSkeletonJob;
     public:
       /**
        * Construct a FusedTimeStepJob.
@@ -1047,14 +1055,15 @@ private:
        * @param isSkeletonJob          if the cell is a skeleton cell.
        */
       FusedTimeStepJob(
-        ADERDGSolver&    solver,
-        CellDescription& cellDescription,
-        CellInfo&        cellInfo,
-        const double     predictionTimeStamp,
-        const double     predictionTimeStepSize,
-        const bool       isFirstTimeStepOfBatch,
-        const bool       isLastTimeStepOfBatch,
-        const bool       isSkeletonJob);
+        ADERDGSolver&                                      solver,
+        CellDescription&                                   cellDescription,
+        CellInfo&                                          cellInfo,
+        const double                                       predictionTimeStamp,
+        const double                                       predictionTimeStepSize,
+        const bool                                         isFirstTimeStepOfBatch,
+        const bool                                         isLastTimeStepOfBatch,
+        const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers,
+        const bool                                         isSkeletonJob);
 
       bool run(bool runOnMasterThread) override;
       void prefetchData() override;
@@ -1070,10 +1079,10 @@ private:
    */
   class UpdateJob: public tarch::multicore::jobs::Job {
     private:
-      ADERDGSolver&    _solver; // TODO not const because of kernels
-      CellDescription& _cellDescription;
-      CellInfo         _cellInfo;
-      const bool       _isAtRemoteBoundary;
+      ADERDGSolver&                                     _solver; // TODO not const because of kernels
+      CellDescription&                                  _cellDescription;
+      CellInfo                                          _cellInfo;
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _boundaryMarkers; // copy
     public:
       /**
        * Construct a UpdateJob.
@@ -1086,10 +1095,10 @@ private:
        * @param isSkeletonJob          if the cell is a skeleton cell
        */
       UpdateJob(
-        ADERDGSolver&    solver,
-        CellDescription& cellDescription,
-        CellInfo&        cellInfo,
-        const bool       isAtRemoteBoundary);
+        ADERDGSolver&                                      solver,
+        CellDescription&                                   cellDescription,
+        CellInfo&                                          cellInfo,
+        const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers);
 
       bool run(bool runOnMasterThread) override;
       void prefetchData() override;
@@ -1788,16 +1797,16 @@ public:
   void updateGlobalObservables(const int solverNumber,CellInfo& cellInfo) final override;
 
   void fusedTimeStepOrRestrict(
-      const int  solverNumber,
-      CellInfo&  cellInfo,
-      const bool isFirstTimeStepOfBatch,
-      const bool isLastTimeStepOfBatch,
-      const bool isAtRemoteBoundary) final override;
+      const int                                          solverNumber,
+      CellInfo&                                          cellInfo,
+      const bool                                         isFirstTimeStepOfBatch,
+      const bool                                         isLastTimeStepOfBatch,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers) final override;
 
   void updateOrRestrict(
-      const int  solverNumber,
-      CellInfo&  cellInfo,
-      const bool isAtRemoteBoundary) final override;
+      const int                                          solverNumber,
+      CellInfo&                                          cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers) final override;
 
   void compress(
       const int solverNumber,
@@ -1841,9 +1850,10 @@ public:
    *                                              (Fused time stepping for nonlinear PDEs is the only time stepping variant where we need to use an update vector.)
    */
   void correction(
-      CellDescription& cellDescription,
-      const bool       isFirstTimeStep,
-      const bool       addSurfaceIntegralResultToUpdate);
+      CellDescription&                                   cellDescription,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers,
+      const bool                                         isFirstTimeStep,
+      const bool                                         addSurfaceIntegralResultToUpdate);
 
   /**
    * TODO(Dominic): Update docu.

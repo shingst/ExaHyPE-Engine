@@ -103,6 +103,23 @@ tarch::la::Vector<DIMENSIONS,double> exahype::Cell::computeFaceBarycentre(
   return faceBarycentre;
 }
 
+tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> exahype::Cell::collectBoundaryMarkers(
+    exahype::Vertex* const verticesAroundCell,
+    const peano::grid::VertexEnumerator& verticesEnumerator) {
+  tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> result(mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex); // TODO(Dominic):
+  tarch::la::Vector<DIMENSIONS,int> center(1);
+  dfor2(v) // Loop over vertices.
+    dfor2(a) // Loop over adjacent cells. Does include current cell ("verticesAroundCell").
+      const tarch::la::Vector<DIMENSIONS,int> position = v+a;
+      if ( tarch::la::countEqualEntries(position,center)==DIMENSIONS-1 ) { // offset in one direction from center=>face neighbour
+        solvers::Solver::BoundaryFaceInfo face(center,position);
+        result[ face._faceIndex ] = verticesAroundCell[ verticesEnumerator(v) ].getCellDescriptionsIndex(aScalar);
+      }
+    enddforx //a
+  enddforx // v
+  return result;
+}
+
 bool exahype::Cell::isAtRemoteBoundary(
     exahype::Vertex* const verticesAroundCell,
     const peano::grid::VertexEnumerator& verticesEnumerator) {

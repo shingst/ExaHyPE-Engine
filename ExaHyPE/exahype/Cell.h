@@ -136,6 +136,19 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
       const int direction, const int orientation);
 
   /**
+   * Collect the boundary markers (special cell descriptions indices) from the surrounding
+   * vertices.
+   *
+   * @return Per face
+   *
+   * @param verticesAroundCell
+   * @param verticesEnumerator
+   */
+  static tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> collectBoundaryMarkers(
+      exahype::Vertex* const verticesAroundCell,
+      const peano::grid::VertexEnumerator& verticesEnumerator);
+
+  /**
    * Returns true if the cell corresponding
    * to the vertices \p verticesAroundCell
    * is neighbour to a remote rank

@@ -6,10 +6,10 @@
 
 
 exahype::solvers::LimitingADERDGSolver::LocalRecomputationJob::LocalRecomputationJob(
-  LimitingADERDGSolver& solver,
-  SolverPatch&          solverPatch,
-  CellInfo&             cellInfo,
-  const bool            isAtRemoteBoundary):
+  LimitingADERDGSolver&                              solver,
+  SolverPatch&                                       solverPatch,
+  CellInfo&                                          cellInfo,
+  const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers):
   tarch::multicore::jobs::Job(
       tarch::multicore::jobs::JobType::BackgroundTask,0,
       getHighPriorityTaskPriority()
@@ -17,13 +17,13 @@ exahype::solvers::LimitingADERDGSolver::LocalRecomputationJob::LocalRecomputatio
   _solver(solver),
   _solverPatch(solverPatch),
   _cellInfo(cellInfo),
-  _isAtRemoteBoundary(isAtRemoteBoundary) {
+  _boundaryMarkers(boundaryMarkers) {
   NumberOfReductionJobs.fetch_add(1);
 }
 
 bool exahype::solvers::LimitingADERDGSolver::LocalRecomputationJob::run(bool runOnMasterThread) {
   double admissibleTimeStepSize =
-      _solver.localRecomputationBody(_solverPatch,_cellInfo,_isAtRemoteBoundary);
+      _solver.localRecomputationBody(_solverPatch,_cellInfo,_boundaryMarkers);
 
   _solver.updateAdmissibleTimeStepSize(admissibleTimeStepSize);
 

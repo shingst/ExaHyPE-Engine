@@ -691,14 +691,15 @@ exahype::solvers::ADERDGSolver::updateRefinementStatusAfterSolutionUpdate(CellDe
 }
 
 void exahype::solvers::ADERDGSolver::fusedTimeStepBody(
-    CellDescription& cellDescription,
-    CellInfo&        cellInfo,
-    const double     predictionTimeStamp,
-    const double     predictionTimeStepSize,
-    const bool       isFirstTimeStepOfBatch,
-    const bool       isLastTimeStepOfBatch,
-    const bool       isSkeletonCell,
-    const bool       mustBeDoneImmediately) {
+    CellDescription&                                   cellDescription,
+    CellInfo&                                          cellInfo,
+    const double                                       predictionTimeStamp,
+    const double                                       predictionTimeStepSize,
+    const bool                                         isFirstTimeStepOfBatch,
+    const bool                                         isLastTimeStepOfBatch,
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers,
+    const bool                                         isSkeletonCell,
+    const bool                                         mustBeDoneImmediately) {
   #ifdef USE_ITAC
   if ( isSkeletonCell ) {
     VT_begin(fusedTimeStepBodyHandleSkeleton);
@@ -707,7 +708,7 @@ void exahype::solvers::ADERDGSolver::fusedTimeStepBody(
   }
   #endif
 
-  correction(cellDescription,isFirstTimeStepOfBatch,isFirstTimeStepOfBatch/*addSurfaceIntegralContributionToUpdate*/);
+  correction(cellDescription,boundaryMarkers,isFirstTimeStepOfBatch,isFirstTimeStepOfBatch/*addSurfaceIntegralContributionToUpdate*/);
 
   UpdateResult result;
   result._timeStepSize    = startNewTimeStep(cellDescription,isFirstTimeStepOfBatch);
@@ -743,11 +744,11 @@ void exahype::solvers::ADERDGSolver::fusedTimeStepBody(
 }
 
 void exahype::solvers::ADERDGSolver::fusedTimeStepOrRestrict(
-    const int  solverNumber,
-    CellInfo&  cellInfo,
-    const bool isFirstTimeStepOfBatch,
-    const bool isLastTimeStepOfBatch,
-    const bool isAtRemoteBoundary) {
+    const int                                          solverNumber,
+    CellInfo&                                          cellInfo,
+    const bool                                         isFirstTimeStepOfBatch,
+    const bool                                         isLastTimeStepOfBatch,
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers) {
   const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( element != NotFound ) {
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
@@ -756,6 +757,7 @@ void exahype::solvers::ADERDGSolver::fusedTimeStepOrRestrict(
 
     if ( cellDescription.getType()==CellDescription::Type::Leaf ) {
       const bool isAMRSkeletonCell     = belongsToAMRSkeleton(cellDescription);
+      const bool isAtRemoteBoundary    = tarch::la::oneEquals(boundaryMarkers,exahype::mappings::LevelwiseAdjacencyBookkeeping::RemoteAdjacencyIndex);
       const bool isSkeletonCell        = isAMRSkeletonCell || isAtRemoteBoundary;
       const bool mustBeDoneImmediately = isSkeletonCell && PredictionSweeps==1;
 
@@ -767,14 +769,15 @@ void exahype::solvers::ADERDGSolver::fusedTimeStepOrRestrict(
         peano::datatraversal::TaskSet( new FusedTimeStepJob(
             *this, cellDescription, cellInfo,
             std::get<0>(predictionTimeStepData),std::get<1>(predictionTimeStepData),
-            isFirstTimeStepOfBatch, isLastTimeStepOfBatch, isSkeletonCell) );
+            isFirstTimeStepOfBatch, isLastTimeStepOfBatch,
+            boundaryMarkers, isSkeletonCell) );
       } else {
         const auto predictionTimeStepData = getPredictionTimeStepData(cellDescription,true);
         fusedTimeStepBody(
             cellDescription,cellInfo,
             std::get<0>(predictionTimeStepData),std::get<1>(predictionTimeStepData),
             isFirstTimeStepOfBatch,isLastTimeStepOfBatch,
-            isSkeletonCell,mustBeDoneImmediately );
+            boundaryMarkers,isSkeletonCell,mustBeDoneImmediately );
       }
     } else if (
         cellDescription.getType()==CellDescription::Type::Virtual &&
@@ -807,9 +810,9 @@ void exahype::solvers::ADERDGSolver::reduce(
 }
 
 void exahype::solvers::ADERDGSolver::updateBody(
-    CellDescription&                                           cellDescription,
-    CellInfo&                                                  cellInfo,
-    const bool                                                 isAtRemoteBoundary) {
+    CellDescription&                                   cellDescription,
+    CellInfo&                                          cellInfo,
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers) {
   #ifdef USE_ITAC
   VT_begin(updateBodyHandle);
   #endif
@@ -817,7 +820,7 @@ void exahype::solvers::ADERDGSolver::updateBody(
   assertion1(cellDescription.getType()==CellDescription::Type::Leaf,cellDescription.toString());
   uncompress(cellDescription);
 
-  correction(cellDescription,true,false/*effect: add face integral result directly to solution*/);
+  correction(cellDescription,boundaryMarkers,true,false/*effect: add face integral result directly to solution*/);
 
   UpdateResult result;
   result._timeStepSize    = startNewTimeStep(cellDescription,true);
@@ -826,6 +829,7 @@ void exahype::solvers::ADERDGSolver::updateBody(
 
   reduce(cellDescription,result);
 
+  const bool isAtRemoteBoundary = tarch::la::oneEquals(boundaryMarkers,mappings::LevelwiseAdjacencyBookkeeping::RemoteAdjacencyIndex);
   compress(cellDescription,isAtRemoteBoundary);
 
   cellDescription.setHasCompletedLastStep(true); // required as prediction checks the flag too. Field should be renamed "setHasCompletedLastOperation(...)".
@@ -836,20 +840,21 @@ void exahype::solvers::ADERDGSolver::updateBody(
 }
 
 void exahype::solvers::ADERDGSolver::updateOrRestrict(
-      const int  solverNumber,
-      CellInfo&  cellInfo,
-      const bool isAtRemoteBoundary){
+    const int                                          solverNumber,
+    CellInfo&                                          cellInfo,
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers) {
   const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   if ( element != NotFound ) {
     CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
     synchroniseTimeStepping(cellDescription);
     cellDescription.setHasCompletedLastStep(false);
 
+    const bool isAtRemoteBoundary = tarch::la::oneEquals(boundaryMarkers,exahype::mappings::LevelwiseAdjacencyBookkeeping::RemoteAdjacencyIndex);
     if ( cellDescription.getType()==CellDescription::Type::Leaf && SpawnUpdateAsBackgroundJob ) {
-      peano::datatraversal::TaskSet ( new UpdateJob( *this, cellDescription, cellInfo, isAtRemoteBoundary ) );
+      peano::datatraversal::TaskSet ( new UpdateJob(*this,cellDescription,cellInfo,boundaryMarkers) );
     }
     else if ( cellDescription.getType()==CellDescription::Type::Leaf ) {
-      updateBody(cellDescription,cellInfo,isAtRemoteBoundary);
+      updateBody(cellDescription,cellInfo,boundaryMarkers);
     }
     else if (
         cellDescription.getType()==CellDescription::Type::Virtual &&
@@ -1181,8 +1186,9 @@ void exahype::solvers::ADERDGSolver::printADERDGFluctuations2D(const CellDescrip
 }
 
 void exahype::solvers::ADERDGSolver::surfaceIntegral(
-    CellDescription& cellDescription,
-    const bool       addToUpdate) {
+    CellDescription&                                   cellDescription,
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers,
+    const bool                                         addToUpdate) {
   assertion1(cellDescription.getType()==CellDescription::Type::Leaf,cellDescription.toString());
   if ( !tarch::la::equals(cellDescription.getNeighbourMergePerformed(),static_cast<signed char>(true)) && !ProfileUpdate ) {
     logError("surfaceIntegral(...)","Riemann solve was not performed on all faces of cell= "<<cellDescription.toString());
@@ -1214,6 +1220,7 @@ void exahype::solvers::ADERDGSolver::surfaceIntegral(
         faceIntegral(output,lFhbnd,direction,orientation,0/*implicit conversion*/,0,cellDescription.getSize(),
                      cellDescription.getTimeStepSize(),addToUpdate);
       }
+      // TODO(Dominic): Impose boundary conditions here
     }
   }
 
@@ -1265,9 +1272,10 @@ void exahype::solvers::ADERDGSolver::adjustSolutionAfterUpdate(CellDescription& 
 }
 
 void exahype::solvers::ADERDGSolver::correction(
-    CellDescription& cellDescription,
-    const bool       backupPreviousSolution,
-    const bool       addSurfaceIntegralResultToUpdate) {
+    CellDescription&                                   cellDescription,
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers,
+    const bool                                         backupPreviousSolution,
+    const bool                                         addSurfaceIntegralResultToUpdate) {
   assertion1(cellDescription.getType()==CellDescription::Type::Leaf,cellDescription.toString())
   assertion1(std::isfinite(cellDescription.getTimeStamp()   ),cellDescription.toString());
   assertion1(std::isfinite(cellDescription.getTimeStepSize()),cellDescription.toString());
@@ -1282,7 +1290,7 @@ void exahype::solvers::ADERDGSolver::correction(
   counter++;
   #endif
 
-  surfaceIntegral(cellDescription,addSurfaceIntegralResultToUpdate);
+  surfaceIntegral(cellDescription,boundaryMarkers,addSurfaceIntegralResultToUpdate);
   if ( addSurfaceIntegralResultToUpdate ) {
     addUpdateToSolution(cellDescription,backupPreviousSolution);
   }
@@ -3045,7 +3053,8 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::ADERDGSolver::me
     const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
     for (int it=0; it<numberOfRuns; it++) {
       cellDescription.setNeighbourMergePerformed(static_cast<unsigned char>(true));
-      updateBody(cellDescription,cellInfo,true);
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> boundaryMarkers(0); // >= 0 indicates no remote/domain boundary
+      updateBody(cellDescription,cellInfo,boundaryMarkers);
 
       swapSolutionAndPreviousSolution(cellDescription); // assumed to be very cheap
       rollbackToPreviousTimeStep(cellDescription);

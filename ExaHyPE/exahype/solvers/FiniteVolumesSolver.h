@@ -160,18 +160,18 @@ private:
    * @param cellInfo                links to all the cell descriptions associated with a cell
    * @param isFirstTimeStepOfBatch  if the current time step is the first time step of a batch of time steps
    * @param isLastTimeStepOfBatch   if the current time step is the last time step of a batch of time steps
-   * @param isAtRemoteBoundary      if the cell description is at a remote boundary.
+   * @param boundaryMarkers         per face, a flag indicating if the cell description is adjacent to a remote or domain boundary.
    * @param uncompressBefore        if the cell description should uncompress data before doing any PDE operations
    *
    * @note Might be called by background task. Do not synchronise time step data here.
    */
   void updateBody(
-      CellDescription& cellDescription,
-      CellInfo&        cellInfo,
-      const bool       isFirstTimeStepOfBatch,
-      const bool       isLastTimeStepOfBatch,
-      const bool       isAtRemoteBoundary,
-      const bool       uncompressBefore);
+      CellDescription&                                   cellDescription,
+      CellInfo&                                          cellInfo,
+      const bool                                         isFirstTimeStepOfBatch,
+      const bool                                         isLastTimeStepOfBatch,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers,
+      const bool                                         uncompressBefore);
 
 #ifdef Parallel
   /**
@@ -237,9 +237,10 @@ private:
    * @param backupPreviousSolution   if the previous solution should be backed up or not. When running batches, we only want to back up the solution in the first step.
    */
   void updateSolution(
-      CellDescription& cellDescription,
-      const int        cellDescriptionsIndex,
-      const bool       backupPreviousSolution);
+      CellDescription&                                   cellDescription,
+      const int                                          cellDescriptionsIndex,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers,
+      const bool                                         backupPreviousSolution);
 
   /**
    * Rolls back the solver's solution on the cell description.
@@ -276,12 +277,13 @@ private:
    */
   class FusedTimeStepJob: public tarch::multicore::jobs::Job {
   private:
-    FiniteVolumesSolver& _solver;
-    CellDescription&     _cellDescription;
-    CellInfo             _cellInfo; // copy
-    const bool           _isFirstTimeStepOfBatch;
-    const bool           _isLastTimeStepOfBatch;
-    const bool           _isSkeletonJob;
+    FiniteVolumesSolver&                              _solver;
+    CellDescription&                                  _cellDescription;
+    CellInfo                                          _cellInfo; // copy
+    const bool                                        _isFirstTimeStepOfBatch;
+    const bool                                        _isLastTimeStepOfBatch;
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _boundaryMarkers; // copy
+    const bool                                        _isSkeletonJob;
   public:
     /**
      * Construct a FusedTimeStepJob.
@@ -299,12 +301,13 @@ private:
      * @param isSkeletonJob          if the cell is a skeleton cell
      */
     FusedTimeStepJob(
-        FiniteVolumesSolver& solver,
-        CellDescription&     cellDescription,
-        CellInfo&            cellInfo,
-        const bool           isFirstTimeStepOfBatch,
-        const bool           isLastTimeStepOfBatch,
-        const bool           isSkeletonJob
+        FiniteVolumesSolver&                               solver,
+        CellDescription&                                   cellDescription,
+        CellInfo&                                          cellInfo,
+        const bool                                         isFirstTimeStepOfBatch,
+        const bool                                         isLastTimeStepOfBatch,
+        const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers,
+        const bool                                         isSkeletonJob
     );
 
     bool run(bool runOnMasterThread) override;
@@ -317,13 +320,16 @@ private:
    * wait in endIteration(...) on the completion of the job.
    * It further important to flag this job as high priority job to
    * ensure completion before the next reduction.
+   *
+   * @note All update jobs have the same priority as their outcome is not directly
+   * piped into an MPI send task. This is different to the result of the FusedTimeStepJob.
    */
   class UpdateJob: public tarch::multicore::jobs::Job {
   private:
-    FiniteVolumesSolver& _solver; // TODO not const because of kernels
-    CellDescription&     _cellDescription;
-    CellInfo             _cellInfo;
-    const bool           _isAtRemoteBoundary;
+    FiniteVolumesSolver&                              _solver; // TODO not const because of kernels
+    CellDescription&                                  _cellDescription;
+    CellInfo                                          _cellInfo;
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _boundaryMarkers; // copy
   public:
     /**
      * Construct a UpdateJob.
@@ -333,13 +339,13 @@ private:
      * @param solver                 the spawning solver
      * @param cellDescription        a cell description
      * @param cellInfo               links to all cell descriptions associated with the cell
-     * @param isSkeletonJob          if the cell is a skeleton cell
+     * @param boundaryMarkers        per face, a flag indicating if the cell description is adjacent to a remote or domain boundary.
      */
     UpdateJob(
-        FiniteVolumesSolver&                                       solver,
-        CellDescription&                                           cellDescription,
-        CellInfo&                                                  cellInfo,
-        const bool                                                 isAtRemoteBoundary);
+        FiniteVolumesSolver&                               solver,
+        CellDescription&                                   cellDescription,
+        CellInfo&                                          cellInfo,
+        const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers);
 
     bool run(bool runOnMasterThread) override;
     void prefetchData() override;
@@ -613,16 +619,16 @@ public:
    * a background job is spawned.
    */
   void fusedTimeStepOrRestrict(
-      const int solverNumber,
-      CellInfo& cellInfo,
-      const bool isFirstTimeStepOfBatch,
-      const bool isLastTimeStepOfBatch,
-      const bool isAtRemoteBoundary) final override;
+      const int                                          solverNumber,
+      CellInfo&                                          cellInfo,
+      const bool                                         isFirstTimeStepOfBatch,
+      const bool                                         isLastTimeStepOfBatch,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers) final override;
 
   void updateOrRestrict(
-      const int  solverNumber,
-      CellInfo&  cellInfo,
-      const bool isAtRemoteBoundary) final override;
+      const int                                          solverNumber,
+      CellInfo&                                          cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers) final override;
 
   void adjustSolutionDuringMeshRefinement(const int solverNumber,CellInfo& cellInfo) final override;
 

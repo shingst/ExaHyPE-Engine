@@ -40,7 +40,7 @@ bool exahype::solvers::ADERDGSolver::FusedTimeStepJob::run(bool runOnMasterThrea
       _cellDescription, _cellInfo,
       _predictionTimeStamp,_predictionTimeStepSize,
       _isFirstTimeStepOfBatch,_isLastTimeStepOfBatch,
-      _isSkeletonJob,false/*mustBeDoneImmediately*/);
+      _boundaryMarkers,_isSkeletonJob,false/*mustBeDoneImmediately*/);
 
   NumberOfReductionJobs.fetch_sub(1);
   assertion( NumberOfReductionJobs.load()>=0 );

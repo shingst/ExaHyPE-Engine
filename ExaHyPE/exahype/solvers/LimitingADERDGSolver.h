@@ -398,14 +398,15 @@ private:
    * @note Might be called by background task. Do not synchronise time step data here.
    */
   void fusedTimeStepBody(
-      SolverPatch& solverPatch,
-      CellInfo&    cellInfo,
-      const double predictionTimeStamp,
-      const double predictionTimeStepSize,
-      const bool   isFirstTimeStepOfBatch,
-      const bool   isLastTimeStepOfBatch,
-      const bool   isSkeletonCell,
-      const bool   mustBeDoneImmediately);
+      SolverPatch&                                       solverPatch,
+      CellInfo&                                          cellInfo,
+      const double                                       predictionTimeStamp,
+      const double                                       predictionTimeStepSize,
+      const bool                                         isFirstTimeStepOfBatch,
+      const bool                                         isLastTimeStepOfBatch,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers,
+      const bool                                         isSkeletonCell,
+      const bool                                         mustBeDoneImmediately);
 
   /**
    * @return Computes a merged limiter status as a maximum of
@@ -424,14 +425,14 @@ private:
    *
    * @param solverPatch        a solver patch which may or may not have an associated limiter patchs
    * @param cellInfo           links to all solver and limiter patches registered for a cell
-   * @param isAtRemoteBoundary checks if the cell is at an remote boundary (information required for compression)
+   *
    *
    * @return an admissible time step size and a mesh update event for the solver patch
    */
   void updateBody(
-      SolverPatch& solverPatch,
-      CellInfo&    cellInfo,
-      const bool   isAtRemoteBoundary);
+      SolverPatch&                                       solverPatch,
+      CellInfo&                                          cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers);
 
  /**
    * Rollback to the previous time step, i.e,
@@ -482,16 +483,17 @@ private:
    * @param cellInfo    struct referring to all cell description associated with a cell
    */
   void localRecomputation(
-      SolverPatch&                                               solverPatch,
-      CellInfo&                                                  cellInfo);
+      SolverPatch&                                       solverPatch,
+      CellInfo&                                          cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers);
 
   /**
    * Function Body for public recomputeSolutionLocally function.
    */
   double localRecomputationBody(
-      SolverPatch&      solverPatch,
-      Solver::CellInfo& cellInfo,
-      const bool        isAtRemoteBoundary);
+      SolverPatch&                                       solverPatch,
+      Solver::CellInfo&                                  cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers);
 
   /**
    * Veto a coarsening attempt of a Parent cell description if
@@ -568,14 +570,15 @@ private:
    */
   class FusedTimeStepJob: public tarch::multicore::jobs::Job {
   private:
-    LimitingADERDGSolver& _solver;
-    SolverPatch&          _solverPatch;
-    CellInfo              _cellInfo;                // copy
-    const double          _predictionTimeStamp;     // copy
-    const double          _predictionTimeStepSize;  // copy
-    const bool            _isFirstTimeStepOfBatch;  // copy
-    const bool            _isLastTimeStepOfBatch;   // copy
-    const bool            _isSkeletonJob;
+    LimitingADERDGSolver&                             _solver;
+    SolverPatch&                                      _solverPatch;
+    CellInfo                                          _cellInfo;               // copy
+    const double                                      _predictionTimeStamp;    // copy
+    const double                                      _predictionTimeStepSize; // copy
+    const bool                                        _isFirstTimeStepOfBatch; // copy
+    const bool                                        _isLastTimeStepOfBatch;  // copy
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _boundaryMarkers;        // copy
+    const bool                                        _isSkeletonJob;
   public:
 
   /**
@@ -594,14 +597,15 @@ private:
    * @param isSkeletonJob          if this job was spawned in a cell belonging to the MPI or AMR skeleton
      */
     FusedTimeStepJob(
-        LimitingADERDGSolver& solver,
-        SolverPatch&          solverPatch,
-        CellInfo&             cellInfo,
-        const double          predictionTimeStamp,
-        const double          predictionTimeStepSize,
-        const bool            isFirstTimeStepOfBatch,
-        const bool            isLastTimeStepOfBatch,
-        const bool            isSkeletonJob);
+        LimitingADERDGSolver&                              solver,
+        SolverPatch&                                       solverPatch,
+        CellInfo&                                          cellInfo,
+        const double                                       predictionTimeStamp,
+        const double                                       predictionTimeStepSize,
+        const bool                                         isFirstTimeStepOfBatch,
+        const bool                                         isLastTimeStepOfBatch,
+        const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers,
+        const bool                                         isSkeletonJob);
 
     bool run(bool runOnMasterThread) override;
   };
@@ -613,29 +617,32 @@ private:
    * wait in endIteration(...) on the completion of the job.
    * It further important to flag this job as high priority job to
    * ensure completion before the next reduction.
+   *
+   * @note All update jobs have the same priority as their outcome is not directly
+   * piped into an MPI send task. This is different to the result of the FusedTimeStepJob.
    */
   class UpdateJob: public tarch::multicore::jobs::Job {
     private:
-      LimitingADERDGSolver& _solver; // TODO not const because of kernels
-      SolverPatch&          _solverPatch;
-      CellInfo              _cellInfo;
-      const bool            _isAtRemoteBoundary;
+      LimitingADERDGSolver&                             _solver; // TODO not const because of kernels
+      SolverPatch&                                      _solverPatch;
+      CellInfo                                          _cellInfo;
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _boundaryMarkers; // copy
     public:
       /**
        * Construct an UpdateJob.
        *
        * @note Job is always spawned as high priority job.
        *
-       * @param solver                 the spawning solver
-       * @param solverPatch        a cell description
-       * @param cellInfo               links to all cell descriptions associated with the cell
-       * @param isSkeletonJob          if the cell is a skeleton cell
+       * @param     solver          the spawning solver
+       * @param     solverPatch     a cell description
+       * @param     cellInfo        links to all cell descriptions associated with the cell
+       * @param[in] boundaryMarkers per face, a flag indicating if the cell description is adjacent to a remote or domain boundary.
        */
       UpdateJob(
-        LimitingADERDGSolver& solver,
-        SolverPatch&          solverPatch,
-        CellInfo&             cellInfo,
-        const bool            isAtRemoteBoundary);
+          LimitingADERDGSolver&                              solver,
+          SolverPatch&                                       solverPatch,
+          CellInfo&                                          cellInfo,
+          const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers);
 
       bool run(bool runOnMasterThread) override;
       void prefetchData() override;
@@ -651,10 +658,10 @@ private:
    */
   class LocalRecomputationJob: public tarch::multicore::jobs::Job {
   private:
-    LimitingADERDGSolver&                                     _solver; // TODO not const because of kernels
-    SolverPatch&                                              _solverPatch;
-    CellInfo                                                  _cellInfo;
-    const bool                                                _isAtRemoteBoundary;
+    LimitingADERDGSolver&                             _solver; // TODO not const because of kernels
+    SolverPatch&                                      _solverPatch;
+    CellInfo                                          _cellInfo;
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _boundaryMarkers; // copy
   public:
     /**
      * Construct an LocalRecomputationJob.
@@ -667,10 +674,10 @@ private:
      * @param isAtRemoteBoundary if the cell is at boundary to a remote rank
      */
     LocalRecomputationJob(
-        LimitingADERDGSolver& solver,
-        SolverPatch&          solverPatch,
-        CellInfo&             cellInfo,
-        const bool            isAtRemoteBoundary);
+        LimitingADERDGSolver&                              solver,
+        SolverPatch&                                       solverPatch,
+        CellInfo&                                          cellInfo,
+        const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers);
 
     bool run(bool runOnMasterThread) override;
     void prefetchData() override;
@@ -945,16 +952,16 @@ public:
       const bool isAtRemoteBoundary);
 
   void fusedTimeStepOrRestrict(
-      const int  solverNumber,
-      CellInfo&  cellInfo,
-      const bool isFirstTimeStepOfBatch,
-      const bool isLastTimeStepOfBatch,
-      const bool isAtRemoteBoundary) final override;
+      const int                                          solverNumber,
+      CellInfo&                                          cellInfo,
+      const bool                                         isFirstTimeStepOfBatch,
+      const bool                                         isLastTimeStepOfBatch,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers) final override;
 
   void updateOrRestrict(
-      const int  solverNumber,
-      CellInfo&  cellInfo,
-      const bool isAtRemoteBoundary) final override;
+      const int                                          solverNumber,
+      CellInfo&                                          cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers) final override;
 
   void compress(
       const int  solverNumber,
@@ -984,10 +991,11 @@ public:
    *                                              (Fused time stepping for nonlinear PDEs is the only time stepping variant where we need to use an update vector.)
    */
   void updateSolution(
-      SolverPatch& solverPatch,
-      CellInfo&    cellInfo,
-      const bool   isFirstTimeStep,
-      const bool   addSurfaceIntegralResultToSolution);
+      SolverPatch&                                       solverPatch,
+      CellInfo&                                          cellInfo,
+      const bool                                         isFirstTimeStep,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers,
+      const bool                                         addSurfaceIntegralResultToSolution);
 
   /**
    * Evaluate the discrete maximum principle and the physically admissibility detection criterion.
@@ -1104,9 +1112,9 @@ public:
    * Further see ::fusedTimeBody regarding order of operations.
    */
   void localRecomputation(
-      const int         solverNumber,
-      Solver::CellInfo& cellInfo,
-      const bool        isAtRemoteBoundary);
+      const int                                          solverNumber,
+      Solver::CellInfo&                                  cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers);
 
   ///////////////////////////////////
   // NEIGHBOUR
