@@ -1434,35 +1434,12 @@ void exahype::solvers::LimitingADERDGSolver::mergeNeighboursDataDuringLocalRecom
   }
 }
 
-void exahype::solvers::LimitingADERDGSolver::mergeWithBoundaryDataDuringLocalRecomputation(
-    const int                                 solverNumber,
-    Solver::CellInfo&                         cellInfo,
-    const tarch::la::Vector<DIMENSIONS, int>& posCell,
-    const tarch::la::Vector<DIMENSIONS, int>& posBoundary) {
-  assertion2(tarch::la::countEqualEntries(posCell,posBoundary)==(DIMENSIONS-1),posCell.toString(),posBoundary.toString());
-  Solver::BoundaryFaceInfo face(posCell,posBoundary);
-
-  const int solverElement = cellInfo.indexOfADERDGCellDescription(solverNumber);
-  if ( solverElement != Solver::NotFound ) {
-    SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
-
-    if (_solver->isLeaf(solverPatch) &&
-        solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell-1) {
-      assertion2(solverPatch.getLevel()==getMaximumAdaptiveMeshLevel(),solverPatch.toString(),getMaximumAdaptiveMeshLevel());
-
-      waitUntilCompletedLastStep<SolverPatch>(solverPatch,false,false); // must come before any other operation
-
-      _limiter->mergeWithBoundaryData(solverNumber,cellInfo,posCell,posBoundary);
-    }
-  }
-}
-
 void exahype::solvers::LimitingADERDGSolver::mergeNeighboursData(
-    const int                                  solverNumber,
-    Solver::CellInfo&                          cellInfo1,
-    Solver::CellInfo&                          cellInfo2,
-    const tarch::la::Vector<DIMENSIONS, int>&  pos1,
-    const tarch::la::Vector<DIMENSIONS, int>&  pos2) {
+    const int                                 solverNumber,
+    Solver::CellInfo&                         cellInfo1,
+    Solver::CellInfo&                         cellInfo2,
+    const tarch::la::Vector<DIMENSIONS, int>& pos1,
+    const tarch::la::Vector<DIMENSIONS, int>& pos2) {
   #ifdef USE_ITAC
   VT_begin(mergeNeighboursHandle);
   #endif
@@ -1552,46 +1529,6 @@ void exahype::solvers::LimitingADERDGSolver::mergeSolutionMinMaxOnFace(
       *(max2+i) = max;
     }
   }
-}
-
-void exahype::solvers::LimitingADERDGSolver::mergeWithBoundaryData(
-    const int                                 solverNumber,
-    Solver::CellInfo&                         cellInfo,
-    const tarch::la::Vector<DIMENSIONS, int>& posCell,
-    const tarch::la::Vector<DIMENSIONS, int>& posBoundary) {
-  #ifdef USE_ITAC
-  VT_begin(mergeNeighboursHandle);
-  #endif
-
-  assertion2(tarch::la::countEqualEntries(posCell,posBoundary)==(DIMENSIONS-1),posCell.toString(),posBoundary.toString());
-  Solver::BoundaryFaceInfo face(posCell,posBoundary);
-
-  const int solverElement = cellInfo.indexOfADERDGCellDescription(solverNumber);
-  if ( solverElement != Solver::NotFound ) {
-    SolverPatch& solverPatch = cellInfo._ADERDGCellDescriptions[solverElement];
-
-    waitUntilCompletedLastStep<SolverPatch>(solverPatch,false,false); // must come before any other operation
-
-    if (
-        _solver->isLeaf(solverPatch) &&
-        (solverPatch.getLevel()!=getMaximumAdaptiveMeshLevel() || // if then
-        solverPatch.getRefinementStatus()<_solver->_minRefinementStatusForTroubledCell) // must be able to switch to DG on the fly
-    ) {
-      _solver->mergeWithBoundaryData(solverNumber,cellInfo,posCell,posBoundary);
-    }
-
-    if (
-        _solver->isLeaf(solverPatch) &&
-        solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
-        solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell-2
-    ) { // must be able to switch to FV on the fly
-      _limiter->mergeWithBoundaryData(solverNumber,cellInfo,posCell,posBoundary);
-    }
-  }
-
-  #ifdef USE_ITAC
-  VT_end(mergeNeighboursHandle);
-  #endif
 }
 
 #ifdef Parallel

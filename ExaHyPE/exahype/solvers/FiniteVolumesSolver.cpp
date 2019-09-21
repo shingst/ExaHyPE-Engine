@@ -875,9 +875,8 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
     counter++;
   #endif
 
-  double* solution       = static_cast<double*>(cellDescription.getSolution());
   double* solutionBackup = static_cast<double*>(cellDescription.getPreviousSolution());
-  if (backupPreviousSolution) {
+  if ( backupPreviousSolution ) {
     std::copy(solution,solution+getDataPerPatch()+getGhostDataPerPatch(),solutionBackup); // Copy (current solution) in old solution field.
   }
 
@@ -995,55 +994,6 @@ void exahype::solvers::FiniteVolumesSolver::mergeNeighboursData(
     Solver::InterfaceInfo face(pos1,pos2);
     cellDescription1.setNeighbourMergePerformed(face._faceIndex1,true);
     cellDescription2.setNeighbourMergePerformed(face._faceIndex2,true);
-  }
-
-  #ifdef USE_ITAC
-  VT_end(mergeNeighboursHandle);
-  #endif
-}
-
-void exahype::solvers::FiniteVolumesSolver::mergeWithBoundaryData(
-    const int                                 solverNumber,
-    Solver::CellInfo&                         cellInfo,
-    const tarch::la::Vector<DIMENSIONS, int>& posCell,
-    const tarch::la::Vector<DIMENSIONS, int>& posBoundary) {
-  #ifdef USE_ITAC
-  VT_begin(mergeNeighboursHandle);
-  #endif
-
-  assertion2(tarch::la::countEqualEntries(posCell,posBoundary)==(DIMENSIONS-1),posCell.toString(),posBoundary.toString());
-
-  const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
-  if ( element != Solver::NotFound ) {
-    CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
-    assertion1( cellDescription.getType()==CellDescription::Type::Leaf, cellDescription.toString() );
-
-    #if !defined(SharedMemoryParallelisation) && !defined(Parallel) && defined(Asserts)
-    static int counter = 0;
-    static double timeStamp = 0;
-    if ( !tarch::la::equals(timeStamp,_minTimeStamp,1e-9) ) {
-      logInfo("mergeWithBoundaryData(...)","#boundaryConditions="<<counter);
-      timeStamp = _minTimeStamp;
-      counter=0;
-    }
-    counter++;
-    #endif
-
-    waitUntilCompletedLastStep<CellDescription>(cellDescription,false,false); // must be done before any other operation on the patch
-
-    uncompress(cellDescription);
-
-    double* luh = static_cast<double*>(cellDescription.getSolution());
-    boundaryConditions(
-        luh,
-        cellDescription.getOffset()+0.5*cellDescription.getSize(),
-        cellDescription.getSize(),
-        cellDescription.getTimeStamp(),
-        cellDescription.getTimeStepSize(),
-        posCell,posBoundary);
-
-    Solver::BoundaryFaceInfo face(posCell,posBoundary);
-    cellDescription.setNeighbourMergePerformed(face._faceIndex,true);
   }
 
   #ifdef USE_ITAC

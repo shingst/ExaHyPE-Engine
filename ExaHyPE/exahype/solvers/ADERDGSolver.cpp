@@ -1822,45 +1822,8 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
   #endif
 }
 
-void exahype::solvers::ADERDGSolver::mergeWithBoundaryData(
-    const int                                 solverNumber,
-    Solver::CellInfo&                         cellInfo,
-    const tarch::la::Vector<DIMENSIONS, int>& posCell,
-    const tarch::la::Vector<DIMENSIONS, int>& posBoundary) {
-  #ifdef USE_ITAC
-  VT_begin(mergeNeighboursHandle);
-  #endif
-
-  assertion2(tarch::la::countEqualEntries(posCell,posBoundary)==(DIMENSIONS-1),posCell.toString(),posBoundary.toString());
-  Solver::BoundaryFaceInfo face(posCell,posBoundary);
-
-  const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
-  if ( element != Solver::NotFound ) {
-    CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
-
-    if ( cellDescription.getType()==CellDescription::Type::Leaf ) {
-      waitUntilCompletedLastStep<CellDescription>(cellDescription,false,false); // must be done before any other operation on the patch
-
-      uncompress(cellDescription);
-
-      prefetchFaceData(cellDescription,face._faceIndex);
-      applyBoundaryConditions(cellDescription,face._faceIndex,face._direction,face._orientation);
-
-      mergeWithAugmentationStatus(cellDescription,face._faceIndex,BoundaryStatus);
-      mergeWithCommunicationStatus(cellDescription,face._faceIndex,BoundaryStatus);
-      mergeWithRefinementStatus(cellDescription,face._faceIndex,BoundaryStatus);
-    }
-
-    cellDescription.setNeighbourMergePerformed(face._faceIndex,true);
-  }
-
-  #ifdef USE_ITAC
-  VT_end(mergeNeighboursHandle);
-  #endif
-}
-
 void exahype::solvers::ADERDGSolver::mergeWithBoundaryData(CellDescription& cellDescription,const int faceIndex,const int direction,const int orientation) {
-  prefetchFaceData(cellDescription,faceIndex);
+  assertion1(cellDescription.getType()==CellDescription::Type::Leaf,cellDescription.toString());
   applyBoundaryConditions(cellDescription,faceIndex,direction,orientation);
 
   mergeWithAugmentationStatus(cellDescription,faceIndex,BoundaryStatus);

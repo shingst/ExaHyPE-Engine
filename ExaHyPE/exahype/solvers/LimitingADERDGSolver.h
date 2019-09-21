@@ -1141,22 +1141,6 @@ public:
       const tarch::la::Vector<DIMENSIONS, int>&  pos1,
       const tarch::la::Vector<DIMENSIONS, int>&  pos2);
 
-  /**
-   * Merge cell descriptions with status - i, where i=0,1, with boundary data during
-   * the local recomputation phase.
-   * All cells with one of these statuses, perform a merge using the limiter.
-   *
-   * @param solverNumber identifier for this solver
-   * @param cellInfo1    cell descriptions associated with a cell
-   * @param posCell      relative position of the (interior) cell to the vertex issuing the merge
-   * @param posBoundary  relative position of the boundary (=outside cell) to the vertex issuing the merge
-   */
-  void mergeWithBoundaryDataDuringLocalRecomputation(
-      const int                                 solverNumber,
-      Solver::CellInfo&                         cellInfo,
-      const tarch::la::Vector<DIMENSIONS, int>& posCell,
-      const tarch::la::Vector<DIMENSIONS, int>& posBoundary);
-
 
   /**
    * Merge solver boundary data (and other values) of two adjacent
@@ -1212,47 +1196,6 @@ public:
       Solver::CellInfo&                          cellInfo2,
       const tarch::la::Vector<DIMENSIONS, int>&  pos1,
       const tarch::la::Vector<DIMENSIONS, int>&  pos2);
-
-  /**
-   * Merge solver boundary data (and other values) of a
-   * cell with the boundary conditions based on the cell's
-   * limiter status.
-   *
-   * The solver involved in the merge
-   * is selected according to the following scheme:
-   *
-   * | Status   | Solver to Merge |
-   * ------------------------------
-   * | O        | ADER-DG         |
-   * | NNT      | ADER-DG         |
-   *
-   * | NT       | FV              |
-   * | T        | FV              |
-   *
-   * Legend: O: Ok, T: Troubled, NT: NeighbourIsTroubledCell, NNT: NeighbourIsNeighbourOfTroubledCell
-   *
-   * <h2>Solution Recomputation</h2>
-   * If we perform a solution recomputation, we do not need to perform
-   * a solution update in the non-troubled solver patches and the patches
-   * with status neighbourIsNeighbourOfTroubledCell. Instead we
-   * can simply reuse the already computed update to advance in
-   * time to the desired time stamp.
-   *
-   * We thus do not need to merge these patches with boundary data
-   * in the recomputation phase.
-   *
-   * @param[in] solverPatches   a list/vector holding solver patches.
-   * @param[in] limiterPatches  a list/vector holding limiterr patches.
-   * @param[in] solverNumber    a number for a solver.
-   * @param[in] posCell         relative position of the cell  w.r.t. a vertex.
-   * @param[in] posBoundary     relative position of the boundary w.r.t. a vertex.
-   * @param[in] isRecomputation flag indicating if this merge is part of a solution recomputation phase.
-   */
-  void mergeWithBoundaryData(
-      const int                                 solverNumber,
-      Solver::CellInfo&                         context,
-      const tarch::la::Vector<DIMENSIONS, int>& posCell,
-      const tarch::la::Vector<DIMENSIONS, int>& posBoundary);
 
 #ifdef Parallel
   ///////////////////////////////////

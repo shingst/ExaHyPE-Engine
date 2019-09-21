@@ -1987,12 +1987,6 @@ public:
       Solver::CellInfo&                         cellInfo2,
       const tarch::la::Vector<DIMENSIONS, int>& pos1,
       const tarch::la::Vector<DIMENSIONS, int>& pos2);
-
-  void mergeWithBoundaryData(
-      const int                                 solverNumber,
-      Solver::CellInfo&                         cellInfo,
-      const tarch::la::Vector<DIMENSIONS, int>& posCell,
-      const tarch::la::Vector<DIMENSIONS, int>& posBoundary);
 #ifdef Parallel
   /**
    * Sends all the cell descriptions at address @p
