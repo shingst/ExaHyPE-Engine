@@ -6,10 +6,10 @@
 
 
 exahype::solvers::FiniteVolumesSolver::UpdateJob::UpdateJob(
-  FiniteVolumesSolver&    solver,
-  CellDescription& cellDescription,
-  CellInfo&        cellInfo,
-  const bool       isAtRemoteBoundary):
+  FiniteVolumesSolver&                               solver,
+  CellDescription&                                   cellDescription,
+  CellInfo&                                          cellInfo,
+  const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers):
   tarch::multicore::jobs::Job(
       tarch::multicore::jobs::JobType::BackgroundTask,0,
       getHighPriorityTaskPriority()
@@ -17,14 +17,14 @@ exahype::solvers::FiniteVolumesSolver::UpdateJob::UpdateJob(
   _solver(solver),
   _cellDescription(cellDescription),
   _cellInfo(cellInfo),
-  _isAtRemoteBoundary(isAtRemoteBoundary) {
+  _boundaryMarkers(boundaryMarkers) {
   NumberOfReductionJobs.fetch_add(1);
 }
 
 bool exahype::solvers::FiniteVolumesSolver::UpdateJob::run(bool runOnMasterThread) {
   _solver.updateBody(
       _cellDescription,_cellInfo,
-      true,true,_isAtRemoteBoundary,true);
+      true,true,_boundaryMarkers,true);
 
   NumberOfReductionJobs.fetch_sub(1);
   assertion( NumberOfReductionJobs.load()>=0 );

@@ -1773,13 +1773,14 @@ public:
    *                                    @p isLastIterationOfBatch are true).
    * @param[in] isAtRemoteBoundary Flag indicating that the cell hosting the
    *                                    cell description is adjacent to a remote rank.
+   * @param[in] boundaryMarkers         per face, a flag indicating if the cell description is adjacent to a remote or domain boundary.
    */
   virtual void fusedTimeStepOrRestrict(
-      const int  solverNumber,
-      CellInfo&  cellInfo,
-      const bool isFirstIterationOfBatch,
-      const bool isLastIterationOfBatch,
-      const bool isAtRemoteBoundary) = 0;
+      const int                                          solverNumber,
+      CellInfo&                                          cellInfo,
+      const bool                                         isFirstTimeStepOfBatch,
+      const bool                                         isLastTimeStepOfBatch,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers) = 0;
 
   /**
    * The nonfused update routine.
@@ -1804,14 +1805,14 @@ public:
    *
    * @note Has no const modifier since kernels are not const functions yet.
    *
-   * @param cellInfo           links to the data associated with the mesh cell
-   * @param solverNumber       id of a solver
-   * @param isAtRemoteBoundary indicates if this cell is adjacent to the domain of another rank
+   * @param[in]    solverNumber    id of a solver
+   * @param[inout] cellInfo        links to the data associated with the mesh cell
+   * @param[in]    boundaryMarkers per face, a flag indicating if the cell description is adjacent to a remote or domain boundary.
    */
   virtual void updateOrRestrict(
-      const int solverNumber,
-      CellInfo& cellInfo,
-      const bool isAtRemoteBoundary) = 0;
+      const int                                          solverNumber,
+      CellInfo&                                          cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers) = 0;
 
   /**
    * Go back to previous time step with

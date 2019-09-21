@@ -6,10 +6,10 @@
 
 
 exahype::solvers::LimitingADERDGSolver::UpdateJob::UpdateJob(
-  LimitingADERDGSolver&  solver,
-  SolverPatch&           solverPatch,
-  CellInfo&              cellInfo,
-  const bool             isAtRemoteBoundary):
+  LimitingADERDGSolver&                              solver,
+  SolverPatch&                                       solverPatch,
+  CellInfo&                                          cellInfo,
+  const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers):
   tarch::multicore::jobs::Job(
       tarch::multicore::jobs::JobType::BackgroundTask,0,
       getHighPriorityTaskPriority()
@@ -17,12 +17,12 @@ exahype::solvers::LimitingADERDGSolver::UpdateJob::UpdateJob(
   _solver(solver),
   _solverPatch(solverPatch),
   _cellInfo(cellInfo),
-  _isAtRemoteBoundary(isAtRemoteBoundary) {
+  _boundaryMarkers(boundaryMarkers) {
   NumberOfReductionJobs.fetch_add(1);
 }
 
 bool exahype::solvers::LimitingADERDGSolver::UpdateJob::run(bool runOnMasterThread) {
-  _solver.updateBody(_solverPatch,_cellInfo,_isAtRemoteBoundary);
+  _solver.updateBody(_solverPatch,_cellInfo,_boundaryMarkers);
 
   NumberOfReductionJobs.fetch_sub(1);
   assertion( NumberOfReductionJobs.load()>=0 );

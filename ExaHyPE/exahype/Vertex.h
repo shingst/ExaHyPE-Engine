@@ -126,30 +126,6 @@ private:
       const tarch::la::Vector<DIMENSIONS, double>& h);
 
   /**
-   * Loops over the cell descriptions stored at the
-   * two heap array indices and tries to impose boundary
-   * conditions if this was not already previously.
-   *
-   * @param cellDescriptionsIndex1 index corresponding to pos1
-   * @param cellDescriptionsIndex2 index corresponding to pos2
-   * @param pos1 position of first cell
-   * @param pos2 position of second cell
-   * @param x the position of the vertex
-   * @param h the mesh size at the level of the vertex
-   *
-   * @note Assumes a stable mesh, or at least one where no cells are deleted
-   * but only added and the adjacency information is updated.
-   */
-  static void mergeWithBoundaryData(
-      solvers::Solver::CellInfo& cellInfo,
-      const tarch::la::Vector<DIMENSIONS,int>& posCell,
-      const tarch::la::Vector<DIMENSIONS,int>& posBoundary,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const tarch::la::Vector<DIMENSIONS, double>& h);
-
-
-
-  /**
    * Loop body of loop in mergeNeighbours.
    *
    * @note All parameters must be copied as the function

@@ -707,12 +707,12 @@ void exahype::solvers::FiniteVolumesSolver::reduce(
 }
 
 void exahype::solvers::FiniteVolumesSolver::updateBody(
-    CellDescription& cellDescription,
-    CellInfo&        cellInfo,
-    const bool       isFirstTimeStepOfBatch,
-    const bool       isLastTimeStepOfBatch,
-    const bool       isAtRemoteBoundary,
-    const bool       uncompressBefore) {
+    CellDescription&                                   cellDescription,
+    CellInfo&                                          cellInfo,
+    const bool                                         isFirstTimeStepOfBatch,
+    const bool                                         isLastTimeStepOfBatch,
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers,
+    const bool                                         uncompressBefore) {
   #ifdef USE_ITAC
   if ( isAtRemoteBoundary ) {
     VT_begin(updateBodyHandleSkeleton);
@@ -723,12 +723,13 @@ void exahype::solvers::FiniteVolumesSolver::updateBody(
 
   if ( uncompressBefore ) { uncompress(cellDescription); }
 
-  updateSolution(cellDescription,cellInfo._cellDescriptionsIndex,isFirstTimeStepOfBatch);
+  updateSolution(cellDescription,cellInfo._cellDescriptionsIndex,boundaryMarkers,isFirstTimeStepOfBatch);
   UpdateResult result;
   result._timeStepSize = startNewTimeStep(cellDescription,isFirstTimeStepOfBatch);
 
   reduce(cellDescription,result);
 
+  const bool isAtRemoteBoundary = tarch::la::oneEquals(boundaryMarkers,exahype::mappings::LevelwiseAdjacencyBookkeeping::RemoteAdjacencyIndex);
   compress(cellDescription,isAtRemoteBoundary);
 
   cellDescription.setHasCompletedLastStep(true); // last step of the FV update
@@ -743,11 +744,13 @@ void exahype::solvers::FiniteVolumesSolver::updateBody(
 }
 
 void exahype::solvers::FiniteVolumesSolver::fusedTimeStepOrRestrict(
-    const int solverNumber,
-    CellInfo& cellInfo,
-    const bool isFirstTimeStepOfBatch,
-    const bool isLastTimeStepOfBatch,
-    const bool isAtRemoteBoundary) {
+    const int                                          solverNumber,
+    CellInfo&                                          cellInfo,
+    const bool                                         isFirstTimeStepOfBatch,
+    const bool                                         isLastTimeStepOfBatch,
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers) {
+  const bool isAtRemoteBoundary = tarch::la::oneEquals(boundaryMarkers,exahype::mappings::LevelwiseAdjacencyBookkeeping::RemoteAdjacencyIndex);
+
   const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
   if (
       (element != NotFound) &&
@@ -757,11 +760,11 @@ void exahype::solvers::FiniteVolumesSolver::fusedTimeStepOrRestrict(
     synchroniseTimeStepping(cellDescription);
     cellDescription.setHasCompletedLastStep(false);
 
-    bool isSkeletonCell = isAtRemoteBoundary;
+    const bool isSkeletonCell = isAtRemoteBoundary;
     peano::datatraversal::TaskSet( new FusedTimeStepJob(
         *this, cellDescription, cellInfo,
         isFirstTimeStepOfBatch, isLastTimeStepOfBatch,
-        isSkeletonCell ) );
+        boundaryMarkers,isSkeletonCell ) );
   }
   else if ( element != NotFound ) {
     CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
@@ -769,14 +772,16 @@ void exahype::solvers::FiniteVolumesSolver::fusedTimeStepOrRestrict(
     cellDescription.setHasCompletedLastStep(false);
     updateBody(
         cellDescription,cellInfo,
-        isFirstTimeStepOfBatch,isLastTimeStepOfBatch,isAtRemoteBoundary,false/*uncompressBefore*/);
+        isFirstTimeStepOfBatch,isLastTimeStepOfBatch,boundaryMarkers,false/*uncompressBefore*/);
   }
 }
 
 void exahype::solvers::FiniteVolumesSolver::updateOrRestrict(
-      const int  solverNumber,
-      CellInfo&  cellInfo,
-      const bool isAtRemoteBoundary){
+      const int                                          solverNumber,
+      CellInfo&                                          cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers){
+  const bool isAtRemoteBoundary = tarch::la::oneEquals(boundaryMarkers,exahype::mappings::LevelwiseAdjacencyBookkeeping::RemoteAdjacencyIndex);
+
   const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
   if ( (element!=NotFound) && SpawnUpdateAsBackgroundJob) {
     CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
@@ -784,7 +789,7 @@ void exahype::solvers::FiniteVolumesSolver::updateOrRestrict(
     cellDescription.setHasCompletedLastStep(false);
 
     peano::datatraversal::TaskSet(
-        new UpdateJob(*this,cellDescription,cellInfo,isAtRemoteBoundary) );
+        new UpdateJob(*this,cellDescription,cellInfo,boundaryMarkers) );
   }
   else if ( element!=NotFound ) {
     CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
@@ -793,7 +798,7 @@ void exahype::solvers::FiniteVolumesSolver::updateOrRestrict(
 
     updateBody(
         cellDescription,cellInfo,
-        true,true,isAtRemoteBoundary,true/*uncompressBefore*/);
+        true,true,boundaryMarkers,true/*uncompressBefore*/);
   }
 }
 
@@ -825,9 +830,33 @@ void exahype::solvers::FiniteVolumesSolver::adjustSolutionDuringMeshRefinement(
 }
 
 void exahype::solvers::FiniteVolumesSolver::updateSolution(
-    CellDescription& cellDescription,
-    const int        cellDescriptionsIndex,
-    const bool       backupPreviousSolution) {
+    CellDescription&                                   cellDescription,
+    const int                                          cellDescriptionsIndex,
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers,
+    const bool                                         backupPreviousSolution) {
+  // boundary conditions
+  double* solution       = static_cast<double*>(cellDescription.getSolution());
+  for (int direction=0; direction<DIMENSIONS; direction++) {
+    for (int orientation=0; orientation<2; orientation++) {
+      const int faceIndex=2*direction+orientation;
+      if ( boundaryMarkers[faceIndex]==mappings::LevelwiseAdjacencyBookkeeping::DomainBoundaryAdjacencyIndex ) {
+        tarch::la::Vector<DIMENSIONS,int> posCell(1);
+        tarch::la::Vector<DIMENSIONS,int> posBoundary = posCell;
+        posBoundary[direction] += orientation > 0 ? 1 : -1;
+
+        boundaryConditions(
+            solution,
+            cellDescription.getOffset()+0.5*cellDescription.getSize(),
+            cellDescription.getSize(),
+            cellDescription.getTimeStamp(),
+            cellDescription.getTimeStepSize(),
+            posCell,posBoundary);
+
+        cellDescription.setNeighbourMergePerformed(faceIndex,true);
+      }
+    }
+  }
+
   if ( !tarch::la::equals(cellDescription.getNeighbourMergePerformed(),static_cast<signed char>(true)) && !ProfileUpdate ) {
     logError("updateSolution(...)","Not all ghost layers were copied to cell="<<cellDescription.toString());
     std::terminate();
@@ -846,9 +875,8 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
     counter++;
   #endif
 
-  double* solution       = static_cast<double*>(cellDescription.getSolution());
   double* solutionBackup = static_cast<double*>(cellDescription.getPreviousSolution());
-  if (backupPreviousSolution) {
+  if ( backupPreviousSolution ) {
     std::copy(solution,solution+getDataPerPatch()+getGhostDataPerPatch(),solutionBackup); // Copy (current solution) in old solution field.
   }
 
@@ -856,6 +884,8 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
   validateNoNansInFiniteVolumesSolution(cellDescription,cellDescriptionsIndex,"updateSolution[pre]");
 
   double admissibleTimeStepSize=std::numeric_limits<double>::infinity();
+
+  // update
   solutionUpdate(solution,
 		 cellDescription.getOffset() + 0.5*cellDescription.getSize(),
 		 cellDescription.getSize(),
@@ -964,55 +994,6 @@ void exahype::solvers::FiniteVolumesSolver::mergeNeighboursData(
     Solver::InterfaceInfo face(pos1,pos2);
     cellDescription1.setNeighbourMergePerformed(face._faceIndex1,true);
     cellDescription2.setNeighbourMergePerformed(face._faceIndex2,true);
-  }
-
-  #ifdef USE_ITAC
-  VT_end(mergeNeighboursHandle);
-  #endif
-}
-
-void exahype::solvers::FiniteVolumesSolver::mergeWithBoundaryData(
-    const int                                 solverNumber,
-    Solver::CellInfo&                         cellInfo,
-    const tarch::la::Vector<DIMENSIONS, int>& posCell,
-    const tarch::la::Vector<DIMENSIONS, int>& posBoundary) {
-  #ifdef USE_ITAC
-  VT_begin(mergeNeighboursHandle);
-  #endif
-
-  assertion2(tarch::la::countEqualEntries(posCell,posBoundary)==(DIMENSIONS-1),posCell.toString(),posBoundary.toString());
-
-  const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
-  if ( element != Solver::NotFound ) {
-    CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
-    assertion1( cellDescription.getType()==CellDescription::Type::Leaf, cellDescription.toString() );
-
-    #if !defined(SharedMemoryParallelisation) && !defined(Parallel) && defined(Asserts)
-    static int counter = 0;
-    static double timeStamp = 0;
-    if ( !tarch::la::equals(timeStamp,_minTimeStamp,1e-9) ) {
-      logInfo("mergeWithBoundaryData(...)","#boundaryConditions="<<counter);
-      timeStamp = _minTimeStamp;
-      counter=0;
-    }
-    counter++;
-    #endif
-
-    waitUntilCompletedLastStep<CellDescription>(cellDescription,false,false); // must be done before any other operation on the patch
-
-    uncompress(cellDescription);
-
-    double* luh = static_cast<double*>(cellDescription.getSolution());
-    boundaryConditions(
-        luh,
-        cellDescription.getOffset()+0.5*cellDescription.getSize(),
-        cellDescription.getSize(),
-        cellDescription.getTimeStamp(),
-        cellDescription.getTimeStepSize(),
-        posCell,posBoundary);
-
-    Solver::BoundaryFaceInfo face(posCell,posBoundary);
-    cellDescription.setNeighbourMergePerformed(face._faceIndex,true);
   }
 
   #ifdef USE_ITAC
@@ -2095,13 +2076,14 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::FiniteVolumesSol
 
   // MEASUREMENTS
   CellProcessingTimes result;
+  const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> boundaryMarkers(0); // >= 0 indicates no remote/domain boundary
 
   // measure FV cells
   {
     const std::chrono::high_resolution_clock::time_point timeStart = std::chrono::high_resolution_clock::now();
     for (int it=0; it<numberOfRuns; it++) {
       cellDescription.setNeighbourMergePerformed(static_cast<unsigned char>(true));
-      updateBody(cellDescription,cellInfo,true,true,true,false);
+      updateBody(cellDescription,cellInfo,true,true,boundaryMarkers,false);
 
       swapSolutionAndPreviousSolution(cellDescription); // assumed to be very cheap
       rollbackToPreviousTimeStep(cellDescription);

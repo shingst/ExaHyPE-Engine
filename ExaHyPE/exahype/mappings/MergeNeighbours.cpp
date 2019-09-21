@@ -21,6 +21,8 @@
 
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
+#include "exahype/mappings/LevelwiseAdjacencyBookkeeping.h"
+
 peano::CommunicationSpecification
 exahype::mappings::MergeNeighbours::communicationSpecification() const {
   return peano::CommunicationSpecification(
@@ -132,7 +134,9 @@ void exahype::mappings::MergeNeighbours::enterCell(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
   if ( exahype::solvers::Solver::CompressionAccuracy>0.0 && fineGridCell.isInitialised() ) {
     solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
-    const bool isAtRemoteBoundary = exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator);
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> boundaryMarkers = exahype::Cell::collectBoundaryMarkers(fineGridVertices,fineGridVerticesEnumerator);
+    const bool isAtRemoteBoundary = tarch::la::oneEquals(boundaryMarkers,LevelwiseAdjacencyBookkeeping::RemoteAdjacencyIndex);
+
     for (unsigned int solverNumber = 0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       solver->compress(solverNumber,cellInfo,isAtRemoteBoundary);

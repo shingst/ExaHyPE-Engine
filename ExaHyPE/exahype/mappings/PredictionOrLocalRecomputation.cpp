@@ -139,13 +139,14 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
 
   if ( fineGridCell.isInitialised() ) {
     solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
-    const bool isAtRemoteBoundary = exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator);
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> boundaryMarkers = exahype::Cell::collectBoundaryMarkers(fineGridVertices,fineGridVerticesEnumerator);
+    const bool isAtRemoteBoundary = tarch::la::oneEquals(boundaryMarkers,LevelwiseAdjacencyBookkeeping::RemoteAdjacencyIndex);
 
     for (unsigned int solverNumber=0; solverNumber<exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
       if ( performLocalRecomputation( solver ) && exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
         auto* limitingADERDG = static_cast<exahype::solvers::LimitingADERDGSolver*>(solver);
-        limitingADERDG->localRecomputation(solverNumber,cellInfo,isAtRemoteBoundary);
+        limitingADERDG->localRecomputation(solverNumber,cellInfo,boundaryMarkers);
       }
       else if ( performPrediction(solver) && exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
         switch ( solver->getType() ) {
@@ -223,25 +224,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::mergeNeighboursDataDurin
       if ( performLocalRecomputation(solver) ) {
         static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
             mergeNeighboursDataDuringLocalRecomputation(solverNumber,cellInfo1,cellInfo2,pos1,pos2);
-      }
-    }
-  } else if (
-      validIndex1 != validIndex2 &&
-      (cellDescriptionsIndex1==mappings::LevelwiseAdjacencyBookkeeping::DomainBoundaryAdjacencyIndex ||
-       cellDescriptionsIndex2==mappings::LevelwiseAdjacencyBookkeeping::DomainBoundaryAdjacencyIndex)
-  ) {
-    const int&                               posCellScalar = validIndex1 ? pos1Scalar : pos2Scalar;
-    const tarch::la::Vector<DIMENSIONS,int>& posCell       = validIndex1 ? pos1       : pos2;
-    const tarch::la::Vector<DIMENSIONS,int>& posBoundary   = validIndex1 ? pos2       : pos1;
-
-    solvers::Solver::CellInfo         cellInfo = vertex.createCellInfo(posCellScalar);
-    solvers::Solver::BoundaryFaceInfo face(posCell,posBoundary);
-
-    for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
-      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-      if ( performLocalRecomputation(solver) ) {
-        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-            mergeWithBoundaryDataDuringLocalRecomputation(solverNumber,cellInfo,posCell,posBoundary);
       }
     }
   }

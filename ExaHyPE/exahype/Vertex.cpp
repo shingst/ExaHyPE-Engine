@@ -273,41 +273,6 @@ void exahype::Vertex::validateNeighbourhood(
   }
 }
 
-void exahype::Vertex::mergeWithBoundaryData(
-    solvers::Solver::CellInfo& cellInfo,
-    const tarch::la::Vector<DIMENSIONS,int>&     posCell,
-    const tarch::la::Vector<DIMENSIONS,int>&     posBoundary,
-    const tarch::la::Vector<DIMENSIONS, double>& x,
-    const tarch::la::Vector<DIMENSIONS, double>& h) {
-  solvers::Solver::BoundaryFaceInfo face(posCell,posBoundary);
-
-  if ( !cellInfo.empty() ) {
-    for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
-      auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
-
-      switch ( solver->getType() ) {
-        case solvers::Solver::Type::ADERDG:
-          static_cast<solvers::ADERDGSolver*>(solver)->
-            mergeWithBoundaryData(solverNumber,cellInfo,posCell,posBoundary);
-          break;
-        case solvers::Solver::Type::LimitingADERDG:
-          static_cast<solvers::LimitingADERDGSolver*>(solver)->
-            mergeWithBoundaryData(solverNumber,cellInfo,posCell,posBoundary);
-          break;
-        case solvers::Solver::Type::FiniteVolumes:
-          static_cast<solvers::FiniteVolumesSolver*>(solver)->
-            mergeWithBoundaryData(solverNumber,cellInfo,posCell,posBoundary);
-          break;
-        default:
-          assertionMsg(false,"Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
-          logError("mergeWithBoundaryDataIfNotDoneYet(...)","Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
-          std::abort();
-          break;
-      }
-    }
-  }
-}
-
 void exahype::Vertex::mergeNeighboursDataAndMetadata(
     solvers::Solver::CellInfo& cellInfo1,
     solvers::Solver::CellInfo& cellInfo2,
@@ -340,7 +305,7 @@ void exahype::Vertex::mergeNeighboursDataAndMetadata(
           break;
         default:
           assertionMsg(false,"Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
-          logError("mergeWithBoundaryDataIfNotDoneYet(...)","Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
+          logError("mergeNeighboursDataAndMetadata(...)","Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
           std::abort();
           break;
       }
@@ -406,20 +371,15 @@ void exahype::Vertex::mergeNeighboursLoopBody(
     solvers::Solver::CellInfo cellInfo2 = vertex.createCellInfo(pos2Scalar);
     mergeNeighboursDataAndMetadata(cellInfo1,cellInfo2,pos1,pos2,x,h);
   }
-  else if ( validIndex1 && cellDescriptionsIndex2==mappings::LevelwiseAdjacencyBookkeeping::DomainBoundaryAdjacencyIndex ) {
-    solvers::Solver::CellInfo cellInfo1 = vertex.createCellInfo(pos1Scalar);
-    mergeWithBoundaryData(cellInfo1,pos1,pos2,x,h);
-  }
-  else if ( validIndex2 && cellDescriptionsIndex1==mappings::LevelwiseAdjacencyBookkeeping::DomainBoundaryAdjacencyIndex ) {
-    solvers::Solver::CellInfo cellInfo2 = vertex.createCellInfo(pos2Scalar);
-    mergeWithBoundaryData(cellInfo2,pos2,pos1,x,h);
-  }
   else if  (
       validate
       &&
       validIndex1 != validIndex2
       &&
-      cellDescriptionsIndex1!=mappings::LevelwiseAdjacencyBookkeeping::RemoteAdjacencyIndex&&
+      cellDescriptionsIndex1!=mappings::LevelwiseAdjacencyBookkeeping::DomainBoundaryAdjacencyIndex &&
+      cellDescriptionsIndex2!=mappings::LevelwiseAdjacencyBookkeeping::DomainBoundaryAdjacencyIndex
+      &&
+      cellDescriptionsIndex1!=mappings::LevelwiseAdjacencyBookkeeping::RemoteAdjacencyIndex &&
       cellDescriptionsIndex2!=mappings::LevelwiseAdjacencyBookkeeping::RemoteAdjacencyIndex
   ) {
     validateNeighbourhood(cellDescriptionsIndex1,cellDescriptionsIndex2,vertex,pos1,pos2);
