@@ -140,6 +140,7 @@ void exahype::mappings::PredictionOrLocalRecomputation::enterCell(
   if ( fineGridCell.isInitialised() ) {
     solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> boundaryMarkers = exahype::Cell::collectBoundaryMarkers(fineGridVertices,fineGridVerticesEnumerator);
+    const bool isAtRemoteBoundary = tarch::la::oneEquals(boundaryMarkers,LevelwiseAdjacencyBookkeeping::RemoteAdjacencyIndex);
 
     for (unsigned int solverNumber=0; solverNumber<exahype::solvers::RegisteredSolvers.size(); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];

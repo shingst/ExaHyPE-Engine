@@ -12,6 +12,8 @@
  
 #include "exahype/mappings/DropNeighbourMessages.h"
 
+#include "exahype/mappings/LevelwiseAdjacencyBookkeeping.h"
+
 peano::CommunicationSpecification exahype::mappings::DropNeighbourMessages::communicationSpecification() const {
   return peano::CommunicationSpecification(
         peano::CommunicationSpecification::ExchangeMasterWorkerData::MaskOutMasterWorkerDataAndStateExchange,
@@ -80,10 +82,12 @@ void exahype::mappings::DropNeighbourMessages::enterCell(
     // wait for completion of jobs
     if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ) {
       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> boundaryMarkers = exahype::Cell::collectBoundaryMarkers(fineGridVertices,fineGridVerticesEnumerator);
+      const bool isAtRemoteBoundary = tarch::la::oneEquals(boundaryMarkers,LevelwiseAdjacencyBookkeeping::RemoteAdjacencyIndex);
+
       // ADER-DG
       for (auto& p : cellInfo._ADERDGCellDescriptions) {
         const bool waitForHighPriorityJob =
-            boundaryMarkers || p.getAugmentationStatus()>=exahype::solvers::ADERDGSolver::MinimumAugmentationStatusForVirtualRefining;
+            isAtRemoteBoundary || p.getAugmentationStatus()>=exahype::solvers::ADERDGSolver::MinimumAugmentationStatusForVirtualRefining;
         solvers::RegisteredSolvers[p.getSolverNumber()]->waitUntilCompletedLastStep(p,waitForHighPriorityJob,false);
       }
       // // FV - fused time step jobs are only spawned within batches

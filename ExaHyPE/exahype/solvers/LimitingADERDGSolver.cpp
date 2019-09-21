@@ -772,8 +772,7 @@ void exahype::solvers::LimitingADERDGSolver::updateOrRestrict(
 
     const bool isAtRemoteBoundary    = tarch::la::oneEquals(boundaryMarkers,exahype::mappings::LevelwiseAdjacencyBookkeeping::RemoteAdjacencyIndex);
     if ( _solver->isLeaf(solverPatch) && SpawnUpdateAsBackgroundJob ) {
-      peano::datatraversal::TaskSet( new UpdateJob(
-          *this, solverPatch,cellInfo,boundaryMarkers,isAtRemoteBoundary ) );
+      peano::datatraversal::TaskSet( new UpdateJob(*this, solverPatch,cellInfo,boundaryMarkers ) );
     }
     else if ( _solver->isLeaf(solverPatch) ) {
       updateBody(solverPatch,cellInfo,boundaryMarkers);
