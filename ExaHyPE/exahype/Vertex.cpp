@@ -407,12 +407,14 @@ void exahype::Vertex::mergeNeighboursLoopBody(
     mergeNeighboursDataAndMetadata(cellInfo1,cellInfo2,pos1,pos2,x,h);
   }
   else if ( validIndex1 && cellDescriptionsIndex2==mappings::LevelwiseAdjacencyBookkeeping::DomainBoundaryAdjacencyIndex ) {
-    solvers::Solver::CellInfo cellInfo1 = vertex.createCellInfo(pos1Scalar);
-    mergeWithBoundaryData(cellInfo1,pos1,pos2,x,h);
+    // do nothing
+    // solvers::Solver::CellInfo cellInfo1 = vertex.createCellInfo(pos1Scalar);
+    // mergeWithBoundaryData(cellInfo1,pos1,pos2,x,h);
   }
   else if ( validIndex2 && cellDescriptionsIndex1==mappings::LevelwiseAdjacencyBookkeeping::DomainBoundaryAdjacencyIndex ) {
-    solvers::Solver::CellInfo cellInfo2 = vertex.createCellInfo(pos2Scalar);
-    mergeWithBoundaryData(cellInfo2,pos2,pos1,x,h);
+    // do nothing
+    // solvers::Solver::CellInfo cellInfo2 = vertex.createCellInfo(pos2Scalar);
+    // mergeWithBoundaryData(cellInfo2,pos2,pos1,x,h);
   }
   else if  (
       validate

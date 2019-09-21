@@ -1185,22 +1185,15 @@ void exahype::solvers::ADERDGSolver::printADERDGFluctuations2D(const CellDescrip
   #endif
 }
 
+
+
 void exahype::solvers::ADERDGSolver::surfaceIntegral(
     CellDescription&                                   cellDescription,
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers,
     const bool                                         addToUpdate) {
   assertion1(cellDescription.getType()==CellDescription::Type::Leaf,cellDescription.toString());
-  if ( !tarch::la::equals(cellDescription.getNeighbourMergePerformed(),static_cast<signed char>(true)) && !ProfileUpdate ) {
-    logError("surfaceIntegral(...)","Riemann solve was not performed on all faces of cell= "<<cellDescription.toString());
-    std::terminate();
-  }
-  assertion1( tarch::la::equals(cellDescription.getNeighbourMergePerformed(),static_cast<signed char>(true)) || ProfileUpdate,cellDescription.toString());
-  cellDescription.setNeighbourMergePerformed(static_cast<signed char>(false));
-
   double* output= static_cast<double*>(cellDescription.getSolution());
-  if ( addToUpdate ) {
-    output = static_cast<double*>(cellDescription.getUpdate());
-  }
+  if ( addToUpdate ) { output = static_cast<double*>(cellDescription.getUpdate()); }
 
   #ifdef Asserts
   if ( _checkForNaNs ) {
@@ -1215,14 +1208,26 @@ void exahype::solvers::ADERDGSolver::surfaceIntegral(
   for (int direction=0; direction<DIMENSIONS; direction++) {
     for (int orientation=0; orientation<2; orientation++) {
       const int faceIndex=2*direction+orientation;
+      // impose boundary conditions
+      if ( boundaryMarkers[faceIndex]==mappings::LevelwiseAdjacencyBookkeeping::DomainBoundaryAdjacencyIndex ) {
+        mergeWithBoundaryData(cellDescription,faceIndex,direction,orientation);
+      }
+      // perform face integral
       if ( cellDescription.getFacewiseAugmentationStatus(faceIndex)<MaximumAugmentationStatus ) { // ignore Ancestors
         double* const lFhbnd = static_cast<double*>(cellDescription.getFluctuation()) + dofsPerFace * faceIndex;
         faceIntegral(output,lFhbnd,direction,orientation,0/*implicit conversion*/,0,cellDescription.getSize(),
                      cellDescription.getTimeStepSize(),addToUpdate);
       }
-      // TODO(Dominic): Impose boundary conditions here
     }
   }
+
+  // check that all neighbour merges have been performed; reset the flags
+  if ( !tarch::la::equals(cellDescription.getNeighbourMergePerformed(),static_cast<signed char>(true)) && !ProfileUpdate ) {
+    logError("surfaceIntegral(...)","Riemann solve was not performed on all faces of cell= "<<cellDescription.toString());
+    std::terminate();
+  }
+  assertion1( tarch::la::equals(cellDescription.getNeighbourMergePerformed(),static_cast<signed char>(true)) || ProfileUpdate,cellDescription.toString());
+  cellDescription.setNeighbourMergePerformed(static_cast<signed char>(false));
 
   #ifdef Asserts
   if ( _checkForNaNs ) {
@@ -1839,7 +1844,7 @@ void exahype::solvers::ADERDGSolver::mergeWithBoundaryData(
       uncompress(cellDescription);
 
       prefetchFaceData(cellDescription,face._faceIndex);
-      applyBoundaryConditions(cellDescription,face);
+      applyBoundaryConditions(cellDescription,face._faceIndex,face._direction,face._orientation);
 
       mergeWithAugmentationStatus(cellDescription,face._faceIndex,BoundaryStatus);
       mergeWithCommunicationStatus(cellDescription,face._faceIndex,BoundaryStatus);
@@ -1854,10 +1859,21 @@ void exahype::solvers::ADERDGSolver::mergeWithBoundaryData(
   #endif
 }
 
-void exahype::solvers::ADERDGSolver::applyBoundaryConditions(CellDescription& p,Solver::BoundaryFaceInfo& face) {
-  assertion1(p.getType()==CellDescription::Type::Leaf,p.toString());
-  assertion1(DataHeap::getInstance().isValidIndex(p.getExtrapolatedPredictorIndex()),p.toString());
-  assertion1(DataHeap::getInstance().isValidIndex(p.getFluctuationIndex()),p.toString());
+void exahype::solvers::ADERDGSolver::mergeWithBoundaryData(CellDescription& cellDescription,const int faceIndex,const int direction,const int orientation) {
+  prefetchFaceData(cellDescription,faceIndex);
+  applyBoundaryConditions(cellDescription,faceIndex,direction,orientation);
+
+  mergeWithAugmentationStatus(cellDescription,faceIndex,BoundaryStatus);
+  mergeWithCommunicationStatus(cellDescription,faceIndex,BoundaryStatus);
+  mergeWithRefinementStatus(cellDescription,faceIndex,BoundaryStatus);
+
+  cellDescription.setNeighbourMergePerformed(faceIndex,true);
+}
+
+void exahype::solvers::ADERDGSolver::applyBoundaryConditions(CellDescription& cellDescription,const int faceIndex,const int direction,const int orientation) {
+  assertion1(cellDescription.getType()==CellDescription::Type::Leaf,cellDescription.toString());
+  assertion1(DataHeap::getInstance().isValidIndex(cellDescription.getExtrapolatedPredictorIndex()),cellDescription.toString());
+  assertion1(DataHeap::getInstance().isValidIndex(cellDescription.getFluctuationIndex()),cellDescription.toString());
   #if !defined(SharedMemoryParallelisation) && !defined(Parallel) && defined(Asserts)
   static int counter = 0;
   static double timeStamp = 0;
@@ -1872,45 +1888,45 @@ void exahype::solvers::ADERDGSolver::applyBoundaryConditions(CellDescription& p,
   const int dataPerFace = getBndFaceSize();
   const int dofsPerFace = getBndFluxSize();
   const int gradientDataPerFace = getBndGradQSize();
-  double* QIn = static_cast<double*>(p.getExtrapolatedPredictor()) +  dataPerFace * face._faceIndex;
-  double* gradQIn = static_cast<double*>(p.getExtrapolatedPredictorGradient()) +  gradientDataPerFace * face._faceIndex;
-  double* FIn = static_cast<double*>(p.getFluctuation())           +  dofsPerFace * face._faceIndex;
-  const double* luh = static_cast<double*>(p.getSolution());
+  double* QIn = static_cast<double*>(cellDescription.getExtrapolatedPredictor()) +  dataPerFace * faceIndex;
+  double* gradQIn = static_cast<double*>(cellDescription.getExtrapolatedPredictorGradient()) +  gradientDataPerFace * faceIndex;
+  double* FIn = static_cast<double*>(cellDescription.getFluctuation())           +  dofsPerFace * faceIndex;
+  const double* luh = static_cast<double*>(cellDescription.getSolution());
 
   #ifdef Asserts
   std::string inputData = riemannDataToString(QIn,FIn,"In");
   #endif
 
   #ifdef Asserts
-  assertion4(std::isfinite(p.getTimeStamp()),p.toString(),face._faceIndex,face._direction,p.getTimeStamp());
-  assertion4(std::isfinite(p.getTimeStepSize()),p.toString(),face._faceIndex,face._direction,p.getTimeStepSize());
-  assertion4(p.getTimeStepSize()>=0.0, p.toString(),face._faceIndex,face._direction,p.getTimeStepSize());
+  assertion4(std::isfinite(cellDescription.getTimeStamp()),cellDescription.toString(),faceIndex,direction,cellDescription.getTimeStamp());
+  assertion4(std::isfinite(cellDescription.getTimeStepSize()),cellDescription.toString(),faceIndex,direction,cellDescription.getTimeStepSize());
+  assertion4(cellDescription.getTimeStepSize()>=0.0, cellDescription.toString(),faceIndex,direction,cellDescription.getTimeStepSize());
   if ( _checkForNaNs ) {
     for(int i=0; i<dofsPerFace; ++i) {
-      assertion6(tarch::la::equals(p.getTimeStepSize(),0.0) || std::isfinite(FIn[i]),p.toString(),face._faceIndex,face._direction,i,FIn[i],inputData);
+      assertion6(tarch::la::equals(cellDescription.getTimeStepSize(),0.0) || std::isfinite(FIn[i]),cellDescription.toString(),faceIndex,direction,i,FIn[i],inputData);
     }
   }
   #endif
 
   // TODO(Dominic): Hand in space-time volume data. Time integrate it afterwards
 
-  std::tuple<double,double> timeStepData = getRiemannSolverTimeStepData(p,p);
+  std::tuple<double,double> timeStepData = getRiemannSolverTimeStepData(cellDescription,cellDescription);
   boundaryConditions(
       FIn,QIn, gradQIn,
       luh,
-      p.getOffset() + 0.5*p.getSize(),
-      p.getSize(),
+      cellDescription.getOffset() + 0.5*cellDescription.getSize(),
+      cellDescription.getSize(),
       std::get<0>(timeStepData),
       std::get<1>(timeStepData),
-      face._direction,face._orientation);
+      direction,orientation);
 
   #ifdef Asserts
-  assertion4(std::isfinite(p.getTimeStamp()),p.toString(),face._faceIndex,face._direction,p.getTimeStamp());
-  assertion4(std::isfinite(p.getTimeStepSize()),p.toString(),face._faceIndex,face._direction,p.getTimeStepSize());
-  assertion4(p.getTimeStepSize()>=0.0, p.toString(),face._faceIndex,face._direction,p.getTimeStepSize());
+  assertion4(std::isfinite(cellDescription.getTimeStamp()),cellDescription.toString(),faceIndex,direction,cellDescription.getTimeStamp());
+  assertion4(std::isfinite(cellDescription.getTimeStepSize()),cellDescription.toString(),faceIndex,direction,cellDescription.getTimeStepSize());
+  assertion4(cellDescription.getTimeStepSize()>=0.0, cellDescription.toString(),faceIndex,direction,cellDescription.getTimeStepSize());
   if ( _checkForNaNs ) {
     for(int i=0; i<dofsPerFace; ++i) {
-      assertion6(tarch::la::equals(p.getTimeStepSize(),0.0) || std::isfinite(FIn[i]),p.toString(),face._faceIndex,face._direction,i,FIn[i],inputData);
+      assertion6(tarch::la::equals(cellDescription.getTimeStepSize(),0.0) || std::isfinite(FIn[i]),cellDescription.toString(),faceIndex,direction,i,FIn[i],inputData);
     }
   }
   #endif

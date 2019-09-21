@@ -834,6 +834,29 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
     const int                                          cellDescriptionsIndex,
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers,
     const bool                                         backupPreviousSolution) {
+  // boundary conditions
+  double* solution       = static_cast<double*>(cellDescription.getSolution());
+  for (int direction=0; direction<DIMENSIONS; direction++) {
+    for (int orientation=0; orientation<2; orientation++) {
+      const int faceIndex=2*direction+orientation;
+      if ( boundaryMarkers[faceIndex]==mappings::LevelwiseAdjacencyBookkeeping::DomainBoundaryAdjacencyIndex ) {
+        tarch::la::Vector<DIMENSIONS,int> posCell(1);
+        tarch::la::Vector<DIMENSIONS,int> posBoundary = posCell;
+        posBoundary[direction] += orientation > 0 ? 1 : -1;
+
+        boundaryConditions(
+            solution,
+            cellDescription.getOffset()+0.5*cellDescription.getSize(),
+            cellDescription.getSize(),
+            cellDescription.getTimeStamp(),
+            cellDescription.getTimeStepSize(),
+            posCell,posBoundary);
+
+        cellDescription.setNeighbourMergePerformed(faceIndex,true);
+      }
+    }
+  }
+
   if ( !tarch::la::equals(cellDescription.getNeighbourMergePerformed(),static_cast<signed char>(true)) && !ProfileUpdate ) {
     logError("updateSolution(...)","Not all ghost layers were copied to cell="<<cellDescription.toString());
     std::terminate();
@@ -863,8 +886,7 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
 
   double admissibleTimeStepSize=std::numeric_limits<double>::infinity();
 
-  // TODO(Dominic): Impose boundary conditions here
-
+  // update
   solutionUpdate(solution,
 		 cellDescription.getOffset() + 0.5*cellDescription.getSize(),
 		 cellDescription.getSize(),

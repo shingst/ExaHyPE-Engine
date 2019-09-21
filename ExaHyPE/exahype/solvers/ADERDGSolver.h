@@ -691,11 +691,24 @@ private:
    *
    * @note Not thread-safe.
    *
-   * @param[in] cellDescription         The cell description
-   * @param[in] face                    information about the boundary face
+   * @param[in] cellDescription The cell description
+   * @param[in] faceIndex       2*direction + orientation
+   * @param[in] direction       direction of the normal vector
+   * @param[in] orientation     orientation of the normal vector: 1 if it points in direction of a coordinate axis. 0 if it points the other way.
+   *
    * @note Not thread-safe.
    */
-  void applyBoundaryConditions(CellDescription& p,Solver::BoundaryFaceInfo& face);
+  void applyBoundaryConditions(CellDescription& cellDescription,const int faceIndex,const int direction,const int orientation);
+
+  /**
+   * Merge with boundary data. Calls applyBoundaryConditions.
+   *
+   * @param[in] cellDescription The cell description
+   * @param[in] faceIndex       2*direction + orientation
+   * @param[in] direction       direction of the normal vector
+   * @param[in] orientation     orientation of the normal vector: 1 if it points in direction of a coordinate axis. 0 if it points the other way.
+   */
+  void mergeWithBoundaryData(CellDescription& cellDescription,const int faceIndex,const int direction,const int orientation);
 
   /**
    * Perform all face integrals for a cell and add the result to
