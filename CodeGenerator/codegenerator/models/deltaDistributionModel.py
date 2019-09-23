@@ -29,5 +29,5 @@ from .abstractModelBaseClass import AbstractModelBaseClass
 class DeltaDistributionModel(AbstractModelBaseClass):
 
     def generateCode(self):
-        if(self.context['usePointSources']):
-            self.render("deltaDistribution_cpp.template", "deltaDistribution.cpp")
+        if(self.context["usePointSources"]):
+            self.render(("aderdg", "deltaDistribution_cpp.template"), "deltaDistribution.cpp")

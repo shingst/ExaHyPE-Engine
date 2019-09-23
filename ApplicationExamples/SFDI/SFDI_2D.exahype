@@ -4,8 +4,7 @@
   "paths": {
     "peano_kernel_path": "./Peano",
     "exahype_path": "./ExaHyPE",
-    "output_directory": "./ApplicationExamples/SFDI/SFDI",
-    "log_file": "whatever.log"
+    "output_directory": "./ApplicationExamples/SFDI/SFDI"
   },
   "architecture": "skx",
   "computational_domain": {
@@ -21,10 +20,10 @@
     ]
   },
   "shared_memory": {
-    "cores": 16,
+    "cores": 4,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
-    "background_job_consumers": 15
+    "background_job_consumers": 3
   },
   "distributed_memory": {
     "timeout": 6000,

@@ -1810,13 +1810,14 @@ public:
    *                                    @p isLastIterationOfBatch are true).
    * @param[in] isAtRemoteBoundary Flag indicating that the cell hosting the
    *                                    cell description is adjacent to a remote rank.
+   * @param[in] boundaryMarkers         per face, a flag indicating if the cell description is adjacent to a remote or domain boundary.
    */
   virtual void fusedTimeStepOrRestrict(
-      const int  solverNumber,
-      CellInfo&  cellInfo,
-      const bool isFirstIterationOfBatch,
-      const bool isLastIterationOfBatch,
-      const bool isAtRemoteBoundary) = 0;
+      const int                                          solverNumber,
+      CellInfo&                                          cellInfo,
+      const bool                                         isFirstTimeStepOfBatch,
+      const bool                                         isLastTimeStepOfBatch,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers) = 0;
 
   /**
    * The nonfused update routine.
@@ -1841,14 +1842,14 @@ public:
    *
    * @note Has no const modifier since kernels are not const functions yet.
    *
-   * @param cellInfo           links to the data associated with the mesh cell
-   * @param solverNumber       id of a solver
-   * @param isAtRemoteBoundary indicates if this cell is adjacent to the domain of another rank
+   * @param[in]    solverNumber    id of a solver
+   * @param[inout] cellInfo        links to the data associated with the mesh cell
+   * @param[in]    boundaryMarkers per face, a flag indicating if the cell description is adjacent to a remote or domain boundary.
    */
   virtual void updateOrRestrict(
-      const int solverNumber,
-      CellInfo& cellInfo,
-      const bool isAtRemoteBoundary) = 0;
+      const int                                          solverNumber,
+      CellInfo&                                          cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers) = 0;
 
   /**
    * Go back to previous time step with
@@ -1978,20 +1979,6 @@ public:
       const int coarseGridCellDescriptionsIndex,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) = 0;
-
-  /**
-   * If a cell description was allocated at heap address @p cellDescriptionsIndex
-   * for solver @p solverNumber, encode metadata of the cell description
-   * and push it to the back of the metadata vector @p metadata.
-   *
-   * Otherwise, push exahype::MasterWorkerCommunicationMetadataPerSolver
-   * times exahype::InvalidMetadataEntry to the back of the vector.
-   *
-   */
-  virtual void appendMasterWorkerCommunicationMetadata(
-      MetadataHeap::HeapEntries& metadata,
-      const int cellDescriptionsIndex,
-      const int solverNumber) const = 0;
 
   /**
    * Send solver data to master or worker rank. Read the data from

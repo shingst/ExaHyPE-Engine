@@ -19,8 +19,6 @@
 
 #include "peano/datatraversal/autotuning/Oracle.h"
 
-#include "multiscalelinkedcell/HangingVertexBookkeeper.h"
-
 #include "exahype/VertexOperations.h"
 
 #include "exahype/solvers/LimitingADERDGSolver.h"
@@ -118,20 +116,20 @@ void exahype::mappings::UpdateAndReduce::leaveCell(
 
   if (fineGridCell.isInitialised()) {
     solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
-    const bool isAtRemoteBoundary = exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator);
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> boundaryMarkers = exahype::Cell::collectBoundaryMarkers(fineGridVertices,fineGridVerticesEnumerator);
 
     for (int solverNumber=0; solverNumber<static_cast<int>(solvers::RegisteredSolvers.size()); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
       switch ( solver->getType() ) {
         case solvers::Solver::Type::ADERDG:
-          static_cast<solvers::ADERDGSolver*>(solver)->updateOrRestrict(solverNumber,cellInfo,isAtRemoteBoundary);
+          static_cast<solvers::ADERDGSolver*>(solver)->updateOrRestrict(solverNumber,cellInfo,boundaryMarkers);
           break;
         case solvers::Solver::Type::LimitingADERDG:
-          static_cast<solvers::LimitingADERDGSolver*>(solver)->updateOrRestrict(solverNumber,cellInfo,isAtRemoteBoundary);
+          static_cast<solvers::LimitingADERDGSolver*>(solver)->updateOrRestrict(solverNumber,cellInfo,boundaryMarkers);
           break;
         case solvers::Solver::Type::FiniteVolumes:
-          static_cast<solvers::FiniteVolumesSolver*>(solver)->updateOrRestrict(solverNumber,cellInfo,isAtRemoteBoundary);
+          static_cast<solvers::FiniteVolumesSolver*>(solver)->updateOrRestrict(solverNumber,cellInfo,boundaryMarkers);
           break;
         default:
           assertionMsg(false,"Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
@@ -140,8 +138,6 @@ void exahype::mappings::UpdateAndReduce::leaveCell(
           break;
       }
     }
-
-    Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);
 }

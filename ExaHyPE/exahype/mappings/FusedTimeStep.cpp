@@ -20,8 +20,6 @@
 #include "peano/datatraversal/autotuning/Oracle.h"
 #include "peano/datatraversal/TaskSet.h"
 
-#include "multiscalelinkedcell/HangingVertexBookkeeper.h"
-
 #include "exahype/VertexOperations.h"
 
 #include "exahype/solvers/LimitingADERDGSolver.h"
@@ -105,23 +103,7 @@ exahype::mappings::FusedTimeStep::leaveCellSpecification(int level) const {
 
 peano::MappingSpecification
 exahype::mappings::FusedTimeStep::touchVertexFirstTimeSpecification(int level) const {
-  #ifdef Parallel
-  return peano::MappingSpecification(
-      peano::MappingSpecification::WholeTree,
-      peano::MappingSpecification::RunConcurrentlyOnFineGrid,true); // counter
-  #else
-
-  const int coarsestSolverLevel = solvers::Solver::getCoarsestMeshLevelOfAllSolvers();
-  if ( std::abs(level)>=coarsestSolverLevel && issuePredictionJobsInThisIteration() ) {
-    return peano::MappingSpecification(
-          peano::MappingSpecification::WholeTree,
-          peano::MappingSpecification::RunConcurrentlyOnFineGrid,true); // counter
-  } else {
-    return peano::MappingSpecification(
-          peano::MappingSpecification::Nop,
-          peano::MappingSpecification::RunConcurrentlyOnFineGrid,false);
-  }
-  #endif
+  return Vertex::getNeighbourMergeSpecification(level);
 }
 
 /**
@@ -355,7 +337,7 @@ void exahype::mappings::FusedTimeStep::leaveCell(
       fineGridCell.isInitialised()
   ) {
     solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
-    const bool isAtRemoteBoundary = exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator);
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> boundaryMarkers = exahype::Cell::collectBoundaryMarkers(fineGridVertices,fineGridVerticesEnumerator);
     const int isLastTimeStep =
         ( exahype::solvers::Solver::PredictionSweeps==1 ) ?
             exahype::State::isLastIterationOfBatchOrNoBatch() :
@@ -375,15 +357,15 @@ void exahype::mappings::FusedTimeStep::leaveCell(
       switch ( solver->getType() ) {
         case solvers::Solver::Type::ADERDG:
           static_cast<solvers::ADERDGSolver*>(solver)->fusedTimeStepOrRestrict(
-              solverNumber,cellInfo,exahype::State::isFirstIterationOfBatchOrNoBatch(),isLastTimeStep,isAtRemoteBoundary);
+              solverNumber,cellInfo,exahype::State::isFirstIterationOfBatchOrNoBatch(),isLastTimeStep,boundaryMarkers);
           break;
         case solvers::Solver::Type::LimitingADERDG:
           static_cast<solvers::LimitingADERDGSolver*>(solver)->fusedTimeStepOrRestrict(
-              solverNumber,cellInfo,exahype::State::isFirstIterationOfBatchOrNoBatch(),isLastTimeStep,isAtRemoteBoundary);
+              solverNumber,cellInfo,exahype::State::isFirstIterationOfBatchOrNoBatch(),isLastTimeStep,boundaryMarkers);
           break;
         case solvers::Solver::Type::FiniteVolumes:
           static_cast<solvers::FiniteVolumesSolver*>(solver)->fusedTimeStepOrRestrict(
-              solverNumber,cellInfo,exahype::State::isFirstIterationOfBatchOrNoBatch(),isLastTimeStep,isAtRemoteBoundary);
+              solverNumber,cellInfo,exahype::State::isFirstIterationOfBatchOrNoBatch(),isLastTimeStep,boundaryMarkers);
           break;
         default:
           assertionMsg(false,"Unrecognised solver type: "<<solvers::Solver::toString(solver->getType()));
@@ -392,9 +374,6 @@ void exahype::mappings::FusedTimeStep::leaveCell(
           break;
       }
     }
-
-    // Must be performed for all cell descriptions
-    Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
 
   logTraceOutWith1Argument("leaveCell(...)", fineGridCell);

@@ -19,6 +19,8 @@ GRMHDb::GRMHDbSolver::GRMHDbSolver(
         const double maximumMeshSize,
         const int maximumMeshDepth,
         const int haloCells,
+        const int haloBufferCells,
+        const int limiterBufferCells,
         const int regularisedFineGridLevels,
         const exahype::solvers::Solver::TimeStepping timeStepping,
         const int DMPObservables,
@@ -28,7 +30,7 @@ GRMHDb::GRMHDbSolver::GRMHDbSolver(
   exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
       "GRMHDbSolver",
     new GRMHDb::GRMHDbSolver_ADERDG(
-      maximumMeshSize,maximumMeshDepth,haloCells,regularisedFineGridLevels,timeStepping,DMPObservables),
+      maximumMeshSize,maximumMeshDepth,haloCells,haloBufferCells,limiterBufferCells,regularisedFineGridLevels,timeStepping,DMPObservables),
     new GRMHDb::GRMHDbSolver_FV(
       maximumMeshSize, timeStepping),
     DMPRelaxationParameter,

@@ -11,19 +11,23 @@
  * For the full license text, see LICENSE.txt
  **/ #}
 
-#include "{{pathToOptKernel}}/gemmsCPP.h"
-#include "{{pathToOptKernel}}/Kernels.h" //for the libxsmm flop counter
+#ifndef EXAHYPE_{{guardNamespace}}_GEMMSCPP_H_
+#define EXAHYPE_{{guardNamespace}}_GEMMSCPP_H_
 
 {% if useLibxsmm %}
-// amrRoutines gemms
-#include "{{pathToOptKernel}}/asm_amrRoutines.c"
 
+{% for namespaceName in codeNamespaceList %}
+namespace {{namespaceName}} {
+{% endfor %}
 
-// fusedSpaceTimePredictorVolumeIntegral gemms
-#include "{{pathToOptKernel}}/asm_fstpvi.c"
+{% for gemm in gemmList %}
+void {{gemm}}(const double* A, const double* B, double* C); 
+{% endfor %}
 
-{% if useLimiter %}
-// Limiter gemms
-#include "{{pathToOptKernel}}/asm_limiter.c"
-{% endif %}
+{% for namespaceName in codeNamespaceList %}
+}
+{% endfor %}
+
 {% endif %}{# useLibxsmm #}
+
+#endif //EXAHYPE_{{guardNamespace}}_GEMMSCPP_H_

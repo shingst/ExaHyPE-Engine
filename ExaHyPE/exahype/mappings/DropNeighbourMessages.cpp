@@ -12,13 +12,7 @@
  
 #include "exahype/mappings/DropNeighbourMessages.h"
 
-//Workaround: we need to define solver classes before the template
-//instantiation of waitUntilLastStepCompleted as otherwise the compiler
-//complains about incomplete types
-#if defined(DistributedOffloading)
-#include "exahype/solvers/ADERDGSolver.h"
-#include "exahype/solvers/LimitingADERDGSolver.h"
-#endif
+#include "exahype/mappings/LevelwiseAdjacencyBookkeeping.h"
 
 peano::CommunicationSpecification exahype::mappings::DropNeighbourMessages::communicationSpecification() const {
   return peano::CommunicationSpecification(
@@ -87,7 +81,9 @@ void exahype::mappings::DropNeighbourMessages::enterCell(
 
     // wait for completion of jobs
     if ( exahype::solvers::Solver::SpawnPredictionAsBackgroundJob ) {
-      const bool isAtRemoteBoundary = Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator);
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> boundaryMarkers = exahype::Cell::collectBoundaryMarkers(fineGridVertices,fineGridVerticesEnumerator);
+      const bool isAtRemoteBoundary = tarch::la::oneEquals(boundaryMarkers,LevelwiseAdjacencyBookkeeping::RemoteAdjacencyIndex);
+
       // ADER-DG
       for (auto& p : cellInfo._ADERDGCellDescriptions) {
         const bool waitForHighPriorityJob =
@@ -96,14 +92,17 @@ void exahype::mappings::DropNeighbourMessages::enterCell(
       }
       // // FV - fused time step jobs are only spawned within batches
       // for (auto& p : cellInfo._FiniteVolumesCellDescriptions) {
-      //   const bool waitForHighPriorityJob = isAtRemoteBoundary;
+      //   const bool waitForHighPriorityJob = boundaryMarkers;
       //   solvers::Solver::waitUntilCompletedTimeStep(p,waitForHighPriorityJob,false);
       // }
     }
-
-    Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
 }
+
+//
+// Below all methods are nop.
+//
+// ====================================
 
 #ifdef Parallel
 ///////////////////////////////////////
@@ -113,11 +112,7 @@ void exahype::mappings::DropNeighbourMessages::mergeWithNeighbour(
     exahype::Vertex& vertex, const exahype::Vertex& neighbour, int fromRank,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridX,
     const tarch::la::Vector<DIMENSIONS, double>& fineGridH, int level) {
-  if ( exahype::solvers::Solver::FuseAllADERDGPhases ) {
-    vertex.receiveNeighbourData(
-        fromRank,false /*no merge*/,true /*no batch*/,
-        fineGridX,fineGridH,level);
-  }
+  // do nothing
 }
 
 bool exahype::mappings::DropNeighbourMessages::prepareSendToWorker(
@@ -130,11 +125,6 @@ bool exahype::mappings::DropNeighbourMessages::prepareSendToWorker(
     int worker) {
   return true; // tells master this worker wants to reduce; we reduce to create a barrier
 }
-
-//
-// Below all methods are nop.
-//
-// ====================================
 
 void exahype::mappings::DropNeighbourMessages::receiveDataFromMaster(
     exahype::Cell& receivedCell, exahype::Vertex* receivedVertices,
@@ -238,7 +228,9 @@ exahype::mappings::DropNeighbourMessages::DropNeighbourMessages(const DropNeighb
 
 void exahype::mappings::DropNeighbourMessages::beginIteration(
     exahype::State& solverState) {
-  // do nothing
+  if ( exahype::solvers::Solver::FuseAllADERDGPhases ) {
+    peano::heap::AbstractHeap::allHeapsDropReceivedBoundaryData();
+  }
 }
 
 void exahype::mappings::DropNeighbourMessages::endIteration(

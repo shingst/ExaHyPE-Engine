@@ -328,7 +328,8 @@ class Controller:
         """Generate context for the KernelCalls model"""
         context = self.buildBaseContext()
         context["solvers"] = solverContextsList
-        context["codegeneratorContextsList"] = [solverContext["codegeneratorContext"] for solverContext in solverContextsList if "codegeneratorContext" in solverContext]
+        context["codegeneratorContextsList"] = [solverContext["codegeneratorContext"] for solverContext in solverContextsList if "codegeneratorContext" in solverContext] \
+                                               + [solverContext["aderdgContext"]["codegeneratorContext"] for solverContext in solverContextsList if ("aderdgContext" in solverContext and "codegeneratorContext" in solverContext["aderdgContext"])]
         context["strictJSON"]            = self.strict_json
         context["specfileName"]          = self.specfileName
         context["specFileAsHex"]         = self.specfileAsHex(self.spec)

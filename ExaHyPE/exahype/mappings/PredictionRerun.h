@@ -102,7 +102,7 @@ private:
   #endif
 
   /**
-   * Ensure all background jobs have terminated.
+   * Drop all received boundary data in the first iteration.
    */
   void beginIteration(exahype::State& solverState);
 

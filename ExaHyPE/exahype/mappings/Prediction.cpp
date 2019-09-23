@@ -21,8 +21,6 @@
 #include "peano/datatraversal/autotuning/Oracle.h"
 #include "peano/datatraversal/TaskSet.h"
 
-#include "multiscalelinkedcell/HangingVertexBookkeeper.h"
-
 #include "exahype/solvers/ADERDGSolver.h"
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
@@ -144,7 +142,6 @@ void exahype::mappings::Prediction::performPredictionOrProlongate(
   if ( fineGridCell.isInitialised() ) {
     solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
 
-    exahype::Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
     const bool isAtRemoteBoundary = exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator);
     for (unsigned int solverNumber=0; solverNumber<solvers::RegisteredSolvers.size(); solverNumber++) {
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];

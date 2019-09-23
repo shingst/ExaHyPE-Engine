@@ -6,10 +6,10 @@
 
 
 exahype::solvers::ADERDGSolver::UpdateJob::UpdateJob(
-  ADERDGSolver&    solver,
-  CellDescription& cellDescription,
-  CellInfo&        cellInfo,
-  const bool       isAtRemoteBoundary):
+  ADERDGSolver&                                      solver,
+  CellDescription&                                   cellDescription,
+  CellInfo&                                          cellInfo,
+  const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers):
   tarch::multicore::jobs::Job(
       tarch::multicore::jobs::JobType::BackgroundTask,0,
       getHighPriorityTaskPriority()
@@ -17,13 +17,12 @@ exahype::solvers::ADERDGSolver::UpdateJob::UpdateJob(
   _solver(solver),
   _cellDescription(cellDescription),
   _cellInfo(cellInfo),
-  _neighbourMergePerformed(cellDescription.getNeighbourMergePerformed()),
-  _isAtRemoteBoundary(isAtRemoteBoundary) {
+  _boundaryMarkers(boundaryMarkers) {
   NumberOfReductionJobs.fetch_add(1);
 }
 
 bool exahype::solvers::ADERDGSolver::UpdateJob::run(bool runOnMasterThread) {
-  _solver.updateBody(_cellDescription,_cellInfo,_neighbourMergePerformed,_isAtRemoteBoundary);
+  _solver.updateBody(_cellDescription,_cellInfo,_boundaryMarkers);
 
   NumberOfReductionJobs.fetch_sub(1);
   assertion( NumberOfReductionJobs.load()>=0 );

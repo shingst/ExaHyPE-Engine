@@ -92,24 +92,6 @@ public:
       const tarch::la::Vector<DIMENSIONS,int>& pos1,
       const tarch::la::Vector<DIMENSIONS,int>& pos2);
 
-  /**
-   * @return if the neighbourMergePerformed flag is set for face @p faceindex on
-   * the cell descriptions referenced by @p cellInfo.
-   *
-   * @note Side effects: This functions checks if the neighbourMergePerformed flag is set to false on the cell descriptions.
-   * If this flag is not set, the function returns true. However, before it returns, it
-   * sets the flag to true. The next call of this function will then return false.
-   *
-   * @param cellInfo              a struct holding referenecs to cell description arrays
-   * @param faceIndex             an index in the range of 0 (inclusive) to 2*DIMENSIONS (exclusive).
-   * @param prefethADERDGFaceData if ADER-DG face data should be prefetched
-   *                              (if defined(SharedTBB) && !defined(noTBBPrefetchesJobData))
-   */
-  static bool hasToMergeAtFace(
-      solvers::Solver::CellInfo& cellInfo,
-      const int                  faceIndex,
-      const bool                 prefetchADERDGFaceData);
-
 private:
   typedef class peano::grid::Vertex<exahype::records::Vertex> Base;
 
@@ -144,63 +126,38 @@ private:
       const tarch::la::Vector<DIMENSIONS, double>& h);
 
   /**
-   * Loops over the cell descriptions stored at the
-   * two heap array indices and tries to impose boundary
-   * conditions if this was not already previously.
-   *
-   * @param cellDescriptionsIndex1 index corresponding to pos1
-   * @param cellDescriptionsIndex2 index corresponding to pos2
-   * @param pos1 position of first cell
-   * @param pos2 position of second cell
-   * @param x the position of the vertex
-   * @param h the mesh size at the level of the vertex
-   *
-   * @note Assumes a stable mesh, or at least one where no cells are deleted
-   * but only added and the adjacency information is updated.
-   */
-  static void mergeWithBoundaryData(
-      solvers::Solver::CellInfo& cellInfo,
-      const tarch::la::Vector<DIMENSIONS,int>& posCell,
-      const tarch::la::Vector<DIMENSIONS,int>& posBoundary,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const tarch::la::Vector<DIMENSIONS, double>& h);
-
-
-
-  /**
    * Loop body of loop in mergeNeighbours.
    *
    * @note All parameters must be copied as the function
    * might be spawned as task.
    *
-   * @param pos1Scalar             linearised adjacency index
-   * @param cellDescriptionsIndex1 cell description index corresponding to the adjacency index
-   * @param x position of a vertex
-   * @param h extent of cells adjacent to the vertex
+   * @param[in] pos1Scalar             linearised adjacency index
+   * @param[in] cellDescriptionsIndex1 cell description index corresponding to the adjacency index
+   * @param x                          position of this vertex
+   * @param h                          mesh size on level of vertex
    */
   static void mergeNeighboursLoopBody(
-      const int                                   spos1Scalar,
-      const int                                   spos2Scalar,
-      const exahype::Vertex&                      vertex,
-      const tarch::la::Vector<DIMENSIONS, double> x,
-      const tarch::la::Vector<DIMENSIONS, double> h);
+      const int                                    pos1Scalar,
+      const int                                    pos2Scalar,
+      const exahype::Vertex&                       vertex,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h);
 
   static void mergeOnlyNeighboursMetadataLoopBodyHelper(
-      solvers::Solver::CellInfo& cellInfo1,
-      const solvers::Solver::CellInfo& cellInfo2,
-      const tarch::la::Vector<DIMENSIONS,int>& pos1,
-      const tarch::la::Vector<DIMENSIONS,int>& pos2,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const tarch::la::Vector<DIMENSIONS, double>& h,
-      const exahype::State::AlgorithmSection& section);
+      solvers::Solver::CellInfo&                   cellInfo1,
+      const solvers::Solver::CellInfo&             cellInfo2,
+      const tarch::la::Vector<DIMENSIONS,int>&     pos1,
+      const tarch::la::Vector<DIMENSIONS,int>&     pos2,
+      const tarch::la::Vector<DIMENSIONS, double>& barycentre,
+      const exahype::State::AlgorithmSection&      section);
 
   /**
    * Loop body of loop in mergeNeighboursMetadata.
    *
    * @param pos1Scalar             linearised adjacency index
    * @param cellDescriptionsIndex1 cell description index corresponding to the adjacency index
-   * @param x position of this vertex
-   * @param h mesh size
+   * @param x                      position of this vertex
+   * @param h                      mesh size
    */
   static void mergeOnlyNeighboursMetadataLoopBody(
       const int pos1Scalar,
@@ -222,7 +179,7 @@ private:
    * @param destScalar
    * @param srcCellDescriptionIndex
    * @param adjacentRanks
-   * @param baryCentre of a face
+   * @param barycentre of a face
    * @param h
    * @param level
    * @param checkThoroughly
@@ -233,7 +190,7 @@ private:
       const int                                    destScalar,
       const int                                    srcCellDescriptionIndex,
       const tarch::la::Vector<TWO_POWER_D, int>&   adjacentRanks,
-      const tarch::la::Vector<DIMENSIONS, double>& baryCentre,
+      const tarch::la::Vector<DIMENSIONS, double>& barycentre,
       const tarch::la::Vector<DIMENSIONS, double>& h,
       const int                                    level,
       const bool                                   checkThoroughly);
@@ -308,6 +265,7 @@ private:
       const tarch::la::Vector<TWO_POWER_D, int>&   adjacentRanks,
       const bool                                   isLastIterationOfBatchOrNoBatch,
       const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h,
       const int                                    level);
 
   /**
@@ -320,7 +278,7 @@ private:
    * @param mergeWithReceivedData
    * @param receiveNeighbourMetadata
    * @param adjacentRanks
-   * @param baryCentre bary centre of the face
+   * @param barycentre bary centre of the face
    * @param level
    */
   static void receiveNeighbourDataLoopBody(
@@ -331,7 +289,6 @@ private:
     const bool                                   mergeWithReceivedData,
     const bool                                   receiveNeighbourMetadata,
     const tarch::la::Vector<TWO_POWER_D, int>&   adjacentRanks,
-    const tarch::la::Vector<DIMENSIONS, double>& baryCentre,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, double>& h,
     const int                                    level);
@@ -645,7 +602,7 @@ private:
       const tarch::la::Vector<DIMENSIONS,int>&     src,
       const tarch::la::Vector<DIMENSIONS,int>&     dest,
       const int                                    srcCellDescriptionsIndex,
-      const tarch::la::Vector<DIMENSIONS, double>& baryCentre,
+      const tarch::la::Vector<DIMENSIONS, double>& barycentre,
       const tarch::la::Vector<DIMENSIONS, double>& h);
 
   /**

@@ -23,7 +23,7 @@
 # @note
 # requires python3
 
-
+import sys
 import argparse
 from enum import Enum
 
@@ -34,14 +34,22 @@ class ArgumentParser:
     
     class ArgType(Enum):
         """Types of arguments for the command line API"""
-        MandatoryString =1  # name, type, help
-        MandatoryInt    =2  # name, type, help
-        OptionalBool    =11 # name (will add --), type, help
-        OptionalInt     =12 # name (will add --), type, help, default value, metavar
+        MandatoryString = 1  # name, type, help
+        MandatoryInt    = 2  # name, type, help
+        MandatoryChoice = 3  # name, type, help, possible values
+        OptionalBool    = 11 # name (will add --), type, help
+        OptionalInt     = 12 # name (will add --), type, help, default value, metavar
 
     # List of all expected arguments for the command line or input validation
-    args = [
+    # Help args
+    helpArgs = [
+        ("kernelType",          ArgType.MandatoryChoice, "type of kernels to generate", ["aderdg", "fv" , "limiter"])
+    ]
+    
+    # ADERDG args
+    aderdgArgs = [
         # mandatory arguments
+        ("kernelType",          ArgType.MandatoryString, "aderdg"),
         ("pathToApplication",   ArgType.MandatoryString, "path to the application as given by the ExaHyPE specification file (application directory as root)"),
         ("pathToOptKernel",     ArgType.MandatoryString, "desired relative path to the generated code (application directory as root)"),
         ("namespace",           ArgType.MandatoryString, "desired namespace for the generated code"),
@@ -69,18 +77,64 @@ class ArgumentParser:
         ("useSplitCKScalar",    ArgType.OptionalBool,    "use split Cauchy–Kowalevski formulation (linear only)"),
         ("useSplitCKVect",      ArgType.OptionalBool,    "use split Cauchy–Kowalevski formulation with vect PDE (linear only)"),
         ("useGaussLobatto",     ArgType.OptionalBool,    "use Gauss Lobatto Quadrature instead of Gauss Legendre"),
-        ("useLimiter",          ArgType.OptionalInt,     "enable limiter with the given number of observable", -1, "numberOfObservable"),
-        ("limPatchSize",        ArgType.OptionalInt,     "the size of the limiter patches per coordinate direction.", -1, "limPatchSize"),
-        ("ghostLayerWidth",     ArgType.OptionalInt,     "use limiter with the given ghostLayerWidth, requires useLimiter option, default = 0", 0, "width"),
-        ("tempVarsOnStack",     ArgType.OptionalBool,    "put the big scratch arrays on the stack instead of the heap (you can use ulimit -s to increase the stack size)"),
+        ("tempVarsOnStack",     ArgType.OptionalBool,    "put the big scratch arrays on the stack instead of the heap (you can use ulimit -s to increase the stack size)")
+    ]
+    
+    # Limiter args
+    limiterArgs = [
+        # mandatory arguments
+        ("kernelType",          ArgType.MandatoryString, "limiter"),
+        ("pathToApplication",   ArgType.MandatoryString, "path to the application as given by the ExaHyPE specification file (application directory as root)"),
+        ("pathToOptKernel",     ArgType.MandatoryString, "desired relative path to the generated code (application directory as root)"),
+        ("namespace",           ArgType.MandatoryString, "desired namespace for the generated code"),
+        ("solverName",          ArgType.MandatoryString, "name of the user-solver"),
+        ("numberOfVariables",   ArgType.MandatoryInt,    "the number of quantities"),
+        ("numberOfParameters",  ArgType.MandatoryInt,    "the number of parameters (fixed quantities)"),
+        ("order",               ArgType.MandatoryInt,    "the order of the approximation polynomial"),
+        ("dimension",           ArgType.MandatoryInt,    "the number of spatial dimensions in the simulation (2 or 3)"),
+        ("architecture",        ArgType.MandatoryString, "the microarchitecture of the target device"), 
+        ("numberOfObservable",  ArgType.MandatoryInt,    "number of observable"),
+        ("limPatchSize",        ArgType.MandatoryInt,    "the size of the limiter patches per coordinate direction."),
+        ("ghostLayerWidth",     ArgType.OptionalInt,     "use limiter with the given ghostLayerWidth, default = 0", 0, "width"),
+        ("useGaussLobatto",     ArgType.OptionalBool,    "use Gauss Lobatto Quadrature instead of Gauss Legendre"),
+        ("tempVarsOnStack",     ArgType.OptionalBool,    "put the big scratch arrays on the stack instead of the heap (you can use ulimit -s to increase the stack size)")
+    ]
+    
+    # FV args
+    fvArgs = [
+        # mandatory arguments
+        ("kernelType",          ArgType.MandatoryString, "fv"),
+        ("pathToApplication",   ArgType.MandatoryString, "path to the application as given by the ExaHyPE specification file (application directory as root)"),
+        ("pathToOptKernel",     ArgType.MandatoryString, "desired relative path to the generated code (application directory as root)"),
+        ("namespace",           ArgType.MandatoryString, "desired namespace for the generated code"),
+        ("solverName",          ArgType.MandatoryString, "name of the user-solver"),
+        ("numberOfVariables",   ArgType.MandatoryInt,    "the number of quantities"),
+        ("numberOfParameters",  ArgType.MandatoryInt,    "the number of parameters (fixed quantities)"),
+        ("patchSize",           ArgType.MandatoryInt,    "the size of a patch"),
+        ("dimension",           ArgType.MandatoryInt,    "the number of spatial dimensions in the simulation (2 or 3)"),
+        ("finiteVolumesType",   ArgType.MandatoryString, "linear or nonlinear"),
+        ("architecture",        ArgType.MandatoryString, "the microarchitecture of the target device"),
+        ("slopeLimiter",        ArgType.MandatoryChoice, "slope limiter function for the scheme", ["minmod","koren","superbee","vanalbada","mclim"]),
+        # optional arguments       
+        ("useFlux",             ArgType.OptionalBool,    "enable flux"),
+        ("useViscousFlux",      ArgType.OptionalBool,    "enable viscous flux"),
+        ("useNCP",              ArgType.OptionalBool,    "enable non conservative product"),
+        ("useSource",           ArgType.OptionalBool,    "enable source terms"),
+        ("useFusedSource",      ArgType.OptionalBool,    "enable fused source terms (include useSource)"),
+        ("useMaterialParam",    ArgType.OptionalBool,    "enable material parameters"),
+        ("useRobustDiagLim",    ArgType.OptionalBool,    "enable robust diagonal limiting in musclhancock scheme"),
+        ("usePointSources",     ArgType.OptionalInt ,    "enable numberOfPointSources point sources", -1, "numberOfPointSources"),
+        ("tempVarsOnStack",     ArgType.OptionalBool,    "put the big scratch arrays on the stack instead of the heap (you can use ulimit -s to increase the stack size)")
     ]
     
     @staticmethod
     def parseArgs():
         """Process the command line arguments"""
+        if len(sys.argv) < 2: # help by default
+            sys.argv.append("--help")
+        args = ArgumentParser.chooseArgs(sys.argv[1])
         parser = argparse.ArgumentParser(description="This is the front end of the ExaHyPE code generator.")
-        
-        for arg in ArgumentParser.args:
+        for arg in args:
             key = arg[0]
             type = arg[1]
             info = arg[2]
@@ -88,6 +142,8 @@ class ArgumentParser:
                 parser.add_argument(key, help=info)
             elif type == ArgumentParser.ArgType.MandatoryInt:
                 parser.add_argument(key, type=int, help=info)
+            elif type == ArgumentParser.ArgType.MandatoryChoice:
+                parser.add_argument(key, help=info, choices=arg[3])
             elif type == ArgumentParser.ArgType.OptionalBool:
                 parser.add_argument("--"+key, action="store_true", help=info)
             elif type == ArgumentParser.ArgType.OptionalInt:
@@ -99,7 +155,9 @@ class ArgumentParser:
     @staticmethod
     def validateInputConfig(inputConfig):
         """Validate a config and add the default value of missing optional arguments"""
-        for arg in ArgumentParser.args:
+        if "kernelType" not in inputConfig:
+            raise ValueError("Cannot validate codegenerator input, kernelType missing")
+        for arg in ArgumentParser.chooseArgs(inputConfig["kernelType"]):
             key  = arg[0]
             type = arg[1]
             #check mandatory and raise error if not set or wrong type
@@ -109,6 +167,11 @@ class ArgumentParser:
             elif type == ArgumentParser.ArgType.MandatoryInt:
                 if key not in inputConfig or not isinstance(inputConfig[key], int):
                     raise ValueError("Invalid codegenerator configuration, argument "+key+" missing or of wrong type (int expected)")
+            elif type == ArgumentParser.ArgType.MandatoryChoice:
+                if key not in inputConfig or not isinstance(inputConfig[key], str):
+                    raise ValueError("Invalid codegenerator configuration, argument "+key+" missing or of wrong type (int expected)")
+                if inputConfig[key] not in arg[3]: #possible values
+                    raise ValueError("Invalid codegenerator configuration, argument "+key+" value not allowed, must be one of "+str(arg[3]))
             #check optional and set it to default if not set
             elif type == ArgumentParser.ArgType.OptionalBool:
                 if key not in inputConfig:
@@ -122,7 +185,9 @@ class ArgumentParser:
     def buildCommandLineFromConfig(inputConfig):
         """Build a valid command line for the given config"""
         commandLine = "codegenerator "
-        for arg in ArgumentParser.args:
+        if "kernelType" not in inputConfig:
+            raise ValueError("Cannot validate codegenerator input, kernelType missing")
+        for arg in ArgumentParser.chooseArgs(inputConfig["kernelType"]):
             key  = arg[0]
             type = arg[1]
             # add mandatory parameters
@@ -139,3 +204,16 @@ class ArgumentParser:
                     commandLine += "--" + key + " " + str(inputConfig[key]) + " "
         
         return commandLine
+
+
+    @staticmethod
+    def chooseArgs(kernelType):
+        if kernelType == "--help" or kernelType == "-h":
+            return ArgumentParser.helpArgs
+        elif kernelType == "aderdg":
+            return ArgumentParser.aderdgArgs
+        elif kernelType == "limiter":
+            return ArgumentParser.limiterArgs
+        elif kernelType == "fv":
+            return ArgumentParser.fvArgs
+        raise ValueError("Cannot validate codegenerator input, kernelType '"+kernelType+"' not recognized, use -h or --help")

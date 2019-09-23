@@ -25,8 +25,11 @@ exahype-project  Dummy
   exahype-path const      = ./ExaHyPE
   output-directory const  = ./ApplicationExamples/TestCases/BigDummyApplication
   architecture const      = noarch
-  log-file                = mylogfile.log
   compiler-flags          = "-DASSERTS"
+
+  shared-memory
+    cores = 1
+  end shared-memory
 
   computational-domain
     dimension const          = 3
@@ -37,6 +40,7 @@ exahype-project  Dummy
 
   global-optimisation
     spawn-predictor-as-background-thread = off
+    spawn-update-as-background-thread = off
     spawn-amr-background-threads         = off
     disable-vertex-exchange-in-time-steps = on
     time-step-batch-factor           = 0.0
@@ -47,7 +51,7 @@ exahype-project  Dummy
 
 
   solver Finite-Volumes DummySolver
-    variables const    = 60
+    variables const    = 20
     patch-size const   = 13
     maximum-mesh-size  = 0.3339
     time-stepping      = global
@@ -58,7 +62,7 @@ exahype-project  Dummy
 
     plot vtk::Cartesian::cells::ascii Writer
       variables const = 60
-      time            = 0.0
+      time            = 10.0
       repeat          = 0.1e-4
       output          = ./dummyoutput
     end plot

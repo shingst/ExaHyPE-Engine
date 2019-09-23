@@ -27,4 +27,4 @@ from .abstractModelBaseClass import AbstractModelBaseClass
 class SolutionUpdateModel(AbstractModelBaseClass):
 
     def generateCode(self):
-        self.render("solutionUpdate_cpp.template", "solutionUpdate.cpp")
+        self.render(("aderdg", "solutionUpdate_cpp.template"), "solutionUpdate.cpp")

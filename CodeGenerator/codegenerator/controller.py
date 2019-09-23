@@ -63,45 +63,79 @@ class Controller:
         
         # Generate the base config from the args input
         self.config = {
-            "numerics"              : args["numerics"],
+            "kernelType"            : args["kernelType"],
             "pathToOptKernel"       : args["pathToOptKernel"],
-            "solverName"            : args["solverName"],
-            "nVar"                  : args["numberOfVariables"],
-            "nPar"                  : args["numberOfParameters"],
-            "nData"                 : args["numberOfVariables"] + args["numberOfParameters"],
-            "nDof"                  : (args["order"])+1,
-            "nDofLim"               : args["limPatchSize"] if args["limPatchSize"] >=0 else 2*args["order"]+1,
-            "nDim"                  : args["dimension"],
-            "useFlux"               : (args["useFlux"] or args["useFluxVect"]),
-            "useFluxVect"           : args["useFluxVect"],
-            "useViscousFlux"        : args["useViscousFlux"],
-            "useNCP"                : (args["useNCP"] or args["useNCPVect"]),
-            "useNCPVect"            : args["useNCPVect"],
-            "useSource"             : (args["useSource"] or args["useSourceVect"] or args["useFusedSource"] or args["useFusedSourceVect"]),
-            "useSourceVect"         : args["useSourceVect"],
-            "useFusedSource"        : (args["useFusedSource"] or args["useFusedSourceVect"]),
-            "useFusedSourceVect"    : args["useFusedSourceVect"],
-            "nPointSources"         : args["usePointSources"],
-            "usePointSources"       : args["usePointSources"] >= 0,
-            "useMaterialParam"      : (args["useMaterialParam"] or args["useMaterialParamVect"]),
-            "useMaterialParamVect"  : args["useMaterialParamVect"],
-            "codeNamespace"         : args["namespace"],
             "pathToOutputDirectory" : os.path.join(Configuration.pathToExaHyPERoot, args["pathToApplication"], args["pathToOptKernel"]),
-            "architecture"          : args["architecture"],
-            "useLimiter"            : args["useLimiter"] >= 0,
-            "nObs"                  : args["useLimiter"],
-            "ghostLayerWidth"       : args["ghostLayerWidth"],
-            "pathToLibxsmmGemmGenerator"  : Configuration.pathToLibxsmmGemmGenerator,
-            "quadratureType"        : ("Gauss-Lobatto" if args["useGaussLobatto"] else "Gauss-Legendre"),
-            "useCERKGuess"          : args["useCERKGuess"],
-            "useSplitCKScalar"      : args["useSplitCKScalar"],
-            "useSplitCKVect"        : args["useSplitCKVect"],
+            "solverName"            : args["solverName"],
+            "codeNamespace"         : args["namespace"],
             "tempVarsOnStack"       : args["tempVarsOnStack"],
+            "architecture"          : args["architecture"],
             "useLibxsmm"            : Configuration.useLibxsmm,
+            "pathToLibxsmmGemmGenerator"  : Configuration.pathToLibxsmmGemmGenerator,
             "runtimeDebug"          : Configuration.runtimeDebug #for debug
         }
-
-        self.config["useSourceOrNCP"] = self.config["useSource"] or self.config["useNCP"]
+        
+        if self.config["kernelType"] == "aderdg":
+            self.config.update( {
+                "numerics"              : args["numerics"],
+                "nVar"                  : args["numberOfVariables"],
+                "nPar"                  : args["numberOfParameters"],
+                "nData"                 : args["numberOfVariables"] + args["numberOfParameters"],
+                "nDof"                  : (args["order"])+1,
+                "nDim"                  : args["dimension"],
+                "useFlux"               : (args["useFlux"] or args["useFluxVect"]) or args["useViscousFlux"],
+                "useFluxVect"           : args["useFluxVect"],
+                "useViscousFlux"        : args["useViscousFlux"],
+                "useNCP"                : (args["useNCP"] or args["useNCPVect"]),
+                "useNCPVect"            : args["useNCPVect"],
+                "useSource"             : (args["useSource"] or args["useSourceVect"] or args["useFusedSource"] or args["useFusedSourceVect"]),
+                "useSourceVect"         : args["useSourceVect"],
+                "useFusedSource"        : (args["useFusedSource"] or args["useFusedSourceVect"]),
+                "useFusedSourceVect"    : args["useFusedSourceVect"],
+                "nPointSources"         : args["usePointSources"],
+                "usePointSources"       : args["usePointSources"] >= 0,
+                "useMaterialParam"      : (args["useMaterialParam"] or args["useMaterialParamVect"]),
+                "useMaterialParamVect"  : args["useMaterialParamVect"],
+                "quadratureType"        : ("Gauss-Lobatto" if args["useGaussLobatto"] else "Gauss-Legendre"),
+                "useCERKGuess"          : args["useCERKGuess"],
+                "useSplitCKScalar"      : args["useSplitCKScalar"],
+                "useSplitCKVect"        : args["useSplitCKVect"]
+            })
+            self.config["useSourceOrNCP"] = self.config["useSource"] or self.config["useNCP"]
+        elif self.config["kernelType"] == "limiter":
+            self.config.update( {
+                "nVar"                  : args["numberOfVariables"],
+                "nPar"                  : args["numberOfParameters"],
+                "nData"                 : args["numberOfVariables"] + args["numberOfParameters"],
+                "nDof"                  : (args["order"])+1,
+                "nDofLim"               : args["limPatchSize"] if args["limPatchSize"] >=0 else 2*args["order"]+1,
+                "nDim"                  : args["dimension"],
+                "nObs"                  : args["numberOfObservable"],
+                "ghostLayerWidth"       : args["ghostLayerWidth"],
+                "quadratureType"        : ("Gauss-Lobatto" if args["useGaussLobatto"] else "Gauss-Legendre")
+            })
+        elif self.config["kernelType"] == "fv":
+            self.config.update( {
+                "nVar"                  : args["numberOfVariables"],
+                "nPar"                  : args["numberOfParameters"],
+                "nData"                 : args["numberOfVariables"] + args["numberOfParameters"],
+                "nDof"                  : args["patchSize"],
+                "nDim"                  : args["dimension"],
+                "useFlux"               : args["useFlux"] or args["useViscousFlux"],
+                "useViscousFlux"        : args["useViscousFlux"],
+                "useNCP"                : args["useNCP"],
+                "useSource"             : args["useSource"] or args["useFusedSource"],
+                "useFusedSource"        : args["useFusedSource"],
+                "useRobustDiagLim"      : args["useRobustDiagLim"],
+                "nPointSources"         : args["usePointSources"],
+                "usePointSources"       : args["usePointSources"] >= 0,
+                "useMaterialParam"      : args["useMaterialParam"],
+                "finiteVolumesType"     : args["finiteVolumesType"],
+                "ghostLayerWidth"       : 2, #hard coded musclhancock value
+                "slopeLimiter"          : args["slopeLimiter"]
+            })
+            self.config["useSourceOrNCP"] = self.config["useSource"] or self.config["useNCP"]
+            
         self.validateConfig(Configuration.simdWidth.keys())
         self.config["vectSize"] = Configuration.simdWidth[self.config["architecture"]] #only initialize once architecture has been validated
         self.baseContext = self.generateBaseContext() # default context build from config
@@ -111,18 +145,20 @@ class Controller:
         """Ensure the configuration fit some constraint, raise errors if not"""
         if not (self.config["architecture"] in validArchitectures):
            raise ValueError("Architecture not recognized. Available architecture: "+str(validArchitectures))
-        if not (self.config["numerics"] == "linear" or self.config["numerics"] == "nonlinear"):
-            raise ValueError("numerics has to be linear or nonlinear")
-        if self.config["nVar"] < 0:
-           raise ValueError("Number of variables must be >=0 ")
-        if self.config["nPar"] < 0:
-           raise ValueError("Number of parameters must be >= 0")
-        if self.config["nDim"] < 2 or self.config["nDim"] > 3:
-           raise ValueError("Number of dimensions must be 2 or 3")
-        if self.config["nDof"] < 1 or self.config["nDof"] > 15+1: #nDof = order+1
-           raise ValueError("Order has to be between 0 and 15 (inclusive)")
-        #if (self.config["useSource"] and not self.config["useSourceVect"] and self.config["useNCPVect"]) or (self.config["useNCP"] and not self.config["useNCPVect"] and self.config["useSourceVect"]) :
-        #    raise ValueError("If using source and NCP, both or neither must be vectorized")
+        if self.config["kernelType"] == "aderdg":
+            if not (self.config["numerics"] == "linear" or self.config["numerics"] == "nonlinear"):
+                raise ValueError("numerics has to be linear or nonlinear")
+            if self.config["nVar"] < 0:
+               raise ValueError("Number of variables must be >=0 ")
+            if self.config["nPar"] < 0:
+               raise ValueError("Number of parameters must be >= 0")
+            if self.config["nDim"] < 2 or self.config["nDim"] > 3:
+               raise ValueError("Number of dimensions must be 2 or 3")
+            if self.config["nDof"] < 1 or self.config["nDof"] > 15+1: #nDof = order+1
+               raise ValueError("Order has to be between 0 and 15 (inclusive)")
+        if self.config["kernelType"] == "fv":
+            if self.config["finiteVolumesType"] != "musclhancock":
+               raise ValueError("Only musclhancock scheme is supported")
 
 
     def printConfig(self):
@@ -137,14 +173,20 @@ class Controller:
         context["nDataPad"] = self.getSizeWithPadding(context["nData"])
         context["nDofPad"]  = self.getSizeWithPadding(context["nDof"])
         context["nDof3D"]   = 1 if context["nDim"] == 2 else context["nDof"]
-        context["isLinear"] = context["numerics"] == "linear"
         context["solverHeader"]      = context["solverName"].split("::")[1] + ".h"
         context["codeNamespaceList"] = context["codeNamespace"].split("::")
         context["guardNamespace"]    = "_".join(context["codeNamespaceList"]).upper()
-        context["nDofLimPad"] = self.getSizeWithPadding(context["nDofLim"])
-        context["nDofLim3D"] = 1 if context["nDim"] == 2 else context["nDofLim"]
-        context["ghostLayerWidth3D"] = 0 if context["nDim"] == 2 else context["ghostLayerWidth"]
-        context["useVectPDEs"] = context["useFluxVect"] or True #TODO JMG add other vect
+        if self.config["kernelType"] == "limiter":
+            context["nDofLimPad"] = self.getSizeWithPadding(context["nDofLim"])
+            context["nDofLim3D"] = 1 if context["nDim"] == 2 else context["nDofLim"]
+            context["ghostLayerWidth3D"] = 0 if context["nDim"] == 2 else context["ghostLayerWidth"]
+        elif self.config["kernelType"] == "aderdg":
+            context["isLinear"] = context["numerics"] == "linear"
+            context["useVectPDEs"] = context["useFluxVect"] or True #TODO JMG add other vect
+        elif self.config["kernelType"] == "fv":
+            context["ghostLayerWidth3D"] = 0 if context["nDim"] == 2 else context["ghostLayerWidth"]
+            context["nDofG"] = context["ghostLayerWidth"]*2 + context["nDof"]
+            context["nDofG3D"] = 1 if context["nDim"] == 2 else context["nDofG"]
         return context
 
     def getSizeWithPadding(self, sizeWithoutPadding):
@@ -162,117 +204,64 @@ class Controller:
         
         # create directory for output files if not existing
         try:
-            os.makedirs(self.config['pathToOutputDirectory'])
+            os.makedirs(self.config["pathToOutputDirectory"])
         except OSError as exception:
             if exception.errno != errno.EEXIST:
                 raise
         
         # remove all .cpp, .cpph, .c and .h files (we are in append mode!)
-        for fileName in os.listdir(self.config['pathToOutputDirectory']):
+        for fileName in os.listdir(self.config["pathToOutputDirectory"]):
             _ , ext = os.path.splitext(fileName)
             if(ext in [".cpp", ".cpph", ".c", ".h"]):
-                os.remove(self.config['pathToOutputDirectory'] + "/" + fileName)
+                os.remove(self.config["pathToOutputDirectory"] + "/" + fileName)
         
-        # generate new files
-        runtimes = {}
+        # run the models new files
         
-        start = time.perf_counter()
-        adjustSolution = adjustSolutionModel.AdjustSolutionModel(self.baseContext)
-        adjustSolution.generateCode()
-        runtimes["adjustSolution"] = time.perf_counter() - start
+        self.runModel(    "kernelsHeader",            kernelsHeaderModel.KernelsHeaderModel(self.baseContext))
+        self.runModel(    "configurationParameters",  configurationParametersModel.ConfigurationParametersModel(self.baseContext))
         
-        start = time.perf_counter()
-        amrRoutines = amrRoutinesModel.AMRRoutinesModel(self.baseContext, self)
-        amrRoutines.generateCode()
-        runtimes["amrRoutines"] = time.perf_counter() - start
+        if self.config["kernelType"] in ["aderdg", "limiter"]:
+            self.runModel("quadrature",               quadratureModel.QuadratureModel(self.baseContext, self))
         
-        start = time.perf_counter()
-        boundaryConditions = boundaryConditionsModel.BoundaryConditionsModel(self.baseContext)
-        boundaryConditions.generateCode()
-        runtimes["boundaryConditions"] = time.perf_counter() - start
+        if self.config["kernelType"] == "aderdg":
+            self.runModel("converter",                converterModel.ConverterModel(self.baseContext))
+            self.runModel("amrRoutines",              amrRoutinesModel.AMRRoutinesModel(self.baseContext, self))
+            self.runModel("deltaDistribution",        deltaDistributionModel.DeltaDistributionModel(self.baseContext))
+            self.runModel("faceIntegral",             faceIntegralModel.FaceIntegralModel(self.baseContext))
+            self.runModel("fusedSTPVI",               fusedSpaceTimePredictorVolumeIntegralModel.FusedSpaceTimePredictorVolumeIntegralModel(self.baseContext, self))
+            self.runModel("matrixUtils",              matrixUtilsModel.MatrixUtilsModel(self.baseContext))
+            self.runModel("dgMatrix",                 dgMatrixModel.DGMatrixModel(self.baseContext))
+            self.runModel("solutionUpdate",           solutionUpdateModel.SolutionUpdateModel(self.baseContext))
+            self.runModel("surfaceIntegral",          surfaceIntegralModel.SurfaceIntegralModel(self.baseContext))
         
-        start = time.perf_counter()
-        configurationParameters = configurationParametersModel.ConfigurationParametersModel(self.baseContext)
-        configurationParameters.generateCode()
-        runtimes["configurationParameters"] = time.perf_counter() - start
+        if self.config["kernelType"] == "limiter":
+            self.runModel("limiter",                  limiterModel.LimiterModel(self.baseContext, self))
         
-        start = time.perf_counter()
-        converter = converterModel.ConverterModel(self.baseContext)
-        converter.generateCode()
-        runtimes["converter"] = time.perf_counter() - start
+        if self.config["kernelType"] == "fv":
+            self.runModel("ghostLayerFilling",        fvGhostLayerFillingModel.FVGhostLayerFillingModel(self.baseContext))
+            self.runModel("ghostLayerFillingAtBoundary", fvGhostLayerFillingAtBoundaryModel.FVGhostLayerFillingAtBoundaryModel(self.baseContext))
+            self.runModel("boundaryLayerExtraction",  fvBoundaryLayerExtractionModel.FVBoundaryLayerExtractionModel(self.baseContext))
+            self.runModel("solutionUpdate",           fvSolutionUpdateModel.FVSolutionUpdateModel(self.baseContext, self))
         
-        start = time.perf_counter()
-        deltaDistribution = deltaDistributionModel.DeltaDistributionModel(self.baseContext)
-        deltaDistribution.generateCode()
-        runtimes["deltaDistribution"] = time.perf_counter() - start
+        if self.config["kernelType"] in ["aderdg", "fv"]:
+            self.runModel("boundaryConditions",       boundaryConditionsModel.BoundaryConditionsModel(self.baseContext))
+            self.runModel("stableTimeStepSize",       stableTimeStepSizeModel.StableTimeStepSizeModel(self.baseContext))
+            self.runModel("adjustSolution",           adjustSolutionModel.AdjustSolutionModel(self.baseContext))
+            self.runModel("riemannSolver",            riemannModel.RiemannModel(self.baseContext))
         
-        start = time.perf_counter()
-        dgMatrix = dgMatrixModel.DGMatrixModel(self.baseContext)
-        dgMatrix.generateCode()
-        runtimes["dgMatrix"] = time.perf_counter() - start
-        
-        start = time.perf_counter()
-        faceIntegral = faceIntegralModel.FaceIntegralModel(self.baseContext)
-        faceIntegral.generateCode()
-        runtimes["faceIntegral"] = time.perf_counter() - start
-        
-        start = time.perf_counter()
-        fusedSpaceTimePredictorVolumeIntegral = fusedSpaceTimePredictorVolumeIntegralModel.FusedSpaceTimePredictorVolumeIntegralModel(self.baseContext, self)
-        fusedSpaceTimePredictorVolumeIntegral.generateCode()
-        runtimes["fusedSpaceTimePredictorVolumeIntegral"] = time.perf_counter() - start
-        
-        start = time.perf_counter()
-        kernelsHeader = kernelsHeaderModel.KernelsHeaderModel(self.baseContext)
-        kernelsHeader.generateCode()
-        runtimes["kernelsHeader"] = time.perf_counter() - start
-        
-        start = time.perf_counter()
-        limiter = limiterModel.LimiterModel(self.baseContext, self)
-        limiter.generateCode()
-        runtimes["limiter"] = time.perf_counter() - start
-        
-        start = time.perf_counter()
-        matrixUtils = matrixUtilsModel.MatrixUtilsModel(self.baseContext)
-        matrixUtils.generateCode()
-        runtimes["matrixUtils"] = time.perf_counter() - start
-        
-        start = time.perf_counter()
-        quadrature = quadratureModel.QuadratureModel(self.baseContext, self)
-        quadrature.generateCode()
-        runtimes["quadrature"] = time.perf_counter() - start
-        
-        start = time.perf_counter()
-        riemann = riemannModel.RiemannModel(self.baseContext)
-        riemann.generateCode()
-        runtimes["riemann"] = time.perf_counter() - start
-        
-        start = time.perf_counter()
-        solutionUpdate = solutionUpdateModel.SolutionUpdateModel(self.baseContext)
-        solutionUpdate.generateCode()
-        runtimes["solutionUpdate"] = time.perf_counter() - start
-        
-        start = time.perf_counter()
-        stableTimeStepSize = stableTimeStepSizeModel.StableTimeStepSizeModel(self.baseContext)
-        stableTimeStepSize.generateCode()
-        runtimes["stableTimeStepSize"] = time.perf_counter() - start
-        
-        start = time.perf_counter()
-        surfaceIntegral = surfaceIntegralModel.SurfaceIntegralModel(self.baseContext)
-        surfaceIntegral.generateCode()
-        runtimes["surfaceIntegral"] = time.perf_counter() - start
-        
-        # must be run only after all gemm have been generated
-        start = time.perf_counter()
+        ## must be run only after all gemm's configurations have been generated
         gemmsContext = copy.copy(self.baseContext)
         gemmsContext["gemmList"] = self.gemmList
-        gemmsCPP = gemmsCPPModel.GemmsCPPModel(gemmsContext)
-        gemmsCPP.generateCode()
-        runtimes["gemmsCPP"] = time.perf_counter() - start
-        
-        if self.config['runtimeDebug']:
-            for key, value in runtimes.items():
-                print(key+": "+str(value))
+        self.runModel(    "gemmsCPP",                 gemmsCPPModel.GemmsCPPModel(gemmsContext))
 
+
+    def runModel(self, name, model):
+        """Run the given model and if debug then print runtime"""
+        start = time.perf_counter()
+        model.generateCode()
+        if self.config["runtimeDebug"]:
+            t = time.perf_counter() - start
+            print(name+": "+str(value))
 
     def generateGemms(self, outputFileName, matmulConfigList):
         """Generate the gemms with the given config list using LIBXSMM"""

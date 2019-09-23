@@ -538,30 +538,36 @@ double exahype::solvers::Solver::getFinestMaximumMeshSizeOfAllSolvers() {
 }
 
 int exahype::solvers::Solver::getCoarsestMeshLevelOfAllSolvers() {
-  int result = std::numeric_limits<int>::max();
+  static int result = std::numeric_limits<int>::max();
 
-  for (const auto& p : exahype::solvers::RegisteredSolvers) {
-    result = std::min( result, p->getCoarsestMeshLevel() );
+  if ( result == std::numeric_limits<int>::max() ) {
+    for (const auto& p : exahype::solvers::RegisteredSolvers) {
+      result = std::min( result, p->getCoarsestMeshLevel() );
+    }
   }
 
   return result;
 }
 
 int exahype::solvers::Solver::getFinestUniformMeshLevelOfAllSolvers() {
-  int result = -std::numeric_limits<int>::max();
+  static int result = -std::numeric_limits<int>::max();
 
-  for (const auto& p : exahype::solvers::RegisteredSolvers) {
-    result = std::max( result, p->getCoarsestMeshLevel() );
+  if ( result < 0 ) {
+    for (const auto& p : exahype::solvers::RegisteredSolvers) {
+      result = std::max( result, p->getCoarsestMeshLevel() );
+    }
   }
 
   return result;
 }
 
 int exahype::solvers::Solver::getMaximumAdaptiveMeshLevelOfAllSolvers() {
-  int result = -std::numeric_limits<int>::max(); // "-", min
+  static int result = -std::numeric_limits<int>::max(); // "-", min
 
-  for (const auto& p : exahype::solvers::RegisteredSolvers) {
-    result = std::max( result, p->getMaximumAdaptiveMeshLevel() );
+  if ( result < 0 ) {
+    for (const auto& p : exahype::solvers::RegisteredSolvers) {
+      result = std::max( result, p->getMaximumAdaptiveMeshLevel() );
+    }
   }
 
   return result;

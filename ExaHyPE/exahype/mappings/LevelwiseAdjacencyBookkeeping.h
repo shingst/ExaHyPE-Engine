@@ -61,7 +61,32 @@ namespace exahype {
  * @version $Revision: 1.1 $
  */
 class exahype::mappings::LevelwiseAdjacencyBookkeeping {
+  private:
+    /**
+     * This operation does not really merge anything. It simply runs over a
+     * vertex's adjacency information and invalidates all entriesfor
+     * non-local patches. Basically, such information always has to remain the
+     * same and the dynamic update here is not really required. However, it may
+     * happen that you fork the grid dynamically. Then, this routine updates
+     * the entries dynamically, too.
+     *
+     * \note In case, the neighbour is the globla master rank, we simply
+     * prescribe a DomainBoundaryAdjacency index.
+     */
+    static tarch::la::Vector<TWO_POWER_D,int> updateCellIndicesInMergeWithNeighbour(
+      const tarch::la::Vector<TWO_POWER_D,int>&  adjacentRanks,
+      const tarch::la::Vector<TWO_POWER_D,int>&  oldAdjacencyEntries
+    );
+
   public:
+
+    /**
+     * Every index greater is valid
+     */
+    static constexpr int InvalidAdjacencyIndex         = -1;
+    static constexpr int RemoteAdjacencyIndex          = -2;
+    static constexpr int DomainBoundaryAdjacencyIndex  = -3;
+
 
     /**
      * Since the position of a cell with respect to a particular vertex is unique,

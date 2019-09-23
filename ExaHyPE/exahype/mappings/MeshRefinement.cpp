@@ -27,7 +27,7 @@
 
 #include "tarch/multicore/Lock.h"
 
-#include "multiscalelinkedcell/HangingVertexBookkeeper.h"
+#include "exahype/mappings/LevelwiseAdjacencyBookkeeping.h"
 
 
 #include "exahype/VertexOperations.h"
@@ -240,7 +240,7 @@ void exahype::mappings::MeshRefinement::touchVertexLastTime(
       fineGridVertex.getRefinementControl()==
           Vertex::Records::RefinementControl::Refined
   ) {
-    //fineGridVertex.erase();
+    fineGridVertex.erase();
   }
 }
 
@@ -318,7 +318,7 @@ void exahype::mappings::MeshRefinement::createCell(
 
   // do nothing
   fineGridCell.setCellDescriptionsIndex(
-      multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+      mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex);
 
   logTraceOutWith1Argument("createCell(...)", fineGridCell);
 }
@@ -375,9 +375,7 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
           ==exahype::Vertex::Records::RefinementControl::Unrefined;
     enddforx
 
-    if ( oneInnerVertexIsRefined
-         //&& _stateCopy.getMeshRefinementIsInRefiningMode()
-    ) {
+    if ( oneInnerVertexIsRefined ) {
       dfor2(v)
         tarch::multicore::Lock lock(BoundarySemaphore);
         if (
@@ -398,9 +396,7 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
         lock.free();
       enddforx
     }
-    else if ( noInnerVertexIsRefined
-        // && !_stateCopy.getMeshRefinementIsInRefiningMode()
-    ) {
+    else if ( noInnerVertexIsRefined ) {
       dfor2(v)
         tarch::multicore::Lock lock(BoundarySemaphore);
         if (
@@ -422,7 +418,7 @@ void exahype::mappings::MeshRefinement::ensureRegularityAlongBoundary(
             ==exahype::solvers::Solver::RefinementControl::Erase
 
         ) {
-//          fineGridVertices[fineGridVerticesEnumerator(v)].erase();
+          fineGridVertices[fineGridVerticesEnumerator(v)].erase();
         }
         lock.free();
       enddforx
@@ -473,13 +469,8 @@ void exahype::mappings::MeshRefinement::enterCell(
     }
   }
 
-  if ( fineGridCell.isInitialised() ) {
-    solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
-    Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
-    // shutdown metadata for empty cells (no cell descriptions)
-    if ( fineGridCell.isEmpty() ) {
-      fineGridCell.shutdownMetaDataAndResetCellDescriptionsIndex();
-    }
+  if ( fineGridCell.isInitialised() && fineGridCell.isEmpty() ) {
+    fineGridCell.shutdownMetaDataAndResetCellDescriptionsIndex();
   }
 
   logTraceOutWith1Argument("enterCell(...)", fineGridCell);
@@ -507,12 +498,6 @@ void exahype::mappings::MeshRefinement::leaveCell(
           fineGridPositionOfCell,
           solverNumber);
     }
-  }
-
-  if ( fineGridCell.isInitialised() ) {
-    // Must be performed for all cell descriptions
-    solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
-    Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
 
   ensureRegularityAlongBoundary(fineGridVertices,fineGridVerticesEnumerator);
@@ -627,7 +612,7 @@ void exahype::mappings::MeshRefinement::receiveDataFromMaster(
   // TODO(Dominic): Here, I have to chance to read the coarse grid cell's state.
 
   receivedCell.setCellDescriptionsIndex(
-      multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+      mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex);
   if (
       !exahype::State::isNewWorkerDueToForkOfExistingDomain() &&
       receivedCell.hasToCommunicate( receivedVerticesEnumerator.getLevel())
@@ -853,7 +838,8 @@ void exahype::mappings::MeshRefinement::mergeWithRemoteDataDueToForkOrJoin(
 
   if ( exahype::State::isNewWorkerDueToForkOfExistingDomain() ) {
     exahype::VertexOperations::writeCellDescriptionsIndex(
-        localVertex,multiscalelinkedcell::HangingVertexBookkeeper::getInstance().createVertexLinkMapForNewVertex());
+        localVertex, mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex
+    );
   }
 
   logTraceOut( "mergeWithRemoteDataDueToForkOrJoin(...)" );
@@ -871,7 +857,7 @@ void exahype::mappings::MeshRefinement::mergeWithRemoteDataDueToForkOrJoin(
   ) {
     if ( exahype::State::isNewWorkerDueToForkOfExistingDomain() ) {
       localCell.setCellDescriptionsIndex(
-          multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+          mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex);
       localCell.setupMetaData();
     } else if ( exahype::State::isJoiningWithWorker() ) {
       exahype::solvers::ADERDGSolver::eraseCellDescriptions(localCell.getCellDescriptionsIndex());

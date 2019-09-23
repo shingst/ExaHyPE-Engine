@@ -27,4 +27,4 @@ from .abstractModelBaseClass import AbstractModelBaseClass
 class StableTimeStepSizeModel(AbstractModelBaseClass):
 
     def generateCode(self):
-        self.render("stableTimeStepSize_cpp.template", "stableTimeStepSize.cpp")
+        self.render((self.context["kernelType"], "stableTimeStepSize_cpp.template"), "stableTimeStepSize.cpp")

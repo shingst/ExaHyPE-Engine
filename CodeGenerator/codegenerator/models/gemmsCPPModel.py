@@ -27,5 +27,5 @@ from .abstractModelBaseClass import AbstractModelBaseClass
 class GemmsCPPModel(AbstractModelBaseClass):
 
     def generateCode(self):
-        self.render("gemmsCPP_h.template",   "gemmsCPP.h")
-        self.render("gemmsCPP_cpp.template", "gemmsCPP.cpp")
+        self.render((self.context["kernelType"], "gemmsCPP_h.template"),   "gemmsCPP.h")
+        self.render((self.context["kernelType"], "gemmsCPP_cpp.template"), "gemmsCPP.cpp")

@@ -50,7 +50,7 @@ double kernels::finitevolumes::godunov::c::solutionUpdate(
   constexpr int ghostLayerWidth    = SolverType::GhostLayerWidth;
   constexpr int patchBegin         = ghostLayerWidth;
   constexpr int patchEnd           = patchBegin+patchSize;
-  constexpr double cflFactor       = SolverType::CFL;
+  constexpr double cflFactor       = CFL; // This is not SolverType::CFL; see the docu.
 
   const double subcellSize[2]           = {cellSize[0]/patchSize, cellSize[1]/patchSize};
   const double invSubcellSizeTimesDt[2] = {dt/subcellSize[0], dt/subcellSize[1]};
@@ -87,7 +87,7 @@ double kernels::finitevolumes::godunov::c::solutionUpdate(
           const double qAvgL = (luh[idx(j-1,k,l)] + luh[idx(j,k,l)]) / 2;
           const double qAvgR = (luh[idx(j,k,l)] + luh[idx(j+1,k,l)]) / 2;
           gradQ[idxGradQ(j,k,0,l)] = (qAvgR - qAvgL) / subcellSize[0];
-          }
+        }
      }
    }
   } else {

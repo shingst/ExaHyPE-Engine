@@ -31,7 +31,9 @@
 
 {% for codegenContext in codegeneratorContextsList %}
 #include "{{codegenContext.pathToOptKernel}}/Quadrature.h"
+{% if codegenContext.kernelType == "aderdg" %}
 #include "{{codegenContext.pathToOptKernel}}/DGMatrices.h"
+{% endif %}
 {% endfor %}
 
 {% for solver in solvers %}
@@ -52,7 +54,9 @@ void kernels::registerSolvers(exahype::parser::Parser& parser) {
 {% endfor %}
 {% for codegenContext in codegeneratorContextsList %}
   {{codegenContext.namespace}}::initQuadratureNodesAndWeights();
+{% if codegenContext.kernelType == "aderdg" %}
   {{codegenContext.namespace}}::initDGMatrices();
+{% endif %}
 {% endfor %}
 
 {% for solver in solvers %}
@@ -65,6 +69,8 @@ void kernels::registerSolvers(exahype::parser::Parser& parser) {
           parser.getMaximumMeshSize({{loop.index0}}),
           parser.getMaximumMeshDepth({{loop.index0}}),
           parser.getHaloCells({{loop.index0}}),
+          parser.getHaloBufferCells({{loop.index0}}),
+          parser.getLimiterBufferCells({{loop.index0}}),
           parser.getRegularisedFineGridLevels({{loop.index0}}),
           parser.getTimeStepping({{loop.index0}}),
           0
@@ -76,6 +82,8 @@ void kernels::registerSolvers(exahype::parser::Parser& parser) {
           parser.getMaximumMeshSize({{loop.index0}}),
           parser.getMaximumMeshDepth({{loop.index0}}),
           parser.getHaloCells({{loop.index0}}),
+          parser.getHaloBufferCells({{loop.index0}}),
+          parser.getLimiterBufferCells({{loop.index0}}),
           parser.getRegularisedFineGridLevels({{loop.index0}}),
           parser.getTimeStepping({{loop.index0}}),
           parser.getDMPObservables({{loop.index0}}),
@@ -167,7 +175,9 @@ void kernels::finalise() {
   }
 {% for codegenContext in codegeneratorContextsList %}
   {{codegenContext.namespace}}::freeQuadratureNodesAndWeights();
+{% if codegenContext.kernelType == "aderdg" %}
   {{codegenContext.namespace}}::freeDGMatrices();
+{% endif %}
 {% endfor %}
 
   for (auto solver : exahype::solvers::RegisteredSolvers) {

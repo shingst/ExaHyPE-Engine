@@ -31,6 +31,8 @@ class GRMHDb::GRMHDbSolver: public exahype::solvers::LimitingADERDGSolver {
         const double maximumMeshSize,
         const int maximumMeshDepth,
         const int haloCells,
+        const int haloBufferCells,
+        const int limiterBufferCells,
         const int regularisedFineGridLevels,
         const exahype::solvers::Solver::TimeStepping timeStepping,
         const int DMPObservables,

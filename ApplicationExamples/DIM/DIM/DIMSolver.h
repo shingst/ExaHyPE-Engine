@@ -33,7 +33,7 @@ class DIM::DIMSolver: public DIM::AbstractDIMSolver {
      */
     static tarch::logging::Log _log;
   public:
-    DIMSolver(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables);
+    DIMSolver(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int haloBufferCells,const int limiterBufferCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables);
 
     /**
      * Initialise the solver.

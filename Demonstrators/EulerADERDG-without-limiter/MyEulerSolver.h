@@ -36,7 +36,7 @@ class EulerADERDG::MyEulerSolver : public EulerADERDG::AbstractMyEulerSolver {
     static double getInitialProfile(const double* const x);
 
   public:
-    MyEulerSolver(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables);
+    MyEulerSolver(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int haloBufferCells,const int limiterBufferCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables);
 
     /**
      * Initialise the solver.

@@ -29,4 +29,4 @@ from .abstractModelBaseClass import AbstractModelBaseClass
 class BoundaryConditionsModel(AbstractModelBaseClass):
 
     def generateCode(self):
-        self.render("boundaryConditions_cpp.template", "boundaryConditions.cpp")
+        self.render((self.context["kernelType"], "boundaryConditions_cpp.template"), "boundaryConditions.cpp")

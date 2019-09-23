@@ -28,7 +28,7 @@ class MHDSolver::MHDSolver: public exahype::solvers::ADERDGSolver {
     static constexpr int order   = 3;
     static constexpr int basisSize   = order+1;
   
-    MHDSolver(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables);
+    MHDSolver(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int haloBufferCells,const int limiterBufferCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables);
 
     void spaceTimePredictor(double* const lQhbnd,double* const lFhbnd,double** const tempSpaceTimeUnknowns,double** const tempSpaceTimeFluxUnknowns,double* const tempUnknowns,double* const tempFluxUnknowns,double* const tempStateSizedVectors,const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& dx,const double dt) override; 
     void solutionUpdate(double* const luh,const double* const lduh,const double dt) override;

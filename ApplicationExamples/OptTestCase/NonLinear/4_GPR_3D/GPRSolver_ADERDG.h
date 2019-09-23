@@ -28,7 +28,7 @@ class GPR::GPRSolver_ADERDG : public GPR::AbstractGPRSolver_ADERDG {
      */
     static tarch::logging::Log _log;
   public:
-    GPRSolver_ADERDG(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables);
+    GPRSolver_ADERDG(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int haloBufferCells,const int limiterBufferCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables);
 
     /**
      * Initialise the solver.

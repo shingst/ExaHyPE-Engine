@@ -29,7 +29,8 @@ extern double *weights2;
 extern double *weights3;
 extern double *iweights3;
 
-{% if useLimiter %}
+{% if kernelType=="limiter" %}
+// limiter projection matrices
 extern double* uh2lob;
 extern double* dg2fv;
 extern double* fv2dg;

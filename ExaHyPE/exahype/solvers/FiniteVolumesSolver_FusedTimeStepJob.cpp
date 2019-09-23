@@ -1,12 +1,13 @@
 #include "exahype/solvers/FiniteVolumesSolver.h"
 
 exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::FusedTimeStepJob(
-  FiniteVolumesSolver& solver,
-  CellDescription&     cellDescription,
-  CellInfo&            cellInfo,
-  const bool           isFirstTimeStepOfBatch,
-  const bool           isLastTimeStepOfBatch,
-  const bool           isSkeletonJob)
+  FiniteVolumesSolver&                               solver,
+  CellDescription&                                   cellDescription,
+  CellInfo&                                          cellInfo,
+  const bool                                         isFirstTimeStepOfBatch,
+  const bool                                         isLastTimeStepOfBatch,
+  const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers,
+  const bool                                         isSkeletonJob)
   :
   tarch::multicore::jobs::Job(
       tarch::multicore::jobs::JobType::BackgroundTask,0,
@@ -15,9 +16,9 @@ exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::FusedTimeStepJob(
   _solver(solver),
   _cellDescription(cellDescription),
   _cellInfo(cellInfo),
-  _neighbourMergePerformed(cellDescription.getNeighbourMergePerformed()),
   _isFirstTimeStepOfBatch(isFirstTimeStepOfBatch),
   _isLastTimeStepOfBatch(isLastTimeStepOfBatch),
+  _boundaryMarkers(boundaryMarkers),
   _isSkeletonJob(isSkeletonJob) {
   NumberOfReductionJobs.fetch_add(1);
   if (_isSkeletonJob) {
@@ -29,9 +30,9 @@ exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::FusedTimeStepJob(
 
 bool exahype::solvers::FiniteVolumesSolver::FusedTimeStepJob::run(bool runOnMasterThread) {
   _solver.updateBody(
-      _cellDescription,_cellInfo,_neighbourMergePerformed,
+      _cellDescription,_cellInfo,
       _isFirstTimeStepOfBatch,_isLastTimeStepOfBatch,
-      _isSkeletonJob,false/*uncompressBefore*/);
+      _boundaryMarkers,false/*uncompressBefore*/);
 
   NumberOfReductionJobs.fetch_sub(1);
   assertion( NumberOfReductionJobs.load()>=0 );

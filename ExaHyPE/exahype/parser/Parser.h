@@ -496,6 +496,23 @@ class exahype::parser::Parser {
   int getHaloCells(int solverNumber) const;
 
   /**
+   * @return additional halo cells that are created during the mesh refinement
+   * iterations but it is not ensured these cells exist during the mesh refinement iterations.
+   *
+   * @note If the user has not specified this optional value, 0 is returned.
+   */
+  int getHaloBufferCells(int solverNumber) const;
+
+  /**
+   * @return number of cells around a troubled cell that we additionally flag as
+   * FV-to-DG projection cells. The layers of DG-to-FV cells are increased the same way.
+   * Note that this will enlarge the limiter refinement stencil.
+   *
+   * @note If the user has not specified this optional value, 0 is returned.
+   */
+  int getLimiterBufferCells(int solverNumber) const;
+
+  /**
    * @return The number of regularised fine grid levels.
    *
    * @note If the user has not specified this optional value, 0 is returned.

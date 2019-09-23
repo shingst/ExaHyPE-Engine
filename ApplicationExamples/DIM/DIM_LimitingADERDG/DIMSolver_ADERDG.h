@@ -28,7 +28,7 @@ class DIM::DIMSolver_ADERDG : public DIM::AbstractDIMSolver_ADERDG {
      */
     static tarch::logging::Log _log;
   public:
-    DIMSolver_ADERDG(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables);
+    DIMSolver_ADERDG(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int haloBufferCells,const int limiterBufferCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables);
 
     /**
      * Initialise the solver.

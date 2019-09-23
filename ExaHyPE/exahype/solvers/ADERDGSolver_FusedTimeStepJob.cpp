@@ -6,14 +6,15 @@
 
 
 exahype::solvers::ADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
-  ADERDGSolver&    solver,
-  CellDescription& cellDescription,
-  CellInfo&        cellInfo,
-  const double     predictionTimeStamp,
-  const double     predictionTimeStepSize,
-  const bool       isFirstTimeStepOfBatch,
-  const bool       isLastTimeStepOfBatch,
-  const bool       isSkeletonJob)
+  ADERDGSolver&                                      solver,
+  CellDescription&                                   cellDescription,
+  CellInfo&                                          cellInfo,
+  const double                                       predictionTimeStamp,
+  const double                                       predictionTimeStepSize,
+  const bool                                         isFirstTimeStepOfBatch,
+  const bool                                         isLastTimeStepOfBatch,
+  const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers,
+  const bool                                         isSkeletonJob)
   :
   tarch::multicore::jobs::Job(
       tarch::multicore::jobs::JobType::BackgroundTask,0,
@@ -22,11 +23,11 @@ exahype::solvers::ADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
   _solver(solver),
   _cellDescription(cellDescription),
   _cellInfo(cellInfo),
-  _neighbourMergePerformed(cellDescription.getNeighbourMergePerformed()),
-  _predictionTimeStamp   (predictionTimeStamp   ),
+  _predictionTimeStamp(predictionTimeStamp),
   _predictionTimeStepSize(predictionTimeStepSize),
   _isFirstTimeStepOfBatch(isFirstTimeStepOfBatch),
   _isLastTimeStepOfBatch(isLastTimeStepOfBatch),
+  _boundaryMarkers(boundaryMarkers),
   _isSkeletonJob(isSkeletonJob) {
   NumberOfReductionJobs.fetch_add(1);
   if (_isSkeletonJob) {
@@ -38,10 +39,10 @@ exahype::solvers::ADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
 
 bool exahype::solvers::ADERDGSolver::FusedTimeStepJob::run(bool runOnMasterThread) {
   _solver.fusedTimeStepBody(
-      _cellDescription, _cellInfo, _neighbourMergePerformed,
+      _cellDescription, _cellInfo,
       _predictionTimeStamp,_predictionTimeStepSize,
       _isFirstTimeStepOfBatch,_isLastTimeStepOfBatch,
-      _isSkeletonJob,false/*mustBeDoneImmediately*/);
+      _boundaryMarkers,_isSkeletonJob,false/*mustBeDoneImmediately*/);
 
   NumberOfReductionJobs.fetch_sub(1);
   assertion( NumberOfReductionJobs.load()>=0 );

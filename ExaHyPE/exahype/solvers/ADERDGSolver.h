@@ -292,12 +292,23 @@ private:
   bool _stabilityConditionWasViolated;
 
   /** Special Refinement Status values */
-  static constexpr int BoundaryStatus             = -3;
-  static constexpr int Pending                    = -2;
-  static constexpr int Erase                      = -1; // Erase must be chosen as -1.
-  static constexpr int Keep                       =  0;
+  static constexpr int EmptyStatus    = -4;
+  static constexpr int BoundaryStatus = -3;
+  static constexpr int Pending        = -2;
+  static constexpr int Erase          = -1; // Erase must be chosen as -1.
+  static constexpr int Keep           =  0;
 
-  int _refineOrKeepOnFineGrid; // can be configured by the user
+  /**
+   * Threshold when to request a mesh adaptation.
+   */
+  const int _minimumRefinementStatusToRequestMeshRefinementInVirtualCell;
+  /**
+   * Refinement Status that indicates that a cell
+   * requests to be refined or to be kept on the finest grid.
+   *
+   * This value is computed as the sum of 1 + #haloCells + #haloBufferCells.
+   */
+  const int _refineOrKeepOnFineGrid; // can be configured by the user
 
   /**
    * !!! LimitingADERDGSolver functionality !!!
@@ -461,7 +472,7 @@ private:
    *
    * @note This operations is thread-safe
    */
-  void addNewCell(
+  void addNewLeafCell(
       exahype::Cell& fineGridCell,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       const int coarseGridCellDescriptionsIndex,
@@ -719,11 +730,24 @@ private:
    *
    * @note Not thread-safe.
    *
-   * @param[in] cellDescription         The cell description
-   * @param[in] face                    information about the boundary face
+   * @param[in] cellDescription The cell description
+   * @param[in] faceIndex       2*direction + orientation
+   * @param[in] direction       direction of the normal vector
+   * @param[in] orientation     orientation of the normal vector: 1 if it points in direction of a coordinate axis. 0 if it points the other way.
+   *
    * @note Not thread-safe.
    */
-  void applyBoundaryConditions(CellDescription& p,Solver::BoundaryFaceInfo& face);
+  void applyBoundaryConditions(CellDescription& cellDescription,const int faceIndex,const int direction,const int orientation);
+
+  /**
+   * Merge with boundary data. Calls applyBoundaryConditions.
+   *
+   * @param[in] cellDescription The cell description
+   * @param[in] faceIndex       2*direction + orientation
+   * @param[in] direction       direction of the normal vector
+   * @param[in] orientation     orientation of the normal vector: 1 if it points in direction of a coordinate axis. 0 if it points the other way.
+   */
+  void mergeWithBoundaryData(CellDescription& cellDescription,const int faceIndex,const int direction,const int orientation);
 
   /**
    * Perform all face integrals for a cell and add the result to
@@ -732,9 +756,10 @@ private:
    * Add the update vector to the solution vector.
    * @param addToUpdate add the result to the update vector
    */
-  void surfaceIntegral(const CellDescription& cellDescription,
-                       const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
-                       const bool addToUpdate);
+  void surfaceIntegral(
+      CellDescription&                                   cellDescription,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers,
+      const bool                                         addToUpdate);
 
   /**
    * Add the update vector to the solution vector.
@@ -786,26 +811,26 @@ private:
    *
    * @param cellDescription         an ADER-DG cell description of type Leaf
    * @param cellInfo                struct referring to all cell descriptions registered for a cell
-   * @param neighbourMergePerformed flag indicating where a neighbour merge has been performed (at spawn time if run by job)
    * @param isFirstTimeStepOfBatch  if this the first time step in a batch (at spawn time if run by job)
    * @param isLastTimeStepOfBatch   if this the last time step in a batch  (at spawn time if run by job)
    * @param predictionTimeStamp     the time stamp which should be used for the prediction (at spawn time if run by job)
    * @param predictionTimeStepSize  the time step size which should be used for the prediction (at spawn time if run by job)
+   * @param boundaryMarkers         markers that indicate where a domain or remote boundary is (see mappings::LevelwiseAdjacencyBookkeeping)
    * @param isSkeletonCell          if this cell description belongs to the MPI or AMR skeleton.
    * @param mustBeDoneImmediately   if the prediction has to be performed immediately and cannot be spawned as background job
    *
    * @note Might be called by background task. Do not synchronise time step data here.
    */
   void fusedTimeStepBody(
-      CellDescription&                                           cellDescription,
-      CellInfo&                                                  cellInfo,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
-      const double                                               predictionTimeStamp,
-      const double                                               predictionTimeStepSize,
-      const bool                                                 isFirstTimeStepOfBatch,
-      const bool                                                 isLastTimeStepOfBatch,
-      const bool                                                 isSkeletonCell,
-      const bool                                                 mustBeDoneImmediately);
+      CellDescription&                                   cellDescription,
+      CellInfo&                                          cellInfo,
+      const double                                       predictionTimeStamp,
+      const double                                       predictionTimeStepSize,
+      const bool                                         isFirstTimeStepOfBatch,
+      const bool                                         isLastTimeStepOfBatch,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers,
+      const bool                                         isSkeletonCell,
+      const bool                                         mustBeDoneImmediately);
 
   /**
    * If the cell description is of type Leaf, update the solution, evaluate the refinement criterion,
@@ -813,15 +838,29 @@ private:
    *
    * @note Not const as kernels are not const.
    *
-   * @param cellDescription a cell description
+   * @param cellDescription         an ADER-DG cell description of type Leaf
+   * @param cellInfo                struct referring to all cell descriptions registered for a cell
+   * @param boundaryMarkers         markers that indicate where a domain or remote boundary is (see mappings::LevelwiseAdjacencyBookkeeping)
+   * @param isSkeletonCell          if this cell description belongs to the MPI or AMR skeleton.
+   * @param mustBeDoneImmediately   if the prediction has to be performed immediately and cannot be spawned as background job
    *
    * @note Might be called by background task. Do not synchronise time step data here.
    */
   void updateBody(
-      CellDescription&                                           cellDescription,
-      CellInfo&                                                  cellInfo,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
-      const bool                                                 isAtRemoteBoundary);
+      CellDescription&                                   cellDescription,
+      CellInfo&                                          cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers);
+
+  /**
+   * @return if the gradient of integer flags from opposite faces is smaller than or equal to 2.
+   *
+   * @param neighbourFlags     flags copied/received from the neighbours.
+   * @param minValueToConsider A minimum value to consider in the convergence check. We typically use a negative BoundaryStatus when
+   *                           "merging" with the boundary. Using this value, these boundary values can be ignored.
+   */
+  static bool checkIfStatusFlaggingHasConverged(
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& neighbourFlags,
+      const int                                          minValueToConsider);
 
 #ifdef Parallel
   /**
@@ -1430,15 +1469,15 @@ private:
    */
   class FusedTimeStepJob: public tarch::multicore::jobs::Job {
     private:
-      ADERDGSolver&                                             _solver; // TODO not const because of kernels
-      CellDescription&                                          _cellDescription;
-      CellInfo                                                  _cellInfo;                // copy
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed; // copy
-      const double                                              _predictionTimeStamp;     // copy
-      const double                                              _predictionTimeStepSize;  // copy
-      const bool                                                _isFirstTimeStepOfBatch;
-      const bool                                                _isLastTimeStepOfBatch;
-      const bool                                                _isSkeletonJob;
+      ADERDGSolver&                                      _solver; // TODO not const because of kernels
+      CellDescription&                                   _cellDescription;
+      CellInfo                                           _cellInfo;                // copy
+      const double                                       _predictionTimeStamp;     // copy
+      const double                                       _predictionTimeStepSize;  // copy
+      const bool                                         _isFirstTimeStepOfBatch;
+      const bool                                         _isLastTimeStepOfBatch;
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>  _boundaryMarkers;         // copy
+      const bool                                         _isSkeletonJob;
     public:
       /**
        * Construct a FusedTimeStepJob.
@@ -1447,14 +1486,6 @@ private:
        * It further spawns a prediction job in this case in order
        * to overlap work with the reduction of time step size
        * and mesh update events.
-       *
-       * @note The state of the neighbourMergePerformed flags is used internally by
-       * some of the kernels, e.g. in order to determine where to perform a face integral.
-       * However, they have to be reset before the next iteration as they indicate on
-       * which face a Riemann solve has already been performed or not (their original usage).
-       * The flags are thus reset directly after spawning a FusedTimeStepJob.
-       * Therefore, we need to copy the neighbourMergePerformed flags when spawning
-       * a FusedTimeStep job.
        *
        * @param solver                 the spawning solver.
        * @param cellDescription        a cell description.
@@ -1466,14 +1497,15 @@ private:
        * @param isSkeletonJob          if the cell is a skeleton cell.
        */
       FusedTimeStepJob(
-        ADERDGSolver&    solver,
-        CellDescription& cellDescription,
-        CellInfo&        cellInfo,
-        const double     predictionTimeStamp,
-        const double     predictionTimeStepSize,
-        const bool       isFirstTimeStepOfBatch,
-        const bool       isLastTimeStepOfBatch,
-        const bool       isSkeletonJob);
+        ADERDGSolver&                                      solver,
+        CellDescription&                                   cellDescription,
+        CellInfo&                                          cellInfo,
+        const double                                       predictionTimeStamp,
+        const double                                       predictionTimeStepSize,
+        const bool                                         isFirstTimeStepOfBatch,
+        const bool                                         isLastTimeStepOfBatch,
+        const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers,
+        const bool                                         isSkeletonJob);
 
       bool run(bool runOnMasterThread) override;
       void prefetchData() override;
@@ -1489,11 +1521,10 @@ private:
    */
   class UpdateJob: public tarch::multicore::jobs::Job {
     private:
-      ADERDGSolver&                                             _solver; // TODO not const because of kernels
-      CellDescription&                                          _cellDescription;
-      CellInfo                                                  _cellInfo;
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed; // copy
-      const bool                                                _isAtRemoteBoundary;
+      ADERDGSolver&                                     _solver; // TODO not const because of kernels
+      CellDescription&                                  _cellDescription;
+      CellInfo                                          _cellInfo;
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _boundaryMarkers; // copy
     public:
       /**
        * Construct a UpdateJob.
@@ -1506,10 +1537,10 @@ private:
        * @param isSkeletonJob          if the cell is a skeleton cell
        */
       UpdateJob(
-        ADERDGSolver&    solver,
-        CellDescription& cellDescription,
-        CellInfo&        cellInfo,
-        const bool       isAtRemoteBoundary);
+        ADERDGSolver&                                      solver,
+        CellDescription&                                   cellDescription,
+        CellInfo&                                          cellInfo,
+        const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers);
 
       bool run(bool runOnMasterThread) override;
       void prefetchData() override;
@@ -1725,9 +1756,7 @@ public:
    * and any refinement criterion has been evaluated before
    * calling this function.
    */
-  void updateRefinementStatus(
-      CellDescription&                                           cellDescription,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) const;
+  void updateRefinementStatus(CellDescription& cellDescription) const;
 
   /**
    * Updates the status flags and sets the stability criterion to
@@ -1761,6 +1790,8 @@ public:
       const double maximumMeshSize,
       const int maximumAdaptiveMeshDepth,
       const int haloCells,
+      const int haloBufferCells,
+      const int limiterBufferCells,
       const int regularisedFineGridLevels,
       const exahype::solvers::Solver::TimeStepping timeStepping,
       const int DMPObservables,
@@ -2063,9 +2094,7 @@ public:
    *
    * @note Has no const modifier since kernels are not const functions yet.
    */
-  MeshUpdateEvent evaluateRefinementCriteriaAfterSolutionUpdate(
-      CellDescription&                                           cellDescription,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
+  MeshUpdateEvent updateRefinementStatusAfterSolutionUpdate(CellDescription& cellDescription);
 
   /*! Perform prediction and volume integral.
    *
@@ -2210,16 +2239,16 @@ public:
   void updateGlobalObservables(const int solverNumber,CellInfo& cellInfo) final override;
 
   void fusedTimeStepOrRestrict(
-      const int  solverNumber,
-      CellInfo&  cellInfo,
-      const bool isFirstTimeStepOfBatch,
-      const bool isLastTimeStepOfBatch,
-      const bool isAtRemoteBoundary) final override;
+      const int                                          solverNumber,
+      CellInfo&                                          cellInfo,
+      const bool                                         isFirstTimeStepOfBatch,
+      const bool                                         isLastTimeStepOfBatch,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers) final override;
 
   void updateOrRestrict(
-      const int  solverNumber,
-      CellInfo&  cellInfo,
-      const bool isAtRemoteBoundary) final override;
+      const int                                          solverNumber,
+      CellInfo&                                          cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers) final override;
 
   void compress(
       const int solverNumber,
@@ -2263,10 +2292,10 @@ public:
    *                                              (Fused time stepping for nonlinear PDEs is the only time stepping variant where we need to use an update vector.)
    */
   void correction(
-      CellDescription&                                           cellDescription,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
-      const bool                                                 isFirstTimeStep,
-      const bool                                                 addSurfaceIntegralResultToUpdate);
+      CellDescription&                                   cellDescription,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers,
+      const bool                                         isFirstTimeStep,
+      const bool                                         addSurfaceIntegralResultToUpdate);
 
   /**
    * TODO(Dominic): Update docu.
@@ -2323,11 +2352,13 @@ public:
    *
    * @note Has no const modifier since kernels are not const functions.
    *
-   * @param cellDescription       a cell description of type Descendand which allocates face data
+   * @param cellDescription       a cell description of type Virtual which allocates face data
    * @param addToCoarseGridUpdate if the result of the face integral should be added to the coarse grid update.
    *                              Otherwise it is directly added to the coarse grid solution.
    */
-  void restrictToTopMostParent(const CellDescription& cellDescription,const bool addToCoarseGridUpdate);
+  void restrictToTopMostParent(
+      CellDescription& cellDescription,
+      const bool addToCoarseGridUpdate);
 
   /**
    * Go back to previous time step with
@@ -2353,14 +2384,13 @@ public:
       const int otherAugmentationStatus);
 
   void mergeNeighboursMetadata(
-      const int                                 solverNumber,
-      Solver::CellInfo&                         cellInfo1,
-      Solver::CellInfo&                         cellInfo2,
-      const tarch::la::Vector<DIMENSIONS, int>& pos1,
-      const tarch::la::Vector<DIMENSIONS, int>& pos2,
-      const tarch::la::Vector<DIMENSIONS,       double>& x,
-      const tarch::la::Vector<DIMENSIONS,       double>& h,
-      const bool                                checkThoroughly) const;
+      const int                                    solverNumber,
+      Solver::CellInfo&                            cellInfo1,
+      Solver::CellInfo&                            cellInfo2,
+      const tarch::la::Vector<DIMENSIONS, int>&    pos1,
+      const tarch::la::Vector<DIMENSIONS, int>&    pos2,
+      const tarch::la::Vector<DIMENSIONS, double>& barycentreFromVertex,
+      const bool                                   checkThoroughly) const;
 
   static void mergeWithNeighbourMetadata(
       const int                                    solverNumber,
@@ -2370,16 +2400,15 @@ public:
       const int                                    neighbourRefinementStatus,
       const tarch::la::Vector<DIMENSIONS, int>&    pos,
       const tarch::la::Vector<DIMENSIONS, int>&    posNeighbour,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const tarch::la::Vector<DIMENSIONS, double>& h);
+      const tarch::la::Vector<DIMENSIONS, double>& barycentreFromVertex);
 
   static void mergeWithEmptyNeighbourDuringMeshRefinement(
       const int                                    solverNumber,
       Solver::CellInfo&                            cellInfo, // corresponds to dest
       const tarch::la::Vector<DIMENSIONS, int>&    pos,
       const tarch::la::Vector<DIMENSIONS, int>&    posNeighbour,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const tarch::la::Vector<DIMENSIONS, double>& h);
+      const bool                                   isAtBoundary,
+      const tarch::la::Vector<DIMENSIONS, double>& barycentreFromVertex);
 
   void mergeNeighboursData(
       const int                                 solverNumber,
@@ -2387,12 +2416,6 @@ public:
       Solver::CellInfo&                         cellInfo2,
       const tarch::la::Vector<DIMENSIONS, int>& pos1,
       const tarch::la::Vector<DIMENSIONS, int>& pos2);
-
-  void mergeWithBoundaryData(
-      const int                                 solverNumber,
-      Solver::CellInfo&                         cellInfo,
-      const tarch::la::Vector<DIMENSIONS, int>& posCell,
-      const tarch::la::Vector<DIMENSIONS, int>& posBoundary);
 #ifdef Parallel
   /**
    * Sends all the cell descriptions at address @p
@@ -2499,13 +2522,12 @@ public:
    * with the one of the neighour.
    * We do this here in order to reduce code bloat.
    *
-   * @param [in]    solverNumber      solver number
-   * @param [inout] cellInfo          array holding all cell decriptions registered at the cell
-   * @param [in]    neighbourMetadata metadata send from the neighbour cell
-   * @param [in]    pos               position of the cell (receives data)
-   * @param [in]    posNeighbour      position of the neighbour cell (did send data)
-   * @param [in]    x                 vertex coordinates
-   * @param [in]    h                 mesh size on the current grid
+   * @param[in]    solverNumber         solver number
+   * @param[inout] cellInfo             array holding all cell decriptions registered at the cell
+   * @param[in]    neighbourMetadata    metadata send from the neighbour cell
+   * @param[in]    pos                  position of the cell (receives data)
+   * @param[in]    posNeighbour         position of the neighbour cell (did send data)
+   * @param[in]    barycentreFromVertex face barycentre computed using vertex coordinates.
    */
   static void mergeWithNeighbourMetadata(
       const int                                    solverNumber,
@@ -2513,8 +2535,7 @@ public:
       const MetadataHeap::HeapEntries&             neighbourMetadata,
       const tarch::la::Vector<DIMENSIONS, int>&    pos,
       const tarch::la::Vector<DIMENSIONS, int>&    posNeighbour,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const tarch::la::Vector<DIMENSIONS, double>& h);
+      const tarch::la::Vector<DIMENSIONS, double>& barycentreFromVertex);
 
   /**
    * Sends out two messages, one holding degrees of freedom (DOF)
@@ -2548,7 +2569,7 @@ public:
       Solver::CellInfo&                             cellInfo,
       const tarch::la::Vector<DIMENSIONS, int>&     src,
       const tarch::la::Vector<DIMENSIONS, int>&     dest,
-      const tarch::la::Vector<DIMENSIONS, double>&  x,
+      const tarch::la::Vector<DIMENSIONS, double>&  barycentre,
       const int                                     level);
 
   /** \copydoc Solver::mergeWithNeighbourData
@@ -2572,7 +2593,7 @@ public:
       Solver::CellInfo&                            cellInfo,
       const tarch::la::Vector<DIMENSIONS, int>&    src,
       const tarch::la::Vector<DIMENSIONS, int>&    dest,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& barycentre,
       const int                                    level);
 
   /** \copydoc Solver::dropNeighbourData
@@ -2590,7 +2611,7 @@ public:
       Solver::CellInfo&                            cellInfo,
       const tarch::la::Vector<DIMENSIONS, int>&    src,
       const tarch::la::Vector<DIMENSIONS, int>&    dest,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& barycentre,
       const int                                    level) const;
 
   ///////////////////////////////////
@@ -2626,11 +2647,11 @@ public:
    * event of a cell description.
    */
   void receiveDataFromMasterIfProlongating(
-      const int masterRank,
-      const int receivedCellDescriptionsIndex,
-      const int receivedElement,
+      const int                                   masterRank,
+      const int                                   receivedCellDescriptionsIndex,
+      const int                                   receivedElement,
       const tarch::la::Vector<DIMENSIONS,double>& x,
-      const int level) const final override;
+      const int                                   level) const final override;
 
   /**
    * Finish prolongation operations started on the master.
@@ -2670,11 +2691,6 @@ public:
        const int                                    coarseGridCellDescriptionsIndex,
        const tarch::la::Vector<DIMENSIONS, double>& x,
        const int                                    level) final override;
-
-  void appendMasterWorkerCommunicationMetadata(
-      MetadataHeap::HeapEntries& metadata,
-      const int                  cellDescriptionsIndex,
-      const int                  solverNumber) const override;
 
   void sendDataToWorkerOrMasterDueToForkOrJoin(
       const int                                    toRank,

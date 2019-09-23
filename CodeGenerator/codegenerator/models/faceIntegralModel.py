@@ -28,4 +28,4 @@ class FaceIntegralModel(AbstractModelBaseClass):
 
     def generateCode(self):
         #self.context["bndFaceSize"] = self.context["nVarPad"] * self.context["nDof"] * self.context["nDof3D"]  
-        self.render("faceIntegral_cpp.template", "faceIntegral.cpp")
+        self.render(("aderdg", "faceIntegral_cpp.template"), "faceIntegral.cpp")

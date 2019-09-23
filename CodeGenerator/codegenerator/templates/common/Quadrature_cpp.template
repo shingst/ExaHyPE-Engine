@@ -21,7 +21,7 @@ double* {{codeNamespace}}::weights2;
 double* {{codeNamespace}}::weights3;
 double* {{codeNamespace}}::iweights3;
 double* {{codeNamespace}}::nodes;
-{% if useLimiter %}
+{% if kernelType=="limiter" %}
 double* {{codeNamespace}}::uh2lob;
 double* {{codeNamespace}}::dg2fv;
 double* {{codeNamespace}}::fv2dg;
@@ -33,7 +33,7 @@ void {{codeNamespace}}::freeQuadratureNodesAndWeights() {
   _mm_free(weights3);
   _mm_free(iweights3);
   _mm_free(nodes);
-{% if useLimiter %}
+{% if kernelType=="limiter" %}
   _mm_free(uh2lob);
   _mm_free(dg2fv);
   _mm_free(fv2dg);
@@ -46,7 +46,7 @@ void {{codeNamespace}}::initQuadratureNodesAndWeights() {
   weights3  = (double *) _mm_malloc(sizeof(double)*{{w3Size }}, ALIGNMENT); //2D: (nDof*nDof)Pad (== w1[i]*w1[j]), 3D: (nDof*nDof*nDof)Pad (== w1[i]*w1[j]*w1[k])
   iweights3 = (double *) _mm_malloc(sizeof(double)*{{w3Size }}, ALIGNMENT); //2D: (nDof*nDof)Pad (== w1[i]*w1[j]), 3D: (nDof*nDof*nDof)Pad (== w1[i]*w1[j]*w1[k])
   nodes     = (double *) _mm_malloc(sizeof(double)*{{nDofPad}}, ALIGNMENT);
-{% if useLimiter %}
+{% if kernelType=="limiter" %}
   uh2lob    = (double *) _mm_malloc(sizeof(double)*{{uh2lobSize}}, ALIGNMENT); //nDof*nDofPad
   dg2fv     = (double *) _mm_malloc(sizeof(double)*{{dg2fvSize }}, ALIGNMENT); //nDof*nDofLimPad
   fv2dg     = (double *) _mm_malloc(sizeof(double)*{{fv2dgSize }}, ALIGNMENT); //nDofLim*nDofPad
@@ -72,7 +72,7 @@ void {{codeNamespace}}::initQuadratureNodesAndWeights() {
   nodes[{{i}}]     = {{"{:.15e}".format(QuadratureNodes[i])}};
 {% endfor %}
 
-{% if useLimiter %}
+{% if kernelType=="limiter" %}
 {% for i in uh2lob_seq %}
   uh2lob[{{i}}]    = {{"{:.15e}".format(uh2lob[i])}};
 {% endfor %}

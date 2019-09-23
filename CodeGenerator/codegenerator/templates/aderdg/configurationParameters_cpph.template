@@ -15,7 +15,7 @@
 namespace {{namespaceName}} {
 {% endfor %}
 
-  // Global configuration 
+  // ADERDG configuration 
   constexpr int getNumberOfVariable()        {return {{nVar}};}
   constexpr int getNumberOfVariablePadded()  {return {{nVarPad}};}
                                              
@@ -31,14 +31,6 @@ namespace {{namespaceName}} {
   constexpr int getDimension()               {return {{nDim}};}
                                              
   constexpr bool isLinear()                  {return {{isLinearCText}};}
-  
-{% if useLimiter %}
-  // Limiter configuration
-  constexpr int getBasisSizeLimiter()        {return {{nDofLim}};}
-  constexpr int getBasisSizeLimiterPadded()  {return {{nDofLimPad}};}
-  constexpr int getGhostLayerWidth()         {return {{ghostLayerWidth}};}
-  constexpr int getNumberOfObservable()      {return {{nObs}};}
-{% endif %}
 
   // Array sizes
   constexpr int getlQiSize()     {return {{lQiSize}};}
@@ -165,14 +157,6 @@ namespace {{namespaceName}} {
   // RiemannSolver, also 2 eigenvalues cost
   constexpr unsigned long riemannSolver_flops = {{nDof*nDof3D*(nDataPad*4+nVar+nVarPad*3)+useNCPFactor*(nDof*nDof3D*(nVar*3+nVarPad*4))}};
   constexpr unsigned long riemannSolver_factor = {{nDof*nDof3D*useNCPFactor}}; // flops of NCP * this factor
-{% endif %}
-
-{% if useLimiter %}
-  constexpr unsigned long  projectOnFVLimiterSpace_flops = {{nDofLim*nDofLim3D*nDof*nDofLim*(nDofLim*nDofPad*(nDim-1)+2*nVar*nDofLim*nDof)}};
-  constexpr unsigned long  projectOnDGSpace_flops = {{nDofLim*nDofLim3D*nDof*nDofLim*(nDofLimPad*nDof*(nDim-1)+2*nVar*nDofLim*nDof)}};
-  constexpr unsigned long  discreteMaximumPrincipleAndMinAndMaxSearch_flops = {{4*nObs+nDof*nDof*nDof3D*nDof3D*(nDofPad*nDof*(nDim-1)+nVar*nDof*nDof)+nDof*nDof3D*nDofLim*nDofLim3D*(nDofLim*nDofPad*(nDim-1)+nVar*nDof*nDofLim)}};
-  constexpr unsigned long  findCellLocalMinAndMax_flops = {{nDof*nDof*nDof3D*nDof3D*(nDofPad*nDof*(nDim-1)+nVar*nDof*nDof)+nDof*nDof3D*nDofLim*nDofLim3D*(nDofLim*nDofPad*(nDim-1)+nVar*nDof*nDofLim)}};
-  constexpr unsigned long  findCellLocalLimiterMinAndMax_flops = 0; //only min and max
 {% endif %}
 
 {% for namespaceName in codeNamespaceList %}
