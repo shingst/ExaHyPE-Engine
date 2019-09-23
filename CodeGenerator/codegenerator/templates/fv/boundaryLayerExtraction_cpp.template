@@ -67,15 +67,15 @@ void {{codeNamespace}}::boundaryLayerExtraction(
 
   // z-axis: strides: My>Mx
   if (boundaryPosition[2] == -1) {
-    for (int z=0; z<ghostLayerWidth; z++) {
-      for (int y=patchBegin; y<patchEnd; ++y) {
+    for (int z=0; z<{{ghostLayerWidth}}; z++) {
+      for (int y={{ghostLayerWidth}}; y<{{ghostLayerWidth+nDof}}; ++y) {
         std::copy_n(luh+{{idxLuh("z+"~ghostLayerWidth,y,ghostLayerWidth,0)}}, {{nData*nDof}}, luhbnd+{{idxBndZ(z,"y-"~ghostLayerWidth,0,0)}});
       }
     }
   }
   if (boundaryPosition[2] == +1) {
-    for (int z=0; z<ghostLayerWidth; z++) {
-      for (int y=patchBegin; y<patchEnd; ++y) {
+    for (int z=0; z<{{ghostLayerWidth}}; z++) {
+      for (int y={{ghostLayerWidth}}; y<{{ghostLayerWidth+nDof}}; ++y) {
         std::copy_n(luh+{{idxLuh("z+"~nDof,y,ghostLayerWidth,0)}}, {{nData*nDof}}, luhbnd+{{idxBndZ(z,"y-"~ghostLayerWidth,0,0)}});
       }
     }
