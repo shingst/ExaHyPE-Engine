@@ -12,14 +12,14 @@
     "dimension": 3,
     "end_time": 10.0,
     "offset": [
-      -15000.0,
-      -15000.0,
-      -15000.0
+      -8000.0,
+      -8000.0,
+      -8000.0
     ],
     "width": [
-      30000.0,
-      30000.0,
-      30000.0
+      16000.0,
+      16000.0,
+      16000.0
     ]
   },
   "shared_memory": {
@@ -54,8 +54,8 @@
       "type": "Limiting-ADER-DG",
       "name": "GPRDRSolver",
       "order": 2,
-      "maximum_mesh_size": 6000.0,
-      "maximum_mesh_depth": 2,
+      "maximum_mesh_size": 1000.0,
+      "maximum_mesh_depth": 1,
       "time_stepping": "global",
       "aderdg_kernel": {
         "language": "C",
@@ -140,10 +140,10 @@
         }
       ],
     "parameters": {
-        "reference": "NLOPRUPTURECG",
+        "reference": "NLOPRUPTUREPW",
         "cgfile": "DTM/trient_003_44_48_9_13.bin",
-        "cx": 4405.905971174,
-        "cy":2551.552691730,
+        "cx": 4456.397222711000,
+        "cy":2596.544914552000,
         "isbinary":1
       },
 

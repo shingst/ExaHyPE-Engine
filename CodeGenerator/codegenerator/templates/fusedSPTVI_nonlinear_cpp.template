@@ -29,6 +29,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         {{solverName}}& solver, 
         double* restrict lduh,
         double* restrict lQhbnd, 
+	double* restrict lGradQhbnd,
         double* restrict lFhbnd,
         double* restrict lQi,
         double* restrict rhs,
@@ -37,7 +38,8 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         double* restrict lQhi,
         double* restrict lFhi,
         double* restrict lShi,  // for NCP or Source
-        double* restrict gradQ, // for NCP or Source
+        double* restrict gradQ, // for NCP or Source or viscousFlux
+        double* restrict gradQAvg, // for viscousFlux
         const double* const restrict luh,
         const double inverseDx, //Assume dx[0] == dx[1] == dx[2]
         const double dt
@@ -57,15 +59,20 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   __assume_aligned(FLCoeff, ALIGNMENT); // == F0
   __assume_aligned(Kxi, ALIGNMENT);
   __assume_aligned(iK1_T, ALIGNMENT);
+  __assume_aligned(weights1, ALIGNMENT);
   __assume_aligned(weights3, ALIGNMENT);
   __assume_aligned(iweights3, ALIGNMENT);
   __assume_aligned(luh, ALIGNMENT); //luh should be aligned, see Solver.h
 {% if useSourceOrNCP %}
   __assume_aligned(lSi, ALIGNMENT);
 {% endif %}
-{% if useNCP %}
+{% if useNCP or useViscousFlux %}
   __assume_aligned(gradQ, ALIGNMENT);
 {% endif %}
+{% if useViscousFlux %}
+  __assume_aligned(gradQAvg, ALIGNMENT);
+{% endif %}
+
 #endif
 
   // 0. Allocate local variable
@@ -88,7 +95,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 
   double new_lQi_slice[{{nDof*nVarPad}}] __attribute__((aligned(ALIGNMENT))); //for step 4 (computing new lQi value), doesn't update parameters
   const double dtBydx = inverseDx * dt; //Assume dx[0] == dx[1] == dx[2]
-{% if useNCP or (useFlux and useCERKGuess) %}
+{% if useNCP or (useFlux and useCERKGuess)  or useViscousFlux %}
   double dudxT_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
   
   // 0. precompute 1/dx * dudx_T. Assume dx[0] == dx[1] == dx[2]
@@ -168,10 +175,61 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   
   // 2. Discrete Picard iterations
   constexpr int MaxIterations = {% if useCERKGuess %}{% if nDof-3 <= 1 %}1; //cannot be lower than 1{% else %}{{nDof-3}}; //nDof-3{% endif %}{% else %}{{2*nDof+1}};{% endif %}
-  
+
   int iter = 0;
   for (; iter < MaxIterations; iter++) {
+{% if useViscousFlux %}
+      //set gradQAvg to 0
+      std::memset(gradQAvg, 0, {{(nDof**nDim)*nVarPad*nDim}} * sizeof(double));
+{% endif %}
     for (int t = 0; t < {{nDof}}; t++) {  // time DOF
+
+
+{% if useNCP or useViscousFlux %}
+      //set gradQ to 0
+      std::memset(gradQ, 0, {{(nDof**nDim)*nVarPad*nDim}} * sizeof(double));
+{% endif %}
+      
+      // Compute the "derivatives" (contributions of the stiffness matrix)      
+      // x direction (independent from the y and z derivatives)
+      for (int z = 0; z < {{nDof3D}}; z++) {
+        for (int y = 0; y < {{nDof}}; y++) {
+{% if useNCP or useViscousFlux %}
+          {{ m.matmul('gradQ_x', 'lQi', 'dudxT_by_dx', 'gradQ', '((t*'~nDof3D~'+z)*'~nDof~'+y)*'~nDof*nDataPad, '0', '(z*'~nDof~'+y)*'~nVarPad*nDof) | indent(10) }}{##}
+{% endif %}
+        }
+      }
+      
+      // y direction (independent from the x and z derivatives)
+      for (int z = 0; z < {{nDof3D}}; z++) {
+        for (int x = 0; x < {{nDof}}; x++) {
+{% if useNCP or useViscousFlux %}
+          {{ m.matmul('gradQ_y', 'lQi', 'dudxT_by_dx', 'gradQ', '((t*'~nDof3D~'+z)*'~nDof*nDof~'+x)*'~nDataPad, '0', '(z*'~nDof*nDof~'+x)*'~nVarPad~'+'~nVarPad*(nDof**nDim)) | indent(10) }}{##}
+{% endif %}
+        }
+      }
+       
+{% if nDim==3 %}
+      // z direction (independent from the x and y derivatives)
+      for (int y = 0; y < {{nDof}}; y++) {
+        for (int x = 0; x < {{nDof}}; x++) {
+{% if useNCP or useViscousFlux %}
+          {{ m.matmul('gradQ_z', 'lQi', 'dudxT_by_dx', 'gradQ', '((t*'~nDof3D*nDof~'+y)*'~nDof~'+x)*'~nDataPad, '0', '(y*'~nDof~'+x)*'~nVarPad~'+'~2*nVarPad*(nDof**nDim)) | indent(10) }}{##}
+{% endif %}
+        }
+      }
+{% endif %}
+
+
+{% if useViscousFlux %}
+// Compute time-avg gradQ
+// TODO(JMG): Maybe compute after Picard its?
+#pragma omp simd aligned(gradQAvg,gradQ:ALIGNMENT)
+    for (int it = 0; it < {{nDim * (nDof**nDim) * nVarPad}}; it++) {
+      gradQAvg[it] += weights1[t] * gradQ[it];
+    }
+{% endif %}
+
 
 {% if useFlux %}
 {# *************************************************
@@ -191,11 +249,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         }
       }
       
-{% if useNCP %}
-      //set gradQ to 0
-      std::memset(gradQ, 0, {{(nDof**nDim)*nVarPad*nDim}} * sizeof(double));
-{% endif %}
-      
       // Compute the "derivatives" (contributions of the stiffness matrix)      
       // x direction (independent from the y and z derivatives)
       for (int z = 0; z < {{nDof3D}}; z++) {
@@ -203,9 +256,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {% if useFlux %}
           {{ m.matmul('rhs_x', 'lFi', 'coeffRhsX', 'rhs', '((t*'~nDof3D~'+z)*'~nDof~'+y)*'~nVarPad*nDof, '0', '((t*'~nDof3D~'+z)*'~nDof~'+y)*'~nVarPad*nDof, trueB='Kxi', trueAlpha='- weights3[t*'~nDof*nDof3D~'+z*'~nDof~'+y] * dtBydx') | indent(10) }}{##}
 {% endif %}{# useFlux #}
-{% if useNCP %}
-          {{ m.matmul('gradQ_x', 'lQi', 'dudxT_by_dx', 'gradQ', '((t*'~nDof3D~'+z)*'~nDof~'+y)*'~nDof*nDataPad, '0', '(z*'~nDof~'+y)*'~nVarPad*nDof) | indent(10) }}{##}
-{% endif %}
         }
       }
       
@@ -215,9 +265,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {% if useFlux %}
           {{ m.matmul('rhs_y', 'lFi', 'coeffRhsY', 'rhs', '((t*'~nDof3D~'+z)*'~nDof*nDof~'+x)*'~nVarPad~'+'~1*(nDof**nDim)*nDof*nVarPad, '0', '((t*'~nDof3D~'+z)*'~nDof*nDof~'+x)*'~nVarPad, trueB='Kxi', trueAlpha='- weights3[t*'~nDof*nDof3D~'+z*'~nDof~'+x] * dtBydx') | indent(10) }}{##}
 {% endif %}{# useFlux #}
-{% if useNCP %}
-          {{ m.matmul('gradQ_y', 'lQi', 'dudxT_by_dx', 'gradQ', '((t*'~nDof3D~'+z)*'~nDof*nDof~'+x)*'~nDataPad, '0', '(z*'~nDof*nDof~'+x)*'~nVarPad~'+'~nVarPad*(nDof**nDim)) | indent(10) }}{##}
-{% endif %}
         }
       }
        
@@ -228,9 +275,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 {% if useFlux %}
           {{ m.matmul('rhs_z', 'lFi','coeffRhsZ', 'rhs', '((t*'~nDof*nDof~'+y)*'~nDof~'+x)*'~nVarPad~'+'~2*(nDof**nDim)*nDof*nVarPad, '0', '((t*'~nDof*nDof~'+y)*'~nDof~'+x)*'~nVarPad, trueB='Kxi', trueAlpha='- weights3[t*'~nDof*nDof3D~'+y*'~nDof~'+x] * dtBydx') | indent(10) }}{##}
 {% endif %}{# useFlux #}
-{% if useNCP %}
-          {{ m.matmul('gradQ_z', 'lQi', 'dudxT_by_dx', 'gradQ', '((t*'~nDof3D*nDof~'+y)*'~nDof~'+x)*'~nDataPad, '0', '(y*'~nDof~'+x)*'~nVarPad~'+'~2*nVarPad*(nDof**nDim)) | indent(10) }}{##}
-{% endif %}
         }
       }
 {% endif %}
@@ -347,7 +391,9 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   
 #ifdef __INTEL_COMPILER
   __assume_aligned(lQhi, ALIGNMENT);
+{% if useViscousFlux %}
   __assume_aligned(lQhbnd, ALIGNMENT);
+{% endif %}
 {% if useFlux %}
   __assume_aligned(lFhi, ALIGNMENT);
   __assume_aligned(lFhbnd, ALIGNMENT);
@@ -357,7 +403,11 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 #endif
   
   std::memset(lQhbnd, 0, {{2*nDim*nDataPad*nDof*nDof3D}} * sizeof(double));
-  std::memset(lFhbnd, 0, {{2*nDim*nVarPad*nDof*nDof3D }} * sizeof(double));
+  std::memset(lFhbnd, 0, {{2*nDim*nVarPad*nDof*nDof3D}} * sizeof(double));
+
+  {% if useViscousFlux %}
+  std::memset(lGradQhbnd, 0, {{2*nDim*nVarPad*nDof*nDof3D*nDim}} * sizeof(double));
+  {% endif %}
 
   // x-direction: face 1 (left) and face 2 (right)
   for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
@@ -385,6 +435,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         // Fortran: lFhbnd(:,j,i,2) = lFhi_x(:,:,j,i) * FRCoeff(:)
         lFhbnd[n+{{nVarPad}}*yz+{{1*nVarPad*nDof*nDof3D}}] +=
             lFhi[n+{{nVarPad}}*(x+{{nDof}}*yz)] * FRCoeff[x];
+
 {% endif %}{# useFlux #}
       }
     }
@@ -460,8 +511,48 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       }
     }
   }
-  {% endif %}
-
+{% endif %}
+{% if useViscousFlux %}
+  // x-direction: face 1 (left) and face 2 (right)
+  for (int dzy = 0; dzy < {{nDof*nDof3D*nDim}}; dzy++) {
+    // Matrix-Vector Products
+    for (int x = 0; x < {{nDof}}; x++) {
+      #pragma omp simd aligned(lGradQhbnd,gradQAvg:ALIGNMENT)
+      for (int n = 0; n < {{nVarPad}}; n++) {
+        lGradQhbnd[dzy*{{nVarPad}}+n+{{0*nDim*nDof*nDof3D*nVarPad}}] += gradQAvg[(dzy*{{nDof}}+x)*{{nVarPad}}+n] * FLCoeff[x];
+        lGradQhbnd[dzy*{{nVarPad}}+n+{{1*nDim*nDof*nDof3D*nVarPad}}] += gradQAvg[(dzy*{{nDof}}+x)*{{nVarPad}}+n] * FRCoeff[x];
+      }
+    }
+  }
+  // y-direction: face 3 (left) and face 4 (right)
+  for (int dz = 0; dz < {{nDof3D*nDim}}; dz++) {
+    // Matrix-Vector Products
+    for (int x = 0; x < {{nDof}}; x++) {
+      for (int y = 0; y < {{nDof}}; y++) {
+        #pragma omp simd aligned(lGradQhbnd,gradQAvg:ALIGNMENT)
+        for (int n = 0; n < {{nVarPad}}; n++) {
+          lGradQhbnd[(dz*{{nDof}}+x)*{{nVarPad}}+n+{{2*nDim*nDof*nDof3D*nVarPad}}] += gradQAvg[((dz*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n] * FLCoeff[y];
+          lGradQhbnd[(dz*{{nDof}}+x)*{{nVarPad}}+n+{{3*nDim*nDof*nDof3D*nVarPad}}] += gradQAvg[((dz*{{nDof}}+y)*{{nDof}}+x)*{{nVarPad}}+n] * FRCoeff[y];
+        }
+      }
+    }
+  }
+{% if nDim==3 %}
+  // z-direction: face 5 (left) and face 6 (right)
+  for (int d = 0; d < {{nDim}}; d++) {
+    // Matrix-Vector Products
+    for (int yx = 0; yx < {{nDof*nDof}}; yx++) {
+      for (int z = 0; z < {{nDof}}; z++) {
+        #pragma omp simd aligned(lGradQhbnd,gradQAvg:ALIGNMENT)
+        for (int n = 0; n < {{nVarPad}}; n++) {
+          lGradQhbnd[(d*{{nDof*nDof}}+yx)*{{nVarPad}}+n+{{4*nDim*nDof*nDof3D*nVarPad}}] += gradQAvg[((d*{{nDof}}+z)*{{nDof*nDof}}+yx)*{{nVarPad}}+n] * FLCoeff[z];
+          lGradQhbnd[(d*{{nDof*nDof}}+yx)*{{nVarPad}}+n+{{5*nDim*nDof*nDof3D*nVarPad}}] += gradQAvg[((d*{{nDof}}+z)*{{nDof*nDof}}+yx)*{{nVarPad}}+n] * FRCoeff[z];
+        }
+      }
+    }
+  }
+{% endif %}{# nDim == 3#}
+{% endif %}{# useViscousFlux #}
   
   //*****************************
   //****** Volume Integral ******

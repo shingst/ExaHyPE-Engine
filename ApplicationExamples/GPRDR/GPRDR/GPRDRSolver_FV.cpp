@@ -63,7 +63,7 @@ void GPRDR::GPRDRSolver_FV::boundaryValues(
 	for(int m=0; m < nVar; m++) {
         stateOutside[m] = Qgp[m];
 	}
-	 std::copy_n(stateInside,nVar,stateOutside);
+	 //std::copy_n(stateInside,nVar,stateOutside);
 
 }
 

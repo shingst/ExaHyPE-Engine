@@ -26,7 +26,13 @@ class NavierStokes::NavierStokesSolver: public exahype::solvers::LimitingADERDGS
     static constexpr int Order                     = NavierStokes::AbstractNavierStokesSolver_ADERDG::Order;
     static constexpr int NumberOfGlobalObservables = NavierStokes::AbstractNavierStokesSolver_ADERDG::NumberOfGlobalObservables;
     static constexpr int NumberOfDMPObservables    = NavierStokes::AbstractNavierStokesSolver_ADERDG::NumberOfDMPObservables;
+    static constexpr int PatchSize                 = NavierStokes::AbstractNavierStokesSolver_FV::PatchSize;
     static constexpr int GhostLayerWidth           = NavierStokes::AbstractNavierStokesSolver_FV::GhostLayerWidth;
+      
+    // limiter projection matrices
+    double dg2fv[(Order+1)*PatchSize];
+    double fv2dg[(Order+1)*PatchSize];
+    double leg2lob[(Order+1)*(Order+1)];
       
     NavierStokesSolver(
         const double maximumMeshSize,

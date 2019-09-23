@@ -25,6 +25,7 @@ void {{codeNamespace}}::boundaryConditions(
                         double* stateOut,
                         const double* const fluxIn,
                         const double* const stateIn,
+			const double* const gradStateIn,
                         const double* const cellCentre,
                         const double* const cellSize,
                         const double t,const double dt,
@@ -49,14 +50,27 @@ void {{codeNamespace}}::boundaryConditions(
 {% endif %}
     for (int ii = 0; ii < {{nDof}}; ii++) {  // loop over dof
       x[d1] = cellCentre[d1] + cellSize[d1] * (nodes[ii] - 0.5); 
+{% if useViscousFlux %}
+  // Remove padding to use the same user function as generic kernel
+  double gradQ_PDE[{{nVar*nDim}}]; 
+  std::copy_n(gradStateIn+{{nVarPad}}*(jj*{{nDof}}+ii), {{nVar}}, gradQ_PDE); //x
+  std::copy_n(gradStateIn+{{nVarPad}}*(jj*{{nDof}}+ii) + {{1 * nVarPad * nDof * nDof3D}}, {{nVar}}, gradQ_PDE + {{1 * nVar}}); //y
+{% if nDim==3 %}
+  std::copy_n(gradStateIn+{{nVarPad}}*(jj*{{nDof}}+ii) + {{2 * nVarPad * nDof * nDof3D}}, {{nVar}}, gradQ_PDE + {{2 * nVar}}); //z
+{% endif %}
+{% endif %}{# useNCP #}
+
 #ifdef USE_IPO
     #pragma forceinline recursive
 #endif
-    // TODO(JMG): Pass gradient here in case of viscous flux
     solver.{{solverName}}::boundaryValues(x,t,dt,faceIndex,normalNonZero,
                           &fluxIn[(jj*{{nDof3D}}+ii)*{{nVarPad}}], &stateIn[(jj*{{nDof3D}}+ii)*{{nDataPad}}],
-					  nullptr,
-                          &fluxOut[(jj*{{nDof3D}}+ii)*{{nVarPad}}],&stateOut[(jj*{{nDof3D}}+ii)*{{nDataPad}}]);   
+{% if useViscousFlux %}
+                          gradQ_PDE,
+{% else %}
+                          nullptr,
+{% endif %}
+                          &fluxOut[(jj*{{nDof3D}}+ii)*{{nVarPad}}],&stateOut[(jj*{{nDof3D}}+ii)*{{nDataPad}}]);
     }
   }
   

@@ -992,7 +992,7 @@ RECURSIVE SUBROUTINE HLLEMFluxFV(FL,FR,QL,QR,NormalNonZero)
   nv(:)=0.
   nv(NormalNonZero+1)=1.
   !
-  flattener=1.0!0.8
+  flattener=0.8!0.8
   !
 CALL PDEFlux(f1L,g1L,h1L,QL)
 CALL PDEFlux(f1R,g1R,h1R,QR)

@@ -40,6 +40,14 @@ double {{codeNamespace}}::stableTimeStepSize(
       for (int n = 0; n < {{nVar}}; n++) {
         maxEigenvalue = std::max(fabs(lambda[n]), maxEigenvalue);
       }
+      {% if useViscousFlux %}
+      double maxEigenvalueVisc = 0.0;
+      solver.{{solverName}}::viscousEigenvalues(luh+({{nData}}*xyz), d, lambda);
+      for (int n = 0; n < {{nVar}}; n++) {
+	maxEigenvalueVisc = std::max(std::abs(lambda[n]), maxEigenvalueVisc);
+      }
+      maxEigenvalue += maxEigenvalueVisc * (2.0/PNPM) * inverseDx;
+      {% endif %}
       denominator += maxEigenvalue * inverseDx; //Assume dx[0] == dx[1] == dx[2]
     }
 

@@ -1701,6 +1701,35 @@ void exahype::solvers::ADERDGSolver::rollbackSolutionGlobally(const int solverNu
   }
 }
 
+void exahype::solvers::ADERDGSolver::mergeWithNeighbourMetadata(
+    const int                                    solverNumber,
+    Solver::CellInfo&                            cellInfo, // corresponds to dest
+    const int                                    neighbourAugmentationStatus,
+    const int                                    neighbourCommunicationStatus,
+    const int                                    neighbourRefinementStatus,
+    const tarch::la::Vector<DIMENSIONS, int>&    pos,
+    const tarch::la::Vector<DIMENSIONS, int>&    posNeighbour,
+    const tarch::la::Vector<DIMENSIONS, double>& x,
+    const tarch::la::Vector<DIMENSIONS, double>& h) {
+  assertion(tarch::la::countEqualEntries(posNeighbour,pos)==DIMENSIONS-1); // only consider faces
+  const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
+  if ( element!=Solver::NotFound ) {
+    Solver::BoundaryFaceInfo face(pos,posNeighbour); //
+    CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
+
+    const tarch::la::Vector<DIMENSIONS,double> baryCentreFrom1 =
+        exahype::Cell::computeFaceBarycentre(cellDescription.getOffset(),cellDescription.getSize(),face._direction,face._orientation);
+    const tarch::la::Vector<DIMENSIONS,double> baryCentreFromVertex =
+        exahype::Vertex::computeFaceBarycentre(x,h,face._direction,pos); // or posNeighbour
+    if ( Vertex::equalUpToRelativeTolerance(baryCentreFrom1,baryCentreFromVertex) ) {
+      mergeWithAugmentationStatus (cellDescription,face._faceIndex,neighbourAugmentationStatus );
+      mergeWithCommunicationStatus(cellDescription,face._faceIndex,neighbourCommunicationStatus);
+      mergeWithRefinementStatus   (cellDescription,face._faceIndex,neighbourRefinementStatus   );
+    }
+    cellDescription.setNeighbourMergePerformed(face._faceIndex,true);
+  }
+}
+
 void exahype::solvers::ADERDGSolver::mergeNeighboursMetadata(
     const int                                    solverNumber,
     Solver::CellInfo&                            cellInfo1,
@@ -1736,12 +1765,18 @@ void exahype::solvers::ADERDGSolver::mergeNeighboursMetadata(
       mergeWithCommunicationStatus(cellDescription2,face._faceIndex2,cellDescription1.getCommunicationStatus());
       mergeWithAugmentationStatus(cellDescription2,face._faceIndex2,cellDescription1.getAugmentationStatus());
       mergeWithRefinementStatus(cellDescription2,face._faceIndex2,cellDescription1.getRefinementStatus());
-
-      cellDescription1.setNeighbourMergePerformed(face._faceIndex1,true); // here we only set, doesn't matter if operation is done twice.
-      cellDescription2.setNeighbourMergePerformed(face._faceIndex2,true);
     } else {
-      AllSolversAreStable = false;
+      mergeWithCommunicationStatus(cellDescription1,face._faceIndex1,-1); // TODO(Dominic): Use constants
+      mergeWithAugmentationStatus(cellDescription1,face._faceIndex1,-1);
+      mergeWithRefinementStatus(cellDescription1,face._faceIndex1,Pending);
+
+      mergeWithCommunicationStatus(cellDescription2,face._faceIndex2,-1);
+      mergeWithAugmentationStatus(cellDescription2,face._faceIndex2,-1);
+      mergeWithRefinementStatus(cellDescription2,face._faceIndex2,Pending);
     }
+
+    cellDescription1.setNeighbourMergePerformed(face._faceIndex1,true); // here we only set, doesn't matter if operation is done twice.
+    cellDescription2.setNeighbourMergePerformed(face._faceIndex2,true);
   }
 }
 
@@ -1954,7 +1989,7 @@ void exahype::solvers::ADERDGSolver::applyBoundaryConditions(CellDescription& p,
 
   const int dataPerFace = getBndFaceSize();
   const int dofsPerFace = getBndFluxSize();
-  const int gradientDataPerFace = _numberOfVariables * power(_nodesPerCoordinateAxis, DIMENSIONS - 1) * DIMENSIONS;
+  const int gradientDataPerFace = getBndGradQSize();
   double* QIn = static_cast<double*>(p.getExtrapolatedPredictor()) +  dataPerFace * face._faceIndex;
   double* gradQIn = static_cast<double*>(p.getExtrapolatedPredictorGradient()) +  gradientDataPerFace * face._faceIndex;
   double* FIn = static_cast<double*>(p.getFluctuation())           +  dofsPerFace * face._faceIndex;
@@ -2030,27 +2065,20 @@ exahype::solvers::ADERDGSolver::appendNeighbourCommunicationMetadata(
 }
 
 void exahype::solvers::ADERDGSolver::mergeWithNeighbourMetadata(
-    const int                                 solverNumber,
-    Solver::CellInfo&                         cellInfo,
-    const MetadataHeap::HeapEntries&          neighbourMetadata,
-    const tarch::la::Vector<DIMENSIONS, int>& src,
-    const tarch::la::Vector<DIMENSIONS, int>& dest) const {
-  assertion(tarch::la::countEqualEntries(src,dest)==DIMENSIONS-1); // only consider faces
-  const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
-  if ( element!=Solver::NotFound ) {
-    Solver::BoundaryFaceInfo face(dest,src);
-    CellDescription& cellDescription = cellInfo._ADERDGCellDescriptions[element];
+    const int                                    solverNumber,
+    Solver::CellInfo&                            cellInfo,
+    const MetadataHeap::HeapEntries&             neighbourMetadata,
+    const tarch::la::Vector<DIMENSIONS, int>&    pos,
+    const tarch::la::Vector<DIMENSIONS, int>&    posNeighbour,
+    const tarch::la::Vector<DIMENSIONS, double>& x,
+    const tarch::la::Vector<DIMENSIONS, double>& h) {
+  const int neighbourAugmentationStatus  = neighbourMetadata[exahype::NeighbourCommunicationMetadataAugmentationStatus  ];
+  const int neighbourCommunicationStatus = neighbourMetadata[exahype::NeighbourCommunicationMetadataCommunicationStatus ];
+  const int neighbourRefinementStatus    = neighbourMetadata[exahype::NeighbourCommunicationMetadataRefinementStatus    ];
 
-    const int neighbourAugmentationStatus  = neighbourMetadata[exahype::NeighbourCommunicationMetadataAugmentationStatus  ];
-    const int neighbourCommunicationStatus = neighbourMetadata[exahype::NeighbourCommunicationMetadataCommunicationStatus ];
-    const int neighbourRefinementStatus    = neighbourMetadata[exahype::NeighbourCommunicationMetadataLimiterStatus       ];
-
-    mergeWithAugmentationStatus (cellDescription,face._faceIndex,neighbourAugmentationStatus );
-    mergeWithCommunicationStatus(cellDescription,face._faceIndex,neighbourCommunicationStatus);
-    mergeWithRefinementStatus   (cellDescription,face._faceIndex,neighbourRefinementStatus   );
-
-    cellDescription.setNeighbourMergePerformed(face._faceIndex,true);
-  }
+  mergeWithNeighbourMetadata(solverNumber,cellInfo,
+      neighbourAugmentationStatus,neighbourCommunicationStatus,neighbourRefinementStatus,
+      pos,posNeighbour,x,h);
 }
 
 void exahype::solvers::ADERDGSolver::sendDataToNeighbour(

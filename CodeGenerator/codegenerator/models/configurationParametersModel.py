@@ -102,7 +102,7 @@ class ConfigurationParametersModel(AbstractModelBaseClass):
             if self.context["useSource"] or self.context["useNCP"]:
                 self.context["lSiSize"]   = nVarPad*(nDof**(nDim+1))
                 self.context["lShiSize"]  = nVarPad*(nDof**nDim)
-            if self.context["useNCP"]:
+            if self.context["useNCP"] or self.context['useViscousFlux']:
                 self.context["gradQSize"] = nVarPad*(nDof**nDim)*nDim
         
         # Face buffer size (Riemann)

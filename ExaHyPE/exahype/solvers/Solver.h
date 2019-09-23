@@ -304,7 +304,7 @@ namespace exahype {
   static constexpr int NeighbourCommunicationMetadataCellType            = 0;
   static constexpr int NeighbourCommunicationMetadataAugmentationStatus  = 1;
   static constexpr int NeighbourCommunicationMetadataCommunicationStatus = 2;
-  static constexpr int NeighbourCommunicationMetadataLimiterStatus       = 3;
+  static constexpr int NeighbourCommunicationMetadataRefinementStatus    = 3;
 
   static constexpr int MasterWorkerCommunicationMetadataPerSolver        = 5;
 

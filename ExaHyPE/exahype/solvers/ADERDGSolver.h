@@ -1712,10 +1712,10 @@ public:
    * Determine a new limiter status for the given direction based on the neighbour's
    * limiter status and the cell's reduced limiter status.
    */
-  void mergeWithRefinementStatus(
+  static void mergeWithRefinementStatus(
       CellDescription& cellDescription,
-      const int faceIndex,
-      const int neighbourLimiterStatus) const;
+      const int        faceIndex,
+      const int        neighbourLimiterStatus);
 
   /**
    * Determine the refinement status from the face
@@ -2341,16 +2341,16 @@ public:
   // NEIGHBOUR
   ///////////////////////////////////
   // helper status
-  void mergeWithCommunicationStatus(
+  static void mergeWithCommunicationStatus(
       CellDescription& cellDescription,
       const int faceIndex,
-      const int otherCommunicationStatus) const;
+      const int otherCommunicationStatus);
 
   // augmentation status
-  void mergeWithAugmentationStatus(
+  static void mergeWithAugmentationStatus(
       CellDescription& cellDescription,
       const int faceIndex,
-      const int otherAugmentationStatus) const;
+      const int otherAugmentationStatus);
 
   void mergeNeighboursMetadata(
       const int                                 solverNumber,
@@ -2361,6 +2361,25 @@ public:
       const tarch::la::Vector<DIMENSIONS,       double>& x,
       const tarch::la::Vector<DIMENSIONS,       double>& h,
       const bool                                checkThoroughly) const;
+
+  static void mergeWithNeighbourMetadata(
+      const int                                    solverNumber,
+      Solver::CellInfo&                            cellInfo, // corresponds to dest
+      const int                                    neighbourAugmentationStatus,
+      const int                                    neighbourCommunicationStatus,
+      const int                                    neighbourRefinementStatus,
+      const tarch::la::Vector<DIMENSIONS, int>&    pos,
+      const tarch::la::Vector<DIMENSIONS, int>&    posNeighbour,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h);
+
+  static void mergeWithEmptyNeighbourDuringMeshRefinement(
+      const int                                    solverNumber,
+      Solver::CellInfo&                            cellInfo, // corresponds to dest
+      const tarch::la::Vector<DIMENSIONS, int>&    pos,
+      const tarch::la::Vector<DIMENSIONS, int>&    posNeighbour,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h);
 
   void mergeNeighboursData(
       const int                                 solverNumber,
@@ -2479,13 +2498,23 @@ public:
    * This routine also merges the cell's limiter status
    * with the one of the neighour.
    * We do this here in order to reduce code bloat.
+   *
+   * @param [in]    solverNumber      solver number
+   * @param [inout] cellInfo          array holding all cell decriptions registered at the cell
+   * @param [in]    neighbourMetadata metadata send from the neighbour cell
+   * @param [in]    pos               position of the cell (receives data)
+   * @param [in]    posNeighbour      position of the neighbour cell (did send data)
+   * @param [in]    x                 vertex coordinates
+   * @param [in]    h                 mesh size on the current grid
    */
-  void mergeWithNeighbourMetadata(
-      const int                                 solverNumber,
-      CellInfo&                                 cellInfo,
-      const MetadataHeap::HeapEntries&          neighbourMetadata,
-      const tarch::la::Vector<DIMENSIONS, int>& src,
-      const tarch::la::Vector<DIMENSIONS, int>& dest) const;
+  static void mergeWithNeighbourMetadata(
+      const int                                    solverNumber,
+      CellInfo&                                    cellInfo,
+      const MetadataHeap::HeapEntries&             neighbourMetadata,
+      const tarch::la::Vector<DIMENSIONS, int>&    pos,
+      const tarch::la::Vector<DIMENSIONS, int>&    posNeighbour,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h);
 
   /**
    * Sends out two messages, one holding degrees of freedom (DOF)
@@ -2821,6 +2850,8 @@ protected:
   virtual int getBndTotalSize()                   const {return getDataPerCellBoundary();} // TODO function should be renamed
   virtual int getBndFluxSize()                    const {return getUnknownsPerFace();} // TODO function should be renamed
   virtual int getBndFluxTotalSize()               const {return getUnknownsPerCellBoundary();} // TODO function should be renamed
+  virtual int getBndGradQSize()                   const {return getUnknownsPerFace() * DIMENSIONS;}
+  virtual int getBndGradQTotalSize()              const {return 2 * DIMENSIONS * getBndGradQSize();}
   virtual int getUpdateSize()                     const {return getUnknownsPerCell();}
 
   virtual bool alignTempArray()                   const {return false;}

@@ -185,6 +185,15 @@ private:
       const tarch::la::Vector<DIMENSIONS, double> x,
       const tarch::la::Vector<DIMENSIONS, double> h);
 
+  static void mergeOnlyNeighboursMetadataLoopBodyHelper(
+      solvers::Solver::CellInfo& cellInfo1,
+      const solvers::Solver::CellInfo& cellInfo2,
+      const tarch::la::Vector<DIMENSIONS,int>& pos1,
+      const tarch::la::Vector<DIMENSIONS,int>& pos2,
+      const tarch::la::Vector<DIMENSIONS, double>& x,
+      const tarch::la::Vector<DIMENSIONS, double>& h,
+      const exahype::State::AlgorithmSection& section);
+
   /**
    * Loop body of loop in mergeNeighboursMetadata.
    *
@@ -323,6 +332,8 @@ private:
     const bool                                   receiveNeighbourMetadata,
     const tarch::la::Vector<TWO_POWER_D, int>&   adjacentRanks,
     const tarch::la::Vector<DIMENSIONS, double>& baryCentre,
+    const tarch::la::Vector<DIMENSIONS, double>& x,
+    const tarch::la::Vector<DIMENSIONS, double>& h,
     const int                                    level);
 
 #endif

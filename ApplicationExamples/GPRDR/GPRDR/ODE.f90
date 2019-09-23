@@ -47,6 +47,17 @@ RECURSIVE SUBROUTINE UpdateSolutionODE(Qnew,Qold,loc_dt)
 	!	print *, AC0,loc_dt
 	!	
 	!end if
+	!AC0(1)=0.271809817913919
+	!
+	!AC0(2)=0.999711778985515
+	!AC0(3)= -1.424312079886052E-003
+	!AC0(4)= -1.403901704045918E-020
+	!AC0(5)= 1.336400383137943E-003
+	!AC0(6)= 0.999633322663082
+	!AC0(7)= 2.077140788241882E-018
+	!AC0(8)= 1.133080272349694E-020
+	!AC0(9)= -2.076754583610124E-018
+	!AC0(10)= 0.999679787557563
 	!print *, ' -INPUT- ',Qold
 	!LOCiter=1
     CALL expintegrator_adaptive(AC0, EQN, loc_dt, ODESETTINGS,AC, substep_count, LOCiter, ODE)
@@ -57,7 +68,7 @@ RECURSIVE SUBROUTINE UpdateSolutionODE(Qnew,Qold,loc_dt)
 	!end if
 	if(LOCiter<0) then
 		print *, ' -OUTPUT- ' ,LOCiter,loc_dt, nVar
-		print *, Q0
+		print *, AC0
 		print *,'ODESETTINGS%delta_max           '  , ODESETTINGS%delta_max
 		print *,'ODESETTINGS%eps_fpi             '  , ODESETTINGS%eps_fpi
 		print *,'ODESETTINGS%eps_ccc             '  , ODESETTINGS%eps_ccc
@@ -85,6 +96,7 @@ RECURSIVE SUBROUTINE UpdateSolutionODE(Qnew,Qold,loc_dt)
 	!AC=AC0
     call export_expintegrator_state(Q0, AC,(/ substep_count, LOCiter /))
     !subuh1(:,ii,jj,kk) = Q0
+	!stop
 	
     Qnew=Q0
 	!Qnew(24)=24
