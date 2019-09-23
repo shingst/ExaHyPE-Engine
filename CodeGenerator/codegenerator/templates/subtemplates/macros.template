@@ -76,9 +76,9 @@ _mm_free({{name}});
 #}
 {% macro gradQAdapter(gradQ,gradQX,gradQY,gradQZ,incr) %}
 double {{gradQ}}[{{incr*nDim}}];
-std::copy_n({{gradQX}}, {{incr}}, gradQ_PDE); //x
-std::copy_n({{gradQY}}, {{incr}}, gradQ_PDE+{{1*incr}}); //y
+std::copy_n({{gradQX}}, {{incr}}, {{gradQ}}); //x
+std::copy_n({{gradQY}}, {{incr}}, {{gradQ}}+{{1*incr}}); //y
 {% if nDim==3 %}
-std::copy_n({{gradQZ}}, {{incr}}, gradQ_PDE+{{2*incr}}); //z
+std::copy_n({{gradQZ}}, {{incr}}, {{gradQ}}+{{2*incr}}); //z
 {% endif %}
 {% endmacro %}

@@ -195,8 +195,9 @@ double {{codeNamespace}}::solutionUpdate(
   }
 
   // 4. Source evaluation, half time step evolution increment
+  
+  {{m.allocateArray("tmp_F", nVarPad*nDim, setToZero=True, forceStack=True) | indent(2)}}{#Required for Riemann solver even without flux#}  
 {% if useFlux %}
-  {{m.allocateArray("tmp_F", nVarPad*nDim, setToZero=True, forceStack=True) | indent(2)}}{##}
   double* F[{{nDim}}] = {tmp_F, tmp_F + {{nVarPad}}{{", tmp_F + "~2*nVarPad if nDim==3}} };
 {% endif %}
 {% if useNCP %}
