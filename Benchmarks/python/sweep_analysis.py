@@ -363,6 +363,7 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
                         else:
                             print("WARNING: Found neither 'order' nor 'patchSize' key in parameter list="+str(parameterDict),file=sys.stderr)
 
+                        print (base, parameterDict["dimension"], stats["unrefined_inner_cells_max"])
                         normalisationPerCells =  base**int(parameterDict["dimension"]) * float(stats["unrefined_inner_cells_max"])
                         if normalisationPerCells > 0:
                           row.append(str( float(adapters[adapter]["total_cputime"])  / normalisationPerCells ))

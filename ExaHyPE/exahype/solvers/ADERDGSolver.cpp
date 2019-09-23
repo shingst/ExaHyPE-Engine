@@ -57,6 +57,7 @@
 #include "exahype/offloading/OffloadingProgressService.h"
 #include "exahype/offloading/OffloadingProfiler.h"
 #include "exahype/offloading/ReplicationStatistics.h"
+#include "peano/utils/UserInterface.h"
 #endif
 
 #include "tarch/timing/Watch.h"
@@ -2463,9 +2464,13 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleReplicatedSTPs(bool isFinal) {
   bool gotOne = true;
   int i = 0;
 
-  logInfo("cleanUpStaleReplicatedSTPs()", "before cleanup there are "<<_allocatedJobs.unsafe_size()<<" allocated received jobs left, "<<_mapTagToReplicationSendData.size()<<" jobs to send,"
-                                            <<" allocated jobs send "<<AllocatedSTPsSend<<" allocated jobs receive "<<AllocatedSTPsReceive<<" estimated mem consumption "<<(double) getAdditionalCurrentMemoryUsageReplication()/1E9<<"GB"
-											<<" allocated stps (constructor) "<<AllocatedSTPs
+  logInfo("cleanUpStaleReplicatedSTPs()", "before cleanup there are "<<_allocatedJobs.unsafe_size()<<" allocated received jobs left, "
+                                                                    <<_mapTagToReplicationSendData.size()<<" jobs to send,"
+                                                                    <<" allocated jobs send "<<AllocatedSTPsSend
+                                                                    <<" allocated jobs receive "<<AllocatedSTPsReceive
+                                                                   <<" estimated additional mem consumption "<<(double) getAdditionalCurrentMemoryUsageReplication()/1E9<<"GB"
+								   <<" actual mem usage "<<peano::utils::UserInterface::getMemoryUsageMB()
+                                                                                        <<" allocated stps (constructor) "<<AllocatedSTPs
 											<<" entrys in hash map "<<_mapJobToData.size()
 											<<" sent STPs "<<SentSTPs
 											<<" completed sends "<<CompletedSentSTPs
@@ -2520,6 +2525,7 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleReplicatedSTPs(bool isFinal) {
   if(isFinal) {
 	  for(auto & elem: _mapTagToReplicationSendData) {
 		  delete elem.second;
+                  exahype::offloading::ReplicationStatistics::getInstance().notifyLateTask();
 		  AllocatedSTPsReceive--;
 	  }
   }
@@ -3469,6 +3475,11 @@ bool exahype::solvers::ADERDGSolver::OffloadingManagerJob::run( bool isCalledOnM
       if( isCalledOnMaster ) {
           return true; 
       }
+
+      if(peano::utils::UserInterface::getMemoryUsageMB()>50000) {
+          logInfo("run()", "WARNING: memory usage is quite high!");
+      }
+
       exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false);
       
       if(_solver._offloadingManagerJobTriggerTerminate) {
