@@ -3503,9 +3503,9 @@ bool exahype::solvers::ADERDGSolver::OffloadingManagerJob::run( bool isCalledOnM
           return true; 
       }
 
-      if(peano::utils::UserInterface::getMemoryUsageMB()>50000) {
-          logInfo("run()", "WARNING: memory usage is quite high!");
-      }
+      //if(peano::utils::UserInterface::getMemoryUsageMB()>50000) {
+      //    logInfo("run()", "WARNING: memory usage is quite high!");
+      //}
 
       exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false);
       
