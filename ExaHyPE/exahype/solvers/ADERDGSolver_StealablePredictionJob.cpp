@@ -135,7 +135,6 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
 					  <<" hash = "<<(size_t) key);
     tbb::concurrent_hash_map<JobTableKey, StealablePredictionJobData*>::accessor a_jobToData;
     bool found = _solver._mapJobToData.find(a_jobToData, key);
-    found = false;
     if(found) {
     	StealablePredictionJobData *data = a_jobToData->second;
     	assert(data->_metadata[2*DIMENSIONS]==_predictorTimeStamp);
