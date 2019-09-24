@@ -339,8 +339,15 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveHandlerRepli
   key.timestamp = data->_metadata[2*DIMENSIONS];
   key.element = data->_metadata[2*DIMENSIONS+2];
 
-  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapJobToData.insert(std::make_pair(key,data));
-  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_allocatedJobs.push(key);
+  if(key.timestamp<static_cast<exahype::solvers::ADERDGSolver*> (solver)->getMinTimeStamp()) {
+	exahype::offloading::ReplicationStatistics::getInstance().notifyLateTask();
+	delete data;
+	AllocatedSTPsReceive--;
+  }
+  else {
+    static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapJobToData.insert(std::make_pair(key,data));
+    static_cast<exahype::solvers::ADERDGSolver*> (solver)->_allocatedJobs.push(key);
+  }
   logInfo("receiveHandlerReplica", "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
 		                           <<" received replica job: center[0] = "<<data->_metadata[0]
 							       <<" center[1] = "<<data->_metadata[1]
