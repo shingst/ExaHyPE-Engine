@@ -179,19 +179,31 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
       cellDescription.setHasCompletedLastStep(true);
 
 #if defined (ReplicationSaving)
+    //check one more time
+    tbb::concurrent_hash_map<JobTableKey, StealablePredictionJobData*>::accessor a_jobToData;
+    bool found = _solver._mapJobToData.find(a_jobToData, key);
+    if(found) {
+       StealablePredictionJobData *data = a_jobToData->second;
+       exahype::offloading::ReplicationStatistics::getInstance().notifyLateTask();
 
+       _solver._mapJobToData.erase(a_jobToData);
+       a_jobToData.release();
+       AllocatedSTPsReceive--;
+       delete data;
+    }
+    else {
 #if defined(ReplicationSavingUseHandshake)
       _solver.sendKeyOfReplicatedSTPToOtherTeams(this);
 #else
-    if(AllocatedSTPsSend<=exahype::offloading::PerformanceMonitor::getInstance().getTasksPerTimestep()) {
-      SentSTPs++;
-      _solver.sendFullReplicatedSTPToOtherTeams(this);
-    }
+      if(AllocatedSTPsSend<=exahype::offloading::PerformanceMonitor::getInstance().getTasksPerTimestep()) {
+        SentSTPs++;
+        _solver.sendFullReplicatedSTPToOtherTeams(this);
+      }
 #endif
     }
-    // TODO: send STP here
-#endif
 
+#endif
+    }
     exahype::offloading::PerformanceMonitor::getInstance().decRemainingTasks();
   }
   else {
