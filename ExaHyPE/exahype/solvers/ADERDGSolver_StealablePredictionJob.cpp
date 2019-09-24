@@ -181,7 +181,19 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
       cellDescription.setHasCompletedLastStep(true);
 
 #if defined (ReplicationSaving)
+    //check one more time
+    tbb::concurrent_hash_map<JobTableKey, StealablePredictionJobData*>::accessor a_jobToData;
+    bool found = _solver._mapJobToData.find(a_jobToData, key);
+    if(found) {
+       StealablePredictionJobData *data = a_jobToData->second;
+       exahype::offloading::ReplicationStatistics::getInstance().notifyLateTask();
 
+       _solver._mapJobToData.erase(a_jobToData);
+       a_jobToData.release();
+       AllocatedSTPsReceive--;
+       delete data;
+    }
+    else {
 #if defined(ReplicationSavingUseHandshake)
       _solver.sendKeyOfReplicatedSTPToOtherTeams(this);
 #else
@@ -192,9 +204,9 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
     }
 #endif
     }
-    // TODO: send STP here
-#endif
 
+#endif
+    }
     exahype::offloading::PerformanceMonitor::getInstance().decRemainingTasks();
   }
   else {
@@ -330,8 +342,15 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveHandlerRepli
   key.timestamp = data->_metadata[2*DIMENSIONS];
   key.element = data->_metadata[2*DIMENSIONS+2];
 
-  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapJobToData.insert(std::make_pair(key,data));
-  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_allocatedJobs.push(key);
+  if(key.timestamp<static_cast<exahype::solvers::ADERDGSolver*> (solver)->getMinTimeStamp()) {
+	exahype::offloading::ReplicationStatistics::getInstance().notifyLateTask();
+	delete data;
+	AllocatedSTPsReceive--;
+  }
+  else {
+    static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapJobToData.insert(std::make_pair(key,data));
+    static_cast<exahype::solvers::ADERDGSolver*> (solver)->_allocatedJobs.push(key);
+  }
   logInfo("receiveHandlerReplica", "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
 		                           <<" received replica job: center[0] = "<<data->_metadata[0]
 							       <<" center[1] = "<<data->_metadata[1]
