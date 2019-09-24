@@ -82,7 +82,8 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::run( bool isCalledO
        handleLocalExecution();
        watch.stopTimer();
 
-       logDebug("run()","measured time per STP "<<watch.getCalendarTime());
+       if(curr%10000==0)
+         logInfo("run()","measured time per STP "<<watch.getCalendarTime());
 
        exahype::offloading::OffloadingAnalyser::getInstance().setTimePerSTP(watch.getCalendarTime());
      }
@@ -134,6 +135,7 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
 					  <<" hash = "<<(size_t) key);
     tbb::concurrent_hash_map<JobTableKey, StealablePredictionJobData*>::accessor a_jobToData;
     bool found = _solver._mapJobToData.find(a_jobToData, key);
+    found = false;
     if(found) {
     	StealablePredictionJobData *data = a_jobToData->second;
     	assert(data->_metadata[2*DIMENSIONS]==_predictorTimeStamp);
@@ -184,6 +186,7 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
       _solver.sendKeyOfReplicatedSTPToOtherTeams(this);
 #else
     if(AllocatedSTPsSend<=exahype::offloading::PerformanceMonitor::getInstance().getTasksPerTimestep()) {
+  //  if(AllocatedSTPsSend<=1000) {
       SentSTPs++;
       _solver.sendFullReplicatedSTPToOtherTeams(this);
     }
