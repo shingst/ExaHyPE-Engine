@@ -70,8 +70,8 @@
         "terms": [
           "flux"
         ],
-        "scheme": "godunov",
-        "implementation": "generic"
+        "scheme": "musclhancock",
+        "implementation": "optimised"
       },
       "global_observables": [
         {"multiplicity": 1, "name": "dgcells"},

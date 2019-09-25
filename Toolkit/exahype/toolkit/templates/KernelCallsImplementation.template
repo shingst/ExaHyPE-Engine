@@ -29,10 +29,10 @@
 #include "kernels/GaussLobattoBasis.h"
 #include "buildinfo.h"
 
-{% for codegenContext in codegeneratorContextsList %}
-#include "{{codegenContext.pathToOptKernel}}/Quadrature.h"
-{% if codegenContext.kernelType == "aderdg" %}
-#include "{{codegenContext.pathToOptKernel}}/DGMatrices.h"
+{% for kernelgenContext in kernelgeneratorContextsList %}
+#include "{{kernelgenContext.pathToOptKernel}}/Quadrature.h"
+{% if kernelgenContext.kernelType == "aderdg" %}
+#include "{{kernelgenContext.pathToOptKernel}}/DGMatrices.h"
 {% endif %}
 {% endfor %}
 
@@ -52,10 +52,10 @@ void kernels::registerSolvers(exahype::parser::Parser& parser) {
   orders.insert({{solver.order}});
 {%   endif %}
 {% endfor %}
-{% for codegenContext in codegeneratorContextsList %}
-  {{codegenContext.namespace}}::initQuadratureNodesAndWeights();
-{% if codegenContext.kernelType == "aderdg" %}
-  {{codegenContext.namespace}}::initDGMatrices();
+{% for kernelgenContext in kernelgeneratorContextsList %}
+  {{kernelgenContext.namespace}}::initQuadratureNodesAndWeights();
+{% if kernelgenContext.kernelType == "aderdg" %}
+  {{kernelgenContext.namespace}}::initDGMatrices();
 {% endif %}
 {% endfor %}
 
@@ -173,10 +173,10 @@ void kernels::finalise() {
   for (const auto p : exahype::solvers::RegisteredSolvers) {
     orders.insert(p->getNodesPerCoordinateAxis()-1);
   }
-{% for codegenContext in codegeneratorContextsList %}
-  {{codegenContext.namespace}}::freeQuadratureNodesAndWeights();
-{% if codegenContext.kernelType == "aderdg" %}
-  {{codegenContext.namespace}}::freeDGMatrices();
+{% for kernelgenContext in kernelgeneratorContextsList %}
+  {{kernelgenContext.namespace}}::freeQuadratureNodesAndWeights();
+{% if kernelgenContext.kernelType == "aderdg" %}
+  {{kernelgenContext.namespace}}::freeDGMatrices();
 {% endif %}
 {% endfor %}
 

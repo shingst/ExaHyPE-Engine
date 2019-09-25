@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Use this script to import the CodeGenerator dependencies locally
+# Use this script to import the KernelGenerator dependencies locally
 
 # -s
 
@@ -29,13 +29,15 @@ else
         h) echo "Help"
            echo \
 '''
-Use this script to import the CodeGenerator dependencies locally.
+Use this script to import the KernelGenerator dependencies locally.
+
+/!\ THE PATHS AT kernelgenerator/configuration.py WILL NEED TO BE UPDATED /!\
 
 This script will import:
-	* jinja2       the CodeGenerator'\''s template engine
+	* jinja2       the KernelGenerator'\''s template engine
 	* markupsafe   jinja2'\''s dependency
 	* libxsmm      generates assembly gemms for matmul operations
-into CodeGenerator/dependencies
+into KernelGenerator/dependencies
 
 Options:
 	-h Show this help
@@ -70,12 +72,12 @@ LIBXSMM_LOCAL_DIR="dependencies/libxsmm"
 scriptDir=$(dirname -- "$(readlink -f -- "$BASH_SOURCE")")
 currentLocation=$(pwd)
 
-# move to the CodeGenerator directory
+# move to the KernelGenerator directory
 cd "$scriptDir"
 
 if [ "$JINJA2_ALREADY_AVAILABLE" = false ] ; then
   echo "Importing Jinja2 and MarkupSafe"
-  # import or update jinja2 to CodeGenerator/dependencies/jinja
+  # import or update jinja2 to KernelGenerator/dependencies/jinja
   if [ -d "$JINJA_LOCAL_DIR" ] && [ -e "$JINJA_LOCAL_DIR"/.git ]; then
     echo "Jinja2 already imported."
     cd "$JINJA_LOCAL_DIR"
@@ -94,7 +96,7 @@ if [ "$JINJA2_ALREADY_AVAILABLE" = false ] ; then
     git clone "$JINJA_GIT_URL" "$JINJA_LOCAL_DIR"
   fi
 
-  # import or update markupsafe to CodeGenerator/dependencies/markupsafe
+  # import or update markupsafe to KernelGenerator/dependencies/markupsafe
   if [ -d "$MARKUPSAFE_LOCAL_DIR" ] && [ -e "$MARKUPSAFE_LOCAL_DIR"/.git ]; then
     echo "MarkupSafe already imported."
     cd "$MARKUPSAFE_LOCAL_DIR"
@@ -116,7 +118,7 @@ else
   echo "Jinja2 is already available with python3"
 fi
 
-# import or update libxsmm to CodeGenerator/dependencies/libxsmm
+# import or update libxsmm to KernelGenerator/dependencies/libxsmm
 if [ -d "$LIBXSMM_LOCAL_DIR" ] && [ -e "$LIBXSMM_LOCAL_DIR"/.git ]; then
   echo "LIBXSMM already imported."
   cd "$LIBXSMM_LOCAL_DIR"
