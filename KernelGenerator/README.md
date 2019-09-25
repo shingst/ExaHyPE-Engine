@@ -186,14 +186,21 @@ Example: ``python3 KernelGenerator/kernelgenerator limiter nonlinear_Euler_Sod_3
 Data format and padding
 -----------------------
 
-The KernelGenerator may use padding when producing architecture specific code, it may also change the index order
+The KernelGenerator may use padding when producing architecture specific code, 
+it may also change the index order
+
+Conversion between the generic and optimised format can be done using the 
+generated converter
 
 Using the C index order convention with index in italic being absent in dim 2
 
+Advanced options like ``--useSplitCKVect`` may use other data layout, see the 
+respective templates
+
 
 | Array | Generic | Optimised | Note |
-| ----- | -------------- | ------- | --------- | ---- | 
-| luh | | _nDof_, nDof, nDof, nData | _nDof_, nDof, nDof, nData | unchanged for compatibility purpose|
+| ----- | ------- | --------- | ---- | 
+| luh | _nDof_, nDof, nDof, nData | _nDof_, nDof, nDof, nData | unchanged for compatibility purpose|
 | lQhbnd | 2*nDim, _nDof_, nDof, **nData** | 2*nDim, _nDof_, nDof, **nDataPad** | 2*nDim face on the square/cube |
 | lFhbnd |  2*nDim, _nDof_, nDof, **nVar** | 2*nDim, _nDof_, nDof, **nVarPad** | 2*nDim face on the square/cube |
 | lQhi |  _nDof_, nDof, nDof, **nData** | _nDof_, nDof, nDof, **nDataPad** | |
