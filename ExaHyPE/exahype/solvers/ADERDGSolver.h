@@ -1231,7 +1231,14 @@ private:
 		  return result;
 	  }
   };
-  tbb::concurrent_hash_map<JobTableKey, StealablePredictionJobData*> _mapJobToData;
+
+  enum class ReplicationStatus { received, transit };
+
+  struct JobTableEntry {
+	  StealablePredictionJobData *data;
+	  ReplicationStatus status;
+  };
+  tbb::concurrent_hash_map<JobTableKey, JobTableEntry> _jobDatabase;
   tbb::concurrent_queue<JobTableKey> _allocatedJobs;
 #endif
 

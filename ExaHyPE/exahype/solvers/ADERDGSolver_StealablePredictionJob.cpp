@@ -129,14 +129,14 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
     key.element = _element;
     logInfo("handleLocalExecution()", "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
     	                          	  <<" looking for replica center[0] = "<< center[0]
-					  <<" center[1] = "<< center[1]
-			                  <<" center[2] = "<< center[2]
-					  <<" time stamp = "<<_predictorTimeStamp
-					  <<" hash = "<<(size_t) key);
-    tbb::concurrent_hash_map<JobTableKey, StealablePredictionJobData*>::accessor a_jobToData;
-    bool found = _solver._mapJobToData.find(a_jobToData, key);
-    if(found) {
-    	StealablePredictionJobData *data = a_jobToData->second;
+					                  <<" center[1] = "<< center[1]
+			                          <<" center[2] = "<< center[2]
+					                  <<" time stamp = "<<_predictorTimeStamp
+	                                  <<" hash = "<<(size_t) key);
+    tbb::concurrent_hash_map<JobTableKey, JobTableEntry>::accessor a_jobToData;
+    bool found = _solver._jobDatabase.find(a_jobToData, key);
+    if(found && a_jobToData->second.status == ReplicationStatus::received ) {
+    	StealablePredictionJobData *data = a_jobToData->second.data;
     	assert(data->_metadata[2*DIMENSIONS]==_predictorTimeStamp);
     	logInfo("handleLocalExecution()", "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
     			                           <<" found STP in received replica jobs:"
@@ -151,7 +151,7 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
         std::memcpy(lFhbnd, &data->_lFhbnd[0], data->_lFhbnd.size()*sizeof(double));
         exahype::offloading::ReplicationStatistics::getInstance().notifySavedTask();
 
-        _solver._mapJobToData.erase(a_jobToData);
+        _solver._jobDatabase.erase(a_jobToData);
         a_jobToData.release();
         AllocatedSTPsReceive--;
         delete data;
@@ -159,6 +159,9 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
 	    cellDescription.setHasCompletedLastStep(true);
     }
     else {
+    	if (found && a_jobToData->second.status == ReplicationStatus::transit) {
+    	    	logInfo("handleLocalExecution()", "task is in transit, we may want to wait!");
+    	 }
         a_jobToData.release();
     	logInfo("handleLocalExecution()",   "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
     			                            <<" Data not available, gotta do it on my own!"
@@ -183,12 +186,12 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
 #if defined (ReplicationSaving)
     //check one more time
     //tbb::concurrent_hash_map<JobTableKey, StealablePredictionJobData*>::accessor a_jobToData;
-    found = _solver._mapJobToData.find(a_jobToData, key);
-    if(found) {
-       StealablePredictionJobData *data = a_jobToData->second;
+    found = _solver._jobDatabase.find(a_jobToData, key);
+    if(found && a_jobToData->second.status==ReplicationStatus::received) {
+       StealablePredictionJobData *data = a_jobToData->second.data;
        exahype::offloading::ReplicationStatistics::getInstance().notifyLateTask();
 
-       _solver._mapJobToData.erase(a_jobToData);
+       _solver._jobDatabase.erase(a_jobToData);
        a_jobToData.release();
        AllocatedSTPsReceive--;
        delete data;
@@ -246,13 +249,13 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
     MPI_Request sendBackRequests[4];
     //logInfo("handleLocalExecution()", "postSendBack");
     _solver.isendStealablePredictionJob(_luh,
-    		                        _lduh,
-					_lQhbnd,
-				        _lFhbnd,
-					_originRank,
-					_tag,
-					exahype::offloading::OffloadingManager::getInstance().getMPICommunicatorMapped(),
-					sendBackRequests);
+    		                            _lduh,
+					                    _lQhbnd,
+				                        _lFhbnd,
+					                    _originRank,
+					                    _tag,
+					                    exahype::offloading::OffloadingManager::getInstance().getMPICommunicatorMapped(),
+					                    sendBackRequests);
     exahype::offloading::OffloadingManager::getInstance().submitRequests(sendBackRequests, 4, _tag, _originRank, sendBackHandler, exahype::offloading::RequestType::sendBack, &_solver);
 
 #if defined(PerformanceAnalysisOffloading)
@@ -348,7 +351,16 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveHandlerRepli
 	AllocatedSTPsReceive--;
   }
   else {
-    static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapJobToData.insert(std::make_pair(key,data));
+	JobTableEntry entry {data, ReplicationStatus::received};
+    tbb::concurrent_hash_map<JobTableKey, JobTableEntry>::accessor a_jobToData;
+    bool found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_jobDatabase.find(a_jobToData, key);
+	if (found) {
+	  a_jobToData->second.status = ReplicationStatus::received;
+	  a_jobToData.release();
+	}
+	else{
+      static_cast<exahype::solvers::ADERDGSolver*> (solver)->_jobDatabase.insert(std::make_pair(key,entry));
+	}
     static_cast<exahype::solvers::ADERDGSolver*> (solver)->_allocatedJobs.push(key);
   }
   logInfo("receiveHandlerReplica", "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()

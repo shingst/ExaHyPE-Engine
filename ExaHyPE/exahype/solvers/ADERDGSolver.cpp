@@ -268,7 +268,7 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
 #if defined(ReplicationSaving)
         ,_lastReceiveReplicaTag(tarch::parallel::Node::getInstance().getNumberOfNodes()),
         _allocatedJobs(),
-	    _mapJobToData()
+	    _jobDatabase()
 #endif
 #endif
 {
@@ -2498,7 +2498,7 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleReplicatedSTPs(bool isFinal) {
 								   <<" actual mem usage "<<peano::utils::UserInterface::getMemoryUsageMB()
                                             <<" memory per stp "<< sizeof(StealablePredictionJobData) + sizeof(double) * ( getDataPerCell() + getUpdateSize() + getBndTotalSize() + getBndFluxTotalSize() )
                                                                                         <<" allocated stps (constructor) "<<AllocatedSTPs
-											<<" entrys in hash map "<<_mapJobToData.size()
+											<<" entrys in hash map "<<_jobDatabase.size()
 											<<" sent STPs "<<SentSTPs
 											<<" completed sends "<<CompletedSentSTPs
 											<<" outstanding requests "<<exahype::offloading::OffloadingManager::getInstance().getNumberOfOutstandingRequests(exahype::offloading::RequestType::sendReplica)
@@ -2521,16 +2521,16 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleReplicatedSTPs(bool isFinal) {
          //                                       <<" center[2] = "<<key.center[2]
          //                                       <<" time stamp = "<<key.timestamp);
 
-    tbb::concurrent_hash_map<JobTableKey, StealablePredictionJobData*>::accessor a_jobToData;
+    tbb::concurrent_hash_map<JobTableKey, JobTableEntry>::accessor a_jobToData;
 
-	bool found = _mapJobToData.find(a_jobToData, key);
+	bool found = _jobDatabase.find(a_jobToData, key);
 
     if(found && (a_jobToData->first.timestamp <_minTimeStamp || isFinal)) {
 
       //logInfo("cleanUpStaleReplicatedSTPs()", " time stamp "<<a_jobToData->first.timestamp<< " _minTimeStamp "<<_minTimeStamp);
 
-      StealablePredictionJobData * data = a_jobToData->second;
-      _mapJobToData.erase(a_jobToData);
+      StealablePredictionJobData * data = a_jobToData->second.data;
+      _jobDatabase.erase(a_jobToData);
       //logInfo("cleanUpStaleReplicatedSTPs()", " center[0] = "<<data->_metadata[0]
 	//										   <<" center[1] = "<<data->_metadata[1]
 	//										   <<" center[2] = "<<data->_metadata[2]
@@ -2577,6 +2577,15 @@ void exahype::solvers::ADERDGSolver::sendRequestForJobAndReceive(int jobTag, int
     }
     else {
       StealablePredictionJobData *data = new StealablePredictionJobData(*this);
+      JobTableEntry entry {data, ReplicationStatus::transit};
+      JobTableKey key_struct;
+      for(int i=0; i<DIMENSIONS; i++)
+        key_struct.center[i] = key[i];
+      key_struct.timestamp = key[2*DIMENSIONS];
+      key_struct.element = key[2*DIMENSIONS+2];
+
+      _jobDatabase.insert(std::make_pair(key_struct,entry));
+
       AllocatedSTPsReceive++;
       logInfo("sendRequestForJobAndReceive()", " allocated STPs receive "<<AllocatedSTPsReceive<<" allocated STPs send "<<AllocatedSTPsSend);
       MPI_Isend(&REQUEST_JOB_ACK, 1, MPI_INTEGER, rank, jobTag, teamInterCommAck, &sendRequest);
@@ -2615,10 +2624,6 @@ void exahype::solvers::ADERDGSolver::sendKeyOfReplicatedSTPToOtherTeams(Stealabl
 	int teams = exahype::offloading::OffloadingManager::getInstance().getTMPITeamSize();
 	int interCommRank = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank();
     MPI_Comm teamInterCommKey = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamCommunicatorKey();
-
-    /*static std::atomic<int> cnt (0);
-    if(cnt>0) return;
-    cnt++;*/
 
     OffloadEntry entry = {-1,
                          job->_cellDescriptionsIndex,
