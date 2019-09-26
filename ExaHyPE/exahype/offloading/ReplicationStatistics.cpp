@@ -28,7 +28,9 @@ ReplicationStatistics::ReplicationStatistics() :
   _receivedTasks(0),
   _sentTasks(0),
   _declinedTasks(0),
-  _lateTasks(0)
+  _lateTasks(0),
+  _sentKeys(0),
+  _receivedKeys(0)
 {
 	// TODO Auto-generated constructor stub
 
@@ -71,6 +73,13 @@ void ReplicationStatistics::notifyExecutedTask(){
     _executedTasks++;
 }
 
+void ReplicationStatistics::notifySentKey() {
+	_sentKeys++;
+}
+
+void ReplicationStatistics::notifyReceivedKey() {
+	_receivedKeys++;
+}
 
 void ReplicationStatistics::printStatistics() {
 #if defined(ReplicationSaving)	
@@ -81,6 +90,8 @@ void ReplicationStatistics::printStatistics() {
 							   <<" saved tasks =  "<<_savedTasks
 							   <<" sent tasks = "<<_sentTasks
 							   <<" received tasks = "<<_receivedTasks
+							   <<" received keys= "<<_receivedKeys
+							   <<" sent keys= "<<_sentKeys
 							   <<" declined tasks = "<<_declinedTasks
 							   <<" late tasks = "<<_lateTasks);
 #endif

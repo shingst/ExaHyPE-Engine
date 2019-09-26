@@ -31,6 +31,8 @@ private:
 	std::atomic<int> _savedTasks;
 	std::atomic<int> _receivedTasks;
 	std::atomic<int> _sentTasks;
+	std::atomic<int> _sentKeys;
+	std::atomic<int> _receivedKeys;
     std::atomic<int> _declinedTasks;
     std::atomic<int> _lateTasks;
 
@@ -46,6 +48,8 @@ public:
     void notifyDeclinedTask();
     void notifyReceivedTask();
     void notifySentTask();
+    void notifySentKey();
+    void notifyReceivedKey();
     void notifySavedTask();
     void notifySpawnedTask();
     void notifyExecutedTask();

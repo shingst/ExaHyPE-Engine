@@ -714,11 +714,11 @@ void exahype::solvers::FiniteVolumesSolver::updateBody(
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers,
     const bool                                         uncompressBefore) {
   #ifdef USE_ITAC
-  if ( isAtRemoteBoundary ) {
-    VT_begin(updateBodyHandleSkeleton);
-  } else {
+  //if ( isAtRemoteBoundary ) {
+  //  VT_begin(updateBodyHandleSkeleton);
+  //} else {
     VT_begin(updateBodyHandle);
-  }
+  //}
   #endif
 
   if ( uncompressBefore ) { uncompress(cellDescription); }

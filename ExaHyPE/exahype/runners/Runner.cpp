@@ -310,12 +310,17 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
 
 #if defined(ReplicationSaving)
     int nteams = TMPI_GetInterTeamCommSize();
-    MPI_Comm interTeamComm = TMPI_GetInterTeamComm();
+    //MPI_Comm interTeamComm = TMPI_GetInterTeamComm();
+    MPI_Comm interTeamComm;
 
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+    int worldRank = TMPI_GetWorldRank();
+    MPI_Comm_split(MPI_COMM_WORLD, rank, worldRank, &interTeamComm);
+
     int rankInterComm;
-    PMPI_Comm_rank(interTeamComm, &rankInterComm);
+    MPI_Comm_rank(interTeamComm, &rankInterComm);
     int team = TMPI_GetTeamNumber();
 
     exahype::offloading::OffloadingManager::getInstance().setTMPITeamSize(nteams);

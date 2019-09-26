@@ -2551,8 +2551,6 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleReplicatedSTPs(bool isFinal) {
   if(isFinal) {
 	  for(auto & elem: _mapTagToReplicationSendData) {
 		  delete elem.second;
-                  exahype::offloading::ReplicationStatistics::getInstance().notifyLateTask();
-		  AllocatedSTPsReceive--;
 	  }
   }
 
@@ -2574,6 +2572,7 @@ void exahype::solvers::ADERDGSolver::sendRequestForJobAndReceive(int jobTag, int
     		                                                   StealablePredictionJob::sendAckHandlerReplication,
 															   exahype::offloading::RequestType::sendReplica,
 															   this, false);
+      exahype::offloading::ReplicationStatistics::getInstance().notifyDeclinedTask();
     }
     else {
       StealablePredictionJobData *data = new StealablePredictionJobData(*this);
@@ -2672,6 +2671,7 @@ void exahype::solvers::ADERDGSolver::sendKeyOfReplicatedSTPToOtherTeams(Stealabl
                    StealablePredictionJob::sendKeyHandlerReplication,
                    exahype::offloading::RequestType::sendReplica,
                    this, false);
+     exahype::offloading::ReplicationStatistics::getInstance().notifySentKey();
      delete[] sendRequests;
 
 }
@@ -3117,6 +3117,7 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
     			 exahype::offloading::RequestType::receiveReplica,
     			 solver,
     			 false);
+    	 exahype::offloading::ReplicationStatistics::getInstance().notifyReceivedKey();
     }
     ierr = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamCommKey, &receivedReplicaKey, &statRepKey );
     assert( ierr==MPI_SUCCESS );
@@ -3159,6 +3160,7 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
            delete[] sendRequests;
     	 }
     	 else {
+    	   solver->_mapTagToReplicationSendData.erase(statRepAck.MPI_TAG);
     	   delete data;
            AllocatedSTPsSend--;
     	 }
