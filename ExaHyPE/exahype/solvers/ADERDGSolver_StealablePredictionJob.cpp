@@ -82,7 +82,8 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::run( bool isCalledO
        handleLocalExecution();
        watch.stopTimer();
 
-       logDebug("run()","measured time per STP "<<watch.getCalendarTime());
+       if(curr%10000==0)
+         logInfo("run()","measured time per STP "<<watch.getCalendarTime());
 
        exahype::offloading::OffloadingAnalyser::getInstance().setTimePerSTP(watch.getCalendarTime());
      }
@@ -158,6 +159,7 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
 	    cellDescription.setHasCompletedLastStep(true);
     }
     else {
+        a_jobToData.release();
     	logInfo("handleLocalExecution()",   "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
     			                            <<" Data not available, gotta do it on my own!"
 											<<" center[0] = "<<center[0]
@@ -180,8 +182,8 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
 
 #if defined (ReplicationSaving)
     //check one more time
-    tbb::concurrent_hash_map<JobTableKey, StealablePredictionJobData*>::accessor a_jobToData;
-    bool found = _solver._mapJobToData.find(a_jobToData, key);
+    //tbb::concurrent_hash_map<JobTableKey, StealablePredictionJobData*>::accessor a_jobToData;
+    found = _solver._mapJobToData.find(a_jobToData, key);
     if(found) {
        StealablePredictionJobData *data = a_jobToData->second;
        exahype::offloading::ReplicationStatistics::getInstance().notifyLateTask();
@@ -195,10 +197,11 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
 #if defined(ReplicationSavingUseHandshake)
       _solver.sendKeyOfReplicatedSTPToOtherTeams(this);
 #else
-      if(AllocatedSTPsSend<=exahype::offloading::PerformanceMonitor::getInstance().getTasksPerTimestep()) {
-        SentSTPs++;
-        _solver.sendFullReplicatedSTPToOtherTeams(this);
-      }
+    if(AllocatedSTPsSend<=exahype::offloading::PerformanceMonitor::getInstance().getTasksPerTimestep()) {
+  //  if(AllocatedSTPsSend<=1000) {
+      SentSTPs++;
+      _solver.sendFullReplicatedSTPToOtherTeams(this);
+    }
 #endif
     }
 

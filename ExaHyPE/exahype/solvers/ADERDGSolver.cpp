@@ -2496,6 +2496,7 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleReplicatedSTPs(bool isFinal) {
                                                                     <<" allocated jobs receive "<<AllocatedSTPsReceive
                                                                    <<" estimated additional mem consumption "<<(double) getAdditionalCurrentMemoryUsageReplication()/1E9<<"GB"
 								   <<" actual mem usage "<<peano::utils::UserInterface::getMemoryUsageMB()
+                                            <<" memory per stp "<< sizeof(StealablePredictionJobData) + sizeof(double) * ( getDataPerCell() + getUpdateSize() + getBndTotalSize() + getBndFluxTotalSize() )
                                                                                         <<" allocated stps (constructor) "<<AllocatedSTPs
 											<<" entrys in hash map "<<_mapJobToData.size()
 											<<" sent STPs "<<SentSTPs
@@ -3504,9 +3505,9 @@ bool exahype::solvers::ADERDGSolver::OffloadingManagerJob::run( bool isCalledOnM
           return true; 
       }
 
-      if(peano::utils::UserInterface::getMemoryUsageMB()>50000) {
-          logInfo("run()", "WARNING: memory usage is quite high!");
-      }
+      //if(peano::utils::UserInterface::getMemoryUsageMB()>50000) {
+      //    logInfo("run()", "WARNING: memory usage is quite high!");
+      //}
 
       exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false);
       
