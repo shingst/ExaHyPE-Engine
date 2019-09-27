@@ -74,12 +74,13 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::run( bool isCalledO
 #ifdef USE_ITAC
       VT_begin(event_stp);
 #endif
+     bool result = false;
      int curr = std::atomic_fetch_add(&JobCounter, 1);
 
      if(curr%1000==0) {
        tarch::timing::Watch watch("exahype::StealablePredictionJob::", "-", false,false);
        watch.startTimer();
-       handleLocalExecution();
+       result = handleLocalExecution();
        watch.stopTimer();
 
        if(curr%10000==0)
@@ -88,12 +89,12 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::run( bool isCalledO
        exahype::offloading::OffloadingAnalyser::getInstance().setTimePerSTP(watch.getCalendarTime());
      }
      else
-       handleLocalExecution();
+       result = handleLocalExecution();
 
 #ifdef USE_ITAC
       VT_end(event_stp);
 #endif
-  return false;
+  return result;
 }
 
 bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecution() {
@@ -161,6 +162,10 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
     else {
     	if (found && a_jobToData->second.status == ReplicationStatus::transit) {
     	    	logInfo("handleLocalExecution()", "task is in transit, we may want to wait!");
+#ifdef ReplicationSavingRescheduleIfInTransit
+                a_jobToData.release();
+    	        return true;
+#endif
     	 }
         a_jobToData.release();
     	logInfo("handleLocalExecution()",   "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
