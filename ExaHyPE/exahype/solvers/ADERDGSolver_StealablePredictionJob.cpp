@@ -121,8 +121,8 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
     logInfo("handleLocalExecution()", "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()<<" cellDescriptionIndex "<<_cellDescriptionsIndex<<" element: "<<_element<<" time stamp: "<<_predictorTimeStamp);
 
 #if defined(ReplicationSaving)
-    double *center;
-    center = (cellDescription.getOffset()+0.5*cellDescription.getSize()).data();
+    tarch::la::Vector<DIMENSIONS, double> center;
+    center = cellDescription.getOffset()+0.5*cellDescription.getSize();
     JobTableKey  key;
     for(int i; i<DIMENSIONS; i++)
        key.center[i] = center[i];
@@ -203,7 +203,9 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
     }
     else {
 #if defined(ReplicationSavingUseHandshake)
+    if(AllocatedSTPsSend<=exahype::offloading::PerformanceMonitor::getInstance().getTasksPerTimestep()) {
       _solver.sendKeyOfReplicatedSTPToOtherTeams(this);
+    }
 #else
     if(AllocatedSTPsSend<=exahype::offloading::PerformanceMonitor::getInstance().getTasksPerTimestep()) {
   //  if(AllocatedSTPsSend<=1000) {
@@ -343,6 +345,12 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveHandlerRepli
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagRankToReplicaData.erase(a_tagRankToData);
   a_tagRankToData.release();
 
+  logInfo("receiveHandlerReplica", "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
+		                           <<" received replica job: center[0] = "<<data->_metadata[0]
+							       <<" center[1] = "<<data->_metadata[1]
+								   <<" center[2] = "<<data->_metadata[2]
+								   <<" time stamp = "<<data->_metadata[2*DIMENSIONS]
+								   <<" element = "<<(int) data->_metadata[2*DIMENSIONS+2]);
 
   JobTableKey key; //{&data->_metadata[0], data->_metadata[2*DIMENSIONS], (int) data->_metadata[2*DIMENSIONS+2] };
   for(int i=0; i<DIMENSIONS; i++)
@@ -368,13 +376,6 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveHandlerRepli
 	}
     static_cast<exahype::solvers::ADERDGSolver*> (solver)->_allocatedJobs.push(key);
   }
-  logInfo("receiveHandlerReplica", "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
-		                           <<" received replica job: center[0] = "<<data->_metadata[0]
-							       <<" center[1] = "<<data->_metadata[1]
-								   <<" center[2] = "<<data->_metadata[2]
-								   <<" time stamp = "<<data->_metadata[2*DIMENSIONS]
-								   <<" element = "<<(int) data->_metadata[2*DIMENSIONS+2]
-                                   <<" hash = "<<(size_t) key);
   exahype::offloading::ReplicationStatistics::getInstance().notifyReceivedTask();
 
 }

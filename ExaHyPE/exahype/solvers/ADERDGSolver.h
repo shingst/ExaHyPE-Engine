@@ -940,8 +940,8 @@ private:
 
       CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex, element);
 
-      double *center;
-      center = (cellDescription.getOffset()+0.5*cellDescription.getSize()).data();
+      tarch::la::Vector<DIMENSIONS, double> center;
+      center = (cellDescription.getOffset()+0.5*cellDescription.getSize());
 
       int prio = getTaskPriority(false)+(LocalStealableSTPCounter+team)%teamSize;
 
