@@ -98,6 +98,7 @@
 #include "exahype/offloading/PerformanceMonitor.h"
 #include "exahype/offloading/OffloadingProgressService.h"
 
+
 #if defined(OffloadingStrategyStaticHardcoded)
 #include "exahype/offloading/StaticDistributor.h"
 #elif defined(OffloadingStrategyAggressiveHybrid)
@@ -106,10 +107,13 @@
 
 #include "exahype/offloading/OffloadingProfiler.h"
 
-#if defined (ReplicationSaving)
+#if defined(ReplicationSaving)
 #include "teaMPI.h"
 #endif
+#endif
 
+#if defined(TMPI_Heartbeats)
+#include "exahype/offloading/HeartbeatJob.h"
 #endif
 
 tarch::logging::Log exahype::runners::Runner::_log("exahype::runners::Runner");
@@ -1042,9 +1046,13 @@ int exahype::runners::Runner::run() {
 
     if ( _parser.isValid() )
       shutdownDistributedMemoryConfiguration();
-      
-#if defined(DistributedOffloading)
 
+
+#if defined(TMPI_Heartbeats)
+    exahype::offloading::HeartbeatJob::stopHeartbeatJob();
+#endif
+
+#if defined(DistributedOffloading)
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
     if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
       //static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopOffloadingManager();

@@ -33,6 +33,10 @@
 #include "exahype/offloading/AggressiveHybridDistributor.h"
 #endif
 
+#if defined(TMPI_Heartbeats)
+#include "exahype/offloading/HeartbeatJob.h"
+#endif
+
 int exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells = 0;
 int exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells = 0;
 
@@ -242,16 +246,19 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
 #ifdef DistributedOffloading
   exahype::offloading::PerformanceMonitor::getInstance().setTasksPerTimestep(_numberOfEnclaveCells + _numberOfSkeletonCells);
 
-    #if defined(DistributedOffloading)
-    for (auto* solver : exahype::solvers::RegisteredSolvers) {
-      if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
-        static_cast<exahype::solvers::ADERDGSolver*>(solver)->startOffloadingManager();
-      }
-      if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->startOffloadingManager();
-      }
-    } 
-    #endif
+  for (auto* solver : exahype::solvers::RegisteredSolvers) {
+    if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
+      static_cast<exahype::solvers::ADERDGSolver*>(solver)->startOffloadingManager();
+    }
+    if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->startOffloadingManager();
+    }
+  }
+
+#endif
+
+#if defined(TMPI_Heartbeats)
+  exahype::offloading::HeartbeatJob::startHeartbeatJob();
 #endif
 
   _backgroundJobsHaveTerminated = false;
