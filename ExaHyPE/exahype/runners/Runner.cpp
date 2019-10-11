@@ -75,6 +75,10 @@
 
 #include "peano/datatraversal/TaskSet.h"
 
+#ifdef TMPI
+#include "teaMPI.h"
+#endif
+
 #ifdef TBBInvade
 #include "shminvade/SHMController.h"
 #include "shminvade/SHMSharedMemoryBetweenTasks.h"
@@ -1813,8 +1817,14 @@ void exahype::runners::Runner::printTimeStepInfo(int numberOfStepsRanSinceLastCa
     #endif
   }
 
+  #if defined(TMPI)
+  logInfo("printTimeStepInfo(...)",
+      "step " << n << "\tteam = " << TMPI_GetTeamNumber() <<  "\tt_min          =" << currentMinTimeStamp);
+  #else
   logInfo("printTimeStepInfo(...)",
       "step " << n << "\tt_min          =" << currentMinTimeStamp);
+  #endif
+ 
 
   logInfo("printTimeStepInfo(...)",
       "\tdt_min         =" << currentMinTimeStepSize);

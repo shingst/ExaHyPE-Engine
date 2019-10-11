@@ -475,6 +475,7 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
   endTimeStep(_minTimeStamp,isLastTimeStepOfBatchOrNoBatch);
 
 #if defined(DistributedOffloading) && defined(ReplicationSaving)
+  exahype::offloading::ReplicationStatistics::getInstance().printStatistics();
   cleanUpStaleReplicatedSTPs();
 #endif
 }
@@ -2884,7 +2885,12 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
 #ifdef USE_ITAC
   //VT_begin(event_progress);
 #endif
-
+  
+  static double lastActive = 0;
+  if(MPI_Wtime()-lastActive > 10) {
+    logInfo("progressOffloading()"," still alive");
+    lastActive=MPI_Wtime();
+  }
 
   // 2. make progress on any outstanding MPI communication
   //if(!runOnMaster)
@@ -2980,7 +2986,7 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
 #ifdef OffloadingUseProgressTask
     if(receivedTask && stat.MPI_TAG==0) {
        int terminatedSender = stat.MPI_SOURCE;
-       logInfo("progressOffloading()","active sender "<<terminatedSender<<" has sent termination signal ");
+       //logInfo("progressOffloading()","active sender "<<terminatedSender<<" has sent termination signal ");
        exahype::offloading::OffloadingManager::getInstance().receiveCompleted(terminatedSender);
        ActiveSenders.erase(terminatedSender);
        ierr = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
@@ -2991,12 +2997,12 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
     // RECEIVE TASK
     if(receivedTask) {
 #ifdef OffloadingUseProgressTask
-       logInfo("progressOffloading()","inserting active sender "<<stat.MPI_SOURCE);
+       //logInfo("progressOffloading()","inserting active sender "<<stat.MPI_SOURCE);
        ActiveSenders.insert(stat.MPI_SOURCE);
        if(NumberOfReceiveJobs==0) {
           NumberOfReceiveJobs++;
           assert(NumberOfReceiveJobs<=1);
-          logInfo("progressOffloading()","spawning receive job, receive jobs "<<NumberOfReceiveJobs);
+          //logInfo("progressOffloading()","spawning receive job, receive jobs "<<NumberOfReceiveJobs);
           ReceiveJob *receiveJob = new ReceiveJob(*solver);
           peano::datatraversal::TaskSet spawnedSet(receiveJob);     
           terminateImmediately = true; // we'll receive this task but then terminate to give the receive job the opportunity to run
@@ -3078,10 +3084,10 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
 
     	 assert(solver->_lastReceiveReplicaTag[statRepData.MPI_SOURCE]!=statRepData.MPI_TAG);
     	 solver->_lastReceiveReplicaTag[statRepData.MPI_SOURCE] = statRepData.MPI_TAG;
-         logInfo("progressOffloading","received replica task from "<<statRepData.MPI_SOURCE<<" , tag "<<statRepData.MPI_TAG);
+         //logInfo("progressOffloading","received replica task from "<<statRepData.MPI_SOURCE<<" , tag "<<statRepData.MPI_TAG);
          StealablePredictionJobData *data = new StealablePredictionJobData(*solver);
          AllocatedSTPsReceive++;
-         logInfo("progressOffloading", "allocated stps receive"<<AllocatedSTPsReceive);
+         //logInfo("progressOffloading", "allocated stps receive"<<AllocatedSTPsReceive);
          MPI_Request receiveReplicaRequests[5];
          solver->irecvStealablePredictionJob(
  		         data->_luh.data(),
@@ -3137,12 +3143,12 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
     	 StealablePredictionJobData *data = a_tagToData->second;
          a_tagToData.release();
 
-    	 logInfo("progressOffloading()", "received ack handshake message: "<<buffer<<" for "
-    			                       <<" center[0] = "<<data->_metadata[0]
-					                   <<" center[1] = "<<data->_metadata[1]
-					                   <<" center[2] = "<<data->_metadata[2]
-				                       <<" time stamp = "<<data->_metadata[2*DIMENSIONS]
-					                   <<" element = "<<(int) data->_metadata[2*DIMENSIONS+2]);
+    	 //logInfo("progressOffloading()", "received ack handshake message: "<<buffer<<" for "
+    	//		                       <<" center[0] = "<<data->_metadata[0]
+	//				                   <<" center[1] = "<<data->_metadata[1]
+	//				                   <<" center[2] = "<<data->_metadata[2]
+	//			                       <<" time stamp = "<<data->_metadata[2*DIMENSIONS]
+	//				                   <<" element = "<<(int) data->_metadata[2*DIMENSIONS+2]);
 
     	 if(buffer==REQUEST_JOB_ACK) {
 

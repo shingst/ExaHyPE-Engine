@@ -601,6 +601,7 @@ def generateScripts():
                                 jobScriptBody += "echo \"sweep/parameters="+json.dumps(parameterDict).replace("\"","\\\"")   +"\" >> "+outputFilePath+"\n"
                                 # pipe the commands into the output file
                                 runCommand = general["run_command"].replace("\"","")
+                                runCommand = runCommand.replace("{{run}}",myRun);
                                 runCommand = runCommand.replace("{{ranks}}",ranks);
                                 runCommand = runCommand.replace("{{nodes}}",nodes);
                                 runCommand = runCommand.replace("{{ranksPerNode}}",ranksPerNode);
