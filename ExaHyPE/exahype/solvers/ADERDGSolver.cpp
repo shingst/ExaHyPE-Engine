@@ -3180,6 +3180,10 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
      ierr = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamCommAck, &receivedReplicaAck, &statRepAck );
      assert( ierr==MPI_SUCCESS );
 #endif
+    if(MPI_Wtime()-lastActive > 10) {
+      logInfo("progressOffloading()"," still alive");
+      lastActive=MPI_Wtime();
+    }
      exahype::offloading::OffloadingManager::getInstance().progressRequests();
 #endif
   }
