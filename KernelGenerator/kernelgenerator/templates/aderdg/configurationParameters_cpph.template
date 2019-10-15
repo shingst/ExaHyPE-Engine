@@ -98,6 +98,8 @@ namespace {{namespaceName}} {
 {% if PSiSize > 0 %}
   constexpr int getPSiShift()   {return {{shift}};}
 {% set shift = shift+PSiSize %}
+{% endif %}
+{% if PSiDerivativeSize > 0 %}
   constexpr int getPSderivativesShift() {return {{shift}};} //same size as PSi
 {% set shift = shift+PSiSize %}
 {% endif %}

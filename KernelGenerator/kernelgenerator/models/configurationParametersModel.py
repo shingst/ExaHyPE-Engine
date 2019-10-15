@@ -61,6 +61,7 @@ class ConfigurationParametersModel(AbstractModelBaseClass):
             self.context["lShiSize"]  =   -1
             self.context["gradQSize"] =   -1
             self.context["PSiSize"]   =   -1
+            self.context["PSiDerivativeSize"] =   -1
             if self.context["isLinear"]:
                 if(self.context["useSplitCKScalar"]):
                     # Linear + split CK
@@ -93,6 +94,7 @@ class ConfigurationParametersModel(AbstractModelBaseClass):
                         self.context["gradQSize"] = nVarPad*(nDof**nDim)*nDim
                     if self.context["usePointSources"]:
                         self.context["PSiSize"]   = (nDof+1)*(nDof**nDim)*nVarPad
+                        self.context["PSiDerivativeSize"] = self.context["PSiSize"]
             else:
                 # nonlinear
                 self.context["lQiSize"]   = nDataPad*(nDof**(nDim+1))
