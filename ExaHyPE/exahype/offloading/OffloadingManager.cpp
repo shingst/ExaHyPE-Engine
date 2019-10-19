@@ -229,7 +229,7 @@ void exahype::offloading::OffloadingManager::submitRequests(
   int mapId = requestTypeToMsgQueueIdx(type);
 
   //submitted[mapId]++;
-  //logInfo("offloadingManager","submitted["<<mapId<<"]:"<<submitted[mapId]);
+  logInfo("submitRequests","submitted["<<mapId<<"]:"<<nRequests);
 
   // assign group id for this request group
   int groupId = getNextGroupId();
@@ -298,6 +298,7 @@ void exahype::offloading::OffloadingManager::createRequestArray(
 }
 
 bool exahype::offloading::OffloadingManager::hasOutstandingRequestOfType(RequestType requestType) {
+  logInfo("hasOutstandingRequestOfType"," type "<<int(requestType)<<" outstanding "<<_outstandingRequests[requestTypeToMsgQueueIdx(requestType)].unsafe_size()<<" active "<<_activeRequests[requestTypeToMsgQueueIdx(requestType)].size() );
   return (!_outstandingRequests[requestTypeToMsgQueueIdx(requestType)].empty() || !_activeRequests[requestTypeToMsgQueueIdx(requestType)].size()==0);
 }
 
@@ -494,6 +495,8 @@ bool exahype::offloading::OffloadingManager::progressRequestsOfType( RequestType
     exahype::offloading::OffloadingProfiler::getInstance().endCommunication(true, time);
   else
     exahype::offloading::OffloadingProfiler::getInstance().endCommunication(false, time);
+
+  logInfo("progressRequestsOfType()"," finished type: "<<mapId<< " nreq "<<outcount);
 
   time = -MPI_Wtime();
   exahype::offloading::OffloadingProfiler::getInstance().beginHandling();

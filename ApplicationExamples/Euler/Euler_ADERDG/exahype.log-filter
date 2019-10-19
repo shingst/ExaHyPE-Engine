@@ -22,13 +22,15 @@ info  peano::parallel::SendReceiveBufferAbstractImplementation::releaseSentMessa
 info  sharedmemoryoracles        -1  black
 
 info  Z4Solver                                -1  black
+info  exahype::solvers::ADERDGSolver          -1  black
+#info  exahype::solvers::ADERDGSolver::progressOffloading          -1 white
 info  exahype::solvers::Plotter               -1  black
 info  exahype::runner::Runner::runAsWorker    -1  black
 info  exahype::mappings::LoadBalancing        -1  white
 info  exahype::runners::Runner::runAsWorker   -1  black
 info  exahype::runners::Runner::init          -1  black
 info  exahype::runners::Runner::createRepository -1  white
-
+info  exahype::offloading::OffloadingManager -1 black
 info  exahype::mappings::LoadBalancing::endIteration -1 black
 
 
