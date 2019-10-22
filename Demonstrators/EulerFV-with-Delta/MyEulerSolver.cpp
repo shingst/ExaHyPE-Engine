@@ -68,17 +68,19 @@ void EulerFV::MyEulerSolver::adjustSolution(const double* const x,const double t
   double voxelSize = _maximumMeshSize / PatchSize;
 
   std::vector< delta::ContactPoint > contact =
-    delta::filter(
+    delta::contactdetection::filter(
      delta::contactdetection::sphereToTriangle(
       x[0], // voxel centre
       x[1], // voxel centre
       x[2], // voxel centre
 	  voxelSize/2.0 * std::sqrt(DIMENSIONS), // bounding sphere around voxel
-
+	  -1,   // there's some indexing stuff which we need to couple the physics
+	        // of two solvers. But we do not need this here
+      _embeddedGeometry->getNumberOfTriangles(),
 	  _embeddedGeometry->getXCoordinates(),
       _embeddedGeometry->getYCoordinates(),
       _embeddedGeometry->getZCoordinates(),
-      _embeddedGeometry->getNumberOfTriangles(),
+	  nullptr, // again, no indices required here
 	  voxelSize * widthOfLayerAroundObject // epsilon
      ),
 	 voxelSize
