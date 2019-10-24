@@ -7,345 +7,114 @@
 // ========================
 
 #include "FOCCZ4Solver_ADERDG.h"
+#include "FOCCZ4Solver_FV.h"
+
+#include <algorithm>
 
 #include "FOCCZ4Solver_ADERDG_Variables.h"
+#include "kernels/GaussLegendreBasis.h"
 
 #include "kernels/KernelUtils.h"
 #include "peano/utils/Loop.h"
 
+#include "PDE.h"
+#include "InitialData.h"
+#include "Tools.h"
+
+#include "tarch/multicore/BooleanSemaphore.h"
+#include "tarch/multicore/Lock.h"
 tarch::logging::Log FOCCZ4::FOCCZ4Solver_ADERDG::_log( "FOCCZ4::FOCCZ4Solver_ADERDG" );
 
 
 void FOCCZ4::FOCCZ4Solver_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
-  // Tip: You find documentation for this method in header file "FOCCZ4::FOCCZ4Solver_ADERDG.h".
-  
-  // @todo Please implement/augment if required
 
+    const int order = FOCCZ4::FOCCZ4Solver_ADERDG::Order;
+  	constexpr int basisSize = AbstractFOCCZ4Solver_FV::PatchSize;
+	constexpr int Ghostlayers = AbstractFOCCZ4Solver_FV::GhostLayerWidth;
+	
+	static tarch::multicore::BooleanSemaphore initializationSemaphoreDG;
+  
+  
+    tarch::multicore::Lock lock(initializationSemaphoreDG);	
+
+  if (constants.isValueValidString("reference")) {
+    std::string reference = constants.getValueAsString("reference");
+	const int length=reference.length();
+	logInfo("init(...)","Reference setup:"<<reference);
+  	printf("\n******************************************************************");
+	printf("\n**************<<<  INIT TECPLOT    >>>****************************");
+	printf("\n******************************************************************");
+    inittecplot_(&order,&order,&basisSize,&Ghostlayers);
+	//inittecplot_(&order,&order);
+	printf("\n******************************************************************");
+	printf("\n**************<<<  INIT PDE SETUP  >>>****************************");
+	printf("\n******************************************************************\n");
+    initparameters_(&length,&reference[0]);
+	printf("\n******************************************************************");
+	printf("\n**************<<<       DONE       >>>****************************");
+	printf("\n******************************************************************");
+  } else {
+    logInfo("init(...)","Not recognized setup.");
+	std::abort();
+  }	
+	
+	lock.free();
     
 }
 
 void FOCCZ4::FOCCZ4Solver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) {
-  // Tip: You find documentation for this method in header file "FOCCZ4::FOCCZ4Solver_ADERDG.h".
-  // Tip: See header file "FOCCZ4::AbstractFOCCZ4Solver_ADERDG.h" for toolkit generated compile-time 
-  //      constants such as Order, NumberOfVariables, and NumberOfParameters.
-  
-  // @todo Please implement/augment if required
   if (tarch::la::equals(t,0.0)) {
-    Q[0] = 0.0;
-    Q[1] = 0.0;
-    Q[2] = 0.0;
-    Q[3] = 0.0;
-    Q[4] = 0.0;
-    Q[5] = 0.0;
-    Q[6] = 0.0;
-    Q[7] = 0.0;
-    Q[8] = 0.0;
-    Q[9] = 0.0;
-    Q[10] = 0.0;
-    Q[11] = 0.0;
-    Q[12] = 0.0;
-    Q[13] = 0.0;
-    Q[14] = 0.0;
-    Q[15] = 0.0;
-    Q[16] = 0.0;
-    Q[17] = 0.0;
-    Q[18] = 0.0;
-    Q[19] = 0.0;
-    Q[20] = 0.0;
-    Q[21] = 0.0;
-    Q[22] = 0.0;
-    Q[23] = 0.0;
-    Q[24] = 0.0;
-    Q[25] = 0.0;
-    Q[26] = 0.0;
-    Q[27] = 0.0;
-    Q[28] = 0.0;
-    Q[29] = 0.0;
-    Q[30] = 0.0;
-    Q[31] = 0.0;
-    Q[32] = 0.0;
-    Q[33] = 0.0;
-    Q[34] = 0.0;
-    Q[35] = 0.0;
-    Q[36] = 0.0;
-    Q[37] = 0.0;
-    Q[38] = 0.0;
-    Q[39] = 0.0;
-    Q[40] = 0.0;
-    Q[41] = 0.0;
-    Q[42] = 0.0;
-    Q[43] = 0.0;
-    Q[44] = 0.0;
-    Q[45] = 0.0;
-    Q[46] = 0.0;
-    Q[47] = 0.0;
-    Q[48] = 0.0;
-    Q[49] = 0.0;
-    Q[50] = 0.0;
-    Q[51] = 0.0;
-    Q[52] = 0.0;
-    Q[53] = 0.0;
-    Q[54] = 0.0;
-    Q[55] = 0.0;
-    Q[56] = 0.0;
-    Q[57] = 0.0;
-    Q[58] = 0.0;
-    Q[59] = 0.0;
-    Q[60] = 0.0;
-    Q[61] = 0.0;
-    Q[62] = 0.0;
-    Q[63] = 0.0;
-    Q[64] = 0.0;
-    Q[65] = 0.0;
-    Q[66] = 0.0;
-    Q[67] = 0.0;
-    Q[68] = 0.0;
-    Q[69] = 0.0;
-    Q[70] = 0.0;
-    Q[71] = 0.0;
-    Q[72] = 0.0;
-    Q[73] = 0.0;
-    Q[74] = 0.0;
-    Q[75] = 0.0;
-    Q[76] = 0.0;
-    Q[77] = 0.0;
-    Q[78] = 0.0;
-    Q[79] = 0.0;
-    Q[80] = 0.0;
-    Q[81] = 0.0;
-    Q[82] = 0.0;
-    Q[83] = 0.0;
-    Q[84] = 0.0;
-    Q[85] = 0.0;
-    Q[86] = 0.0;
-    Q[87] = 0.0;
-    Q[88] = 0.0;
-    Q[89] = 0.0;
-    Q[90] = 0.0;
-    Q[91] = 0.0;
-    Q[92] = 0.0;
-    Q[93] = 0.0;
-    Q[94] = 0.0;
-    Q[95] = 0.0;
+    int md = exahype::solvers::Solver::getMaximumAdaptiveMeshDepth();
+    double cms = exahype::solvers::Solver::getCoarsestMeshSize();
+    const int order = FOCCZ4::FOCCZ4Solver_ADERDG::Order;
+    std::fill_n(Q,96,0.0);
+
+    double x_3[3];
+    x_3[2]=0;
+    std::copy_n(&x[0],DIMENSIONS,&x_3[0]);
+    
+    initialdata_(x_3, &t, Q);
+  }
+  for(int i = 0; i< 96 ; i++){
+    assert(std::isfinite(Q[i]));
   }
 }
 
 void FOCCZ4::FOCCZ4Solver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int direction,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) {
-  // Tip: You find documentation for this method in header file "FOCCZ4::FOCCZ4Solver_ADERDG.h".
-  // Tip: See header file "FOCCZ4::AbstractFOCCZ4Solver_ADERDG.h" for toolkit generated compile-time 
-  //      constants such as Order, NumberOfVariables, and NumberOfParameters.
+  const int nVar = FOCCZ4::FOCCZ4Solver_ADERDG::NumberOfVariables;
+  const int order = FOCCZ4::FOCCZ4Solver_ADERDG::Order;
+  const int basisSize = order + 1;
+  const int nDim = DIMENSIONS;
+  double Qgp[nVar],*F[nDim], Fs[nDim][nVar];
 
-  // @todo Please implement/augment if required
-  stateOut[0] = 0.0;
-  stateOut[1] = 0.0;
-  stateOut[2] = 0.0;
-  stateOut[3] = 0.0;
-  stateOut[4] = 0.0;
-  stateOut[5] = 0.0;
-  stateOut[6] = 0.0;
-  stateOut[7] = 0.0;
-  stateOut[8] = 0.0;
-  stateOut[9] = 0.0;
-  stateOut[10] = 0.0;
-  stateOut[11] = 0.0;
-  stateOut[12] = 0.0;
-  stateOut[13] = 0.0;
-  stateOut[14] = 0.0;
-  stateOut[15] = 0.0;
-  stateOut[16] = 0.0;
-  stateOut[17] = 0.0;
-  stateOut[18] = 0.0;
-  stateOut[19] = 0.0;
-  stateOut[20] = 0.0;
-  stateOut[21] = 0.0;
-  stateOut[22] = 0.0;
-  stateOut[23] = 0.0;
-  stateOut[24] = 0.0;
-  stateOut[25] = 0.0;
-  stateOut[26] = 0.0;
-  stateOut[27] = 0.0;
-  stateOut[28] = 0.0;
-  stateOut[29] = 0.0;
-  stateOut[30] = 0.0;
-  stateOut[31] = 0.0;
-  stateOut[32] = 0.0;
-  stateOut[33] = 0.0;
-  stateOut[34] = 0.0;
-  stateOut[35] = 0.0;
-  stateOut[36] = 0.0;
-  stateOut[37] = 0.0;
-  stateOut[38] = 0.0;
-  stateOut[39] = 0.0;
-  stateOut[40] = 0.0;
-  stateOut[41] = 0.0;
-  stateOut[42] = 0.0;
-  stateOut[43] = 0.0;
-  stateOut[44] = 0.0;
-  stateOut[45] = 0.0;
-  stateOut[46] = 0.0;
-  stateOut[47] = 0.0;
-  stateOut[48] = 0.0;
-  stateOut[49] = 0.0;
-  stateOut[50] = 0.0;
-  stateOut[51] = 0.0;
-  stateOut[52] = 0.0;
-  stateOut[53] = 0.0;
-  stateOut[54] = 0.0;
-  stateOut[55] = 0.0;
-  stateOut[56] = 0.0;
-  stateOut[57] = 0.0;
-  stateOut[58] = 0.0;
-  stateOut[59] = 0.0;
-  stateOut[60] = 0.0;
-  stateOut[61] = 0.0;
-  stateOut[62] = 0.0;
-  stateOut[63] = 0.0;
-  stateOut[64] = 0.0;
-  stateOut[65] = 0.0;
-  stateOut[66] = 0.0;
-  stateOut[67] = 0.0;
-  stateOut[68] = 0.0;
-  stateOut[69] = 0.0;
-  stateOut[70] = 0.0;
-  stateOut[71] = 0.0;
-  stateOut[72] = 0.0;
-  stateOut[73] = 0.0;
-  stateOut[74] = 0.0;
-  stateOut[75] = 0.0;
-  stateOut[76] = 0.0;
-  stateOut[77] = 0.0;
-  stateOut[78] = 0.0;
-  stateOut[79] = 0.0;
-  stateOut[80] = 0.0;
-  stateOut[81] = 0.0;
-  stateOut[82] = 0.0;
-  stateOut[83] = 0.0;
-  stateOut[84] = 0.0;
-  stateOut[85] = 0.0;
-  stateOut[86] = 0.0;
-  stateOut[87] = 0.0;
-  stateOut[88] = 0.0;
-  stateOut[89] = 0.0;
-  stateOut[90] = 0.0;
-  stateOut[91] = 0.0;
-  stateOut[92] = 0.0;
-  stateOut[93] = 0.0;
-  stateOut[94] = 0.0;
-  stateOut[95] = 0.0;
+  double x_3[3];
+  x_3[2]=0;
+  std::copy_n(&x[0],DIMENSIONS,&x_3[0]);
+  
+  int md=0;
+  double cms=0;
+	
+  std::memset(stateOut, 0, nVar * sizeof(double));
+  std::memset(fluxOut , 0, nVar * sizeof(double));
+	
+  for(int dd=0; dd<nDim; dd++) F[dd] = Fs[dd];
 
-  fluxOut[0] = 0.0;
-  fluxOut[1] = 0.0;
-  fluxOut[2] = 0.0;
-  fluxOut[3] = 0.0;
-  fluxOut[4] = 0.0;
-  fluxOut[5] = 0.0;
-  fluxOut[6] = 0.0;
-  fluxOut[7] = 0.0;
-  fluxOut[8] = 0.0;
-  fluxOut[9] = 0.0;
-  fluxOut[10] = 0.0;
-  fluxOut[11] = 0.0;
-  fluxOut[12] = 0.0;
-  fluxOut[13] = 0.0;
-  fluxOut[14] = 0.0;
-  fluxOut[15] = 0.0;
-  fluxOut[16] = 0.0;
-  fluxOut[17] = 0.0;
-  fluxOut[18] = 0.0;
-  fluxOut[19] = 0.0;
-  fluxOut[20] = 0.0;
-  fluxOut[21] = 0.0;
-  fluxOut[22] = 0.0;
-  fluxOut[23] = 0.0;
-  fluxOut[24] = 0.0;
-  fluxOut[25] = 0.0;
-  fluxOut[26] = 0.0;
-  fluxOut[27] = 0.0;
-  fluxOut[28] = 0.0;
-  fluxOut[29] = 0.0;
-  fluxOut[30] = 0.0;
-  fluxOut[31] = 0.0;
-  fluxOut[32] = 0.0;
-  fluxOut[33] = 0.0;
-  fluxOut[34] = 0.0;
-  fluxOut[35] = 0.0;
-  fluxOut[36] = 0.0;
-  fluxOut[37] = 0.0;
-  fluxOut[38] = 0.0;
-  fluxOut[39] = 0.0;
-  fluxOut[40] = 0.0;
-  fluxOut[41] = 0.0;
-  fluxOut[42] = 0.0;
-  fluxOut[43] = 0.0;
-  fluxOut[44] = 0.0;
-  fluxOut[45] = 0.0;
-  fluxOut[46] = 0.0;
-  fluxOut[47] = 0.0;
-  fluxOut[48] = 0.0;
-  fluxOut[49] = 0.0;
-  fluxOut[50] = 0.0;
-  fluxOut[51] = 0.0;
-  fluxOut[52] = 0.0;
-  fluxOut[53] = 0.0;
-  fluxOut[54] = 0.0;
-  fluxOut[55] = 0.0;
-  fluxOut[56] = 0.0;
-  fluxOut[57] = 0.0;
-  fluxOut[58] = 0.0;
-  fluxOut[59] = 0.0;
-  fluxOut[60] = 0.0;
-  fluxOut[61] = 0.0;
-  fluxOut[62] = 0.0;
-  fluxOut[63] = 0.0;
-  fluxOut[64] = 0.0;
-  fluxOut[65] = 0.0;
-  fluxOut[66] = 0.0;
-  fluxOut[67] = 0.0;
-  fluxOut[68] = 0.0;
-  fluxOut[69] = 0.0;
-  fluxOut[70] = 0.0;
-  fluxOut[71] = 0.0;
-  fluxOut[72] = 0.0;
-  fluxOut[73] = 0.0;
-  fluxOut[74] = 0.0;
-  fluxOut[75] = 0.0;
-  fluxOut[76] = 0.0;
-  fluxOut[77] = 0.0;
-  fluxOut[78] = 0.0;
-  fluxOut[79] = 0.0;
-  fluxOut[80] = 0.0;
-  fluxOut[81] = 0.0;
-  fluxOut[82] = 0.0;
-  fluxOut[83] = 0.0;
-  fluxOut[84] = 0.0;
-  fluxOut[85] = 0.0;
-  fluxOut[86] = 0.0;
-  fluxOut[87] = 0.0;
-  fluxOut[88] = 0.0;
-  fluxOut[89] = 0.0;
-  fluxOut[90] = 0.0;
-  fluxOut[91] = 0.0;
-  fluxOut[92] = 0.0;
-  fluxOut[93] = 0.0;
-  fluxOut[94] = 0.0;
-  fluxOut[95] = 0.0;
+  for(int i=0; i < basisSize; i++)  { // i == time
+    const double weight = kernels::legendre::weights[order][i];
+    const double xi = kernels::legendre::nodes[order][i];
+    double ti = t + xi * dt;
+
+    //    initialdata_(x, &ti, Qgp,&md,&cms,&order);
+    initialdata_(x_3, &ti, Qgp);
+    flux(Qgp, F);
+    for(int m=0; m < nVar; m++) {
+      stateOut[m] += weight * Qgp[m];
+      fluxOut[m] += weight * Fs[direction][m];
+    }
+  }
 }
 
 exahype::solvers::Solver::RefinementControl FOCCZ4::FOCCZ4Solver_ADERDG::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,double t,const int level) {
-  // Tip: You find documentation for this method in header file "FOCCZ4::FOCCZ4Solver_ADERDG.h".
-  // Tip: See header file "FOCCZ4::AbstractFOCCZ4Solver_ADERDG.h" for toolkit generated compile-time 
-  //      constants such as Order, NumberOfVariables, and NumberOfParameters.
-  // Tip: See header file "peano/utils/Loop.h" for dimension-agnostic for loops.
-  
-  //  Example: Loop over all pointwise state variables (plus parameters)
-  //
-  //  constexpr int sizeOfQ = NumberOfVariables+NumberOfParameters;
-  //  dfor(i,Order+1) {
-  //    const int iLinearised = dLinearised(i,Order+1);
-  //    const double* const Q = luh + iLinearised * sizeOfQ; // pointwise state variables (plus parameters)
-  //    // use Q[0], Q[1], ... Q[sizeOfQ-1]
-  //  }
-  
   // @todo Please implement/augment if required
   return exahype::solvers::Solver::RefinementControl::Keep;
 }
@@ -363,102 +132,13 @@ void FOCCZ4::FOCCZ4Solver_ADERDG::eigenvalues(const double* const Q,const int di
   //      constants such as Order, NumberOfVariables, and NumberOfParameters.
   
   // @todo Please implement/augment if required
-  lambda[0] = 1.0;
-  lambda[1] = 1.0;
-  lambda[2] = 1.0;
-  lambda[3] = 1.0;
-  lambda[4] = 1.0;
-  lambda[5] = 1.0;
-  lambda[6] = 1.0;
-  lambda[7] = 1.0;
-  lambda[8] = 1.0;
-  lambda[9] = 1.0;
-  lambda[10] = 1.0;
-  lambda[11] = 1.0;
-  lambda[12] = 1.0;
-  lambda[13] = 1.0;
-  lambda[14] = 1.0;
-  lambda[15] = 1.0;
-  lambda[16] = 1.0;
-  lambda[17] = 1.0;
-  lambda[18] = 1.0;
-  lambda[19] = 1.0;
-  lambda[20] = 1.0;
-  lambda[21] = 1.0;
-  lambda[22] = 1.0;
-  lambda[23] = 1.0;
-  lambda[24] = 1.0;
-  lambda[25] = 1.0;
-  lambda[26] = 1.0;
-  lambda[27] = 1.0;
-  lambda[28] = 1.0;
-  lambda[29] = 1.0;
-  lambda[30] = 1.0;
-  lambda[31] = 1.0;
-  lambda[32] = 1.0;
-  lambda[33] = 1.0;
-  lambda[34] = 1.0;
-  lambda[35] = 1.0;
-  lambda[36] = 1.0;
-  lambda[37] = 1.0;
-  lambda[38] = 1.0;
-  lambda[39] = 1.0;
-  lambda[40] = 1.0;
-  lambda[41] = 1.0;
-  lambda[42] = 1.0;
-  lambda[43] = 1.0;
-  lambda[44] = 1.0;
-  lambda[45] = 1.0;
-  lambda[46] = 1.0;
-  lambda[47] = 1.0;
-  lambda[48] = 1.0;
-  lambda[49] = 1.0;
-  lambda[50] = 1.0;
-  lambda[51] = 1.0;
-  lambda[52] = 1.0;
-  lambda[53] = 1.0;
-  lambda[54] = 1.0;
-  lambda[55] = 1.0;
-  lambda[56] = 1.0;
-  lambda[57] = 1.0;
-  lambda[58] = 1.0;
-  lambda[59] = 1.0;
-  lambda[60] = 1.0;
-  lambda[61] = 1.0;
-  lambda[62] = 1.0;
-  lambda[63] = 1.0;
-  lambda[64] = 1.0;
-  lambda[65] = 1.0;
-  lambda[66] = 1.0;
-  lambda[67] = 1.0;
-  lambda[68] = 1.0;
-  lambda[69] = 1.0;
-  lambda[70] = 1.0;
-  lambda[71] = 1.0;
-  lambda[72] = 1.0;
-  lambda[73] = 1.0;
-  lambda[74] = 1.0;
-  lambda[75] = 1.0;
-  lambda[76] = 1.0;
-  lambda[77] = 1.0;
-  lambda[78] = 1.0;
-  lambda[79] = 1.0;
-  lambda[80] = 1.0;
-  lambda[81] = 1.0;
-  lambda[82] = 1.0;
-  lambda[83] = 1.0;
-  lambda[84] = 1.0;
-  lambda[85] = 1.0;
-  lambda[86] = 1.0;
-  lambda[87] = 1.0;
-  lambda[88] = 1.0;
-  lambda[89] = 1.0;
-  lambda[90] = 1.0;
-  lambda[91] = 1.0;
-  lambda[92] = 1.0;
-  lambda[93] = 1.0;
-  lambda[94] = 1.0;
-  lambda[95] = 1.0;
+  double nv[3] = {0.};
+  nv[direction] = 1;
+  pdeeigenvalues_(lambda, Q, nv);
+
+  for(int i = 0; i< 96 ; i++){
+    assert(std::isfinite(lambda[i]));
+  }
 }
 
 
@@ -469,202 +149,19 @@ void FOCCZ4::FOCCZ4Solver_ADERDG::flux(const double* const Q,double** const F) {
   // Tip: You find documentation for this method in header file "FOCCZ4::FOCCZ4Solver_ADERDG.h".
   // Tip: See header file "FOCCZ4::AbstractFOCCZ4Solver_ADERDG.h" for toolkit generated compile-time 
   //      constants such as Order, NumberOfVariables, and NumberOfParameters.
-  
-  // @todo Please implement/augment if required
-  F[0][0] = 0.0;
-  F[0][1] = 0.0;
-  F[0][2] = 0.0;
-  F[0][3] = 0.0;
-  F[0][4] = 0.0;
-  F[0][5] = 0.0;
-  F[0][6] = 0.0;
-  F[0][7] = 0.0;
-  F[0][8] = 0.0;
-  F[0][9] = 0.0;
-  F[0][10] = 0.0;
-  F[0][11] = 0.0;
-  F[0][12] = 0.0;
-  F[0][13] = 0.0;
-  F[0][14] = 0.0;
-  F[0][15] = 0.0;
-  F[0][16] = 0.0;
-  F[0][17] = 0.0;
-  F[0][18] = 0.0;
-  F[0][19] = 0.0;
-  F[0][20] = 0.0;
-  F[0][21] = 0.0;
-  F[0][22] = 0.0;
-  F[0][23] = 0.0;
-  F[0][24] = 0.0;
-  F[0][25] = 0.0;
-  F[0][26] = 0.0;
-  F[0][27] = 0.0;
-  F[0][28] = 0.0;
-  F[0][29] = 0.0;
-  F[0][30] = 0.0;
-  F[0][31] = 0.0;
-  F[0][32] = 0.0;
-  F[0][33] = 0.0;
-  F[0][34] = 0.0;
-  F[0][35] = 0.0;
-  F[0][36] = 0.0;
-  F[0][37] = 0.0;
-  F[0][38] = 0.0;
-  F[0][39] = 0.0;
-  F[0][40] = 0.0;
-  F[0][41] = 0.0;
-  F[0][42] = 0.0;
-  F[0][43] = 0.0;
-  F[0][44] = 0.0;
-  F[0][45] = 0.0;
-  F[0][46] = 0.0;
-  F[0][47] = 0.0;
-  F[0][48] = 0.0;
-  F[0][49] = 0.0;
-  F[0][50] = 0.0;
-  F[0][51] = 0.0;
-  F[0][52] = 0.0;
-  F[0][53] = 0.0;
-  F[0][54] = 0.0;
-  F[0][55] = 0.0;
-  F[0][56] = 0.0;
-  F[0][57] = 0.0;
-  F[0][58] = 0.0;
-  F[0][59] = 0.0;
-  F[0][60] = 0.0;
-  F[0][61] = 0.0;
-  F[0][62] = 0.0;
-  F[0][63] = 0.0;
-  F[0][64] = 0.0;
-  F[0][65] = 0.0;
-  F[0][66] = 0.0;
-  F[0][67] = 0.0;
-  F[0][68] = 0.0;
-  F[0][69] = 0.0;
-  F[0][70] = 0.0;
-  F[0][71] = 0.0;
-  F[0][72] = 0.0;
-  F[0][73] = 0.0;
-  F[0][74] = 0.0;
-  F[0][75] = 0.0;
-  F[0][76] = 0.0;
-  F[0][77] = 0.0;
-  F[0][78] = 0.0;
-  F[0][79] = 0.0;
-  F[0][80] = 0.0;
-  F[0][81] = 0.0;
-  F[0][82] = 0.0;
-  F[0][83] = 0.0;
-  F[0][84] = 0.0;
-  F[0][85] = 0.0;
-  F[0][86] = 0.0;
-  F[0][87] = 0.0;
-  F[0][88] = 0.0;
-  F[0][89] = 0.0;
-  F[0][90] = 0.0;
-  F[0][91] = 0.0;
-  F[0][92] = 0.0;
-  F[0][93] = 0.0;
-  F[0][94] = 0.0;
-  F[0][95] = 0.0;
-  
-  F[1][0] = 0.0;
-  F[1][1] = 0.0;
-  F[1][2] = 0.0;
-  F[1][3] = 0.0;
-  F[1][4] = 0.0;
-  F[1][5] = 0.0;
-  F[1][6] = 0.0;
-  F[1][7] = 0.0;
-  F[1][8] = 0.0;
-  F[1][9] = 0.0;
-  F[1][10] = 0.0;
-  F[1][11] = 0.0;
-  F[1][12] = 0.0;
-  F[1][13] = 0.0;
-  F[1][14] = 0.0;
-  F[1][15] = 0.0;
-  F[1][16] = 0.0;
-  F[1][17] = 0.0;
-  F[1][18] = 0.0;
-  F[1][19] = 0.0;
-  F[1][20] = 0.0;
-  F[1][21] = 0.0;
-  F[1][22] = 0.0;
-  F[1][23] = 0.0;
-  F[1][24] = 0.0;
-  F[1][25] = 0.0;
-  F[1][26] = 0.0;
-  F[1][27] = 0.0;
-  F[1][28] = 0.0;
-  F[1][29] = 0.0;
-  F[1][30] = 0.0;
-  F[1][31] = 0.0;
-  F[1][32] = 0.0;
-  F[1][33] = 0.0;
-  F[1][34] = 0.0;
-  F[1][35] = 0.0;
-  F[1][36] = 0.0;
-  F[1][37] = 0.0;
-  F[1][38] = 0.0;
-  F[1][39] = 0.0;
-  F[1][40] = 0.0;
-  F[1][41] = 0.0;
-  F[1][42] = 0.0;
-  F[1][43] = 0.0;
-  F[1][44] = 0.0;
-  F[1][45] = 0.0;
-  F[1][46] = 0.0;
-  F[1][47] = 0.0;
-  F[1][48] = 0.0;
-  F[1][49] = 0.0;
-  F[1][50] = 0.0;
-  F[1][51] = 0.0;
-  F[1][52] = 0.0;
-  F[1][53] = 0.0;
-  F[1][54] = 0.0;
-  F[1][55] = 0.0;
-  F[1][56] = 0.0;
-  F[1][57] = 0.0;
-  F[1][58] = 0.0;
-  F[1][59] = 0.0;
-  F[1][60] = 0.0;
-  F[1][61] = 0.0;
-  F[1][62] = 0.0;
-  F[1][63] = 0.0;
-  F[1][64] = 0.0;
-  F[1][65] = 0.0;
-  F[1][66] = 0.0;
-  F[1][67] = 0.0;
-  F[1][68] = 0.0;
-  F[1][69] = 0.0;
-  F[1][70] = 0.0;
-  F[1][71] = 0.0;
-  F[1][72] = 0.0;
-  F[1][73] = 0.0;
-  F[1][74] = 0.0;
-  F[1][75] = 0.0;
-  F[1][76] = 0.0;
-  F[1][77] = 0.0;
-  F[1][78] = 0.0;
-  F[1][79] = 0.0;
-  F[1][80] = 0.0;
-  F[1][81] = 0.0;
-  F[1][82] = 0.0;
-  F[1][83] = 0.0;
-  F[1][84] = 0.0;
-  F[1][85] = 0.0;
-  F[1][86] = 0.0;
-  F[1][87] = 0.0;
-  F[1][88] = 0.0;
-  F[1][89] = 0.0;
-  F[1][90] = 0.0;
-  F[1][91] = 0.0;
-  F[1][92] = 0.0;
-  F[1][93] = 0.0;
-  F[1][94] = 0.0;
-  F[1][95] = 0.0;
-  
+  constexpr int nVar = FOCCZ4::FOCCZ4Solver_ADERDG::NumberOfVariables;
+  if(DIMENSIONS == 2){
+    double F_3[nVar];
+    pdeflux_(F[0], F[1],F_3, Q);
+  }else{
+    pdeflux_(F[0], F[1],F[2], Q);
+  }
+
+  for(int d = 0; d< DIMENSIONS ; d++){
+    for(int i = 0; i< 96 ; i++){
+      assert(std::isfinite(F[d][i]));
+    }
+  }
 }
 
 
@@ -674,102 +171,11 @@ void FOCCZ4::FOCCZ4Solver_ADERDG::algebraicSource(const tarch::la::Vector<DIMENS
   // Tip: See header file "FOCCZ4::AbstractFOCCZ4Solver_ADERDG.h" for toolkit generated compile-time 
   //      constants such as Order, NumberOfVariables, and NumberOfParameters.
   // @todo Please implement/augment if required
-  S[0] = 0.0;
-  S[1] = 0.0;
-  S[2] = 0.0;
-  S[3] = 0.0;
-  S[4] = 0.0;
-  S[5] = 0.0;
-  S[6] = 0.0;
-  S[7] = 0.0;
-  S[8] = 0.0;
-  S[9] = 0.0;
-  S[10] = 0.0;
-  S[11] = 0.0;
-  S[12] = 0.0;
-  S[13] = 0.0;
-  S[14] = 0.0;
-  S[15] = 0.0;
-  S[16] = 0.0;
-  S[17] = 0.0;
-  S[18] = 0.0;
-  S[19] = 0.0;
-  S[20] = 0.0;
-  S[21] = 0.0;
-  S[22] = 0.0;
-  S[23] = 0.0;
-  S[24] = 0.0;
-  S[25] = 0.0;
-  S[26] = 0.0;
-  S[27] = 0.0;
-  S[28] = 0.0;
-  S[29] = 0.0;
-  S[30] = 0.0;
-  S[31] = 0.0;
-  S[32] = 0.0;
-  S[33] = 0.0;
-  S[34] = 0.0;
-  S[35] = 0.0;
-  S[36] = 0.0;
-  S[37] = 0.0;
-  S[38] = 0.0;
-  S[39] = 0.0;
-  S[40] = 0.0;
-  S[41] = 0.0;
-  S[42] = 0.0;
-  S[43] = 0.0;
-  S[44] = 0.0;
-  S[45] = 0.0;
-  S[46] = 0.0;
-  S[47] = 0.0;
-  S[48] = 0.0;
-  S[49] = 0.0;
-  S[50] = 0.0;
-  S[51] = 0.0;
-  S[52] = 0.0;
-  S[53] = 0.0;
-  S[54] = 0.0;
-  S[55] = 0.0;
-  S[56] = 0.0;
-  S[57] = 0.0;
-  S[58] = 0.0;
-  S[59] = 0.0;
-  S[60] = 0.0;
-  S[61] = 0.0;
-  S[62] = 0.0;
-  S[63] = 0.0;
-  S[64] = 0.0;
-  S[65] = 0.0;
-  S[66] = 0.0;
-  S[67] = 0.0;
-  S[68] = 0.0;
-  S[69] = 0.0;
-  S[70] = 0.0;
-  S[71] = 0.0;
-  S[72] = 0.0;
-  S[73] = 0.0;
-  S[74] = 0.0;
-  S[75] = 0.0;
-  S[76] = 0.0;
-  S[77] = 0.0;
-  S[78] = 0.0;
-  S[79] = 0.0;
-  S[80] = 0.0;
-  S[81] = 0.0;
-  S[82] = 0.0;
-  S[83] = 0.0;
-  S[84] = 0.0;
-  S[85] = 0.0;
-  S[86] = 0.0;
-  S[87] = 0.0;
-  S[88] = 0.0;
-  S[89] = 0.0;
-  S[90] = 0.0;
-  S[91] = 0.0;
-  S[92] = 0.0;
-  S[93] = 0.0;
-  S[94] = 0.0;
-  S[95] = 0.0;
+   pdesource_(S, Q);
+
+  for(int i = 0; i< 96 ; i++){
+    assert(std::isfinite(S[i]));
+  }
 }
 
 void  FOCCZ4::FOCCZ4Solver_ADERDG::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
@@ -778,116 +184,32 @@ void  FOCCZ4::FOCCZ4Solver_ADERDG::nonConservativeProduct(const double* const Q,
   //      constants such as Order, NumberOfVariables, and NumberOfParameters.
   
   // @todo Please implement/augment if required
-  BgradQ[0] = 0.0;
-  BgradQ[1] = 0.0;
-  BgradQ[2] = 0.0;
-  BgradQ[3] = 0.0;
-  BgradQ[4] = 0.0;
-  BgradQ[5] = 0.0;
-  BgradQ[6] = 0.0;
-  BgradQ[7] = 0.0;
-  BgradQ[8] = 0.0;
-  BgradQ[9] = 0.0;
-  BgradQ[10] = 0.0;
-  BgradQ[11] = 0.0;
-  BgradQ[12] = 0.0;
-  BgradQ[13] = 0.0;
-  BgradQ[14] = 0.0;
-  BgradQ[15] = 0.0;
-  BgradQ[16] = 0.0;
-  BgradQ[17] = 0.0;
-  BgradQ[18] = 0.0;
-  BgradQ[19] = 0.0;
-  BgradQ[20] = 0.0;
-  BgradQ[21] = 0.0;
-  BgradQ[22] = 0.0;
-  BgradQ[23] = 0.0;
-  BgradQ[24] = 0.0;
-  BgradQ[25] = 0.0;
-  BgradQ[26] = 0.0;
-  BgradQ[27] = 0.0;
-  BgradQ[28] = 0.0;
-  BgradQ[29] = 0.0;
-  BgradQ[30] = 0.0;
-  BgradQ[31] = 0.0;
-  BgradQ[32] = 0.0;
-  BgradQ[33] = 0.0;
-  BgradQ[34] = 0.0;
-  BgradQ[35] = 0.0;
-  BgradQ[36] = 0.0;
-  BgradQ[37] = 0.0;
-  BgradQ[38] = 0.0;
-  BgradQ[39] = 0.0;
-  BgradQ[40] = 0.0;
-  BgradQ[41] = 0.0;
-  BgradQ[42] = 0.0;
-  BgradQ[43] = 0.0;
-  BgradQ[44] = 0.0;
-  BgradQ[45] = 0.0;
-  BgradQ[46] = 0.0;
-  BgradQ[47] = 0.0;
-  BgradQ[48] = 0.0;
-  BgradQ[49] = 0.0;
-  BgradQ[50] = 0.0;
-  BgradQ[51] = 0.0;
-  BgradQ[52] = 0.0;
-  BgradQ[53] = 0.0;
-  BgradQ[54] = 0.0;
-  BgradQ[55] = 0.0;
-  BgradQ[56] = 0.0;
-  BgradQ[57] = 0.0;
-  BgradQ[58] = 0.0;
-  BgradQ[59] = 0.0;
-  BgradQ[60] = 0.0;
-  BgradQ[61] = 0.0;
-  BgradQ[62] = 0.0;
-  BgradQ[63] = 0.0;
-  BgradQ[64] = 0.0;
-  BgradQ[65] = 0.0;
-  BgradQ[66] = 0.0;
-  BgradQ[67] = 0.0;
-  BgradQ[68] = 0.0;
-  BgradQ[69] = 0.0;
-  BgradQ[70] = 0.0;
-  BgradQ[71] = 0.0;
-  BgradQ[72] = 0.0;
-  BgradQ[73] = 0.0;
-  BgradQ[74] = 0.0;
-  BgradQ[75] = 0.0;
-  BgradQ[76] = 0.0;
-  BgradQ[77] = 0.0;
-  BgradQ[78] = 0.0;
-  BgradQ[79] = 0.0;
-  BgradQ[80] = 0.0;
-  BgradQ[81] = 0.0;
-  BgradQ[82] = 0.0;
-  BgradQ[83] = 0.0;
-  BgradQ[84] = 0.0;
-  BgradQ[85] = 0.0;
-  BgradQ[86] = 0.0;
-  BgradQ[87] = 0.0;
-  BgradQ[88] = 0.0;
-  BgradQ[89] = 0.0;
-  BgradQ[90] = 0.0;
-  BgradQ[91] = 0.0;
-  BgradQ[92] = 0.0;
-  BgradQ[93] = 0.0;
-  BgradQ[94] = 0.0;
-  BgradQ[95] = 0.0;
+   pdencp_(BgradQ, Q, gradQ);
+  for(int i = 0; i< 96 ; i++){
+    assert(std::isfinite(BgradQ[i]));
+  }
 }
 
 
 
 bool FOCCZ4::FOCCZ4Solver_ADERDG::isPhysicallyAdmissible(
-      const double* const solution,
-      const double* const observablesMin,const double* const observablesMax,
-      const bool wasTroubledInPreviousTimeStep,
-      const tarch::la::Vector<DIMENSIONS,double>& center,
-      const tarch::la::Vector<DIMENSIONS,double>& dx,
-      const double t) const {
-
-      return true;//GlobalLimitingCriterion::isPhysicallyAdmissible(solution, observablesMin, observablesMax, wasTroubledInPreviousTimeStep, center, dx, t);
+      const double* const                         solution,
+      const double* const                         localDMPObservablesMin,
+      const double* const                         localDMPObservablesMax,
+      const bool                                  wasTroubledInPreviousTimeStep,
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+      const double                               timeStamp) const
+	  {
+  		  
+	  int limvalue;
+	   
+	  pdelimitervalue_(&limvalue,&cellCentre[0],&NumberOfDMPObservables, localDMPObservablesMin, localDMPObservablesMax);
+	  bool ret_value;
+	  limvalue > 0 ? ret_value=false : ret_value=true;
+	  return ret_value;
 }
 void FOCCZ4::FOCCZ4Solver_ADERDG::fusedSource(const double* const restrict Q, const double* const restrict gradQ, double* const restrict S){
-	//PDE::fusedSource(Q, gradQ, S);
+	pdefusedsrcncp_(S,Q,gradQ);
+	//fusedSource(Q, gradQ, S);
 }

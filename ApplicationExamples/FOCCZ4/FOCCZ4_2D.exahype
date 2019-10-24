@@ -96,11 +96,19 @@
         }
       ],
     "parameters": {
-        "reference": "NLOPRUPTUREPW"
+        "reference": "CCZ4MinkowskiSrc"
       },
 
 
     "plotters": [
+	{
+          "type": "user::defined",
+          "name": "TecplotWriter",
+          "time": 0.0,
+          "repeat": 0.1,
+          "output": "./output/tecplot",
+          "variables": 96
+        }
       ]
     }
   ]

@@ -188,13 +188,14 @@ class FOCCZ4::FOCCZ4Solver_ADERDG : public FOCCZ4::AbstractFOCCZ4Solver_ADERDG {
 
 	void static fusedSource(const double* const restrict Q, const double* const restrict gradQ, double* const restrict S);
 	
-	    bool isPhysicallyAdmissible(
-      const double* const solution,
-      const double* const observablesMin,const double* const observablesMax,
-      const bool wasTroubledInPreviousTimeStep,
-      const tarch::la::Vector<DIMENSIONS,double>& center,
-      const tarch::la::Vector<DIMENSIONS,double>& dx,
-      const double t) const override;
+    bool isPhysicallyAdmissible(
+				const double* const                         solution,
+				const double* const                         localDMPObservablesMin,
+				const double* const                         localDMPObservablesMax,
+				const bool                                  wasTroubledInPreviousTimeStep,
+				const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+				const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+				const double                                timeStamp) const override;
 /* pointSource() function not included, as requested in the specification file */
 
 /* multiplyMaterialParameterMatrix() not included, as requested in the specification file */
