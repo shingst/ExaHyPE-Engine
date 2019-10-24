@@ -23,7 +23,6 @@
 #include "peano/heap/CompressedFloatingPointNumbers.h"
 
 #include <algorithm>
-#include <mm_malloc.h> //g++
 #include <cstring> //memset
 
 #include "../../../Peano/tarch/multicore/Jobs.h"
@@ -85,6 +84,8 @@ double exahype::solvers::Solver::PipedCompressedBytes = 0;
 #endif
 
 tarch::logging::Log exahype::solvers::Solver::_log( "exahype::solvers::Solver");
+
+std::atomic<bool> exahype::solvers::Solver::AllSolversAreStable = ATOMIC_VAR_INIT(false);
 
 #ifdef Parallel
 int exahype::solvers::Solver::MasterWorkerCommunicationTag = MPI_ANY_TAG;
@@ -199,27 +200,6 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
   VT_end(ensureAllJobsHaveTerminatedHandle);
   #endif
 }
-
-void exahype::solvers::Solver::configurePredictionPhase(const bool usePredictionBackgroundJobs, bool useProlongationBackgroundJobs) {
-  exahype::solvers::Solver::SpawnPredictionAsBackgroundJob   = usePredictionBackgroundJobs;
-  exahype::solvers::Solver::SpawnProlongationAsBackgroundJob = useProlongationBackgroundJobs;
-
-  #ifdef OnePredictionSweep
-  exahype::solvers::Solver::PredictionSweeps = 1;
-  #else
-  exahype::solvers::Solver::PredictionSweeps = ( 
-         !allSolversPerformOnlyUniformRefinement() || // prolongations are done in second sweep
-         usePredictionBackgroundJobs ) ? 
-         2 : 1;
-  #endif
-
-  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-    logInfo("configurePredictionPhase()","prediction sweeps                   ="<<exahype::solvers::Solver::PredictionSweeps);
-    logInfo("configurePredictionPhase()","spawn prediction as background job  ="<<exahype::solvers::Solver::SpawnPredictionAsBackgroundJob);
-    logInfo("configurePredictionPhase()","spawn prolongation as background job="<<exahype::solvers::Solver::SpawnProlongationAsBackgroundJob);
-  }
-}
-
 
 exahype::solvers::Solver::Solver(
   const std::string&                     identifier,
@@ -540,30 +520,36 @@ double exahype::solvers::Solver::getFinestMaximumMeshSizeOfAllSolvers() {
 }
 
 int exahype::solvers::Solver::getCoarsestMeshLevelOfAllSolvers() {
-  int result = std::numeric_limits<int>::max();
+  static int result = std::numeric_limits<int>::max();
 
-  for (const auto& p : exahype::solvers::RegisteredSolvers) {
-    result = std::min( result, p->getCoarsestMeshLevel() );
+  if ( result == std::numeric_limits<int>::max() ) {
+    for (const auto& p : exahype::solvers::RegisteredSolvers) {
+      result = std::min( result, p->getCoarsestMeshLevel() );
+    }
   }
 
   return result;
 }
 
 int exahype::solvers::Solver::getFinestUniformMeshLevelOfAllSolvers() {
-  int result = -std::numeric_limits<int>::max();
+  static int result = -std::numeric_limits<int>::max();
 
-  for (const auto& p : exahype::solvers::RegisteredSolvers) {
-    result = std::max( result, p->getCoarsestMeshLevel() );
+  if ( result < 0 ) {
+    for (const auto& p : exahype::solvers::RegisteredSolvers) {
+      result = std::max( result, p->getCoarsestMeshLevel() );
+    }
   }
 
   return result;
 }
 
 int exahype::solvers::Solver::getMaximumAdaptiveMeshLevelOfAllSolvers() {
-  int result = -std::numeric_limits<int>::max(); // "-", min
+  static int result = -std::numeric_limits<int>::max(); // "-", min
 
-  for (const auto& p : exahype::solvers::RegisteredSolvers) {
-    result = std::max( result, p->getMaximumAdaptiveMeshLevel() );
+  if ( result < 0 ) {
+    for (const auto& p : exahype::solvers::RegisteredSolvers) {
+      result = std::max( result, p->getMaximumAdaptiveMeshLevel() );
+    }
   }
 
   return result;

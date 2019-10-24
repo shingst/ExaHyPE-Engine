@@ -14,9 +14,7 @@
 #include "ADERDG2LegendreDivergenceVTK.h"
 #include "tarch/parallel/Node.h"
 
-#include "kernels/DGMatrices.h"
-#include "kernels/GaussLegendreQuadrature.h"
-#include "kernels/DGBasisFunctions.h"
+#include "kernels/GaussLegendreBasis.h"
 
 #include "peano/utils/Loop.h"
 
@@ -221,7 +219,7 @@ std::pair<int,int> exahype::plotters::ADERDG2LegendreDivergenceVTK::plotLegendre
       //p = offsetOfPatch + tarch::la::multiplyComponents( i.convertScalar<double>(), sizeOfPatch) * (1.0/_order);
 
       for (int d=0; d<DIMENSIONS; d++) {
-        p(d) = offsetOfPatch(d) + kernels::gaussLegendreNodes[_order][i(d)] * sizeOfPatch(d);
+        p(d) = offsetOfPatch(d) + kernels::legendre::nodes[_order][i(d)] * sizeOfPatch(d);
       }
 
       const int newVertexNumber = _vertexWriter->plotVertex(p);
@@ -274,10 +272,10 @@ void exahype::plotters::ADERDG2LegendreDivergenceVTK::plotVertexData(
     // This is inefficient but works. We could look it up directly from the arrays
     tarch::la::Vector<DIMENSIONS, double> p;
     for (int d=0; d<DIMENSIONS; d++) {
-      p(d) = offsetOfPatch(d) + kernels::gaussLegendreNodes[_order][i(d)] * sizeOfPatch(d);
+      p(d) = offsetOfPatch(d) + kernels::legendre::nodes[_order][i(d)] * sizeOfPatch(d);
     }
     for (int unknown=0; unknown < _solverUnknowns; unknown++) {
-      interpoland[unknown] = kernels::interpolate(
+      interpoland[unknown] = kernels::legendre::interpolate(
         offsetOfPatch.data(),
         sizeOfPatch.data(),
         p.data(), // das ist die Position
@@ -315,7 +313,7 @@ void exahype::plotters::ADERDG2LegendreDivergenceVTK::plotPatch(const int solver
   const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   auto& aderdgCellDescription  = cellInfo._ADERDGCellDescriptions[element];
 
-  if (aderdgCellDescription.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell) {
+  if (aderdgCellDescription.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Leaf) {
     double* solverSolution = static_cast<double*>(aderdgCellDescription.getSolution());
 
     plotPatch(

@@ -92,43 +92,6 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
   Cell(const Base::PersistentCell& argument);
 
   /**
-   * Here we reset helper variables that play a role in
-   * the neighbour data exchange.
-   * These are the cell description fields
-   * neighbourMergePerformed[DIMENSIONS_TIMES_TWO] and
-   * faceDataExchangeCounter[DIMENSIONS_TIMES_TWO].
-   *
-   * Neighbour Merge Performed Flags
-   * -------------------------------
-   * If desired, this routine resets the neighbour
-   * merge flags for all found cell descriptions.
-   *
-   * @note This must not ne done in the UpdateAndReduce and FusedTimeStep
-   * mappings as these spawns jobs which internally rely on the
-   * information with which neighbour a merge has been performed.
-   * The spawned jobs reset the flags after they do not require
-   * the information anymore.
-   *
-   * Face Data Exchange Counters
-   * ---------------------------
-   *
-   * This routine resets the face data exchange counters:
-   * To this end, we count the listings of a remote rank on each
-   * of the faces surrounding a cell description.
-   *
-   * We perform the following actions depending on the counter value:
-   * 0 - no connection: no send. Set to unreachable value.
-   * 2^{d-2} - full face connection where cell is inside but half of face vertices are outside:
-   * send at time of 2^{d-2}-th touch of face.
-   * 4^{d-2} - full face connection where cell is inside and face vertices are all inside:
-   * send at time of 2^{d-2}-th touch of face.
-   */
-  static void resetNeighbourMergePerformedFlags(
-      const solvers::Solver::CellInfo& cellInfo,
-      exahype::Vertex* const fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator);
-
-  /**
    * Determine inside and outside faces of a cell.
    * A face is considered inside if at least
    * one of its vertices is inside.
@@ -171,6 +134,19 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
       const tarch::la::Vector<DIMENSIONS,double>& cellOffset,
       const tarch::la::Vector<DIMENSIONS,double>& cellSize,
       const int direction, const int orientation);
+
+  /**
+   * Collect the boundary markers (special cell descriptions indices) from the surrounding
+   * vertices.
+   *
+   * @return Per face
+   *
+   * @param verticesAroundCell
+   * @param verticesEnumerator
+   */
+  static tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> collectBoundaryMarkers(
+      exahype::Vertex* const verticesAroundCell,
+      const peano::grid::VertexEnumerator& verticesEnumerator);
 
   /**
    * Returns true if the cell corresponding
@@ -269,7 +245,6 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
   exahype::solvers::Solver::CellInfo addNewCellDescription(
       const int solverNumber,
       const exahype::records::ADERDGCellDescription::Type cellType,
-      const exahype::records::ADERDGCellDescription::RefinementEvent refinementEvent,
       const int level,
       const int parentIndex,
       const tarch::la::Vector<DIMENSIONS, double>& cellSize,
@@ -286,7 +261,6 @@ class exahype::Cell : public peano::grid::Cell<exahype::records::Cell> {
   exahype::solvers::Solver::CellInfo addNewCellDescription(
       const int solverNumber,
       const exahype::records::FiniteVolumesCellDescription::Type cellType,
-      const exahype::records::FiniteVolumesCellDescription::RefinementEvent refinementEvent,
       const int level,
       const int parentIndex,
       const tarch::la::Vector<DIMENSIONS, double>& cellSize,

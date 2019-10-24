@@ -18,7 +18,7 @@
 
 #include "peano/utils/Loop.h"
 
-#include "multiscalelinkedcell/HangingVertexBookkeeper.h"
+#include "exahype/mappings/LevelwiseAdjacencyBookkeeping.h"
 
 #include "kernels/KernelCalls.h"
 
@@ -36,7 +36,7 @@ tarch::logging::Log exahype::Cell::_log("exahype::Cell");
 #ifdef Parallel
 #include <deque>
 
-int exahype::Cell::ReceivedMetadataHeapIndex(multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+int exahype::Cell::ReceivedMetadataHeapIndex(mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex);
 
 std::deque<int> exahype::Cell::ReceivedDataHeapIndices;
 #endif
@@ -47,7 +47,7 @@ exahype::Cell::Cell() : Base() {
   // createCell(...) events of Peano's spacetree traversal automaton
   // with default ("do-nothing") values.
   _cellData.setCellDescriptionsIndex(
-      multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+      mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex);
   _cellData.setADERDGCellDescriptions(nullptr);
   _cellData.setFiniteVolumesCellDescriptions(nullptr);
 }
@@ -55,7 +55,7 @@ exahype::Cell::Cell() : Base() {
 exahype::Cell::Cell(const Base::DoNotCallStandardConstructor& value)
 : Base(value) {
   _cellData.setCellDescriptionsIndex(
-      multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+      mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex);
   _cellData.setADERDGCellDescriptions(nullptr);
   _cellData.setFiniteVolumesCellDescriptions(nullptr);
 }
@@ -63,25 +63,6 @@ exahype::Cell::Cell(const Base::DoNotCallStandardConstructor& value)
 exahype::Cell::Cell(const Base::PersistentCell& argument) : Base(argument) {
   // This constructor is used to create a cell from persistent data.
   // Do not use it. This would overwrite persistent data.
-}
-
-void exahype::Cell::resetNeighbourMergePerformedFlags(
-    const solvers::Solver::CellInfo& cellInfo,
-    exahype::Vertex* const fineGridVertices,
-    const peano::grid::VertexEnumerator& fineGridVerticesEnumerator) {
-  // ADER-DG
-  for (auto& p : cellInfo._ADERDGCellDescriptions) {
-    for (int faceIndex=0; faceIndex<DIMENSIONS_TIMES_TWO; faceIndex++) {
-      p.setNeighbourMergePerformed(faceIndex,static_cast<char>(false));
-    }
-  }
-
-  // Finite-Volumes (loop body can be copied from ADER-DG loop)
-  for (auto& p : cellInfo._FiniteVolumesCellDescriptions) {
-    for (int faceIndex=0; faceIndex<DIMENSIONS_TIMES_TWO; faceIndex++) {
-      p.setNeighbourMergePerformed(faceIndex,static_cast<char>(false));
-    }
-  }
 }
 
 std::bitset<DIMENSIONS_TIMES_TWO> exahype::Cell::determineInsideAndOutsideFaces(
@@ -122,6 +103,23 @@ tarch::la::Vector<DIMENSIONS,double> exahype::Cell::computeFaceBarycentre(
   return faceBarycentre;
 }
 
+tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> exahype::Cell::collectBoundaryMarkers(
+    exahype::Vertex* const verticesAroundCell,
+    const peano::grid::VertexEnumerator& verticesEnumerator) {
+  tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> result(mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex); // TODO(Dominic):
+  tarch::la::Vector<DIMENSIONS,int> center(1);
+  dfor2(v) // Loop over vertices.
+    dfor2(a) // Loop over adjacent cells. Does include current cell ("verticesAroundCell").
+      const tarch::la::Vector<DIMENSIONS,int> position = v+a;
+      if ( tarch::la::countEqualEntries(position,center)==DIMENSIONS-1 ) { // offset in one direction from center=>face neighbour
+        solvers::Solver::BoundaryFaceInfo face(center,position);
+        result[ face._faceIndex ] = verticesAroundCell[ verticesEnumerator(v) ].getCellDescriptionsIndex(aScalar);
+      }
+    enddforx //a
+  enddforx // v
+  return result;
+}
+
 bool exahype::Cell::isAtRemoteBoundary(
     exahype::Vertex* const verticesAroundCell,
     const peano::grid::VertexEnumerator& verticesEnumerator) {
@@ -157,7 +155,7 @@ void exahype::Cell::setupMetaData() {
 
 void exahype::Cell::shutdownMetaDataAndResetCellDescriptionsIndex() {
   shutdownMetaData();
-  _cellData.setCellDescriptionsIndex(multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex);
+  _cellData.setCellDescriptionsIndex(mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex);
   _cellData.setADERDGCellDescriptions(nullptr);
   _cellData.setFiniteVolumesCellDescriptions(nullptr);
 }
@@ -176,7 +174,7 @@ void exahype::Cell::shutdownMetaData() const {
 }
 
 bool exahype::Cell::isEmpty() const {
-  if (_cellData.getCellDescriptionsIndex()!=multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex) {
+  if (_cellData.getCellDescriptionsIndex()!=mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex) {
     assertion1( exahype::solvers::ADERDGSolver::Heap::getInstance().isValidIndex(_cellData.getCellDescriptionsIndex()),
                 _cellData.getCellDescriptionsIndex());
     assertion1( exahype::solvers::FiniteVolumesSolver::Heap::getInstance().isValidIndex(_cellData.getCellDescriptionsIndex()),
@@ -230,19 +228,17 @@ exahype::solvers::Solver::CellInfo exahype::Cell::createCellInfo() const {
 exahype::solvers::Solver::CellInfo exahype::Cell::addNewCellDescription(
     const int solverNumber,
     const exahype::records::FiniteVolumesCellDescription::Type cellType,
-    const exahype::records::FiniteVolumesCellDescription::RefinementEvent refinementEvent,
     const int level,
     const int parentIndex,
     const tarch::la::Vector<DIMENSIONS, double>&  cellSize,
     const tarch::la::Vector<DIMENSIONS, double>&  cellOffset) {
-  if (_cellData.getCellDescriptionsIndex() == multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex) {
+  if (_cellData.getCellDescriptionsIndex() == mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex) {
     setupMetaData();
   }
 
   solvers::Solver::CellInfo cellInfo(_cellData.getCellDescriptionsIndex());
   solvers::FiniteVolumesSolver::addNewCellDescription(
-      solverNumber,cellInfo,
-      cellType,refinementEvent,
+      solverNumber,cellInfo,cellType,
       level,parentIndex,cellSize,cellOffset);
   return cellInfo;
 }
@@ -251,19 +247,17 @@ exahype::solvers::Solver::CellInfo exahype::Cell::addNewCellDescription(
 exahype::solvers::Solver::CellInfo exahype::Cell::addNewCellDescription(
     const int                                     solverNumber,
     const exahype::records::ADERDGCellDescription::Type cellType,
-    const exahype::records::ADERDGCellDescription::RefinementEvent refinementEvent,
     const int                                     level,
     const int                                     parentIndex,
     const tarch::la::Vector<DIMENSIONS, double>&  cellSize,
     const tarch::la::Vector<DIMENSIONS, double>&  cellOffset) {
-  if (_cellData.getCellDescriptionsIndex() == multiscalelinkedcell::HangingVertexBookkeeper::InvalidAdjacencyIndex) {
+  if (_cellData.getCellDescriptionsIndex() == mappings::LevelwiseAdjacencyBookkeeping::InvalidAdjacencyIndex) {
     setupMetaData();
   }
 
   solvers::Solver::CellInfo cellInfo(_cellData.getCellDescriptionsIndex());
   exahype::solvers::ADERDGSolver::addNewCellDescription(
-      solverNumber,cellInfo,
-      cellType,refinementEvent,
+      solverNumber,cellInfo,cellType,
       level,parentIndex,cellSize,cellOffset);
   return cellInfo;
 }

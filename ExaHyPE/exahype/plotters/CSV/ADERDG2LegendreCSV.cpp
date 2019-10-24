@@ -14,9 +14,7 @@
 #include "ADERDG2LegendreCSV.h"
 #include "tarch/parallel/Node.h"
 
-#include "kernels/DGMatrices.h"
-#include "kernels/GaussLegendreQuadrature.h"
-#include "kernels/DGBasisFunctions.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "kernels/KernelUtils.h"
 
 #include "peano/utils/Loop.h"
@@ -151,7 +149,7 @@ void exahype::plotters::ADERDG2LegendreCSV::plotPatch(const int solverNumber,sol
   const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   auto& aderdgCellDescription  = cellInfo._ADERDGCellDescriptions[element];
 
-  if (aderdgCellDescription.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell) {
+  if (aderdgCellDescription.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Leaf) {
     double* solverSolution = static_cast<double*>(aderdgCellDescription.getSolution());
 
 	// Old Debugging information by Vasco. We can probably recycle some of them
@@ -199,7 +197,7 @@ void exahype::plotters::ADERDG2LegendreCSV::plotPatch(
 	dfor(i,order+1) {
 		tarch::la::Vector<DIMENSIONS, double> pos;
 		for (int d=0; d<DIMENSIONS; d++) {
-			pos(d) = offsetOfPatch(d) + kernels::gaussLegendreNodes[order][i(d)] * sizeOfPatch(d);
+			pos(d) = offsetOfPatch(d) + kernels::legendre::nodes[order][i(d)] * sizeOfPatch(d);
 		}
 		
 		_postProcessing->mapQuantities(offsetOfPatch, sizeOfPatch, pos, i,

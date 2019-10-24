@@ -19,14 +19,6 @@ if ! $PYTHON3 -c "import sys; sys.path.append(\"$Toolkit\"); import exahype.tool
   echo "$0: At least one required Python3 module is not available." >&2
   echo "$0: Install the project submodules with ./Submodules/updateSubmodules.sh from ExaHyPE's main directory" >&2
   exit -1
-  # TODO SVEN: your install script won't work, it need to install to Submodules or change the paths in the Configuration files of toolkit, specfiles and codegenerator
-  #echo "$0: At least one required Python3 module is not available." >&2
-  #if echo "$@" | grep -q -- '--interactive'; then
-  #  ./install-dependencies.sh >&2 || { echo "$0: Installing dependencies failed."; exit -1; }
-  #else 
-  #  echo "$0: Call with --interactive to let the toolkit install the dependencies locally and interactively." >&2
-  #  exit -1
-  #fi
 fi
 
 # Run program using "exec", which ensures the proper return value of the shell script

@@ -13,8 +13,6 @@
  
 #include "exahype/mappings/FinaliseMeshRefinement.h"
 
-#include "multiscalelinkedcell/HangingVertexBookkeeper.h"
-
 #include "tarch/multicore/Loop.h"
 
 #include "peano/datatraversal/autotuning/Oracle.h"
@@ -126,7 +124,7 @@ void exahype::mappings::FinaliseMeshRefinement::beginIteration(exahype::State& s
   exahype::mappings::MeshRefinement::IsFirstIteration = true;
 
   #ifdef Parallel
-  // hack to enforce reductions
+  // enforce reductions from worker side
   solverState.setReduceStateAndCell(true);
   #endif
 
@@ -171,8 +169,6 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
         }
       }
     }
-
-    Cell::resetNeighbourMergePerformedFlags(cellInfo,fineGridVertices,fineGridVerticesEnumerator);
   }
 }
 

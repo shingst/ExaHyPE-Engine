@@ -16,6 +16,8 @@ HybridInterfaceDemonstration::DummySolver::DummySolver(
         const double maximumMeshSize,
         const int maximumMeshDepth,
         const int haloCells,
+        const int haloBufferCells,
+        const int limiterBufferCells,
         const int regularisedFineGridLevels,
         const exahype::solvers::Solver::TimeStepping timeStepping,
         const int DMPObservables,
@@ -25,7 +27,7 @@ HybridInterfaceDemonstration::DummySolver::DummySolver(
   exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
       "DummySolver",
     new HybridInterfaceDemonstration::DummySolver_ADERDG(
-      maximumMeshSize,maximumMeshDepth,haloCells,regularisedFineGridLevels,timeStepping,DMPObservables),
+      maximumMeshSize,maximumMeshDepth,haloCells,haloBufferCells,limiterBufferCells,regularisedFineGridLevels,timeStepping,DMPObservables),
     new HybridInterfaceDemonstration::DummySolver_FV(
       maximumMeshSize, timeStepping),
     DMPRelaxationParameter,

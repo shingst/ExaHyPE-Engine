@@ -28,9 +28,12 @@ event-mapping: // -DEC: consider to move the computation of boundary extrapolate
 
 event-mapping: 
   name: LoadBalancing
+
+event-mapping:
+  name: Broadcast
  
 event-mapping:
-  name: BroadcastAndDropNeighbourMessages
+  name: DropNeighbourMessages
   
 event-mapping:
   name: MergeNeighbours
@@ -50,6 +53,9 @@ event-mapping:
   
 // GridUpdate     
 event-mapping:
+  name: UniformRefinement
+
+event-mapping:
   name: MeshRefinement
   
 event-mapping:
@@ -57,6 +63,16 @@ event-mapping:
 
 event-mapping:
   name: AugmentedAMRTreePlot2d
+  
+// Profiling
+event-mapping:
+  name: Empty
+  
+adapter:
+  name: UniformRefinement
+  merge-with-user-defined-mapping: UniformRefinement
+  merge-with-user-defined-mapping: LoadBalancing
+  merge-with-user-defined-mapping: LevelwiseAdjacencyBookkeeping
   
 adapter:
   name: MeshRefinement
@@ -103,9 +119,15 @@ adapter:
 
 // Additional adapters for limiter status spreading and recomputation
 adapter: 
-  name: BroadcastAndDropNeighbourMessages
-  merge-with-user-defined-mapping: BroadcastAndDropNeighbourMessages
+  name: Broadcast
+  merge-with-user-defined-mapping: Broadcast
 
+adapter:
+  name: BroadcastAndDropNeighbourMessages
+  merge-with-user-defined-mapping: Broadcast
+  merge-with-user-defined-mapping: DropNeighbourMessages
+  
+// Additional adapters for limiter status spreading and recomputation
 adapter:
   name: RefinementStatusSpreading
   merge-with-user-defined-mapping: RefinementStatusSpreading
@@ -129,7 +151,14 @@ adapter:
 
 // Additional adapters for 2 phase time stepping
 
+// TODO: Have Correction mapping
+
 adapter:
   name: Correction
   merge-with-user-defined-mapping: MergeNeighbours
   merge-with-user-defined-mapping: UpdateAndReduce
+  
+// Profiling Adapter
+adapter:
+  name: Empty
+  merge-with-user-defined-mapping: Empty

@@ -14,13 +14,10 @@
 #include "FiniteVolumes2UserDefined.h"
 #include "tarch/parallel/Node.h"
 
-#include "kernels/DGMatrices.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "peano/utils/Loop.h"
 
 #include "exahype/solvers/FiniteVolumesSolver.h"
-
-#include "kernels/DGBasisFunctions.h"
-
 
 std::string exahype::plotters::FiniteVolumes2UserDefined::getIdentifier() {
   return "user::defined";
@@ -55,7 +52,7 @@ void exahype::plotters::FiniteVolumes2UserDefined::plotPatch(const int solverNum
   const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
   auto& finiteVolumesCellDescription  = cellInfo._FiniteVolumesCellDescriptions[element];
 
-  if (finiteVolumesCellDescription.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell) {
+  if (finiteVolumesCellDescription.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Leaf) {
     double* solverSolution = static_cast<double*>(finiteVolumesCellDescription.getSolution());
 
     plotPatch(

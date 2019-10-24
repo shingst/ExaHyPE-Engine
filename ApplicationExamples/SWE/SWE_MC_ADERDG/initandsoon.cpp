@@ -18,6 +18,8 @@
 #include "tarch/parallel/Node.h"
 
 #include "peano/peano.h"
+#include "peano/parallel/JoinDataBufferPool.h"
+
 
 #include "exahype/main.h"
 #include "exahype/parser/Parser.h"
@@ -26,8 +28,7 @@
 
 #include "kernels/KernelCalls.h"
 
-#include "kernels/GaussLegendreQuadrature.h"
-#include "kernels/DGMatrices.h"
+#include "kernels/GaussLegendreBasis.h"
 
 #include <vector>
 #include <cstdlib> // getenv, exit
@@ -40,16 +41,18 @@ tarch::logging::Log _log("exahype");
 
 namespace muq{
 
+      bool firstRun=true;
       exahype::parser::Parser parser;
       std::vector<std::string> cmdlineargs;
 
 int init(int argc, char** argv) {
+  firstRun=true;
   //
   //   Parse config file
   // =====================
   //
   std::string progname = argv[0];
-
+  
   if (argc < 2) {
     logError("main()", "Usage: " << progname << " --help");
     return -1;
@@ -110,7 +113,7 @@ int init(int argc, char** argv) {
                "mpi initialisation wasn't successful. Application shut down");
 #endif
     return parallelSetup;
-  }
+ }
 
   int sharedMemorySetup = peano::initSharedMemoryEnvironment();
   if (sharedMemorySetup != 0) {
@@ -234,36 +237,39 @@ int init(int argc, char** argv) {
   }
 
   int run_exahype(){
-
-  exahype::runners::Runner runner(parser, cmdlineargs); 
-  std::cout << "starting first run" << std::endl;
-  int programExitCode = runner.run();
-  assert(programExitCode == 0);
-  std::cout << "done run" << std::endl;
-    return programExitCode;
-  }
+	if(!firstRun){
+		tarch::parallel::NodePool::getInstance().shutdown();
+		tarch::parallel::NodePool::getInstance().init();
+	}
+	exahype::runners::Runner runner(parser, cmdlineargs); 
+	runner.initHeaps();
+	std::cout << "starting first run" << std::endl;
+	int programExitCode = runner.run();
+	assert(programExitCode == 0);
+        firstRun = false;
+	std::cout << "done run 1" << std::endl;
+	runner.shutdownHeaps();
+        peano::parallel::JoinDataBufferPool::getInstance().releaseMessages();
+	//std::cout << "done run 2" << std::endl;
+	//tarch::parallel::NodePool::getInstance().terminate();
+	//std::cout << "done run 3" << std::endl;
+	//tarch::parallel::NodePool::getInstance().restart();
+	//std::cout << "done run 4" << std::endl;
+	return programExitCode;
+}
 
 int finalize(){
-    int programExitCode = 0;
-  if (programExitCode == 0) {
-#ifdef Parallel
-    if (tarch::parallel::Node::getInstance().isGlobalMaster()) {
-      logInfo("main()", "Peano terminates successfully");
-    }
-#else
-    logInfo("main()", "Peano terminates successfully");
-#endif
-  } else {
-    logInfo("main()", "quit with error code " << programExitCode);
-  }
-
   peano::shutdownParallelEnvironment();
   peano::shutdownSharedMemoryEnvironment();
   peano::releaseCachedData();
-
   kernels::finalise();
-
-  return programExitCode;
+  return 0;//programExitCode;
 }
+
+bool setCommunicator(MPI_Comm communicator){
+  return tarch::parallel::Node::getInstance().setCommunicator(communicator);
+}
+
+
 
 }

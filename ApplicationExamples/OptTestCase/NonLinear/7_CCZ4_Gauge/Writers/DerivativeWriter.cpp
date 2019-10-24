@@ -7,8 +7,7 @@
 // ========================
 #include "DerivativeWriter.h"
 
-#include "kernels/DGMatrices.h"
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "kernels/KernelUtils.h"
 
 #include "Fortran/PDE.h" // ADMConstraints()
@@ -51,9 +50,9 @@ void CCZ4::DerivativeWriter::plotPatch(
 	for (int iy = 0; iy < basisSize; iy++) {
 	for (int ix = 0; ix < basisSize; ix++) {
 		// Gauss-Legendre weights from pos argument
-		wx = kernels::gaussLegendreWeights[CCZ4::AbstractCCZ4Solver_ADERDG::Order][ix];
-		wy = kernels::gaussLegendreWeights[CCZ4::AbstractCCZ4Solver_ADERDG::Order][iy];
-		wz = kernels::gaussLegendreWeights[CCZ4::AbstractCCZ4Solver_ADERDG::Order][iz];
+		wx = kernels::legendre::weights[CCZ4::AbstractCCZ4Solver_ADERDG::Order][ix];
+		wy = kernels::legendre::weights[CCZ4::AbstractCCZ4Solver_ADERDG::Order][iy];
+		wz = kernels::legendre::weights[CCZ4::AbstractCCZ4Solver_ADERDG::Order][iz];
 
 		CCZ4Fortran::DeriveADMConstraints(constraints, &u[idx_u(iz,iy,ix,0)], &gradQ[idx_gradQ(iz,iy,ix,0,0)]);
 		constraintReductions.addValue(constraints, scaling*wx*wy*wz);

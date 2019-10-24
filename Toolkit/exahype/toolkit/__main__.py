@@ -12,10 +12,13 @@ def main():
     # import as module
     from toolkit import Controller
     control = Controller()
-    try:
-        control.run()
-    except Exception as e:
-        sys.exit(str(e))
+    if control.debug:
+        control.run() # will print full exception if an error occurs
+    else:
+        try: # will just print the exception message
+            control.run()
+        except Exception as e:
+            sys.exit(str(e))
 
 def memoryUsageResource():
     """

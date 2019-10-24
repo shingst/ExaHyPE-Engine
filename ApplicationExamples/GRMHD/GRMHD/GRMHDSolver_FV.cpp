@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <cstring> // memset
 #include "kernels/KernelUtils.h" // matrix indexing
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 
 #include "exahype/disableOptimization.h" // bugs when limiting is on. whatevers
 

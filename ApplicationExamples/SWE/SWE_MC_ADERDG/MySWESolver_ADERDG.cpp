@@ -11,7 +11,7 @@
 #include "peano/utils/Loop.h"
 #include "kernels/KernelUtils.h"
 
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "readCsv.h"
 #include "bathymetry.h"
 
@@ -48,8 +48,6 @@ void SWE::MySWESolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,c
     a_measurements[3] = {0.1,0.5};
     writeCsv("Input/measurements.csv", a_measurements);*/
         readCsv("Input/parameters.csv", &a);
-        for(int i=0; i < a.size(); i++)
-            std::cout << "aaaaaaaaa " << a[i] << std::endl;
 }
 
 void SWE::MySWESolver_ADERDG::adjustSolution(double* const luh, const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt){
@@ -72,11 +70,10 @@ void SWE::MySWESolver_ADERDG::adjustSolution(double* const luh, const tarch::la:
         for (int i=0; i< num_nodes; i++){
             for (int j=0; j< num_nodes; j++){
 
-                double x  =  (offset_x+dx[0]*kernels::gaussLegendreNodes[basisSize-1][i]);
-                double y  =  (offset_y+dx[1]*kernels::gaussLegendreNodes[basisSize-1][j]);
+                double x  =  (offset_x+dx[0]*kernels::legendre::nodes[basisSize-1][i]);
+                double y  =  (offset_y+dx[1]*kernels::legendre::nodes[basisSize-1][j]);
 
                 double b =  SWE::linearInterpolation(x,y,a);
-                std::cout << "bbbbbbbb " << b << std::endl;
 
                 if(x < 0.5) {
                     luh[id_xyf(i,j,0)] = 2.0 - b; //h

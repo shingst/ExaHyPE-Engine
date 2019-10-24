@@ -116,8 +116,7 @@ void SWE::MySWESolver_FV::flux(const double* const Q,double** const F) {
   g[3] = 0.0;
  
 }
-
-double SWE::MySWESolver_FV::riemannSolver(double* const fL, double* const fR, const double* const qL, const double* const qR, int direction) {
+double SWE::MySWESolver_FV::riemannSolver(double* const fL, double* const fR, const double* const qL, const double* const qR, const double* QL, const double* QR, const double* cellSize, int direction){
     double LL[NumberOfVariables] = {0.0};
     double LR[NumberOfVariables] = {0.0};
 

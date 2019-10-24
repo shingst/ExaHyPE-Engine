@@ -18,7 +18,8 @@
 #include "exahype/State.h"
 
 
- #include "exahype/mappings/BroadcastAndDropNeighbourMessages.h"
+ #include "exahype/mappings/Broadcast.h"
+ #include "exahype/mappings/DropNeighbourMessages.h"
 
 
 
@@ -38,9 +39,11 @@ namespace exahype {
  */
 class exahype::adapters::BroadcastAndDropNeighbourMessages {
   private:
-    typedef mappings::BroadcastAndDropNeighbourMessages Mapping0;
+    typedef mappings::Broadcast Mapping0;
+    typedef mappings::DropNeighbourMessages Mapping1;
 
-     Mapping0  _map2BroadcastAndDropNeighbourMessages;
+     Mapping0  _map2Broadcast;
+     Mapping1  _map2DropNeighbourMessages;
 
 
   public:

@@ -77,11 +77,11 @@ class AbstractModelBaseClass():
         canonicalPath = os.path.realpath(absolutePath)
         
         if not os.path.exists(canonicalPath) or overwrite:
-          with open(canonicalPath, "w") as output:
-              output.write(self.renderAsString(templateName, context))
-          return canonicalPath, context
+            with open(canonicalPath, "w") as output:
+                output.write(self.renderAsString(templateName, context))
+            return canonicalPath, context
         else:
-          return None, context
+            return None, context
     
     
     def renderAsString(self, templateName, context=None):
@@ -94,10 +94,10 @@ class AbstractModelBaseClass():
         template = env.get_template(templateName)
         
         try:
-          return template.render(context)
+            return template.render(context)
         except Exception:
-           pp = pprint.PrettyPrinter(depth=8)
-           print("ERROR: could not render template '%s'" % templateName,file=sys.stderr)
-           print("ERROR: used context:",file=sys.stderr)
-           print(pp.pformat(context),file=sys.stderr)
-           raise
+            pp = pprint.PrettyPrinter(depth=8)
+            print("ERROR: could not render template '%s'" % templateName,file=sys.stderr)
+            print("ERROR: used context:",file=sys.stderr)
+            print(pp.pformat(context),file=sys.stderr)
+            raise

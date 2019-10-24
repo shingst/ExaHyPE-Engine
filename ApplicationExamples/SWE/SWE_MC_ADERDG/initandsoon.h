@@ -20,4 +20,6 @@ namespace muq{
 
     int finalize();
 
+    bool setCommunicator(MPI_Comm comm);
+
 }

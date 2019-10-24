@@ -1,6 +1,7 @@
 #ifndef _EXAHYPE_RECORDS_FINITEVOLUMESCELLDESCRIPTION_H
 #define _EXAHYPE_RECORDS_FINITEVOLUMESCELLDESCRIPTION_H
 
+#include "exahype/util/CopyableAtomic.h"
 #include "peano/utils/Globals.h"
 #include "tarch/compiler/CompilerSpecificSettings.h"
 #include "peano/utils/PeanoOptimisations.h"
@@ -32,11 +33,29 @@ namespace exahype {
  *
  * 		   build date: 09-02-2014 14:40
  *
- * @date   18/12/2018 23:45
+ * @date   26/07/2019 16:21
  */
 class exahype::records::FiniteVolumesCellDescription { 
    
    public:
+      // MANUALLY ADDED
+      /**
+       * Indicates if the last operation was completed for this cell description
+       * and its data can be used for the next operations.
+       *
+       * At the moment, the traversal threads read and reset this flag
+       * and the consumer threads set it.
+       */
+      util::CopyableAtomic<bool> _hasCompletedLastStep{true};
+
+      bool getHasCompletedLastStep() const {
+        return _hasCompletedLastStep.load();
+      }
+
+      void setHasCompletedLastStep(bool state) {
+        _hasCompletedLastStep.store(state);
+      }
+      // MANUALLY ADDED
       
       typedef exahype::records::FiniteVolumesCellDescriptionPacked Packed;
       
@@ -44,12 +63,8 @@ class exahype::records::FiniteVolumesCellDescription {
          Uncompressed = 0, CurrentlyProcessed = 1, Compressed = 2
       };
       
-      enum RefinementEvent {
-         None = 0, ErasingChildrenRequested = 1, ErasingChildren = 2, ChangeChildrenToDescendantsRequested = 3, ChangeChildrenToDescendants = 4, RefiningRequested = 5, Refining = 6, DeaugmentingChildrenRequestedTriggered = 7, DeaugmentingChildrenRequested = 8, DeaugmentingChildren = 9, AugmentingRequested = 10, Augmenting = 11
-      };
-      
       enum Type {
-         Erased = 0, Ancestor = 1, Cell = 2, Descendant = 3
+         Erased = 0, Leaf = 1
       };
       
       struct PersistentRecords {
@@ -59,7 +74,6 @@ class exahype::records::FiniteVolumesCellDescription {
          #else
          tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed;
          #endif
-         bool _hasCompletedLastStep;
          double _timeStepSize;
          double _timeStamp;
          double _previousTimeStepSize;
@@ -99,7 +113,6 @@ class exahype::records::FiniteVolumesCellDescription {
          #endif
          Type _type;
          int _parentIndex;
-         RefinementEvent _refinementEvent;
          /**
           * Generated
           */
@@ -108,7 +121,7 @@ class exahype::records::FiniteVolumesCellDescription {
          /**
           * Generated
           */
-         PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedLastStep, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& extrapolatedSolutionIndex, const int& extrapolatedSolutionAveragesIndex, const int& extrapolatedSolutionCompressedIndex, void* extrapolatedSolution, void* extrapolatedSolutionAverages, void* extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent);
+         PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& extrapolatedSolutionIndex, const int& extrapolatedSolutionAveragesIndex, const int& extrapolatedSolutionCompressedIndex, void* extrapolatedSolution, void* extrapolatedSolutionAverages, void* extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const Type& type, const int& parentIndex);
          
          
          inline int getSolverNumber() const 
@@ -185,26 +198,6 @@ class exahype::records::FiniteVolumesCellDescription {
  #endif 
  {
             _neighbourMergePerformed = (neighbourMergePerformed);
-         }
-         
-         
-         
-         inline bool getHasCompletedLastStep() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-            return _hasCompletedLastStep;
-         }
-         
-         
-         
-         inline void setHasCompletedLastStep(const bool& hasCompletedLastStep) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-            _hasCompletedLastStep = hasCompletedLastStep;
          }
          
          
@@ -905,26 +898,6 @@ class exahype::records::FiniteVolumesCellDescription {
          
          
          
-         inline RefinementEvent getRefinementEvent() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-            return _refinementEvent;
-         }
-         
-         
-         
-         inline void setRefinementEvent(const RefinementEvent& refinementEvent) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-            _refinementEvent = refinementEvent;
-         }
-         
-         
-         
       };
       private: 
          PersistentRecords _persistentRecords;
@@ -943,7 +916,7 @@ class exahype::records::FiniteVolumesCellDescription {
          /**
           * Generated
           */
-         FiniteVolumesCellDescription(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedLastStep, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& extrapolatedSolutionIndex, const int& extrapolatedSolutionAveragesIndex, const int& extrapolatedSolutionCompressedIndex, void* extrapolatedSolution, void* extrapolatedSolutionAverages, void* extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent);
+         FiniteVolumesCellDescription(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& extrapolatedSolutionIndex, const int& extrapolatedSolutionAveragesIndex, const int& extrapolatedSolutionCompressedIndex, void* extrapolatedSolution, void* extrapolatedSolutionAverages, void* extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const Type& type, const int& parentIndex);
          
          /**
           * Generated
@@ -1051,26 +1024,6 @@ class exahype::records::FiniteVolumesCellDescription {
             assertion(elementIndex<DIMENSIONS_TIMES_TWO);
             _persistentRecords._neighbourMergePerformed[elementIndex]= neighbourMergePerformed;
             
-         }
-         
-         
-         
-         inline bool getHasCompletedLastStep() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-            return _persistentRecords._hasCompletedLastStep;
-         }
-         
-         
-         
-         inline void setHasCompletedLastStep(const bool& hasCompletedLastStep) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-            _persistentRecords._hasCompletedLastStep = hasCompletedLastStep;
          }
          
          
@@ -1822,26 +1775,6 @@ class exahype::records::FiniteVolumesCellDescription {
          }
          
          
-         
-         inline RefinementEvent getRefinementEvent() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-            return _persistentRecords._refinementEvent;
-         }
-         
-         
-         
-         inline void setRefinementEvent(const RefinementEvent& refinementEvent) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-            _persistentRecords._refinementEvent = refinementEvent;
-         }
-         
-         
          /**
           * Generated
           */
@@ -1851,16 +1784,6 @@ class exahype::records::FiniteVolumesCellDescription {
           * Generated
           */
          static std::string getCompressionStateMapping();
-         
-         /**
-          * Generated
-          */
-         static std::string toString(const RefinementEvent& param);
-         
-         /**
-          * Generated
-          */
-         static std::string getRefinementEventMapping();
          
          /**
           * Generated
@@ -1942,7 +1865,7 @@ class exahype::records::FiniteVolumesCellDescription {
  *
  * 		   build date: 09-02-2014 14:40
  *
- * @date   18/12/2018 23:45
+ * @date   26/07/2019 16:21
  */
 class exahype::records::FiniteVolumesCellDescriptionPacked { 
    
@@ -1951,8 +1874,6 @@ class exahype::records::FiniteVolumesCellDescriptionPacked {
       typedef exahype::records::FiniteVolumesCellDescription::CompressionState CompressionState;
       
       typedef exahype::records::FiniteVolumesCellDescription::Type Type;
-      
-      typedef exahype::records::FiniteVolumesCellDescription::RefinementEvent RefinementEvent;
       
       struct PersistentRecords {
          int _solverNumber;
@@ -1984,15 +1905,13 @@ class exahype::records::FiniteVolumesCellDescriptionPacked {
          tarch::la::Vector<DIMENSIONS,double> _size;
          Type _type;
          int _parentIndex;
-         RefinementEvent _refinementEvent;
          
          /** mapping of records:
          || Member 	|| startbit 	|| length
-          |  hasCompletedLastStep	| startbit 0	| #bits 1
-          |  compressionState	| startbit 1	| #bits 2
-          |  bytesPerDoFInPreviousSolution	| startbit 3	| #bits 3
-          |  bytesPerDoFInSolution	| startbit 6	| #bits 3
-          |  bytesPerDoFInExtrapolatedSolution	| startbit 9	| #bits 3
+          |  compressionState	| startbit 0	| #bits 2
+          |  bytesPerDoFInPreviousSolution	| startbit 2	| #bits 3
+          |  bytesPerDoFInSolution	| startbit 5	| #bits 3
+          |  bytesPerDoFInExtrapolatedSolution	| startbit 8	| #bits 3
           */
          int _packedRecords0;
          
@@ -2004,7 +1923,7 @@ class exahype::records::FiniteVolumesCellDescriptionPacked {
          /**
           * Generated
           */
-         PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedLastStep, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& extrapolatedSolutionIndex, const int& extrapolatedSolutionAveragesIndex, const int& extrapolatedSolutionCompressedIndex, void* extrapolatedSolution, void* extrapolatedSolutionAverages, void* extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent);
+         PersistentRecords(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& extrapolatedSolutionIndex, const int& extrapolatedSolutionAveragesIndex, const int& extrapolatedSolutionCompressedIndex, void* extrapolatedSolution, void* extrapolatedSolutionAverages, void* extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const Type& type, const int& parentIndex);
          
          
          inline int getSolverNumber() const 
@@ -2081,29 +2000,6 @@ class exahype::records::FiniteVolumesCellDescriptionPacked {
  #endif 
  {
             _neighbourMergePerformed = (neighbourMergePerformed);
-         }
-         
-         
-         
-         inline bool getHasCompletedLastStep() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-            int mask = 1 << (0);
-   int tmp = static_cast<int>(_packedRecords0 & mask);
-   return (tmp != 0);
-         }
-         
-         
-         
-         inline void setHasCompletedLastStep(const bool& hasCompletedLastStep) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-            int mask = 1 << (0);
-   _packedRecords0 = static_cast<int>( hasCompletedLastStep ? (_packedRecords0 | mask) : (_packedRecords0 & ~mask));
          }
          
          
@@ -2554,9 +2450,9 @@ class exahype::records::FiniteVolumesCellDescriptionPacked {
  #endif 
  {
             int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (1));
+   mask = static_cast<int>(mask << (0));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (1));
+   tmp = static_cast<int>(tmp >> (0));
    assertion(( tmp >= 0 &&  tmp <= 2));
    return (CompressionState) tmp;
          }
@@ -2570,9 +2466,9 @@ class exahype::records::FiniteVolumesCellDescriptionPacked {
  {
             assertion((compressionState >= 0 && compressionState <= 2));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (1));
+   mask = static_cast<int>(mask << (0));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(compressionState) << (1));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | static_cast<int>(compressionState) << (0));
          }
          
          
@@ -2583,9 +2479,9 @@ class exahype::records::FiniteVolumesCellDescriptionPacked {
  #endif 
  {
             int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (3));
+   mask = static_cast<int>(mask << (2));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (3));
+   tmp = static_cast<int>(tmp >> (2));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -2600,9 +2496,9 @@ class exahype::records::FiniteVolumesCellDescriptionPacked {
  {
             assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (3));
+   mask = static_cast<int>(mask << (2));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (3));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (2));
          }
          
          
@@ -2613,9 +2509,9 @@ class exahype::records::FiniteVolumesCellDescriptionPacked {
  #endif 
  {
             int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (6));
+   mask = static_cast<int>(mask << (5));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (6));
+   tmp = static_cast<int>(tmp >> (5));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -2630,9 +2526,9 @@ class exahype::records::FiniteVolumesCellDescriptionPacked {
  {
             assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (6));
+   mask = static_cast<int>(mask << (5));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (6));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (5));
          }
          
          
@@ -2643,9 +2539,9 @@ class exahype::records::FiniteVolumesCellDescriptionPacked {
  #endif 
  {
             int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (9));
+   mask = static_cast<int>(mask << (8));
    int tmp = static_cast<int>(_packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (9));
+   tmp = static_cast<int>(tmp >> (8));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -2660,9 +2556,9 @@ class exahype::records::FiniteVolumesCellDescriptionPacked {
  {
             assertion((bytesPerDoFInExtrapolatedSolution >= 1 && bytesPerDoFInExtrapolatedSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (9));
+   mask = static_cast<int>(mask << (8));
    _packedRecords0 = static_cast<int>(_packedRecords0 & ~mask);
-   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedSolution) - 1) << (9));
+   _packedRecords0 = static_cast<int>(_packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedSolution) - 1) << (8));
          }
          
          
@@ -2843,26 +2739,6 @@ class exahype::records::FiniteVolumesCellDescriptionPacked {
          
          
          
-         inline RefinementEvent getRefinementEvent() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-            return _refinementEvent;
-         }
-         
-         
-         
-         inline void setRefinementEvent(const RefinementEvent& refinementEvent) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-            _refinementEvent = refinementEvent;
-         }
-         
-         
-         
       };
       private: 
          PersistentRecords _persistentRecords;
@@ -2881,7 +2757,7 @@ class exahype::records::FiniteVolumesCellDescriptionPacked {
          /**
           * Generated
           */
-         FiniteVolumesCellDescriptionPacked(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const bool& hasCompletedLastStep, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& extrapolatedSolutionIndex, const int& extrapolatedSolutionAveragesIndex, const int& extrapolatedSolutionCompressedIndex, void* extrapolatedSolution, void* extrapolatedSolutionAverages, void* extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const Type& type, const int& parentIndex, const RefinementEvent& refinementEvent);
+         FiniteVolumesCellDescriptionPacked(const int& solverNumber, const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed, const double& timeStepSize, const double& timeStamp, const double& previousTimeStepSize, const double& previousTimeStamp, const int& solutionIndex, const int& solutionAveragesIndex, const int& solutionCompressedIndex, void* solution, void* solutionAverages, void* solutionCompressed, const int& previousSolutionIndex, const int& previousSolutionAveragesIndex, const int& previousSolutionCompressedIndex, void* previousSolution, void* previousSolutionAverages, void* previousSolutionCompressed, const int& extrapolatedSolutionIndex, const int& extrapolatedSolutionAveragesIndex, const int& extrapolatedSolutionCompressedIndex, void* extrapolatedSolution, void* extrapolatedSolutionAverages, void* extrapolatedSolutionCompressed, const CompressionState& compressionState, const int& bytesPerDoFInPreviousSolution, const int& bytesPerDoFInSolution, const int& bytesPerDoFInExtrapolatedSolution, const int& level, const tarch::la::Vector<DIMENSIONS,double>& offset, const tarch::la::Vector<DIMENSIONS,double>& size, const Type& type, const int& parentIndex);
          
          /**
           * Generated
@@ -2989,29 +2865,6 @@ class exahype::records::FiniteVolumesCellDescriptionPacked {
             assertion(elementIndex<DIMENSIONS_TIMES_TWO);
             _persistentRecords._neighbourMergePerformed[elementIndex]= neighbourMergePerformed;
             
-         }
-         
-         
-         
-         inline bool getHasCompletedLastStep() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-            int mask = 1 << (0);
-   int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   return (tmp != 0);
-         }
-         
-         
-         
-         inline void setHasCompletedLastStep(const bool& hasCompletedLastStep) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-            int mask = 1 << (0);
-   _persistentRecords._packedRecords0 = static_cast<int>( hasCompletedLastStep ? (_persistentRecords._packedRecords0 | mask) : (_persistentRecords._packedRecords0 & ~mask));
          }
          
          
@@ -3462,9 +3315,9 @@ class exahype::records::FiniteVolumesCellDescriptionPacked {
  #endif 
  {
             int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (1));
+   mask = static_cast<int>(mask << (0));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (1));
+   tmp = static_cast<int>(tmp >> (0));
    assertion(( tmp >= 0 &&  tmp <= 2));
    return (CompressionState) tmp;
          }
@@ -3478,9 +3331,9 @@ class exahype::records::FiniteVolumesCellDescriptionPacked {
  {
             assertion((compressionState >= 0 && compressionState <= 2));
    int mask =  (1 << (2)) - 1;
-   mask = static_cast<int>(mask << (1));
+   mask = static_cast<int>(mask << (0));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(compressionState) << (1));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | static_cast<int>(compressionState) << (0));
          }
          
          
@@ -3491,9 +3344,9 @@ class exahype::records::FiniteVolumesCellDescriptionPacked {
  #endif 
  {
             int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (3));
+   mask = static_cast<int>(mask << (2));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (3));
+   tmp = static_cast<int>(tmp >> (2));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -3508,9 +3361,9 @@ class exahype::records::FiniteVolumesCellDescriptionPacked {
  {
             assertion((bytesPerDoFInPreviousSolution >= 1 && bytesPerDoFInPreviousSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (3));
+   mask = static_cast<int>(mask << (2));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (3));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInPreviousSolution) - 1) << (2));
          }
          
          
@@ -3521,9 +3374,9 @@ class exahype::records::FiniteVolumesCellDescriptionPacked {
  #endif 
  {
             int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (6));
+   mask = static_cast<int>(mask << (5));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (6));
+   tmp = static_cast<int>(tmp >> (5));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -3538,9 +3391,9 @@ class exahype::records::FiniteVolumesCellDescriptionPacked {
  {
             assertion((bytesPerDoFInSolution >= 1 && bytesPerDoFInSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (6));
+   mask = static_cast<int>(mask << (5));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (6));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInSolution) - 1) << (5));
          }
          
          
@@ -3551,9 +3404,9 @@ class exahype::records::FiniteVolumesCellDescriptionPacked {
  #endif 
  {
             int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (9));
+   mask = static_cast<int>(mask << (8));
    int tmp = static_cast<int>(_persistentRecords._packedRecords0 & mask);
-   tmp = static_cast<int>(tmp >> (9));
+   tmp = static_cast<int>(tmp >> (8));
    tmp = tmp + 1;
    assertion(( tmp >= 1 &&  tmp <= 7));
    return (int) tmp;
@@ -3568,9 +3421,9 @@ class exahype::records::FiniteVolumesCellDescriptionPacked {
  {
             assertion((bytesPerDoFInExtrapolatedSolution >= 1 && bytesPerDoFInExtrapolatedSolution <= 7));
    int mask =  (1 << (3)) - 1;
-   mask = static_cast<int>(mask << (9));
+   mask = static_cast<int>(mask << (8));
    _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 & ~mask);
-   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedSolution) - 1) << (9));
+   _persistentRecords._packedRecords0 = static_cast<int>(_persistentRecords._packedRecords0 | (static_cast<int>(bytesPerDoFInExtrapolatedSolution) - 1) << (8));
          }
          
          
@@ -3802,26 +3655,6 @@ class exahype::records::FiniteVolumesCellDescriptionPacked {
          }
          
          
-         
-         inline RefinementEvent getRefinementEvent() const 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-            return _persistentRecords._refinementEvent;
-         }
-         
-         
-         
-         inline void setRefinementEvent(const RefinementEvent& refinementEvent) 
- #ifdef UseManualInlining
- __attribute__((always_inline))
- #endif 
- {
-            _persistentRecords._refinementEvent = refinementEvent;
-         }
-         
-         
          /**
           * Generated
           */
@@ -3841,16 +3674,6 @@ class exahype::records::FiniteVolumesCellDescriptionPacked {
           * Generated
           */
          static std::string getTypeMapping();
-         
-         /**
-          * Generated
-          */
-         static std::string toString(const RefinementEvent& param);
-         
-         /**
-          * Generated
-          */
-         static std::string getRefinementEventMapping();
          
          /**
           * Generated

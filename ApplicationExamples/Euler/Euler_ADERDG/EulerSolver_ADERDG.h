@@ -78,7 +78,7 @@ private:
   static tarch::logging::Log _log;
 
 public:
-  EulerSolver_ADERDG(const double maximumMeshSize,int maximumAdaptiveMeshDepth,const int haloCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables);
+  EulerSolver_ADERDG(const double maximumMeshSize,int maximumAdaptiveMeshDepth,const int haloCells,const int haloBufferCells,const int limiterBufferCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables);
 
   /**
    * Initialise the solver.

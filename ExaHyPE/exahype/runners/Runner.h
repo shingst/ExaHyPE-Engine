@@ -205,18 +205,6 @@ class exahype::runners::Runner {
   void initHPCEnvironment();
 
   /**
-   * Initialise the heaps for storing and exchanging
-   * degrees of freedom, solver metadata, and solver
-   * patches.
-   */
-  void initHeaps();
-
-  /**
-   * Shutdown all heaps.
-   */
-  void shutdownHeaps();
-
-  /**
    * Print minimum of current solver time stamps and time step sizes.
    *
    * The solver time stamp and step sizes are computed as
@@ -275,6 +263,31 @@ class exahype::runners::Runner {
    * @param plot       Do plot before the corrector is applied
    */
   void runOneTimeStepWithTwoSeparateAlgorithmicSteps(
+      exahype::repositories::Repository& repository, bool plot);
+
+  /**
+   * Same as the first one but Riemann solves are not done
+   * via the vertices but via the cells. To prevent
+   * data races, the Riemann solves are thus done twice
+   * and the face integral contribution is directly added to the cell solution
+   * (or inserted into a ghost layer if the FV method is used.)
+   *
+   * Background Jobs
+   * ---------------
+   *
+   * Each cells looks up its 2*d face neighbours.
+   * If the STP jobs of the two cells adjacent to a face is
+   * completed, Riemann solve plus faceIntegral are performed.
+   * Otherwise, the same check is performed on the next face.
+   * If the current cell or all neighbours have not completed their
+   * STP computation yet, the current thread will process a bunch
+   * of STP jobs itself before checking the faces.
+   * In the meantime, there is a chance that the background job
+   * consumer threads have completed the critical STP jobs.
+   *
+   * @param plot Do plot before the corrector is applied
+   */
+  void runOneTimeStepWithTwoSeparateAlgorithmicStepsDoRiemannSolvesTwice(
       exahype::repositories::Repository& repository, bool plot);
 
   /**
@@ -453,6 +466,18 @@ class exahype::runners::Runner {
  public:
   explicit Runner(exahype::parser::Parser& parser, std::vector<std::string>& cmdlineargs);
   virtual ~Runner();
+
+  /**
+   * Initialise the heaps for storing and exchanging
+   * degrees of freedom, solver metadata, and solver
+   * patches.
+   */
+  static void initHeaps();
+
+  /**
+   * Shutdown all heaps.
+   */
+  static void shutdownHeaps();
 
   // Disallow copy and assignment
   Runner(const Runner& other) = delete;

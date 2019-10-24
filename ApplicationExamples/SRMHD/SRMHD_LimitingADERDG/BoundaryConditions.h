@@ -9,7 +9,7 @@
 
 #include <memory>
 #include <cstring>
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "kernels/KernelUtils.h" // matrix indexing
 
 #include "InitialData.h"
@@ -70,7 +70,7 @@ inline void BoundaryExact(
 // instead, for the time being, we do it only for AlfenWave:
 
 // We could easily do this in Fortran, but this would require that
-// kernels::gaussLegendreWeights and kernels::gaussLegendreNodes
+// kernels::legendre::weights and kernels::legendre::nodes
 // can be accessed from Fortran.
 inline void BoundaryAlfenWave(
 	const double* const x, const double* const t, const double* const dt,
@@ -109,8 +109,8 @@ inline void BoundaryAlfenWave(
 
   // Integrate solution in gauss points (Qgp) in time
   for(int i=0; i < basisSize; i++)  { // i == time
-     const double weight = kernels::gaussLegendreWeights[order][i];
-     const double xi = kernels::gaussLegendreNodes[order][i];
+     const double weight = kernels::legendre::weights[order][i];
+     const double xi = kernels::legendre::nodes[order][i];
      double ti = t[0] + xi * dt[0];
 
      alfenwave_(x, Qgp, &ti);

@@ -18,10 +18,8 @@
 #include "tarch/la/Scalar.h"
 #include "tarch/la/ScalarOperations.h"
 
-#include "kernels/GaussLegendreQuadrature.h"
-#include "kernels/DGMatrices.h"
-
 #include <fstream>
+#include "kernels/GaussLegendreBasis.h"
 
 using std::endl;
 using std::cout;

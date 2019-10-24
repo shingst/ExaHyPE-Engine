@@ -29,7 +29,7 @@ class EulerADERDG::MyEulerSolver_ADERDG : public EulerADERDG::AbstractMyEulerSol
      */
     static tarch::logging::Log _log;
   public:
-    MyEulerSolver_ADERDG(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables);
+    MyEulerSolver_ADERDG(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int haloBufferCells,const int limiterBufferCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables);
 
     /**
      * Initialise the solver.

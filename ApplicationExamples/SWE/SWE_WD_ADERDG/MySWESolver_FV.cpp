@@ -33,6 +33,7 @@ void SWE::MySWESolver_FV::adjustSolution(const double* const x,const double t,co
   }
   else{
     if(Q[0] < epsilon_FV){
+      Q[0] = std::max(0.0,Q[0]);
       Q[1] = 0;
       Q[2] = 0;
     }
@@ -104,7 +105,7 @@ void SWE::MySWESolver_FV::flux(const double* const Q,double** const F) {
   g[3] = 0.0;
 }
 
-double SWE::MySWESolver_FV::riemannSolver(double* const fL, double* const fR, const double* const qL, const double* const qR, int direction) {
+double SWE::MySWESolver_FV::riemannSolver(double* const fL, double* const fR, const double* const qL, const double* const qR, const double* const gradL, const double* const gradR, const double* csize, int direction) {
     //std::cout << qL[0] << ", " << qR[0] << std::endl;
   double LL[NumberOfVariables] = {0.0};
   double LR[NumberOfVariables] = {0.0};
@@ -144,7 +145,6 @@ double SWE::MySWESolver_FV::riemannSolver(double* const fL, double* const fR, co
   double djump[NumberOfVariables] = {0.0};
 
   djump[direction + 1] = 0.5*grav_FV*hRoe*Deta;
-
 
   flux[0] = 0.5 * (FL[direction][0] + FR[direction][0]) - 0.5*smax*Deta;
   for (int i = 0; i < NumberOfVariables; i++){

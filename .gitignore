@@ -2,6 +2,9 @@
 *_generated.cpp
 cfiles.mk
 buildinfo.h
+Demonstrators/**/kernels
+TestCases/**/kernels
+ApplicationExamples/**/kernels
 
 # Any kind of log files created by some editors
 # (swap files or temporary files)

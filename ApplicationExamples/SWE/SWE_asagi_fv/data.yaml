@@ -9,7 +9,7 @@ components:
   !Switch
   [b]: 
     !ASAGI
-    file: data/tohoku_gebco_ucsb3_500m_hawaii_bath.nc
+    file: tohoku_2011/tohoku_gebco_ucsb3_2000m_hawaii_bath.nc
     parameters: [b]
     var: z
     components:
@@ -27,7 +27,7 @@ components:
           y: [-399750.0, 399750.0]
         components:
           !ASAGI
-          file: data/tohoku_gebco_ucsb3_500m_hawaii_displ.nc
+          file: tohoku_2011/tohoku_gebco_ucsb3_2000m_hawaii_displ.nc
           parameters: [d]
           var: z
           components:

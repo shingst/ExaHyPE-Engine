@@ -9,7 +9,7 @@
 
 #include <cstring> // memset
 #include "kernels/KernelUtils.h" // matrix indexing
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 
 tarch::logging::Log GPR::GPRSolver_ADERDG::_log( "GPR::GPRSolver_ADERDG" );
 
@@ -43,8 +43,8 @@ void GPR::GPRSolver_ADERDG::boundaryValues(const double* const x,const double t,
   for(int dd=0; dd<nDim; dd++) F[dd] = Fs[dd];
   
   for(int i=0; i < basisSize; i++)  { // i == time
-     const double weight = kernels::gaussLegendreWeights[order][i];
-     const double xi = kernels::gaussLegendreNodes[order][i];
+     const double weight = kernels::legendre::weights[order][i];
+     const double xi = kernels::legendre::nodes[order][i];
      double ti = t + xi * dt;
 
      initialdata_(x, &ti, Qgp);

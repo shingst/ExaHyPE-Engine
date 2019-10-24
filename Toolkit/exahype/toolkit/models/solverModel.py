@@ -24,7 +24,7 @@
 import copy
 
 from .abstractModelBaseClass import AbstractModelBaseClass
-from .codegeneratorModel import CodegeneratorModel
+from .kernelgeneratorModel import KernelgeneratorModel
 
 
 class SolverModel(AbstractModelBaseClass):
@@ -32,31 +32,34 @@ class SolverModel(AbstractModelBaseClass):
 
     def generateADERDGSolverFiles(self):
         solverTemplates = {
-            "user"    : [ (self.context["solver"]+".h"   , "solvers/MinimalADERDGSolverHeader.template"),
-                          (self.context["solver"]+".cpp" , "solvers/EmptyADERDGSolverImplementation.template") ],
-            "generic" : [ (self.context["solver"]+".h"   , "solvers/ADERDGSolverHeader.template"),
-                          (self.context["solver"]+".cpp" , "solvers/ADERDGSolverInCUserCode.template") ],
+            "user"      : [ (self.context["solver"]+".h"   , "solvers/MinimalADERDGSolverHeader.template"),
+                            (self.context["solver"]+".cpp" , "solvers/EmptyADERDGSolverImplementation.template") ],
+            "generic"   : [ (self.context["solver"]+".h"   , "solvers/ADERDGSolverHeader.template"),
+                            (self.context["solver"]+".cpp" , "solvers/ADERDGSolverInCUserCode.template") ],
+            # optimised use the same as generic # TODO JMG change
+            "optimised" : [ (self.context["solver"]+".h"   , "solvers/ADERDGSolverHeader.template"),
+                            (self.context["solver"]+".cpp" , "solvers/ADERDGSolverInCUserCode.template") ],
         }
         solverTemplates["optimised"] = solverTemplates["generic"]
         
         abstractSolverTemplates  = { 
-            "user"      :  [],
-            "generic"   :  [ (self.context["abstractSolver"]+".cpp" , "solvers/AbstractGenericADERDGSolverImplementation.template"),
-                             (self.context["abstractSolver"]+".h"   , "solvers/AbstractGenericADERDGSolverHeader.template") ],
-            "optimised" :  [ (self.context["abstractSolver"]+".cpp" , "solvers/AbstractOptimisedADERDGSolverImplementation.template"),
-                             (self.context["abstractSolver"]+".h"   , "solvers/AbstractOptimisedADERDGSolverHeader.template") ],
+            "user"      : [],
+            "generic"   : [ (self.context["abstractSolver"]+".cpp" , "solvers/AbstractGenericADERDGSolverImplementation.template"),
+                            (self.context["abstractSolver"]+".h"   , "solvers/AbstractGenericADERDGSolverHeader.template") ],
+            "optimised" : [ (self.context["abstractSolver"]+".cpp" , "solvers/AbstractOptimisedADERDGSolverImplementation.template"),
+                            (self.context["abstractSolver"]+".h"   , "solvers/AbstractOptimisedADERDGSolverHeader.template") ],
         }
         
         implementation = self.context["implementation"]
         
         paths = [] # path is None if nothing was generated
         if implementation == "optimised":
-            codegenModel = CodegeneratorModel()
-            _ , self.context["codegeneratorContext"] = codegenModel.generateCode(self.context) #call codegenerator and store context used
+            kernelgenModel = KernelgeneratorModel()
+            _ , self.context["kernelgeneratorContext"] = kernelgenModel.generateCode(self.context) #call kernelgenerator and store context used
         for filePath,template in solverTemplates.get(implementation,[]):
-          paths.append(self.render(template,filePath,overwrite=False)[0])
+            paths.append(self.render(template,filePath,overwrite=False)[0])
         for filePath,template in abstractSolverTemplates.get(implementation,[]):
-          paths.append(self.render(template,filePath)[0])
+            paths.append(self.render(template,filePath)[0])
         
         if implementation != "user":
             paths.append(self.render("variables/VariablesHeader.template",self.context["solver"]+"_Variables.h")[0])
@@ -66,28 +69,32 @@ class SolverModel(AbstractModelBaseClass):
 
     def generateFiniteVolumesSolverFiles(self):
         solverTemplates = {
-            "user"    : [ (self.context["solver"]+".h"   , "solvers/MinimalFiniteVolumesSolverHeader.template"),
+            "user"      : [ (self.context["solver"]+".h"   , "solvers/MinimalFiniteVolumesSolverHeader.template"),
                           (self.context["solver"]+".cpp" , "solvers/EmptyFiniteVolumesSolverImplementation.template") ],
-            "generic" : [ (self.context["solver"]+".h"   , "solvers/GenericFiniteVolumesSolverHeader.template"),
+            "generic"   : [ (self.context["solver"]+".h"   , "solvers/GenericFiniteVolumesSolverHeader.template"),
+                          (self.context["solver"]+".cpp" , "solvers/GenericFiniteVolumesSolverInCUserCode.template") ],
+            # optimised use the same as generic # TODO JMG change
+            "optimised" : [ (self.context["solver"]+".h"   , "solvers/GenericFiniteVolumesSolverHeader.template"),
                           (self.context["solver"]+".cpp" , "solvers/GenericFiniteVolumesSolverInCUserCode.template") ],
         }
         
         abstractSolverTemplates  = { 
-            "generic"   :  [ (self.context["abstractSolver"]+".cpp" , "solvers/AbstractGenericFiniteVolumesSolverImplementation.template"),
-                             (self.context["abstractSolver"]+".h"   , "solvers/AbstractGenericFiniteVolumesSolverHeader.template") ]
+            "generic"   : [ (self.context["abstractSolver"]+".cpp" , "solvers/AbstractGenericFiniteVolumesSolverImplementation.template"),
+                             (self.context["abstractSolver"]+".h"   , "solvers/AbstractGenericFiniteVolumesSolverHeader.template") ],
+            "optimised" : [ (self.context["abstractSolver"]+".cpp" , "solvers/AbstractOptimisedFiniteVolumesSolverImplementation.template"),
+                             (self.context["abstractSolver"]+".h"   , "solvers/AbstractOptimisedFiniteVolumesSolverHeader.template") ],
         }
        
         implementation = self.context["implementation"]
         
-        if implementation=="optimised": # TODO
-            print("ERROR: optimised FV kernels not available yet.",file=sys.stderr)
-            raise
-            
         paths = [] # path is None if nothing was generated
+        if implementation=="optimised":
+            kernelgenModel = KernelgeneratorModel()
+            _ , self.context["kernelgeneratorContext"] = kernelgenModel.generateCode(self.context) #call kernelgenerator and store context used
         for filePath,template in solverTemplates.get(implementation,[]):
-          paths.append(self.render(template,filePath,overwrite=False)[0])
+            paths.append(self.render(template,filePath,overwrite=False)[0])
         for filePath,template in abstractSolverTemplates.get(implementation,[]):
-          paths.append(self.render(template,filePath)[0])
+            paths.append(self.render(template,filePath)[0])
         
         if implementation != "user":
             paths.append(self.render("variables/VariablesHeader.template",self.context["solver"]+"_Variables.h")[0])
@@ -111,8 +118,11 @@ class SolverModel(AbstractModelBaseClass):
             raise
         
         paths = [] # path is None if nothing was generated
+        if implementation == "optimised":
+            kernelgenModel = KernelgeneratorModel()
+            _ , self.context["kernelgeneratorContext"] = kernelgenModel.generateCode(self.context) #call kernelgenerator and store context used
         for filePath,template in abstractSolverTemplates.get(implementation,[]):
-          paths.append(self.render(template,filePath)[0])
+            paths.append(self.render(template,filePath)[0])
         
         return paths, self.context
 
@@ -123,5 +133,4 @@ class SolverModel(AbstractModelBaseClass):
           "Finite-Volumes"   : self.generateFiniteVolumesSolverFiles,
           "Limiting-ADER-DG" : self.generateLimitingADERDGSolverFiles
         }
-       
         return generators[self.context["solverType"]]() # (paths, context)

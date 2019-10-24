@@ -20,7 +20,7 @@
 
 #include "exahype/plotters/ascii/CSVWriter.h"
 
-#include "kernels/DGMatrices.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "kernels/KernelUtils.h" // index functions
 #include "peano/utils/Loop.h"
 
@@ -160,7 +160,7 @@ void exahype::plotters::Patch2CSV::plotPatch(const int solverNumber,solvers::Sol
 		case exahype::solvers::Solver::Type::ADERDG: { // scope for variables
 			data.element = cellInfo.indexOfADERDGCellDescription(solverNumber);
 			auto& solverPatch  = cellInfo._ADERDGCellDescriptions[data.element];
-			if(solverPatch.getType()!=exahype::solvers::ADERDGSolver::CellDescription::Type::Cell)
+			if(solverPatch.getType()!=exahype::solvers::ADERDGSolver::CellDescription::Type::Leaf)
 				return; // plot only cells
 			//double* solution = static_cast<double*>(solverPatch.getSolution());
 			data.timeStamp = solverPatch.getTimeStamp();
@@ -187,7 +187,7 @@ void exahype::plotters::Patch2CSV::plotPatch(const int solverNumber,solvers::Sol
 		case exahype::solvers::Solver::Type::FiniteVolumes: {
 			data.element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
 			auto& solverPatch  = cellInfo._FiniteVolumesCellDescriptions[data.element];
-			if(solverPatch.getType()!=exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell)
+			if(solverPatch.getType()!=exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Leaf)
 				return; // plot only cells
 			// double* solution = static_cast<double*>(solverPatch.getSolution());
 			data.timeStamp = solverPatch.getTimeStamp();

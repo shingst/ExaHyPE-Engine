@@ -67,7 +67,7 @@
       "type" : "object", 
       "scope" : "compile-time",
       "used-by" : "toolkit",
-      "required" : [ "output_directory", "peano_kernel_path", "exahype_path" ],
+      "required" : [ "output_directory" ],
       "additionalProperties" : false,
       "properties" : {
         "output_directory" : {
@@ -145,7 +145,10 @@
           "title" : "The algorithmic phase we want to profile.", 
           "scope" : "run-time",
           "default": "whole_code",
-          "enum" : [ "whole_code", "neighbour_merge", "predictor", "update" ]
+          "enum" : [ "whole_code", "neighbour_merge", "predictor", "update", 
+                      "empty",
+                      "empty_enter_cell",  "empty_leave_cell",  "empty_touch_first",  "empty_touch_first_leave_cell",  
+                      "empty_enter_cell_reduce",  "empty_leave_cell_reduce",  "empty_touch_first_reduce",  "empty_touch_first_leave_cell_reduce" ]
         },
         "measure_cell_processing_times" : {
           "type" : "boolean", 
@@ -262,24 +265,25 @@
           "exclusiveMinimum" : false,
           "default": 400
         },
-        "outside_cells" : {
-          "type" : "integer", 
-          "title" : "Place a certain number of bounding box cells outside of the domain (all coordinate directions). If the number is odd, one less cells is placed outside on the 'left' side than on the 'right side'", 
-          "default" : 2,
-          "minimum" : 0,
-          "exclusiveMinimum" : false
-        },
         "outside_cells_left" : {
           "type" : "integer", 
-          "title" : "Number of outside cells to be placed on the 'left' side.", 
+          "title" : "Number of outside cells to be placed 'left' to the domain, per direction.", 
           "default" : 1,
           "minimum" : 0,
           "exclusiveMinimum" : false
         },
-        "one_third_of_cells_outside" : {
-          "type" : "boolean", 
-          "title" : "Places one third of the bounding box cells per coordinate direction (plus 2 cells) outside of the domain. This way we can put 2^d ranks on the coarsest grid (cubic domains). This flag overrules the outside_cells and outside_cells_left parameters.", 
-          "default" : false
+        "outside_cells_right" : {
+          "type" : "integer", 
+          "title" : "Number of outside cells to be placed 'right' to the domain, per direction.", 
+          "default" : 1,
+          "minimum" : 0,
+          "exclusiveMinimum" : false
+        },
+        "ranks_per_dimension" : {
+          "type" : "integer", 
+          "title" : "The maximum ranks per dimension on the coarse grid. With non-cubic domains, less ranks may be used per some directions.", 
+          "minimum" : 0,
+          "exclusiveMinimum" : true
         }
       }
     }, 
@@ -331,7 +335,7 @@
           "title" : "Maximum number of background jobs a consumer grabs from the queue in a single rush (default: maximum (signed) integer number)", 
           "minimum" : 1,
           "exclusiveMinimum" : false,
-          "default" : 2147483647
+          "default" : 2
         },
         "autotuning_strategy" : {
           "type" : "string", 
@@ -404,7 +408,7 @@
           "type" : "string", 
           "title" : "Determines ranks with too much load",
           "enum" : ["hotspot","greedy_naive","greedy_regular"],
-          "default" : "fair",
+          "default" : "hotspot",
           "old_format" : [
             { "token_after" : "configure" },
             { "filter_token" : ["hotspot", "greedy-naive", "greedy-regular"] }
@@ -475,7 +479,7 @@
         "fuse_algorithmic_steps" : {
           "type" : "string", 
           "default" : "none",
-          "enum" : ["none","most","all"],
+          "enum" : ["none","most","most_do_riemann_twice","all"],
           "old_format" : { "token_after" : "fuse-algorithmic-steps" }
         }, 
         "fuse_algorithmic_steps_rerun_factor" : {
@@ -492,23 +496,23 @@
         "spawn_predictor_as_background_thread" : {
           "type" : "boolean", 
           "title" : "Whether to spawn the predictor or the first and intermediate fused time steps as background jobs.",
-          "default" : false,
+          "default" : true,
           "old_format" : { "token_after" : "spawn-predictor-as-background-thread" }
         },
         "spawn_update_as_background_thread" : {
           "type" : "boolean", 
-          "title" : "Wether to spawn the update or the last fused time step in a batch as a background job",
-          "default" : false
+          "title" : "Whether to spawn the update or the last fused time step in a batch as a background job",
+          "default" : true
         },
         "spawn_prolongation_as_background_thread" : {
           "type" : "boolean", 
-          "title" : "Wether to spawn the face data prolongation as a background thread, or so.",
+          "title" : "Whether to spawn the face data prolongation as a background thread, or so.",
           "default" : false
         },
         "spawn_amr_background_threads" : {
           "type" : "boolean", 
-          "title" : "Wether to spawn the predictor as a background thread, or so.",
-          "default" : false,
+          "title" : "Whether to spawn the predictor as a background thread, or so.",
+          "default" : true,
           "old_format" : { "token_after" : "spawn-amr-background-threads" }
         }, 
         "spawn_neighbour_merge_as_thread" : {
@@ -586,7 +590,7 @@
         "dependencies" : {
           "patch_size" : {
             "properties" : {
-              "type" : { "enum" : ["Finite-Volumes"] }
+              "type" : { "enum" : ["Finite-Volumes","Limiting-ADER-DG"] }
             }
           },
           "order" : {
@@ -643,7 +647,7 @@
               },
               "adjust_solution" : {
                 "type" : "string",
-                "title" : "Wether to adjust solutions per patch (DG cell / FV patch) or per point (DG node, FV subcell) )",
+                "title" : "Whether to adjust solutions per patch (DG cell / FV patch) or per point (DG node, FV subcell) )",
                 "enum" : ["patchwise", "pointwise"],
                 "default" : "pointwise"
               },
@@ -652,6 +656,11 @@
                 "title" : "Where to allocate storage in the solver kernel interface. Heap known to be safer for large PDEs",
                 "enum" : ["stack","heap"],
                 "default" : "stack"
+              },
+              "transform_riemann_data" : {
+                "type" : "boolean",
+                "title" : "Pre- and post-process Riemann inputs and solution.",
+                "default" : false
               },
               "space_time_predictor" : {
                 "type" : "object",
@@ -709,7 +718,7 @@
               },
               "language" : {
                 "type" : "string", 
-                "title" : "The walking dead",
+                "title" : "Language the kernels are implemented in.",
                 "enum" : ["C","Fortran"],
                 "default" : "C"
               }, 
@@ -734,13 +743,13 @@
             "properties" : {
               "implementation" : {
                 "type" : "string",
-                "title" : "Use generic kernels, or implement your own kernels",
-                "enum" : ["generic", "user" ],
+                "title" : "Use generic or optimised kernels, or implement your own kernels",
+                "enum" : ["generic", "optimised", "user" ],
                 "default" : "generic"
               },
               "adjust_solution" : {
                 "type" : "string",
-                "title" : "Wether to adjust solutions per patch (FV patch) or per point (FV subcell) )",
+                "title" : "Whether to adjust solutions per patch (FV patch) or per point (FV subcell) )",
                 "enum" : ["patchwise", "pointwise"],
                 "default" : "pointwise"
               },
@@ -761,7 +770,7 @@
               },
               "language" : {
                 "type" : "string", 
-                "title" : "The walking dead",
+                "title" : "Language the kernels are implemented in.",
                 "enum" : ["C","Fortran"],
                 "default" : "C"
               }, 
@@ -776,6 +785,14 @@
                 "title" : "Slope/Flux limiter for high order FV (not applicable with godunov scheme)",
                 "enum" : ["minmod","koren","superbee","vanalbada","mclim"],
                 "default" : "minmod"
+              },
+              "optimised_terms" : {
+                "type" : "array",
+                "title" : "Only optimised kernels: For which PDE terms should be code generated",
+                "items" : {
+                  "type" : "string",
+                  "enum" : ["fusedsource"]
+                }
               }
             }
           }, 
@@ -831,7 +848,9 @@
             "type" : "number", 
             "title" : "Minimum size of finest cell in the overall grid",
             "scope" : "run-time",
-            "old_format" : { "token_after" : "maximum-mesh-size" }
+            "old_format" : { "token_after" : "maximum-mesh-size" },
+            "minimum" : 0.0,
+            "exclusiveMinimum" : true
           },
           "maximum_mesh_depth" : {
             "type" : "integer", 
@@ -842,26 +861,54 @@
           "order" : {
             "type" : "integer", 
             "title" : "Approximation order of the scheme",
-            "$comment" : "With pure FV, this value is ignored. With Limiter, this value determines the patch_size",
+            "$comment" : "With pure FV, this value is ignored. With Limiter, this value may determine the patch_size",
             "scope" : "compile-time",
             "old_format" : { "token_after" : "order" }
           }, 
           "patch_size" : {
-            "type" : "integer", 
-            "title" : "Number of subcells per coordinate direction (no ghost)",
-            "$comment" : "With pure DG, this value is ignored. With Limiter, this value is determined by the order",
-            "scope" : "compile-time"
+            "oneOf" : [
+              { 
+                "type" : "integer", 
+                "title" : "Number of subcells per coordinate direction per Finite-Volumes patch (ghost cells are excluded).",
+                "$comment" : "With pure ADER-DG, this value is ignored.",
+                "scope" : "compile-time",
+                "minimum" : 1,
+                "exclusiveMinimum" : false    
+              },
+              { 
+                "type" : "string",
+                "title" : "Automatically choose the patch size as 2*order+1 (default) or as the maximum possible patch size (max), which might be up to three times larger than the 'original' variant's patch size.",
+                "enum" : ["default", "max" ],
+                "$comment" : "With pure Finite-Volumes, this results in an error during the code generation.",
+                "default" : "max"
+              }
+            ]
           },
           "cfl" : {
             "type" : "number",
-            "title" : "Override the CFL number used. By default 0.9",
+            "title" : "Override the CFL safety factor (default: 0.9)",
             "scope" : "compile-time",
-            "default" : 0.9
+            "default" : 0.9,
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "exclusiveMinimum": true,
+            "exclusiveMaximum": false
           },
           "halo_cells" : {
             "type" : "integer", 
             "title" : "Number of halo cells around finest grid cell which requests further refinement or wants to be kept.",
-            "scope" : "run-time"
+            "scope" : "run-time",
+            "default": 0,
+            "minimum": 0,
+            "exclusiveMinimum": false
+          },
+          "halo_buffer_cells" : {
+            "type" : "integer", 
+            "title" : "Additional halo cells that are created during the mesh refinement iterations but it is not ensured these cells exist during the mesh refinement iterations.",
+            "scope" : "run-time",
+            "default": 0,
+            "minimum": 0,
+            "exclusiveMinimum": false
           },
           "regularised_fine_grid_levels" : {
             "type" : "integer", 
@@ -899,7 +946,15 @@
                 "title" : "The discrete maximum principle relaxation parameter (only Limiting-ADER-DG solver)",
                 "scope" : "run-time",
                 "default" : 1e-4
-              }
+              },
+              "limiter_buffer_cells" : {
+                "type" : "integer", 
+                "title" : "Number of cells around a troubled cell that we additionally flag as FV-to-DG projection cells. The layers of DG-to-FV cells are increased the same way. Note that this will enlarge the limiter refinement stencil.",
+                "scope" : "run-time",
+                "default": 1,
+                "minimum": 1,
+                "exclusiveMinimum": false
+              }    
             }
           },
           "time_stepping" : {

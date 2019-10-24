@@ -69,6 +69,7 @@ class exahype::repositories::Repository {
     /**
      * Switch to another event handle.
      */
+    virtual void switchToUniformRefinement() = 0;    
     virtual void switchToMeshRefinement() = 0;    
     virtual void switchToMeshRefinementAndPlotTree() = 0;    
     virtual void switchToFinaliseMeshRefinement() = 0;    
@@ -76,6 +77,7 @@ class exahype::repositories::Repository {
     virtual void switchToInitialPrediction() = 0;    
     virtual void switchToFusedTimeStep() = 0;    
     virtual void switchToPredictionRerun() = 0;    
+    virtual void switchToBroadcast() = 0;    
     virtual void switchToBroadcastAndDropNeighbourMessages() = 0;    
     virtual void switchToRefinementStatusSpreading() = 0;    
     virtual void switchToPredictionOrLocalRecomputation() = 0;    
@@ -83,7 +85,9 @@ class exahype::repositories::Repository {
     virtual void switchToUpdateAndReduce() = 0;    
     virtual void switchToPrediction() = 0;    
     virtual void switchToCorrection() = 0;    
+    virtual void switchToEmpty() = 0;    
 
+    virtual bool isActiveAdapterUniformRefinement() const = 0;
     virtual bool isActiveAdapterMeshRefinement() const = 0;
     virtual bool isActiveAdapterMeshRefinementAndPlotTree() const = 0;
     virtual bool isActiveAdapterFinaliseMeshRefinement() const = 0;
@@ -91,6 +95,7 @@ class exahype::repositories::Repository {
     virtual bool isActiveAdapterInitialPrediction() const = 0;
     virtual bool isActiveAdapterFusedTimeStep() const = 0;
     virtual bool isActiveAdapterPredictionRerun() const = 0;
+    virtual bool isActiveAdapterBroadcast() const = 0;
     virtual bool isActiveAdapterBroadcastAndDropNeighbourMessages() const = 0;
     virtual bool isActiveAdapterRefinementStatusSpreading() const = 0;
     virtual bool isActiveAdapterPredictionOrLocalRecomputation() const = 0;
@@ -98,6 +103,7 @@ class exahype::repositories::Repository {
     virtual bool isActiveAdapterUpdateAndReduce() const = 0;
     virtual bool isActiveAdapterPrediction() const = 0;
     virtual bool isActiveAdapterCorrection() const = 0;
+    virtual bool isActiveAdapterEmpty() const = 0;
 
 
     /**

@@ -10,7 +10,7 @@
  * Released under the BSD 3 Open Source License.
  * For the full license text, see LICENSE.txt
  **/
- 
+
 #ifndef _EXAHYPE_STATE_H_
 #define _EXAHYPE_STATE_H_
 
@@ -45,11 +45,17 @@ namespace exahype {
  * the needs of your application. We do not recommend to remove anything!
  */
 class exahype::State : public peano::grid::State<exahype::records::State> {
- private:
+private:
   static tarch::logging::Log _log;
 
   static int CurrentBatchIteration;
   static int NumberOfBatchIterations;
+
+  /**
+   * Flag indicating if one solver requested a local recomputation.
+   * Is initialised in beginIteration(...).
+   */
+  static bool OneSolverRequestedLocalRecomputation;
 
   typedef class peano::grid::State<exahype::records::State> Base;
 
@@ -71,7 +77,28 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    * @param currentBatchIteration   the current batch iteration
    * @param numberOfBatchIterations the total number of batch iterations.
    */
-  static void kickOffIteration(exahype::records::RepositoryState::Action action,const int currentBatchIteration,const int numberOfIterations);
+  static void kickOffIteration(const exahype::records::RepositoryState::Action& action,const int currentBatchIteration,const int numberOfIterations);
+
+
+  /**
+   * @return if the adapter expects that start and end of synchronous heap communication are started manually.
+   *
+   * All other adapters and their mappings let Peano control the communication.
+   *
+   * @param action                           indicates the current algorithmic phase (Prediction, FusedTimeStep, ...)
+   * @param predictionFusedTimeStepCondition a condition derived from the current iteration or the number of iterations.
+   */
+  static bool startAndFinishSynchronousExchangeManually(const exahype::records::RepositoryState::Action& action,const bool predictionFusedTimeStepCondition);
+
+  /**
+   * @return if the adapter expects that start and end of synchronous heap communication are started manually.
+   *
+   * All other adapters and their mappings let Peano control the communication.
+   *
+   * @param action                            indicates the current algorithmic phase (Prediction, FusedTimeStep, ...)
+   * @param predictionFusedTimeStepCondition  a condition derived from the current iteration or the number of iterations.
+   */
+  static bool startAndFinishNeighbourExchangeManually(const exahype::records::RepositoryState::Action& action,const bool predictionFusedTimeStepCondition);
 
   /**
    * Static callback to kick off and iteration and perform global broadcasts between working nodes.
@@ -92,15 +119,6 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    */
   static void kickOffIteration(exahype::records::RepositoryState& repositoryState, exahype::State& solverState, const int currentBatchIteration);
 
-// /**                                                                                                                                        //
-//  * Wrap up an iterations, i.e. make use of values that are reduced over the cells (and MPI ranks).                                         //
-//  *                                                                                                                                         //
-//  * @param action                  repository action indicating what time step (fused vs non-fused) is run                                  //
-//  * @param currentBatchIteration   the current batch iteration                                                                              //
-//  * @param numberOfBatchIterations the total number of batch iterations.                                                                    //
-//  */                                                                                                                                        //
-// static void wrapUpIteration(exahype::records::RepositoryState::Action action,const int currentBatchIteration,const int numberOfIterations);//
-
   /**
    * Static callback to wrap up an iteration.
    *
@@ -119,7 +137,7 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
    */
   static void wrapUpIteration(exahype::records::RepositoryState& repositoryState, exahype::State& solverState, const int currentBatchIteration);
 
- public:
+public:
   /**
    * This enum is used to select certain solvers
    * in mappings like PredictionRerun, MeshRefinement etc.
@@ -224,15 +242,6 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
   /**
    * \see exahype/State.def
    */
-  void setMeshRefinementIsInRefiningMode(const bool state);
-  /**
-   * \see exahype/State.def
-   */
-  bool getMeshRefinementIsInRefiningMode() const;
-
-  /**
-   * \see exahype/State.def
-   */
   void setStableIterationsInARow(const int value);
   /**
    * \see exahype/State.def
@@ -240,19 +249,19 @@ class exahype::State : public peano::grid::State<exahype::records::State> {
   int getStableIterationsInARow() const;
 
 
-/**
- * Please consult Peano guidebook Section 6.3.2 for details.
- *
- * Mainly used to decide if the refinement can be enforced or
- * must be done more carefully. If there are still
- * idle ranks and the mesh is not stable, the
- * mesh refinement must not be enforced.
- *
- * We switch to immediate, aggressive refinement if and only if
- *
- * @note Has to be called after the iteration!
- */
-void endedGridConstructionIteration(int finestGridLevelPossible);
+  /**
+   * Please consult Peano guidebook Section 6.3.2 for details.
+   *
+   * Mainly used to decide if the refinement can be enforced or
+   * must be done more carefully. If there are still
+   * idle ranks and the mesh is not stable, the
+   * mesh refinement must not be enforced.
+   *
+   * We switch to immediate, aggressive refinement if and only if
+   *
+   * @note Has to be called after the iteration!
+   */
+  void endedGridConstructionIteration(int finestGridLevelPossible);
 
   /**
    * Please consult Peano guidebook Section 6.3.2 for details.
@@ -315,7 +324,17 @@ void endedGridConstructionIteration(int finestGridLevelPossible);
    */
   static bool isSecondToLastIterationOfBatchOrNoBatch();
 
-  #ifdef Parallel
+  /**
+   * @return if one solver has requested a local recomputation.
+   *
+   * @note This function makes only sense for the mappings
+   * LocalRollback and PredictionOrLocalRecomputation.
+   *
+   * @see kickOffIteration
+   */
+  static bool hasOneSolverRequestedLocalRecomputation();
+
+#ifdef Parallel
   /*!
    * Send data such global solver and plotter
    * time step data down to a worker.
@@ -339,9 +358,9 @@ void endedGridConstructionIteration(int finestGridLevelPossible);
    * time step data up to the master.
    */
   static void reduceGlobalDataToMaster(
-    const int                                   master,
-    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
-    const int                                   level);
+      const int                                   master,
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const int                                   level);
 
   /*!
    * Merge with global data, such as global solver
@@ -351,7 +370,7 @@ void endedGridConstructionIteration(int finestGridLevelPossible);
       const int                                   worker,
       const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
       const int                                   level);
-  #endif
+#endif
 };
 
 #endif

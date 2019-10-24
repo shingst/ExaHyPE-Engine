@@ -123,6 +123,10 @@ void exahype::mappings::LoadBalancing::beginIteration(
       determineLastLevelToPopulateUniformly();
   _numberOfLocalCells = 0;
   solverState.setReduceStateAndCell(true);
+
+  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+    logInfo("beginIteration(..)","last level to uniformly populate with MPI ranks is " << LastLevelToPopulateUniformly);
+  }
   #endif
 }
 
@@ -136,7 +140,7 @@ void exahype::mappings::LoadBalancing::enterCell(
       const tarch::la::Vector<DIMENSIONS,int>&                             fineGridPositionOfCell
 ) {
   #ifdef Parallel
-  if ( 
+  if (
     fineGridVerticesEnumerator.getLevel() <= LastLevelToPopulateUniformly
   ) {
     // The user can use this call back to give a hint on how the final mesh will look like

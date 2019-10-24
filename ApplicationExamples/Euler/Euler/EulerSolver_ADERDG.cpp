@@ -21,10 +21,11 @@
 
 #include <math.h>
 
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 
 #include "kernels/aderdg/generic/Kernels.h"
 
+#include "peano/utils/Loop.h"
 
 tarch::logging::Log Euler::EulerSolver_ADERDG::_log("Euler::EulerSolver_ADERDG");
 
@@ -472,15 +473,53 @@ void Euler::EulerSolver_ADERDG::adjustPointSolution(const double* const x,const 
   }
 }
 
+/*void Euler::EulerSolver_ADERDG::adjustSolution(double* const luh, const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {
+    // Dimensions                        = 2
+    // Number of variables + parameters  = 4 + 0
+
+    // Initial data
+    if (tarch::la::equals(t,0.0)) {
+        constexpr int basisSize = EulerSolver_ADERDG::Order+1;
+        constexpr int numberOfData= EulerSolver_ADERDG::NumberOfVariables;
+
+        kernels::idx3 id_xyf(basisSize,basisSize,numberOfData);
+
+        double offset_x=center[0]-0.5*dx[0];
+        double offset_y=center[1]-0.5*dx[1];
+
+            for (int j=0; j< basisSize; j++){
+                double x = center[0] + dx[0] * (kernels::legendre::nodes[basisSize-1][j] - 0.5);
+                double point[2]= {x,0.0};
+
+                for (int i=0; i< basisSize; i++)
+                    referenceSolution(point,0.0,luh + id_xyf(i,j,0));
+        }
+    }
+}*/
+
 exahype::solvers::Solver::RefinementControl
 Euler::EulerSolver_ADERDG::refinementCriterion(
     const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center,
     const tarch::la::Vector<DIMENSIONS, double>& dx, double t,
     const int level) {
-  if ( level > getCoarsestMeshLevel() ) {
-    return exahype::solvers::Solver::RefinementControl::Erase;
+  double maxE = -std::numeric_limits<double>::max();
+  double minE = +std::numeric_limits<double>::max();
+  
+  const int nodes = std::pow((Order+1), DIMENSIONS);
+  for(int i=0;i<nodes;i++) {
+    maxE = std::max(maxE, luh[i*NumberOfVariables+NumberOfVariables-1]);
+    minE = std::min(minE, luh[i*NumberOfVariables+NumberOfVariables-1]);
   }
-  return exahype::solvers::Solver::RefinementControl::Keep;
+
+  if ( maxE/minE > 1.05 ) {
+    return RefinementControl::Refine;
+  }
+
+  if ( level > getCoarsestMeshLevel() ) {
+    return RefinementControl::Erase;
+  }
+
+  return RefinementControl::Keep;
 }
 
 void Euler::EulerSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int direction,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut){
@@ -504,12 +543,12 @@ void Euler::EulerSolver_ADERDG::boundaryValues(const double* const x,const doubl
     std::fill_n(stateOut, NumberOfVariables, 0.0);
     std::fill_n(fluxOut,  NumberOfVariables, 0.0);
     for (int i=0; i<Order+1; i++) {
-      const double ti = t + dt * kernels::gaussLegendreNodes[Order][i];
+      const double ti = t + dt * kernels::legendre::nodes[Order][i];
       referenceSolution(x,ti,Q);
       flux(Q,F);
       for (int v=0; v<NumberOfVariables; v++) {
-        stateOut[v] += Q[v]            * kernels::gaussLegendreWeights[Order][i];
-        fluxOut[v]  += F[direction][v] * kernels::gaussLegendreWeights[Order][i];
+        stateOut[v] += Q[v]            * kernels::legendre::weights[Order][i];
+        fluxOut[v]  += F[direction][v] * kernels::legendre::weights[Order][i];
       }
     }
   } break;
@@ -523,12 +562,12 @@ void Euler::EulerSolver_ADERDG::boundaryValues(const double* const x,const doubl
       std::fill_n(stateOut, NumberOfVariables, 0.0);
       std::fill_n(fluxOut,  NumberOfVariables, 0.0);
       for (int i=0; i<Order+1; i++) {
-        const double ti = t + dt * kernels::gaussLegendreNodes[Order][i];
+        const double ti = t + dt * kernels::legendre::nodes[Order][i];
         referenceSolution(x,ti,Q);
         flux(Q,F);
         for (int v=0; v<NumberOfVariables; v++) {
-          stateOut[v] += Q[v]            * kernels::gaussLegendreWeights[Order][i];
-          fluxOut[v]  += F[direction][v] * kernels::gaussLegendreWeights[Order][i];
+          stateOut[v] += Q[v]            * kernels::legendre::weights[Order][i];
+          fluxOut[v]  += F[direction][v] * kernels::legendre::weights[Order][i];
         }
       }
     } else { // wall boundary conditions 
@@ -573,7 +612,10 @@ void Euler::EulerSolver_ADERDG::resetGlobalObservables(GlobalObservables& global
 void Euler::EulerSolver_ADERDG::mapGlobalObservables(
     GlobalObservables&                          globalObservables,
     const double* const                         luh,
-    const tarch::la::Vector<DIMENSIONS,double>& cellSize) const {
+    const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+    const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+    const double t,
+    const double dt) const {
   globalObservables.dgcells() = 1;
   globalObservables.fvcells() = 0;
 }
@@ -587,6 +629,8 @@ void Euler::EulerSolver_ADERDG::mergeGlobalObservables(
   
 void Euler::EulerSolver_ADERDG::beginTimeStep(const double minTimeStamp,const bool isFirstTimeStepOfBatchOrNoBatch) {
   ReadOnlyGlobalObservables observables = getGlobalObservables();
-  logInfo("beginTimeStep(...)","observables.dgcells()="<<observables.dgcells());
-  logInfo("beginTimeStep(...)","observables.fvcells()="<<observables.fvcells());
+  if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+    logInfo("beginTimeStep(...)","observables.dgcells()="<<observables.dgcells());
+    logInfo("beginTimeStep(...)","observables.fvcells()="<<observables.fvcells());
+  }
 }

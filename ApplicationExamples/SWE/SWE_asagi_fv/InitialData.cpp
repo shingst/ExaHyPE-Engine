@@ -19,30 +19,37 @@ extern int scenario;
 #ifdef Dim2
 
 InitialData::InitialData()
-  : scenario(1){
+        : scenario(1){
 #if defined(USE_ASAGI)
-    asagiReader = new AsagiReader("");
-    parser = new easi::YAMLParser(3, asagiReader);
-    model  = parser->parse("data.yaml");
-    //Easi binding point for topography
-    adapter = new easi::ArraysAdapter();
-    adapter->addBindingPoint("b",bathymetry  );
-    adapter->addBindingPoint("d",displacement);
+                static tarch::multicore::BooleanSemaphore initializationSemaphoreDG;
+                tarch::multicore::Lock lock(initializationSemaphoreDG);
+
+                asagiReader = new AsagiReader("");
+                parser = new easi::YAMLParser(3, asagiReader);
+                model  = parser->parse("data.yaml");
+                //Easi binding point for topography
+                adapter = new easi::ArraysAdapter();
+                adapter->addBindingPoint("b",bathymetry  );
+                adapter->addBindingPoint("d",displacement);
+                lock.free();
 #endif
-}
+        }
 
 InitialData::InitialData(int a_scenario)
-  : scenario(a_scenario){
+        : scenario(a_scenario){
 #if defined(USE_ASAGI)
-  asagiReader = new AsagiReader("");
-  parser = new easi::YAMLParser(3, asagiReader);
-  model  = parser->parse("data.yaml");
-  //Easi binding point for topography
-  adapter = new easi::ArraysAdapter();
-  adapter->addBindingPoint("b",bathymetry);
-  adapter->addBindingPoint("d",displacement);
+                static tarch::multicore::BooleanSemaphore initializationSemaphoreDG;
+                tarch::multicore::Lock lock(initializationSemaphoreDG);
+                asagiReader = new AsagiReader("");
+                parser = new easi::YAMLParser(3, asagiReader);
+                model  = parser->parse("data.yaml");
+                //Easi binding point for topography
+                adapter = new easi::ArraysAdapter();
+                adapter->addBindingPoint("b",bathymetry);
+                adapter->addBindingPoint("d",displacement);
+                lock.free();
 #endif
-}
+        }
 
 
 
@@ -53,25 +60,7 @@ void InitialData::ShockShockProblem(const double * const x, double* Q){
   MySWESolver_FV::Variables vars(Q);
 
   if(x[0] < 5) {
-      vars.h() = 4.0;
-      vars.hu()= 2.0;
-      vars.hv()= 0.0;
-      vars.b() = 0;
-  } else {
-      vars.h() = 4.0;
-      vars.hu()= -2.0;
-      vars.hv()= 0.0;
-      vars.b() = 0.0;
-  }
-}
 
-/*
-* Constant water height with both sides moving away from each other
-*/
-void InitialData::RareRareProblem(const double * const x, double* Q){
-  MySWESolver_FV::Variables vars(Q);
-
-  if(x[0] < 5) {
       vars.h() = 4.0;
       vars.hu()= -2.0;
       vars.hv()= 0.0;
@@ -338,19 +327,17 @@ void InitialData::SolitaryWaveOnSimpleBeach(const double*const x, double* Q){
 void InitialData::readAsagiData(const double* const x,double* Q){
 
   easi::Query query(1,3);
-
   query.x(0,0)=x[0];
   query.x(0,1)=x[1];
   query.x(0,2)=0;
   model->evaluate(query,*adapter);
 
   Q[0]=max(0.0,-bathymetry[0]); //h = H-b
-  if(std::isnan(Q[0])){
-    std::cout << x[0] << "," << x[1] << std::endl;
-  }
-  Q[1]=0;
-  Q[2]=0;
-  Q[3]=displacement[0]+bathymetry[0]; 
+  if(std::isnan(Q[0]))
+    std::cout << "Error when reading bathymetry" << x[0] << "," << x[1] << std::endl;
+  Q[1]= 0;
+  Q[2]= 0;
+  Q[3]= displacement[0]+bathymetry[0]; 
 }
 #endif
 
@@ -359,6 +346,9 @@ void InitialData::readAsagiData(const double* const x,double* Q){
 #endif
 
 void InitialData::getInitialData(const double* const x,double* Q) {
+	static tarch::multicore::BooleanSemaphore initializationSemaphoreDG;
+	tarch::multicore::Lock lock(initializationSemaphoreDG);
+	
   switch (scenario)
   {
     case 0:
@@ -405,10 +395,11 @@ void InitialData::getInitialData(const double* const x,double* Q) {
           break;
 #if defined(USE_ASAGI)
     case 14:
-      readAsagiData(x, Q);
+	  readAsagiData(x, Q);
           break;
 #endif
     default:
       GaussFunctionProblem(x, Q);
   }
+  lock.free();
 }

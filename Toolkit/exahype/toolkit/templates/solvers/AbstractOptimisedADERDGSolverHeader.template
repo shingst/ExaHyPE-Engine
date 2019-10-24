@@ -28,6 +28,8 @@
 #include "tarch/Assertions.h"
 #include "tarch/la/Vector.h"
 
+#include "kernels/KernelUtils.h"
+
 namespace {{project}}{
   class {{solver}};
   class {{abstractSolver}};
@@ -45,6 +47,13 @@ public:
   static constexpr int MaxPicardIterations       = Order+1;
   static constexpr bool UseMaxPicardIterations   = {{"true" if useMaxPicardIterations else "false"}};
   static constexpr double CFL                    = {{CFL}};
+  static constexpr double PNPM                   = {{PNPM}};
+  
+  // [order][node i]
+  static kernels::UnivariateFunction** basisFunction;
+  static kernels::UnivariateFunction** basisFunctionFirstDerivative;
+  static kernels::UnivariateFunction** basisFunctionSecondDerivative;
+  
   {% if usePointSources %}
   static constexpr int NumberOfPointSources      = {{numberOfPointSources}};
   double pointSourceLocation[NumberOfPointSources][DIMENSIONS];
@@ -77,6 +86,8 @@ public:
       const double maximumMeshSize,
       const int maximumMeshDepth,
       const int haloCells,
+      const int haloBufferCells,
+      const int limiterBufferCells,
       const int regularisedFineGridLevels,
       const exahype::solvers::Solver::TimeStepping timeStepping,
       const int DMPObservables
@@ -188,8 +199,8 @@ public:
    */
   bool isPhysicallyAdmissible(
       const double* const                         solution,
-      const double* const                         observablesMin,
-      const double* const                         observablesMax,
+      const double* const                         localDMPObservablesMin,
+      const double* const                         localDMPObservablesMax,
       const bool                                  wasTroubledInPreviousTimeStep,
       const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
       const tarch::la::Vector<DIMENSIONS,double>& cellSize,
@@ -202,8 +213,8 @@ public:
    */
   bool vetoDiscreteMaximumPrincipleDecision(
       const double* const                         solution,
-      const double* const                         localObservablesMin,
-      const double* const                         localObservablesMax,
+      const double* const                         localDMPObservablesMin,
+      const double* const                         localDMPObservablesMax,
       const bool                                  wasTroubledInPreviousTimeStep,
       const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
       const tarch::la::Vector<DIMENSIONS,double>& cellSize,
@@ -249,7 +260,7 @@ public:
   int fusedSpaceTimePredictorVolumeIntegral(double* const lduh,double* const lQhbnd, double* lGradQhbnd, double* const lFhbnd,double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const bool addVolumeIntegralResultToUpdate) override;
   void addUpdateToSolution(double* const luh,const double* const luhOld,const double* const lduh,const double dt) override;
   void surfaceIntegral(double* const lduh,const double* const lFhbnd,const tarch::la::Vector<DIMENSIONS,double>& cellSize); //override; //TODO JMG make override again when enabled back
-  void faceIntegral(double* const out,const double* const lFhbnd,const int direction, const int orientation,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex,const int levelDelta,const tarch::la::Vector<DIMENSIONS, double>& cellSize,const double dt,const bool addToUpdate) override;    
+  void faceIntegral(double* const out,double* const lFhbnd,const int direction, const int orientation,const tarch::la::Vector<DIMENSIONS-1,int>& subfaceIndex,const int levelDelta,const tarch::la::Vector<DIMENSIONS, double>& cellSize,const double dt,const bool addToUpdate) override;    
   void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double t,const double dt, const tarch::la::Vector<DIMENSIONS, double>& cellSize,const int direction, bool isBoundaryFace, int faceIndex) override;
   // old: void boundaryConditions(double* const fluxOut,double* const stateOut,const double* const fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int direction) override;
   // old: void boundaryConditions(double* const fluxIn,const double* const stateIn,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,const double t,const double dt,const int faceIndex,const int direction) override;
@@ -274,7 +285,10 @@ public:
   void updateGlobalObservables(
       double* const                               globalObservables,
       const double* const                         luh,
-      const tarch::la::Vector<DIMENSIONS,double>& cellSize) final override;
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+      const double t,
+      const double dt) final override;
   void mergeGlobalObservables(double* const globalObservables,const double* const otherObservables) final override;
   void wrapUpGlobalObservables(double* const globalObservables) final override;
 
@@ -290,6 +304,7 @@ public:
   int getTempPointForceSourcesSize()      const {return {{optNamespace}}::getPSiSize();          }
   int getBndFaceSize()                    const {return {{optNamespace}}::getBndFaceSize();      }
   int getBndTotalSize()                   const {return {{optNamespace}}::getBndFaceTotalSize(); }
+  int getBndGradQSize()                   const {return {{optNamespace}}::getBndGradQSize();     }
   int getBndFluxSize()                    const {return {{optNamespace}}::getBndFluxSize();      }
   int getBndFluxTotalSize()               const {return {{optNamespace}}::getBndFluxTotalSize(); }
   int getUpdateSize()                     const {return {{optNamespace}}::getUpdateSize(); }
@@ -452,7 +467,10 @@ public:
   virtual void mapGlobalObservables(
       GlobalObservables&                          globalObservables,
       const double* const                         luh,
-      const tarch::la::Vector<DIMENSIONS,double>& cellSize) const;
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+      const double t,
+      const double dt) const;
 
   /**
    * This method merges two vectors of (global) observables.
@@ -482,6 +500,44 @@ public:
    */
   virtual void wrapUpGlobalObservables(GlobalObservables& globalObservables) const;
 
+  
+  {% if transformRiemannData %}
+  /**
+   * Pre-process extrapolated predictor, gradient and volume flux degrees of freedom (DOFs)
+   * for the face with index @p faceIndex before
+   * they are piped into the Riemann solver.
+   * 
+   * This function is used to move physical-space-to-reference-space rotations
+   * out of the face-wise Riemann solver and behind the space-time predictor.
+   * 
+   * @note All DoFs per face are passed to this function, not just pointwise values.   
+   * 
+   * @param[inout] lQbhnd     the predictor DOFs extrapolated to the face.
+   * @param[inout] lGradQhbnd the DoF of the predictor's gradient extrapolated to the face.
+   * @param[inout] lFhbnd     the volume flux DOFs extrapolated to the face.
+   * @param[in]    direction  direction of the face
+   * @param[in]    faceIndex  index of the face: 2*direction+orientation, where orientation is 1 if the normal vector of the face points
+   *                          in positive direction. Otherwise, orientation is zero.
+   */
+  virtual void preProcessRiemannSolverInputs(double* const lQhbnd,double* const lGradQhbnd,double* const lFhbnd,const int direction,const int faceIndex) const;
+
+  /**
+   * Post-process the Riemann solution before performing the face integral,
+   * which is part of the corrector step.
+   * 
+   * This function is used to move reference-space-to-physical-space rotations
+   * out of the face-wise Riemann solver and before the face integral.
+   * 
+   * @note All DoFs per face are passed to this function, not just pointwise values.   
+   * 
+   * @param[inout] lFhbnd     the Riemann solution (in reference space_
+   * @param[in]    direction  direction of the face
+   * @param[in]    faceIndex  index of the face: 2*direction+orientation, where orientation is 1 if the normal vector of the face points
+   *                          in positive direction. Otherwise, orientation is zero.
+   */
+  virtual void postProcessRiemannSolution(double* const lFhbnd,const int direction,const int fineGridFaceIndex) const;
+  {% endif %}
+  
   /**
    * Signals a user solver that ExaHyPE just started a new time step.
    *

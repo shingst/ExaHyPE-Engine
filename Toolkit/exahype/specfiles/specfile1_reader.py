@@ -105,18 +105,22 @@ class SpecFile1Reader():
     def convert(self,option,value):
         integers=[\
             "dimension",\
+            "ranks_per_dimension",\
             "time_steps",\
+            "ranks_per_node",\
             "buffer_size",\
             "timeout",\
             "node_pool_timeout",
             "max_forks_at_once",\
             "cores",\
             "measure_cell_processing_times_iter",\
-            "outside_cells",\
+            "outside_cells_right",\
             "outside_cells_left",\
             "order",\
             "patch_size",\
             "halo_cells",\
+            "halo_buffer_cells",\
+            "limiter_buffer_cells",\
             "maximum_mesh_depth",\
             "dmp_observables",\
             "steps_till_cured",\
@@ -189,13 +193,14 @@ class SpecFile1Reader():
     ##
     # TODO
     def map_distributed_memory(self,distributed_memory):
-        distributed_memory["load_balancing_type"] = distributed_memory.pop("identifier").replace("_load_balancing","")
-        distributed_memory["buffer_size"]         = distributed_memory.pop("buffer_size")
+        if "identifier" in distributed_memory:
+          distributed_memory["load_balancing_type"] = distributed_memory.pop("identifier").replace("_load_balancing","")
+        if "buffer_size" in distributed_memory:
+          distributed_memory["buffer_size"]         = distributed_memory.pop("buffer_size")
         # configure
         if "configure" in distributed_memory:
             configure = distributed_memory.pop("configure").replace("{","").replace("}","")
-            required = ["ranks-per-node"]
-            required_found = [] 
+            required = ["ranks_per_node"]
             for token in configure.split(","):
                 token_s = token.strip()
                 m_ranks_per_node          = re.match(r"ranks-per-node:([0-9]+)",token_s) # '-' since original values; only keys have been modified
@@ -210,7 +215,6 @@ class SpecFile1Reader():
                 if m_ranks_per_node:
                     distributed_memory["ranks_per_node"] = int(m_ranks_per_node.group(1))
                     found_token = True
-                    required_found.append("ranks-per-node")
                 if m_primary_ranks_per_node:
                     distributed_memory["primary_ranks_per_node"]=int(m_ranks_per_node.group(1))
                     found_token = True
@@ -222,14 +226,16 @@ class SpecFile1Reader():
                     found_token = True
                 if not found_token and len(token_s):
                     raise SpecFile1ParserError("Could not map value '%s' extracted from option 'distributed-memory/configure'. Is it spelt correctly?" % token_s)
-        for param in required:
-            if param not in required_found:
-                raise SpecFile1ParserError("Could not find required parameter '{}:<number>' in 'distributed-memory/configure' section.".format(param))
+            for param in required:
+                if param not in distributed_memory:
+                    raise SpecFile1ParserError("Could not find required parameter '{}:<number>' in 'distributed-memory/configure' section.".format(param))
                  
     ##
     # TODO
     def map_shared_memory(self,shared_memory):
-        shared_memory["autotuning_strategy"]=shared_memory.pop("identifier")
+        # autotuning strategy
+        if "identifier" in shared_memory:
+            shared_memory["autotuning_strategy"]=shared_memory.pop("identifier")
         # configure
         if "configure" in shared_memory:
             configure = shared_memory.pop("configure").replace("{","").replace("}","")

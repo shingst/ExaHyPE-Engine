@@ -68,10 +68,10 @@ double kernels::finitevolumes::riemannsolvers::c::rusanov(
     }
 
     const auto pi = std::acos(-1); // not constexpr for intel compilers
-    const auto factor = std::sqrt(0.5 * pi);
+    const auto factor = 1.0 / std::sqrt(0.5 * pi);
 
-    s_max += 2 * factor * maxViscousEigenvalue / (cellSize[normalNonZero] * factor);
-    s_max_dt += 2 * maxViscousEigenvalue / (cellSize[normalNonZero]);
+    s_max += 2 * factor * maxViscousEigenvalue / cellSize[normalNonZero];
+    s_max_dt += 2 * maxViscousEigenvalue / cellSize[normalNonZero];
   }
 
   // determine BgradQ from ncp
@@ -169,12 +169,11 @@ double kernels::finitevolumes::riemannsolvers::c::rusanov(
     for (int i = 0; i < numberOfVariables; i++) {
       maxViscousEigenvalue = std::max(maxViscousEigenvalue, std::abs(sR[i]));
     }
-
     const auto pi = std::acos(-1); // not constexpr for intel compilers
-    const auto factor = std::sqrt(0.5 * pi);
+    const auto factor = 1.0 / std::sqrt(0.5 * pi);
 
-    s_max += 2 * factor * maxViscousEigenvalue / (cellSize[normalNonZero] * factor);
-    s_max_dt += 2 * maxViscousEigenvalue / (cellSize[normalNonZero]);
+    s_max += 2 * factor * maxViscousEigenvalue / cellSize[normalNonZero];
+    s_max_dt += 2 * maxViscousEigenvalue / cellSize[normalNonZero];
   }
 
 

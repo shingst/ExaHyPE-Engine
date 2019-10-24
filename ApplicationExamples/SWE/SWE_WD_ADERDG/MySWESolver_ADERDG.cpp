@@ -73,25 +73,13 @@ exahype::solvers::Solver::RefinementControl SWE::MySWESolver_ADERDG::refinementC
         largestH = std::max (largestH, vars.h());
         smallestH = std::min(smallestH, vars.h());
     }
-
-    //gradient
-//    if (largestH - smallestH > 5e-2){
-//        return exahype::solvers::Solver::RefinementControl::Refine;
-//    }
+    if (largestH == 0.0)
+        return exahype::solvers::Solver::RefinementControl::Erase;
 
     //height
-    //20*0.000002
-   if (smallestH < 0.025 && level > getCoarsestMeshLevel() + 1) {
-       return exahype::solvers::Solver::RefinementControl::Refine;
-   }
-   if (smallestH < 0.05 && level > getCoarsestMeshLevel()) {
-       return exahype::solvers::Solver::RefinementControl::Refine;
-   }
-
-   if (smallestH < 0.08 && smallestH != 0  && level == getCoarsestMeshLevel()) {
-       return exahype::solvers::Solver::RefinementControl::Refine;
-   }
-
+    if (smallestH < 20 * epsilon_DG) {
+        return exahype::solvers::Solver::RefinementControl::Refine;
+    }
     if (level > getCoarsestMeshLevel())
         return exahype::solvers::Solver::RefinementControl::Erase;
     return exahype::solvers::Solver::RefinementControl::Keep;
@@ -113,7 +101,6 @@ void SWE::MySWESolver_ADERDG::eigenvalues(const double* const Q,const int d,doub
   const double c = std::sqrt(grav_DG*vars.h());
   const double ih = 1./vars.h();
   double u_n = Q[d + 1] * ih;
-
 
   if (vars.h() < epsilon_DG){
     eigs.h() = 0.0;
@@ -179,34 +166,28 @@ void  SWE::MySWESolver_ADERDG::nonConservativeProduct(const double* const Q,cons
 }
 
 bool SWE::MySWESolver_ADERDG::isPhysicallyAdmissible(
-      const double* const solution,
+      const double* const luh,
       const double* const observablesMin,const double* const observablesMax,
       const bool wasTroubledInPreviousTimeStep,
       const tarch::la::Vector<DIMENSIONS,double>& center,
       const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t) const {
 
-  double hMin;
-  double hMax;
-  idx3 id(Order+1,Order+1,NumberOfVariables);
-  hMin=solution[id(0,0,0)];
-  hMax=solution[id(0,0,0)];
-  for(int i = 0 ; i < Order+1 ; i++){
-    for(int j = 0 ; j < Order+1 ; j++){
-      hMin=std::min(hMin, solution[id(i,j,0)]);
-      hMax=std::max(hMin, solution[id(i,j,0)]);
-    }
-  }
+    double largestH = -std::numeric_limits<double>::max();
+    double smallestH = std::numeric_limits<double>::max();
 
-    if (hMin == 0 && hMax == 0){
-        return true;
+    kernels::idx3 idx_luh(Order+1,Order+1,NumberOfVariables);
+    dfor(i,Order+1) {
+        ReadOnlyVariables vars(luh + idx_luh(i(1),i(0),0));
+        largestH = std::max (largestH, vars.h());
+        smallestH = std::min(smallestH, vars.h());
     }
-    else if (hMin <= 20 * epsilon_DG){
+
+    if(largestH == 0.0)
+        return true;
+    if (smallestH <= 20 * epsilon_DG)
         return false;
-    }
-    else {
-        return true;
-    }
+    return true;
 }
 
 // void SWE::MySWESolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* const observables, const double* const Q){

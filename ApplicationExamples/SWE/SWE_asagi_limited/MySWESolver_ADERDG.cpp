@@ -9,11 +9,10 @@
 #include "MySWESolver_ADERDG.h"
 #include "InitialData.h"
 #include "MySWESolver_ADERDG_Variables.h"
-#include "peano/utils/Loop.h"
-//#include "kernels/aderdg/generic/Kernels.h"
-#include "kernels/KernelUtils.h"
 
-#include "../../../ExaHyPE/kernels/GaussLegendreQuadrature.h"
+#include "peano/utils/Loop.h"
+#include "kernels/KernelUtils.h"
+#include "../../../ExaHyPE/kernels/GaussLegendreBasis.h"
 
 using namespace kernels;
 
@@ -228,7 +227,7 @@ bool SWE::MySWESolver_ADERDG::isPhysicallyAdmissible(
 
 }
 
-void SWE::MySWESolver_ADERDG::riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double dt,const int direction,bool isBoundaryFace, int faceIndex) {
+void SWE::MySWESolver_ADERDG::riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double* gradQL, const double* gradQR, const double dt,const int direction,bool isBoundaryFace, int faceIndex) {
   constexpr int numberOfVariables  = NumberOfVariables;
   constexpr int numberOfData       = numberOfVariables;
   constexpr int order              = Order;
@@ -241,7 +240,7 @@ void SWE::MySWESolver_ADERDG::riemannSolver(double* const FL,double* const FR,co
   {
     idx2 idx_QLR(basisSize, numberOfData);
     for (int j = 0; j < basisSize; j++) {
-      const double weight = kernels::gaussLegendreWeights[order][j];
+      const double weight = kernels::legendre::weights[order][j];
 
       for (int k = 0; k < numberOfData; k++) {
         QavL[k] += weight * QL[idx_QLR(j, k)];

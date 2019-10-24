@@ -8,7 +8,7 @@
 #include "Fortran/C2P-GRMHD.h"
 #include "InitialData/InitialData.h"
 #include "Fortran/MassAccretionRate.h"
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #include <cmath>
 
 #include "kernels/aderdg/generic/c/sizes.cpph"

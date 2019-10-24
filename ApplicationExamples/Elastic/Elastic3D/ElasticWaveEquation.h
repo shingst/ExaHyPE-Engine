@@ -33,7 +33,7 @@ class ElasticWaveEquation3D::ElasticWaveEquation : public ElasticWaveEquation3D:
     static tarch::logging::Log _log;
     CurvilinearTransformation crt;    
   public:
-    ElasticWaveEquation(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables);
+    ElasticWaveEquation(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int haloBufferCells,const int limiterBufferCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables);
 
 
     /**

@@ -1,6 +1,10 @@
 #include "PDE.h"
 #include "Scenarios/Scenario.h"
 
+#ifdef OPT_KERNELS
+#include "kernels/NavierStokes_NavierStokesSolver_ADERDG/Kernels.h"
+#endif
+
 NavierStokes::PDE::PDE() :
   PDE(0.1, 10000, 1.4, 0.7, 1, 1.4, 0.4) {
 }
@@ -61,9 +65,10 @@ void NavierStokes::PDE::setZ(double *Q, double value) const {
 }
 
 double NavierStokes::PDE::getHeight(double const *Q) const {
+  constexpr auto parametersOffset = AbstractNavierStokesSolver_ADERDG::VariableMetrics::SizeVariables;
   if (useGravity) {
     // Gravity is included in pressure!
-    const auto heightIdx = AbstractNavierStokesSolver_ADERDG::VariableMetrics::SizeVariables;
+    const auto heightIdx = parametersOffset;
     return Q[heightIdx];
   }
 
@@ -72,25 +77,28 @@ double NavierStokes::PDE::getHeight(double const *Q) const {
 }
 
 void NavierStokes::PDE::setHeight(double *Q, double value) const {
+  constexpr auto parametersOffset = AbstractNavierStokesSolver_ADERDG::VariableMetrics::SizeVariables;
   if (useGravity) {
     // Gravity is included in pressure!
-    const auto heightIdx = AbstractNavierStokesSolver_ADERDG::VariableMetrics::SizeVariables;
+    const auto heightIdx = parametersOffset;
     Q[heightIdx] = value;
   }
   // Otherwise, nothing happens
 }
 
 void NavierStokes::PDE::setBackgroundState(double *Q, double backgroundRho, double backgroundPressure) const {
+  constexpr auto parametersOffset = AbstractNavierStokesSolver_ADERDG::VariableMetrics::SizeVariables;
   if (useBackgroundState) {
-    const auto backgroundStateIdx = AbstractNavierStokesSolver_ADERDG::VariableMetrics::SizeVariables + 1;
+    const auto backgroundStateIdx = parametersOffset + 1;
       Q[backgroundStateIdx] = backgroundRho;
       Q[backgroundStateIdx+1] = backgroundPressure;
   }
 }
 
 std::pair<double, double> NavierStokes::PDE::getBackgroundState(double const *Q) const {
- if (useBackgroundState) {
-    const auto backgroundStateIdx = AbstractNavierStokesSolver_ADERDG::VariableMetrics::SizeVariables + 1;
+  constexpr auto parametersOffset = AbstractNavierStokesSolver_ADERDG::VariableMetrics::SizeVariables;
+  if (useBackgroundState) {
+    const auto backgroundStateIdx = parametersOffset + 1;
     return {Q[backgroundStateIdx], Q[backgroundStateIdx+1]};
   }
  return {0.0, 0.0};
@@ -183,8 +191,6 @@ void NavierStokes::PDE::evaluateFlux(const double* Q, const double* gradQ, doubl
   const auto Z = E + 1; // Only defined if coupling is used!
 
   ReadOnlyVariables vars(Q);
-
-  auto idxF = kernels::idx2(vars.SizeVariables, DIMENSIONS);
 
   // gradQ contains params for FV solver but not for DG.
   auto sizeGrad = vars.SizeVariables;

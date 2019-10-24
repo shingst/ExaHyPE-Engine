@@ -14,12 +14,10 @@
 #include "ADERDG2UserDefined.h"
 #include "tarch/parallel/Node.h"
 
-#include "kernels/DGMatrices.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "peano/utils/Loop.h"
 
 #include "exahype/solvers/ADERDGSolver.h"
-
-#include "kernels/DGBasisFunctions.h"
 
 
 std::string exahype::plotters::ADERDG2UserDefined::getIdentifier() {
@@ -52,7 +50,7 @@ void exahype::plotters::ADERDG2UserDefined::plotPatch(const int solverNumber,sol
   const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   auto& aderdgCellDescription  = cellInfo._ADERDGCellDescriptions[element];
 
-  if (aderdgCellDescription.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell) {
+  if (aderdgCellDescription.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Leaf) {
     double* solverSolution = static_cast<double*>(aderdgCellDescription.getSolution());
 
     plotPatch(

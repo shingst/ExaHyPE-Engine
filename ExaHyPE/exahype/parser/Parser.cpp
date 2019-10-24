@@ -513,26 +513,30 @@ tarch::la::Vector<DIMENSIONS, double> exahype::parser::Parser::getOffset() const
   return result;
 }
 
-int exahype::parser::Parser::getOutsideCells() const {
-  return getIntFromPath("/computational_domain/outside_cells", 2, isOptional);
-}
-
-int exahype::parser::Parser::getOutsideCellsLeft() const {
-  const int outsideCells = getOutsideCells();
-  const int result       = getIntFromPath("/computational_domain/outside_cells_left", outsideCells/2, isOptional);
-  if ( result < 0 || result > outsideCells ) {
-    logError("getOutsideCellsLeft()", "'outside_cells_left' must not be negative or larger than 'outside_cells' (default: 2); it is: "<<result);
+int exahype::parser::Parser::getOutsideCellsRight() const {
+  const int result = getIntFromPath("/computational_domain/outside_cells_right", 1, isOptional);
+  if ( result < 0 ) {
+    logError("getOutsideCellsLeft()", "'outside_cells_right' must not be negative; it is: "<<result);
     invalidate();
   }
   return result;
 }
 
-bool exahype::parser::Parser::getPlaceOneThirdOfCellsOuside() const {
-  return getBoolFromPath("/computational_domain/one_third_of_cells_outside", false, isOptional);
+int exahype::parser::Parser::getOutsideCellsLeft() const {
+  const int result = getIntFromPath("/computational_domain/outside_cells_left", 1, isOptional);
+  if ( result < 0 ) {
+    logError("getOutsideCellsLeft()", "'outside_cells_left' must not be negative; it is: "<<result);
+    invalidate();
+  }
+  return result;
+}
+
+int exahype::parser::Parser::getRanksPerDimensionToPutOnCoarsestGrid() const {
+  return getIntFromPath("/computational_domain/ranks_per_dimension", true, isOptional);
 }
 
 bool exahype::parser::Parser::getScaleBoundingBox() const {
-  return getPlaceOneThirdOfCellsOuside() || getOutsideCells() > 0;
+  return getRanksPerDimensionToPutOnCoarsestGrid()>0 || getOutsideCellsRight() > 0;
 }
 
 std::string exahype::parser::Parser::getMulticorePropertiesFile() const {
@@ -558,10 +562,19 @@ exahype::parser::Parser::MPILoadBalancingType exahype::parser::Parser::getMPILoa
 
 double exahype::parser::Parser::getNodePoolAnsweringTimeout() const {
   const std::string path = "/distributed_memory/node_pool_timeout";
-  const double defaultResult = 1;
+  const double defaultResult = 1e-1;
   double result = getDoubleFromPath(path, defaultResult, true);
   if(tarch::la::equals(defaultResult, result)) {
     logWarning( "getNodePoolAnsweringTimeout()", path << " not specified for MPI configuration so use default timeout of " << defaultResult );
+  }
+  if (result>defaultResult) {
+    logWarning(
+      "getNodePoolAnsweringTimeout()",
+	  "a larger node pool answering time (" << path << ") than the default of " << defaultResult <<
+	  " means that the load balancing delays any decision on rebalancing by " << result << "s. This might lead" <<
+	  " to good load balancing yet will delay in particular the grid construction where many balancing decisions" <<
+	  " have to be made."
+	);
   }
   return result;
 }
@@ -583,7 +596,7 @@ int exahype::parser::Parser::getMaxForksPerLoadBalancingStep() const {
 }
 
 int exahype::parser::Parser::getMPIBufferSize() const {
-  int result = getIntFromPath("/distributed_memory/buffer_size");
+  int result = getIntFromPath("/distributed_memory/buffer_size", 64, isOptional);
 
   // Apparently, in former days an invalid value just yielded in a non-fatal error.
   // all non-castable ints resulted in negative numbers.
@@ -598,7 +611,7 @@ int exahype::parser::Parser::getMPIBufferSize() const {
 }
 
 int exahype::parser::Parser::getMPITimeOut() const {
-  double result = getIntFromPath("/distributed_memory/timeout");
+  double result = getIntFromPath("/distributed_memory/timeout", 60, isOptional);
 
   // Apparently, in former days an invalid value just yielded in a non-fatal error.
   // all non-castable doubles resulted in negative numbers.
@@ -698,6 +711,10 @@ bool exahype::parser::Parser::getFuseMostAlgorithmicSteps() const {
   return getStringFromPath("/optimisation/fuse_algorithmic_steps", "none", isOptional).compare("most")==0;
 }
 
+bool exahype::parser::Parser::getFuseMostAlgorithmicStepsDoRiemannSolvesTwice() const {
+  return getStringFromPath("/optimisation/fuse_algorithmic_steps", "none", isOptional).compare("most_do_riemann_twice")==0;
+}
+
 double exahype::parser::Parser::getFuseAlgorithmicStepsRerunFactor() const {
   const double default_value = 0.99;
   double result = getDoubleFromPath("/optimisation/fuse_algorithmic_steps_rerun_factor", default_value, isOptional);
@@ -727,11 +744,11 @@ double exahype::parser::Parser::getFuseAlgorithmicStepsDiffusionFactor() const {
 }
 
 bool exahype::parser::Parser::getSpawnPredictionAsBackgroundThread() const {
-  return getBoolFromPath("/optimisation/spawn_predictor_as_background_thread", false, isOptional);
+  return getBoolFromPath("/optimisation/spawn_predictor_as_background_thread", true, isOptional);
 }
 
 bool exahype::parser::Parser::getSpawnUpdateAsBackgroundThread() const {
-  return getBoolFromPath("/optimisation/spawn_update_as_background_thread", false, isOptional);
+  return getBoolFromPath("/optimisation/spawn_update_as_background_thread", true, isOptional);
 }
 
 bool exahype::parser::Parser::getSpawnProlongationAsBackgroundThread() const {
@@ -739,7 +756,7 @@ bool exahype::parser::Parser::getSpawnProlongationAsBackgroundThread() const {
 }
 
 bool exahype::parser::Parser::getSpawnAMRBackgroundThreads() const {
-  return getBoolFromPath("/optimisation/spawn_amr_background_threads", false, isOptional);
+  return getBoolFromPath("/optimisation/spawn_amr_background_threads", true, isOptional);
 }
 
 bool exahype::parser::Parser::getSpawnNeighbourMergeAsThread() const {
@@ -926,6 +943,34 @@ int exahype::parser::Parser::getHaloCells(int solverNumber) const {
   return result;
 }
 
+int exahype::parser::Parser::getHaloBufferCells(int solverNumber) const {
+  int result = getIntFromPath(sformat("/solvers/%d/halo_buffer_cells", solverNumber),0,isOptional);
+
+  if (tarch::la::smaller(result, 0)) {
+    logError("getHaloBufferCells(int)",
+             "'" << getIdentifier(solverNumber)
+                 << "': 'halo-buffer-cells': Value must be greater than or equal to zero.");
+    invalidate();
+  }
+
+  logDebug("getHaloBufferCells()", "found halo-buffer-cells " << result);
+  return result;
+}
+
+int exahype::parser::Parser::getLimiterBufferCells(int solverNumber) const {
+  int result = getIntFromPath(sformat("/solvers/%d/limiter/limiter_buffer_cells", solverNumber),0,isOptional);
+
+  if (tarch::la::smaller(result, 0)) {
+    logError("getLimiterBufferCells(int)",
+             "'" << getIdentifier(solverNumber)
+                 << "': 'limiter-buffer-cells': Value must be greater than or equal to zero.");
+    invalidate();
+  }
+
+  logDebug("getLimiterBufferCells()", "found limiter-buffer-cells " << result);
+  return result;
+}
+
 int exahype::parser::Parser::getRegularisedFineGridLevels(int solverNumber) const {
   int result = getIntFromPath(sformat("/solvers/%d/regularised_fine_grid_levels", solverNumber),0,isOptional);
   
@@ -1063,14 +1108,26 @@ std::string exahype::parser::Parser::getProfilerIdentifier() const {
   return getStringFromPath("/profiling/profiler", "NoOpProfiler", isOptional);
 }
 
+
+bool exahype::parser::Parser::getProfileEmptyAdapter() const {
+  std::string option = getStringFromPath("/profiling/profiling_target", "whole_code", isOptional);
+  std::string prefix("empty");
+  return option.compare(0,prefix.length(),prefix)==0;
+}
+
 exahype::parser::Parser::ProfilingTarget exahype::parser::Parser::getProfilingTarget() const {
   std::string option = getStringFromPath("/profiling/profiling_target", "whole_code", isOptional);
 
-  if ( option.compare("whole_code")!=0 && (
+  if (
+      (option.compare("neighbour_merge")==0 ||
+      option.compare("predictor")==0)
+      &&
+      (
        #ifdef Parallel
        true ||
        #endif
-       foundSimulationEndTime())
+       foundSimulationEndTime()
+      )
   ) {
     logError("getProfilingTarget","Profiling target '"<<option<<"' can not be chosen if a simulation end time is specified or a parallel build is run. Only 'whole_code' is allowed in this case.");
     invalidate();
@@ -1085,6 +1142,27 @@ exahype::parser::Parser::ProfilingTarget exahype::parser::Parser::getProfilingTa
     return ProfilingTarget::Update;
   } else if ( option.compare("predictor")==0 ) {
     return ProfilingTarget::Prediction;
+  //
+  } else if ( option.compare("empty")==0 ) {
+      return ProfilingTarget::Empty;
+  //
+  } else if ( option.compare("empty_enter_cell")==0 ) {
+      return ProfilingTarget::EmptyEnterCell;
+  } else if ( option.compare("empty_leave_cell")==0 ) {
+      return ProfilingTarget::EmptyLeaveCell;
+  } else if ( option.compare("empty_touch_first")==0 ) {
+      return ProfilingTarget::EmptyTouchVertexFirstTime;
+  } else if ( option.compare("empty_touch_first_leave_cell")==0 ) {
+      return ProfilingTarget::EmptyTouchVertexFirstTimeLeaveCell;
+  //
+  } else if ( option.compare("empty_enter_cell_reduce")==0 ) {
+      return ProfilingTarget::EmptyEnterCellReduce;
+  } else if ( option.compare("empty_leave_cell_reduce")==0 ) {
+      return ProfilingTarget::EmptyLeaveCellReduce;
+  } else if ( option.compare("empty_touch_first_reduce")==0 ) {
+      return ProfilingTarget::EmptyTouchVertexFirstTimeReduce;
+  } else if ( option.compare("empty_touch_first_leave_cell_reduce")==0 ) {
+      return ProfilingTarget::EmptyTouchVertexFirstTimeLeaveCellReduce;
   } else {
     logError("getProfilingTarget","Unknown profiling target: "<<option);
     invalidate();
@@ -1214,8 +1292,8 @@ int exahype::parser::Parser::getRanksPerNode() {
 int exahype::parser::Parser::getNumberOfBackgroundJobConsumerTasks() {
   int result = getIntFromPath("/shared_memory/background_job_consumers",0,isOptional);
   if (result<=0) {
-    logInfo("getNumberOfBackgroundTasks()", "no number of background tasks specified. Use default: #consumers = #threads / 4.");
-    result = getNumberOfThreads()/4;
+    logInfo("getNumberOfBackgroundTasks()", "no number of background tasks specified. Use default: #consumers = #threads-1.");
+    result = getNumberOfThreads()-1;
   }
   return result;
 }
@@ -1231,7 +1309,7 @@ bool exahype::parser::Parser::compareJobSystemWaitBehaviour(const std::string& s
 }
 
 int exahype::parser::Parser::getMaxBackgroundJobsInARush() {
-  return getIntFromPath("/shared_memory/max_background_jobs_in_one_rush",std::numeric_limits<int>::max(),isOptional);
+  return getIntFromPath("/shared_memory/max_background_jobs_in_one_rush",getMinBackgroundJobsInARush()*2,isOptional);
 }
 
 int exahype::parser::Parser::getMinBackgroundJobsInARush() {

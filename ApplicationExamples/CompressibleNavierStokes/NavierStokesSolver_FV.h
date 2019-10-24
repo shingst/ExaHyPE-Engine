@@ -116,7 +116,10 @@ class NavierStokes::NavierStokesSolver_FV : public NavierStokes::AbstractNavierS
     void mapGlobalObservables(
         GlobalObservables&                          globalObservables,
         const double* const                         luh,
-        const tarch::la::Vector<DIMENSIONS,double>& cellSize) const final override;
+        const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+        const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+        const double t,
+        const double dt) const final override;
 
     void mergeGlobalObservables(
         GlobalObservables&         globalObservables,

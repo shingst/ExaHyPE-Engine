@@ -100,7 +100,7 @@ private:
   static tarch::logging::Log _log;
 
 public:
-  EulerSolver_ADERDG(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables);
+  EulerSolver_ADERDG(const double maximumMeshSize,const int maximumMeshDepth,const int haloCells,const int haloBufferCells,const int limiterBufferCells,const int regularisedFineGridLevels,const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables);
 
   /**
    * Initialise the solver.
@@ -134,7 +134,8 @@ public:
    *                         as C array (already allocated).
    */
   void adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) override;
-
+  //void adjustSolution(double* const luh, const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) final override;
+  
   /**
    * Compute the flux tensor.
    *
@@ -224,13 +225,17 @@ public:
   void mapGlobalObservables(
       GlobalObservables&                          globalObservables,
       const double* const                         luh,
-      const tarch::la::Vector<DIMENSIONS,double>& cellSize) const final override;
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+      const double t,
+      const double dt) const final override;
 
   void mergeGlobalObservables(
       GlobalObservables&         globalObservables,
       ReadOnlyGlobalObservables& otherObservables) const final override;
   
   void beginTimeStep(const double minTimeStamp,const bool isFirstTimeStepOfBatchOrNoBatch) final override;
-};
+
+  };
 
 #endif // __EulerSolver_ADERDG_CLASS_HEADER__

@@ -2,7 +2,7 @@
 #include "BoundaryConditions.h"
 
 #include "kernels/KernelUtils.h" // matrix indexing
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 
 #include "InitialData/InitialData.h"
 #include "PDE/PDE.h"
@@ -193,8 +193,8 @@ void GRMHD::BoundaryConditions::exact(BOUNDARY_SIGNATURE) {
 		}
 		// Time integrate exact BC
 		for(int i=0; i < basisSize; i++)  { // i == time
-			const double weight = kernels::gaussLegendreWeights[order][i];
-			const double xi = kernels::gaussLegendreNodes[order][i];
+			const double weight = kernels::legendre::weights[order][i];
+			const double xi = kernels::legendre::nodes[order][i];
 			double ti = t + xi * dt;
 
 			// do *not* use adjustPointSolution, it only works if ti~0.

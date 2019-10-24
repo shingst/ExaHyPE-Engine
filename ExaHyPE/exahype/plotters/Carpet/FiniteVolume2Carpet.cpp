@@ -24,9 +24,8 @@
 #include "exahype/plotters/Carpet/CarpetHDF5Writer.h"
 #include "kernels/KernelUtils.h" // indexing
 #include "peano/utils/Loop.h" // dfor
-#include "kernels/DGMatrices.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "exahype/solvers/ADERDGSolver.h"
-#include "kernels/DGBasisFunctions.h"
 #include "tarch/logging/Log.h"
 #include <sstream>
 
@@ -77,7 +76,7 @@ void exahype::plotters::FiniteVolume2Carpet::init(const std::string& filename, i
 void exahype::plotters::FiniteVolume2Carpet::plotPatch(const int solverNumber,solvers::Solver::CellInfo& cellInfo) {
   const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
   auto& cellDescription  = cellInfo._FiniteVolumesCellDescriptions[element];
-	if (cellDescription.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell) {
+	if (cellDescription.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Leaf) {
 		double* solution = static_cast<double*>(cellDescription.getSolution());
 
 		plotPatch(

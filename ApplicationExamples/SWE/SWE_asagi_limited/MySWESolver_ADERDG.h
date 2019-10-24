@@ -37,6 +37,8 @@ class SWE::MySWESolver_ADERDG : public SWE::AbstractMySWESolver_ADERDG {
         const double maximumMeshSize,
         const int maximumMeshDepth,
         const int haloCells,
+        const int haloBufferCells,
+        const int limiterBufferCells,
         const int regularisedFineGridLevels,
         const exahype::solvers::Solver::TimeStepping timeStepping,const int DMPObservables
         );
@@ -149,7 +151,8 @@ class SWE::MySWESolver_ADERDG : public SWE::AbstractMySWESolver_ADERDG {
 
     void nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) final override;
 
-    void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double t,const double dt, const tarch::la::Vector<DIMENSIONS, double>& lengthScale,const int direction, bool isBoundaryFace, int faceIndex);
+    void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double* gradQL, const double* gradQR, const double dt,const int direction,bool isBoundaryFace, int faceIndex);
+    //void riemannSolver(double* const FL,double* const FR,const double* const QL,const double* const QR,const double* gradQL, const double* gradQR, const double t,const double dt,const int direction, bool isBoundaryFace, int faceIndex) ;
 /* pointSource() function not included, as requested in the specification file */
 
 /* multiplyMaterialParameterMatrix() not included, as requested in the specification file */

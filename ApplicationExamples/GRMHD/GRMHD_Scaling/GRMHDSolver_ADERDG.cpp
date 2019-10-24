@@ -7,7 +7,7 @@
 #include <cstring> // memset
 #include <cmath> //min,max
 #include "kernels/KernelUtils.h" // matrix indexing
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 
 #include "exahype/disableOptimization.h" // we experience compiler bugs sometimes.
 
@@ -71,8 +71,8 @@ void GRMHD::GRMHDSolver_ADERDG::boundaryValues(const double* const x,const doubl
         fluxOut[m] = 0;
     }
     for(int i=0; i < basisSize; i++)  { // i == time
-        const double weight = kernels::gaussLegendreWeights[order][i];
-        const double xi = kernels::gaussLegendreNodes[order][i];
+        const double weight = kernels::legendre::weights[order][i];
+        const double xi = kernels::legendre::nodes[order][i];
         double ti = t + xi * dt;
 
         initialData(x, ti, dt, Qgp);

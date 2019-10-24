@@ -16,7 +16,7 @@
 #include "tarch/compiler/CompilerSpecificSettings.h"
 #include "tarch/tests/TestCaseFactory.h"
 
-#include "kernels/DGBasisFunctions.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "peano/utils/Loop.h"
 
 #include "kernels/aderdg/generic/Kernels.h"
@@ -38,6 +38,18 @@ tarch::logging::Log exahype::tests::c::ElasticityKernelTest::_log( "exahype::tes
 namespace exahype {
 namespace tests {
 namespace c {
+
+double**   ElasticityKernelTest::weights                                  = kernels::lobatto::weights;
+double**   ElasticityKernelTest::nodes                                    = kernels::lobatto::nodes;
+double***  ElasticityKernelTest::Kxi                                      = kernels::lobatto::Kxi;
+double***  ElasticityKernelTest::dudx                                     = kernels::lobatto::dudx;
+double***  ElasticityKernelTest::iK1                                      = kernels::lobatto::iK1;
+double***  ElasticityKernelTest::equidistantGridProjector                 = kernels::lobatto::equidistantGridProjector;
+double***  ElasticityKernelTest::FCoeff                                   = kernels::lobatto::FCoeff;
+double**** ElasticityKernelTest::fineGridProjector                        = kernels::lobatto::fineGridProjector;
+kernels::UnivariateFunction** ElasticityKernelTest::basisFunction                 = kernels::lobatto::basisFunction;
+kernels::UnivariateFunction** ElasticityKernelTest::basisFunctionFirstDerivative  = kernels::lobatto::basisFunctionFirstDerivative;
+kernels::UnivariateFunction** ElasticityKernelTest::basisFunctionSecondDerivative = kernels::lobatto::basisFunctionSecondDerivative;
 
 
 ElasticityKernelTest::ElasticityKernelTest()

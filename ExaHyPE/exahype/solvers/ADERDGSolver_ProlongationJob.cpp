@@ -20,8 +20,8 @@ exahype::solvers::ADERDGSolver::ProlongationJob::ProlongationJob(
   NumberOfEnclaveJobs.fetch_add(1); // TODO(Dominic): Not sure yet which queue is optimal
 }
 
-bool exahype::solvers::ADERDGSolver::ProlongationJob::run() {
-  _solver.prolongateFaceDataToDescendant(
+bool exahype::solvers::ADERDGSolver::ProlongationJob::run(bool runOnMasterThread) {
+  _solver.prolongateFaceDataToVirtualCell(
       _cellDescription,_parentCellDescription,_subcellIndex);
 
   NumberOfEnclaveJobs.fetch_sub(1);

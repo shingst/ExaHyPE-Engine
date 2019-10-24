@@ -23,7 +23,7 @@ namespace aderdg {
 namespace generic {
 namespace c {
 
-template <int numberOfVariables, int basisSize>
+template <typename SolverType,int numberOfVariables, int basisSize>
 void surfaceIntegralLinear(double *lduh, const double *const lFhbnd,
                            const tarch::la::Vector<DIMENSIONS, double> &dx) {
   constexpr int order = basisSize - 1;
@@ -33,19 +33,20 @@ void surfaceIntegralLinear(double *lduh, const double *const lFhbnd,
 
   // x faces
   for (int j = 0; j < basisSize; j++) {
-#if defined(_GLL)
-    const double weight = kernels::gaussLobattoWeights[order][j];
-#else
-    const double weight = kernels::gaussLegendreWeights[order][j];
-#endif    
+//#if defined(_GLL)
+//    const double weight = kernels::gaussLobattoWeights[order][j];
+//#else
+//    const double weight = kernels::gaussLegendreWeights[order][j];
+//#endif
+    const double weight = SolverType::weights[order][j];
     const double updateSize = weight / dx[0];
 
     for (int k = 0; k < basisSize; k++) {
       // left flux minus right flux
       for (int l = 0; l < numberOfVariables; l++) {
         lduh[idx_lduh(j, k, l)] -=
-            (lFhbnd[idx_lFhbnd(1, j, l)] * kernels::FRCoeff[order][k] +
-             lFhbnd[idx_lFhbnd(0, j, l)] * kernels::FLCoeff[order][k]) *
+            (lFhbnd[idx_lFhbnd(1, j, l)] * SolverType::FCoeff[order][1][k] +
+             lFhbnd[idx_lFhbnd(0, j, l)] * SolverType::FCoeff[order][0][k]) *
             updateSize;
       }
     }
@@ -54,20 +55,20 @@ void surfaceIntegralLinear(double *lduh, const double *const lFhbnd,
   // y faces
   for (int j = 0; j < basisSize; j++) {
     for (int k = 0; k < basisSize; k++) {
-#if defined(_GLL)
-      const double weight = kernels::gaussLobattoWeights[order][k];
-#else
-      const double weight = kernels::gaussLegendreWeights[order][k];
-#endif
-
+//#if defined(_GLL)
+//      const double weight = kernels::gaussLobattoWeights[order][k];
+//#else
+//      const double weight = kernels::gaussLegendreWeights[order][k];
+//#endif
+      const double weight = SolverType::weights[order][k];
       
       const double updateSize = weight / dx[1];
 
       // back flux minus front flux
       for (int l = 0; l < numberOfVariables; l++) {
         lduh[idx_lduh(j, k, l)] -=
-            (lFhbnd[idx_lFhbnd(3, k, l)] * kernels::FRCoeff[order][j] +
-             lFhbnd[idx_lFhbnd(2, k, l)] * kernels::FLCoeff[order][j]) *
+            (lFhbnd[idx_lFhbnd(3, k, l)] * SolverType::FCoeff[order][1][j] +
+             lFhbnd[idx_lFhbnd(2, k, l)] * SolverType::FCoeff[order][0][j]) *
             updateSize;
       }
     }

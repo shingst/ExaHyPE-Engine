@@ -281,7 +281,7 @@ class exahype::parser::Parser {
    *
    * @return number of cells placed outside of the domain per coordinate axis.
    */
-  int getOutsideCells() const;
+  int getOutsideCellsRight() const;
 
   /**
    * @return number of outside cells which should be placed on the "left" side
@@ -290,15 +290,13 @@ class exahype::parser::Parser {
   int getOutsideCellsLeft() const;
 
   /**
-   * Places one third of the bounding box cells per coordinate direction (plus 2 cells)
-   * outside of the domain.
+   * @return the number of ranks the user wants to put on the coarsest grid.
    *
-   * This way we can put 2^d ranks on the coarsest grid (cubic domains).
-   * This flag overrules the 'outside_cells' and 'outside_cells_left' parameters.
-   *
-   * @return true if the feature is enabled.
+   * @note This only scales the bounding box to a certain size.
+   * The code is not run with MPI. To run the code with MPI,
+   * it must be compiled with MPI
    */
-  bool getPlaceOneThirdOfCellsOuside() const;
+  int getRanksPerDimensionToPutOnCoarsestGrid() const;
 
   /**
    * @return if the bounding box is scaled in any way.
@@ -359,6 +357,13 @@ class exahype::parser::Parser {
    * an optional entry in the spec file.
    */
   bool getFuseMostAlgorithmicSteps() const;
+
+  /**
+   * Similar to getFuseMostAlgorithmicSteps this fused variant uses two grid iterations. The difference is that
+   * only a single loop over the cells is employed to compute the Riemann solves; no additional loop over the vertices is used.
+   * The drawback is that the Riemann solves are run twice.
+   */
+  bool getFuseMostAlgorithmicStepsDoRiemannSolvesTwice() const;
 
   /**
    * @return Time step size factor for the fused ADER-DG time stepping for nonlinear PDEs
@@ -491,6 +496,23 @@ class exahype::parser::Parser {
   int getHaloCells(int solverNumber) const;
 
   /**
+   * @return additional halo cells that are created during the mesh refinement
+   * iterations but it is not ensured these cells exist during the mesh refinement iterations.
+   *
+   * @note If the user has not specified this optional value, 0 is returned.
+   */
+  int getHaloBufferCells(int solverNumber) const;
+
+  /**
+   * @return number of cells around a troubled cell that we additionally flag as
+   * FV-to-DG projection cells. The layers of DG-to-FV cells are increased the same way.
+   * Note that this will enlarge the limiter refinement stencil.
+   *
+   * @note If the user has not specified this optional value, 0 is returned.
+   */
+  int getLimiterBufferCells(int solverNumber) const;
+
+  /**
    * @return The number of regularised fine grid levels.
    *
    * @note If the user has not specified this optional value, 0 is returned.
@@ -579,11 +601,28 @@ class exahype::parser::Parser {
    * The profiling target.
    */
   enum class ProfilingTarget {
-    WholeCode,     //!< The whole code is profiled
-    NeigbhourMerge,//!< The neighbour merge phase is profiled
-    Prediction,    //!< The prediction phase is profiled
-    Update         //!< The update phase is profiled
+    WholeCode,                               //!< The whole code is profiled
+    NeigbhourMerge,                          //!< The neighbour merge phase is profiled
+    Prediction,                              //!< The prediction phase is profiled
+    Update,                                  //!< The update phase is profiled
+    //
+    Empty,                                   //!< The empty adapter is profiled. Everything is switched off.
+    //
+    EmptyEnterCell,                          //!< The empty adapter is profiled. enterCell, is deactivated. Reductions are deactivated.
+    EmptyLeaveCell,                          //!< The empty adapter is profiled. leaveCell is deactivated. Reductions are deactivated.
+    EmptyTouchVertexFirstTime,               //!< The empty adapter is profiled. touchVertexFirstTime is deactivated. Reductions are deactivated.
+    EmptyTouchVertexFirstTimeLeaveCell,      //!< The empty adapter is profiled. touchVertexFirstTime, leaveCell are deactivated. Reductions are deactivated.
+    EmptyEnterCellReduce,                    //!< The empty adapter is profiled. enterCell, is activated. Reductions are activated.
+    EmptyLeaveCellReduce,                    //!< The empty adapter is profiled. leaveCell is activated. Reductions are activated.
+    EmptyTouchVertexFirstTimeReduce,         //!< The empty adapter is profiled. touchVertexFirstTime is activated. Reductions are activated.
+    EmptyTouchVertexFirstTimeLeaveCellReduce //!< The empty adapter is profiled. touchVertexFirstTime, leaveCell are activated. Reductions are activated.
   };
+
+  /**
+   * @return if the profiling target is one of that uses the adapter named Empty, which is a dummy adapter that does do nothing at all. It is used to measure the cost of the grid traversal and the
+   * reduction operation.
+   */
+  bool getProfileEmptyAdapter() const;
 
   /**
    * Specify what code part you plan to run/profile.
@@ -641,8 +680,7 @@ class exahype::parser::Parser {
    */
   int getMinBackgroundJobsInARush();
   /**
-   * @return Maximum number of background jobs a consumer grabs from the queue in a single rush
-   * (default: ~maximum integer number)
+   * @return Maximum number of background jobs a consumer grabs from the queue in a single rush (default: 2* minimum number)
    */
   int getMaxBackgroundJobsInARush();
 

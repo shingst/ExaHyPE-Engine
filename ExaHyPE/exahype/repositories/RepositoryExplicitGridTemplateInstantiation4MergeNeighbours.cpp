@@ -11,6 +11,7 @@
 
 #include "peano/stacks/VertexSTDStack.h"
 
+ #include "exahype/adapters/UniformRefinement.h" 
  #include "exahype/adapters/MeshRefinement.h" 
  #include "exahype/adapters/MeshRefinementAndPlotTree.h" 
  #include "exahype/adapters/FinaliseMeshRefinement.h" 
@@ -18,6 +19,7 @@
  #include "exahype/adapters/InitialPrediction.h" 
  #include "exahype/adapters/FusedTimeStep.h" 
  #include "exahype/adapters/PredictionRerun.h" 
+ #include "exahype/adapters/Broadcast.h" 
  #include "exahype/adapters/BroadcastAndDropNeighbourMessages.h" 
  #include "exahype/adapters/RefinementStatusSpreading.h" 
  #include "exahype/adapters/PredictionOrLocalRecomputation.h" 
@@ -25,6 +27,7 @@
  #include "exahype/adapters/UpdateAndReduce.h" 
  #include "exahype/adapters/Prediction.h" 
  #include "exahype/adapters/Correction.h" 
+ #include "exahype/adapters/Empty.h" 
 
 
 namespace peano {

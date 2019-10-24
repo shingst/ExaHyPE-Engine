@@ -25,7 +25,7 @@
 
 #include "kernels/KernelUtils.h"
 
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 
 tarch::logging::Log Euler::EulerSolver_ADERDG::_log("Euler::EulerSolver_ADERDG");
 
@@ -331,6 +331,7 @@ void Euler::EulerSolver_ADERDG::adjustPointSolution(const double* const x,const 
   if (tarch::la::equals(t, 0.0)) {
     referenceSolution(x,0.0,Q);
   }
+  //referenceSolution(x,0.0,Q);
 }
 
 exahype::solvers::Solver::RefinementControl
@@ -338,29 +339,22 @@ Euler::EulerSolver_ADERDG::refinementCriterion(
     const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& center,
     const tarch::la::Vector<DIMENSIONS, double>& dx, double t,
     const int level) {
-  double largestRho   = -std::numeric_limits<double>::max();
-  double smallestRho  = +std::numeric_limits<double>::max();
-
-  kernels::idx3 idx_luh(Order+1,Order+1,NumberOfVariables);
-  dfor(i,Order+1) {
-    const double* Q = luh + idx_luh(i(1),i(0),0);
-
-    largestRho  = std::max (largestRho,   Q[0]);
-    smallestRho = std::min (smallestRho,  Q[0]);
+  double maxE = -std::numeric_limits<double>::max();
+  double minE = +std::numeric_limits<double>::max();
+  
+  const int nodes = std::pow((Order+1), DIMENSIONS);
+  for(int i=0;i<nodes;i++) {
+    maxE = std::max(maxE, luh[i*NumberOfVariables+NumberOfVariables-1]);
+    minE = std::min(minE, luh[i*NumberOfVariables+NumberOfVariables-1]);
   }
 
-  assertion(largestRho>=smallestRho);
-  const double ratio = ( largestRho-smallestRho ) / smallestRho *
-                       (1+0.1 * getMaximumMeshSize() / dx[0] );
-  //  std::cout << level << std::endl;
-
-  if ( ratio > 0.05 ) {
-    return exahype::solvers::Solver::RefinementControl::Refine;
+  if ( maxE/minE > 1.05 ) {
+    return RefinementControl::Refine;
+  } else if ( level > getCoarsestMeshLevel() ) {
+    return RefinementControl::Erase;
+  } else {
+    return RefinementControl::Keep;
   }
-  else if ( ratio < 0.02 ) {
-    return exahype::solvers::Solver::RefinementControl::Erase;
-  }
-  else return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
 void Euler::EulerSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int direction,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) {
@@ -384,12 +378,12 @@ void Euler::EulerSolver_ADERDG::boundaryValues(const double* const x,const doubl
     std::fill_n(stateOut, NumberOfVariables, 0.0);
     std::fill_n(fluxOut,  NumberOfVariables, 0.0);
     for (int i=0; i<Order+1; i++) {
-      const double ti = t + dt * kernels::gaussLegendreNodes[Order][i];
+      const double ti = t + dt * kernels::legendre::nodes[Order][i];
       referenceSolution(x,ti,Q);
       flux(Q,F);
       for (int v=0; v<NumberOfVariables; v++) {
-        stateOut[v] += Q[v]            * kernels::gaussLegendreWeights[Order][i];
-        fluxOut[v]  += F[direction][v] * kernels::gaussLegendreWeights[Order][i];
+        stateOut[v] += Q[v]            * kernels::legendre::weights[Order][i];
+        fluxOut[v]  += F[direction][v] * kernels::legendre::weights[Order][i];
       }
     }
   } break;

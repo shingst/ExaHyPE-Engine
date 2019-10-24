@@ -1,7 +1,6 @@
 #include "ConstraintsWriter.h"
 
-#include "kernels/DGMatrices.h"
-#include "kernels/GaussLegendreQuadrature.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "kernels/KernelUtils.h"
 
 #include "Fortran/PDE.h" // ADMConstraints()

@@ -29,7 +29,7 @@
 // Should thus be placed in kernel module or the solver
 // should provide a function that computes solution values
 // at equidistant grid points
-#include "kernels/DGMatrices.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "kernels/KernelUtils.h" // index functions
 #include "peano/utils/Loop.h"
 
@@ -299,7 +299,7 @@ void exahype::plotters::FiniteVolumes2VTK::plotPatch(const int solverNumber,solv
   const int element = cellInfo.indexOfFiniteVolumesCellDescription(solverNumber);
   auto& cellDescription  = cellInfo._FiniteVolumesCellDescriptions[element];
 
-  if (cellDescription.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Cell) {
+  if (cellDescription.getType()==exahype::solvers::FiniteVolumesSolver::CellDescription::Type::Leaf) {
     const tarch::la::Vector<DIMENSIONS, double> &offsetOfPatch = cellDescription.getOffset(), &sizeOfPatch = cellDescription.getSize();
 
     // Slicing debugging:

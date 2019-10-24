@@ -74,9 +74,9 @@ void exahype::plotters::ADERDG2FlashHDF5::interpolateCartesianSlicedPatch(
 #include "exahype/plotters/FlashHDF5/FlashHDF5Writer.h"
 #include "kernels/KernelUtils.h" // indexing
 #include "peano/utils/Loop.h" // dfor
-#include "kernels/DGMatrices.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "exahype/solvers/ADERDGSolver.h"
-#include "kernels/DGBasisFunctions.h"
+#include "kernels/GaussLegendreBasis.h"
 #include "tarch/logging/Log.h"
 #include <sstream>
 
@@ -112,7 +112,7 @@ void exahype::plotters::ADERDG2FlashHDF5::plotPatch(const int solverNumber,solve
   const int element = cellInfo.indexOfADERDGCellDescription(solverNumber);
   auto& aderdgCellDescription  = cellInfo._ADERDGCellDescriptions[element];
 
-  if (aderdgCellDescription.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Cell) {
+  if (aderdgCellDescription.getType()==exahype::solvers::ADERDGSolver::CellDescription::Type::Leaf) {
     double* solverSolution = static_cast<double*>(aderdgCellDescription.getSolution());
 
     plotPatch(
@@ -171,10 +171,10 @@ void exahype::plotters::ADERDG2FlashHDF5::interpolateCartesianPatch(const dvec& 
       dfor(ii,basisSize) { // Gauss-Legendre node indices
         int iGauss = peano::utils::dLinearisedWithoutLookup(ii,order + 1);
         interpoland[unknown] +=
-		kernels::equidistantGridProjector1d[order][ii(0)][i(0)] *
-		kernels::equidistantGridProjector1d[order][ii(1)][i(1)] *
+		kernels::legendre::equidistantGridProjector[order][ii(0)][i(0)] *
+		kernels::legendre::equidistantGridProjector[order][ii(1)][i(1)] *
 		#if DIMENSIONS==3
-		kernels::equidistantGridProjector1d[order][ii(2)][i(2)] *
+		kernels::legendre::equidistantGridProjector[order][ii(2)][i(2)] *
 		#endif
 		u[iGauss * solverUnknowns + unknown];
         assertion3(interpoland[unknown] == interpoland[unknown], offsetOfPatch, sizeOfPatch, iGauss);
@@ -220,7 +220,7 @@ void exahype::plotters::ADERDG2FlashHDF5::interpolateCartesianSlicedPatch(const 
 		dvec pos = plane + slicer.project(i).convertScalar<double>() * (sizeOfPatch(0)/(order));
 		
 		for (int unknown=0; unknown < solverUnknowns; unknown++) {
-			interpoland[unknown] = kernels::interpolate(
+			interpoland[unknown] = kernels::legendre::interpolate(
 				offsetOfPatch.data(),
 				sizeOfPatch.data(),
 				pos.data(),
@@ -259,7 +259,7 @@ void exahype::plotters::ADERDG2FlashHDF5::interpolateCartesianSlicedPatch(const 
 		dvec pos = line + (i.convertScalar<double>())* (sizeOfPatch(0)/(order));
 		
 		for (int unknown=0; unknown < solverUnknowns; unknown++) {
-			interpoland[unknown] = kernels::interpolate(
+			interpoland[unknown] = kernels::legendre::interpolate(
 				offsetOfPatch.data(),
 				sizeOfPatch.data(),
 				pos.data(),

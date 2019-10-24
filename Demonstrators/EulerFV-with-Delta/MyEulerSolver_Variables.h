@@ -207,7 +207,7 @@ class EulerFV::AbstractMyEulerSolver::ReadOnlyVariables : public EulerFV::Abstra
 
 class EulerFV::AbstractMyEulerSolver::Variables : public EulerFV::AbstractMyEulerSolver::VariableMetrics{
   private:
-    double* _Q;
+    double* const _Q;
   public:
     static constexpr int SizeVariables  = 6;
     static constexpr int SizeParameters = 0;
@@ -263,7 +263,7 @@ class EulerFV::AbstractMyEulerSolver::Variables : public EulerFV::AbstractMyEule
     }
     tarch::la::Vector<3,double> j() const {
       tarch::la::Vector<3,double> values;
-      values=_Q[1],_Q[2],_Q[3],_Q[3];
+      values=_Q[1],_Q[2],_Q[3];
       return values;
     }
     // setters for j
@@ -292,7 +292,7 @@ class EulerFV::AbstractMyEulerSolver::Variables : public EulerFV::AbstractMyEule
 
 class EulerFV::AbstractMyEulerSolver::Fluxes : public EulerFV::AbstractMyEulerSolver::VariableMetrics {
   private:
-    double** _F;
+    double** const _F;
   public:
     Fluxes(double** const F) : _F(F) {}
     
@@ -564,5 +564,75 @@ _F[0][1+2],_F[1][1+2],_F[2][1+2];
 }; // end of Fluxes
 
 // NamingSchemes:
+
+//
+// Global Observables
+//
+class EulerFV::AbstractMyEulerSolver::ReadOnlyGlobalObservables {
+  private:
+    const double* const _observables;
+  public:
+    static constexpr int Size = 0;
+    
+    ReadOnlyGlobalObservables(const double* const observables) : _observables(observables) {}
+    
+    double operator [] (int index) const {
+      assertion(index>=0 && index < Size);
+      return _observables[index];
+    }
+    
+    double operator () (int index) const {
+      assertion(index>=0 && index < Size);
+      return _observables[index];
+    }
+    
+    const double* data() const {
+      return _observables;
+    }
+    
+    int size() const {
+      return Size;
+    }
+
+}; // end of ReadOnlyGlobalObservables
+
+
+class EulerFV::AbstractMyEulerSolver::GlobalObservables {
+  private:
+    double* const _observables;
+  public:
+    static constexpr int Size = 0;
+  
+    GlobalObservables(double* const observables) : _observables(observables) {}
+    
+    void operator = (GlobalObservables& observables) {
+      std::copy(observables.data(),observables.data()+Size,_observables);
+    }
+    
+    void operator = (ReadOnlyGlobalObservables& observables) {
+      assertion(observables.size()==Size);
+      std::copy(observables.data(),observables.data()+Size,_observables);
+    }
+    
+    double& operator [] (int index) {
+      assertion(index>=0 && index < Size);
+      return _observables[index];
+    }
+    
+    double& operator () (int index) {
+      assertion(index>=0 && index < Size);
+      return _observables[index];
+    }
+    
+    double* data() {
+      return _observables;
+    }
+    
+    int size() const {
+      return Size;
+    }
+
+}; 
+// end of GlobalObservables
 
 #endif

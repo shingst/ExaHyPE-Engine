@@ -50,7 +50,7 @@ exahype::repositories::RepositoryFactory& exahype::repositories::RepositoryFacto
   return singleton;
 }
 
-    
+
 exahype::repositories::Repository* 
 exahype::repositories::RepositoryFactory::createWithSTDStackImplementation(
   peano::geometry::Geometry&                   geometry,

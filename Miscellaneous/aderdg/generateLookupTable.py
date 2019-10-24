@@ -7,6 +7,7 @@
 
 :synopsis: Generates lookup table initialisation code up to a specific order.
 """
+import mpmath as mp
 import numpy as np
 from os import remove
 from numpy import linalg
@@ -14,26 +15,18 @@ import sys
 import os
 import errno
 
-from fileWriter import writeMatrixLookupTableInitToFile, writeVectorLookupTableInitToFile
 from aderdg import *
-import gaussLobattoQuadrature as lob
+from generateBasisFunctionImplementations import *
+import gaussLobattoQuadrature  as lob
+import gaussLegendreQuadrature as leg
 
 #-----------------------------------------------------------
 # main
 #-----------------------------------------------------------
-maxOrder = 9;
-minOrder = 0;
-minDim   = 2;
-maxDim   = 3;
-
-# for a matrix-matrix multiplication C = A *B
-# the row count of the matrix A has to be a multiple
-# of the SIMD_SIZE. This is achieved through padding
-# with zeros. As the system matrices currently
-# are on the right side (matrix B) no padding is required.
-# This is likely to change in the future. 
-
-outputDirectory = "generatedCode"
+maxOrder  = 15
+printPrec = 64
+#outputDirectory = "generatedCode"
+outputDirectory="/home/dominic/Documents/dev/ExaHyPE/ExaHyPE-Engine/ExaHyPE/kernels/generated"
 
 # create directory for output files if not existing
 try:
@@ -42,156 +35,198 @@ except OSError as exception:
     if exception.errno != errno.EEXIST:
         raise
 
-# remove all .cpp files (we are in append mode!) 
-for fileName in os.listdir(outputDirectory):
-    if fileName.endswith(".cpp"):
-        remove(outputDirectory+"/"+fileName)
-       
-
-# later on there may be several output files, 
-# one for each padding scheme
-filename=outputDirectory+"/matrices.cpp"
-filename2=outputDirectory+"/gausPoints.cpp"
-filename3=outputDirectory+"/lobPoints.cpp"
-
 
 # we process one order after another
 # (1) write the #ifdef construct to the output file
 # (2) compute the quadrature points and weights
 # (3) compute the system matrices and write them to the output file
 
-out = open("generatedCode/lookupTableInit.csnippet", "w")
-out2 = open("generatedCode/gausPoints.csnippet", "w")
-out3 = open("generatedCode/lobPoints.csnippet", "w")
+gaulegImpl   = open(outputDirectory+"/GaussLegendreBasis.csnippet", "w")
+gaulobImpl   = open(outputDirectory+"/GaussLobattoBasis.csnippet", "w")
+gaulegHeader = open(outputDirectory+"/GaussLegendreBasis.hsnippet", "w")
+gaulobHeader = open(outputDirectory+"/GaussLobattoBasis.hsnippet", "w")
 
-order = minOrder
-while (order <= maxOrder):    
-    dim = minDim
-    out.write("// N=%d\n" % order)
-    # Gauss-Legendre nodes and weights
-    x, w = np.polynomial.legendre.leggauss(order+1)
-    # map onto [0,1]
-    xGPN = 0.5*(x+1)
-    wGPN = 0.5*w
+# header
+for rule, outfile in { "legendre" : gaulegHeader, "lobatto" : gaulobHeader }.items():
+    def writeVector(label,suffix="\n\n"):
+        outfile.write("\n".join(["extern double %s_%d[%d+1];" % (label,i,i) for i in range(0,maxOrder+1)]))
+        outfile.write("\nextern double* %s[%d+1];" % (label,maxOrder))
+        outfile.write(suffix)
     
-    weights = np.outer(xGPN, xGPN)
-	
-    text = ""
-    for l in range(0,order+1):
-        line = "gaussLegendreWeights[%d][%d] = %.16g;\n" % (order,l,wGPN[l])
-        text += line
-    out2.write(text)
-
-    text = ""
-    for l in range(0,order+1):
-        line = "gaussLegendreNodes  [%d][%d] = %.16g;\n" % (order,l,xGPN[l])
-        text += line
-    out2.write(text)
-	
-    out2.write("\n")
+    def writeMatrix(label,suffix="\n\n"):
+        for r in range(0,maxOrder+1):
+            outfile.write("\n".join(["extern double %s_%d_%d[%d+1];" % (label,r,i,r) for i in range(0,r+1)]))
+            outfile.write("\nextern double* %s_%d[%d+1];" % (label,r,r))
+            outfile.write("\n")
+        outfile.write("extern double** %s[%d+1];" % (label,maxOrder))
+        outfile.write(suffix)
     
-    #Gauss-Lobatto nodes and weights
-    if(order+1 == 1):
-        out3.write("//Gauss-Lobatto isn't defined for n=1, using Gauss-Legendre instead\n")
-        out3.write("gaussLobattoWeights[0][0] = 1;   //should not be used\n")
-        out3.write("gaussLobattoNodes  [0][0] = 0.5; //should not be used\n")
-        out3.write("\n")
-    elif(order+1 > 1):
-        x, w = lob.gaulob(0., 1., order+1)
-        text = ""
-        for l in range(0,order+1):
-            line = "gaussLobattoWeights[%d][%d] = %.16g;\n" % (order,l,w[l])
-            text += line
-        out3.write(text)
+    outfile.write("namespace kernels {\n")
+    outfile.write("namespace %s {\n" % rule)
+    writeVector("weights")
+    writeVector("nodes")
+    writeMatrix("Kxi")
+    #writeMatrix("MM")
+    writeMatrix("iK1")
+    writeMatrix("dudx")
+    writeMatrix("equidistantGridProjector")
 
-        text = ""
-        for l in range(0,order+1):
-            line = "gaussLobattoNodes  [%d][%d] = %.16g;\n" % (order,l,x[l])
-            text += line
-        out3.write(text)
+    #[order][left/right][i_fine]
+    for lr in [0,1]:
+        outfile.write("\n".join(["extern double FCoeff_%d_%d[%d+1];\n" % (lr,p,p) for p in range(0,maxOrder+1)]))        
+    outfile.write("\n".join(["extern double* FCoeff_%d[2];\n" % (p) for p in range(0,maxOrder+1)]))
+    outfile.write("extern double** FCoeff[%d+1];\n\n" % (maxOrder))
+    outfile.write("\n")
 
-        out3.write("\n")
+    #[order][interval][i_fine][i_coarse]
+    def writeFineGridProjectorMatrix(label,order,suffix="\n\n"):
+        outfile.write("\n".join(["extern double %s_%d[%d+1];" % (label,i,order) for i in range(0,order+1)]))
+        outfile.write("\nextern double* %s[%d+1];" % (label,order))
+        outfile.write(suffix)
 
+    for p in range(0,maxOrder+1):
+        writeFineGridProjectorMatrix("fineGridProjector_0_%d" % p,p,suffix="\n")
+        writeFineGridProjectorMatrix("fineGridProjector_1_%d" % p,p,suffix="\n")
+        writeFineGridProjectorMatrix("fineGridProjector_2_%d" % p,p,suffix="\n")
+        outfile.write("extern double** fineGridProjector_%d[3];\n" % p)
 
-    #----------------------------------------------------------------
-    # compute matrices and export
-    #----------------------------------------------------------------
-###############################################################################
-# Stiffness matrix
-###############################################################################
-    Kxi  = assembleStiffnessMatrix(xGPN, wGPN, order)
-#    Kxi2 = assembleStiffnessMatrixShorter(xGPN, wGPN, order)
+    outfile.write("extern double*** fineGridProjector[%d+1];\n\n" % (maxOrder))
 
-    writeMatrixLookupTableInitToFile( out,"",Kxi,order+1,order+1,"Kxi[%d]" % order );
+    # basis functions    
+    outfile.write("\n")
+    for p in range(0,maxOrder+1):
+        for i in range(0,p+1):
+            outfile.write(                "double basisFunction_%d_%d(const double& s);\n" % (p,i))    
+            outfile.write( "double basisFunctionFirstDerivative_%d_%d(const double& s);\n" % (p,i))    
+            outfile.write("double basisFunctionSecondDerivative_%d_%d(const double& s);\n" % (p,i))    
+    for p in range(0,maxOrder+1):
+        outfile.write("extern UnivariateFunction basisFunction_%d[%d+1];\n"                 % (p,p))
+        outfile.write("extern UnivariateFunction basisFunctionFirstDerivative_%d[%d+1];\n"  % (p,p))
+        outfile.write("extern UnivariateFunction basisFunctionSecondDerivative_%d[%d+1];\n" % (p,p))
+    outfile.write("extern UnivariateFunction* basisFunction[%d+1];\n"                 % (maxOrder))
+    outfile.write("extern UnivariateFunction* basisFunctionFirstDerivative[%d+1];\n"  % (maxOrder))
+    outfile.write("extern UnivariateFunction* basisFunctionSecondDerivative[%d+1];\n" % (maxOrder))
+    
+    # end
+    outfile.write("}\n")
+    outfile.write("}\n")
 
-###############################################################################
-# Mass matrix
-###############################################################################
-    MM = assembleMassMatrix(xGPN, wGPN, order)
-    #writeMatrixToFile(MM, order+1, order+1, "MM", filename)
+#gaulegHeader.close()
+#gaulobHeader.close()
+#sys.exit()
 
+# source
+def quadNodes(order,rule):
+    if rule is "legendre": 
+        return leg.gauleg(order+1)
+    elif rule is "lobatto":
+        if(order+1 == 1):
+            return [0.5], [1]
+        elif(order+1 > 1):
+            return lob.gaulob(0., 1., order+1)
 
-###############################################################################
-# Time lifting operator (is the same as FLCoeff)
-###############################################################################
-    F0 = assembleTimeFluxMatrixF0(xGPN, order)
-    writeVectorLookupTableInitToFile(out, "", F0, order+1, "F0[%d]" % order)
+for rule, outfile in { "legendre" : gaulegImpl, "lobatto" : gaulobImpl }.items():
+    for order in range(0,maxOrder+1):    
+        outfile.write("// order %d\n" % order)
+        
+        def writeVector(vector,label):
+            outfile.write("double kernels::%s::%s_%d[%d]={\n  %s\n};\n" % (rule,label,order,order+1,",\n  ".join([mp.nstr(i,printPrec) for i in vector])))
+        
+        def writeMatrix(matrix,label):
+            for r in range(0,order+1):
+                outfile.write("double kernels::%s::%s_%d_%d[%d+1]={\n  %s\n};\n"   % (rule,label,order,r,order,
+                    ",\n  ".join([mp.nstr(i,printPrec) for i in matrix[r]])))
+            outfile.write("double* kernels::%s::%s_%d[%d+1]={\n  %s\n};\n"  % (rule,label,order,order,
+                ",\n  ".join(["%s_%d_%d" % (label,order,i) for i in range(0,order+1)])))
 
-###############################################################################
-# Left-hand side matrix appearing in predictor computation 
-###############################################################################
-    K1 = assembleK1(Kxi, xGPN, order) 
-    iK1 = np.linalg.inv(K1)
-    writeMatrixLookupTableInitToFile( out,"",iK1,order+1,order+1,"iK1[%d]" % order)
+        # quad nodes
+        x,w = quadNodes(order,rule)
+        writeVector(w,"weights")
+        writeVector(x,"nodes")
 
-###############################################################################
-# Lifting operators
-# (Do not see a reason to store FLCoeff and FRCoeff if we have FCoeff)
-# (Do not see a reason to store FLCoeff, FRCoeff, and FCoeff if
-# we have the equidistiantGridProjectors)
-###############################################################################
-    FLCoeff, _ = BaseFunc1d(0.0, xGPN, order) 
-    FRCoeff, _ = BaseFunc1d(1.0, xGPN, order)
-    FCoeff = [FLCoeff, FRCoeff]
+        # reference stiffness matrix
+        Kxi = assembleStiffnessMatrix(x, w, order)
+        writeMatrix(Kxi,"Kxi")
 
-    writeVectorLookupTableInitToFile(out, "", FLCoeff, order+1, "FLCoeff[%d]" % order)
-    writeVectorLookupTableInitToFile(out, "", FRCoeff, order+1, "FRCoeff[%d]" % order)
-    writeMatrixLookupTableInitToFile(out, "", FCoeff, 2, order+1, "FCoeff[%d]" % order)
+        # mass matrix
+        MM = assembleMassMatrix(x, w, order)
+        #writeMatrix(MM,"MM")
 
+        # left-hand side matrix appearing in predictor computation 
+        K1 = assembleK1(Kxi, x, order) 
+        iK1 = mp.inverse(K1).tolist()
+        writeMatrix(iK1,"iK1")
 
-###############################################################################
-# Derivative Matrix
-###############################################################################
-    dudx = assembleDiscreteDerivativeOperator(MM, Kxi)
-    writeMatrixLookupTableInitToFile(out,"",dudx,order+1,order+1,"dudx[%d]" % order)
+        # derivative Matrix
+        dudx = assembleDiscreteDerivativeOperator(MM, Kxi)
+        writeMatrix(dudx,"dudx")
 
-###############################################################################
-# Equidistant grid projectors
-###############################################################################
+        # equidistant grid projectors
+        equidistantGridProjector = assembleEquidistantGridProjector1d(x, order)
+        writeMatrix(equidistantGridProjector,"equidistantGridProjector")
 
-    # dim == 2 only
-#    subOutputMatrix  = assembleSubOutputMatrix(xGPN, order, dim)
-#    subOutputMatrix2 = assembleEquidistantGridProjector2d(xGPN, order, dim)    
-#    for j in range(0, order+1):
-#        for i in range(0, order+1):
-#            print (subOutputMatrix[i][j] - subOutputMatrix2[i][j])
+        # lifting operators
+        FLCoeff, _ = BaseFunc1d(mp.mpf(0.0), x, order) 
+        FRCoeff, _ = BaseFunc1d(mp.mpf(1.0), x, order)
+        writeVector(FLCoeff,"FCoeff_0")
+        writeVector(FRCoeff,"FCoeff_1")
+        outfile.write("double* kernels::%s::FCoeff_%d[2]={FCoeff_0_%d,FCoeff_1_%d};\n" % (rule,order,order,order))
 
-#    writeMatrixLookupTableInitToFile(out, "", subOutputMatrix, (order+1)**dim, (order+1)**dim, "subOutputMatrix[%d]" % order)
-    equidistantGridProjector1d = assembleEquidistantGridProjector1d(xGPN, order, dim)
-    writeMatrixLookupTableInitToFile(out, "", equidistantGridProjector1d, (order+1), (order+1), "equidistantGridProjector1d[%d]" % order)
+        # fine grid projectors
+        fineGridProjector1d0 = assembleFineGridProjector1d(x, 0, order)
+        fineGridProjector1d1 = assembleFineGridProjector1d(x, 1, order)
+        fineGridProjector1d2 = assembleFineGridProjector1d(x, 2, order)
+        writeMatrix(fineGridProjector1d0,"fineGridProjector_0")
+        writeMatrix(fineGridProjector1d1,"fineGridProjector_1")
+        writeMatrix(fineGridProjector1d2,"fineGridProjector_2")
+        outfile.write("double** kernels::%s::fineGridProjector_%d[3]={fineGridProjector_0_%d,fineGridProjector_1_%d,fineGridProjector_2_%d};\n" % (rule,order,order,order,order))
 
-###############################################################################
-# Fine grid projectors
-###############################################################################
-    fineGridProjector1d0 = assembleFineGridProjector1d(xGPN, 0, order, dim)
-    fineGridProjector1d1 = assembleFineGridProjector1d(xGPN, 1, order, dim)
-    fineGridProjector1d2 = assembleFineGridProjector1d(xGPN, 2, order, dim)
-    writeMatrixLookupTableInitToFile(out, "", fineGridProjector1d0, (order+1), (order+1), "fineGridProjector1d[%d][0]" % order)
-    writeMatrixLookupTableInitToFile(out, "", fineGridProjector1d1, (order+1), (order+1), "fineGridProjector1d[%d][1]" % order)
-    writeMatrixLookupTableInitToFile(out, "", fineGridProjector1d2, (order+1), (order+1), "fineGridProjector1d[%d][2]" % order)
+        # basis functions
+        outfile.write("\n")
+        generateBasisFunctionDefinitions(outfile,rule,order,x,printPrec)
 
-    print("Done with order "+ str(order))
-    order+=1
-out.close()
+        def writeBasisFunctionArray(label):
+            outfile.write("kernels::UnivariateFunction kernels::%s::%s_%d[%d+1]={\n  %s\n};\n" % (rule,label,order,order,
+                ",\n  ".join(["%s_%d_%d" % (label,order,i) for i in range(0,order+1)])))
 
+        writeBasisFunctionArray("basisFunction")
+        writeBasisFunctionArray("basisFunctionFirstDerivative")
+        writeBasisFunctionArray("basisFunctionSecondDerivative")
 
+        print("Done with operators for order "+ str(order))
+
+    # collect the arrays per order
+    outfile.write("\n")
+    # weights,nodes
+    for array in ["weights","nodes"]:
+        outfile.write("double* kernels::%s::%s[%d+1] = {\n  %s\n};\n" % (rule,array,maxOrder,
+        ",\n  ".join(["%s_%d" % (array,i) for i in range(0,maxOrder+1)])))
+    # Kxi,iK1,dudx,equidistantGridProjector
+    for array in ["Kxi","iK1","dudx","equidistantGridProjector"]:
+        outfile.write("double** kernels::%s::%s[%d+1] = {\n  %s\n};\n" % (rule,array,maxOrder,
+            ",\n  ".join(["%s_%d" % (array,i) for i in range(0,maxOrder+1)])))
+    
+    # FCoeff
+    array="FCoeff"
+    outfile.write("double** kernels::%s::%s[%d+1] = {\n  %s\n};\n" % (rule,array,maxOrder,
+        ",\n  ".join(["%s_%d" % (array,i) for i  in range(0,maxOrder+1)])))
+    
+    # fineGridProjector1d
+    array="fineGridProjector"
+    outfile.write("double*** kernels::%s::%s[%d+1] = {\n  %s\n};\n" % (rule,array,maxOrder,
+        ",\n  ".join(["%s_%d" % (array,i) for i in range(0,maxOrder+1)])))
+
+    # basis functions
+    def writeBasisFunctionArray(label):
+        outfile.write("kernels::UnivariateFunction* kernels::%s::%s[%d+1]={\n  %s\n};\n" % (rule,label,order,
+            ",\n  ".join(["%s_%d" % (label,i) for i in range(0,order+1)])))
+
+    writeBasisFunctionArray("basisFunction")
+    writeBasisFunctionArray("basisFunctionFirstDerivative")
+    writeBasisFunctionArray("basisFunctionSecondDerivative")
+    
+
+gaulegHeader.close()
+gaulegImpl.close()
+gaulobHeader.close()
+gaulobImpl.close()

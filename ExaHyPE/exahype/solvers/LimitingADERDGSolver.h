@@ -116,23 +116,6 @@ protected:
    */
   const double _DMPDifferenceScaling;
 
-  /**
-   * A counter holding the number of iterations to
-   * cure a troubled cell.
-   * This counter will be initialised to a certain
-   * (user-dependent?) value if a cell is flagged as troubled.
-   *
-   * If the cell is not troubled for one iteration, the counter is
-   * decreased until it reaches 0. Then, the
-   * cell is considered as cured.
-   * Note that the counter can be reset to the maximum value
-   * in the meantime if the cell is marked again as troubled.
-   *
-   * This counter prevents that a cell is toggling between
-   * troubled and Ok (cured).
-   */
-  int _iterationsToCureTroubledCell;
-
 private:
   typedef exahype::records::ADERDGCellDescription SolverPatch;
 
@@ -300,11 +283,10 @@ private:
    * if feature-based refinement was requested by the user.
    * Returns MeshUpdateEvent::None in all other cases.
    */
-  MeshUpdateEvent determineRefinementStatusAfterSolutionUpdate(
-      SolverPatch&                                               solverPatch,
-      CellInfo&                                                  cellInfo,
-      const bool                                                 isTroubled,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed);
+  MeshUpdateEvent updateRefinementStatusAfterSolutionUpdate(
+      SolverPatch& solverPatch,
+      CellInfo&    cellInfo,
+      const bool   isTroubled);
 
   /**
    * Takes the FV solution from the limiter patch and projects it on the
@@ -406,7 +388,6 @@ private:
    *
    * @param solverPatch             an ADER-DG cell description of type Cell
    * @param cellInfo                struct referring to all cell descriptions registered for a cell
-   * @param neighbourMergePerformed flag indicating where a neighbour merge has been performed (at spawn time if run by job)
    * @param isFirstTimeStepOfBatch  if this the first time step in a batch (at spawn time if run by job)
    * @param isLastTimeStepOfBatch   if this the last time step in a batch  (at spawn time if run by job)
    * @param predictionTimeStamp     the time stamp which should be used for the prediction (at spawn time if run by job)
@@ -417,30 +398,41 @@ private:
    * @note Might be called by background task. Do not synchronise time step data here.
    */
   void fusedTimeStepBody(
-      SolverPatch&                                               solverPatch,
-      CellInfo&                                                  cellInfo,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
-      const double                                               predictionTimeStamp,
-      const double                                               predictionTimeStepSize,
-      const bool                                                 isFirstTimeStepOfBatch,
-      const bool                                                 isLastTimeStepOfBatch,
-      const bool                                                 isSkeletonCell,
-      const bool                                                 mustBeDoneImmediately);
+      SolverPatch&                                       solverPatch,
+      CellInfo&                                          cellInfo,
+      const double                                       predictionTimeStamp,
+      const double                                       predictionTimeStepSize,
+      const bool                                         isFirstTimeStepOfBatch,
+      const bool                                         isLastTimeStepOfBatch,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers,
+      const bool                                         isSkeletonCell,
+      const bool                                         mustBeDoneImmediately);
+
+  /**
+   * @return Computes a merged limiter status as a maximum of
+   * the current cell value and the neighbours' values decremented by 1.
+   *
+   * @note This method is required as we cure troubled cells
+   * on the fly by lowering their limiter status by 2.
+   * If the
+   *
+   * @param[in] solverPatch A solver patch.
+   */
+  static int computeMergedRefinementStatus(const SolverPatch& solverPatch);
 
   /**
    * Body of LimitingADERDGSolver::updateOrRestrict(...).
    *
    * @param solverPatch        a solver patch which may or may not have an associated limiter patchs
    * @param cellInfo           links to all solver and limiter patches registered for a cell
-   * @param isAtRemoteBoundary checks if the cell is at an remote boundary (information required for compression)
+   *
    *
    * @return an admissible time step size and a mesh update event for the solver patch
    */
   void updateBody(
-      SolverPatch&                                               solverPatch,
-      CellInfo&                                                  cellInfo,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
-      const bool                                                 isAtRemoteBoundary);
+      SolverPatch&                                       solverPatch,
+      CellInfo&                                          cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers);
 
  /**
    * Rollback to the previous time step, i.e,
@@ -469,7 +461,7 @@ private:
    */
   bool isInvolvedInLocalRecomputation(const SolverPatch& solverPatch) const {
     return
-        solverPatch.getType()==SolverPatch::Type::Cell &&
+        solverPatch.getType()==SolverPatch::Type::Leaf &&
         solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
         solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell-2;
   }
@@ -487,23 +479,32 @@ private:
    *
    * Legend: O: Ok (ADER-DG cells), T: Troubled (FV cells), NT: FV->DG cells, NNT: DG->FV cells
    *
-   * @param solverPatch                    a solver patch
-   * @param cellInfo                       struct referring to all cell description associated with a cell
-   * @param limiterNeighbourMergePerformed flags indicating in which direction the limiter has performed a neighbour merge.
+   * @param solverPatch a solver patch
+   * @param cellInfo    struct referring to all cell description associated with a cell
    */
   void localRecomputation(
-      SolverPatch&                                               solverPatch,
-      CellInfo&                                                  cellInfo,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& limiterNeighbourMergePerformed);
+      SolverPatch&                                       solverPatch,
+      CellInfo&                                          cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers);
 
   /**
    * Function Body for public recomputeSolutionLocally function.
    */
   double localRecomputationBody(
-      SolverPatch&                                               solverPatch,
-      Solver::CellInfo&                                          cellInfo,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& limiterNeighbourMergePerformed,
-      const bool                                                 isAtRemoteBoundary);
+      SolverPatch&                                       solverPatch,
+      Solver::CellInfo&                                  cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers);
+
+  /**
+   * Veto a coarsening attempt of a Parent cell description if
+   * the restricted solution is troubled.
+   *
+   * @param cellDescriptionsIndex heap index associated with a mesh cell
+   * @param solverNumber          identification number of a solver.
+   */
+  void vetoCoarseningIfRestrictedSolutionIsTroubled(
+      const int cellDescriptionsIndex,
+      const int solverNumber);
 
 #ifdef Parallel
 
@@ -566,26 +567,18 @@ private:
    *
    * TODO(Dominic): Minimise time step sizes and refinement requests per patch
    * (->transpose the typical minimisation order)
-   *
-   * @note The state of the neighbourMergePerformed flags is used internally by
-   * some of the kernels, e.g. in order to determine where to perform a face integral.
-   * However, they have to be reset before the next iteration as they indicate on
-   * which face a Riemann solve has already been performed or not (their original usage).
-   * The flags are thus reset directly after spawning a FusedTimeStepJob.
-   * Therefore, we need to copy the neighbourMergePerformed flags when spawning
-   * a FusedTimeStep job.
    */
   class FusedTimeStepJob: public tarch::multicore::jobs::Job {
   private:
-    LimitingADERDGSolver&                                     _solver;
-    SolverPatch&                                              _solverPatch;
-    CellInfo                                                  _cellInfo;                // copy
-    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed; // copy
-    const double                                              _predictionTimeStamp;     // copy
-    const double                                              _predictionTimeStepSize;  // copy
-    const bool                                                _isFirstTimeStepOfBatch;  // copy
-    const bool                                                _isLastTimeStepOfBatch;   // copy
-    const bool                                                _isSkeletonJob;
+    LimitingADERDGSolver&                             _solver;
+    SolverPatch&                                      _solverPatch;
+    CellInfo                                          _cellInfo;               // copy
+    const double                                      _predictionTimeStamp;    // copy
+    const double                                      _predictionTimeStepSize; // copy
+    const bool                                        _isFirstTimeStepOfBatch; // copy
+    const bool                                        _isLastTimeStepOfBatch;  // copy
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _boundaryMarkers;        // copy
+    const bool                                        _isSkeletonJob;
   public:
 
   /**
@@ -604,16 +597,17 @@ private:
    * @param isSkeletonJob          if this job was spawned in a cell belonging to the MPI or AMR skeleton
      */
     FusedTimeStepJob(
-        LimitingADERDGSolver& solver,
-        SolverPatch&          solverPatch,
-        CellInfo&             cellInfo,
-        const double          predictionTimeStamp,
-        const double          predictionTimeStepSize,
-        const bool            isFirstTimeStepOfBatch,
-        const bool            isLastTimeStepOfBatch,
-        const bool            isSkeletonJob);
+        LimitingADERDGSolver&                              solver,
+        SolverPatch&                                       solverPatch,
+        CellInfo&                                          cellInfo,
+        const double                                       predictionTimeStamp,
+        const double                                       predictionTimeStepSize,
+        const bool                                         isFirstTimeStepOfBatch,
+        const bool                                         isLastTimeStepOfBatch,
+        const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers,
+        const bool                                         isSkeletonJob);
 
-    bool run() override;
+    bool run(bool runOnMasterThread) override;
   };
 
   /**
@@ -624,38 +618,33 @@ private:
    * It further important to flag this job as high priority job to
    * ensure completion before the next reduction.
    *
-   * @note The state of the neighbourMergePerformed flags is used internally by
-   * some of the kernels, e.g. in order to determine where to perform a face integral.
-   * However, they have to be reset before the next iteration as they indicate on
-   * which face a Riemann solve has already been performed or not (their original usage).
-   * The flags are thus reset directly after spawning the job.
-   * Therefore, we need to copy the neighbourMergePerformed flags them.
+   * @note All update jobs have the same priority as their outcome is not directly
+   * piped into an MPI send task. This is different to the result of the FusedTimeStepJob.
    */
   class UpdateJob: public tarch::multicore::jobs::Job {
     private:
-      LimitingADERDGSolver&                                     _solver; // TODO not const because of kernels
-      SolverPatch&                                              _solverPatch;
-      CellInfo                                                  _cellInfo;
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _neighbourMergePerformed; // copy
-      const bool                                                _isAtRemoteBoundary;
+      LimitingADERDGSolver&                             _solver; // TODO not const because of kernels
+      SolverPatch&                                      _solverPatch;
+      CellInfo                                          _cellInfo;
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _boundaryMarkers; // copy
     public:
       /**
        * Construct an UpdateJob.
        *
        * @note Job is always spawned as high priority job.
        *
-       * @param solver                 the spawning solver
-       * @param solverPatch        a cell description
-       * @param cellInfo               links to all cell descriptions associated with the cell
-       * @param isSkeletonJob          if the cell is a skeleton cell
+       * @param     solver          the spawning solver
+       * @param     solverPatch     a cell description
+       * @param     cellInfo        links to all cell descriptions associated with the cell
+       * @param[in] boundaryMarkers per face, a flag indicating if the cell description is adjacent to a remote or domain boundary.
        */
       UpdateJob(
-        LimitingADERDGSolver& solver,
-        SolverPatch&          solverPatch,
-        CellInfo&             cellInfo,
-        const bool            isAtRemoteBoundary);
+          LimitingADERDGSolver&                              solver,
+          SolverPatch&                                       solverPatch,
+          CellInfo&                                          cellInfo,
+          const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers);
 
-      bool run() override;
+      bool run(bool runOnMasterThread) override;
       void prefetchData() override;
   };
 
@@ -666,41 +655,31 @@ private:
    * wait in endIteration(...) on the completion of the job.
    * It further important to flag this job as high priority job to
    * ensure completion before the next reduction.
-   *
-   * @note The state of the neighbourMergePerformed flags is used internally by
-   * some of the kernels, e.g. in order to determine where to perform a face integral.
-   * However, they have to be reset before the next iteration as they indicate on
-   * which face a Riemann solve has already been performed or not (their original usage).
-   * The flags are thus reset directly after spawning the job.
-   * Therefore, we need to copy the neighbourMergePerformed flags them.
    */
   class LocalRecomputationJob: public tarch::multicore::jobs::Job {
   private:
-    LimitingADERDGSolver&                                     _solver; // TODO not const because of kernels
-    SolverPatch&                                              _solverPatch;
-    CellInfo                                                  _cellInfo;
-    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char> _limiterNeighbourMergePerformed; // copy
-    const bool                                                _isAtRemoteBoundary;
+    LimitingADERDGSolver&                             _solver; // TODO not const because of kernels
+    SolverPatch&                                      _solverPatch;
+    CellInfo                                          _cellInfo;
+    const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _boundaryMarkers; // copy
   public:
     /**
      * Construct an LocalRecomputationJob.
      *
      * @note Job is always spawned as high priority job.
      *
-     * @param solver                         the spawning solver
-     * @param solverPatch                    a cell description
-     * @param cellInfo                       links to all cell descriptions associated with the cell
-     * @param limiterNeighbourMergePerformed flags indicating in which direction the limiter has performed a neighbour merge.
-     * @param isAtRemoteBoundary             if the cell is at boundary to a remote rank
+     * @param solver             the spawning solver
+     * @param solverPatch        a cell description
+     * @param cellInfo           links to all cell descriptions associated with the cell
+     * @param isAtRemoteBoundary if the cell is at boundary to a remote rank
      */
     LocalRecomputationJob(
-        LimitingADERDGSolver&                                      solver,
-        SolverPatch&                                               solverPatch,
-        CellInfo&                                                  cellInfo,
-        const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& limiterNeighbourMergePerformed,
-        const bool                                                 isAtRemoteBoundary);
+        LimitingADERDGSolver&                              solver,
+        SolverPatch&                                       solverPatch,
+        CellInfo&                                          cellInfo,
+        const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers);
 
-    bool run() override;
+    bool run(bool runOnMasterThread) override;
     void prefetchData() override;
   };
 
@@ -720,7 +699,7 @@ private:
         CellInfo&             cellInfo,
         const bool            isInitialMeshRefinement);
 
-    bool run() override;
+    bool run(bool runOnMasterThread) override;
   };
 
 public:
@@ -739,8 +718,7 @@ public:
       exahype::solvers::ADERDGSolver* solver,
       exahype::solvers::FiniteVolumesSolver* limiter,
       const double DMPRelaxationParameter=1e-4,
-      const double DMPDifferenceScaling=1e-3,
-      const int iterationsToCureTroubledCell=2);
+      const double DMPDifferenceScaling=1e-3);
 
   virtual ~LimitingADERDGSolver() {
     _solver.reset();
@@ -755,12 +733,6 @@ public:
   void updateMeshUpdateEvent(MeshUpdateEvent meshUpdateEvent) final override;
   void resetMeshUpdateEvent() final override;
   MeshUpdateEvent getMeshUpdateEvent() const final override;
-
-  // TODO(Lukas) Still needed?
-  /*
-void updateNextGlobalObservables(
-          const std::vector<double>& globalObservables) override;
-  */
 
   double getMinTimeStamp() const final override;
   double getMinTimeStepSize() const final override;
@@ -932,17 +904,15 @@ void updateNextGlobalObservables(
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const int  solverNumber,
-      const bool stillInRefiningMode) override;
+      const int  solverNumber) override;
 
- bool progressMeshRefinementInLeaveCell(
+ void progressMeshRefinementInLeaveCell(
      exahype::Cell& fineGridCell,
      exahype::Vertex* const fineGridVertices,
      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
      exahype::Cell& coarseGridCell,
      const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-     const int solverNumber,
-     const bool stillInRefiningMode) override;
+     const int solverNumber) override;
 
  exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
      const int cellDescriptionsIndex,
@@ -950,14 +920,8 @@ void updateNextGlobalObservables(
      const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
      const tarch::la::Vector<DIMENSIONS, double>& cellSize,
      const int level,
-     const bool checkThoroughly) const final override;
-
- bool attainedStableState(
-     exahype::Cell&                       fineGridCell,
-     exahype::Vertex* const               fineGridVertices,
-     const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-     const int                            solverNumber,
-     const bool                           stillInRefiningMode) const final override;
+     const bool checkThoroughly,
+     bool& checkSuccessful) const final override;
 
   void finaliseStateUpdates(
       const int solverNumber,
@@ -988,16 +952,16 @@ void updateNextGlobalObservables(
       const bool isAtRemoteBoundary);
 
   void fusedTimeStepOrRestrict(
-      const int  solverNumber,
-      CellInfo&  cellInfo,
-      const bool isFirstTimeStepOfBatch,
-      const bool isLastTimeStepOfBatch,
-      const bool isAtRemoteBoundary) final override;
+      const int                                          solverNumber,
+      CellInfo&                                          cellInfo,
+      const bool                                         isFirstTimeStepOfBatch,
+      const bool                                         isLastTimeStepOfBatch,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers) final override;
 
   void updateOrRestrict(
-      const int  solverNumber,
-      CellInfo&  cellInfo,
-      const bool isAtRemoteBoundary) final override;
+      const int                                          solverNumber,
+      CellInfo&                                          cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers) final override;
 
   void compress(
       const int  solverNumber,
@@ -1005,20 +969,6 @@ void updateNextGlobalObservables(
       const bool isAtRemoteBoundary) const final override;
 
   void adjustSolutionDuringMeshRefinement(const int solverNumber,CellInfo& cellInfo) final override;
-
-
-  /**
-   * TODO make prviate
-   *
-   * @return the maximum out of the solver patch's refinement
-   * status and of the maximum refinement status of its neighbours minus one.
-   *
-   * @param solverPatch a solver patch
-   * @param neighbourMergePerformed a flag per face indicating if a neighbour/boudnary merge was performed
-   */
-  int getMaxiumRefinementStatusInNeighbourhood(
-      SolverPatch& solverPatch,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed) const;
 
   /**
    * Update the solution of a solver patch and or
@@ -1041,11 +991,11 @@ void updateNextGlobalObservables(
    *                                              (Fused time stepping for nonlinear PDEs is the only time stepping variant where we need to use an update vector.)
    */
   void updateSolution(
-      SolverPatch&                                               solverPatch,
-      CellInfo&                                                  cellInfo,
-      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,signed char>& neighbourMergePerformed,
-      const bool                                                 isFirstTimeStep,
-      const bool                                                 addSurfaceIntegralResultToSolution);
+      SolverPatch&                                       solverPatch,
+      CellInfo&                                          cellInfo,
+      const bool                                         isFirstTimeStep,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers,
+      const bool                                         addSurfaceIntegralResultToSolution);
 
   /**
    * Evaluate the discrete maximum principle and the physically admissibility detection criterion.
@@ -1102,7 +1052,8 @@ void updateNextGlobalObservables(
     * Go back to previous time step with
     * time step data and solution.
     *
-    * Keep the new refinement status.
+    * Reset the refinement status to the old value.
+    * (Nothing has happened but we have a new mesh.)
     *
     * Allocate necessary new limiter patches.
     */
@@ -1161,9 +1112,9 @@ void updateNextGlobalObservables(
    * Further see ::fusedTimeBody regarding order of operations.
    */
   void localRecomputation(
-      const int         solverNumber,
-      Solver::CellInfo& cellInfo,
-      const bool        isAtRemoteBoundary);
+      const int                                          solverNumber,
+      Solver::CellInfo&                                  cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers);
 
   ///////////////////////////////////
   // NEIGHBOUR
@@ -1189,22 +1140,6 @@ void updateNextGlobalObservables(
       Solver::CellInfo&                          cellInfo2,
       const tarch::la::Vector<DIMENSIONS, int>&  pos1,
       const tarch::la::Vector<DIMENSIONS, int>&  pos2);
-
-  /**
-   * Merge cell descriptions with status - i, where i=0,1, with boundary data during
-   * the local recomputation phase.
-   * All cells with one of these statuses, perform a merge using the limiter.
-   *
-   * @param solverNumber identifier for this solver
-   * @param cellInfo1    cell descriptions associated with a cell
-   * @param posCell      relative position of the (interior) cell to the vertex issuing the merge
-   * @param posBoundary  relative position of the boundary (=outside cell) to the vertex issuing the merge
-   */
-  void mergeWithBoundaryDataDuringLocalRecomputation(
-      const int                                 solverNumber,
-      Solver::CellInfo&                         cellInfo,
-      const tarch::la::Vector<DIMENSIONS, int>& posCell,
-      const tarch::la::Vector<DIMENSIONS, int>& posBoundary);
 
 
   /**
@@ -1261,47 +1196,6 @@ void updateNextGlobalObservables(
       Solver::CellInfo&                          cellInfo2,
       const tarch::la::Vector<DIMENSIONS, int>&  pos1,
       const tarch::la::Vector<DIMENSIONS, int>&  pos2);
-
-  /**
-   * Merge solver boundary data (and other values) of a
-   * cell with the boundary conditions based on the cell's
-   * limiter status.
-   *
-   * The solver involved in the merge
-   * is selected according to the following scheme:
-   *
-   * | Status   | Solver to Merge |
-   * ------------------------------
-   * | O        | ADER-DG         |
-   * | NNT      | ADER-DG         |
-   *
-   * | NT       | FV              |
-   * | T        | FV              |
-   *
-   * Legend: O: Ok, T: Troubled, NT: NeighbourIsTroubledCell, NNT: NeighbourIsNeighbourOfTroubledCell
-   *
-   * <h2>Solution Recomputation</h2>
-   * If we perform a solution recomputation, we do not need to perform
-   * a solution update in the non-troubled solver patches and the patches
-   * with status neighbourIsNeighbourOfTroubledCell. Instead we
-   * can simply reuse the already computed update to advance in
-   * time to the desired time stamp.
-   *
-   * We thus do not need to merge these patches with boundary data
-   * in the recomputation phase.
-   *
-   * @param[in] solverPatches   a list/vector holding solver patches.
-   * @param[in] limiterPatches  a list/vector holding limiterr patches.
-   * @param[in] solverNumber    a number for a solver.
-   * @param[in] posCell         relative position of the cell  w.r.t. a vertex.
-   * @param[in] posBoundary     relative position of the boundary w.r.t. a vertex.
-   * @param[in] isRecomputation flag indicating if this merge is part of a solution recomputation phase.
-   */
-  void mergeWithBoundaryData(
-      const int                                 solverNumber,
-      Solver::CellInfo&                         context,
-      const tarch::la::Vector<DIMENSIONS, int>& posCell,
-      const tarch::la::Vector<DIMENSIONS, int>& posBoundary);
 
 #ifdef Parallel
   ///////////////////////////////////
@@ -1367,13 +1261,25 @@ void updateNextGlobalObservables(
    * send order:   minAndMax,solver,limiter
    * receive order limiter,solver,minAndMax
    *
+   * @note The limiter is only active on the finest mesh level
+   * in ExaHyPE. All other levels use the ADER-DG solver.
+   * All level send the minimum and maximum DMP
+   * observables around, which are used for
+   * the shock detection.
+   *
+   * @note If we send out data during a fused time step,
+   * a cell might be newly marked as troubled but a new limiter patch
+   * is not allocated yet. This will be
+   * done in the following local recomputation
+   * step. We send an empty limiter message in this case.
+   *
    * @param toRank       the rank we send data to
    * @param solverNumber identification number of this solver
    * @param cellInfo     links to the data assocated with the source cell
    * @param src          relative position of message source to vertex
    * @param dest         relative position of message destination to vertex
-   * @param x            vertex' coordinates
-   * @param level        vertex' level
+   * @param x            face barycentre
+   * @param level        mesh level
    */
   void sendDataToNeighbour(
       const int                                     toRank,
@@ -1384,33 +1290,7 @@ void updateNextGlobalObservables(
       const tarch::la::Vector<DIMENSIONS, double>&  x,
       const int                                     level);
 
-  /**
-   * Send data or empty data to the neighbour data based
-   * on the limiter status.
-   */
-  void sendDataToNeighbourBasedOnLimiterStatus(
-        const int                                    toRank,
-        const int                                    solverNumber,
-        Solver::CellInfo&                            cellInfo,
-        const tarch::la::Vector<DIMENSIONS, int>&    src,
-        const tarch::la::Vector<DIMENSIONS, int>&    dest,
-        const tarch::la::Vector<DIMENSIONS, double>& x,
-        const int                                    level);
-
   void mergeWithNeighbourData(
-      const int                                    fromRank,
-      const int                                    solverNumber,
-      Solver::CellInfo&                            cellInfo,
-      const tarch::la::Vector<DIMENSIONS, int>&    src,
-      const tarch::la::Vector<DIMENSIONS, int>&    dest,
-      const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level);
-
-  /**
-   * Merge or drop received neighbour data based
-   * on the limiter status.
-   */
-  void mergeWithNeighbourDataBasedOnLimiterStatus(
       const int                                    fromRank,
       const int                                    solverNumber,
       Solver::CellInfo&                            cellInfo,
@@ -1504,19 +1384,13 @@ void updateNextGlobalObservables(
    *
    * TODO(Dominic): No const modifier const as kernels are not const yet
    */
-  bool progressMeshRefinementInMergeWithMaster(
+  void progressMeshRefinementInMergeWithMaster(
       const int worker,
       const int localCellDescriptionsIndex,
       const int localElement,
       const int coarseGridCellDescriptionsIndex,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int  level,
-      const bool stillInRefiningMode) final override;
-
-  void appendMasterWorkerCommunicationMetadata(
-      exahype::MetadataHeap::HeapEntries& metadata,
-      const int cellDescriptionsIndex,
-      const int solverNumber) const final override;
+      const int  level) final override;
 
   void sendDataToWorkerOrMasterDueToForkOrJoin(
       const int                                     toRank,
@@ -1615,7 +1489,10 @@ void updateNextGlobalObservables(
   void updateGlobalObservables(
       double* const                               globalObservables,
       const double* const                         luh,
-      const tarch::la::Vector<DIMENSIONS,double>& cellSize) final override;
+      const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+      const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+      const double t,
+      const double dt) final override;
 
   void mergeGlobalObservables(
       double* const       globalObservables,

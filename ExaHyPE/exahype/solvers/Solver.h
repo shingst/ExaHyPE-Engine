@@ -284,7 +284,7 @@ namespace exahype {
   static constexpr int NeighbourCommunicationMetadataCellType            = 0;
   static constexpr int NeighbourCommunicationMetadataAugmentationStatus  = 1;
   static constexpr int NeighbourCommunicationMetadataCommunicationStatus = 2;
-  static constexpr int NeighbourCommunicationMetadataLimiterStatus       = 3;
+  static constexpr int NeighbourCommunicationMetadataRefinementStatus    = 3;
 
   static constexpr int MasterWorkerCommunicationMetadataPerSolver        = 5;
 
@@ -390,6 +390,14 @@ protected:
   void glueTogether(int numberOfEntries, int normalHeapIndex, int compressedHeapIndex, int bytesForMantissa) const;
 
 public:
+
+  /**
+   * A flag that memorises if all solvers are stable.
+   * It is reset to false by the MeshRefinement mapping's
+   * beginIteration(...) method.
+   */
+  static std::atomic<bool> AllSolversAreStable;
+
   #ifdef USE_ITAC
   /**
    * These handles are used to trace solver events with Intel Trace Analyzer and Collector.
@@ -1076,13 +1084,6 @@ public:
    */
   static int getMaxRefinementStatus();
 
-  /**
-   * Specify if solvers spawn background jobs and
-   * configure the number of sweeps run by the adapters FusedTimeStep, Prediction, PredictionRerun,
-   * and PredictorOrLocalRecomputation.
-   */
-  static void configurePredictionPhase(const bool usePredictionBackgroundJobs, bool useProlongationBackgroundJobs);
-
 
   static std::string toString(const JobType& jobType);
 
@@ -1627,8 +1628,7 @@ public:
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const peano::grid::VertexEnumerator& coarseGridVerticesEnumerator,
-      const int  solverNumber,
-      const bool stillInRefiningMode) = 0;
+      const int  solverNumber) = 0;
 
   /**
    * Refinement routine that should be used for
@@ -1637,24 +1637,27 @@ public:
    * \return If a new compute cell was introduced
    * as part of a refinement operation.
    */
-  virtual bool progressMeshRefinementInLeaveCell(
+  virtual void progressMeshRefinementInLeaveCell(
       exahype::Cell& fineGridCell,
       exahype::Vertex* const fineGridVertices,
       const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
       exahype::Cell& coarseGridCell,
       const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell,
-      const int solverNumber,
-      const bool stillInRefiningMode) = 0;
+      const int solverNumber) = 0;
 
   /**
    * \return if the vertices around a cell should be erased, kept,
    * or refined.
    *
-   * @param checkThoroughly If set to true, check that the indices found in the
-   *                        adjacency map are actual heap indices and that the
-   *                        geometry information of the cell descriptions found at
-   *                        the heap index indicates that these cells are adjacent
-   *                        to the vertex.
+   * @param[in] checkThoroughly If set to true, check that the indices found in the
+   *                            adjacency map are actual heap indices and that the
+   *                            geometry information of the cell descriptions found at
+   *                            the heap index indicates that these cells are adjacent
+   *                            to the vertex.
+   *
+   * @param[inout] checkSuccessful  indicates that the cell description's geometry
+   *                            information does not match that of the vertex. This implies
+   *                            that the adjacency lists are not up to date yet.
    */
   virtual exahype::solvers::Solver::RefinementControl eraseOrRefineAdjacentVertices(
       const int cellDescriptionsIndex,
@@ -1662,25 +1665,8 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& cellOffset,
       const tarch::la::Vector<DIMENSIONS, double>& cellSize,
       const int level,
-      const bool checkThoroughly) const = 0;
-
-  /**
-   * Returns true if the solver has attained
-   * a stable state on the cell description
-   *
-   * @param fineGridCell               a fine grid cell
-   * @param fineGridVertices           vertices surrounding the fine grid cell
-   * @param fineGridVerticesEnumerator a enumerator for the fine grid vertices
-   * @param solverNumber               a solver number
-   * @param stillInRefiningMode        indicates if the mesh refinement
-   *                                   is still in refining mode (true) or switched to coarsening mode (false).
-   */
-  virtual bool attainedStableState(
-      exahype::Cell&                       fineGridCell,
-      exahype::Vertex* const               fineGridVertices,
-      const peano::grid::VertexEnumerator& fineGridVerticesEnumerator,
-      const int                            solverNumber,
-      const bool                           stillInRefiningMode) const = 0;
+      const bool checkThoroughly,
+      bool& checkSuccessful) const = 0;
 
   /**
    * This method is called after the
@@ -1787,13 +1773,14 @@ public:
    *                                    @p isLastIterationOfBatch are true).
    * @param[in] isAtRemoteBoundary Flag indicating that the cell hosting the
    *                                    cell description is adjacent to a remote rank.
+   * @param[in] boundaryMarkers         per face, a flag indicating if the cell description is adjacent to a remote or domain boundary.
    */
   virtual void fusedTimeStepOrRestrict(
-      const int  solverNumber,
-      CellInfo&  cellInfo,
-      const bool isFirstIterationOfBatch,
-      const bool isLastIterationOfBatch,
-      const bool isAtRemoteBoundary) = 0;
+      const int                                          solverNumber,
+      CellInfo&                                          cellInfo,
+      const bool                                         isFirstTimeStepOfBatch,
+      const bool                                         isLastTimeStepOfBatch,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers) = 0;
 
   /**
    * The nonfused update routine.
@@ -1818,14 +1805,14 @@ public:
    *
    * @note Has no const modifier since kernels are not const functions yet.
    *
-   * @param cellInfo           links to the data associated with the mesh cell
-   * @param solverNumber       id of a solver
-   * @param isAtRemoteBoundary indicates if this cell is adjacent to the domain of another rank
+   * @param[in]    solverNumber    id of a solver
+   * @param[inout] cellInfo        links to the data associated with the mesh cell
+   * @param[in]    boundaryMarkers per face, a flag indicating if the cell description is adjacent to a remote or domain boundary.
    */
   virtual void updateOrRestrict(
-      const int solverNumber,
-      CellInfo& cellInfo,
-      const bool isAtRemoteBoundary) = 0;
+      const int                                          solverNumber,
+      CellInfo&                                          cellInfo,
+      const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers) = 0;
 
   /**
    * Go back to previous time step with
@@ -1948,28 +1935,13 @@ public:
    *
    * Veto erasing requests from the coarse grid cell as well.
    */
-  virtual bool progressMeshRefinementInMergeWithMaster(
+  virtual void progressMeshRefinementInMergeWithMaster(
       const int worker,
       const int localCellDescriptionsIndex,
       const int localElement,
       const int coarseGridCellDescriptionsIndex,
       const tarch::la::Vector<DIMENSIONS, double>& x,
-      const int                                    level,
-      const bool                                   stillInRefiningMode) = 0;
-
-  /**
-   * If a cell description was allocated at heap address @p cellDescriptionsIndex
-   * for solver @p solverNumber, encode metadata of the cell description
-   * and push it to the back of the metadata vector @p metadata.
-   *
-   * Otherwise, push exahype::MasterWorkerCommunicationMetadataPerSolver
-   * times exahype::InvalidMetadataEntry to the back of the vector.
-   *
-   */
-  virtual void appendMasterWorkerCommunicationMetadata(
-      MetadataHeap::HeapEntries& metadata,
-      const int cellDescriptionsIndex,
-      const int solverNumber) const = 0;
+      const int                                    level) = 0;
 
   /**
    * Send solver data to master or worker rank. Read the data from
@@ -2105,6 +2077,7 @@ public:
   typedef struct CellProcessingTimes {
     double _minTimePredictor    = std::numeric_limits<double>::quiet_NaN(); ///> The time (sec) required to run a single ADERDG space-time predictor Picard iteration.
     double _maxTimePredictor    = std::numeric_limits<double>::quiet_NaN(); ///> The time (sec) required to run order+1 ADERDG space-time predictor Picard iterations.
+    double _timeADERDGRiemann   = std::numeric_limits<double>::quiet_NaN(); ///> The time (sec) to process a (pure) ADER-DG cell minus the predictor computation (plus evaluating the limiting criterion in the LimitingADERDGSolver case).
     double _timeADERDGUpdate    = std::numeric_limits<double>::quiet_NaN(); ///> The time (sec) to process a (pure) ADER-DG cell minus the predictor computation (plus evaluating the limiting criterion in the LimitingADERDGSolver case).
     double _timeADERDG2FVUpdate = std::numeric_limits<double>::quiet_NaN(); ///> The time (sec) to process an ADER-DG cell minus the predictor computation which additionally projects the DG solution into FV space (plus evaluating the limiting criterion), i.e. only one Picard iteration is used.
     double _timeFV2ADERDGUpdate = std::numeric_limits<double>::quiet_NaN(); ///> The time (sec) to process an FV cell which additionally projects the FV solution into DG space (plus evaluating the limiting criterion), i.e. only one Picard iteration is used.
@@ -2112,12 +2085,13 @@ public:
 
     void toString(std::ostream& out,const double conversion=1.0,const int precision=8,std::string unit="sec",std::string prefix="") const {
       out.precision(precision);
-      out << prefix << "minTimePredictor    = "<<std::setw(12)<<std::fixed<<_minTimePredictor   *conversion<<" "<<unit<<std::endl;
-      out << prefix << "maxTimePredictor    = "<<std::setw(12)<<std::fixed<<_maxTimePredictor   *conversion<<" "<<unit<<std::endl;
-      out << prefix << "timeADERDGUpdate    = "<<std::setw(12)<<std::fixed<<_timeADERDGUpdate   *conversion<<" "<<unit<<std::endl;
-      out << prefix << "timeADERDG2FVUpdate = "<<std::setw(12)<<std::fixed<<_timeADERDG2FVUpdate*conversion<<" "<<unit<<std::endl;
-      out << prefix << "timeFV2ADERDGUpdate = "<<std::setw(12)<<std::fixed<<_timeFV2ADERDGUpdate*conversion<<" "<<unit<<std::endl;
-      out << prefix << "timeFVUpdate        = "<<std::setw(12)<<std::fixed<<_timeFVUpdate       *conversion<<" "<<unit<<std::endl;
+      out << prefix << "timePredictor              = "<<std::setw(12)<<std::fixed<<_minTimePredictor   *conversion<<" "<<unit<<std::endl;
+      out << prefix << "timePredictorMaxPicardIter = "<<std::setw(12)<<std::fixed<<_maxTimePredictor   *conversion<<" "<<unit<<std::endl;
+      out << prefix << "timeADERDGRiemann          = "<<std::setw(12)<<std::fixed<<_timeADERDGRiemann  *conversion<<" "<<unit<<std::endl;
+      out << prefix << "timeADERDGUpdate           = "<<std::setw(12)<<std::fixed<<_timeADERDGUpdate   *conversion<<" "<<unit<<std::endl;
+      out << prefix << "timeADERDG2FVUpdate        = "<<std::setw(12)<<std::fixed<<_timeADERDG2FVUpdate*conversion<<" "<<unit<<std::endl;
+      out << prefix << "timeFV2ADERDGUpdate        = "<<std::setw(12)<<std::fixed<<_timeFV2ADERDGUpdate*conversion<<" "<<unit<<std::endl;
+      out << prefix << "timeFVUpdate               = "<<std::setw(12)<<std::fixed<<_timeFVUpdate       *conversion<<" "<<unit<<std::endl;
     }
   } CellProcessingTimes;
 
@@ -2174,12 +2148,18 @@ public:
    * @note Implementation must be thread-safe.
    *
    *\param[in]    luh               The solution array.
-   *\param[in]    cellSize          The size of a cell.
+   *\param[in]    cellCentre        The centre of a cell.
+   *\param[in]    cellSize          The size of the cell.
+   *\param[in]    t                 The updated time stamp.
+   *\param[in]    dtOld             The old time step size. Can be used to go back in time.
    */
    virtual void updateGlobalObservables(
        double* const                               globalObservables,
        const double* const                         luh,
-       const tarch::la::Vector<DIMENSIONS,double>& cellSize) = 0;
+       const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
+       const tarch::la::Vector<DIMENSIONS,double>& cellSize,
+       const double t,
+       const double dtOld) = 0;
 
    /**
     * This method merges two vectors of (global) observables.

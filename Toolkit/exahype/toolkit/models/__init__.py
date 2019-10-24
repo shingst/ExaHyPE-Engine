@@ -1,1 +1,1 @@
-__all__ = ["codegeneratorModel", "kernelCallsModel", "makefileModel", "plotterModel", "readmeModel", "solverModel"]
+__all__ = ["kernelgeneratorModel", "kernelCallsModel", "makefileModel", "plotterModel", "readmeModel", "solverModel"]
