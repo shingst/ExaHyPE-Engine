@@ -2591,11 +2591,12 @@ RECURSIVE SUBROUTINE PDEFusedSrcNCP(Src_BgradQ,Q,gradQin)
        Christoffel_kind1(i,j,k) = DD(k,i,j)+DD(j,i,k)-DD(i,j,k)      ! this definition seems to work ! 
        DO l = 1, 3
           Christoffel_tilde(i,j,k) = Christoffel_tilde(i,j,k) + g_contr(k,l)*( DD(i,j,l)+DD(j,i,l)-DD(l,i,j) ) 
-		  mytmp1(i,j,k,l)                    = DD(i,j,l)+DD(j,i,l)-DD(l,i,j) 
-          Christoffel(i,j,k)       = Christoffel(i,j,k)       + g_contr(k,l)*( mytmp1(i,j,k,l)		  ) 
-		  mytmp2(i,j,k,l)=( g_cov(j,l)*PP(i)+g_cov(i,l)*PP(j)-g_cov(i,j)*PP(l) ) 
-		  Christoffel(i,j,k)       = Christoffel(i,j,k)       -g_contr(k,l)*mytmp2(i,j,k,l) 
+		  !mytmp1(i,j,k,l)                    = DD(i,j,l)+DD(j,i,l)-DD(l,i,j) 
+          !Christoffel(i,j,k)       = Christoffel(i,j,k)       + g_contr(k,l)*( mytmp1(i,j,k,l)		  ) 
+		  !mytmp2(i,j,k,l)=( g_cov(j,l)*PP(i)+g_cov(i,l)*PP(j)-g_cov(i,j)*PP(l) ) 
+		  !Christoffel(i,j,k)       = Christoffel(i,j,k)       -g_contr(k,l)*mytmp2(i,j,k,l) 
           !Gtilde(i)                = Gtilde(i)+2*g_contr(i,j)*g_contr(k,l)*DD(l,j,k) 
+		  Christoffel(i,j,k)       = Christoffel(i,j,k)       + g_contr(k,l)*(DD(i,j,l)+DD(j,i,l)-DD(l,i,j))-g_contr(k,l)*( g_cov(j,l)*PP(i)+g_cov(i,l)*PP(j)-g_cov(i,j)*PP(l) ) 
 		  !PRINT *, Christoffel(i,j,k) ,I,J,K
         ENDDO 
       ENDDO
@@ -4012,5 +4013,31 @@ RECURSIVE SUBROUTINE PDEFusedSrcNCP(Src_BgradQ,Q,gradQin)
     CONTINUE     
     !            
 END SUBROUTINE PDEFusedSrcNCP 
+
+
+RECURSIVE SUBROUTINE pderefinecriteria(refine_flag, max_luh,min_luh,x) 
+  USE MainVariables, ONLY: nVar , nDim  
+  IMPLICIT NONE  
+	Integer, intent(out) :: refine_flag
+	real, intent(in) :: max_luh(nVar),min_luh(nVar),x(nDim)
+	
+	!if(abs(x(1))<10) then
+	!	refine_flag=2
+	!	return
+	!end if
+	!if(abs(x(2))<15) then
+	!	refine_flag=2
+	!	return
+	!end if
+#ifdef CCZ4EINSTEIN
+  if(abs(max_luh(60)-min_luh(60))>1.e-4 .or. abs(max_luh(54)-min_luh(54))>1.e-4) then
+	refine_flag=2
+  else
+	refine_flag=0
+  end if
+#endif
+END SUBROUTINE pderefinecriteria
+
+
 
 #endif
