@@ -5,11 +5,12 @@
 !#include "expintegrator_type.f90"
 
 RECURSIVE SUBROUTINE InitParameters(STRLEN,PARSETUP) 
-	USE MainVariables, ONLY: nVar , nDim, EQN, ICType
+	USE MainVariables, ONLY: nVar , nDim, EQN, ICType, NSTOV_rho_atmo, NSTOV_kappa,NSTOV_p_atmo
 	USE NSTOV_mod
 	IMPLICIT NONE  
 	integer          :: STRLEN
 	character(len=STRLEN) :: PARSETUP
+	real :: igamma
 
 	ICType=trim(parsetup)
 	print *, "****************************************************************"
@@ -74,7 +75,9 @@ RECURSIVE SUBROUTINE InitParameters(STRLEN,PARSETUP)
 			EQN%CCZ4LapseType   = 0 ! harmonic lapse 
 			EQN%EinsteinAutoAux = 0 
 
-
+			igamma = 1.0/EQN%gamma
+			NSTOV_rho_atmo = (NSTOV_p_atmo/NSTOV_kappa)**igamma 
+			
 			CALL NSTOV_Main
 			
 #else	
@@ -149,6 +152,8 @@ RECURSIVE SUBROUTINE InitialData(xGP, tGp, Q)
        ! 
 		case('CCZ4TOV')	
         V0 = 0.0
+		
+
         ! Compute the metric and its derivatives 
         CALL METRIC(  xGP, alpha,  gp, gm, beta, Kex, g_cov, g_contr, phi )
         CALL DMETRIC( xGP, AA, BB, DD, PP )
@@ -304,6 +309,10 @@ RECURSIVE SUBROUTINE InitialData(xGP, tGp, Q)
         ! The trace of the extrinsic curvature at the initial time 
         V0(59) = K0 
         !
+	   if(V0(55)>1.0 .or. V0(55)<0.0) then
+			print *, V0
+			pause
+		end if
 		
 #ifdef RNSTOV    
 
@@ -333,7 +342,7 @@ RECURSIVE SUBROUTINE InitialData(xGP, tGp, Q)
 #if defined(CCZ4EINSTEIN) || defined(CCZ4GRHD) 
        V0(60:64) = (/ rho, VV_cov(1:3), p /)
 	   
-	   !print *, V0
+
 	   !pause
 
 #endif      

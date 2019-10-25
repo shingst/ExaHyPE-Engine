@@ -177,7 +177,7 @@ END SUBROUTINE NSTOV_x
     
 
 
-SUBROUTINE NSTOV_rbar(r,NSTOV_q) 
+RECURSIVE SUBROUTINE NSTOV_rbar(r,NSTOV_q) 
     USE MainVariables, ONLY : EQN,myrank,NSTOVVar,NSTOVVar_barNew,NSTOVVar_bar,  NSTOV_nODE, NSTOV_rho_c, NSTOV_rho_atmo, NSTOV_kappa, NSTOV_p_atmo, NSTOV_nODE_p
     IMPLICIT NONE
     ! input argument 

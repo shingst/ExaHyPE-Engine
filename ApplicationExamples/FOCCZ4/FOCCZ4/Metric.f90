@@ -1,5 +1,5 @@
 SUBROUTINE METRIC ( xc, lapse, gp, gm, shift, Kex, g_cov, g_contr, phi )
-  USE MainVariables, ONLY: ICType, aom, Mbh, P_eps,NSTOVVar
+  USE MainVariables, ONLY: ICType, aom, Mbh, P_eps,NSTOVVar,NSTOV_nODE
 #if defined(RNSTOV) 
   USE NSTOV_mod
 #endif     
@@ -20,6 +20,9 @@ SUBROUTINE METRIC ( xc, lapse, gp, gm, shift, Kex, g_cov, g_contr, phi )
   REAL :: lx, ly, lz, HH, SS, detg, rho, r_hz, sig, theta, a, M    
   REAL :: st, st2, delta, rho2, sigma, zz, V0Z4(54),V070(70) 
   REAL :: transl(3), xGP(3),Mbh_loc,rbar
+#if defined(RNSTOV) 
+  REAL :: qloc(NSTOV_nODE) 
+#endif    
   REAL, DIMENSION(3) :: xGP_loc,xGP_sph    
   !
   Kex = 0.0 
@@ -326,16 +329,16 @@ SUBROUTINE METRIC ( xc, lapse, gp, gm, shift, Kex, g_cov, g_contr, phi )
         r=XGP_sph(1)
         !
 #ifdef SPHERICAL  ! then we are in the original coordinate system        
-        CALL NSTOV_x(r,NSTOVVar%qloc)
+        CALL NSTOV_x(r,qloc)
 #elif CYLINDRICAL
         PRINT *, 'CYLINDRICAL COORDINATES NOT TESTED FOR RNSTOV'
 #else  
-        CALL NSTOV_rbar(r,NSTOVVar%qloc)
+        CALL NSTOV_rbar(r,qloc)
 		!print *, r,NSTOVVar%qloc
 		!pause
 #endif
         !
-        lapse = EXP(NSTOVVar%qloc(2))
+        lapse = EXP(qloc(2))
         shift(1:3) = 0.
         !gammaij(1:6) = 0.
         !gammaij(1) = 1.0
@@ -343,16 +346,16 @@ SUBROUTINE METRIC ( xc, lapse, gp, gm, shift, Kex, g_cov, g_contr, phi )
         !gammaij(6) = 1.0
         g_cov = 0.
 #ifdef SPHERICAL
-        g_cov(1,1)  = 1.0/(1.0-2.0*NSTOVVar%qloc(1)/r)
+        g_cov(1,1)  = 1.0/(1.0-2.0*qloc(1)/r)
         g_cov(2,2)  = r**2
         g_cov(3,3)  = SIN(xGP_sph(2))**2*r**2
         !
 #else   
         !rbar = r !*NSTOVVar%C*exp(NSTOVVar%q(4,n))
         !rbar = 0.5*r/NSTOVVar%radius*(SQRT(NSTOVVar%radius**2-2*NSTOVVar%q(1,NSTOVVar%iradius)*NSTOVVar%radius)+NSTOVVar%radius-NSTOVVar%q(1,NSTOVVar%iradius))*EXP(NSTOVVar%qloc(4)-NSTOVVar%q(4,NSTOVVar%iradius)) 
-        g_cov(1,1) = 1.0/(NSTOVVar%C**2*exp(2.0*NSTOVVar%qloc(4))) ! rbar**2/(r+1e-14)**2
-        g_cov(2,2) = 1.0/(NSTOVVar%C**2*exp(2.0*NSTOVVar%qloc(4))) ! rbar**2/(r+1e-14)**2
-        g_cov(3,3) = 1.0/(NSTOVVar%C**2*exp(2.0*NSTOVVar%qloc(4))) ! rbar**2/(r+1e-14)**2
+        g_cov(1,1) = 1.0/(NSTOVVar%C**2*exp(2.0*qloc(4))) ! rbar**2/(r+1e-14)**2
+        g_cov(2,2) = 1.0/(NSTOVVar%C**2*exp(2.0*qloc(4))) ! rbar**2/(r+1e-14)**2
+        g_cov(3,3) = 1.0/(NSTOVVar%C**2*exp(2.0*qloc(4))) ! rbar**2/(r+1e-14)**2
         !
 #endif 
         g_contr=0.
