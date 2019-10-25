@@ -7,17 +7,17 @@
     "output_directory": "./ApplicationExamples/FOCCZ4/FOCCZ4",
     "log_file": "whatever.log"
   },
-  "architecture": "skx",
+  "architecture": "noarch",
   "computational_domain": {
     "dimension": 2,
-    "end_time": 3.0,
+    "end_time": 101.0,
     "offset": [
-      -20.0,
-      -20.0
+      -100.0,
+      -100.0
     ],
     "width": [
-      40.0,
-      40.0
+      200.0,
+      200.0
     ]
   },
   "shared_memory": {
@@ -52,8 +52,8 @@
       "type": "Limiting-ADER-DG",
       "name": "FOCCZ4Solver",
       "order": 3,
-      "maximum_mesh_size": 1.0,
-      "maximum_mesh_depth": 2,
+      "maximum_mesh_size": 5.0,
+      "maximum_mesh_depth": 0,
       "time_stepping": "global",
       "aderdg_kernel": {
         "language": "C",
@@ -68,7 +68,7 @@
 		"fusedsource"
 	],
         "optimised_kernel_debugging": [],
-        "implementation": "optimised"
+        "implementation": "generic"
       },
       "point_sources": 0,
       "limiter": {

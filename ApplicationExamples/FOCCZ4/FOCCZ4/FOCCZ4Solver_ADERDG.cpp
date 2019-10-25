@@ -97,9 +97,9 @@ void FOCCZ4::FOCCZ4Solver_ADERDG::boundaryValues(const double* const x,const dou
   std::memset(stateOut, 0, nVar * sizeof(double));
   std::memset(fluxOut , 0, nVar * sizeof(double));
 	
-  std::copy_n(stateIn,nVar,stateOut);
-  std::copy_n(fluxIn,nVar,fluxOut);
-  /*for(int dd=0; dd<nDim; dd++) F[dd] = Fs[dd];
+  //std::copy_n(stateIn,nVar,stateOut);
+  //std::copy_n(fluxIn,nVar,fluxOut);
+  for(int dd=0; dd<nDim; dd++) F[dd] = Fs[dd];
   
   for(int i=0; i < basisSize; i++)  { // i == time
     const double weight = kernels::legendre::weights[order][i];
@@ -111,14 +111,37 @@ void FOCCZ4::FOCCZ4Solver_ADERDG::boundaryValues(const double* const x,const dou
     flux(Qgp, F);
     for(int m=0; m < nVar; m++) {
       stateOut[m] += weight * Qgp[m];
-      //fluxOut[m] += weight * Fs[direction][m];
+      fluxOut[m] += weight * Fs[direction][m];
     }
-  }*/
+  }
+  
 }
 
 exahype::solvers::Solver::RefinementControl FOCCZ4::FOCCZ4Solver_ADERDG::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,double t,const int level) {
   // @todo Please implement/augment if required
-  return exahype::solvers::Solver::RefinementControl::Keep;
+  //return exahype::solvers::Solver::RefinementControl::Keep;
+  if(DIMENSIONS == 2){
+    if(std::abs(cellCentre[0]) < 10){
+      if(std::abs(cellCentre[1]) < 10){
+	return exahype::solvers::Solver::RefinementControl::Refine;
+      }
+    }
+  }else{
+    if(std::abs(cellCentre[0]) < 5){
+      if(std::abs(cellCentre[1]) < 5){
+		  if(std::abs(cellCentre[2]) < 5){
+			return exahype::solvers::Solver::RefinementControl::Refine;
+		  }
+      }
+    }	  
+	  
+  };	 
+  
+  //return exahype::solvers::Solver::RefinementControl::Keep;
+  if ( level > getCoarsestMeshLevel() ) {
+    return exahype::solvers::Solver::RefinementControl::Erase;
+  }
+return exahype::solvers::Solver::RefinementControl::Keep;
 }
 
 //*****************************************************************************
@@ -212,6 +235,11 @@ bool FOCCZ4::FOCCZ4Solver_ADERDG::isPhysicallyAdmissible(
 	  return ret_value;
 }
 void FOCCZ4::FOCCZ4Solver_ADERDG::fusedSource(const double* const restrict Q, const double* const restrict gradQ, double* const restrict S){
+	//static tarch::multicore::BooleanSemaphore initializationSemaphoreDG;
+  
+  
+    //tarch::multicore::Lock lock(initializationSemaphoreDG);	
 	pdefusedsrcncp_(S,Q,gradQ);
 	//fusedSource(Q, gradQ, S);
+	//lock.free();
 }

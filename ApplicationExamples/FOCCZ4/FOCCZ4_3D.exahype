@@ -10,7 +10,7 @@
   "architecture": "skx",
   "computational_domain": {
     "dimension": 3,
-    "end_time": 3.0,
+    "end_time": 11.0,
     "offset": [
       -20.0,
       -20.0,

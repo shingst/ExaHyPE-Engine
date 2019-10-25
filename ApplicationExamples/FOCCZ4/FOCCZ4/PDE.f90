@@ -2591,11 +2591,12 @@ RECURSIVE SUBROUTINE PDEFusedSrcNCP(Src_BgradQ,Q,gradQin)
        Christoffel_kind1(i,j,k) = DD(k,i,j)+DD(j,i,k)-DD(i,j,k)      ! this definition seems to work ! 
        DO l = 1, 3
           Christoffel_tilde(i,j,k) = Christoffel_tilde(i,j,k) + g_contr(k,l)*( DD(i,j,l)+DD(j,i,l)-DD(l,i,j) ) 
-		  mytmp1(i,j,k,l)                    = DD(i,j,l)+DD(j,i,l)-DD(l,i,j) 
-          Christoffel(i,j,k)       = Christoffel(i,j,k)       + g_contr(k,l)*( mytmp1(i,j,k,l)		  ) 
-		  mytmp2(i,j,k,l)=( g_cov(j,l)*PP(i)+g_cov(i,l)*PP(j)-g_cov(i,j)*PP(l) ) 
-		  Christoffel(i,j,k)       = Christoffel(i,j,k)       -g_contr(k,l)*mytmp2(i,j,k,l) 
+		  !mytmp1(i,j,k,l)                    = DD(i,j,l)+DD(j,i,l)-DD(l,i,j) 
+          !Christoffel(i,j,k)       = Christoffel(i,j,k)       + g_contr(k,l)*( mytmp1(i,j,k,l)		  ) 
+		  !mytmp2(i,j,k,l)=( g_cov(j,l)*PP(i)+g_cov(i,l)*PP(j)-g_cov(i,j)*PP(l) ) 
+		  !Christoffel(i,j,k)       = Christoffel(i,j,k)       -g_contr(k,l)*mytmp2(i,j,k,l) 
           !Gtilde(i)                = Gtilde(i)+2*g_contr(i,j)*g_contr(k,l)*DD(l,j,k) 
+		  Christoffel(i,j,k)       = Christoffel(i,j,k)       + g_contr(k,l)*(DD(i,j,l)+DD(j,i,l)-DD(l,i,j))-g_contr(k,l)*( g_cov(j,l)*PP(i)+g_cov(i,l)*PP(j)-g_cov(i,j)*PP(l) ) 
 		  !PRINT *, Christoffel(i,j,k) ,I,J,K
         ENDDO 
       ENDDO
