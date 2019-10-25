@@ -9,13 +9,15 @@
   },
   "architecture": "noarch",
   "computational_domain": {
-    "dimension": 2,
+    "dimension": 3,
     "end_time": 101.0,
     "offset": [
+      -100.0,
       -100.0,
       -100.0
     ],
     "width": [
+      200.0,
       200.0,
       200.0
     ]
@@ -53,7 +55,7 @@
       "name": "FOCCZ4Solver",
       "order": 4,
       "maximum_mesh_size": 10.0,
-      "maximum_mesh_depth": 2,
+      "maximum_mesh_depth": 1,
       "time_stepping": "global",
       "aderdg_kernel": {
         "language": "C",
