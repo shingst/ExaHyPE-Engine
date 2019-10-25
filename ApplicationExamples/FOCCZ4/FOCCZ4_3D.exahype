@@ -55,7 +55,7 @@
       "name": "FOCCZ4Solver",
       "order": 4,
       "maximum_mesh_size": 10.0,
-      "maximum_mesh_depth": 2,
+      "maximum_mesh_depth": 1,
       "time_stepping": "global",
       "aderdg_kernel": {
         "language": "C",

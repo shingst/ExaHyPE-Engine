@@ -4030,10 +4030,16 @@ RECURSIVE SUBROUTINE pderefinecriteria(refine_flag, max_luh,min_luh,x)
 	!	return
 	!end if
 #ifdef CCZ4EINSTEIN
-  if(abs(max_luh(60)-min_luh(60))>1.e-4 .or. abs(max_luh(54)-min_luh(54))>1.e-4) then
+  if(abs(max_luh(60)-min_luh(60))>1.e-4 .or. abs(max_luh(54)-min_luh(54))>1.e-3) then
 	refine_flag=2
   else
 	refine_flag=0
+  end if
+  
+  if(nDim .eq. 3) then
+	if(sqrt(x(1)**2+x(2)**2+x(3)**2)<15.0) then
+		refine_flag=2
+	end if
   end if
 #endif
 END SUBROUTINE pderefinecriteria
