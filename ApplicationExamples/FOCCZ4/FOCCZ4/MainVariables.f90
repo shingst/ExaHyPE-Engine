@@ -40,6 +40,40 @@
 	
 	TYPE(tEquations) :: EQN
 	
+   !Variables for NSTOV module 
+#ifdef SPHERICAL  
+    INTEGER, PARAMETER :: NSTOV_nODE = 3
+#else
+    INTEGER, PARAMETER :: NSTOV_nODE = 4
+#endif
+    INTEGER, PARAMETER :: NSTOV_nODE_p = 3, NSTOV_ATMO = 0 ! 1 => Landau atmo
+    REAL(8), PARAMETER :: NSTOV_rho_c = 1.28e-3
+    REAL(8), PARAMETER :: NSTOV_kappa = 100
+    REAL(8), PARAMETER    :: p_floor = 1.0e-16, rho_floor = 1.0e-10
+    REAL(8) :: NSTOV_rho_atmo != 1e-10
+    REAL(8), PARAMETER :: NSTOV_p_atmo = 1e-15 , NSTOV_t_atm=1.0
+    !
+	REAL(8)            ::  Mbh = 1.0, aom = 0.0 
+	REAL(8), PARAMETER    :: P_eps = 1e-4
+	integer, parameter :: MYRANK=0 	
+    
+    !
+    TYPE tNSTOVVar
+        INTEGER :: Computed
+        REAL(8) :: Int
+        !INTEGER, PARAMETER :: nODE = 3
+        REAL(8) :: Mass, radius,r1,dr1,r2,dr2,rW,drW,rUni,C,p_R ,rho_R,lapse_C
+        INTEGER :: n_B,iradius,ir1,ir2,irW 
+        REAL(8), DIMENSION (:,:),     ALLOCATABLE :: q,dq
+        REAL(8), DIMENSION (:),     ALLOCATABLE :: r,dr
+        REAL(8), DIMENSION (:),     ALLOCATABLE :: qloc
+    END TYPE tNSTOVVar
+    TYPE(tNSTOVVar) :: NSTOVVar,NSTOVVar_bar,NSTOVVar_barNew
+    !
+    REAL(8), PARAMETER :: CoordTol =1e-11	
+	
+	
+	
   ! 3-point Gaussian quadrature 
   REAL, PARAMETER     :: sGP3(3) = (/ 0.5-sqrt(15.)/10.,0.5,0.5+sqrt(15.)/10. /) 
   REAL, PARAMETER     :: wGP3(3) = (/ 5./18., 8./18., 5./18. /) 

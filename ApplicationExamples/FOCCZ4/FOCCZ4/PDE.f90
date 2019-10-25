@@ -4036,11 +4036,11 @@ RECURSIVE SUBROUTINE pderefinecriteria(refine_flag, max_luh,min_luh,x)
 	refine_flag=0
   end if
   
-  if(nDim .eq. 3) then
-	if(sqrt(x(1)**2+x(2)**2+x(3)**2)<15.0) then
-		refine_flag=2
-	end if
-  end if
+  !if(nDim .eq. 3) then
+	!if(sqrt(x(1)**2+x(2)**2+x(3)**2)<15.0) then
+	!	refine_flag=2
+	!end if
+  !end if
 #endif
 END SUBROUTINE pderefinecriteria
 
