@@ -97,6 +97,7 @@ void FOCCZ4::FOCCZ4Solver_ADERDG::boundaryValues(const double* const x,const dou
   std::memset(stateOut, 0, nVar * sizeof(double));
   std::memset(fluxOut , 0, nVar * sizeof(double));
 	
+  std::copy_n(stateIn,nVar,stateOut);
   for(int dd=0; dd<nDim; dd++) F[dd] = Fs[dd];
 
   for(int i=0; i < basisSize; i++)  { // i == time
@@ -109,7 +110,7 @@ void FOCCZ4::FOCCZ4Solver_ADERDG::boundaryValues(const double* const x,const dou
     flux(Qgp, F);
     for(int m=0; m < nVar; m++) {
       stateOut[m] += weight * Qgp[m];
-      fluxOut[m] += weight * Fs[direction][m];
+      //fluxOut[m] += weight * Fs[direction][m];
     }
   }
 }

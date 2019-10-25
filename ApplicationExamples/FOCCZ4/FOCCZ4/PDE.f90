@@ -36,14 +36,16 @@ RECURSIVE SUBROUTINE PDEFlux(f,g,hz,Q)
   END SUBROUTINE PDEFlux
 
 
-RECURSIVE SUBROUTINE PDENCP(BgradQ,Q,gradQ) 
+RECURSIVE SUBROUTINE PDENCP(BgradQ,Q,gradQin) 
    USE MainVariables, ONLY :  nVar, nDim, EQN,nParam,d
    IMPLICIT NONE
    ! 11. Oct 21:40: This was a matrix BGradQ(nVar, nDim) but is a vector in spaceTimePredictorNonlinear
    REAL, INTENT(OUT) :: BgradQ(nVar)
-   REAL, INTENT(IN)  :: gradQ(nVar, 3)
+   REAL, INTENT(IN)  :: gradQin(nVar, 3)
    REAL, INTENT(IN)  :: Q(nVar)
 
+   
+   REAL 			:: gradQ(nVar, 3)
     ! Argument list 
     REAL :: par(nParam)  
     ! Local variables 
@@ -90,6 +92,7 @@ RECURSIVE SUBROUTINE PDENCP(BgradQ,Q,gradQ)
 #endif         
     !
     BgradQ = 0.0
+	!return
     !
 #ifdef EULER     
     !
@@ -265,12 +268,15 @@ BgradQ(7) = -6.0*EQN%c0**2*Q(2)/Q(1)*gradQ(8,1)
     !
 #if defined(CCZ4EINSTEIN) || defined(CCZ4GRMHD) || defined(CCZ4GRHD) || defined(CCZ4GRGPR) 
     !
-    Qx = gradQ(:,1) 
-    Qy = gradQ(:,2)
+    Qx = gradQin(:,1) 
+    Qy = gradQin(:,2)
 	IF(nDim.eq.2) THEN
 	    Qz = 0.0
+		gradQ(:,1:2)=gradQin(:,1:2)
+		gradQ(:,3)	=0.0
 	ELSE
-		Qz = gradQ(:,3)		
+		Qz = gradQin(:,3)
+		gradQ=gradQin
 	ENDIF 
 
     k1   = EQN%CCZ4k1  
@@ -2301,13 +2307,14 @@ END SUBROUTINE PDEMatrixB
 !END SUBROUTINE getExactSolution
 
 
-SUBROUTINE PDEFusedSrcNCP(Src_BgradQ,Q,gradQ)
-    USE MainVariables, ONLY : nVar, nParam, d, EQN 
+RECURSIVE SUBROUTINE PDEFusedSrcNCP(Src_BgradQ,Q,gradQin)
+    USE MainVariables, ONLY : nVar, nParam, d, EQN, nDim 
     IMPLICIT NONE
     ! Argument list 
-    REAL, INTENT(IN)  :: Q(nVar), gradQ(nVar,d)
+    REAL, INTENT(IN)  :: Q(nVar), gradQin(nVar,d)
     REAL, INTENT(OUT) :: Src_BgradQ(nVar) 
     ! Local variables 
+	REAL				:: gradQ(nVar,d)
 	REAL	:: par(nParam), time=0.0
     INTEGER :: i,j,k,l,m,n,ip,iq,ii,jj,kk,ll,mm,iErr,count    
     REAL :: p, irho, lam, mu 
@@ -2352,7 +2359,7 @@ SUBROUTINE PDEFusedSrcNCP(Src_BgradQ,Q,gradQ)
     ! Matter contributions
     REAL :: sm(3), Sij(3,3), Sij_contr(3,3), sm_contr(3), S, tau, dens, bv_cov(3), sqrdet 
     REAL :: srctraceK, srcTheta
-    REAL :: SrcK(3,3), SrcGhat(3)
+    REAL :: SrcK(3,3), SrcGhat(3),mytmp1(3,3,3,3), mytmp2(3,3,3,3) 
     
     REAL, PARAMETER :: Pi = ACOS(-1.0) 
     !
@@ -2360,9 +2367,16 @@ SUBROUTINE PDEFusedSrcNCP(Src_BgradQ,Q,gradQ)
     !
 #if defined(CCZ4EINSTEIN) || defined(CCZ4GRHD) || defined(CCZ4GRMHD) || defined(CCZ4GRGPR) 
     !
-    Qx = gradQ(:,1) 
-    Qy = gradQ(:,2)
-    Qz = gradQ(:,3)
+    Qx = gradQin(:,1) 
+    Qy = gradQin(:,2)
+	IF(nDim.eq.2) THEN
+	    Qz = 0.0
+		gradQ(:,1:2)=gradQin(:,1:2)
+		gradQ(:,3)	=0.0
+	ELSE
+		Qz = gradQin(:,3)
+		gradQ=gradQin
+	ENDIF 
 
     k1   = EQN%CCZ4k1  
     k2   = EQN%CCZ4k2  
@@ -2577,13 +2591,25 @@ SUBROUTINE PDEFusedSrcNCP(Src_BgradQ,Q,gradQ)
        Christoffel_kind1(i,j,k) = DD(k,i,j)+DD(j,i,k)-DD(i,j,k)      ! this definition seems to work ! 
        DO l = 1, 3
           Christoffel_tilde(i,j,k) = Christoffel_tilde(i,j,k) + g_contr(k,l)*( DD(i,j,l)+DD(j,i,l)-DD(l,i,j) ) 
-          Christoffel(i,j,k)       = Christoffel(i,j,k)       + g_contr(k,l)*( DD(i,j,l)+DD(j,i,l)-DD(l,i,j) ) -g_contr(k,l)*( g_cov(j,l)*PP(i)+g_cov(i,l)*PP(j)-g_cov(i,j)*PP(l) ) 
+		  mytmp1(i,j,k,l)                    = DD(i,j,l)+DD(j,i,l)-DD(l,i,j) 
+          Christoffel(i,j,k)       = Christoffel(i,j,k)       + g_contr(k,l)*( mytmp1(i,j,k,l)		  ) 
+		  mytmp2(i,j,k,l)=( g_cov(j,l)*PP(i)+g_cov(i,l)*PP(j)-g_cov(i,j)*PP(l) ) 
+		  Christoffel(i,j,k)       = Christoffel(i,j,k)       -g_contr(k,l)*mytmp2(i,j,k,l) 
           !Gtilde(i)                = Gtilde(i)+2*g_contr(i,j)*g_contr(k,l)*DD(l,j,k) 
+		  !PRINT *, Christoffel(i,j,k) ,I,J,K
         ENDDO 
       ENDDO
      ENDDO
     ENDDO
-    !
+    !print *, 'g_contr',g_contr
+	!print *, 'g_cov',g_cov
+	!print *, 'DD',DD
+	!print *, 'PP',PP
+	print *, 'mytmp1',mytmp1
+	print *, 'mytmp2',mytmp2
+	print *, 'Christoffel',Christoffel
+	pause
+	
     DO l = 1, 3
      DO j = 1, 3
       DO i = 1, 3
@@ -2737,6 +2763,23 @@ SUBROUTINE PDEFusedSrcNCP(Src_BgradQ,Q,gradQ)
     !
     dtTraceK = - nablanablaalphaNCP - nablanablaalphaSrc + alpha*( RPlusTwoNablaZNCP + RPlusTwoNablaZSrc + traceK**2 - 2*Theta*traceK ) - 3*alpha*k1*(1+k2)*Theta + SUM(beta(:)*dtraceK(:)) 
     !
+	!print *, 'dtTraceK=', dtTraceK
+	!print *, 'nablanablaalphaNCP=', nablanablaalphaNCP
+	!print *, 'nablanablaalphaSrc=', nablanablaalphaSrc
+	!print *, 'RPlusTwoNablaZNCP=', RPlusTwoNablaZNCP
+	!print *, 'RPlusTwoNablaZSrc=', RPlusTwoNablaZSrc
+	!print *, 'traceK=', traceK
+	!print *, 'dtraceK=', dtraceK
+	!print *, 'Theta=', Theta
+	!print *, 'Christoffel',Christoffel
+	print *, 'Christoffel',Christoffel
+	!print *, 'Gtilde',Gtilde
+	!print *, 'Christoffel_tilde',Christoffel_tilde
+	!print *, 'dChristoffelsrc',dChristoffelsrc
+	!print *, 'dChristoffel_tildesrc',dChristoffel_tildesrc
+	!print *, 'Z',Z
+	pause
+	
     traceB = BB(1,1) + BB(2,2) + BB(3,3) 
     dtphi   = beta(1)*PP(1) + beta(2)*PP(2) + beta(3)*PP(3) + 1./3.*alpha*traceK - 1./3.*traceB 
     dtalpha = -alpha*fa*(traceK-K0-c*2*Theta) + beta(1)*AA(1) + beta(2)*AA(2) + beta(3)*AA(3) 

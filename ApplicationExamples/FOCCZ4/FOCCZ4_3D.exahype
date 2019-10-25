@@ -1,0 +1,118 @@
+{
+  "project_name": "FOCCZ4",
+  "compiler_flags": "-DCCZ4EINSTEIN -DGLMROT",
+  "paths": {
+    "peano_kernel_path": "./Peano",
+    "exahype_path": "./ExaHyPE",
+    "output_directory": "./ApplicationExamples/FOCCZ4/FOCCZ4",
+    "log_file": "whatever.log"
+  },
+  "architecture": "skx",
+  "computational_domain": {
+    "dimension": 3,
+    "end_time": 3.0,
+    "offset": [
+      -20.0,
+      -20.0,
+      -20.0
+
+    ],
+    "width": [
+      40.0,
+      40.0,
+      40.0
+    ]
+  },
+  "shared_memory": {
+    "cores": 1,
+    "properties_file": "sharedmemory.properties",
+    "autotuning_strategy": "dummy",
+    "background_job_consumers": 1
+  },
+  "distributed_memory": {
+    "timeout": 6000,
+    "load_balancing_type": "static",
+    "buffer_size": 6400,
+    "load_balancing_strategy": "hotspot",
+    "node_pool_strategy": "fair",
+    "ranks_per_node": 10
+  },
+  "optimisation": {
+    "fuse_algorithmic_steps": "all",
+    "fuse_algorithmic_steps_rerun_factor": 0.99,
+    "fuse_algorithmic_steps_diffusion_factor": 0.99,
+    "spawn_predictor_as_background_thread": true,
+    "spawn_update_as_background_thread": true,
+    "spawn_amr_background_threads": true,
+    "disable_vertex_exchange_in_time_steps": true,
+    "time_step_batch_factor": 0.0,
+    "disable_metadata_exchange_in_batched_time_steps": false,
+    "double_compression": 0.0,
+    "spawn_double_compression_as_background_thread": true
+  },
+  "solvers": [
+    {
+      "type": "Limiting-ADER-DG",
+      "name": "FOCCZ4Solver",
+      "order": 3,
+      "maximum_mesh_size": 10.0,
+      "maximum_mesh_depth": 0,
+      "time_stepping": "global",
+      "aderdg_kernel": {
+        "language": "C",
+        "nonlinear": true,
+        "terms": [
+          "flux",
+          "ncp",
+          "source"
+        ],
+        "space_time_predictor": {},
+        "optimised_terms": [
+		"fusedsource"
+	],
+        "optimised_kernel_debugging": [],
+        "implementation": "optimised"
+      },
+      "point_sources": 0,
+      "limiter": {
+        "dmp_observables": 3,
+        "dmp_relaxation_parameter": 1e+3,
+        "dmp_difference_scaling": 1e+4,
+        "patch_size": "max",
+        "implementation": "generic"
+      },
+      "fv_kernel": {
+        "language": "C",
+        "terms": [
+          "flux",
+          "ncp",
+          "source"
+        ],
+        "scheme": "musclhancock",
+	"slope_limiter" : "minmod",
+        "implementation": "generic"
+      },
+      "variables": [
+        {
+          "name": "MYQ",
+          "multiplicity": 96
+        }
+      ],
+    "parameters": {
+        "reference": "CCZ4MinkowskiSrc"
+      },
+
+
+    "plotters": [
+	{
+          "type": "user::defined",
+          "name": "TecplotWriter",
+          "time": 0.0,
+          "repeat": 0.05,
+          "output": "./output/tecplot",
+          "variables": 96
+        }
+      ]
+    }
+  ]
+}
