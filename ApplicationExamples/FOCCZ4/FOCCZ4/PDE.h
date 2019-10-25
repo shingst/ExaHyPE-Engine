@@ -24,6 +24,8 @@ void registerinitialdata_(const char* const id_name, int* id_name_len);
 void pdeauxvar_(double* aux, const double* const Q,double* x, const double* const time);
 void pdecritialstress_(double* CS, const double* const Q);
 
+void pderefinecriteria_(int* refine_flag,const double* max_luh,const double* min_luh,const double* x);
+
 //void hllemfluxfv_(double* FL, double* FR, const double* const  QL, const double* const  QR, const double* const  QavL, const double* const  QavR, const int* normalNonZeroIndex);
 void hllemfluxfv_(double* FL, double* FR, const double* const  QL, const double* const  QR, const int* normalNonZeroIndex);
 void hllemriemannsolver_(const int* basisSize, const int* normalNonZeroIndex, double* FL, double* FR, const double* const  QL, const double* const  QR, const double* const  QavL, const double* const  QavR);

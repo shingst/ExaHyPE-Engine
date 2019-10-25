@@ -120,7 +120,7 @@ void FOCCZ4::FOCCZ4Solver_ADERDG::boundaryValues(const double* const x,const dou
 exahype::solvers::Solver::RefinementControl FOCCZ4::FOCCZ4Solver_ADERDG::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,double t,const int level) {
   // @todo Please implement/augment if required
   //return exahype::solvers::Solver::RefinementControl::Keep;
-  if(DIMENSIONS == 2){
+  /*if(DIMENSIONS == 2){
     if(std::abs(cellCentre[0]) < 10){
       if(std::abs(cellCentre[1]) < 10){
 	return exahype::solvers::Solver::RefinementControl::Refine;
@@ -141,7 +141,75 @@ exahype::solvers::Solver::RefinementControl FOCCZ4::FOCCZ4Solver_ADERDG::refinem
   if ( level > getCoarsestMeshLevel() ) {
     return exahype::solvers::Solver::RefinementControl::Erase;
   }
-return exahype::solvers::Solver::RefinementControl::Keep;
+return exahype::solvers::Solver::RefinementControl::Keep;*/
+
+
+  const int nVar = FOCCZ4::AbstractFOCCZ4Solver_ADERDG::NumberOfVariables;
+  const int order = FOCCZ4::AbstractFOCCZ4Solver_ADERDG::Order;
+  const int basisSize = order + 1;
+  int refine_flag;
+  double max_luh[nVar];
+  double min_luh[nVar];
+  
+  //return exahype::solvers::Solver::RefinementControl::Keep;
+ 
+ // 	 
+ 
+  for(int m = 0; m <nVar ; m++){
+	max_luh[m]=-1.e+14;
+	min_luh[m]=1.e+14;
+  }
+  
+#if DIMENSIONS==3
+	kernels::idx4 id_xyz_dof(basisSize,basisSize,basisSize,nVar);
+#else
+	kernels::idx3 id_xy_dof(basisSize,basisSize,nVar);
+#endif
+  
+  for(int i = 0; i < basisSize; i++){
+		for(int j = 0; j <basisSize ; j++){
+#if DIMENSIONS==3	
+			for(int k = 0; k <basisSize ; k++){
+#endif
+#if DIMENSIONS==3
+				for(int m = 0; m <nVar ; m++){
+					if(luh[id_xyz_dof(i,j,k,m)]<min_luh[m]){
+						min_luh[m]=luh[id_xyz_dof(i,j,k,m)];
+					}
+					if(luh[id_xyz_dof(i,j,k,m)]>max_luh[m]){
+						max_luh[m]=luh[id_xyz_dof(i,j,k,m)];
+					}
+				}
+#else
+				for(int m = 0; m <nVar ; m++){
+					if(luh[id_xy_dof(i,j,m)]<min_luh[m]){
+						min_luh[m]=luh[id_xy_dof(i,j,m)];
+					}
+					if(luh[id_xy_dof(i,j,m)]>max_luh[m]){
+						max_luh[m]=luh[id_xy_dof(i,j,m)];
+					}
+				}	
+#endif
+		
+
+#if DIMENSIONS==3				
+			}
+#endif			
+		}
+	}		  
+  pderefinecriteria_(&refine_flag,&max_luh[0],&min_luh[0],&cellCentre[0]);
+  if(refine_flag>1){
+	  return exahype::solvers::Solver::RefinementControl::Refine;
+  }else{
+		if(refine_flag>0){
+			return exahype::solvers::Solver::RefinementControl::Keep;
+		}else{
+			//return exahype::solvers::Solver::RefinementControl::Recoarse;
+			return exahype::solvers::Solver::RefinementControl::Keep;
+		};
+  }
+
+
 }
 
 //*****************************************************************************

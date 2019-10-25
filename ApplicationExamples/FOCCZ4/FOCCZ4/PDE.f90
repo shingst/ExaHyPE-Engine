@@ -4014,4 +4014,30 @@ RECURSIVE SUBROUTINE PDEFusedSrcNCP(Src_BgradQ,Q,gradQin)
     !            
 END SUBROUTINE PDEFusedSrcNCP 
 
+
+RECURSIVE SUBROUTINE pderefinecriteria(refine_flag, max_luh,min_luh,x) 
+  USE MainVariables, ONLY: nVar , nDim  
+  IMPLICIT NONE  
+	Integer, intent(out) :: refine_flag
+	real, intent(in) :: max_luh(nVar),min_luh(nVar),x(nDim)
+	
+	!if(abs(x(1))<10) then
+	!	refine_flag=2
+	!	return
+	!end if
+	!if(abs(x(2))<15) then
+	!	refine_flag=2
+	!	return
+	!end if
+#ifdef CCZ4EINSTEIN
+  if(abs(max_luh(60)-min_luh(60))>1.e-4 .or. abs(max_luh(54)-min_luh(54))>1.e-4) then
+	refine_flag=2
+  else
+	refine_flag=0
+  end if
+#endif
+END SUBROUTINE pderefinecriteria
+
+
+
 #endif
