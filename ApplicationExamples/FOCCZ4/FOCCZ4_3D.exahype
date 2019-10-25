@@ -7,7 +7,7 @@
     "output_directory": "./ApplicationExamples/FOCCZ4/FOCCZ4",
     "log_file": "whatever.log"
   },
-  "architecture": "skx",
+  "architecture": "generic",
   "computational_domain": {
     "dimension": 3,
     "end_time": 3.0,
@@ -15,7 +15,6 @@
       -20.0,
       -20.0,
       -20.0
-
     ],
     "width": [
       40.0,
@@ -24,10 +23,10 @@
     ]
   },
   "shared_memory": {
-    "cores": 1,
+    "cores": 10,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
-    "background_job_consumers": 1
+    "background_job_consumers": 9
   },
   "distributed_memory": {
     "timeout": 6000,
@@ -55,8 +54,8 @@
       "type": "Limiting-ADER-DG",
       "name": "FOCCZ4Solver",
       "order": 3,
-      "maximum_mesh_size": 10.0,
-      "maximum_mesh_depth": 0,
+      "maximum_mesh_size": 1.0,
+      "maximum_mesh_depth": 2,
       "time_stepping": "global",
       "aderdg_kernel": {
         "language": "C",
@@ -71,7 +70,7 @@
 		"fusedsource"
 	],
         "optimised_kernel_debugging": [],
-        "implementation": "optimised"
+        "implementation": "generic"
       },
       "point_sources": 0,
       "limiter": {
@@ -108,7 +107,7 @@
           "type": "user::defined",
           "name": "TecplotWriter",
           "time": 0.0,
-          "repeat": 0.05,
+          "repeat": 1.0,
           "output": "./output/tecplot",
           "variables": 96
         }

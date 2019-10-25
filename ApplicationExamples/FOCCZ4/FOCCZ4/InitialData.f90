@@ -45,16 +45,20 @@ RECURSIVE SUBROUTINE InitParameters(STRLEN,PARSETUP)
 	end select
 END SUBROUTINE InitParameters
 
-RECURSIVE SUBROUTINE InitialData(xGP, tGp, Q)
+RECURSIVE SUBROUTINE InitialData(xGPin, tGp, Q)
 	USE, INTRINSIC :: ISO_C_BINDING
 	USE MainVariables, ONLY : nVar, nDim, EQN, ICType
 	IMPLICIT NONE 
 	! Argument list 
-	REAL, INTENT(IN)               :: xGP(3), tGp        ! 
+	REAL, INTENT(IN)               :: xGPin(3), tGp        ! 
 	REAL, INTENT(OUT)              :: Q(nVar)        ! 
-	REAL :: up(nVar),V0(nVar),r
+	REAL :: up(nVar),V0(nVar),r,xGP(3)
 
+	xGP=xGPin
 	
+  	IF(nDim==2) THEN
+  		xGP(3) = 0.
+	ENDIF
 	select case(ICType)
 		case('CCZ4MinkowskiSrc')
  ! 
@@ -68,9 +72,9 @@ RECURSIVE SUBROUTINE InitialData(xGP, tGp, Q)
        !
        !V0(54) = 0.2*EXP(-0.5*( xGP(1)**2+xGP(2)**2)/1.0**2 ) 
        !
-       r = SQRT( xGP(1)**2 + xGP(2)**2 ) 
+       r = SQRT( xGP(1)**2 + xGP(2)**2 + xGP(3)**2 ) 
        !
-       V0(60) =     0.001*EXP(-0.5*( (xGP(1)-2.0)**2+xGP(2)**2+0*xGP(3)**2)/1.0**2 ) +     0.001*EXP(-0.5*( (xGP(1)+2.0)**2+xGP(2)**2+0*xGP(3)**2)/1.0**2 )
+       V0(60) =     0.001*EXP(-0.5*( (xGP(1)-2.0)**2+xGP(2)**2+xGP(3)**2)/1.0**2 ) +     0.001*EXP(-0.5*( (xGP(1)+2.0)**2+xGP(2)**2+xGP(3)**2)/1.0**2 )
        IF( r>5.0 .AND. r<10. ) THEN 
            V0(61) = -0.2*xGP(2)*( 10.0 - r )/5.0  
            V0(62) = +0.2*xGP(1)*( 10.0 - r )/5.0  
@@ -81,7 +85,7 @@ RECURSIVE SUBROUTINE InitialData(xGP, tGp, Q)
            V0(61:62) = 0.0  
        ENDIF 
        V0(63) = 0.0 
-       V0(64) = 0.5*0.001*EXP(-0.5*( (xGP(1)-2.0)**2+xGP(2)**2+0*xGP(3)**2)/1.0**2 ) + 0.5*0.001*EXP(-0.5*( (xGP(1)+2.0)**2+xGP(2)**2+0*xGP(3)**2)/1.0**2 )
+       V0(64) = 0.5*0.001*EXP(-0.5*( (xGP(1)-2.0)**2+xGP(2)**2+xGP(3)**2)/1.0**2 ) + 0.5*0.001*EXP(-0.5*( (xGP(1)+2.0)**2+xGP(2)**2+xGP(3)**2)/1.0**2 )
        ! 
 	CASE DEFAULT
 		PRINT *, 'NOT IMPLEMENTED'
