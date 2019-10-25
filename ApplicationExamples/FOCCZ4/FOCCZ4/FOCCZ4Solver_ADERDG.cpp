@@ -98,13 +98,14 @@ void FOCCZ4::FOCCZ4Solver_ADERDG::boundaryValues(const double* const x,const dou
   std::memset(fluxOut , 0, nVar * sizeof(double));
 	
   std::copy_n(stateIn,nVar,stateOut);
-  for(int dd=0; dd<nDim; dd++) F[dd] = Fs[dd];
-
+  std::copy_n(fluxIn,nVar,fluxOut);
+  /*for(int dd=0; dd<nDim; dd++) F[dd] = Fs[dd];
+  
   for(int i=0; i < basisSize; i++)  { // i == time
     const double weight = kernels::legendre::weights[order][i];
     const double xi = kernels::legendre::nodes[order][i];
     double ti = t + xi * dt;
-
+  
     //    initialdata_(x, &ti, Qgp,&md,&cms,&order);
     initialdata_(x_3, &ti, Qgp);
     flux(Qgp, F);
@@ -112,7 +113,7 @@ void FOCCZ4::FOCCZ4Solver_ADERDG::boundaryValues(const double* const x,const dou
       stateOut[m] += weight * Qgp[m];
       //fluxOut[m] += weight * Fs[direction][m];
     }
-  }
+  }*/
 }
 
 exahype::solvers::Solver::RefinementControl FOCCZ4::FOCCZ4Solver_ADERDG::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,double t,const int level) {

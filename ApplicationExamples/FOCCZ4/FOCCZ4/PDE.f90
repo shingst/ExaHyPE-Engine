@@ -2605,10 +2605,10 @@ RECURSIVE SUBROUTINE PDEFusedSrcNCP(Src_BgradQ,Q,gradQin)
 	!print *, 'g_cov',g_cov
 	!print *, 'DD',DD
 	!print *, 'PP',PP
-	print *, 'mytmp1',mytmp1
-	print *, 'mytmp2',mytmp2
-	print *, 'Christoffel',Christoffel
-	pause
+	!print *, 'mytmp1',mytmp1
+	!print *, 'mytmp2',mytmp2
+	!print *, 'Christoffel',Christoffel
+	!pause
 	
     DO l = 1, 3
      DO j = 1, 3
@@ -2772,13 +2772,13 @@ RECURSIVE SUBROUTINE PDEFusedSrcNCP(Src_BgradQ,Q,gradQin)
 	!print *, 'dtraceK=', dtraceK
 	!print *, 'Theta=', Theta
 	!print *, 'Christoffel',Christoffel
-	print *, 'Christoffel',Christoffel
+	!print *, 'Christoffel',Christoffel
 	!print *, 'Gtilde',Gtilde
 	!print *, 'Christoffel_tilde',Christoffel_tilde
 	!print *, 'dChristoffelsrc',dChristoffelsrc
 	!print *, 'dChristoffel_tildesrc',dChristoffel_tildesrc
 	!print *, 'Z',Z
-	pause
+	!pause
 	
     traceB = BB(1,1) + BB(2,2) + BB(3,3) 
     dtphi   = beta(1)*PP(1) + beta(2)*PP(2) + beta(3)*PP(3) + 1./3.*alpha*traceK - 1./3.*traceB 

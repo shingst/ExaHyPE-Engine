@@ -25,6 +25,8 @@ RECURSIVE SUBROUTINE InitParameters(STRLEN,PARSETUP)
 			EQN%CCZ4GLMepsP = 1.0   ! 5.  
 			EQN%CCZ4GLMepsD = 1.0   ! 0.1 
 			!
+			EQN%CCZ4itau  = 0.0 
+			
 			EQN%CCZ4k1  = 0.0  
 			EQN%CCZ4k2  = 0.0 
 			EQN%CCZ4k3  = 0.0 
@@ -68,7 +70,7 @@ RECURSIVE SUBROUTINE InitialData(xGP, tGp, Q)
        !
        r = SQRT( xGP(1)**2 + xGP(2)**2 ) 
        !
-       !V0(60) =     0.001*EXP(-0.5*( (xGP(1)-2.0)**2+xGP(2)**2+0*xGP(3)**2)/1.0**2 ) +     0.001*EXP(-0.5*( (xGP(1)+2.0)**2+xGP(2)**2+0*xGP(3)**2)/1.0**2 )
+       V0(60) =     0.001*EXP(-0.5*( (xGP(1)-2.0)**2+xGP(2)**2+0*xGP(3)**2)/1.0**2 ) +     0.001*EXP(-0.5*( (xGP(1)+2.0)**2+xGP(2)**2+0*xGP(3)**2)/1.0**2 )
        IF( r>5.0 .AND. r<10. ) THEN 
            V0(61) = -0.2*xGP(2)*( 10.0 - r )/5.0  
            V0(62) = +0.2*xGP(1)*( 10.0 - r )/5.0  
@@ -79,7 +81,7 @@ RECURSIVE SUBROUTINE InitialData(xGP, tGp, Q)
            V0(61:62) = 0.0  
        ENDIF 
        V0(63) = 0.0 
-       !V0(64) = 0.5*0.001*EXP(-0.5*( (xGP(1)-2.0)**2+xGP(2)**2+0*xGP(3)**2)/1.0**2 ) + 0.5*0.001*EXP(-0.5*( (xGP(1)+2.0)**2+xGP(2)**2+0*xGP(3)**2)/1.0**2 )
+       V0(64) = 0.5*0.001*EXP(-0.5*( (xGP(1)-2.0)**2+xGP(2)**2+0*xGP(3)**2)/1.0**2 ) + 0.5*0.001*EXP(-0.5*( (xGP(1)+2.0)**2+xGP(2)**2+0*xGP(3)**2)/1.0**2 )
        ! 
 	CASE DEFAULT
 		PRINT *, 'NOT IMPLEMENTED'
