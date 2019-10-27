@@ -4046,9 +4046,6 @@ RECURSIVE SUBROUTINE pderefinecriteria(refine_flag, max_luh,min_luh,x)
 	Integer, intent(out) :: refine_flag
 	real, intent(in) :: max_luh(nVar),min_luh(nVar),x(nDim)
 	
-        refine_flag = 0 
-
-
 	!if(abs(x(1))<10) then
 	!	refine_flag=2
 	!	return
@@ -4058,6 +4055,8 @@ RECURSIVE SUBROUTINE pderefinecriteria(refine_flag, max_luh,min_luh,x)
 	!	return
 	!end if
 #ifdef CCZ4EINSTEIN
+
+  refine_flag = 0 
 
 !  if(abs(max_luh(60)-min_luh(60))>1.e-4 .or. abs(max_luh(54)-min_luh(54))>1.e-3) then
 !	refine_flag=2

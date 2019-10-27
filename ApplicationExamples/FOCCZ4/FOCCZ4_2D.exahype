@@ -51,8 +51,8 @@
     {
       "type": "Limiting-ADER-DG",
       "name": "FOCCZ4Solver",
-      "order": 4,
-      "maximum_mesh_size": 10.0,
+      "order": 3,
+      "maximum_mesh_size": 3.0, 
       "maximum_mesh_depth": 2,
       "time_stepping": "global",
       "aderdg_kernel": {
