@@ -371,6 +371,14 @@ RECURSIVE SUBROUTINE PDElimitervalue(limiter_value,xx,numberOfObservables, obser
 	real	:: rr	
 
 	limiter_value=0
+	
+#ifdef CCZ4GRHD 	
+	IF( SQRT(xx(1)**2+xx(2)**2+xx(3)**2)>=7.0 .and. SQRT(xx(1)**2+xx(2)**2+xx(3)**2)<=9.5 ) THEN
+		limiter_value = 1
+	ELSE
+		limiter_value = 0
+	ENDIF 
+#endif 	
 
    !limiter_value = 1
 END SUBROUTINE PDElimitervalue
