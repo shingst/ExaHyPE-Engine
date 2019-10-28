@@ -11,7 +11,7 @@
 ! Trento (EQNTYPE4)
 
 RECURSIVE SUBROUTINE PDEFlux(f,g,hz,Q)
-  USE MainVariables, ONLY : nVar, nDim, EQN
+  USE MainVariables, ONLY : nVar, nDim, EQN, d 
   USE iso_c_binding
   IMPLICIT NONE
   REAL :: f(nVar), g(nVar), h(nVar), hz(nVar), Q(nVar), V(nVar)
@@ -21,15 +21,40 @@ RECURSIVE SUBROUTINE PDEFlux(f,g,hz,Q)
   ! Local varialbes
   REAL :: p, A(3,3), AU(3), detA, GT(3,3), devG(3,3), TT(3,3), Id(3,3), T,falpha
   INTEGER :: iErr
-  REAL :: ialpha,LEalpha,u(3)
+  REAL :: ialpha,LEalpha,alpha,phi,u(3)
   real :: LL_gpr,MM_gpr,dMM_gpr,dKK_gpr,YY,etaloc
   REAL :: x(3),time,rho,Jx,Jy,Jz, Jv
+#ifdef VECTOR    
+#ifdef AVX512 
+  INTEGER, PARAMETER :: nVarGRMHD = 24                           ! The number of variables of the PDE system 
+#else   
+  INTEGER, PARAMETER :: nVarGRMHD = 20                           ! The number of variables of the PDE system 
+#endif 
+#else
+  INTEGER, PARAMETER :: nVarGRMHD = 19                           ! The number of variables of the PDE system 
+#endif
+  REAL :: QGRMHD(nVarGRMHD), FGRMHD(nVarGRMHD,d)  
 
     f=0
     g=0
     h=0
-	!CALL PDECons2Prim(V,Q,x,time,iErr)
 
+#ifdef CCZ4GRHD
+
+    alpha         = EXP(Q(17)) 
+    phi           = EXP(Q(55)) 
+    QGRMHD(1:5)   = Q(60:64)        ! hydro variables 
+    QGRMHD(6:9)   = 0.0             ! EM variables 
+    QGRMHD(10)    = alpha           ! lapse 
+    QGRMHD(11:13) = Q(18:20)        ! shift 
+    QGRMHD(14:19) = Q(1:6)/phi**2   ! metric 
+    CALL PDEFluxGRMHD(FGRMHD,QGRMHD) 
+    f(60:64) = FGRMHD(1:5,1) 
+    g(60:64) = FGRMHD(1:5,2) 
+    h(60:64) = FGRMHD(1:5,3) 
+
+#endif 		
+	
   IF(nDim==3) THEN
     hz=h
   END IF  
@@ -4030,17 +4055,25 @@ RECURSIVE SUBROUTINE pderefinecriteria(refine_flag, max_luh,min_luh,x)
 	!	return
 	!end if
 #ifdef CCZ4EINSTEIN
-  if(abs(max_luh(60)-min_luh(60))>1.e-4 .or. abs(max_luh(54)-min_luh(54))>1.e-3) then
-	refine_flag=2
-  else
-	refine_flag=0
-  end if
+
+  refine_flag = 0 
+
+!  if(abs(max_luh(60)-min_luh(60))>1.e-4 .or. abs(max_luh(54)-min_luh(54))>1.e-3) then
+!	refine_flag=2
+!  else
+!	refine_flag=0
+!  end if
   
-  !if(nDim .eq. 3) then
-	!if(sqrt(x(1)**2+x(2)**2+x(3)**2)<15.0) then
-	!	refine_flag=2
-	!end if
-  !end if
+  if(nDim .eq. 3) then
+	if(sqrt(x(1)**2+x(2)**2+x(3)**2)<15.0) then
+		refine_flag=2
+	end if
+	else
+	        if(sqrt(x(1)**2+x(2)**2)<15.0) then
+                refine_flag=2
+        end if
+
+  end if
 #endif
 END SUBROUTINE pderefinecriteria
 

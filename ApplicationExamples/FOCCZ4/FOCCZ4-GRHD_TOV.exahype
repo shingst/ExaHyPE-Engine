@@ -1,6 +1,6 @@
 {
   "project_name": "FOCCZ4",
-  "compiler_flags": "-DCCZ4EINSTEIN -DGLMROT",
+  "compiler_flags": "-DCCZ4GRHD -DGLMROT -DRNSTOV",
   "paths": {
     "peano_kernel_path": "./Peano",
     "exahype_path": "./ExaHyPE",
@@ -9,15 +9,17 @@
   },
   "architecture": "noarch",
   "computational_domain": {
-    "dimension": 2,
+    "dimension": 3,
     "end_time": 101.0,
     "offset": [
-      -100.0,
-      -100.0
+      -4.0,
+      -4.0,
+      -4.0
     ],
     "width": [
-      200.0,
-      200.0
+      8.0,
+      8.0,
+      8.0
     ]
   },
   "shared_memory": {
@@ -52,8 +54,8 @@
       "type": "Limiting-ADER-DG",
       "name": "FOCCZ4Solver",
       "order": 3,
-      "maximum_mesh_size": 3.0, 
-      "maximum_mesh_depth": 2,
+      "maximum_mesh_size": 2.0,
+      "maximum_mesh_depth": 0,
       "time_stepping": "global",
       "aderdg_kernel": {
         "language": "C",
@@ -96,7 +98,7 @@
         }
       ],
     "parameters": {
-        "reference": "CCZ4MinkowskiSrc"
+        "reference": "CCZ4TOV"
       },
 
 

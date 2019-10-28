@@ -199,7 +199,7 @@ template <typename SolverType>
 void computeGradQ(double* gradQ, const double* const u, const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch) {
 	const int numberOfVariables = SolverType::NumberOfVariables;
 	const int order = SolverType::Order;
-	computeGradQ(gradQ, u, sizeOfPatch, numberOfVariables, order);
+        computeGradQ(gradQ, u, sizeOfPatch, numberOfVariables, order);
 }
 
 /// Convenience also for computeGradQi
