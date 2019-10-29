@@ -35,5 +35,5 @@ void FOCCZ4::CentralDensity::mapQuantities(
 ) {
   double V[96];
   pdecons2prim_(V,Q);
-  outputQuantities[0] = Q[59];
+  outputQuantities[0] = V[59];
 }

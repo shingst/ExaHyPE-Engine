@@ -142,6 +142,9 @@ class FOCCZ4::FOCCZ4Solver_FV : public FOCCZ4::AbstractFOCCZ4Solver_FV {
      */
     void nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) override;
     
+	
+	double riemannSolver(double* fL, double *fR, const double* qL, const double* qR, const double* gradQL, const double* gradQR, const double* cellSize, int direction) override;
+
     /* pointSource() function not included, as requested in the specification file */
 };
 
