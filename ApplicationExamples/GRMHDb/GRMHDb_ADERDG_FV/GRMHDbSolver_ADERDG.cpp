@@ -366,25 +366,25 @@ void GRMHDb::GRMHDbSolver_ADERDG::eigenvalues(const double* const Q,const int d,
 	//}
 	//printf("\n******* ADERDG::eigenvalues *****************");
   // @todo Please implement/augment if required
-  lambda[0] = 1.0;
-  lambda[1] = 1.0;
-  lambda[2] = 1.0;
-  lambda[3] = 1.0;
-  lambda[4] = 1.0;
-  lambda[5] = 1.0;
-  lambda[6] = 1.0;
-  lambda[7] = 1.0;
-  lambda[8] = 1.0;
-  lambda[9] = 1.0;
-  lambda[10] = 1.0;
-  lambda[11] = 1.0;
-  lambda[12] = 1.0;
-  lambda[13] = 1.0;
-  lambda[14] = 1.0;
-  lambda[15] = 1.0;
-  lambda[16] = 1.0;
-  lambda[17] = 1.0;
-  lambda[18] = 1.0;
+  lambda[0]  = 0.0;
+  lambda[1]  = 0.0;
+  lambda[2]  = 0.0;
+  lambda[3]  = 0.0;
+  lambda[4]  = 0.0;
+  lambda[5]  = 0.0;
+  lambda[6]  = 0.0;
+  lambda[7]  = 0.0;
+  lambda[8]  = 0.0;
+  lambda[9]  = 0.0;
+  lambda[10] = 0.0;
+  lambda[11] = 0.0;
+  lambda[12] = 0.0;
+  lambda[13] = 0.0;
+  lambda[14] = 0.0;
+  lambda[15] = 0.0;
+  lambda[16] = 0.0;
+  lambda[17] = 0.0;
+  lambda[18] = 0.0;
 
   //return;
 
@@ -635,14 +635,14 @@ bool GRMHDb::GRMHDbSolver_ADERDG::isPhysicallyAdmissible(
 #ifdef Dim2
 	double dr;
 	dr = dx[0] * dx[0] + dx[1] * dx[1];
-        dr = sqrt(dr);
+	dr = sqrt(dr);
 	double radiusC;
 		radiusC = center[0] * center[0] + center[1] * center[1];
 	if (radiusC > 0.) {
-		radiusC = sqrt(radiusC);		
-	}		
-        if (radiusC + 0.5*dr > 8.05 && radiusC-0.5*dr < 8.35) {
-	//if (radiusC > 7.6 && radiusC < 8.5) {
+		radiusC = sqrt(radiusC);
+	}
+	if (radiusC + 0.5*dr > 8.05 && radiusC - 0.5*dr < 8.35) {
+		//if (radiusC > 7.6 && radiusC < 8.5) {
 		return false;
 	}
 	else {

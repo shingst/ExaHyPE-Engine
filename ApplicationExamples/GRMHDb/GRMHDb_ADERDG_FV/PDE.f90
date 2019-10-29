@@ -11,6 +11,12 @@ RECURSIVE SUBROUTINE PDEPrim2Cons(Q,V)
   INTENT(IN)  :: V
   INTENT(OUT) :: Q 
   !
+#ifdef DEBUGGONE
+  Q = V
+  STOP
+  RETURN
+#endif
+  !
   CALL PDEPrim2ConsGRMHD(Q,V)
   !
   continue
@@ -28,6 +34,13 @@ RECURSIVE SUBROUTINE PDECons2Prim(V,Q,iErr)
   INTENT(IN)  :: Q 
   INTENT(OUT) :: V  
   INTENT(INOUT) :: iErr 
+  !
+#ifdef DEBUGGONE
+  V = Q
+  iErr = 0
+  STOP
+  RETURN
+#endif
   !
   CALL PDECons2PrimGRMHD(V,Q,iErr)
   !
@@ -51,7 +64,7 @@ RECURSIVE SUBROUTINE PDEFlux(f,g,h,Q)
   !INTENT(OUT) :: FF
   ! Local varialbes
   INTEGER :: i
-  REAL :: FF(nVar,d), V(nVar)
+  REAL :: FF(nVar,ndim), V(nVar)
   !REAL :: V(nVar)
   REAL, PARAMETER :: epsilon = 1e-14 
   !
@@ -262,6 +275,12 @@ RECURSIVE SUBROUTINE PDESource(S,Q)
   INTENT(OUT) :: S
   ! --------------------------------------------
   !
+#ifdef DEBUGGONE
+  S = 0.
+  STOP
+  RETURN
+#endif
+  !
   CALL PDESourceGRMHD(S,Q) 
   !S = 0.
   !
@@ -355,6 +374,11 @@ RECURSIVE SUBROUTINE PDEAuxVar(aux,V,x)
   ! Local Variables 
   !
   IF(nAux.GT.0) THEN
+#ifdef DEBUGGONE
+        STOP
+   		aux = 0.
+   		RETURN
+#endif
 		CALL PDEAuxVarGRMHD(aux,V,x)
   ENDIF
   !
@@ -455,35 +479,36 @@ RECURSIVE SUBROUTINE HLLEMFluxFV(FL,FR,QL,QR,QavL,QavR,NormalNonZero)
   fR = f1R*nv(1)+g1R*nv(2)+h1R*nv(3)
   fL = f1L*nv(1)+g1L*nv(2)+h1L*nv(3)
   !
-IF(ANY(fR(6:8).NE.0)) THEN
-     PRINT *,"f1R",f1R
-     PRINT *,"g1R",g1R
-     PRINT *,"h1R",h1R
-     PRINT *,"f1L",f1L
-     PRINT *,"g1L",g1L
-     PRINT *,"h1L",h1L
-     PRINT *,"dQ",dQ
-     PRINT *,"QR",QR
-     PRINT *,"QL",QL
-     PRINT *,"dQ",dQ
-     PRINT *,"BEFORE: fR(6:8).NE.0",fR(6:8)
-    STOP
-ENDIF
-IF(ANY(fl(6:8).NE.0)) THEN
-     PRINT *,"QR",QR
-     PRINT *,"QL",QL
-     PRINT *,"dQ",dQ
-     PRINT *,"BEFORE: fl(6:8).NE.0",fl(6:8)
-    STOP
-ENDIF
+!IF(ANY(fR(6:8).NE.0)) THEN
+!     PRINT *,"f1R",f1R
+!     PRINT *,"g1R",g1R
+!     PRINT *,"h1R",h1R
+!     PRINT *,"f1L",f1L
+!     PRINT *,"g1L",g1L
+!     PRINT *,"h1L",h1L
+!     PRINT *,"dQ",dQ
+!     PRINT *,"QR",QR
+!     PRINT *,"QL",QL
+!     PRINT *,"dQ",dQ
+!     PRINT *,"BEFORE: fR(6:8).NE.0",fR(6:8)
+!    STOP
+!ENDIF
+!IF(ANY(fl(6:8).NE.0)) THEN
+!     PRINT *,"QR",QR
+!     PRINT *,"QL",QL
+!     PRINT *,"dQ",dQ
+!     PRINT *,"BEFORE: fl(6:8).NE.0",fl(6:8)
+!    STOP
+!ENDIF
   !USE Parameters, ONLY : d,nVar,ndim 
   QM = 0.5*(QL+QR) 
+  !CALL PDECons2PrimGRMHD(VM,QM,iErr)
   CALL PDEEigenvalues(LL,QL,nv)  
   CALL PDEEigenvalues(LR,QR,nv)  
-IF(ANY(QM(6:8).NE.0)) THEN
-    PRINT *, "HLLEMFluxFV QM(6:8)",QM(6:8)
-    STOP
-ENDIF
+!IF(ANY(QM(6:8).NE.0)) THEN
+!    PRINT *, "HLLEMFluxFV QM(6:8)",QM(6:8)
+!    STOP
+!ENDIF
   CALL PDEEigenvalues(LM,QM,nv)  
   minL = MINVAL(LL)
   minM = MINVAL(LM)
@@ -517,10 +542,9 @@ ENDIF
   !
   IF(QR(1).LT.1e-9.OR.QL(1).LT.1e-9) THEN
       deltaL = 0.
-  ELSE
-      temp = MATMUL( deltaL, iRL ) 
-      absA = absA - sR*sL/(sR-sL)*MATMUL( RL, temp )  ! HLLEM anti-diffusion  
-  ENDIF 
+  ENDIF
+  temp = MATMUL( deltaL, iRL ) 
+  absA = absA - sR*sL/(sR-sL)*MATMUL( RL, temp )  ! HLLEM anti-diffusion  
   !    
   CALL RoeMatrix(ARoe,QL,QR,nv)
   !
@@ -545,39 +569,39 @@ ENDIF
   fR = fL - Dp
   fL = fL + Dm
   ! 
-IF(ANY(Dp(6:8).NE.0)) THEN
-     PRINT *,"QR",QR
-     PRINT *,"QL",QL
-     PRINT *,"dQ",dQ
-     PRINT *,"Dp(6:8).NE.0",Dp(6:8)
-    STOP
-ENDIF
-IF(ANY(Dm(6:8).NE.0)) THEN
-     PRINT *,"QR",QR
-     PRINT *,"QL",QL
-     PRINT *,"dQ",dQ
-     PRINT *,"Dm(6:8).NE.0",Dm(6:8)
-    STOP
-ENDIF
-IF(ANY(fR(6:8).NE.0)) THEN
-     PRINT *,"QR",QR
-     PRINT *,"QL",QL
-     PRINT *,"dQ",dQ
-     PRINT *,"fR(6:8).NE.0",fR(6:8)
-    STOP
-ENDIF
-IF(ANY(fl(6:8).NE.0)) THEN
-     PRINT *,"QR",QR
-     PRINT *,"QL",QL
-     PRINT *,"dQ",dQ
-     PRINT *,"fl(6:8).NE.0",fl(6:8)
-    STOP
-ENDIF
-  ! REMEMBER THE FOLLOWING: we are recursively updating qh as
-  ! q_i^{n+1} = q_i^n - FL              .... i.e. F_=F_{i+1/2}_ right flux
-  ! q_{i+1}^{n+1} = q_i^n + FR             .... i.e. FR=F_{i+1/2} left flux
-  ! see musclhancock.cpph after "// 4. Solve Riemann problems"
-  !
+!IF(ANY(Dp(6:8).NE.0)) THEN
+!     PRINT *,"QR",QR
+!     PRINT *,"QL",QL
+!     PRINT *,"dQ",dQ
+!     PRINT *,"Dp(6:8).NE.0",Dp(6:8)
+!    STOP
+!ENDIF
+!IF(ANY(Dm(6:8).NE.0)) THEN
+!     PRINT *,"QR",QR
+!     PRINT *,"QL",QL
+!     PRINT *,"dQ",dQ
+!     PRINT *,"Dm(6:8).NE.0",Dm(6:8)
+!    STOP
+!ENDIF
+!IF(ANY(fR(6:8).NE.0)) THEN
+!     PRINT *,"QR",QR
+!     PRINT *,"QL",QL
+!     PRINT *,"dQ",dQ
+!     PRINT *,"fR(6:8).NE.0",fR(6:8)
+!    STOP
+!ENDIF
+!IF(ANY(fl(6:8).NE.0)) THEN
+!     PRINT *,"QR",QR
+!     PRINT *,"QL",QL
+!     PRINT *,"dQ",dQ
+!     PRINT *,"fl(6:8).NE.0",fl(6:8)
+!    STOP
+!ENDIF
+!  ! REMEMBER THE FOLLOWING: we are recursively updating qh as
+!  ! q_i^{n+1} = q_i^n - FL              .... i.e. F_=F_{i+1/2}_ right flux
+!  ! q_{i+1}^{n+1} = q_i^n + FR             .... i.e. FR=F_{i+1/2} left flux
+!  ! see musclhancock.cpph after "// 4. Solve Riemann problems"
+  ! 
     END SUBROUTINE HLLEMFluxFV
 
     
@@ -593,6 +617,13 @@ IF(ANY(Q(6:8).NE.0)) THEN
     PRINT *, "PDEEigenvectors Q(6:8)",Q(6:8)
     STOP
 ENDIF
+#ifdef DEBUGGONE
+  R = 0.
+  L = 1.0
+  iR = 0.
+  STOP
+  RETURN
+#endif
   !
   CALL PDEEigenVectorsGRMHD(R,L,iR,Q,nv)
   !

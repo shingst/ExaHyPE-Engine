@@ -1,7 +1,5 @@
 ! GRMHDb Initial Data
-
-#define GRMHD
-#define RNSTOV
+ 
 
 RECURSIVE SUBROUTINE PDESetup(myrank)
 	USE, INTRINSIC :: ISO_C_BINDING
@@ -287,6 +285,7 @@ RECURSIVE SUBROUTINE InitialField(xGP,tGP,u0)
             v0(17) = 1.0
             v0(19) = 1.0 
         ENDIF
+        v0(2)=0.2
         !
     CASE('GRMHDAlfvenWave') 
        rho0 = 1.
