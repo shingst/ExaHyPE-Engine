@@ -3908,9 +3908,9 @@ RECURSIVE SUBROUTINE pderefinecriteria(refine_flag, max_luh,min_luh,x)
 	!	refine_flag=2
 	!	return
 	!end if
+ 	refine_flag = 0
 #ifdef CCZ4EINSTEIN
 
-  refine_flag = 0 
 
 !  if(abs(max_luh(60)-min_luh(60))>1.e-4 .or. abs(max_luh(54)-min_luh(54))>1.e-3) then
 !	refine_flag=2
@@ -3930,7 +3930,47 @@ RECURSIVE SUBROUTINE pderefinecriteria(refine_flag, max_luh,min_luh,x)
   end if
 #endif
 END SUBROUTINE pderefinecriteria
-
+ 
+    
+RECURSIVE SUBROUTINE maxHyperbolicEigenvalueGRHD(smax,QR,QL,nv)
+    USE MainVariables, only : nDim,nVar
+    !USE GRMHDmod
+    IMPLICIT NONE 
+    real, INTENT(OUT) :: smax
+    real, INTENT(IN) :: QR(nVar),QL(nVar), nv(3)
+    REAL :: LL(19),LR(19),QLGRMHD(19),QRGRMHD(19)
+    REAL :: tmp1,tmp2,alpha,phi
+    !
+    QLGRMHD = 0.0
+    QRGRMHD = 0.0
+    smax = 0.
+#ifdef CCZ4GRHD
+    !
+    alpha         = EXP(QL(17)) 
+    phi           = EXP(QL(55)) 
+    QLGRMHD(1:5)   = QL(60:64)        ! hydro variables 
+    QLGRMHD(6:9)   = 0.0             ! EM variables 
+    QLGRMHD(10)    = alpha           ! lapse 
+    QLGRMHD(11:13) = QL(18:20)        ! shift 
+    QLGRMHD(14:19) = QL(1:6)/phi**2   ! metric 
+    !
+    alpha         = EXP(QR(17)) 
+    phi           = EXP(QR(55)) 
+    QRGRMHD(1:5)   = QR(60:64)        ! hydro variables 
+    QRGRMHD(6:9)   = 0.0             ! EM variables 
+    QRGRMHD(10)    = alpha           ! lapse 
+    QRGRMHD(11:13) = QR(18:20)        ! shift 
+    QRGRMHD(14:19) = QR(1:6)/phi**2   ! metric 
+    ! 
+    CALL PDEEigenvaluesGRMHD(LL,QLGRMHD,nv) 
+    CALL PDEEigenvaluesGRMHD(LR,QRGRMHD,nv)  
+    tmp1=MAXVAL(LL)
+    tmp2=MAXVAL(LR)
+    !
+    smax=MAX(tmp1,tmp2)
+#endif 		
+     
+END SUBROUTINE maxHyperbolicEigenvalueGRHD
 
 
 #endif

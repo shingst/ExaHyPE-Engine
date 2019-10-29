@@ -311,3 +311,144 @@ void FOCCZ4::FOCCZ4Solver_ADERDG::fusedSource(const double* const restrict Q, co
 	//fusedSource(Q, gradQ, S);
 	//lock.free();
 }
+
+
+#ifdef CCZ4GRHD
+
+#include <algorithm>
+#include <cassert>
+#include <cmath>
+#include <cstring>
+
+#include "kernels/KernelUtils.h"
+#include "kernels/RiemannSolverUtils.h"
+
+// from kernels:aderdg:generic:c:3d
+void FOCCZ4::FOCCZ4Solver_ADERDG::MyNewRusanovSolver(
+    double* FL, double* FR, const double* const QL, const double* const QR,
+    const double t, const double dt,
+    const tarch::la::Vector<DIMENSIONS, double>& dx, const int direction) {
+  constexpr int numberOfVariables =
+      FOCCZ4::AbstractFOCCZ4Solver_ADERDG::NumberOfVariables;
+  constexpr int numberOfParameters =
+      FOCCZ4::AbstractFOCCZ4Solver_ADERDG::NumberOfParameters;
+  constexpr int numberOfData = numberOfVariables + numberOfParameters;
+  constexpr int order = FOCCZ4::AbstractFOCCZ4Solver_ADERDG::Order;
+  constexpr int basisSize = order + 1;
+
+  // Compute the average variables and parameters from the left and the right
+  double QavL[numberOfData] = {0.0};
+  double QavR[numberOfData] = {0.0};
+  kernels::riemannsolvers::util::averageRiemannInputs<basisSize, numberOfData>(
+      QL, FOCCZ4::AbstractFOCCZ4Solver_ADERDG::weights, QavL);
+  kernels::riemannsolvers::util::averageRiemannInputs<basisSize, numberOfData>(
+      QR, FOCCZ4::AbstractFOCCZ4Solver_ADERDG::weights, QavR);
+
+  double LL[numberOfVariables] = {
+      0.0};  // do not need to store material parameters
+  double LR[numberOfVariables] = {0.0};
+
+  // Hyperbolic eigenvalues
+  eigenvalues(QavL, direction, LL);
+  eigenvalues(QavR, direction, LR);
+  // skip parameters
+  std::transform(LL, LL + numberOfVariables, LL, std::abs<double>);
+  std::transform(LR, LR + numberOfVariables, LR, std::abs<double>);
+  const double maxHyperbolicEigenvalueL =
+      *std::max_element(LL, LL + numberOfVariables);
+  const double maxHyperbolicEigenvalueR =
+      *std::max_element(LR, LR + numberOfVariables);
+  const double maxHyperbolicEigenvalue =
+      std::max(maxHyperbolicEigenvalueL, maxHyperbolicEigenvalueR);
+
+  double smax = maxHyperbolicEigenvalue;
+
+  double smaxtwo;
+  double smaxtmpone;
+  double smaxtmptwo;
+  smaxtwo = 0.;
+
+  double nv[3] = {0.};
+  nv[direction] = 1;
+
+  {
+    kernels::idx3 idx_QLR(basisSize, basisSize, numberOfData);
+    for (int i = 0; i < basisSize; i++) {
+      for (int j = 0; j < basisSize; j++) {
+        smaxtmpone = smaxtwo;
+        // pdeeigenvalues_(lambda, Q, nv);
+        maxhyperboliceigenvaluegrhd_(&smaxtmptwo, &QR[idx_QLR(i, j, 0)],
+                                     &QL[idx_QLR(i, j, 0)], nv);
+        smaxtwo = std::max(smaxtmpone, smaxtmptwo);
+      }
+    }
+  }
+
+  // compute fluxes (and fluctuations for non-conservative PDEs)
+  double Qavg[numberOfData];
+  kernels::idx2 idx_gradQ(DIMENSIONS, numberOfVariables);
+  double gradQ[DIMENSIONS][numberOfVariables] = {0.0};
+  double ncp[numberOfVariables] = {0.0};
+  {
+    kernels::idx3 idx_FLR(basisSize, basisSize, numberOfVariables);
+    kernels::idx3 idx_QLR(basisSize, basisSize, numberOfData);
+    for (int i = 0; i < basisSize; i++) {
+      for (int j = 0; j < basisSize; j++) {
+        // if (useNCP) {  // we don't use matrixB but the NCP call here.
+        for (int l = 0; l < numberOfVariables; l++) {
+          gradQ[direction][l] = QR[idx_QLR(i, j, l)] - QL[idx_QLR(i, j, l)];
+        }
+        for (int l = 0; l < numberOfData; l++) {
+          Qavg[l] = 0.5 * (QR[idx_QLR(i, j, l)] + QL[idx_QLR(i, j, l)]);
+        }
+
+        nonConservativeProduct(Qavg, gradQ[0], ncp);
+        //}
+
+        // skip parameters
+        for (int k = 0; k < 59; k++) {
+          FL[idx_FLR(i, j, k)] =
+              0.5 * (FR[idx_FLR(i, j, k)] + FL[idx_FLR(i, j, k)]) -
+              0.5 * smax * (QR[idx_QLR(i, j, k)] - QL[idx_QLR(i, j, k)]);
+
+          // if (useNCP) {
+          FR[idx_FLR(i, j, k)] = FL[idx_FLR(i, j, k)] - 0.5 * ncp[k];
+          FL[idx_FLR(i, j, k)] = FL[idx_FLR(i, j, k)] + 0.5 * ncp[k];
+          //} else {
+          //  FR[idx_FLR(i, j, k)] = FL[idx_FLR(i, j, k)];
+          //}
+        }
+        // this is the hydro
+        for (int k = 59; k < 64; k++) {
+          FL[idx_FLR(i, j, k)] =
+              0.5 * (FR[idx_FLR(i, j, k)] + FL[idx_FLR(i, j, k)]) -
+              0.5 * smaxtwo * (QR[idx_QLR(i, j, k)] - QL[idx_QLR(i, j, k)]);
+
+          // if (useNCP) {
+          FR[idx_FLR(i, j, k)] = FL[idx_FLR(i, j, k)] - 0.5 * ncp[k];
+          FL[idx_FLR(i, j, k)] = FL[idx_FLR(i, j, k)] + 0.5 * ncp[k];
+          //} else {
+          //  FR[idx_FLR(i, j, k)] = FL[idx_FLR(i, j, k)];
+          //}
+        }
+        // this is the GLM cleaning
+        for (int k = 64; k < numberOfVariables; k++) {
+          FL[idx_FLR(i, j, k)] =
+              0.5 * (FR[idx_FLR(i, j, k)] + FL[idx_FLR(i, j, k)]) -
+              0.5 * smax * (QR[idx_QLR(i, j, k)] - QL[idx_QLR(i, j, k)]);
+
+          // if (useNCP) {
+          FR[idx_FLR(i, j, k)] = FL[idx_FLR(i, j, k)] - 0.5 * ncp[k];
+          FL[idx_FLR(i, j, k)] = FL[idx_FLR(i, j, k)] + 0.5 * ncp[k];
+          //} else {
+          //  FR[idx_FLR(i, j, k)] = FL[idx_FLR(i, j, k)];
+          //}
+        }
+      }
+    }
+  }
+}
+
+#endif
+
+ 

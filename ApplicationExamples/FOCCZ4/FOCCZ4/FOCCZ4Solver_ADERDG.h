@@ -198,6 +198,11 @@ class FOCCZ4::FOCCZ4Solver_ADERDG : public FOCCZ4::AbstractFOCCZ4Solver_ADERDG {
 				const double                                timeStamp) const override;
 /* pointSource() function not included, as requested in the specification file */
 
+#ifdef CCZ4GRHD
+   void MyNewRusanovSolver(double* FL, double* FR, const double* const QL,const double* const QR, const double t,const double dt,const tarch::la::Vector<DIMENSIONS, double>& dx,const int direction);
+#endif
+
+
 /* multiplyMaterialParameterMatrix() not included, as requested in the specification file */
 };
 

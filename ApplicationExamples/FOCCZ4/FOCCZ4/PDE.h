@@ -34,6 +34,10 @@ void hllemriemannsolver_(const int* basisSize, const int* normalNonZeroIndex, do
 void admconstraints_(double* constraints, double* Q, double* gradQ);
 
 void pdecons2prim_(double* V,const double* Q);
+
+ 
+void maxhyperboliceigenvaluegrhd_(double* smax, const double* const QR, const double* const QL, double* nv);
+
 }/* extern "C" */
 
 
