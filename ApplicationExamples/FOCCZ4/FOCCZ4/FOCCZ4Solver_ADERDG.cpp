@@ -296,8 +296,8 @@ bool FOCCZ4::FOCCZ4Solver_ADERDG::isPhysicallyAdmissible(
 	  {
   		  
 	  int limvalue;
-	   
-	  pdelimitervalue_(&limvalue,&cellCentre[0],&NumberOfDMPObservables, localDMPObservablesMin, localDMPObservablesMax);
+	   const int num = 3;
+	  pdelimitervalue_(&limvalue,&cellCentre[0],&num, localDMPObservablesMin, localDMPObservablesMax);
 	  bool ret_value;
 	  limvalue > 0 ? ret_value=false : ret_value=true;
 	  return ret_value;

@@ -304,7 +304,7 @@ SUBROUTINE NSTOV_solution(r,dr,q,printer)
     dr(0) =  r(1)-r(0)
     q(1:NSTOV_nODE,0) = q(1:NSTOV_nODE,1) 
     !
-    IF(printer.AND.myrank.eq.0) THEN
+    IF(printer.eq.1.AND.myrank.eq.0) THEN
         OPEN (1,file='NSTOV_q.dat')
         OPEN (3,file='NSTOV_dr.dat')
         100 format (1000E18.10)
