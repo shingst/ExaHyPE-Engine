@@ -88,7 +88,7 @@
           "source"
         ],
         "scheme": "musclhancock",
-	"slope_limiter" : "minmod",
+	"slope_limiter" : "mclim",
         "implementation": "generic"
       },
       "variables": [
@@ -200,6 +200,27 @@
         "time" : 0.0,
         "repeat": 0.01,
         "output": "./output/adm-integrals"
+    },
+    {
+        "type": "vtk::Cartesian::vertices::binary",
+        "name": "ConstraintsWriter",
+      "variables": 6,
+      "time": 0.0,
+      "repeat": 0.01,
+      "output": "./vtk-output/constraints"
+    },
+    {
+        "type": "probe::ascii",
+        "name": "CentralDensity",
+        "time": 0.0,
+        "repeat": 0.001,
+        "output": "./output/rho",
+        "variables": 1,
+        "select": {
+            "x": 0.0,
+            "y": 0.0,
+            "z": 0.0
+        }
     }
     ]
     }

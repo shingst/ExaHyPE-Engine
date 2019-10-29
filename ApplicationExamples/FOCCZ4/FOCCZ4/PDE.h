@@ -29,7 +29,9 @@ void pderefinecriteria_(int* refine_flag,const double* max_luh,const double* min
 //void hllemfluxfv_(double* FL, double* FR, const double* const  QL, const double* const  QR, const double* const  QavL, const double* const  QavR, const int* normalNonZeroIndex);
 void hllemfluxfv_(double* FL, double* FR, const double* const  QL, const double* const  QR, const int* normalNonZeroIndex);
 void hllemriemannsolver_(const int* basisSize, const int* normalNonZeroIndex, double* FL, double* FR, const double* const  QL, const double* const  QR, const double* const  QavL, const double* const  QavR);
+void admconstraints_(double* constraints, double* Q, double* gradQ);
 
 }/* extern "C" */
+
 
 #endif /* __EXAHYPE_USER_PDE__ */
