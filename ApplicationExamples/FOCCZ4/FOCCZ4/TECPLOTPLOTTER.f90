@@ -828,7 +828,7 @@ SUBROUTINE SetMainParameters(N_in,M_in,basisSize,Ghostlayers)
 	
 	
 	nElem_max=2000000
-	nElem_max=50000
+	nElem_max=100000
 	nSubPlotElem_max=nElem_max*M**nDim
 	nRealNodes_max=nElem_max*(M+1)**nDim
 	! Initialize matries and gauss points
