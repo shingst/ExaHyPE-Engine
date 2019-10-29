@@ -33,6 +33,7 @@ void hllemfluxfv_(double* lambda, double* FL, double* FR, const double* const  Q
 void hllemriemannsolver_(const int* basisSize, const int* normalNonZeroIndex, double* FL, double* FR, const double* const  QL, const double* const  QR, const double* const  QavL, const double* const  QavR);
 void admconstraints_(double* constraints, double* Q, double* gradQ);
 
+void pdecons2prim_(double* V,const double* Q);
 }/* extern "C" */
 
 

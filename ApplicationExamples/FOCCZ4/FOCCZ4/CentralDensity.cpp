@@ -6,6 +6,7 @@
 //   www.exahype.eu
 // ========================
 #include "CentralDensity.h"
+#include "PDE.h"
 
 FOCCZ4::CentralDensity::CentralDensity(FOCCZ4::FOCCZ4Solver& solver) {
   // @TODO Please insert your code here.
@@ -32,6 +33,7 @@ void FOCCZ4::CentralDensity::mapQuantities(
     double* const outputQuantities,
     double timeStamp
 ) {
-  const int writtenUnknowns = 1;
+  double V[96];
+  pdecons2prim_(V,Q);
   outputQuantities[0] = Q[59];
 }
