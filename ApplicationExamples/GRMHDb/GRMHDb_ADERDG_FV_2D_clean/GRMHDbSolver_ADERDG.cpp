@@ -180,6 +180,7 @@ void GRMHDb::GRMHDbSolver_ADERDG::boundaryValues(const double* const x, const do
   stateOut[16] = 0.0;
   stateOut[17] = 0.0;
   stateOut[18] = 0.0;
+
   fluxOut[0] = 0.0;
   fluxOut[1] = 0.0;
   fluxOut[2] = 0.0;
@@ -200,6 +201,40 @@ void GRMHDb::GRMHDbSolver_ADERDG::boundaryValues(const double* const x, const do
   fluxOut[17] = 0.0;
   fluxOut[18] = 0.0;
 
+
+ /* stateOut[0] = exp(-(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]) / 8.0);
+  stateOut[1] = sin(x[1])*sin(x[0]);
+  stateOut[2] = sin(x[2]);
+  for (int i = 3; i < numberOfData; i++) {
+	  stateOut[i] = cos(x[0]);
+  }
+  fluxOut[0] = exp(-(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]) / 8.0);
+  fluxOut[1] = sin(x[1])*sin(x[0]);
+  fluxOut[2] = sin(x[2]);
+  for (int i = 3; i < numberOfData; i++) {
+	  fluxOut[i] = cos(x[0]);
+  }*/
+ 
+ 
+ //// STANDARD ANALYTICAL BOUNDARY CONDITIONS:
+
+ for(int dd=0; dd<nDim; dd++) F[dd] = Fs[dd];
+
+ for(int i=0; i < basisSize; i++)  { // i == time
+	  const double weight = kernels::legendre::weights[order][i];
+	  const double xi = kernels::legendre::nodes[order][i];
+	  double ti = t + xi * dt;
+
+	  initialdata_(x, &ti, Qgp);
+	  //pdeflux_(F[0], F[1], F[2], Qgp);
+	  flux(Qgp, F);
+          for(int m=0; m < numberOfData; m++) {
+		  stateOut[m] += weight * Qgp[m];
+		  fluxOut[m] += weight * Fs[normalNonZero][m];
+	  }
+ }
+
+/*
   // THIS IS FOR THE 1D Riemann problems (invisicd reflective boundary conditions at the y boundaries)
   if (normalNonZero == 0) {
 	  // STANDARD ANALYTICAL BOUNDARY CONDITIONS:
@@ -225,46 +260,7 @@ void GRMHDb::GRMHDbSolver_ADERDG::boundaryValues(const double* const x, const do
 	  flux(stateOut, F); 
 	  std::copy_n(F[normalNonZero], numberOfVariables, fluxOut);
   }
-
-  //printf("\n I WAS HERE!!!!!!!!");
-
- //// STANDARD ANALYTICAL BOUNDARY CONDITIONS:
- //for(int dd=0; dd<nDim; dd++) F[dd] = Fs[dd];
-
- //for(int i=0; i < basisSize; i++)  { // i == time
-	//  const double weight = kernels::legendre::weights[order][i];
-	//  const double xi = kernels::legendre::nodes[order][i];
-	//  double ti = t + xi * dt;
-
-	//  initialdata_(x, &ti, Qgp);
-	//  //pdeflux_(F[0], F[1], F[2], Qgp);
-	//  flux(Qgp, F);
- //         for(int m=0; m < numberOfData; m++) {
-	//	  stateOut[m] += weight * Qgp[m];
-	//	  fluxOut[m] += weight * Fs[normalNonZero][m];
-	//  }
- //}
-
-
-
-
- /* stateOut[0] = exp(-(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]) / 8.0);
-  stateOut[1] = sin(x[1])*sin(x[0]);
-  stateOut[2] = sin(x[2]);
-  for (int i = 3; i < numberOfData; i++) {
-	  stateOut[i] = cos(x[0]);
-  }
-  fluxOut[0] = exp(-(x[0] * x[0] + x[1] * x[1] + x[2] * x[2]) / 8.0);
-  fluxOut[1] = sin(x[1])*sin(x[0]);
-  fluxOut[2] = sin(x[2]);
-  for (int i = 3; i < numberOfData; i++) {
-	  fluxOut[i] = cos(x[0]);
-  }*/
-  /*
-   double x3D[3] = {0.};
-   for(int i=0;i<DIMENSIONS;i++){
-	 x3D[i]=x[i];
-	 }*/
+*/
 
   /*
 	for(int m=0; m < numberOfData; m++) {
@@ -272,9 +268,6 @@ void GRMHDb::GRMHDbSolver_ADERDG::boundaryValues(const double* const x, const do
 	fluxOut[m] = fluxIn[m];
 	}
 	*/
-	
-       // printf("\n******* DONE*****************");
-
 }
 
 exahype::solvers::Solver::RefinementControl GRMHDb::GRMHDbSolver_ADERDG::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& center,const tarch::la::Vector<DIMENSIONS,double>& dx,double t,const int level) {
@@ -301,7 +294,7 @@ exahype::solvers::Solver::RefinementControl GRMHDb::GRMHDbSolver_ADERDG::refinem
 	//const int order = GRMHDb::AbstractGRMHDbSolver_ADERDG::Order;
 	//const int basisSize = order + 1;
 	//const int nDim = DIMENSIONS; 
-
+        
         //printf("\n******* refinementCriterion *****************");
 	
 	
@@ -363,7 +356,7 @@ void GRMHDb::GRMHDbSolver_ADERDG::eigenvalues(const double* const Q,const int d,
   //      constants such as Order, NumberOfVariables, and NumberOfParameters.
   // Dimensions                        = 3
   // Number of variables + parameters  = 19 + 0
-
+  
 	constexpr int numberOfVariables = AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
 	constexpr int numberOfParameters = AbstractGRMHDbSolver_ADERDG::NumberOfParameters;
 	constexpr int numberOfData = numberOfVariables + numberOfParameters;
@@ -441,9 +434,6 @@ void GRMHDb::GRMHDbSolver_ADERDG::flux(const double* const Q,double** const F) {
   // Dimensions                        = 3
   // Number of variables + parameters  = 19 + 0
   
-       // printf("\n*******   *****************");
-
-	//printf("\nSONO QUI IN flux ADERDG");
   // @todo Please implement/augment if required
   F[0][0] = 0.0;
   F[0][1] = 0.0;
@@ -484,29 +474,29 @@ void GRMHDb::GRMHDbSolver_ADERDG::flux(const double* const Q,double** const F) {
   F[1][16] = 0.0;
   F[1][17] = 0.0;
   F[1][18] = 0.0;
- 
+  
 #ifdef Dim3
-		F[2][0] = 0.0;
-		F[2][1] = 0.0;
-		F[2][2] = 0.0;
-		F[2][3] = 0.0;
-		F[2][4] = 0.0;
-		F[2][5] = 0.0;
-		F[2][6] = 0.0;
-		F[2][7] = 0.0;
-		F[2][8] = 0.0;
-		F[2][9] = 0.0;
-		F[2][10] = 0.0;
-		F[2][11] = 0.0;
-		F[2][12] = 0.0;
-		F[2][13] = 0.0;
-		F[2][14] = 0.0;
-		F[2][15] = 0.0;
-		F[2][16] = 0.0;
-		F[2][17] = 0.0;
-		F[2][18] = 0.0;
+  F[2][0] = 0.0;
+  F[2][1] = 0.0;
+  F[2][2] = 0.0;
+  F[2][3] = 0.0;
+  F[2][4] = 0.0;
+  F[2][5] = 0.0;
+  F[2][6] = 0.0;
+  F[2][7] = 0.0;
+  F[2][8] = 0.0;
+  F[2][9] = 0.0;
+  F[2][10] = 0.0;
+  F[2][11] = 0.0;
+  F[2][12] = 0.0;
+  F[2][13] = 0.0;
+  F[2][14] = 0.0;
+  F[2][15] = 0.0;
+  F[2][16] = 0.0;
+  F[2][17] = 0.0;
+  F[2][18] = 0.0;
 #endif
-
+  
     if(DIMENSIONS == 2){
 		constexpr int numberOfVariables = AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
 		constexpr int numberOfParameters = AbstractGRMHDbSolver_ADERDG::NumberOfParameters;
@@ -516,43 +506,10 @@ void GRMHDb::GRMHDbSolver_ADERDG::flux(const double* const Q,double** const F) {
 	}else{
 		pdeflux_(F[0], F[1],F[2], Q);
 	}
-
+   
 
   //pdeflux_(&F[0][0], Q);
-
-
- // F[1][0] = 0.0;
- // F[1][1] = 0.0;
- // F[1][2] = 0.0;
- // F[1][3] = 0.0;
- // F[1][4] = 0.0;
- // F[1][5] = 0.0;
- // F[1][6] = 0.0;
- // F[1][7] = 0.0;
- // F[1][8] = 0.0;
- // F[1][9] = 0.0;
- // F[1][10] = 0.0;
- // F[1][11] = 0.0;
- // F[1][12] = 0.0;
- // F[1][13] = 0.0;
- // F[1][14] = 0.0;
- // F[1][15] = 0.0;
- // F[1][16] = 0.0;
- // F[1][17] = 0.0;
- // F[1][18] = 0.0;
-
-
- // printf("\nSONO QUI IN FLUX ADERDG");
- ////   if(DIMENSIONS == 2){
-	////	constexpr int numberOfVariables = AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
-	////	constexpr int numberOfParameters = AbstractGRMHDbSolver_ADERDG::NumberOfParameters;
-	////	constexpr int numberOfData = numberOfVariables + numberOfParameters;
-	////	double F_3[numberOfData];
-	////	pdeflux_(F[0], F[1],F_3, Q);
-	////}else{
-	////	pdeflux_(F[0], F[1],F[2], Q);
-	////}
-   
+ 
 }
 
 
@@ -562,7 +519,6 @@ void  GRMHDb::GRMHDbSolver_ADERDG::nonConservativeProduct(const double* const Q,
   // Tip: See header file "GRMHDb::AbstractGRMHDbSolver_ADERDG.h" for toolkit generated compile-time 
   //      constants such as Order, NumberOfVariables, and NumberOfParameters.
   
-  //printf("\n ************* nonConservativeProduct ADERDG ***************");
   // @todo Please implement/augment if required
   BgradQ[0] = 0.0;
   BgradQ[1] = 0.0;
@@ -583,28 +539,7 @@ void  GRMHDb::GRMHDbSolver_ADERDG::nonConservativeProduct(const double* const Q,
   BgradQ[16] = 0.0;
   BgradQ[17] = 0.0;
   BgradQ[18] = 0.0;
-
-  //return;
-  
- /* const int numberOfVariables = AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
-  constexpr int tot3Dvar = 3*numberOfVariables;
-  double gradQ3D[tot3Dvar]={0.};
-  int count=0;
-  for(int i=0;i<DIMENSIONS;i++){
-   for(int m=0;m<numberOfVariables;m++){
-     gradQ3D[count]=gradQ[count];
-     count++;
-     }
-    }
-    */
-
   pdencp_(BgradQ, Q, gradQ);
-
-
-  //printf("\n *************t ADERDG ***************");
-
-
-
 }
 
 void GRMHDb::GRMHDbSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(
@@ -781,15 +716,13 @@ void GRMHDb::GRMHDbSolver_ADERDG::riemannSolver(double* const FL, double* const 
 
 #else
 
-
-
 #include "kernels/aderdg/generic/Kernels.h" 
 void GRMHDb::GRMHDbSolver_ADERDG::riemannSolver(double* const FL, double* const FR, const double* const QL, const double* const QR, const double t, const double dt, const tarch::la::Vector<DIMENSIONS, double>& dx, const int direction, bool isBoundaryFace, int faceIndex) {
 	assertion2(direction >= 0, dt, direction);
 	assertion2(direction<DIMENSIONS, dt, direction);
-    kernels::aderdg::generic::c::riemannSolverNonlinear<true, false, GRMHDbSolver_ADERDG>(*static_cast<GRMHDbSolver_ADERDG*>(this), FL, FR, QL, QR, t, dt, dx, direction);
-
+	kernels::aderdg::generic::c::riemannSolverNonlinear<true, false, GRMHDbSolver_ADERDG>(*static_cast<GRMHDbSolver_ADERDG*>(this), FL, FR, QL, QR, t, dt, dx, direction);
  
+
 	constexpr int order = GRMHDb::AbstractGRMHDbSolver_ADERDG::Order;
 	constexpr int basisSize = order + 1;
 	constexpr int numberOfVariables = AbstractGRMHDbSolver_ADERDG::NumberOfVariables;
@@ -810,27 +743,22 @@ void GRMHDb::GRMHDbSolver_ADERDG::riemannSolver(double* const FL, double* const 
 		}
 	}
 #else
-        kernels::idx3 idx_FLR(basisSize, basisSize, numberOfVariables);
-        for (int i = 0; i < basisSize; i++) {
-                for (int j = 0; j < basisSize; j++) {
-                        //resetNumericalDiffusionOnADM(FL + idx_FLR(i, j, 0));
-                        //resetNumericalDiffusionOnADM(FR + idx_FLR(i, j, 0));
-                        double* FLL = FL + idx_FLR(i, j, 0);
-                        double* FRR = FR + idx_FLR(i, j, 0);
-                        for (int m = 9; m < numberOfVariables; m++) {
-                                FLL[m] = 0.0;
-                                FRR[m] = 0.0;
-                        }
-                }
-        }
+	kernels::idx3 idx_FLR(basisSize, basisSize, numberOfVariables);
+	for (int i = 0; i < basisSize; i++) {
+		for (int j = 0; j < basisSize; j++) {
+			//resetNumericalDiffusionOnADM(FL + idx_FLR(i, j, 0));
+			//resetNumericalDiffusionOnADM(FR + idx_FLR(i, j, 0));
+			double* FLL = FL + idx_FLR(i, j, 0);
+			double* FRR = FR + idx_FLR(i, j, 0);
+			for (int m = 9; m < numberOfVariables; m++) {
+				FLL[m] = 0.0;
+				FRR[m] = 0.0;
+			}
+		}
+	}
 #endif
 
 
 }
-
-
-
-
 #endif
-
 

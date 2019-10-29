@@ -743,7 +743,7 @@ RECURSIVE SUBROUTINE GetSubcell_wh(LocNode,wh)
          !STOP
     !STOP
 #ifdef Dim3
-    ENDDO
+   ENDDO
 #endif
          !STOP
    !
@@ -1104,7 +1104,7 @@ RECURSIVE SUBROUTINE ComputeOutputMatrices
     ! i.e.    P(x_m) = sum_l  ( phi_l (x_m) * p_l )
     !                =  A_ml*p_l           => A_ml    = { phi_l(x_m) }^T
     !                = p_l*{A^T}_lm        =>{A^T}_lm =   phi_l(x_m)  
-	cnt = 0  
+	cnt = 0
      DO k = 1, nSub_DG_nodeV(3)
         DO j = 1, nSub_DG_nodeV(2)
            DO i = 1, nSub_DG_nodeV(1)
@@ -1161,7 +1161,7 @@ RECURSIVE SUBROUTINE ComputeOutputMatrices
 			  allsubxi(3,c) = REAL(k-1)/REAL(nSub_DG)		
            ENDDO
         ENDDO
-    ENDDO
+     ENDDO
      
     Print *,"nSubLim_nodeV:", nSubLim_nodeV
 	! Compute subtri
@@ -1194,7 +1194,7 @@ RECURSIVE SUBROUTINE ComputeOutputMatrices
 			  subtri(5,c) =idxn(i,j,k+1)
 			  subtri(6,c) =idxn(i+1,j,k+1)
 			  subtri(7,c) =idxn(i+1,j+1,k+1)
-			  subtri(8,c) =idxn(i,j+1,k+1)     
+			  subtri(8,c) =idxn(i,j+1,k+1)        
 #endif              
            ENDDO
         ENDDO
@@ -1214,7 +1214,7 @@ RECURSIVE SUBROUTINE ComputeOutputMatrices
 			  subtri_lim(5,c) =idxn_lim(i  ,j  ,k+1)
 			  subtri_lim(6,c) =idxn_lim(i+1,j  ,k+1)
 			  subtri_lim(7,c) =idxn_lim(i+1,j+1,k+1)
-			  subtri_lim(8,c) =idxn_lim(i  ,j+1,k+1)  
+			  subtri_lim(8,c) =idxn_lim(i  ,j+1,k+1)        
 #endif              
            ENDDO
         ENDDO
