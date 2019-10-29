@@ -19,7 +19,12 @@ RECURSIVE SUBROUTINE InitParameters(STRLEN,PARSETUP)
 	!stop
 	!ICType   = 'CCZ4MinkowskiSrc'
 	EQN%Pi    = ACOS(-1.0)
-	
+#if defined(CCZ4GRMHD) || (GRMHD)
+    EQN%DivCleaning_a=1.0
+#else
+    EQN%DivCleaning_a=0.0
+#endif
+    !
 	select case(ICType)
 		case('CCZ4MinkowskiSrc')
 			EQN%CCZ4GLMc0   = 1.5   ! 0.1      
