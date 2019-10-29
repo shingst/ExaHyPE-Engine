@@ -29,6 +29,7 @@
 #include "exahype/plotters/Tecplot/ExaHyPE2Tecplot.h"
 
 #include "exahype/plotters/VTK/FiniteVolumes2VTK.h"
+#include "exahype/plotters/VTK/LimitingADERDG2CartesianVTKwithGradients.h"
 #include "exahype/plotters/VTK/LimitingADERDG2CartesianVTK.h"
 #include "exahype/plotters/VTK/LimitingADERDGSubcells2CartesianVTK.h"
 #include "exahype/plotters/VTK/Patch2VTK.h"
@@ -174,7 +175,49 @@ exahype::plotters::Plotter::Plotter(
        * This is actually some kind of switch expression though switches do
        * not work for strings, so we map it onto an if-then-else cascade.
        */
-      // VTK
+      // VTK with Gradients
+      if (equalsIgnoreCase(_type, LimitingADERDG2CartesianVerticesVTKAsciiwithGradients::getIdentifier())) {
+        _device = new LimitingADERDG2CartesianVerticesVTKAsciiwithGradients(
+            postProcessing,static_cast<exahype::solvers::LimitingADERDGSolver*>(
+                solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
+      }
+      if (equalsIgnoreCase(_type, LimitingADERDG2CartesianVerticesVTKBinarywithGradients::getIdentifier())) {
+        _device = new LimitingADERDG2CartesianVerticesVTKBinarywithGradients(
+            postProcessing,static_cast<exahype::solvers::LimitingADERDGSolver*>(
+            solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
+      }
+      if (equalsIgnoreCase(_type, LimitingADERDG2CartesianCellsVTKAsciiwithGradients::getIdentifier())) {
+        _device = new LimitingADERDG2CartesianCellsVTKAsciiwithGradients(
+            postProcessing,static_cast<exahype::solvers::LimitingADERDGSolver*>(
+                solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
+      }
+      if (equalsIgnoreCase(_type, LimitingADERDG2CartesianCellsVTKBinarywithGradients::getIdentifier())) {
+        _device = new LimitingADERDG2CartesianCellsVTKBinarywithGradients(
+            postProcessing,static_cast<exahype::solvers::LimitingADERDGSolver*>(
+                solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
+      }
+      // VTU
+      if (equalsIgnoreCase(_type, LimitingADERDG2CartesianVerticesVTUAsciiwithGradients::getIdentifier())) {
+        _device = new LimitingADERDG2CartesianVerticesVTUAsciiwithGradients(
+            postProcessing,static_cast<exahype::solvers::LimitingADERDGSolver*>(
+                solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
+      }
+      if (equalsIgnoreCase(_type, LimitingADERDG2CartesianVerticesVTUBinarywithGradients::getIdentifier())) {
+        _device = new LimitingADERDG2CartesianVerticesVTUBinarywithGradients(
+            postProcessing,static_cast<exahype::solvers::LimitingADERDGSolver*>(
+                solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
+      }
+      if (equalsIgnoreCase(_type, LimitingADERDG2CartesianCellsVTUAsciiwithGradients::getIdentifier())) {
+        _device = new LimitingADERDG2CartesianCellsVTUAsciiwithGradients(
+            postProcessing,static_cast<exahype::solvers::LimitingADERDGSolver*>(
+                solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
+      }
+      if (equalsIgnoreCase(_type, LimitingADERDG2CartesianCellsVTUBinarywithGradients::getIdentifier())) {
+        _device = new LimitingADERDG2CartesianCellsVTUBinarywithGradients(
+            postProcessing,static_cast<exahype::solvers::LimitingADERDGSolver*>(
+                solvers::RegisteredSolvers[_solver])->getLimiter()->getGhostLayerWidth());
+      }
+      //Old
       if (equalsIgnoreCase(_type, LimitingADERDG2CartesianVerticesVTKAscii::getIdentifier())) {
         _device = new LimitingADERDG2CartesianVerticesVTKAscii(
             postProcessing,static_cast<exahype::solvers::LimitingADERDGSolver*>(
