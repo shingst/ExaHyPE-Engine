@@ -19,7 +19,7 @@ RECURSIVE SUBROUTINE InitParameters(STRLEN,PARSETUP)
 	!stop
 	!ICType   = 'CCZ4MinkowskiSrc'
 	EQN%Pi    = ACOS(-1.0)
-#if defined(CCZ4GRMHD) || (GRMHD)
+#if defined(CCZ4GRMHD) || defined(GRMHD)
     EQN%DivCleaning_a=1.0
 #else
     EQN%DivCleaning_a=0.0
