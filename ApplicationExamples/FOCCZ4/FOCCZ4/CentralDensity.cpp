@@ -33,5 +33,5 @@ void FOCCZ4::CentralDensity::mapQuantities(
     double timeStamp
 ) {
   const int writtenUnknowns = 1;
-  outputQuantities[0] = Q[60];
+  outputQuantities[0] = Q[59];
 }
