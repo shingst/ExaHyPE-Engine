@@ -2097,6 +2097,7 @@ RECURSIVE SUBROUTINE HLLEMFluxFV(smaxout,FL,FR,QL,QR,NormalNonZero)
 #endif
   REAL :: QR_GRMHD(nVarGRMHD), QL_GRMHD(nVarGRMHD)  
   REAL :: LR_GRMHD(nVarGRMHD), LL_GRMHD(nVarGRMHD)  
+  REAL :: FR_GRMHD(nVarGRMHD), FL_GRMHD(nVarGRMHD)  
   
   nv(:)=0.
   nv(NormalNonZero+1)=1.
@@ -2139,10 +2140,12 @@ RECURSIVE SUBROUTINE HLLEMFluxFV(smaxout,FL,FR,QL,QR,NormalNonZero)
 
   flux = 0.5*(fL + fR) -0.5*smax*( QR - QL ) 
   !
+  !
+  ! decoupled Rusanov 
+  !
   smax = MAX( MAXVAL(ABS(LL_GRMHD)), MAXVAL(ABS(LR_GRMHD)) ) 
-
   flux(60:64) = 0.5*(fL(60:64) + fR(60:64)) -0.5*smax*( QR(60:64) - QL(60:64) ) 
-  
+  ! 	
   !
   gradQ=0.
   gradQ(:,NormalNonZero+1) = QR(:) - QL(:) 
@@ -2153,7 +2156,14 @@ RECURSIVE SUBROUTINE HLLEMFluxFV(smaxout,FL,FR,QL,QR,NormalNonZero)
   fR = flux - Dp
   fL = flux + Dm
   
-
+  !
+  ! HLLEM for GRHD 
+  ! 
+  CALL HLLEMFluxFVGRMHD(FL_GRMHD,FR_GRMHD,QL_GRMHD,QR_GRMHD,nv)   
+  !
+  fR(60:64) = FR_GRMHD(1:5)
+  fL(60:64) = FL_GRMHD(1:5)
+  !
   
  !fR(18:nVar) = 0.- 0.5*ncp(18:nVar)
  !fL(18:nVar) = 0.+ 0.5*ncp(18:nVar) 
