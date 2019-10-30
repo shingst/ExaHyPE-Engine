@@ -5,11 +5,8 @@
 // ========================
 //   www.exahype.eu
 // ========================
-
-#include "PDE.h" // ADMConstraints()
-
-#include "AbstractFOCCZ4Solver_ADERDG.h"
 #include "ConstraintsWriter.h"
+#include "PDE.h"
 
 FOCCZ4::ConstraintsWriter::ConstraintsWriter(FOCCZ4::FOCCZ4Solver& solver) {
   // @TODO Please insert your code here.
@@ -32,17 +29,17 @@ void FOCCZ4::ConstraintsWriter::mapQuantities(
     const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, int>&    pos,
-    double* Q, double* gradQ,
-    double* outputQuantities,
+    double* const Q, double* gradQ,
+    double* const outputQuantities,
     double timeStamp
 ) {
-	// this should be a UserOnTheFlyPostProcessing constant,
-	// allowing to ensure we write out 6 unknowns.
-	static constexpr int writtenUnknowns = 6;
+static constexpr int writtenUnknowns = 6;
 
 	for(int i=0; i<59; i++) { if(Q[i]!=Q[i]) std::abort(); }
 	
 	admconstraints_(outputQuantities, Q, gradQ);
 
 	for(int i=0; i<6; i++) { if(outputQuantities[i]!=outputQuantities[i]) std::abort(); }
+
+
 }

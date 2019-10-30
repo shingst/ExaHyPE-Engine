@@ -202,12 +202,12 @@
         "output": "./output/adm-integrals"
     },
     {
-        "type": "vtk::Cartesian::vertices::binary",
+        "type": "vtk::Legendre::vertices::ascii",
         "name": "ConstraintsWriter",
       "variables": 6,
       "time": 0.0,
       "repeat": 0.01,
-      "output": "./vtk-output/constraints"
+      "output": "./output/constraints"
     },
     {
         "type": "probe::ascii",

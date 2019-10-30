@@ -21,13 +21,15 @@ public:
 
   void startPlotting(double time) override;
   void finishPlotting() override;
+  bool mapWithDerivatives() override {
+      return true;
+  }
   void mapQuantities(
     const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
     const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const tarch::la::Vector<DIMENSIONS, int>&    pos,
-    double* const Q,
-    double* const gradQ,
+    double* const Q, double* gradQ,
     double* const outputQuantities,
     double timeStamp) override;
 };
