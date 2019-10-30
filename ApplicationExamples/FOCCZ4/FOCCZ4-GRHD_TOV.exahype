@@ -197,7 +197,22 @@
           "output": "./output/tecplot",
           "variables": 96
         }, 
-
+    {
+        "type": "user::defined",
+        "name": "ADMIntegralsWriter",
+        "variables": 0,
+        "time" : 0.0,
+        "repeat": 0.01,
+        "output": "./output/adm-integrals"
+    },
+    {
+        "type": "vtk::Legendre::vertices::ascii",
+        "name": "ConstraintsWriter",
+      "variables": 6,
+      "time": 0.0,
+      "repeat": 0.01,
+      "output": "./output/constraints"
+    },
     {
         "type": "probe::ascii",
         "name": "CentralDensity",
