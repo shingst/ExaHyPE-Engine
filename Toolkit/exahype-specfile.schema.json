@@ -895,16 +895,16 @@
             "exclusiveMaximum": false
           },
           "halo_cells" : {
-            "type" : "integer", 
-            "title" : "Number of halo cells around finest grid cell which requests further refinement or wants to be kept.",
+            "type" : "integer",
+            "title" : "Number of halo cells around finest grid cells which request further refinement or want to be kept, i.e. cells that contain interesting solution features. ExaHyPE will always stop the time stepping iterations and adapt the mesh if a feature travels into the halo layers.",
             "scope" : "run-time",
             "default": 0,
             "minimum": 0,
             "exclusiveMinimum": false
           },
           "halo_buffer_cells" : {
-            "type" : "integer", 
-            "title" : "Additional halo cells that are created during the mesh refinement iterations but it is not ensured these cells exist during the mesh refinement iterations.",
+            "type" : "integer",
+            "title" : "Similar to the other halo cells but ExaHyPE will NOT stop the time stepping iterations and refine the mesh if a feature travels into these cells. The layers will be restored if the user or the limiter criteria request refinement next.",
             "scope" : "run-time",
             "default": 0,
             "minimum": 0,
