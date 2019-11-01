@@ -4,34 +4,77 @@
 // ========================
 //   www.exahype.eu
 // ========================
-#ifndef POSTPROCESSING_ConstraintsWriter_CLASS_HEADER_
-#define POSTPROCESSING_ConstraintsWriter_CLASS_HEADER_
+#ifndef ConstraintsWriter_CLASS_HEADER_
+#define ConstraintsWriter_CLASS_HEADER_
 
-#include "exahype/plotters/Plotter.h"
+#include "exahype/plotters/ADERDG2UserDefined.h"
+#include "exahype/plotters/ascii/MultipleReductionsWriter.h"
+
+#include "AbstractFOCCZ4Solver_ADERDG.h"
 
 namespace FOCCZ4 {
-  class FOCCZ4Solver;
   class ConstraintsWriter;
 }
 
-class FOCCZ4::ConstraintsWriter : public exahype::plotters::Plotter::UserOnTheFlyPostProcessing {
-public:
-  ConstraintsWriter(FOCCZ4::FOCCZ4Solver& solver);
-  virtual ~ConstraintsWriter();
+/**
+ * The ConstraintsWriter for all primarily ADERDG applications:
+ *   * The LimitingADERDGSolver
+ *   * The ADERDGSolver
+ **/
+class FOCCZ4::ConstraintsWriter : public exahype::plotters::ADERDG2UserDefined {
+ public:
+  /** Z4 custom start */
+  static constexpr int numberOfVariables = FOCCZ4::AbstractFOCCZ4Solver_ADERDG::NumberOfVariables;
+  static constexpr int order = FOCCZ4::AbstractFOCCZ4Solver_ADERDG::Order;
+  static constexpr int basisSize = order + 1;
+  static constexpr int basisSize3 = basisSize*basisSize*basisSize;
 
-  void startPlotting(double time) override;
+  exahype::plotters::ascii::MultipleReductionsWriter constraintReductions;
+
+  /** Z4 custom end */
+
+  /**
+   * Constructor.
+   * 
+   * \note ExaHyPE does not increment file counters for
+   * you if you use user defined plotting. You have
+   * to declare and manage such member variables yourself. 
+   */
+  ConstraintsWriter();
+
+  /**
+   * This method is invoked every time a cell 
+   * is touched by the plotting device.
+   *
+   * \note Use the protected variables _order, _variables to
+   * determine the size of u. 
+   * The array u has the size _variables * (_order+1)^DIMENSIONS.
+   * 
+   * @param[in] offsetOfPatch the offset of the cell/patch.
+   * @param[in] sizeOfPatch the offset of the cell/patch.
+   * @param[in] u the degrees of freedom "living" inside of the patch.
+   */
+  void plotPatch(
+      const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
+      const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* u,
+      double timeStamp) override;
+
+  /** 
+   * This method is called at the beginning of the plotting.
+   * You can use it to reset member variables, e.g., those
+   * used for calculations, or to increment file counters.
+   *
+   * @param[in] time a characteristic solver time stamp.
+   *            Usually the global minimum.
+   */
+  void startPlotting( double time) override;
+  
+  /** 
+   * This method is called at the end of the plotting.
+   * You can use it to reset member variables, finalise calculations (compute square roots etc.),
+   * or to increment file counters
+   */
   void finishPlotting() override;
-  bool mapWithDerivatives() override {
-      return true;
-  }
-  void mapQuantities(
-    const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
-    const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
-    const tarch::la::Vector<DIMENSIONS, double>& x,
-    const tarch::la::Vector<DIMENSIONS, int>&    pos,
-    double* const Q, double* gradQ,
-    double* const outputQuantities,
-    double timeStamp) override;
 };
 
-#endif /* POSTPROCESSING_ConstraintsWriter_CLASS_HEADER_ */
+#endif /* ConstraintsWriter_CLASS_HEADER_ */

@@ -10,23 +10,25 @@
   "architecture": "noarch",
   "computational_domain": {
     "dimension": 3,
-    "end_time": 101.0,
+    "outside_cells_left": 0,
+    "outside_cells_right": 0,
+    "end_time": 1001.0,
     "offset": [
-      -15.0,
-      -15.0,
-      -15.0
+      -45.0,
+      -45.0,
+      -45.0
     ],
     "width": [
-      30.0,
-      30.0,
-      30.0
+      90.0,
+      90.0,
+      90.0
     ]
   },
   "shared_memory": {
-    "cores": 10,
+    "cores": 70,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
-    "background_job_consumers": 9
+    "background_job_consumers": 69
   },
   "distributed_memory": {
     "timeout": 6000,
@@ -54,8 +56,8 @@
       "type": "Limiting-ADER-DG",
       "name": "FOCCZ4Solver",
       "order": 3,
-      "maximum_mesh_size": 2.0,
-      "maximum_mesh_depth": 0,
+      "maximum_mesh_size": 15.0,
+      "maximum_mesh_depth": 2,
       "time_stepping": "global",
       "aderdg_kernel": {
         "language": "C",
@@ -88,7 +90,7 @@
           "source"
         ],
         "scheme": "musclhancock",
-	"slope_limiter" : "minmod",
+	"slope_limiter" : "mclim",
         "implementation": "generic"
       },
 
@@ -193,7 +195,7 @@
           "type": "user::defined",
           "name": "TecplotWriter",
           "time": 0.0,
-          "repeat": 1.0,
+          "repeat": 10.0,
           "output": "./output/tecplot",
           "variables": 96
         }, 
@@ -206,7 +208,7 @@
         "output": "./output/adm-integrals"
     },
     {
-        "type": "vtk::Legendre::vertices::ascii",
+        "type": "user::defined",
         "name": "ConstraintsWriter",
       "variables": 6,
       "time": 0.0,
@@ -217,7 +219,7 @@
         "type": "probe::ascii",
         "name": "CentralDensity",
         "time": 0.0,
-        "repeat": 0.001,
+        "repeat": 0.1,
         "output": "./output/rho",
         "variables": 1,
         "select": {
