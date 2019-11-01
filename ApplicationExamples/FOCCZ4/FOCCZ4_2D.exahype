@@ -89,12 +89,98 @@
 	"slope_limiter" : "minmod",
         "implementation": "generic"
       },
+
       "variables": [
+       {
+          "name": "G",
+          "multiplicity": 6
+        },
         {
-          "name": "MYQ",
-          "multiplicity": 96
+          "name": "K",
+          "multiplicity": 6
+        },
+        {
+          "name": "theta",
+          "multiplicity": 1
+        },
+        {
+          "name": "Z",
+          "multiplicity": 3
+        },
+        {
+          "name": "lapse",
+          "multiplicity": 1
+        },
+        {
+          "name": "shift",
+          "multiplicity": 3
+        },
+        {
+          "name": "b",
+          "multiplicity": 3
+        },
+        {
+          "name": "dLapse",
+          "multiplicity": 3
+        },
+        {
+          "name": "dxShift",
+          "multiplicity": 3
+        },
+        {
+          "name": "dyShift",
+          "multiplicity": 3
+        },
+        {
+          "name": "dzShift",
+          "multiplicity": 3
+        },
+        {
+          "name": "dxG",
+          "multiplicity": 6
+        },
+        {
+          "name": "dyG",
+          "multiplicity": 6
+        },
+        {
+          "name": "dzG",
+          "multiplicity": 6
+        },
+        {
+          "name": "traceK",
+          "multiplicity": 1
+        },
+        {
+          "name": "phi",
+          "multiplicity": 1
+        },
+        {
+          "name": "P",
+          "multiplicity": 3
+        },
+        {
+          "name": "K0",
+          "multiplicity": 1
+        },
+        {
+            "name": "rho",
+            "multiplicity": 1
+        },
+        {
+            "name": "vel",
+            "multiplicity": 3
+        },
+        {
+            "name": "pressure",
+            "multiplicity": 1
+        },
+        {
+          "name": "glm",
+          "multiplicity": 32
         }
       ],
+	  
     "parameters": {
         "reference": "CCZ4MinkowskiSrc"
       },

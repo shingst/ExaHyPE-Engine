@@ -2115,6 +2115,16 @@ RECURSIVE SUBROUTINE HLLEMFluxFV(smaxout,FL,FR,QL,QR,NormalNonZero)
   CALL PDEEigenvalues(LL,QL,nv)  
   CALL PDEEigenvalues(LR,QR,nv)  
 
+  smax = MAX( MAXVAL(ABS(LL)), MAXVAL(ABS(LR)) ) 
+  smaxout=smax
+
+  flux = 0.5*(fL + fR) -0.5*smax*( QR - QL ) 
+  !
+  !
+  ! decoupled Rusanov 
+  !
+#ifdef CCZ4GRHD  
+
     alpha           = EXP(QL(17)) 
     phi             = EXP(QL(55)) 
     QL_GRMHD(1:5)   = QL(60:64)        ! hydro variables 
@@ -2134,18 +2144,12 @@ RECURSIVE SUBROUTINE HLLEMFluxFV(smaxout,FL,FR,QL,QR,NormalNonZero)
     QR_GRMHD(14:19) = QR(1:6)/phi**2   ! metric 
     
 	CALL PDEEigenvaluesGRMHD(LR_GRMHD,QR_GRMHD,nv)	
-
-  smax = MAX( MAXVAL(ABS(LL)), MAXVAL(ABS(LR)) ) 
-  smaxout=smax
-
-  flux = 0.5*(fL + fR) -0.5*smax*( QR - QL ) 
-  !
-  !
-  ! decoupled Rusanov 
+ 
   !
   smax = MAX( MAXVAL(ABS(LL_GRMHD)), MAXVAL(ABS(LR_GRMHD)) ) 
   flux(60:64) = 0.5*(fL(60:64) + fR(60:64)) -0.5*smax*( QR(60:64) - QL(60:64) ) 
   ! 	
+#endif   
   !
   gradQ=0.
   gradQ(:,NormalNonZero+1) = QR(:) - QL(:) 
@@ -2159,10 +2163,10 @@ RECURSIVE SUBROUTINE HLLEMFluxFV(smaxout,FL,FR,QL,QR,NormalNonZero)
   !
   ! HLLEM for GRHD 
   ! 
-  CALL HLLEMFluxFVGRMHD(FL_GRMHD,FR_GRMHD,QL_GRMHD,QR_GRMHD,nv)   
+  !CALL HLLEMFluxFVGRMHD(FL_GRMHD,FR_GRMHD,QL_GRMHD,QR_GRMHD,nv)   
   !
-  fR(60:64) = FR_GRMHD(1:5)
-  fL(60:64) = FL_GRMHD(1:5)
+  !fR(60:64) = FR_GRMHD(1:5)
+  !fL(60:64) = FL_GRMHD(1:5)
   !
   
  !fR(18:nVar) = 0.- 0.5*ncp(18:nVar)
@@ -3919,7 +3923,7 @@ RECURSIVE SUBROUTINE pderefinecriteria(refine_flag, max_luh,min_luh,x)
 	!	return
 	!end if
  	refine_flag = 0
-#ifdef CCZ4EINSTEIN
+!!#ifdef CCZ4EINSTEIN
 
 
 !  if(abs(max_luh(60)-min_luh(60))>1.e-4 .or. abs(max_luh(54)-min_luh(54))>1.e-3) then
@@ -3938,7 +3942,8 @@ RECURSIVE SUBROUTINE pderefinecriteria(refine_flag, max_luh,min_luh,x)
         end if
 
   end if
-#endif
+!#endif
+ 
 END SUBROUTINE pderefinecriteria
  
     

@@ -7,7 +7,7 @@ RECURSIVE SUBROUTINE ADMConstraints( Constraints, Q, gradQ )
    INTENT(OUT) :: Constraints
    INTEGER, PARAMETER :: nConstraints = 6 
    INTEGER :: i, ip, j, k, l, m, n, iErr, qq, ii, jj, kk, ll, mm, nn  
-   REAL :: xGP(d), Constraints(nConstraints), Q(nVar), gradQ(nVar,nDim)!, gradQT(d,Nvar)  
+   REAL :: xGP(d), Constraints(nConstraints), Q(nVar), gradQ(nVar,d)!, gradQT(d,Nvar)  
    REAL :: traceK, R, phi, KK2
    REAL :: g_contr(3,3), g_cov(3,3), Ricci(3,3)
    REAL :: DD(3,3,3), Atilde(3,3), PP(3), GG(3), dP(3,3)
