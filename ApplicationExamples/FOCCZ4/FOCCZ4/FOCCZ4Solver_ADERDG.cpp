@@ -117,6 +117,15 @@ void FOCCZ4::FOCCZ4Solver_ADERDG::boundaryValues(const double* const x,const dou
   
 }
 
+bool isInRefinementZone(const tarch::la::Vector<DIMENSIONS,double>& center, double dx){
+	double radius = 8.12514;
+	// lower left, upper right radius of cell
+	double cen = tarch::la::norm2(center);
+	double dr = std::max(0.5,dx);
+  bool shouldRefine = (cen > (radius -dr) ) && ( cen  <= (radius+dr) ); 
+  return shouldRefine;
+}
+
 exahype::solvers::Solver::RefinementControl FOCCZ4::FOCCZ4Solver_ADERDG::refinementCriterion(const double* const luh,const tarch::la::Vector<DIMENSIONS,double>& cellCentre,const tarch::la::Vector<DIMENSIONS,double>& cellSize,double t,const int level) {
   // @todo Please implement/augment if required
   //return exahype::solvers::Solver::RefinementControl::Keep;
@@ -143,7 +152,7 @@ exahype::solvers::Solver::RefinementControl FOCCZ4::FOCCZ4Solver_ADERDG::refinem
   }
 return exahype::solvers::Solver::RefinementControl::Keep;*/
 
-
+/*
   const int nVar = FOCCZ4::AbstractFOCCZ4Solver_ADERDG::NumberOfVariables;
   const int order = FOCCZ4::AbstractFOCCZ4Solver_ADERDG::Order;
   const int basisSize = order + 1;
@@ -204,10 +213,17 @@ return exahype::solvers::Solver::RefinementControl::Keep;*/
 		if(refine_flag>0){
 			return exahype::solvers::Solver::RefinementControl::Keep;
 		}else{
+			if(tarch::la::equals(t,0.0) && tarch::la::norm2(cellCentre)<100)
+				return exahype::solvers::Solver::RefinementControl::Refine;
 			//return exahype::solvers::Solver::RefinementControl::Recoarse;
 			return exahype::solvers::Solver::RefinementControl::Keep;
 		};
   }
+*/
+
+    if(isInRefinementZone(cellCentre,std::sqrt(tarch::la::norm2(cellSize))))
+        return exahype::solvers::Solver::RefinementControl::Refine;
+    return exahype::solvers::Solver::RefinementControl::Erase;
 
 
 }
@@ -294,13 +310,10 @@ bool FOCCZ4::FOCCZ4Solver_ADERDG::isPhysicallyAdmissible(
       const tarch::la::Vector<DIMENSIONS,double>& cellSize,
       const double                               timeStamp) const
 	  {
-  		  
 	  int limvalue;
 	   const int num = 3;
 	  pdelimitervalue_(&limvalue,&cellCentre[0],&num, localDMPObservablesMin, localDMPObservablesMax);
-	  bool ret_value;
-	  limvalue > 0 ? ret_value=false : ret_value=true;
-	  return ret_value;
+	  return !limvalue;
 }
 void FOCCZ4::FOCCZ4Solver_ADERDG::fusedSource(const double* const restrict Q, const double* const restrict gradQ, double* const restrict S){
 	//static tarch::multicore::BooleanSemaphore initializationSemaphoreDG;

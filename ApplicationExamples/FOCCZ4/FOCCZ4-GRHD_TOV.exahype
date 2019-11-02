@@ -74,6 +74,7 @@
         "optimised_kernel_debugging": [],
         "implementation": "generic"
       },
+      "halo_buffer_cells" : 5,
       "point_sources": 0,
       "limiter": {
         "dmp_observables": 3,
