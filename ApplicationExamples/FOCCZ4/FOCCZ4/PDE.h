@@ -38,6 +38,9 @@ void pdecons2prim_(double* V,const double* Q);
  
 void maxhyperboliceigenvaluegrhd_(double* smax, const double* const QR, const double* const QL, double* nv);
 
+void enforceccz4constraints_(double* Q); 
+
+
 }/* extern "C" */
 
 

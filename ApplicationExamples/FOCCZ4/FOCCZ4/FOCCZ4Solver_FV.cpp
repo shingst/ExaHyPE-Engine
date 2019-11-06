@@ -34,6 +34,11 @@ void FOCCZ4::FOCCZ4Solver_FV::adjustSolution(const double* const x,const double 
     
     initialdata_(x_3, &t, Q);
   }
+  else
+  {
+	  enforceccz4constraints_(Q); 
+  }
+  
   for(int i = 0; i< 96 ; i++){
     assert(std::isfinite(Q[i]));
   }

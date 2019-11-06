@@ -75,6 +75,10 @@ void FOCCZ4::FOCCZ4Solver_ADERDG::adjustPointSolution(const double* const x,cons
     
     initialdata_(x_3, &t, Q);
   }
+  else
+  {
+	  enforceccz4constraints_(Q); 
+  }
   for(int i = 0; i< 96 ; i++){
     assert(std::isfinite(Q[i]));
   }
