@@ -1,15 +1,15 @@
 ! ADM CONSTRAINTS
 
 RECURSIVE SUBROUTINE ADMConstraints( Constraints, Q, gradQ )
-   USE mainVariables, ONLY : nVar, nDim, d    
+   USE MainVariables, ONLY : nVar, nDim, d, EQN     
    IMPLICIT NONE
    INTENT(IN)  :: Q, gradQ 
    INTENT(OUT) :: Constraints
    INTEGER, PARAMETER :: nConstraints = 6 
    INTEGER :: i, ip, j, k, l, m, n, iErr, qq, ii, jj, kk, ll, mm, nn  
-   REAL :: xGP(d), Constraints(nConstraints), Q(nVar), gradQ(nVar,d)!, gradQT(d,Nvar)  
+   REAL :: xGP(d), Constraints(nConstraints), Q(nVar), V(nVar), gradQ(nVar,d)!, gradQT(d,Nvar)  
    REAL :: traceK, R, phi, KK2
-   REAL :: g_contr(3,3), g_cov(3,3), Ricci(3,3)
+   REAL :: g_contr(3,3), g_cov(3,3), Ricci(3,3), sm(3), gm  
    REAL :: DD(3,3,3), Atilde(3,3), PP(3), GG(3), dP(3,3)
    REAL :: s1,s2,s3,s4,s5,s6,s7,s8,s9,s10
    REAL :: dDD(3,3,3,3), Christoffel(3,3,3), ChristoffelNC(3,3,3), Id(3,3), dgup(3,3,3), Riemann(3,3,3,3), dChristoffel(3,3,3,3)
@@ -17,7 +17,8 @@ RECURSIVE SUBROUTINE ADMConstraints( Constraints, Q, gradQ )
    REAL :: dg_cov(3,3,3), g_covx(3,3), g_covy(3,3), g_covz(3,3), det
    REAL :: alpha, Aex(3,3), Kex(3,3), traceA, k0, dAex(3,3,3), dKex(3,3,3), Amix(3,3), Aup(3,3), Kmix(3,3), Kup(3,3)
    REAL :: ghat(3), theta, dtheta(3), dghat(3,3), AA(3), dAA(3,3), BB(3,3), dBB(3,3,3), dphi(3), dPP(3,3), beta(3) 
-   REAL :: Christoffel_tilde(3,3,3), Gtilde(3), Christoffel_kind1(3,3,3), Z(3), Zup(3), Kupdown 
+   REAL :: Christoffel_tilde(3,3,3), Gtilde(3), Christoffel_kind1(3,3,3), Z(3), Zup(3), Kupdown, EE  
+   REAL, PARAMETER :: pi = ACOS(-1.0) 
 
    Constraints(:) = 0.0
 
@@ -266,8 +267,15 @@ RECURSIVE SUBROUTINE ADMConstraints( Constraints, Q, gradQ )
     !
     R = SUM(phi**2*g_contr*Ricci) 
     !
+#if defined(CCZ4GRHD)  
+    CALL PDECons2Prim(V,Q,iErr) 
+    EE = V(60) + 1.0/(EQN%gamma-1)*V(64) 
+#else 
+    EE = Q(60) + 1.0/(EQN%gamma-1)*Q(64) 
+#endif        
+    !
     Kupdown = SUM(Kex*Kup) 
-    Ham = R - KupDown + traceK**2 
+    Ham = R - KupDown + traceK**2 - 16*pi*EE  
     !
     dKex = 0.0
     DO j = 1, 3
@@ -290,6 +298,12 @@ RECURSIVE SUBROUTINE ADMConstraints( Constraints, Q, gradQ )
             ENDDO     
         ENDDO
     ENDDO   
+
+#ifdef CCZ4GRHD
+    gm         = phi**3      ! inverse square root of determinant = phi**3 
+    sm(1:3)    = Q(61:63) * gm
+    Mom(1:3) = Mom(1:3) - 8*pi*sm(1:3)  
+#endif     
    
     Constraints(1)   = Ham 
     Constraints(2:4) = Mom(1:3)
