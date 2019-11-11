@@ -139,6 +139,7 @@ public:
   static int event_progress;
   static int event_offload;
   #endif
+
   /**
    * The maximum helper status.
    * This value is assigned to cell descriptions
@@ -986,8 +987,8 @@ private:
         Running,
         Resume,
         Paused,
-	    Terminate,
-		Terminated
+	Terminate,
+	Terminated
       };
 	  OffloadingManagerJob(ADERDGSolver& solver);
 	  ~OffloadingManagerJob();
@@ -1045,7 +1046,6 @@ private:
       StealablePredictionJobData(const StealablePredictionJobData&) = delete;                                      //deleted copy constructor
       StealablePredictionJobData& operator = (const StealablePredictionJobData &) = delete;                //deleted copy assignment operator
   };
-
 
   /**
    * These maps are needed for deallocating data that belongs to offloaded tasks
@@ -1126,7 +1126,7 @@ private:
 		  double *luh, double *lduh,
 		  double *lQhbnd, double *lFhbnd,
 		  double *dx, double *center,
-          const int originRank,
+                  const int originRank,
 		  const int tag
       );
   
@@ -3290,16 +3290,16 @@ public:
       }
       #endif
 
-      switch ( JobSystemWaitBehaviour ) {
-         case JobSystemWaitBehaviourType::ProcessJobsWithSamePriority:
+      //switch ( JobSystemWaitBehaviour ) {
+      //   case JobSystemWaitBehaviourType::ProcessJobsWithSamePriority:
            tarch::multicore::jobs::processBackgroundJobs( 1, getTaskPriority(waitForHighPriorityJob), true );
            break;
-         case JobSystemWaitBehaviourType::ProcessAnyJobs:
-           tarch::multicore::jobs::processBackgroundJobs( 1, -1, true );
-           break;
-         default:
-           break;
-      }
+      //   case JobSystemWaitBehaviourType::ProcessAnyJobs:
+      //     tarch::multicore::jobs::processBackgroundJobs( 1, -1, true );
+      //     break;
+      //   default:
+      //     break;
+     // }
 
       if((MPI_Wtime()-startTime)>10.0) { // && responsibleRank!=myRank) {
         startTime = MPI_Wtime();

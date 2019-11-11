@@ -83,8 +83,7 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::run( bool isCalledO
        result = handleLocalExecution();
        watch.stopTimer();
 
-       if(curr%10000==0)
-         logInfo("run()","measured time per STP "<<watch.getCalendarTime());
+       logDebug("run()","measured time per STP "<<watch.getCalendarTime());
 
        exahype::offloading::OffloadingAnalyser::getInstance().setTimePerSTP(watch.getCalendarTime());
      }
@@ -256,13 +255,13 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecutio
     MPI_Request sendBackRequests[4];
     //logInfo("handleLocalExecution()", "postSendBack");
     _solver.isendStealablePredictionJob(_luh,
-    		                            _lduh,
-					                    _lQhbnd,
-				                        _lFhbnd,
-					                    _originRank,
-					                    _tag,
-					                    exahype::offloading::OffloadingManager::getInstance().getMPICommunicatorMapped(),
-					                    sendBackRequests);
+    		                        _lduh,
+					_lQhbnd,
+				        _lFhbnd,
+					_originRank,
+					_tag,
+					exahype::offloading::OffloadingManager::getInstance().getMPICommunicatorMapped(),
+					sendBackRequests);
     exahype::offloading::OffloadingManager::getInstance().submitRequests(sendBackRequests, 4, _tag, _originRank, sendBackHandler, exahype::offloading::RequestType::sendBack, &_solver);
 
 #if defined(PerformanceAnalysisOffloading)
@@ -391,8 +390,7 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveBackHandler(
  // logInfo("receiveBackHandler","successful receiveBack request");
   tbb::concurrent_hash_map<int, CellDescription*>::accessor a_tagToCellDesc;
   bool found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToCellDesc.find(a_tagToCellDesc, tag);
-  assert(found);
-  //assertion(found);
+  assertion(found);
   auto cellDescription = a_tagToCellDesc->second;
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToCellDesc.erase(a_tagToCellDesc);
   a_tagToCellDesc.release();

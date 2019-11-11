@@ -215,7 +215,7 @@ void exahype::offloading::OffloadingAnalyser::printWaitingTimes() {
   for(int i=0; i<nnodes; i++) {
     for(int j=0; j<nnodes; j++) {
       if(waitingTimesSnapshot[k+j]>0)
-        logDebug("printWaitingTimes()","rank "<<i<<" waiting for "<<waitingTimesSnapshot[k+j]<<" for rank "<<j);
+        logInfo("printWaitingTimes()","rank "<<i<<" waiting for "<<waitingTimesSnapshot[k+j]<<" for rank "<<j);
     }
     k+= nnodes;
   }
