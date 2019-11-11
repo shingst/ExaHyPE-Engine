@@ -4535,16 +4535,16 @@ RECURSIVE SUBROUTINE PDEEigenvectorsGRMHD(R,L,iR,Q,nv)
     ENDIF
     !
     ! to be sure that we use the same routine
-    CALL PDEEigenvaluesGRMHD(lambda,Q,nv) 
+    !CALL PDEEigenvaluesGRMHD(lambda,Q,nv) 
+    
+    Lambda(1)   = ( u*(1.0-cs2) - SQRT( cs2*lf2m*( (1.0-v2*cs2)*gg - u**2*(1.0-cs2) )) )*den 
+    Lambda(2:4) = u
+    Lambda(5)   = ( u*(1.0-cs2) + SQRT( cs2*lf2m*( (1.0-v2*cs2)*gg - u**2*(1.0-cs2) )) )*den
+    Lambda_ia(1:5)   = Lambda(1:5)
+    Lambda(1:5)   = lapse*Lambda(1:5) - sft
     !
-    !Lambda(1)   = ( u*(1.0-cs2) - SQRT( cs2*lf2m*( (1.0-v2*cs2)*gg - u**2*(1.0-cs2) )) )*den 
-    !Lambda(2:4) = u
-    !Lambda(5)   = ( u*(1.0-cs2) + SQRT( cs2*lf2m*( (1.0-v2*cs2)*gg - u**2*(1.0-cs2) )) )*den
-    !Lambda_ia(1:5)   = Lambda(1:5)
-    !Lambda(1:5)   = lapse*Lambda(1:5) - sft
-    !!
-    !Lambda(6:) = 0.
-    ! 
+    Lambda(6:) = 0.
+     
   !
   !  sv = (/ 1., 1., 1. /) - ABS(nv)
   !  sv = sv/SQRT(SUM(sv(:)**2))  
