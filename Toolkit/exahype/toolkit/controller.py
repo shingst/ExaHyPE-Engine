@@ -306,7 +306,7 @@ class Controller:
         else:
             context["stealing"] = "none"
             context["stealingProgress"] = "none"
-            context["useReplicationSaving"] = false
+            context["useReplicationSaving"] = False
 
         # kernels
         useOptKernel = False
