@@ -11,6 +11,8 @@
  * For the full license text, see LICENSE.txt
  **/
 
+#if  defined(SharedTBB)  && defined(Parallel)
+
 #include "HeartbeatJob.h"
 
 #include <mpi.h>
@@ -76,3 +78,5 @@ bool HeartbeatJob::run(bool runOnMasterThread) {
 }
 
 }
+
+#endif

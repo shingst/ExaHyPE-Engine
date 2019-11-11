@@ -1,12 +1,18 @@
-/*
- * HeartbeatJob.h
+/**
+ * This file is part of the ExaHyPE project.
+ * Copyright (c) 2016  http://exahype.eu
+ * All rights reserved.
  *
- *  Created on: 05.10.2019
- *      Author: ps659535
- */
+ * The project has received funding from the European Union's Horizon
+ * 2020 research and innovation programme under grant agreement
+ * No 671698. For copyrights and licensing, please consult the webpage.
+ *
+ * Released under the BSD 3 Open Source License.
+ * For the full license text, see LICENSE.txt
+ **/
 
-#ifndef EXAHYPE_EXAHYPE_OFFLOADING_HEARTBEATJOB_H_
-#define EXAHYPE_EXAHYPE_OFFLOADING_HEARTBEATJOB_H_
+#if !defined(EXAHYPE_OFFLOADING_HEARTBEATJOB_H_) && defined(SharedTBB)  && defined(Parallel)
+#define EXAHYPE_OFFLOADING_HEARTBEATJOB_H_
 
 #include "tarch/multicore/Jobs.h"
 #include "tarch/logging/Log.h"
@@ -38,4 +44,4 @@ class HeartbeatJob : public tarch::multicore::jobs::Job {
 }
 
 }
-#endif /* EXAHYPE_EXAHYPE_OFFLOADING_HEARTBEATJOB_H_ */
+#endif /* EXAHYPE_OFFLOADING_HEARTBEATJOB_H_ */
