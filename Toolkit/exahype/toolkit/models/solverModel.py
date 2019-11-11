@@ -24,7 +24,7 @@
 import copy
 
 from .abstractModelBaseClass import AbstractModelBaseClass
-from .codegeneratorModel import CodegeneratorModel
+from .kernelgeneratorModel import KernelgeneratorModel
 
 
 class SolverModel(AbstractModelBaseClass):
@@ -54,8 +54,8 @@ class SolverModel(AbstractModelBaseClass):
         
         paths = [] # path is None if nothing was generated
         if implementation == "optimised":
-            codegenModel = CodegeneratorModel()
-            _ , self.context["codegeneratorContext"] = codegenModel.generateCode(self.context) #call codegenerator and store context used
+            kernelgenModel = KernelgeneratorModel()
+            _ , self.context["kernelgeneratorContext"] = kernelgenModel.generateCode(self.context) #call kernelgenerator and store context used
         for filePath,template in solverTemplates.get(implementation,[]):
             paths.append(self.render(template,filePath,overwrite=False)[0])
         for filePath,template in abstractSolverTemplates.get(implementation,[]):
@@ -89,8 +89,8 @@ class SolverModel(AbstractModelBaseClass):
         
         paths = [] # path is None if nothing was generated
         if implementation=="optimised":
-            codegenModel = CodegeneratorModel()
-            _ , self.context["codegeneratorContext"] = codegenModel.generateCode(self.context) #call codegenerator and store context used
+            kernelgenModel = KernelgeneratorModel()
+            _ , self.context["kernelgeneratorContext"] = kernelgenModel.generateCode(self.context) #call kernelgenerator and store context used
         for filePath,template in solverTemplates.get(implementation,[]):
             paths.append(self.render(template,filePath,overwrite=False)[0])
         for filePath,template in abstractSolverTemplates.get(implementation,[]):
@@ -119,8 +119,8 @@ class SolverModel(AbstractModelBaseClass):
         
         paths = [] # path is None if nothing was generated
         if implementation == "optimised":
-            codegenModel = CodegeneratorModel()
-            _ , self.context["codegeneratorContext"] = codegenModel.generateCode(self.context) #call codegenerator and store context used
+            kernelgenModel = KernelgeneratorModel()
+            _ , self.context["kernelgeneratorContext"] = kernelgenModel.generateCode(self.context) #call kernelgenerator and store context used
         for filePath,template in abstractSolverTemplates.get(implementation,[]):
             paths.append(self.render(template,filePath)[0])
         

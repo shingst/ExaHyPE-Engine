@@ -1,7 +1,5 @@
 ! GRMHDb Initial Data
-
-#define GRMHD
-#define NoRNSTOV
+ 
 
 RECURSIVE SUBROUTINE PDESetup(myrank)
 	USE, INTRINSIC :: ISO_C_BINDING
@@ -67,7 +65,7 @@ RECURSIVE SUBROUTINE PDESetup(myrank)
     CASE('Sod')
     	EQN%gamma = 5.0/3.0
     CASE('Riemann0')
-    	EQN%gamma = 5.0/3.0
+        EQN%gamma = 5.0/3.0
 	CASE('GRMHDAccretion')
 		EQN%gamma = 4./3. 
 	CASE('GRMHDTOV')

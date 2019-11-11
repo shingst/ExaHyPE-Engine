@@ -38,8 +38,8 @@ class SolverController:
         paths, context = output
         for path in filter(None, paths):
             logger.info("Generated '"+path+"'")
-        if "codegeneratorContext" in context:
-            logger.info("Codegenerator used, command line to get the same result: "+context["codegeneratorContext"]["commandLine"])
+        if "kernelgeneratorContext" in context:
+            logger.info("Kernelgenerator used, command line to get the same result: "+context["kernelgeneratorContext"]["commandLine"])
         contextsList.append(context)
         
         return context
@@ -88,16 +88,16 @@ class SolverController:
                 aderdgContext["numberOfDMPObservables"] = context["numberOfDMPObservables"]
                 aderdgContext["ghostLayerWidth"]        = fvContext["ghostLayerWidth"]
                 
-                self.addCodegeneratorPathAndNamespace(aderdgContext) # refresh path and namespace
-                self.addCodegeneratorPathAndNamespace(fvContext) # refresh path and namespace
+                self.addKernelgeneratorPathAndNamespace(aderdgContext) # refresh path and namespace
+                self.addKernelgeneratorPathAndNamespace(fvContext) # refresh path and namespace
                 
                 # generate all solver files
                 model = solverModel.SolverModel(fvContext)
                 context["fvContext"] = self.processModelOutput(model.generateCode(), [], logger) #don't register context
                 model = solverModel.SolverModel(aderdgContext)
                 context["aderdgContext"] = self.processModelOutput(model.generateCode(), [], logger) #don't register context
-                if "codegeneratorContext" in context["aderdgContext"]:
-                    context["codegeneratorContext"] = context["aderdgContext"]["codegeneratorContext"] #move codegencontext one up if it exists
+                if "kernelgeneratorContext" in context["aderdgContext"]:
+                    context["kernelgeneratorContext"] = context["aderdgContext"]["kernelgeneratorContext"] #move kernelgencontext one up if it exists
                     # Add missing, TODO JMG make cleaner
                     context["basis"] = context["aderdgContext"]["basis"] 
                     context["tempVarsOnStack"] = context["aderdgContext"]["tempVarsOnStack"]
@@ -165,7 +165,7 @@ class SolverController:
         context["type"] = "ADER-DG"
         context.update(self.buildADERDGKernelContext(solver["aderdg_kernel"]))
         context.update(self.buildKernelOptimizationContext(solver["aderdg_kernel"], context))
-        self.addCodegeneratorPathAndNamespace(context)
+        self.addKernelgeneratorPathAndNamespace(context)
         
         context["order"]                  = solver["order"]
         if int(context["order"]) > 9:
@@ -187,7 +187,7 @@ class SolverController:
         context["FVSolver"]               = solver["name"]+"_FV"
         context["ADERDGAbstractSolver"]   = "Abstract"+solver["name"]+"_ADERDG"
         context["FVAbstractSolver"]       = "Abstract"+solver["name"]+"_FV"
-        self.addCodegeneratorPathAndNamespace(context)
+        self.addKernelgeneratorPathAndNamespace(context)
         
         return context
 
@@ -198,7 +198,7 @@ class SolverController:
         context.update(self.buildFVKernelContext(solver["fv_kernel"]))
         context.update(self.buildKernelOptimizationContext(solver["fv_kernel"], context))
         context["patchSize"] = solver.get("patch_size","default") # overwrite if called from LimitingADERDGSolver creation
-        self.addCodegeneratorPathAndNamespace(context)
+        self.addKernelgeneratorPathAndNamespace(context)
         
         return context
 
@@ -291,7 +291,7 @@ class SolverController:
         
         return context
         
-    def addCodegeneratorPathAndNamespace(self, context):
+    def addKernelgeneratorPathAndNamespace(self, context):
         kernelType = "aderdg" if context["type"] == "ADER-DG" else ("limiter" if context["type"] == "Limiting-ADER-DG" else "fv")
         context["kernelType"]         = kernelType
         context["optKernelPath"]      = os.path.join("kernels", context["project"] + "_" + context["solver"], kernelType)

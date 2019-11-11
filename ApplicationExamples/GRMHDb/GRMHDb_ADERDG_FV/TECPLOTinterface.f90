@@ -1,3 +1,7 @@
+! HERE every input variables refere to the "nDim" total space dimensions:
+! at the moment, the externally defined TECPLOT routines are referred to 3D space dimensions.
+    
+    
 RECURSIVE SUBROUTINE ElementCallTECPLOTPLOTTER(wh,lx0,ldx,limiter)
 	USE, INTRINSIC :: ISO_C_BINDING
 	USE TECPLOTPLOTTERmod !, only : ElementTECPLOTPLOTTER,nDOFm
@@ -6,8 +10,11 @@ RECURSIVE SUBROUTINE ElementCallTECPLOTPLOTTER(wh,lx0,ldx,limiter)
 	REAL, INTENT(IN) :: wh(nVar,nDOFm),lx0(nDim),ldx(nDim)
 	real :: lx0_3(3),ldx_3(3)
 	integer :: limiter
-	lx0_3(1:nDim)=lx0
-	ldx_3(1:nDim)=ldx
+        lx0_3 = 0.
+        ldx_3 = 0.
+
+	lx0_3(1:nDim)=lx0(1:nDim)
+	ldx_3(1:nDim)=ldx(1:nDim)
     CALL ElementTECPLOTPLOTTER(wh,lx0_3,ldx_3,limiter)
 END SUBROUTINE ElementCallTECPLOTPLOTTER
 
@@ -19,8 +26,11 @@ RECURSIVE SUBROUTINE ElementCallTECPLOTADERDGPLOTTER(wh,lx0,ldx,limiter)
 	REAL, INTENT(IN) :: wh(nVar,nDOFm),lx0(nDim),ldx(nDim)
 	real :: lx0_3(3),ldx_3(3)
 	integer :: limiter
-	lx0_3(1:nDim)=lx0
-	ldx_3(1:nDim)=ldx
+        lx0_3 = 0.
+        ldx_3 = 0.
+
+	lx0_3(1:nDim)=lx0(1:nDim)
+	ldx_3(1:nDim)=ldx(1:nDim)
 	CALL ElementTECPLOTPLOTTER_ADERDG(wh,lx0_3,ldx_3,limiter)
  END SUBROUTINE ElementCallTECPLOTADERDGPLOTTER
 
@@ -32,8 +42,10 @@ RECURSIVE SUBROUTINE ElementCallTECPLOTFVPLOTTER(wh,lx0,ldx,limiter)
 	REAL, INTENT(IN) :: wh(nVar,(nSubLim+2*nSubLim_GL)**nDIM),lx0(nDim),ldx(nDim)
 	real :: lx0_3(3),ldx_3(3)
 	integer :: limiter,i,j,k,Stencil
-	lx0_3(1:nDim)=lx0
-	ldx_3(1:nDim)=ldx
+	lx0_3 = 0.
+	ldx_3 = 0.
+	lx0_3(1:nDim)=lx0(1:nDim)
+	ldx_3(1:nDim)=ldx(1:nDim)
     !!PRINT *, lx0_3
     !!PRINT *, ldx_3
      !PRINT *, "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"

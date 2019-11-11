@@ -41,7 +41,6 @@ void GRMHDb::TecplotWriter::plotADERDGPatch(
 	plotForADERSolver = 1;
 	plotForFVSolver = 0;
 	elementcalltecplotaderdgplotter_(u, &offsetOfPatch[0], &sizeOfPatch[0], &plotForADERSolver);
-	//printf("SONO QUI IN plotADERDGPatch");
 }
 
 

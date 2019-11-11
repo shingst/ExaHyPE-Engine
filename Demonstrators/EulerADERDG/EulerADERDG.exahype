@@ -101,7 +101,7 @@ exahype-project EulerADERDG
     dmp-relaxation-parameter   = 1e-4
     dmp-difference-scaling     = 1e-3
     
-    plot vtu::Cartesian::vertices::limited::ascii EulerWriter
+    plot vtu::Cartesian::cells::limited::ascii EulerWriter
       variables const = 5
       time            = 100.0
       repeat          = 0.001

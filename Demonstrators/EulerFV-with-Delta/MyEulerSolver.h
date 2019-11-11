@@ -19,7 +19,13 @@
  * We use Peano's logging
  */
 #include "tarch/logging/Log.h"
+
+
+/**
+ * Include Delta
+ */
 #include "delta/Mesh.h"
+
 
 namespace EulerFV{
   class MyEulerSolver;
@@ -30,8 +36,11 @@ class EulerFV::MyEulerSolver : public EulerFV::AbstractMyEulerSolver {
     /**
      * Log device
      */
-    static tarch::logging::Log  _log;
+    static tarch::logging::Log _log;
 
+    /**
+     * We hold one instance of a Delta mesh.
+     */
     delta::Mesh*  _embeddedGeometry;
   public:
     MyEulerSolver(
@@ -48,43 +57,60 @@ class EulerFV::MyEulerSolver : public EulerFV::AbstractMyEulerSolver {
     void init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) final override ;
 
     /**
-     * @see FiniteVolumesSolver
+     * Adjust the conserved variables and parameters (together: Q) at a given time t at the (quadrature) point x.
+     *
+     * @note Please overwrite function adjustSolution(...) if you want to
+     * adjust the solution degrees of freedom in a cellwise manner.
+     *
+     * @param[in]    x   physical coordinate on the face.
+     * @param[in]    t   start of the time interval.
+     * @param[in]    dt  width of the time interval.
+     * @param[in]    Q   vector of state variables (plus parameters); 
+     *                   range: [0,nVar+nPar-1], already allocated.
      */    
     void adjustSolution(const double* const x,const double t,const double dt, double* const Q) override; 
     
     /**
-     * Compute the eigenvalues of the flux tensor per coordinate direction \p d.
+     * Compute the eigenvalues of the flux tensor per coordinate  @p direction.
      *
-     * \param[in] Q  the conserved variables associated with a quadrature node
-     *               as C array (already allocated).
-     * \param[in] d  the column of the flux vector (d=0,1,...,DIMENSIONS).
-     * \param[inout] lambda the eigenvalues as C array (already allocated).
+     * @param[in]    Q          vector of state variables (plus parameters); 
+     *                          range: [0,nVar+nPar-1], already allocated.
+     * @param[in]    direction  normal direction of the face / column of the flux vector (range: [0,nDims-1]).
+     * @param[inout] lambda     eigenvalues as C array;
+     *                          range: [0,nVar-1], already allocated.
      */
-    void eigenvalues(const double* const Q,const int d,double* const lambda) override;
+    void eigenvalues(const double* const Q,const int direction,double* const lambda) override;
         
     /**
      * Impose boundary conditions at a point on a boundary face
      * within the time interval [t,t+dt].
      *
-     * \param[in]    x         the physical coordinate on the face.
-     * \param[in]    t         the start of the time interval.
-     * \param[in]    dt        the width of the time interval.
+     * \param[in]    x         physical coordinate on the boundary; range: [0,nDims-1].
+     * \param[in]    t         start of the time interval.
+     * \param[in]    dt        width of the time interval.
      * \param[in]    faceIndex indexing of the face (0 -- {x[0]=xmin}, 1 -- {x[1]=xmax}, 2 -- {x[1]=ymin}, 3 -- {x[2]=ymax}, and so on,
      *                         where xmin,xmax,ymin,ymax are the bounds of the cell containing point x.
-     * \param[in]    d         the coordinate direction the face normal is pointing to.
-     * \param[in]    QIn       the conserved variables at point x from inside of the domain
-     *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
-     * \param[inout] QOut      the conserved variables at point x from outside of the domain
-     *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
+     * \param[in]    direction coordinate direction the face normal is pointing to.
+     * @param[in]    QIn       vector of state variables (plus parameters) from inside of the domain
+     *                         range: [0,nVar+nPar-1], already allocated.
+     * @param[inout] QOut      vector of state variables (plus parameters) from outside of the domain.
+     *                         range: [0,nVar+nPar-1], already allocated.
+     *                         
+     * @note The argument QOut is initially set as QIn mirrored at the boundary face. This
+     * makes it easier to implement certain boundary conditions where a velocity, e.g., 
+     * needs to change its sign compared to the inside state.
      */
-    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) override;
+    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int direction,const double* const QIn,double* const QOut) override;
     
     /**
      * Compute the flux tensor.
      *
-     * \param[in]    Q the conserved variables (and parameters) associated with a quadrature point
-     *                 as C array (already allocated).
-     * \param[inout] F the fluxes at that point as C array (already allocated).
+     * @param[in]    Q vector of state variables (plus parameters); 
+     *                 range: [0,nVar+nPar-1], already allocated.
+     *                 
+     * @param[inout] F flux at that point;
+     *                 range[outer->inner]: [0,nDim-1]x[0,nVar-1], 
+     *                 already allocated.
      */
     void flux(const double* const Q,double** const F) override;
 

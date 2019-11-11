@@ -1,0 +1,557 @@
+/**
+ * Tensish is a small Algebra-free Tensor library for numerical relativity.
+ * 
+ * Tensish follows these paradigms:
+ * 
+ *   1) Seperate storage (e.g. linearized stored or shadowed) from semantics
+ *      (e.g. the physical meaning of entries).
+ *   2) Don't implement tensor algebra (e.g. addition, multiplication,
+ *      contraction, etc.). Supply instead loops and convenient syntax.
+ *      This corresponds to that users don't have to write abstract index
+ *      notation (high level tensor algebra) but can stick to component-wise
+ *      expressions instead (like some people prefer to write on the paper).
+ *      It mimics also much more Fortran n-dimensional array linear algebra.
+ *   3) Verbose semantics: Adopt a hungarian notation-like extensiveness,
+ *      e.g. be verbose about upper, lower or mixed indices. Allow users
+ *      to have a 1:1 correspondence of Latex and C. Always display the
+ *      index positions (lower or upper).
+ *   4) Don't copy or allocate data if not neccessary: The shadow classes
+ *      allow higher dimensional indicing without copying data by making
+ *      use of (construction-time) references.
+ *   5) Be extensive and use templates: Any containers can be used
+ *      beyond the given ones. The "Really" classes are an example of other
+ *      storage classes.
+ *   6) Don't hide the internals: We use struct's everywhere instead of
+ *      privateness to allow users to access raw data in our containers
+ *      if neccessary.
+ *   7) Don't overengineer: This is a library around double pointers and C.
+ *      It uses only as much templates as neccessary and avoids black
+ *      templating magic. It is short in size (less then 1000 lines).
+ *      We don't really support anything fancy (such as Fortran ordering).
+ *
+ * As a  consequence, we don't provide a compile-time algebra check. People
+ * can do math wrong, i.e. write foo = foo.lo(i,j)*bar.lo(i,j). However,
+ * thanks to the syntax one immediately sees that only foo.lo(i,j)*bar.up(i,j)
+ * makes sense in this particular contraction.
+ *
+ * Written by SvenK, Aug 2017 for ExaHyPE.
+ **/
+#ifndef IT_REALLY_WHIPS_THE_LLAMAS_ASS
+#define IT_REALLY_WHIPS_THE_LLAMAS_ASS
+
+
+/* This header file needs the definition of a C preprocessor variable TDIM which stands for
+ * "TENSISH DIMENSIONS". It can be independent of (for instance) the ExaHyPE DIMENSIONS.
+ * You should provide this in the including file, i.e.
+ * 
+ *    #define TDIM 3
+ *    #include "tensish.cpph"
+ *
+ * The number of dimensions is only needed for the DFOR macro.
+ */
+
+#ifndef TDIM
+#error The Tensish library needs the TDIM preprocessor variable defined to a numeric value
+#endif
+
+// Tensish do, similar to a compact Fortran "DO i=0,N" statement.
+#define TDO(i,N) for(int i=0; i<N; i++)
+#define DFOR(i) for(int i=0; i<TDIM; i++)
+
+// We use "CONTRACT" as a synonym to indicate that contractions are happening.
+#define CONTRACT DFOR
+#define CONTRACT2(i,j) DFOR(i) DFOR(j)
+#define CONTRACT3(i,j,k) DFOR(i) DFOR(j) DFOR(k)
+#define CONTRACT4(i,j,k,l) DFOR(i) DFOR(j) DFOR(k) DFOR(l)
+
+// Length assertions with Tensish. Should use Peano assertions here.
+constexpr bool debug_tensish = false;
+
+#include <iostream>
+#include <cstdlib>
+#define tensish_assert(expr,explanation) if(debug_tensish && !(expr)){ std::cerr << \
+   "assertion in file " << __FILE__ << ", line " << __LINE__ << " failed: " << #expr <<  std::endl; std::abort(); }
+#define tensish_bound(expr) tensish_assert(expr, "out of bounds access")
+
+#include <cmath>
+#include <algorithm> // fill_n
+#include <stdexcept>
+
+namespace tensish {
+	// helper
+	inline double SQ(double x) { return x*x; }
+	
+	/*****************************************************************************/
+	/*                                                                           */
+	/*  Storage/addressation classes                                             */
+	/*                                                                           */
+	/*****************************************************************************/ 
+	
+	/**
+	 * Scalar classes which mimic doubles (i.e. real numbers, scalars) but have the
+	 * purpose to trick the API, i.e. do special things when asked for a value or
+	 * being a value assigned to.
+	 **/
+	namespace scalar {
+		// The invalid structure crashes the program once instanciated
+		struct invalid { invalid() { std::abort(); } };
+
+		// The illegal structure crashes once assigned or asked a value for
+		struct illegal {
+			operator double() const { std::abort(); return 0; }
+			void operator=(double val) { std::abort(); }
+		};
+		
+		// The zero mimics a zero when asked for and sucks the value when assigned to
+		struct zero {
+			operator double() const { return 0; }
+			void operator=(double val) {}
+		};
+	} // ns dummy
+	
+	namespace generic {
+		// Storing anything. This is a POD without constructor.
+		template<typename T, int N> struct stored {
+			T data[N];
+			stored() = default;
+			T& operator()(int j) { return data[j]; }
+			const T& operator()(int j) const { return data[j]; }
+			T operator=(T val) { std::fill(data,N,val); return val; }
+		};
+		
+		// has N maybe for debugging or compile time bound checks
+		template<typename T, int N> struct shadow {
+			T *const data;
+			constexpr shadow(T *const foreign) : data(foreign) {}
+			T& operator()(int j) { return data[j]; }
+			const T& operator()(int j) const { return data[j]; }
+			T operator=(T val) { std::fill(data,N,val); return val; }
+		};
+	} // ns generic
+	
+	/**
+	* Vector (1-dimensional linear storage, i.e. just a fixed length array).
+	**/
+	namespace vec {
+		/// Storing an array and allowing () accss.
+		/// This is a lightweight version of std::array from the STL, but with the 
+		/// bound checks if debug_tensish is active.
+		/// TODO: Can we do similiar like http://de.cppreference.com/w/cpp/container/array/get
+		/// i.e compile time bound checks, hidden behind a constexpr operator()(int) interface?
+		template<int N> struct stored {
+			double data[N];
+			stored() { if(debug_tensish) std::fill_n(data,N,NAN); }
+			stored(const double* const foreign) { DFOR(i) DFOR(j) data[i+j*N] = foreign[i+j*N]; }
+			double& operator()(int j) { tensish_bound(j<N); return data[j]; }
+			const double& operator()(int j) const { tensish_bound(j<N);  return data[j]; }
+			double operator=(double val) { std::fill_n(data,N,val); return val; }
+		};
+
+		/// Shadows a linear storage
+		template<int N> struct shadow {
+			int debug_size = N;
+			double *const data;
+			constexpr shadow(double* const foreign) : data(foreign) {}
+			double& operator()(int j) { tensish_bound(j<N); return data[j]; }
+			const double& operator()(int j) const { tensish_bound(j<N); return data[j]; }
+			double operator=(double val) { std::fill_n(data,N,val); return val; }
+		};
+		
+		/// same as shadow but does not allow changing the storage location
+		template<int N> struct const_shadow {
+			int debug_size = N;
+			const double *const data;
+			constexpr const_shadow(const double* const foreign) : data(foreign) {}
+			const double& operator()(int j) const { tensish_bound(j<N); return data[j]; }
+		};
+
+		// helpers for some algebra
+		template<typename T> struct placeholder { T operator()(int j) { return T(); } };
+		typedef placeholder<scalar::zero> zero;
+		typedef placeholder<scalar::illegal> illegal;
+		
+		// abbreviations for typical uses in 3 dimensions.
+		typedef stored<TDIM> stored_D;
+		typedef shadow<TDIM> shadow_D;
+		typedef const_shadow<TDIM> const_shadow_D;
+		
+		// a special structure for the 2vs3 dimensions problem.
+		// Does not really work. Is probably nowhere used.
+		template<typename T>
+		struct the2vs3guy {
+			T data[3]; // can suck up to three values but never exposes the third one
+			the2vs3guy() = default;
+			T& operator()(int j) { return (j<2)?data[j]:scalar::zero(); }
+			const T& operator()(int j) const { return (j<2)?data[j]:scalar::zero(); }
+		};
+	} // ns vec
+
+	/**
+	* Symmetric Matrix (2-dimensional linearized storage).
+	* Examples which can be partially represented with symmetric matrices are the metric
+	* and the energy-momentum tensor.
+	**/
+	namespace sym {
+		/**
+		* Computes the size of a symmetric matrix with rank N, for instance
+		* N=3 for a 3x3 matrix (9 elements, with symmetry 6 independent
+		* elements), so size(3):=6.
+		**/
+		constexpr int size(int N) { return (N*(N+1)/2); }
+		
+		/**
+		* The index function gives the sequentialization (ordering)
+		* of a symmetric matrix of any size.
+		*
+		* Example for 3 dimensions (each index going from 0..2):
+		*
+		*    g_{ij} i->  0 1 2     If [0,1,2]=[x,y,z], then
+		*               +-----+    this would mean the ordering is like
+		*        j    0 |0 1 3|
+		*        |    1 |1 2 4|      g_ij = (gxx, gxy, gyy, gxz, gyz, gzz)
+		*        V    2 |3 4 5|      pos  = [  0,   1,   2,   3,   4,   5]
+		*               +-----+ 
+		*                          This is column-major (Pizza/C) for a symmetric matrix.
+		*                          In contrast, row-major (Trento/F) would sequentialize
+		* 
+		*                            g_ij = (gxx, gxy, gxz, gyy, gyz, gzz)
+		*                            pos  = [  0,   1,   2,   3,   4,   5]
+		* 
+		* The symmetric matrix column major ordering is integer sequence http://oeis.org/A084855
+		* 
+		* Again, this is column-major Pizza/C convention, ordering 11 12 22 13 23 33
+		**/
+		constexpr int column_major(int i, int j) {return  j<=i ? j+(i*(i+1))/2 : i+(j*(j+1))/2;}
+		
+		// TODO: Fixme with the naming.
+		//       It turns out CCZ4 state vectors are row ordered and this is assumably
+		//       C, not F ordering. Tensish should wipe column ordering in favour of row ordering.
+
+		constexpr int ensure(int val, int N) {
+			// tensish_assert(N==3, "This is a stupid expression crafted by Sven and only valid for N=3");
+			// Assertions break constexpr, must use TDIM and assume (!) that N==TDIM.
+			return (N==TDIM)?val:-99999999999;
+		}
+		
+		constexpr int row_major(int i, int j, int N) {
+			// A constexpr-compatible "inlined" switch-statement/nested if.
+			// These N-dependent expressions where hacked together by Sven without fundamental insight.
+			return
+			( (N==3)
+			? (j<=i ? (i+j*N)-j*j+j/(N-1) : (j+i*N)-i*i+i/(N-1))
+			: (  (N==2)
+			   ? ((i+j*N)-j*j)
+			   : -99999999999 /* Poor man's abort(): Will most likely produce a segfault at index access. */
+			  )
+			);
+		}
+		/*
+		#if TDIM == 3
+		// This is WRONG!
+		constexpr int row_major(int i, int j, int N) { return ensure(j<=i ? (i+j*N)-j*j+j/(N-1) : (j+i*N)-i*i+i/(N-1), N); }
+		#elif TDIM == 2
+		constexpr int row_major(int i, int j, int N) { return ensure((i+j*N)-j*j, N); }
+		#else
+		#error The programmer did not implement row_major for this dimension.
+		#endif
+		*/
+		// here is one for N==4:   (i+j*N)-j*j+j/(N-1)+(j+1)/N if j<=i else (i<->j)
+
+		// This is the default for this namespace: The C column_major.
+		constexpr int index(int i,int j) {return  column_major(i,j);}
+	
+		// TODO: Find an analytic expression for the row-first ordering and valid for any N.
+		// We have (Pizza/C):  11 12 22 13 23 33
+		// We want (Trento/F): 11 12 13 22 23 33
+		// (NB: It seems to be impossible without depending on N.)
+		
+		// Here is the tensish ordering which sets up the matrix from a vector
+		// in python, say vector has name "a":
+		//  [[a[0],a[1],a[3]],[a[1],a[2],a[4]],[a[3],a[4],a[5]]]
+		
+		// Here is how to test orderings in python:
+		// N=3; numpy.array([[ (i+j*N)-j*j+j/(N-1)  for i in range(N) ]for j in range(N) ])
+		
+		/**
+		 * A loop for the symmetric matrix. Useful for setting it's entries.
+		 **/
+		#define SYMFOR(i,j) DFOR(i) for(int j=0; j<=i; j++)
+		
+		/// The same guy for the linearized storage
+		#define DOSYM(i) for(int i=0; i<tensish::sym::size(TDIM); i++)
+		
+		/// Compute determinant of a symmetric matrix
+		template<class T> constexpr double det(const T &lo) {
+			#if TDIM == 3
+			return -lo(0,2)*lo(0,2)*lo(1,1) + 2*lo(0,1)*lo(0,2)*lo(1,2)
+			-lo(0,0)*lo(1,2)*lo(1,2) - lo(0,1)*lo(0,1)*lo(2,2)
+			+lo(0,0)*lo(1,1)*lo(2,2);
+			#elif TDIM == 2
+			return lo(0,0)*lo(1,1) - lo(0,1)*lo(1,0);
+			#else
+			#error The programmer did not implement det for this dimension.
+			#endif
+		}
+		
+		/// The Kronecker delta with two elements
+		constexpr int delta(int i, int j) { return i==j ? 1 : 0; }
+		
+		/// 3D total antisymmetric tensor / Epsilon Tensor / Levi-Civita-Tensor (not density), returns i \in {-1,0,1}
+		constexpr int levi(int i, int j, int k) {
+			return ((i==j)||(i==k)||(j==k)) ? 0 : (i-j)*(i-k)*(k-j)/2;
+		}
+
+		
+		/// Stores a linearized NxN matrix and allows 2D index access
+		template<int N> struct stored {
+			double data[size(N)];
+			stored() { if(debug_tensish) std::fill_n(data,size(N),NAN); }
+			double& operator()(int i, int j) { tensish_bound(i<N && j<N); return data[index(i,j)]; }
+			const double& operator()(int i, int j) const { tensish_bound(i<N && j<N); return data[index(i,j)];}
+			double operator=(double val) { std::fill_n(data,size(N),val); return val; }
+		};
+		
+		/// Shadows (refers to) a linearized NxN and allows 2D index access
+		template<int N> struct shadow {
+			double *const data;
+			constexpr shadow(double* const foreign) : data(foreign) {}
+			double& operator()(int i, int j) { tensish_bound(i<N && j<N); return data[index(i,j)]; }
+			const double& operator()(int i, int j) const { tensish_bound(i<N && j<N); return data[index(i,j)]; }
+			double operator=(double val) { std::fill_n(data,size(N),val); return val; }
+		};
+		
+		/// Same as shadow but does not allow chaning the storage location
+		template<int N> struct const_shadow {
+			const double *const data;
+			constexpr const_shadow(const double* const foreign) : data(foreign) {}
+			const double& operator()(int i, int j) const { tensish_bound(i<N && j<N); return data[index(i,j)]; }
+		};
+		
+		template<typename T> struct placeholder { T operator()(int i, int j) { return T(); } };
+		typedef placeholder<scalar::zero> zero;
+		typedef placeholder<scalar::illegal> illegal;
+		
+		// abbreviations for typical uses in 3 dimensions.
+		typedef stored<TDIM> stored_D;
+		typedef shadow<TDIM> shadow_D;
+		typedef const_shadow<TDIM> const_shadow_D;
+	} // ns sym
+	
+	/**
+	 * Arbitrary square matrices
+	 **/
+	namespace square {
+		constexpr int size(int N) { return N*N; }
+		// TODO: I have the strong feeling that the naming here is wrong.
+		constexpr int column_major(int i, int j, int N) { return j+i*N; }
+		constexpr int row_major(int i, int j, int N) { return i+j*N; }
+		
+		/// An index function which is called like index_func(i,j,N) where
+		/// N is the extend.
+		typedef int(*index_func)(int, int, int);
+		
+		/// Shadows (refers to) arbitrary data and allows 2D index access
+		template<index_func index, int N> struct shadow {
+			double *const data;
+			constexpr shadow(double* const foreign) : data(foreign) {}
+			double& operator()(int i, int j) { tensish_bound(i<N && j<N); return data[index(i,j,N)]; }
+			const double& operator()(int i, int j) const { tensish_bound(i<N && j<N); return data[index(i,j,N)]; }
+			double operator=(double val) { std::fill_n(data,size(N),val); return val; }
+		};
+		
+		template<index_func index, int N> struct const_shadow {
+			const double *const data;
+			constexpr const_shadow(const double* const foreign) : data(foreign) {}
+			const double& operator()(int i, int j) const { tensish_bound(i<N && j<N); return data[index(i,j,N)]; }
+		};
+		
+		// This might be convenient
+		typedef shadow<column_major, TDIM> shadow_D;
+		typedef const_shadow<column_major, TDIM> const_shadow_D;
+		
+		typedef shadow<sym::row_major, TDIM> row_major_shadow_D;
+		typedef const_shadow<sym::row_major, TDIM> row_major_const_shadow_D;
+	} // ns
+	
+
+	/*****************************************************************************/
+	/*                                                                           */
+	/*  Semantics                                                                */
+	/*                                                                           */
+	/*****************************************************************************/ 
+	
+	/// A generic up/lo type for generic types
+	template<class U, class T> struct GenericUp {
+		U up;
+		GenericUp() = default;
+		GenericUp(T payload) : up(payload) {}
+	};
+	
+	template<class L, class T> struct GenericLo {
+		L lo;
+		GenericLo() = default;
+		GenericLo(T payload) : lo(payload) {}
+	};
+	
+	template<class U, class L, class T> struct GenericUpLo {
+		U up; L lo;
+		
+		struct InitLo {
+			U up; L lo;
+			InitLo(T payload) : lo(payload) {}
+		};
+		struct InitUp {
+			U up; L lo;
+			InitUp(T payload) : up(payload) {}
+		};
+		struct ConstLo {
+			U up; const L lo;
+			ConstLo(T payload) : lo(payload) {}
+		};
+		struct ConstUp {
+			const U up; L lo;
+			ConstUp(T payload) : up(payload) {}
+		};
+	};
+
+	/// Represents a fully contravariant tensor (only upper indices)
+	template<class U> struct Up {
+		U up;
+		Up() = default;
+		Up(double* const payload) : up(payload) {}
+	};
+
+	/// Represents a read-only fully contravariant tensor (only upper indices)
+	template<class U> struct ConstUp {
+		const U up;
+		ConstUp(const double* const payload) : up(payload) {}
+	};
+
+	/// Represents a fully covariant tensor (only lower indices)
+	template<class L> struct Lo {
+		L lo;
+		Lo() {}
+		Lo(double* const payload) : lo(payload) {}
+	};
+
+	/// Represents a read-only fully covariant tensor (only lower indices)	
+	template<class L> struct ConstLo {
+		const L lo;
+		ConstLo(const double* const payload) : lo(payload) {}
+	};
+
+	/**
+	* Represents a mixed tensor with upper and lower indices.
+	* The naming makes most sense for 2-tensors, i.e. ul(i,j).
+	**/
+	template<class M> struct Mixed {
+		M ul;
+	};
+	
+	/**
+	* Represents a Tensor from which both the fully contravariant
+	* (upper) as well as the fully covariant (lower) version is
+	* accessible/stored.
+	* 
+	* Const* classes:
+	* Represents a Full<U,L> object which is constructed by
+	* passing constant data to the lower part. Therefore, the
+	* lower part is supposed to be constant while the upper may
+	* be changable.
+	* 
+	* Init* classes:
+	* Represents a Full<U,L> object which is constructed by
+	* passing data to the lower part, i.e. the Full<U,L> is
+	* initialized.
+	**/
+	template<class U, class L> struct UpLo {
+		U up; L lo;
+		constexpr UpLo() {}
+		
+		struct InitLo {
+			U up; L lo;
+			InitLo(double* const payload) : lo(payload) {}
+		};
+		struct InitUp {
+			U up; L lo;
+			InitUp(double* const payload) : up(payload) {}
+		};
+		struct ConstLo {
+			U up; const L lo;
+			ConstLo(const double* const payload) : lo(payload) {}
+		};
+		struct ConstUp {
+			const U up; L lo;
+			ConstUp(const double* const payload) : up(payload) {}
+		};
+
+	};
+
+	template<class U, class M> struct UpSym {
+		U up; // upper indices
+		M ul; // upper-lower mixed (2-tensor)
+		//double& lu(int i, int j) { return ul(i,j); } // ul = lu
+	};
+	
+	namespace metric {
+		/**
+		* The 3-Metric as an up/lo structure, ie. being effectively a
+		*     UpLo<sym::stored<3>, sym::const_shadow>::ConstLo
+		* Therefore we assume the lower metric to be stored so the upper can be completed.
+		**/
+		template<class L> struct generic {
+			sym::stored_D up;
+			const L lo;
+			double det; ///< The determinant of the metric
+			double sqdet; ///< sqrt(abs(determinant))
+			
+			generic(const double* const lo_)
+				: lo(lo_)
+				/* up: */ { complete_from_lower(); }
+			
+			void complete_from_lower() {
+				det = sym::det(lo);
+				if(det==0) throw std::range_error("Singular metric.");
+				
+				sqdet = std::sqrt(std::abs(det));
+
+				// quick fix, should use templates and static_assert(N >= 0 && N <= 10, "N out of bounds!");
+				// instead.
+				#if TDIM == 3 
+				up(0,0) = (-lo(1,2)*lo(1,2) + lo(1,1)*lo(2,2) )/det;
+				up(0,1) = ( lo(0,2)*lo(1,2) - lo(0,1)*lo(2,2) )/det;
+				up(1,1) = (-lo(0,2)*lo(0,2) + lo(0,0)*lo(2,2) )/det;
+				up(0,2) = (-lo(0,2)*lo(1,1) + lo(0,1)*lo(1,2) )/det;
+				up(1,2) = ( lo(0,1)*lo(0,2) - lo(0,0)*lo(1,2) )/det;
+				up(2,2) = (-lo(0,1)*lo(0,1) + lo(0,0)*lo(1,1) )/det;
+				#elif TDIM == 2
+				up(0,0) =  lo(1,1)/det;
+				up(0,1) = -lo(1,0)/det;
+				up(1,1) =  lo(0,0)/det;
+				#else
+				std::abort();
+				//#error Only 2D and 3D are implemented so far. Check the value of TDIM
+				static_assert(TDIM == 3 || TDIM == 2, "Only 2D and 3D implemented so far");
+				#endif
+
+				//vc = sqrt(fabs(d));
+			}
+
+			// Provide lowering and raising for vectors, just for convenience.
+			// However, in principle you should do this on your own.
+			/*
+			template<class UpLo1, class UpLo2> void raise_vec(UpLo1& source, UpLo2& target) {
+				target.up=0; DFOR(i) CONTRACT(j) target.up(i) += up(i,j)*source.lo(j); }
+			template<class UpLo1, class UpLo2> void lower_vec(UpLo1& source, UpLo2& target) {
+				target.lo=0; DFOR(i) CONTRACT(j) target.lo(i) += lo(i,j)*source.up(j); }
+			template<class UpLo> void raise_vec(UpLo& source) { raise_vec(source,source); }
+			template<class UpLo> void lower_vec(UpLo& source) { raise_vec(source,source); }
+			*/
+			// we don't want them.
+		};
+	
+		typedef generic<sym::const_shadow_D> const_shadow_D; // <--- if you used tensish::metric() in the past, use this one now.
+	} // ns metric
+
+} // namespace tensish
+#endif /* IT_REALLY_WHIPS_THE_LLAMAS_ASS */

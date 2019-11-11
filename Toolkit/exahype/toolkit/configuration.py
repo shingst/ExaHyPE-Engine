@@ -17,8 +17,8 @@ class Configuration:
     # absolute path to markupsafe (jinja2 dependency)
     pathToMarkupsafe    = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "Submodules", "markupsafe", "src"))
     
-    # absolute path to the codegenerator module
-    pathToCodegenerator = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "CodeGenerator"))
+    # absolute path to the kernelgenerator module
+    pathToKernelgenerator = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "KernelGenerator"))
     
     # absolute path to the specfile module
     pathToSpecfiles    = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -50,10 +50,10 @@ def checkDependencies():
     sys.path.insert(1, Configuration.pathToJinja2)
     sys.path.insert(1, Configuration.pathToMarkupsafe)
     import jinja2
-    # Check codegenerator
-    sys.path.insert(1, Configuration.pathToCodegenerator)
-    import codegenerator
-    codegenerator.checkDependencies()
+    # Check kernelgenerator
+    sys.path.insert(1, Configuration.pathToKernelgenerator)
+    import kernelgenerator
+    kernelgenerator.checkDependencies()
     # Check specfile
     sys.path.insert(1, Configuration.pathToSpecfiles)
     import specfiles
@@ -61,5 +61,5 @@ def checkDependencies():
     # Remove added path
     sys.path.remove(Configuration.pathToJinja2)
     sys.path.remove(Configuration.pathToMarkupsafe)
-    sys.path.remove(Configuration.pathToCodegenerator)
+    sys.path.remove(Configuration.pathToKernelgenerator)
     sys.path.remove(Configuration.pathToSpecfiles)

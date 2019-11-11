@@ -219,7 +219,8 @@ double kernels::finitevolumes::godunov::c::solutionUpdate(
     }
     }
   }
-  
+  delete gradQ;
+
   return dt_max_allowed;
 }
 
