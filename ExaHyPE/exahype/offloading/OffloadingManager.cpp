@@ -229,7 +229,7 @@ void exahype::offloading::OffloadingManager::submitRequests(
   int mapId = requestTypeToMsgQueueIdx(type);
 
   //submitted[mapId]++;
-  logInfo("submitRequests","submitted["<<mapId<<"]:"<<nRequests);
+  logDebug("submitRequests","submitted["<<mapId<<"]:"<<nRequests);
 
   // assign group id for this request group
   int groupId = getNextGroupId();
@@ -474,7 +474,7 @@ bool exahype::offloading::OffloadingManager::progressRequestsOfType( RequestType
   double time = -MPI_Wtime();
   exahype::offloading::OffloadingProfiler::getInstance().beginCommunication();
 
-  logInfo("progressRequestsOfType()"," type: "<<mapId<< " nreq "<<nRequests);
+  logDebug("progressRequestsOfType()"," type: "<<mapId<< " nreq "<<nRequests);
 
   int ierr = MPI_Testsome(nRequests,&_activeRequests[mapId][0], &outcount, &arrOfIndices[0], MPI_STATUSES_IGNORE);
 
@@ -501,7 +501,7 @@ bool exahype::offloading::OffloadingManager::progressRequestsOfType( RequestType
   else
     exahype::offloading::OffloadingProfiler::getInstance().endCommunication(false, time);
 
-  logInfo("progressRequestsOfType()"," finished type: "<<mapId<< " nreq "<<outcount);
+  logDebug("progressRequestsOfType()"," finished type: "<<mapId<< " nreq "<<outcount);
 
   time = -MPI_Wtime();
   exahype::offloading::OffloadingProfiler::getInstance().beginHandling();

@@ -114,6 +114,7 @@ void exahype::offloading::OffloadingAnalyser::updateZeroTresholdAndFilteredSnaps
     bool hasEntry = false;
     for(int j=0; j<nnodes; j++) {
       double currentWaitingTime = currentWaitingTimesSnapshot[i*nnodes+j];
+      logDebug("updateZeroTresholdAndFilteredSnapshot()","rank "<<i<<" waiting for "<<currentWaitingTime<<" for rank "<<j);
       if(currentWaitingTime>0) {
         hasEntry = true;
         break;
@@ -125,7 +126,10 @@ void exahype::offloading::OffloadingAnalyser::updateZeroTresholdAndFilteredSnaps
     }
   }
   
-  if(!isValid) return;
+  if(!isValid)  {
+    logDebug("updateZeroThresholdAndFilteredSnapshot","not valid yet!");
+    return;
+  }
 
   double min, max;
   min = std::numeric_limits<double>::max();

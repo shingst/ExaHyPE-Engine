@@ -82,7 +82,7 @@ exahype::offloading::PerformanceMonitor::~PerformanceMonitor() {
 void exahype::offloading::PerformanceMonitor::submitWaitingTimeForRank(double waitingTime, int rank) {
   if(waitingTime>0)
     _currentWaitingTimes[rank] =  waitingTime;
-    //logInfo("submitWaitingTimes", "submitting new waiting time "<<waitingTime<< " for rank "<<rank); 
+  //logInfo("submitWaitingTimes", "submitting new waiting time "<<waitingTime<< " for rank "<<rank); 
 }
 
 const double *exahype::offloading::PerformanceMonitor::getWaitingTimesSnapshot() {

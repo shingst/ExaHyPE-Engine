@@ -2888,7 +2888,7 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
   
   static double lastActive = 0;
   if(MPI_Wtime()-lastActive > 10) {
-    logInfo("progressOffloading()"," still alive");
+    logDebug("progressOffloading()"," still alive");
     lastActive=MPI_Wtime();
   }
 
