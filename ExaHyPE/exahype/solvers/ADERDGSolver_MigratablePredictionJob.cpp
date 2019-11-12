@@ -1,4 +1,4 @@
-#ifdef DistributedOffloading
+#if defined(DistributedOffloading) && defined(Parallel) && defined(SharedTBB)
 
 #include "ADERDGSolver.h"
 
@@ -7,7 +7,7 @@
 #include "exahype/offloading/OffloadingProfiler.h"
 #include "exahype/offloading/ReplicationStatistics.h"
 
-exahype::solvers::ADERDGSolver::StealablePredictionJob::StealablePredictionJob(
+exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob(
     ADERDGSolver& solver,
     const int cellDescriptionsIndex,
     const int element,
@@ -29,7 +29,7 @@ exahype::solvers::ADERDGSolver::StealablePredictionJob::StealablePredictionJob(
   exahype::offloading::PerformanceMonitor::getInstance().incCurrentTasks();
 };
 
-exahype::solvers::ADERDGSolver::StealablePredictionJob::StealablePredictionJob(
+exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob(
     ADERDGSolver& solver,
     const int cellDescriptionsIndex,
     const int element,
@@ -66,10 +66,10 @@ exahype::solvers::ADERDGSolver::StealablePredictionJob::StealablePredictionJob(
   exahype::offloading::PerformanceMonitor::getInstance().incCurrentTasks();
 };
 
-exahype::solvers::ADERDGSolver::StealablePredictionJob::~StealablePredictionJob() {};
+exahype::solvers::ADERDGSolver::MigratablePredictionJob::~MigratablePredictionJob() {};
 
-//Caution: Compression and restriction are not supported yet!
-bool exahype::solvers::ADERDGSolver::StealablePredictionJob::run( bool isCalledOnMaster ) {
+//Caution: Compression is not supported yet!
+bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run( bool isCalledOnMaster ) {
 
 #ifdef USE_ITAC
       VT_begin(event_stp);
@@ -80,7 +80,7 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::run( bool isCalledO
      if(curr%1000==0) {
        tarch::timing::Watch watch("exahype::StealablePredictionJob::", "-", false,false);
        watch.startTimer();
-       result = handleLocalExecution();
+       result = handleExecution();
        watch.stopTimer();
 
        logDebug("run()","measured time per STP "<<watch.getCalendarTime());
@@ -88,7 +88,7 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::run( bool isCalledO
        exahype::offloading::OffloadingAnalyser::getInstance().setTimePerSTP(watch.getCalendarTime());
      }
      else
-       result = handleLocalExecution();
+       result = handleExecution();
 
 #ifdef USE_ITAC
       VT_end(event_stp);
@@ -96,198 +96,186 @@ bool exahype::solvers::ADERDGSolver::StealablePredictionJob::run( bool isCalledO
   return result;
 }
 
-bool exahype::solvers::ADERDGSolver::StealablePredictionJob::handleLocalExecution() {
+bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecution() {
   int myRank = tarch::parallel::Node::getInstance().getRank();
   bool result = false;
 
-#if defined(PerformanceAnalysisOffloading)
-  tarch::timing::Watch watch("exahype::offloading::", "-", false,false);
-  watch.startTimer();
-#endif
-#if defined(OffloadingUseProfiler)
-  exahype::offloading::OffloadingProfiler::getInstance().beginComputation();
-  double time = -MPI_Wtime();
-#endif
+  CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,_element);
 
-  if(_originRank==myRank) {
-    CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,_element);
-
-    double *luh    = static_cast<double*>(cellDescription.getSolution());
-    double *lduh   = static_cast<double*>(cellDescription.getUpdate());
-    double *lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
-    double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
-
-    logInfo("handleLocalExecution()", "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()<<" cellDescriptionIndex "<<_cellDescriptionsIndex<<" element: "<<_element<<" time stamp: "<<_predictorTimeStamp);
+  double *luh    = static_cast<double*>(cellDescription.getSolution());
+  double *lduh   = static_cast<double*>(cellDescription.getUpdate());
+  double *lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
+  double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
 
 #if defined(ReplicationSaving)
-    tarch::la::Vector<DIMENSIONS, double> center;
-    center = cellDescription.getOffset()+0.5*cellDescription.getSize();
-    JobTableKey  key;
-    for(int i; i<DIMENSIONS; i++)
-       key.center[i] = center[i];
-    key.timestamp = _predictorTimeStamp;
-    key.element = _element;
-    logInfo("handleLocalExecution()", "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
-    	                          	  <<" looking for replica center[0] = "<< center[0]
+  //check if task outcome has been received already
+  tarch::la::Vector<DIMENSIONS, double> center;
+  center = cellDescription.getOffset()+0.5*cellDescription.getSize();
+
+  JobTableKey  key;
+  for(int i; i<DIMENSIONS; i++)
+     key.center[i] = center[i];
+  key.timestamp = _predictorTimeStamp;
+  key.element = _element;
+
+  logDebug("handleLocalExecution()", "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
+  	                          	      <<" looking for replica center[0] = "<< center[0]
 					                  <<" center[1] = "<< center[1]
 			                          <<" center[2] = "<< center[2]
 					                  <<" time stamp = "<<_predictorTimeStamp
 	                                  <<" hash = "<<(size_t) key);
-    tbb::concurrent_hash_map<JobTableKey, JobTableEntry>::accessor a_jobToData;
-    bool found = _solver._jobDatabase.find(a_jobToData, key);
-    if(found && a_jobToData->second.status == ReplicationStatus::received ) {
-    	StealablePredictionJobData *data = a_jobToData->second.data;
-    	assert(data->_metadata[2*DIMENSIONS]==_predictorTimeStamp);
-    	logInfo("handleLocalExecution()", "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
-    			                           <<" found STP in received replica jobs:"
-    			                           <<" center[0] = "<<data->_metadata[0]
-						   <<" center[1] = "<<data->_metadata[1]
-						   <<" center[2] = "<<data->_metadata[2]
-						   <<" time stamp = "<<data->_metadata[2*DIMENSIONS]
-						   <<" element = "<<(int) data->_metadata[2*DIMENSIONS+2]);
-        std::memcpy(luh, &data->_luh[0], data->_luh.size()*sizeof(double));
-        std::memcpy(lduh, &data->_lduh[0], data->_lduh.size()*sizeof(double));
-        std::memcpy(lQhbnd, &data->_lQhbnd[0], data->_lQhbnd.size()*sizeof(double));
-        std::memcpy(lFhbnd, &data->_lFhbnd[0], data->_lFhbnd.size()*sizeof(double));
-        exahype::offloading::ReplicationStatistics::getInstance().notifySavedTask();
 
-        _solver._jobDatabase.erase(a_jobToData);
-        a_jobToData.release();
-        AllocatedSTPsReceive--;
-        delete data;
+  tbb::concurrent_hash_map<JobTableKey, JobTableEntry>::accessor a_jobToData;
+  bool found = _solver._jobDatabase.find(a_jobToData, key);
+  if(found && a_jobToData->second.status == ReplicationStatus::received ) {
+  	StealablePredictionJobData *data = a_jobToData->second.data;
+  	assert(data->_metadata[2*DIMENSIONS]==_predictorTimeStamp);
+  	logDebug("handleLocalExecution()", "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
+  			                           <<" found STP in received replica jobs:"
+  			                           <<" center[0] = "<<data->_metadata[0]
+                                       <<" center[1] = "<<data->_metadata[1]
+                                       <<" center[2] = "<<data->_metadata[2]
+                                       <<" time stamp = "<<data->_metadata[2*DIMENSIONS]
+                                       <<" element = "<<(int) data->_metadata[2*DIMENSIONS+2]);
+    std::memcpy(luh, &data->_luh[0], data->_luh.size()*sizeof(double));
+    std::memcpy(lduh, &data->_lduh[0], data->_lduh.size()*sizeof(double));
+    std::memcpy(lQhbnd, &data->_lQhbnd[0], data->_lQhbnd.size()*sizeof(double));
+    std::memcpy(lFhbnd, &data->_lFhbnd[0], data->_lFhbnd.size()*sizeof(double));
+    exahype::offloading::ReplicationStatistics::getInstance().notifySavedTask();
 
-	    cellDescription.setHasCompletedLastStep(true);
-    }
-    else {
-    	if (found && a_jobToData->second.status == ReplicationStatus::transit) {
-    	    	logInfo("handleLocalExecution()", "task is in transit, we may want to wait!");
+    _solver._jobDatabase.erase(a_jobToData);
+    a_jobToData.release();
+    AllocatedSTPsReceive--;
+    delete data;
+
+	cellDescription.setHasCompletedLastStep(true);
+	result = false;
+  }
+  else if (found && a_jobToData->second.status == ReplicationStatus::transit) {
+  	logDebug("handleLocalExecution()", "task is in transit, we may want to wait!");
 #ifdef ReplicationSavingRescheduleIfInTransit
-                a_jobToData.release();
-    	        return true;
+    a_jobToData.release();
+    result = true;
 #endif
-    	 }
-        a_jobToData.release();
-    	logInfo("handleLocalExecution()",   "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
-    			                            <<" Data not available, gotta do it on my own!"
-											<<" center[0] = "<<center[0]
-											<<" center[1] = "<<center[1]
-											<<" center[2] = "<<center[2]
-											<<" time stamp = "<<_predictorTimeStamp);
-        exahype::offloading::ReplicationStatistics::getInstance().notifyExecutedTask();
+  }
+  else {
+    a_jobToData.release();
+    logDebug("handleLocalExecution()",   "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
+                                          <<" Data not available, gotta do it on my own!"
+                                          <<" center[0] = "<<center[0]
+                                          <<" center[1] = "<<center[1]
+                                          <<" center[2] = "<<center[2]
+                                          <<" time stamp = "<<_predictorTimeStamp);
+    exahype::offloading::ReplicationStatistics::getInstance().notifyExecutedTask();
 #endif
 
-      //TODO: add support for lGradQhbnd
-      _solver.fusedSpaceTimePredictorVolumeIntegral(
-        lduh,lQhbnd,nullptr, lFhbnd,
-        luh,
-        cellDescription.getOffset()+0.5*cellDescription.getSize(),
-        cellDescription.getSize(),
-        _predictorTimeStamp,
-        _predictorTimeStepSize,
-       true);
-      cellDescription.setHasCompletedLastStep(true);
+    //TODO: add support for lGradQhbnd
+    _solver.fusedSpaceTimePredictorVolumeIntegral(
+      lduh,lQhbnd,nullptr, lFhbnd,
+      luh,
+      cellDescription.getOffset()+0.5*cellDescription.getSize(),
+      cellDescription.getSize(),
+      _predictorTimeStamp,
+      _predictorTimeStepSize,
+      true);
+    cellDescription.setHasCompletedLastStep(true);
+
+    result = false;
 
 #if defined (ReplicationSaving)
     //check one more time
     //tbb::concurrent_hash_map<JobTableKey, StealablePredictionJobData*>::accessor a_jobToData;
     found = _solver._jobDatabase.find(a_jobToData, key);
     if(found && a_jobToData->second.status==ReplicationStatus::received) {
-       StealablePredictionJobData *data = a_jobToData->second.data;
-       exahype::offloading::ReplicationStatistics::getInstance().notifyLateTask();
+      StealablePredictionJobData *data = a_jobToData->second.data;
+      exahype::offloading::ReplicationStatistics::getInstance().notifyLateTask();
 
-       _solver._jobDatabase.erase(a_jobToData);
-       a_jobToData.release();
-       AllocatedSTPsReceive--;
-       delete data;
+      _solver._jobDatabase.erase(a_jobToData);
+      a_jobToData.release();
+      AllocatedSTPsReceive--;
+      delete data;
     }
     else {
 #if defined(ReplicationSavingUseHandshake)
-    if(AllocatedSTPsSend<=exahype::offloading::PerformanceMonitor::getInstance().getTasksPerTimestep()) {
-      _solver.sendKeyOfReplicatedSTPToOtherTeams(this);
-    }
+      if(AllocatedSTPsSend<=exahype::offloading::PerformanceMonitor::getInstance().getTasksPerTimestep()) {
+        _solver.sendKeyOfReplicatedSTPToOtherTeams(this);
+      }
 #else
-    if(AllocatedSTPsSend<=exahype::offloading::PerformanceMonitor::getInstance().getTasksPerTimestep()) {
+      if(AllocatedSTPsSend<=exahype::offloading::PerformanceMonitor::getInstance().getTasksPerTimestep()) {
   //  if(AllocatedSTPsSend<=1000) {
-      SentSTPs++;
-      _solver.sendFullReplicatedSTPToOtherTeams(this);
-    }
+        SentSTPs++;
+        _solver.sendFullReplicatedSTPToOtherTeams(this);
+      }
 #endif
     }
+  }
+#endif
 
-#endif
-    }
+  if(!result) {
     exahype::offloading::PerformanceMonitor::getInstance().decRemainingTasks();
-  }
-  else {
-    //TODO: support for lGradQhbnd
-    _solver.fusedSpaceTimePredictorVolumeIntegral(
-        _lduh,_lQhbnd,nullptr,_lFhbnd,
-        _luh,
-        _center,
-        _dx,
-        _predictorTimeStamp,
-        _predictorTimeStepSize,
-       true);
-  }
-  exahype::offloading::PerformanceMonitor::getInstance().decCurrentTasks();
-#if defined(OffloadingUseProfiler)
-  time += MPI_Wtime();
-  exahype::offloading::OffloadingProfiler::getInstance().endComputation(time);
-#endif
-#if defined(PerformanceAnalysisOffloading)
-  watch.stopTimer();
-  if(watch.getCalendarTime() >= 0.0) {
-    logInfo(
-        "localCompute()",
-        "remaining "<<NumberOfEnclaveJobs+NumberOfSkeletonJobs-NumberOfRemoteJobs<<" "<<
-        "time=" << std::fixed <<
-        watch.getCalendarTime() <<
-        ", cpu time=" <<
-        watch.getCPUTime()
-    );
-  }
-#endif
-
-  if(_originRank!=myRank) {
-#if defined(PerformanceAnalysisOffloading)
-    watch.startTimer();
-#endif
-    MPI_Request sendBackRequests[4];
-    //logInfo("handleLocalExecution()", "postSendBack");
-    _solver.isendStealablePredictionJob(_luh,
-    		                        _lduh,
-					_lQhbnd,
-				        _lFhbnd,
-					_originRank,
-					_tag,
-					exahype::offloading::OffloadingManager::getInstance().getMPICommunicatorMapped(),
-					sendBackRequests);
-    exahype::offloading::OffloadingManager::getInstance().submitRequests(sendBackRequests, 4, _tag, _originRank, sendBackHandler, exahype::offloading::RequestType::sendBack, &_solver);
-
-#if defined(PerformanceAnalysisOffloading)
-    watch.stopTimer();
-    if(watch.getCalendarTime() >= 0.0) {
-      logInfo(
-          "remoteReturnSend()",
-          "time=" << std::fixed <<
-          watch.getCalendarTime() <<
-          ", cpu time=" <<
-          watch.getCPUTime()
-      );
-    }
-#endif
-  }
-  else {
-#if defined(PerformanceAnalysisOffloading)
-    watch.startTimer();
-#endif
-    NumberOfEnclaveJobs--;
-    assertion( NumberOfEnclaveJobs>=0 );
+    exahype::offloading::PerformanceMonitor::getInstance().decCurrentTasks();
   }
   return result;
 }
 
-void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveHandler(exahype::solvers::Solver* solver, int tag, int remoteRank) {
+bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution() {
+  int myRank = tarch::parallel::Node::getInstance().getRank();
+  bool result = false;
+
+
+#if defined(OffloadingUseProfiler)
+  exahype::offloading::OffloadingProfiler::getInstance().beginComputation();
+  double time = -MPI_Wtime();
+#endif
+  //local treatment if this job belongs to the local rank
+  if(_originRank==myRank) {
+    result = handleLocalExecution();
+    NumberOfEnclaveJobs--;
+    assertion( NumberOfEnclaveJobs>=0 );
+  }
+  //remote task, need to execute and send it back
+  else {
+	result = false;
+    //TODO: support for lGradQhbnd
+    _solver.fusedSpaceTimePredictorVolumeIntegral(
+      _lduh,_lQhbnd,nullptr,_lFhbnd,
+      _luh,
+      _center,
+      _dx,
+      _predictorTimeStamp,
+      _predictorTimeStepSize,
+      true);
+  }
+#if defined(OffloadingUseProfiler)
+  time += MPI_Wtime();
+  exahype::offloading::OffloadingProfiler::getInstance().endComputation(time);
+#endif
+
+  //send back
+  if(_originRank!=myRank) {
+    MPI_Request sendBackRequests[4];
+    //logInfo("handleLocalExecution()", "postSendBack");
+    _solver.isendStealablePredictionJob(_luh,
+         	                            _lduh,
+                                        _lQhbnd,
+                                        _lFhbnd,
+                                        _originRank,
+                                        _tag,
+                                        exahype::offloading::OffloadingManager::getInstance().getMPICommunicatorMapped(),
+                                        sendBackRequests);
+    exahype::offloading::OffloadingManager::getInstance().submitRequests(
+    		                            sendBackRequests,
+										4,
+										_tag,
+										_originRank,
+										sendBackHandler,
+										exahype::offloading::RequestType::sendBack,
+										&_solver);
+  }
+  return result;
+}
+
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandler(exahype::solvers::Solver* solver, int tag, int remoteRank) {
 #if defined(PerformanceAnalysisOffloadingDetailed)
   logInfo("receiveHandler","successful receive request");
 #endif
@@ -300,14 +288,14 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveHandler(exah
   a_tagRankToData.release();
 
   exahype::offloading::OffloadingAnalyser::getInstance().notifyReceivedSTPJob();
-  StealablePredictionJob *job= static_cast<exahype::solvers::ADERDGSolver*> (solver)->createFromData(data, remoteRank, tag);
+  MigratablePredictionJob *job= static_cast<exahype::solvers::ADERDGSolver*> (solver)->createFromData(data, remoteRank, tag);
   peano::datatraversal::TaskSet spawnedSet(job);
 
   exahype::offloading::OffloadingProfiler::getInstance().notifyReceivedTask(remoteRank);
 }
 
 #if defined(ReplicationSaving)
-void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveKeyHandlerReplication(exahype::solvers::Solver* solver, int tag, int remoteRank) {
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveKeyHandlerReplication(exahype::solvers::Solver* solver, int tag, int remoteRank) {
 #if defined(PerformanceAnalysisOffloadingDetailed)
   logInfo("receiveKeyHandlerReplica","successful receive request");
 #endif
@@ -331,7 +319,7 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveKeyHandlerRe
 
 }
 
-void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveHandlerReplication(exahype::solvers::Solver* solver, int tag, int remoteRank) {
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerReplication(exahype::solvers::Solver* solver, int tag, int remoteRank) {
 #if defined(PerformanceAnalysisOffloadingDetailed)
   logInfo("receiveHandlerReplica","successful receive request");
 #endif
@@ -380,7 +368,7 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveHandlerRepli
 }
 #endif
 
-void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveBackHandler(exahype::solvers::Solver* solver, int tag, int remoteRank) {
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler(exahype::solvers::Solver* solver, int tag, int remoteRank) {
 #if defined(PerformanceAnalysisOffloadingDetailed)
   static std::atomic<int> cnt=0;
   cnt++;
@@ -417,7 +405,7 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveBackHandler(
   assertion( NumberOfRemoteJobs>=0 );
 }
 
-void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendBackHandler(exahype::solvers::Solver* solver, int tag, int remoteRank) {
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackHandler(exahype::solvers::Solver* solver, int tag, int remoteRank) {
 #if defined(PerformanceAnalysisOffloadingDetailed)
   logInfo("sendBackHandler","successful sendBack request");
 #endif
@@ -437,7 +425,7 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendBackHandler(exa
 }
 
 #if defined(ReplicationSaving)
-void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendAckHandlerReplication(
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendAckHandlerReplication(
 		exahype::solvers::Solver* solver,
 		int tag,
 		int remoteRank)
@@ -447,7 +435,7 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendAckHandlerRepli
 
 }
 
-void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendKeyHandlerReplication(
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendKeyHandlerReplication(
 		exahype::solvers::Solver* solver,
 		int tag,
 		int remoteRank)
@@ -465,7 +453,7 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendKeyHandlerRepli
   //a_tagToData.release();
 }
 
-void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendHandlerReplication(
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendHandlerReplication(
 		exahype::solvers::Solver* solver,
 		int tag,
 		int remoteRank)
@@ -486,7 +474,7 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendHandlerReplicat
 }
 #endif
 
-void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendHandler(exahype::solvers::Solver* solver, int tag, int remoteRank) {
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendHandler(exahype::solvers::Solver* solver, int tag, int remoteRank) {
 #if defined(PerformanceAnalysisOffloadingDetailed)
   static std::atomic<int> cnt=0;
   cnt++;
@@ -521,7 +509,7 @@ void exahype::solvers::ADERDGSolver::StealablePredictionJob::sendHandler(exahype
       lFhbnd, remoteRank, tag, commMapped, recvRequests);
   exahype::offloading::OffloadingManager::getInstance().submitRequests(
       recvRequests, 4, tag, remoteRank,
-      exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveBackHandler,
+      exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler,
       exahype::offloading::RequestType::receiveBack, solver, false);
 #endif
 

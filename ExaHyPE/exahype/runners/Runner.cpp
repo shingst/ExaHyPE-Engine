@@ -1058,8 +1058,10 @@ int exahype::runners::Runner::run() {
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
     if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
       //static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopOffloadingManager();
+#if defined(ReplicationSaving)
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->finishOutstandingInterTeamCommunication();
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->cleanUpStaleReplicatedSTPs(true);
+#endif
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopOffloadingManager();
     }
     if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {

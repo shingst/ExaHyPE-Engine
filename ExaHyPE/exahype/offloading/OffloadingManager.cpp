@@ -298,7 +298,12 @@ void exahype::offloading::OffloadingManager::createRequestArray(
 }
 
 bool exahype::offloading::OffloadingManager::hasOutstandingRequestOfType(RequestType requestType) {
-  logInfo("hasOutstandingRequestOfType"," type "<<int(requestType)<<" outstanding "<<_outstandingRequests[requestTypeToMsgQueueIdx(requestType)].unsafe_size()<<" active "<<_activeRequests[requestTypeToMsgQueueIdx(requestType)].size() );
+  logDebug("hasOutstandingRequestOfType",
+           " type "
+           <<int(requestType)
+           <<" outstanding "
+           <<_outstandingRequests[requestTypeToMsgQueueIdx(requestType)].unsafe_size()
+           <<" active "<<_activeRequests[requestTypeToMsgQueueIdx(requestType)].size() );
   return (!_outstandingRequests[requestTypeToMsgQueueIdx(requestType)].empty() || !_activeRequests[requestTypeToMsgQueueIdx(requestType)].size()==0);
 }
 

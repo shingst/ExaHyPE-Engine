@@ -1086,7 +1086,7 @@ private:
    * executed remotely on a different rank than the one where it
    * was spawned.
    */
-  class StealablePredictionJob : public tarch::multicore::jobs::Job {
+  class MigratablePredictionJob : public tarch::multicore::jobs::Job {
     friend class exahype::solvers::ADERDGSolver;
     private:
       ADERDGSolver&    				_solver;
@@ -1106,10 +1106,12 @@ private:
       static std::atomic<int> JobCounter;
 
       // actual execution of a STP job
+      bool handleExecution();
       bool handleLocalExecution();
+
     public:
       // constructor for local jobs that can be stolen
-      StealablePredictionJob(
+      MigratablePredictionJob(
           ADERDGSolver&     solver,
 	  	  const int cellDescriptionsIndex,
 		  const int element,
@@ -1117,7 +1119,7 @@ private:
 		  const double predictorTimeStepSize
       );
       // constructor for remote jobs that were received from another rank
-      StealablePredictionJob(
+      MigratablePredictionJob(
           ADERDGSolver&     solver,
 		  int cellDescriptionsIndex,
 		  int element,
@@ -1130,8 +1132,8 @@ private:
 		  const int tag
       );
   
-      StealablePredictionJob(const StealablePredictionJob& stp) = delete;
-      ~StealablePredictionJob();
+      MigratablePredictionJob(const MigratablePredictionJob& stp) = delete;
+      ~MigratablePredictionJob();
 
       // call-back method: called when a job has been sent back to its origin rank
       static void sendBackHandler(
@@ -1193,9 +1195,9 @@ private:
 
   void sendRequestForJobAndReceive(int tag, int rank, double *key);
 
-  void sendKeyOfReplicatedSTPToOtherTeams(StealablePredictionJob *job);
+  void sendKeyOfReplicatedSTPToOtherTeams(MigratablePredictionJob *job);
 
-  void sendFullReplicatedSTPToOtherTeams(StealablePredictionJob *job);
+  void sendFullReplicatedSTPToOtherTeams(MigratablePredictionJob *job);
 
   struct JobTableKey {
 	  double center[DIMENSIONS];
@@ -1267,7 +1269,7 @@ private:
   /*
    * Creates a StealablePredictionJob from StealablePredictionJobData.
    */
-  StealablePredictionJob* createFromData(
+  MigratablePredictionJob* createFromData(
       StealablePredictionJobData *data,
 	  const int origin,
 	  const int tag);
@@ -1317,7 +1319,7 @@ private:
    * it can either be submitted to Peano's job system or sent away
    * to another rank.
    */
-  void submitOrSendStealablePredictionJob(StealablePredictionJob *job);
+  void submitOrSendStealablePredictionJob(MigratablePredictionJob *job);
 
   // offloading manager job associated to the solver
   OffloadingManagerJob *_offloadingManagerJob;
