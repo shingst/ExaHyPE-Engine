@@ -935,27 +935,27 @@ private:
 #if defined(DistributedOffloading)
 
   static int getTaskPriorityLocalStealableJob(int cellDescriptionsIndex, int element, double timeStamp) {
-#if defined(ReplicationSaving)
-      int team = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank();
-      int teamSize = exahype::offloading::OffloadingManager::getInstance().getTMPITeamSize();
+#if defined(TaskSharing)
+    int team = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank();
+    int teamSize = exahype::offloading::OffloadingManager::getInstance().getTMPITeamSize();
 
-      CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex, element);
+    CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex, element);
 
-      tarch::la::Vector<DIMENSIONS, double> center;
-      center = (cellDescription.getOffset()+0.5*cellDescription.getSize());
+    tarch::la::Vector<DIMENSIONS, double> center;
+    center = (cellDescription.getOffset()+0.5*cellDescription.getSize());
 
-      int prio = getTaskPriority(false)+(LocalStealableSTPCounter+team)%teamSize;
+    int prio = getTaskPriority(false)+(LocalStealableSTPCounter+team)%teamSize;
 
-      logInfo("getTaskPriorityLocalStealableJob()", "team = "<<team
-    		  	  	  	  	  	  	  <<" center[0] = "<< center[0]
-  						              <<" center[1] = "<< center[1]
-  			                          <<" center[2] = "<< center[2]
-  								      <<" time stamp = "<<timeStamp
-									  <<" prio = "<<prio);
+    logDebug("getTaskPriorityLocalStealableJob()", "team = "<<team
+                                                 <<" center[0] = "<< center[0]
+                                                 <<" center[1] = "<< center[1]
+                                                 <<" center[2] = "<< center[2]
+                                                 <<" time stamp = "<<timeStamp
+                                                 <<" prio = "<<prio);
 
-	  return prio;
+    return prio;
 #else
-	  return getTaskPriority(false);
+    return getTaskPriority(false);
 #endif
   }
 
@@ -1053,7 +1053,7 @@ private:
    * and its data has been sent back.
    */
   tbb::concurrent_hash_map<std::pair<int,int>, StealablePredictionJobData*> _mapTagRankToStolenData;
-#if defined(ReplicationSaving)
+#if defined(TaskSharing)
   tbb::concurrent_hash_map<std::pair<int,int>, StealablePredictionJobData*> _mapTagRankToReplicaData;
   tbb::concurrent_hash_map<std::pair<int,int>, double*> _mapTagRankToReplicaKey;
 #endif
@@ -1062,7 +1062,7 @@ private:
   tbb::concurrent_hash_map<int, double*> _mapTagToMetaData;
   // Used in order to time offloaded tasks.
   tbb::concurrent_hash_map<int, double> _mapTagToOffloadTime;
-#if defined(ReplicationSaving)
+#if defined(TaskSharing)
   tbb::concurrent_hash_map<int, StealablePredictionJobData*> _mapTagToReplicationSendData;
 #endif
   
@@ -1072,7 +1072,7 @@ private:
    */
   std::vector<int> _lastReceiveTag;
 
-#if defined(ReplicationSaving)
+#if defined(TaskSharing)
   std::vector<int> _lastReceiveReplicaTag;
 #endif
 
@@ -1145,7 +1145,7 @@ private:
     	  exahype::solvers::Solver* solver,
 		  int tag,
 		  int rank);
-#if defined(ReplicationSaving)
+#if defined(TaskSharing)
       static void sendKeyHandlerReplication(
     	  exahype::solvers::Solver* solver,
 		  int tag,
@@ -1173,7 +1173,7 @@ private:
 		  int tag,
 		  int rank);
 
-#if defined(ReplicationSaving)
+#if defined(TaskSharing)
       static void receiveKeyHandlerReplication(
     	  exahype::solvers::Solver* solver,
 		  int tag,
@@ -1188,7 +1188,7 @@ private:
       bool run(bool calledFromMaster) override;
   };
 
-#if defined(ReplicationSaving)
+#if defined(TaskSharing)
 
   static int REQUEST_JOB_CANCEL;
   static int REQUEST_JOB_ACK;

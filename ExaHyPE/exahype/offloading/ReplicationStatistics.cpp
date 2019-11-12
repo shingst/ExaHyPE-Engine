@@ -82,7 +82,7 @@ void ReplicationStatistics::notifyReceivedKey() {
 }
 
 void ReplicationStatistics::printStatistics() {
-#if defined(ReplicationSaving)	
+#if defined(TaskSharing)	
      int team = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank();
      logInfo("printStatistics", " team "<<team
 			                   <<" spawned tasks = "<<_spawnedTasks

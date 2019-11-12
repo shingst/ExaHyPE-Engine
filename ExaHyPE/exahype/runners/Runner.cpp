@@ -110,7 +110,7 @@
 
 #include "exahype/offloading/OffloadingProfiler.h"
 
-#if defined(ReplicationSaving)
+#if defined(TaskSharing)
 #include "teaMPI.h"
 #endif
 #endif
@@ -314,7 +314,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     exahype::offloading::OffloadingManager::getInstance().createMPICommunicator(); 
     exahype::offloading::OffloadingProgressService::getInstance().enable();
 
-#if defined(ReplicationSaving)
+#if defined(TaskSharing)
     int nteams = TMPI_GetInterTeamCommSize();
     //MPI_Comm interTeamComm = TMPI_GetInterTeamComm();
     MPI_Comm interTeamComm;
@@ -357,12 +357,12 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     exahype::offloading::StaticDistributor::getInstance().loadDistributionFromFile(_parser.getOffloadingInputFile());
 #elif defined(OffloadingStrategyAggressiveHybrid)
     exahype::offloading::AggressiveHybridDistributor::getInstance().configure(
-       _parser.getDoubleFromPath("/distributed_memory/stealing_CCP_temperature"),
-       _parser.getDoubleFromPath("/distributed_memory/stealing_diffusion_temperature"),
-       _parser.getIntFromPath("/distributed_memory/stealing_CCP_frequency"),
-       _parser.getIntFromPath("/distributed_memory/stealing_CCP_steps"),
-       _parser.getBoolFromPath("/distributed_memory/stealing_update_temperature"),
-       _parser.getDoubleFromPath("/distributed_memory/stealing_increase_temp_threshold")
+       _parser.getDoubleFromPath("/distributed_memory/offloading_CCP_temperature"),
+       _parser.getDoubleFromPath("/distributed_memory/offloading_diffusion_temperature"),
+       _parser.getIntFromPath("/distributed_memory/offloading_CCP_frequency"),
+       _parser.getIntFromPath("/distributed_memory/offloading_CCP_steps"),
+       _parser.getBoolFromPath("/distributed_memory/offloading_update_temperature"),
+       _parser.getDoubleFromPath("/distributed_memory/offloading_increase_temp_threshold")
     );
 #endif
 
@@ -1058,7 +1058,7 @@ int exahype::runners::Runner::run() {
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
     if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
       //static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopOffloadingManager();
-#if defined(ReplicationSaving)
+#if defined(TaskSharing)
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->finishOutstandingInterTeamCommunication();
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->cleanUpStaleReplicatedSTPs(true);
 #endif
@@ -1072,7 +1072,7 @@ int exahype::runners::Runner::run() {
   logInfo("shutdownDistributedMemoryConfiguration()","stopped offloading manager");
   exahype::offloading::OffloadingManager::getInstance().destroyMPICommunicator(); 
   logInfo("shutdownDistributedMemoryConfiguration()","destroyed MPI communicators");
-#if defined(ReplicationSaving)
+#if defined(TaskSharing)
   exahype::offloading::ReplicationStatistics::getInstance().printStatistics();
 #endif
 //  exahype::offloading::OffloadingProfiler::getInstance().endPhase();

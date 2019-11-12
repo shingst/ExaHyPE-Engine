@@ -86,7 +86,7 @@ exahype::offloading::OffloadingManager::~OffloadingManager() {
   delete[] _localBlacklist;
 }
 
-#if defined(ReplicationSaving)
+#if defined(TaskSharing)
 
 void exahype::offloading::OffloadingManager::setTMPIInterTeamCommunicators(MPI_Comm comm, MPI_Comm commKey, MPI_Comm commAck) {
   _interTeamComm = comm;
@@ -357,7 +357,7 @@ void exahype::offloading::OffloadingManager::progressRequests() {
     VT_end(event_progress_sendBack);
 #endif
   }
-#if defined(ReplicationSaving)
+#if defined(TaskSharing)
   if (hasOutstandingRequestOfType(RequestType::receiveReplica)) {
      progressRequestsOfType(RequestType::receiveReplica);
   }
@@ -405,7 +405,7 @@ void exahype::offloading::OffloadingManager::progressAnyRequests() {
     VT_end(event_progress_sendBack);
 #endif
   }
-#if defined(ReplicationSaving)
+#if defined(TaskSharing)
   //always progress both sends and receives for replica tasks!
   if (hasOutstandingRequestOfType(RequestType::receiveReplica)) {
      progressRequestsOfType(RequestType::receiveReplica);

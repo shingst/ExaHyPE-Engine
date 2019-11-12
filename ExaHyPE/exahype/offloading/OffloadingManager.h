@@ -214,7 +214,7 @@ class exahype::offloading::OffloadingManager {
      */
     MPI_Comm _offloadingCommMapped;
 
-#if defined(ReplicationSaving)
+#if defined(TaskSharing)
     /**
      * Communicator for communication between replicating ranks.
      */
@@ -314,7 +314,7 @@ class exahype::offloading::OffloadingManager {
     bool progressReceiveBackRequests();
     bool hasOutstandingRequestOfType(RequestType requestType);
 
-#if defined (ReplicationSaving)
+#if defined (TaskSharing)
     void setTMPIInterTeamCommunicators(MPI_Comm comm, MPI_Comm commKey, MPI_Comm commAck);
     MPI_Comm getTMPIInterTeamCommunicatorData();
     MPI_Comm getTMPIInterTeamCommunicatorKey();

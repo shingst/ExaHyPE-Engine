@@ -300,12 +300,12 @@ class Controller:
         context["useLikwid"] = False # TODO
         context["likwidInc"] = ""    # TODO
         if context["useDistributedMem"]:
-            context["stealing"]  = self.spec["distributed_memory"]["stealing"]
-            context["stealingProgress"] = self.spec["distributed_memory"]["stealing_progress"]
-            context["useReplicationSaving"] = self.spec["distributed_memory"]["replication_saving"]
+            context["offloading"]  = self.spec["distributed_memory"]["offloading"]
+            context["offloadingProgress"] = self.spec["distributed_memory"]["offloading_progress"]
+            context["useReplicationSaving"] = self.spec["distributed_memory"]["task_sharing"]
         else:
-            context["stealing"] = "none"
-            context["stealingProgress"] = "none"
+            context["offloading"] = "none"
+            context["offloadingProgress"] = "none"
             context["useReplicationSaving"] = False
 
         # kernels

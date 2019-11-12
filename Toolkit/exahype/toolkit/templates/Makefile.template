@@ -71,35 +71,35 @@ ifeq ($(DISTRIBUTEDMEM),)
     DISTRIBUTEDMEM=None
 {% endif %}
 endif
-{% if stealing=="static" %}
+{% if offloading=="static" %}
 PROJECT_CFLAGS += -DDistributedOffloading -DOffloadingStrategyStatic
-{% elif stealing=="dynamic" %}
+{% elif offloading=="dynamic" %}
 PROJECT_CFLAGS += -DDistributedOffloading -DOffloadingStrategyDynamic
-{% elif stealing=="dynamic_diffusive" %}
+{% elif offloading=="dynamic_diffusive" %}
 PROJECT_CFLAGS += -DDistributedOffloading -DOffloadingStrategyDiffusive 
-{% elif stealing=="aggressive_diffusive" %}
+{% elif offloading=="aggressive_diffusive" %}
 PROJECT_CFLAGS += -DDistributedOffloading -DOffloadingStrategyAggressive 
-{% elif stealing=="aggressiveCCP_diffusive" %}
+{% elif offloading=="aggressiveCCP_diffusive" %}
 PROJECT_CFLAGS += -DDistributedOffloading -DOffloadingStrategyAggressiveCCP 
-{% elif stealing=="aggressiveHybrid" %}
+{% elif offloading=="aggressiveHybrid" %}
 PROJECT_CFLAGS += -DDistributedOffloading -DOffloadingStrategyAggressiveHybrid -DPerformanceAnalysis 
-{% elif stealing=="hybrid" %}
+{% elif offloading=="hybrid" %}
 PROJECT_CFLAGS += -DDistributedOffloading -DOffloadingStrategyHybrid
-{% elif stealing=="static_hardcoded" %}
+{% elif offloading=="static_hardcoded" %}
 PROJECT_CFLAGS += -DDistributedOffloading -DOffloadingStrategyStaticHardcoded
-{% elif stealing=="none" %}
+{% elif offloading=="none" %}
 PROJECT_CFLAGS += -DAnalyseWaitingTimes
 {% endif %}
 
 {% if useReplicationSaving %}
-PROJECT_CFLAGS += -DUSE_TMPI -DDistributedOffloading -DReplicationSaving 
+PROJECT_CFLAGS += -DUSE_TMPI -DDistributedOffloading -DTaskSharing 
 {% endif %}
 
-{% if stealingProgress=="progress_thread" %}
+{% if offloadingProgress=="progress_thread" %}
 PROJECT_CFLAGS += -DOffloadingUseProgressThread
-{% elif stealingProgress=="progress_task" %}
+{% elif offloadingProgress=="progress_task" %}
 PROJECT_CFLAGS += -DOffloadingUseProgressTask -DnoMPIWaitsProcessJobs
-{% elif stealingProgress=="none" %}
+{% elif offloadingProgress=="none" %}
 PROJECT_CFLAGS += 
 {% endif %}
 

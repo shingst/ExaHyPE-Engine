@@ -107,7 +107,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   double *lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
   double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
 
-#if defined(ReplicationSaving)
+#if defined(TaskSharing)
   //check if task outcome has been received already
   tarch::la::Vector<DIMENSIONS, double> center;
   center = cellDescription.getOffset()+0.5*cellDescription.getSize();
@@ -153,7 +153,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   }
   else if (found && a_jobToData->second.status == ReplicationStatus::transit) {
   	logDebug("handleLocalExecution()", "task is in transit, we may want to wait!");
-#ifdef ReplicationSavingRescheduleIfInTransit
+#ifdef TaskSharingRescheduleIfInTransit
     a_jobToData.release();
     result = true;
 #endif
@@ -182,7 +182,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 
     result = false;
 
-#if defined (ReplicationSaving)
+#if defined (TaskSharing)
     //check one more time
     //tbb::concurrent_hash_map<JobTableKey, StealablePredictionJobData*>::accessor a_jobToData;
     found = _solver._jobDatabase.find(a_jobToData, key);
@@ -196,7 +196,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
       delete data;
     }
     else {
-#if defined(ReplicationSavingUseHandshake)
+#if defined(TaskSharingUseHandshake)
       if(AllocatedSTPsSend<=exahype::offloading::PerformanceMonitor::getInstance().getTasksPerTimestep()) {
         _solver.sendKeyOfReplicatedSTPToOtherTeams(this);
       }
@@ -276,9 +276,6 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution() 
 }
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandler(exahype::solvers::Solver* solver, int tag, int remoteRank) {
-#if defined(PerformanceAnalysisOffloadingDetailed)
-  logInfo("receiveHandler","successful receive request");
-#endif
   //logInfo("receiveHandler","successful receive request");
 
   tbb::concurrent_hash_map<std::pair<int, int>, StealablePredictionJobData*>::accessor a_tagRankToData;
@@ -294,12 +291,9 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandler(exa
   exahype::offloading::OffloadingProfiler::getInstance().notifyReceivedTask(remoteRank);
 }
 
-#if defined(ReplicationSaving)
+#if defined(TaskSharing)
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveKeyHandlerReplication(exahype::solvers::Solver* solver, int tag, int remoteRank) {
-#if defined(PerformanceAnalysisOffloadingDetailed)
-  logInfo("receiveKeyHandlerReplica","successful receive request");
-#endif
-  logInfo("receiveKeyHandlerReplica","successful receive request");
+  logDebug("receiveKeyHandlerReplica","successful receive request");
 
   tbb::concurrent_hash_map<std::pair<int, int>, double*>::accessor a_tagRankToData;
   double *key;
@@ -308,22 +302,19 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveKeyHandlerR
   //static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagRankToReplicaKey.erase(a_tagRankToData);
   //a_tagRankToData.release();
 
-  logInfo("receiveKeyHandlerReplica", "team "
-		                           <<" received replica job key: center[0] = "<<key[0]
-							       <<" center[1] = "<<key[1]
-								   <<" center[2] = "<<key[2]
-								   <<" time stamp = "<<key[2*DIMENSIONS]
-								   <<" element = "<<(int) key[2*DIMENSIONS+2]);
+  logDebug("receiveKeyHandlerReplica", "team "
+		                       <<" received replica job key: center[0] = "<<key[0]
+		    	               <<" center[1] = "<<key[1]
+				       <<" center[2] = "<<key[2]
+				       <<" time stamp = "<<key[2*DIMENSIONS]
+				       <<" element = "<<(int) key[2*DIMENSIONS+2]);
 
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->sendRequestForJobAndReceive(tag, remoteRank, key);
 
 }
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerReplication(exahype::solvers::Solver* solver, int tag, int remoteRank) {
-#if defined(PerformanceAnalysisOffloadingDetailed)
-  logInfo("receiveHandlerReplica","successful receive request");
-#endif
-  logInfo("receiveHandlerReplica","successful receive request");
+  logDebug("receiveHandlerReplica","successful receive request");
 
   tbb::concurrent_hash_map<std::pair<int, int>, StealablePredictionJobData*>::accessor a_tagRankToData;
   StealablePredictionJobData *data;
@@ -332,12 +323,13 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerRepl
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagRankToReplicaData.erase(a_tagRankToData);
   a_tagRankToData.release();
 
-  logInfo("receiveHandlerReplica", "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
-		                           <<" received replica job: center[0] = "<<data->_metadata[0]
-							       <<" center[1] = "<<data->_metadata[1]
-								   <<" center[2] = "<<data->_metadata[2]
-								   <<" time stamp = "<<data->_metadata[2*DIMENSIONS]
-								   <<" element = "<<(int) data->_metadata[2*DIMENSIONS+2]);
+  logDebug("receiveHandlerReplica", "team "
+                                    <<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
+		                    <<" received replica job: center[0] = "<<data->_metadata[0]
+				    <<" center[1] = "<<data->_metadata[1]
+				    <<" center[2] = "<<data->_metadata[2]
+				    <<" time stamp = "<<data->_metadata[2*DIMENSIONS]
+				    <<" element = "<<(int) data->_metadata[2*DIMENSIONS+2]);
 
   JobTableKey key; //{&data->_metadata[0], data->_metadata[2*DIMENSIONS], (int) data->_metadata[2*DIMENSIONS+2] };
   for(int i=0; i<DIMENSIONS; i++)
@@ -369,11 +361,6 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerRepl
 #endif
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler(exahype::solvers::Solver* solver, int tag, int remoteRank) {
-#if defined(PerformanceAnalysisOffloadingDetailed)
-  static std::atomic<int> cnt=0;
-  cnt++;
-  logInfo("receiveBackHandler","successful receiveBack request, cnt "<<cnt);
-#endif
 
  // logInfo("receiveBackHandler","successful receiveBack request");
   tbb::concurrent_hash_map<int, CellDescription*>::accessor a_tagToCellDesc;
@@ -406,9 +393,6 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
 }
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackHandler(exahype::solvers::Solver* solver, int tag, int remoteRank) {
-#if defined(PerformanceAnalysisOffloadingDetailed)
-  logInfo("sendBackHandler","successful sendBack request");
-#endif
   //logInfo("sendBackHandler","successful sendBack request");
   tbb::concurrent_hash_map<std::pair<int, int>, StealablePredictionJobData*>::accessor a_tagRankToData;
 
@@ -424,14 +408,14 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackHandler(ex
   assertion( NumberOfStolenJobs>=0 );
 }
 
-#if defined(ReplicationSaving)
+#if defined(TaskSharing)
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendAckHandlerReplication(
 		exahype::solvers::Solver* solver,
 		int tag,
 		int remoteRank)
 {
 
-  logInfo("sendAckHandlerReplication","successfully completed send ack to other team");
+  logDebug("sendAckHandlerReplication","successfully completed send ack to other team");
 
 }
 
@@ -441,7 +425,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendKeyHandlerRepl
 		int remoteRank)
 {
 
-  logInfo("sendKeyHandlerReplication","successfully completed send key to other teams");
+  logDebug("sendKeyHandlerReplication","successfully completed send key to other teams");
   //exahype::offloading::ReplicationStatistics::getInstance().notifySentTask();
   //tbb::concurrent_hash_map<int, double*>::accessor a_tagToData;
   //bool found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToReplicationSendKey.find(a_tagToData, tag);
@@ -459,7 +443,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendHandlerReplica
 		int remoteRank)
 {
 
-  logInfo("sendHandlerReplication","successfully completed send to other teams");
+  logDebug("sendHandlerReplication","successfully completed send to other teams");
   exahype::offloading::ReplicationStatistics::getInstance().notifySentTask();
   tbb::concurrent_hash_map<int, StealablePredictionJobData*>::accessor a_tagToData;
   bool found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToReplicationSendData.find(a_tagToData, tag);
@@ -469,7 +453,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendHandlerReplica
   delete data;
   AllocatedSTPsSend--;
   CompletedSentSTPs++;
-  logInfo("sendHandlerReplication"," allocated stps send "<<AllocatedSTPsSend);
+  logDebug("sendHandlerReplication"," allocated stps send "<<AllocatedSTPsSend);
   a_tagToData.release();
 }
 #endif
