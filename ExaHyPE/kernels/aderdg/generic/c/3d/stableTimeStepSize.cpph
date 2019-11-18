@@ -50,16 +50,9 @@ double kernels::aderdg::generic::c::stableTimeStepSize(
                       }
                       maxEigenvalue += maxEigenvalueV * (2.0/PNPM) * invDx[d];
                   }
-                  if(maxEigenvalue*invDx[d]>50) {   
-                    std::cout<< "max eigenvalue" << maxEigenvalue<<" invDx " <<invDx[d]<<std::endl; 
-                  }
                 
                   denominator += maxEigenvalue * invDx[d];
               }
-            //  if(cflFactor * PNPM/denominator < 0.005) {
-            //     std::cout<< "max eigenvalue" << maxEigenvalue<<std::endl; 
-            //     std::cout<< denominator<< std::endl;
-            //  } 
             
               dt = std::min(dt, cflFactor * PNPM / denominator);
           }

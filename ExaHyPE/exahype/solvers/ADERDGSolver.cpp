@@ -535,9 +535,6 @@ double exahype::solvers::ADERDGSolver::getAdmissibleTimeStepSize() const {
 void exahype::solvers::ADERDGSolver::updateAdmissibleTimeStepSize( double value ) {
   tarch::multicore::Lock lock(_reductionSemaphore);
   _admissibleTimeStepSize = std::min(_admissibleTimeStepSize,value);
-  if(_admissibleTimeStepSize<0.005) {
-    logInfo("updateAdmissibleTimeStepSize", "setting to "<<_admissibleTimeStepSize );    
-  }
   lock.free();
 }
 
@@ -1154,9 +1151,6 @@ double exahype::solvers::ADERDGSolver::computeTimeStepSize(CellDescription& cell
 
     validateCellDescriptionData(cellDescription,false,false,true,"computeTimeStepSizes(...)");
     double admissibleTimeStepSize = stableTimeStepSize(luh,cellDescription.getSize());
-    if(admissibleTimeStepSize<0.006) {
-    logInfo("computeTimeStepSize"," admissible "<<admissibleTimeStepSize);
-   }
 
     assertion2(!_checkForNaNs || admissibleTimeStepSize>0,admissibleTimeStepSize,cellDescription.toString());
 
