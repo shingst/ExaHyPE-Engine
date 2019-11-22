@@ -44,7 +44,7 @@ class CloudScenario : public Scenario {
   // const double c_p = 1.005 * 1000;
   const double c_p = gamma / (gamma - 1) * gasConstant;
   const double c_v = 1 / (gamma - 1) * gasConstant;
-  const double referencePressure = 10000;
+  const double referencePressure = 100000;
 
   double getGamma() const override;
   double getPr() const override;
