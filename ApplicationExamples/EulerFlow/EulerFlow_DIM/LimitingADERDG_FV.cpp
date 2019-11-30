@@ -32,6 +32,14 @@ void Euler::LimitingADERDG_FV::boundaryValues(
   const int nVar = NumberOfVariables;
   std::copy_n(stateIn,nVar,stateOut);
   stateOut[1+normalNonZero] = -stateIn[1+normalNonZero];
+    if(faceIndex == 0){ // inflow
+        stateOut[1+normalNonZero] = stateIn[1+normalNonZero];
+    }
+    if(faceIndex == 1) { //outflow
+        stateOut[1+normalNonZero] = stateIn[1+normalNonZero];
+        stateOut[0] = 1.0;
+        stateOut[4] = 2.5;
+    }
 }
 
 //***********************************************************

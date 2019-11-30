@@ -2,7 +2,6 @@
 
  double GAMMA = 1.4;
  double EPSalpha = 1.e-5;
-
  const int nVar = 9;
  
 void PDEPrim2Cons(double* Q,double* V){
@@ -60,35 +59,32 @@ void initialdata_(const double* const x,const double t,double* const Q){
 }
 
 //standard symmetric 4-digit NACA airfoil
+double t = 2*0.594689181;
 double symmetric_NACA_airfoil(double x){
-    return 1.2*(0.2969*std::sqrt(x)-0.126*x-0.3516*x*x+0.2843*x*x*x-0.1015*x*x*x*x);
+    return t/2.0*(0.298222773*std::sqrt(x) - 0.127125232*x - 0.357907906*x*x + 0.291984971*x*x*x - 0.105174606*x*x*x*x); //1.2*(0.2969*std::sqrt(x)-0.126*x-0.3516*x*x+0.2843*x*x*x-0.1036*x*x*x*x);
 }
 
+//Use 4612 airfoil values
+double m = 0.04; //maximum camber
+double p =0.6; //maximum camber location
+double c = 1.0;
 //introduce cambering
 double cambered_NACA_airfoil(double x){
-    double m = 0.1; //maximum camber
-    double p =0.6; //maximum camber location
-    double c = 1.0;
-
     if(x >=0 && x < p*c)
         return m/p/p*(2*p*(x/c)-(x/c)*(x/c));
-    return m/(1.0-p*p)*((1-2*p*p)+2*p*(x/c)-(x/c)*(x/c));
+    if(x <= c)
+        return m/(1.0-p)/(1.0-p)*((1-2*p)+2*p*(x/c)-(x/c)*(x/c));
 }
 
 //angle for cambering
 double theta_NACA(double x){
-    //Use 2412 airfoil values
-    double m = 0.02; //maximum camber
-    double p =0.4; //maximum camber location
-    double c = 0.5;
-
-    double dycdx = 0.0;
-    if(x>=0 && x < p*c) dycdx = 2*m/p/p*(p-(x/c));
-    else dycdx = 2*m/(1-p*p)*(p-x/c);
-    return std::atan(dycdx);
+    if(x>=0 && x < p*c)
+        return 2*m/p/p*(p-(x/c));
+    else if(x<= c)
+        return 2*m/(1-p)/(1.-p)*(p-x/c);
 }
 
-void initialdata(const double* const x,const double t,double* const Q){
+void initialdata_0012(const double* const x,const double t,double* const Q){
     typedef tarch::la::Vector<DIMENSIONS,double> vecNd;
     vecNd xvec(x[0],x[1]);
     vecNd x0(0.75, 1.0/6.0);
@@ -103,19 +99,6 @@ void initialdata(const double* const x,const double t,double* const Q){
     Q[6] = 0.0;
     Q[7] = 0.0;
     Q[8] = 0.0; //psi
-    /* cambered airfoil
-     * TODO find sign of r
-     double xu = x[0] - symmetric_NACA_airfoil(x[0])*std::sin(theta_NACA(x[0]));
-    double yu = cambered_NACA_airfoil(x[0])+symmetric_NACA_airfoil(x[0])*std::cos(theta_NACA(x[0]));
-    double ru =  std::sqrt((xu-x[0])*(xu-x[0])+(yu-std::abs(x[1]))*(yu-std::abs(x[1])));
-
-     double xl = x[0] + symmetric_NACA_airfoil(x[0])*std::sin(theta_NACA(x[0]));
-    double yl = cambered_NACA_airfoil(x[0])-symmetric_NACA_airfoil(x[0])*std::cos(theta_NACA(x[0]));
-    double rl =  std::sqrt((xl-x[0])*(xl-x[0])+(yl-std::abs(x[1]))*(yl-std::abs(x[1])));
-
-    double sign = -1;
-    */
-
     double yu = symmetric_NACA_airfoil(1-x[0]);
     double ru = (x[0]<0 || x[0]>1) ? -1.0 : (yu-std::abs(x[1]));
     auto smoothInterface = [](double r, double dist){
@@ -125,12 +108,57 @@ void initialdata(const double* const x,const double t,double* const Q){
             return 0.0;
         return 0.5*(std::sin(M_PI/2.0/dist*r)+1.0);
     };
-    Q[5] =  1.0 - smoothInterface(ru,0.0005);
+    Q[5] =  1.0 - smoothInterface(ru,0.05);
 
     Q[0] = Q[0]*Q[5];
     Q[1] = Q[1]*Q[5];
     Q[2] = Q[2]*Q[5];
     Q[4] = Q[4]*Q[5];
+}
+
+
+void initialdata(const double* const x,const double t,double* const Q){
+    typedef tarch::la::Vector<DIMENSIONS,double> vecNd;
+    vecNd xvec(x[0],x[1]);
+    vecNd x0(0.75, 1.0/6.0);
+
+    double V[nVar];
+    V[0] = 1.4;
+    V[1] = 1.0;
+    V[2] = 0.;
+    V[3] = 0.;
+    V[4] = 1.0;
+    V[6] = 0.0;
+    V[7] = 0.0;
+    V[8] = 0.0; //psi
+    /* cambered airfoil NACA 2412 */
+    double theta = theta_NACA(x[0]);
+    double xu = x[0] - symmetric_NACA_airfoil(x[0])*theta/std::sqrt(theta*theta+1);
+    double yu = cambered_NACA_airfoil(x[0])+symmetric_NACA_airfoil(x[0])/std::sqrt(theta*theta+1);
+    double ru = std::sqrt((xu-x[0])*(xu-x[0])+(yu-x[1])*(yu-x[1]));
+    int signu  = -(yu-x[1])/std::abs(yu-x[1]);
+
+    double xl = x[0] + symmetric_NACA_airfoil(x[0])*theta/std::sqrt(theta*theta+1);
+    double yl = cambered_NACA_airfoil(x[0])-symmetric_NACA_airfoil(x[0])/(theta*theta+1);
+    double rl = std::sqrt((xl-x[0])*(xl-x[0])+(yl-x[1])*(yl-x[1]));
+    int signl  = (yl-x[1])/std::abs(yl-x[1]);
+    auto smoothInterface = [](double r, double dist){
+        if(r > dist)
+            return 1.0;
+        if(r<-dist)
+            return 0.0;
+        return 0.5*(std::sin(M_PI/2.0/dist*r)+1.0);
+    };
+
+    /*std::cout << "yt at 1 " << symmetric_NACA_airfoil(1) << std::endl;
+    std::cout << "yc at 1 " << cambered_NACA_airfoil(1) << std::endl;
+    std::cout << "yt at 0 " << symmetric_NACA_airfoil(0) << std::endl;
+    std::cout << "yc at 0 " << cambered_NACA_airfoil(0) << std::endl;*/
+
+    V[5] = 1.0;
+    if(x[0] >=0.0 && x[0] <= 1.0)
+        V[5] = std::min(V[5], ((x[1]>=0) ? smoothInterface( signu*ru, 0.005) : smoothInterface(signl*rl, 0.005) ));
+    PDEPrim2Cons(Q,V);
 }
 
 void PDEflux(const double* const Q,double** const F){

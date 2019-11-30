@@ -50,6 +50,14 @@ void Euler::LimitingADERDG_ADERDG::boundaryValues(const double* const x,const do
     fluxOut[8] = fluxIn[8];
 
     stateOut[1+normalNonZero] = -stateIn[1+normalNonZero];
+    if(faceIndex == 0){ // inflow
+        stateOut[1+normalNonZero] = stateIn[1+normalNonZero];
+    }
+    if(faceIndex == 1) { //outflow
+        stateOut[1+normalNonZero] = stateIn[1+normalNonZero];
+        stateOut[0] = 1.0;
+        stateOut[4] = 2.5;
+    }
 }
 
 
@@ -62,11 +70,13 @@ exahype::solvers::Solver::RefinementControl Euler::LimitingADERDG_ADERDG::refine
 }
 
 void Euler::LimitingADERDG_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables, const double* const Q) const {
+  double V[9];
+  PDECons2Prim(V,Q);
   observables[0] = Q[0]; //extract density
   observables[1] = Q[1];
   observables[2] = Q[2];
   observables[3] = Q[3];
-  observables[4] = Q[4];
+  observables[4] = V[4]; //extract pressure
   observables[5] = Q[5]; // extract alpha
 }
 
@@ -78,12 +88,14 @@ bool Euler::LimitingADERDG_ADERDG::isPhysicallyAdmissible(
       const tarch::la::Vector<DIMENSIONS,double>& center,
       const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t) const {
-  if (observablesMin[0] < 1.e-2) return false;
-  if(observablesMax[5] < 0.985 && observablesMin[5] > 0.015)
-          return false;
-  if(observablesMax[5]>1.005)
-      return false;
-  return true;
+    if(observablesMax[5] < 1e-2) return true;  // interior of the solid
+    if (observablesMin[0] < 1.e-2) return false; // density positive
+    if (observablesMin[4] < 1.e-2) return false; //pressure positive
+    if(observablesMax[5] < 0.985 && observablesMin[5] > 0.015)
+        return false;
+    if(observablesMax[5]>1.005)
+        return false;
+    return true;
 }
 
 //*****************************************************************************
