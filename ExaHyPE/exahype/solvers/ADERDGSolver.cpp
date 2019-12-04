@@ -1155,6 +1155,7 @@ double exahype::solvers::ADERDGSolver::computeTimeStepSize(CellDescription& cell
 
     validateCellDescriptionData(cellDescription,false,false,true,"computeTimeStepSizes(...)");
     double admissibleTimeStepSize = stableTimeStepSize(luh,cellDescription.getSize());
+
     assertion2(!_checkForNaNs || admissibleTimeStepSize>0,admissibleTimeStepSize,cellDescription.toString());
 
     assertion3(!_checkForNaNs || admissibleTimeStepSize<std::numeric_limits<double>::infinity(),std::numeric_limits<double>::infinity(),admissibleTimeStepSize,cellDescription.toString());
