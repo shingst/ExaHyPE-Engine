@@ -2804,6 +2804,8 @@ public:
    */
   static void progressOffloading(exahype::solvers::ADERDGSolver* solver, bool isCalledOnMaster);
 
+  static void pollForOutstandingCommunicationRequests(exahype::solvers::ADERDGSolver *solver);
+
   static void setMaxNumberOfIprobesInProgressOffloading(int maxNumIprobes);
 
   static bool tryToReceiveTaskBack(exahype::solvers::ADERDGSolver* solver, const void* cellDescription = nullptr);

@@ -274,7 +274,7 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
 #if defined(TaskSharing)
         ,_lastReceiveReplicaTag(tarch::parallel::Node::getInstance().getNumberOfNodes()),
         _allocatedJobs(),
-	    _jobDatabase()
+	     _jobDatabase()
 #endif
 #endif
 {
@@ -2887,55 +2887,7 @@ void exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressOffloading(i
   MaxIprobesInOffloadingProgress = maxIprobes;
 }
 
-void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDGSolver* solver, bool runOnMaster) {
-
-  bool canRun;
-  tarch::multicore::Lock lock(OffloadingSemaphore, false);
-#if defined(OffloadingUseProgressThread)
-  if(runOnMaster)
-    canRun = false;
-  else 
-    canRun = lock.tryLock();
-#else
-  // First, we ensure here that only one thread at a time progresses offloading
-  // this avoids multithreaded MPI problems
-  canRun = lock.tryLock();
-#endif
-
-  if(!canRun) {
-#if defined(PerformanceAnalysisOffloadingDetailed)
-    watch.stopTimer();
-    if(watch.getCalendarTime() >= 0.0) {
-      logInfo(
-          "progressOffloading() ",
-          "couldn't run "<<
-          "time=" << std::fixed <<
-          watch.getCalendarTime() <<
-          ", cpu time=" <<
-          watch.getCPUTime()
-      );
-    }
-#endif
-    return;
-  }
-#ifdef USE_ITAC
-  //VT_begin(event_progress);
-#endif
-  
-  static double lastActive = 0;
-  if(MPI_Wtime()-lastActive > 10) {
-    logDebug("progressOffloading()"," still alive");
-    lastActive=MPI_Wtime();
-  }
-
-  // 2. make progress on any outstanding MPI communication
-  //if(!runOnMaster)
-  exahype::offloading::OffloadingManager::getInstance().progressRequests();
-
-  // 3. progress on performance monitor
-  exahype::offloading::PerformanceMonitor::getInstance().run();
-
-  // 4. detect whether local rank should receive stolen sections
+void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exahype::solvers::ADERDGSolver *solver) {
   MPI_Status stat, statMapped;
   int receivedTask = 0;
   int receivedTaskBack = 0;
@@ -2979,8 +2931,8 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
 
 #if defined (TaskSharing)
   while(
-		  (receivedTask || receivedTaskBack || receivedReplicaTask || receivedReplicaAck || receivedReplicaKey)
-		  && (iprobesCounter<MaxIprobesInOffloadingProgress || receivedReplicaKey || receivedReplicaAck || receivedReplicaTask) && !terminateImmediately )
+      (receivedTask || receivedTaskBack || receivedReplicaTask || receivedReplicaAck || receivedReplicaKey)
+      && (iprobesCounter<MaxIprobesInOffloadingProgress || receivedReplicaKey || receivedReplicaAck || receivedReplicaTask) && !terminateImmediately )
   {
 #else
   while( (receivedTask || receivedTaskBack) && iprobesCounter<MaxIprobesInOffloadingProgress && !terminateImmediately ) {
@@ -3060,15 +3012,15 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
         StealablePredictionJobData *data = new StealablePredictionJobData(*solver);
         solver->_mapTagRankToStolenData.insert(std::make_pair(std::make_pair(stat.MPI_SOURCE, stat.MPI_TAG), data));
         solver->irecvStealablePredictionJob(
-		         data->_luh.data(),
-   	 	         data->_lduh.data(),
-	 	         data->_lQhbnd.data(),
-		         data->_lFhbnd.data(),
-		         stat.MPI_SOURCE,
-		         stat.MPI_TAG,
-		         exahype::offloading::OffloadingManager::getInstance().getMPICommunicator(),
-		         &receiveRequests[0],
-		         &(data->_metadata[0]));
+             data->_luh.data(),
+               data->_lduh.data(),
+             data->_lQhbnd.data(),
+             data->_lFhbnd.data(),
+             stat.MPI_SOURCE,
+             stat.MPI_TAG,
+             exahype::offloading::OffloadingManager::getInstance().getMPICommunicator(),
+             &receiveRequests[0],
+             &(data->_metadata[0]));
          //double wtime = -MPI_Wtime();
         int canComplete = 0;
         int ierr = MPI_Testall(5, &receiveRequests[0], &canComplete, MPI_STATUSES_IGNORE);
@@ -3081,13 +3033,13 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
              double wtime = -MPI_Wtime();
              exahype::offloading::OffloadingManager::getInstance().submitRequests(
                  receiveRequests,
-			     5,
-			     stat.MPI_TAG,
-		 	     stat.MPI_SOURCE,
-		         MigratablePredictionJob::receiveHandler,
-		 	     exahype::offloading::RequestType::receive,
-			     solver,
-			     true);
+           5,
+           stat.MPI_TAG,
+           stat.MPI_SOURCE,
+             MigratablePredictionJob::receiveHandler,
+           exahype::offloading::RequestType::receive,
+           solver,
+           true);
              wtime+= MPI_Wtime();
              if(wtime>0.01)
                logDebug("progressOffloading()","blocking for stolen task took too long:"<<wtime<<"s");
@@ -3095,13 +3047,13 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
           else {
              exahype::offloading::OffloadingManager::getInstance().submitRequests(
                  receiveRequests,
-			     5,
-			     stat.MPI_TAG,
-			     stat.MPI_SOURCE,
-		         MigratablePredictionJob::receiveHandler,
-			     exahype::offloading::RequestType::receive,
-			     solver,
-			     false);
+           5,
+           stat.MPI_TAG,
+           stat.MPI_SOURCE,
+             MigratablePredictionJob::receiveHandler,
+           exahype::offloading::RequestType::receive,
+           solver,
+           false);
            }
         }
       }
@@ -3118,23 +3070,23 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
       // is this message metadata? -> if true, we are about to receive a new STP task
       if(msgLenDouble==2*DIMENSIONS+3) {
 
-    	 assertion(solver->_lastReceiveReplicaTag[statRepData.MPI_SOURCE]!=statRepData.MPI_TAG);
-    	 solver->_lastReceiveReplicaTag[statRepData.MPI_SOURCE] = statRepData.MPI_TAG;
+       assertion(solver->_lastReceiveReplicaTag[statRepData.MPI_SOURCE]!=statRepData.MPI_TAG);
+       solver->_lastReceiveReplicaTag[statRepData.MPI_SOURCE] = statRepData.MPI_TAG;
          logDebug("progressOffloading","received replica task from "<<statRepData.MPI_SOURCE<<" , tag "<<statRepData.MPI_TAG);
          StealablePredictionJobData *data = new StealablePredictionJobData(*solver);
          AllocatedSTPsReceive++;
          //logInfo("progressOffloading", "allocated stps receive"<<AllocatedSTPsReceive);
          MPI_Request receiveReplicaRequests[5];
          solver->irecvStealablePredictionJob(
- 		         data->_luh.data(),
-   	 	         data->_lduh.data(),
-   	 	         data->_lQhbnd.data(),
-   		         data->_lFhbnd.data(),
-   		         statRepData.MPI_SOURCE,
-   		         statRepData.MPI_TAG,
-   		         interTeamComm,
-   		         &receiveReplicaRequests[0],
-   		         &(data->_metadata[0]));
+             data->_luh.data(),
+               data->_lduh.data(),
+               data->_lQhbnd.data(),
+               data->_lFhbnd.data(),
+               statRepData.MPI_SOURCE,
+               statRepData.MPI_TAG,
+               interTeamComm,
+               &receiveReplicaRequests[0],
+               &(data->_metadata[0]));
          solver->_mapTagRankToReplicaData.insert(std::make_pair(std::make_pair(statRepData.MPI_SOURCE, statRepData.MPI_TAG), data));
          exahype::offloading::OffloadingManager::getInstance().submitRequests(
                  receiveReplicaRequests,
@@ -3143,8 +3095,8 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
                  statRepData.MPI_SOURCE,
                  MigratablePredictionJob::receiveHandlerReplication,
                  exahype::offloading::RequestType::receiveReplica,
-   		         solver,
-   		         false);
+               solver,
+               false);
        }
     }
 #endif
@@ -3152,98 +3104,109 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
     assertion(ierr==MPI_SUCCESS);
 #if defined(TaskSharingUseHandshake)
     if(receivedReplicaKey) {
-    	 double *key = new double[2*DIMENSIONS+3];
-    	 MPI_Request receiveReplicaKeyRequest;
-    	 MPI_Irecv(key, 2*DIMENSIONS+3, MPI_DOUBLE, statRepKey.MPI_SOURCE, statRepKey.MPI_TAG, interTeamCommKey, &receiveReplicaKeyRequest);
-    	 solver->_mapTagRankToReplicaKey.insert(std::make_pair(std::make_pair(statRepKey.MPI_SOURCE, statRepKey.MPI_TAG), key));
-    	 exahype::offloading::OffloadingManager::getInstance().submitRequests(
-    			 &receiveReplicaKeyRequest,
-    			 1,
-    			 statRepKey.MPI_TAG,
-    			 statRepKey.MPI_SOURCE,
-    			 MigratablePredictionJob::receiveKeyHandlerReplication,
-    			 exahype::offloading::RequestType::receiveReplica,
-    			 solver,
-    			 false);
-    	 exahype::offloading::ReplicationStatistics::getInstance().notifyReceivedKey();
+       double *key = new double[2*DIMENSIONS+3];
+       MPI_Request receiveReplicaKeyRequest;
+       MPI_Irecv(key, 2*DIMENSIONS+3, MPI_DOUBLE, statRepKey.MPI_SOURCE, statRepKey.MPI_TAG, interTeamCommKey, &receiveReplicaKeyRequest);
+       solver->_mapTagRankToReplicaKey.insert(std::make_pair(std::make_pair(statRepKey.MPI_SOURCE, statRepKey.MPI_TAG), key));
+       exahype::offloading::OffloadingManager::getInstance().submitRequests(
+           &receiveReplicaKeyRequest,
+           1,
+           statRepKey.MPI_TAG,
+           statRepKey.MPI_SOURCE,
+           MigratablePredictionJob::receiveKeyHandlerReplication,
+           exahype::offloading::RequestType::receiveReplica,
+           solver,
+           false);
+       exahype::offloading::ReplicationStatistics::getInstance().notifyReceivedKey();
     }
     ierr = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamCommKey, &receivedReplicaKey, &statRepKey );
     assertion( ierr==MPI_SUCCESS );
     if(receivedReplicaAck) {
-    	 int buffer = -1;
-    	 MPI_Recv(&buffer, 1, MPI_INTEGER, statRepAck.MPI_SOURCE, statRepAck.MPI_TAG, interTeamCommAck, MPI_STATUS_IGNORE );
+       int buffer = -1;
+       MPI_Recv(&buffer, 1, MPI_INTEGER, statRepAck.MPI_SOURCE, statRepAck.MPI_TAG, interTeamCommAck, MPI_STATUS_IGNORE );
 
-    	 tbb::concurrent_hash_map<int, StealablePredictionJobData*>::accessor a_tagToData;
-    	 bool found = solver->_mapTagToReplicationSendData.find(a_tagToData, statRepAck.MPI_TAG);
-    	 assertion(found);
-    	 StealablePredictionJobData *data = a_tagToData->second;
+       tbb::concurrent_hash_map<int, StealablePredictionJobData*>::accessor a_tagToData;
+       bool found = solver->_mapTagToReplicationSendData.find(a_tagToData, statRepAck.MPI_TAG);
+       assertion(found);
+       StealablePredictionJobData *data = a_tagToData->second;
          a_tagToData.release();
 
-    	 //logInfo("progressOffloading()", "received ack handshake message: "<<buffer<<" for "
-    	//		                       <<" center[0] = "<<data->_metadata[0]
-	//				                   <<" center[1] = "<<data->_metadata[1]
-	//				                   <<" center[2] = "<<data->_metadata[2]
-	//			                       <<" time stamp = "<<data->_metadata[2*DIMENSIONS]
-	//				                   <<" element = "<<(int) data->_metadata[2*DIMENSIONS+2]);
+       //logInfo("progressOffloading()", "received ack handshake message: "<<buffer<<" for "
+      //                           <<" center[0] = "<<data->_metadata[0]
+  //                           <<" center[1] = "<<data->_metadata[1]
+  //                           <<" center[2] = "<<data->_metadata[2]
+  //                             <<" time stamp = "<<data->_metadata[2*DIMENSIONS]
+  //                           <<" element = "<<(int) data->_metadata[2*DIMENSIONS+2]);
 
-    	 if(buffer==REQUEST_JOB_ACK) {
+       if(buffer==REQUEST_JOB_ACK) {
 
            MPI_Request *sendRequests = new MPI_Request[4];
 
            solver->isendStealablePredictionJob(&data->_luh[0],
-         		                               &data->_lduh[0],
+                                           &data->_lduh[0],
                                                &data->_lQhbnd[0],
                                                &data->_lFhbnd[0],
                                                statRepAck.MPI_SOURCE,
-					                           statRepAck.MPI_TAG,
+                                     statRepAck.MPI_TAG,
                                                interTeamComm,
                                                &sendRequests[0],
                                                nullptr);
 
-       	   exahype::offloading::OffloadingManager::getInstance().submitRequests(
-       			                 sendRequests, 4, statRepAck.MPI_TAG, statRepAck.MPI_SOURCE,
-       			                 MigratablePredictionJob::sendHandlerReplication,
-        						 exahype::offloading::RequestType::sendReplica,
-       						     solver, false);
+           exahype::offloading::OffloadingManager::getInstance().submitRequests(
+                             sendRequests, 4, statRepAck.MPI_TAG, statRepAck.MPI_SOURCE,
+                             MigratablePredictionJob::sendHandlerReplication,
+                     exahype::offloading::RequestType::sendReplica,
+                       solver, false);
            delete[] sendRequests;
-    	 }
-    	 else {
-    	   solver->_mapTagToReplicationSendData.erase(statRepAck.MPI_TAG);
-    	   delete data;
+       }
+       else {
+         solver->_mapTagToReplicationSendData.erase(statRepAck.MPI_TAG);
+         delete data;
            AllocatedSTPsSend--;
-    	 }
+       }
       }
      ierr = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamCommAck, &receivedReplicaAck, &statRepAck );
      assertion( ierr==MPI_SUCCESS );
 #endif
-    if(MPI_Wtime()-lastActive > 10) {
-      logDebug("progressOffloading()"," still alive");
-      lastActive=MPI_Wtime();
-    }
      exahype::offloading::OffloadingManager::getInstance().progressRequests();
 #endif
   }
   time+= MPI_Wtime();
- 
-  //if(time>0.01) {
-  //  logInfo("progressOffloading","Iprobe loop took "<<time<<"s");
-  //}
-  // now, a different thread can progress the offloading
-  //exahype::offloading::OffloadingManager::getInstance().resetRunningAndReceivingBack();
-  lock.free();
+}
 
-#if defined(PerformanceAnalysisOffloading)
-  watch.stopTimer();
-  if(watch.getCalendarTime() >= 0.0) {
-    logInfo(
-        "endOffloadingManager()",
-        "time=" << std::fixed <<
-        watch.getCalendarTime() <<
-        ", cpu time=" <<
-        watch.getCPUTime()
-    );
-  }
+void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDGSolver* solver, bool runOnMaster) {
+
+  bool canRun;
+  tarch::multicore::Lock lock(OffloadingSemaphore, false);
+#if defined(OffloadingUseProgressThread)
+  if(runOnMaster)
+    canRun = false;
+  else
+    canRun = lock.tryLock();
+#else
+  // First, we ensure here that only one thread at a time progresses offloading
+  // this avoids multithreaded MPI problems
+  canRun = lock.tryLock();
 #endif
+
+  if(!canRun) {
+    return;
+  }
+#ifdef USE_ITAC
+  //VT_begin(event_progress);
+#endif
+
+  // 2. make progress on any outstanding MPI communication
+  //if(!runOnMaster)
+  exahype::offloading::OffloadingManager::getInstance().progressRequests();
+
+  // 3. progress on performance monitor
+  exahype::offloading::PerformanceMonitor::getInstance().run();
+
+  // 4. detect whether local rank should receive stolen sections
+  pollForOutstandingCommunicationRequests(solver);
+
+  lock.free();
 
 #ifdef USE_ITAC
   //VT_end(event_progress);
