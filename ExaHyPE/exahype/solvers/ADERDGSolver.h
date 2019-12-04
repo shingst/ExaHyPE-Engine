@@ -1275,6 +1275,20 @@ private:
 	  const int tag);
 
   /*
+   *  Sends away data of a StealablePredictionJob to a destination rank 
+   *  using MPI offloading. 
+   */
+  void sendMigratablePredictionJobOffload(
+          double *luh,
+          double *lduh,
+          double *lQhbnd,
+          double *lFhbnd,
+          int dest,
+          int tag,
+          MPI_Comm comm,
+          double *metadata =nullptr);
+
+  /*
    * Sends away data of a StealablePredictionJob to a destination rank.
    */
   void isendStealablePredictionJob(
