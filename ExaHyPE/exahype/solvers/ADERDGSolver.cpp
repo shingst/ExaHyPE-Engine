@@ -2962,7 +2962,7 @@ void exahype::solvers::ADERDGSolver::receiveBackMigratableJob(int tag, int src, 
         exahype::offloading::RequestType::receiveBack, solver, false);
 }
 
-void exahype::solver::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahype::solvers::ADERDGSolver *solver) {
+void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahype::solvers::ADERDGSolver *solver) {
   MPI_Comm interTeamComm = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamCommunicatorData();
 
   StealablePredictionJobData *data = new StealablePredictionJobData(*solver);
@@ -3024,7 +3024,12 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
 #endif
 #if defined(TaskSharing)
 #if !defined(TaskSharingUseHandshake)
+#if UseMPIOffloading
+  MPI_Status_Offload statRepDataOffload;
+  MPI_Iprobe_offload(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamComm, &receivedReplicaTask, &statRepDataOffload);
+#else
   MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamComm, &receivedReplicaTask, &statRepData);
+#endif
 #endif
   MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamCommAck, &receivedReplicaAck, &statRepAck);
   MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamCommKey, &receivedReplicaKey, &statRepKey);
