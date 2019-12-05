@@ -2804,6 +2804,12 @@ public:
    */
   static void progressOffloading(exahype::solvers::ADERDGSolver* solver, bool isCalledOnMaster);
 
+  static void receiveTaskOutcome(int tag, int src, exahype::solvers::ADERDGSolver *solver);
+
+  static void receiveMigratableJob(int tag, int src, exahype::solvers::ADERDGSolver *solver);
+
+  static void receiveBackMigratableJob(int tag, int src, exahype::solvers::ADERDGSolver *solver);
+
   static void pollForOutstandingCommunicationRequests(exahype::solvers::ADERDGSolver *solver);
 
   static void setMaxNumberOfIprobesInProgressOffloading(int maxNumIprobes);
