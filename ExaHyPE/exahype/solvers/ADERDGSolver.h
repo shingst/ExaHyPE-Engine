@@ -1309,7 +1309,7 @@ private:
 	  double *lduh,
 	  double *lQhbnd,
 	  double *lFhbnd,
-      int srcRank,
+          int srcRank,
 	  int tag,
 	  MPI_Comm comm,
           MPI_Request *requests,
@@ -1323,10 +1323,21 @@ private:
     double *lduh,
     double *lQhbnd,
     double *lFhbnd,
-      int srcRank,
+    int srcRank,
     int tag,
     MPI_Comm comm,
     double *metadata =nullptr);
+
+  void recvMigratablePredictionJobOffload(
+    double *luh,
+    double *lduh,
+    double *lQhbnd,
+    double *lFhbnd,
+    int srcRank,
+    int tag,
+    MPI_Comm comm,
+    double *metadata =nullptr);
+
 
 
   /* If a StealablePredictionJob has been spawned by the master thread,
