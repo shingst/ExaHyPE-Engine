@@ -204,7 +204,7 @@ void PDEncp(const double* const Q,const double* const gradQ,double* const BgradQ
 }
 
 void PDEEigenvalues(const double* const Q,const int direction,double* const L){
-    if(Q[5]<1.e-10){
+    if(Q[5]<1.e-4){
         L[0] = 1.0;
         return;
     }
