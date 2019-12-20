@@ -255,7 +255,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% if nDim ==3 %}
 {% if useFlux %}
     //call flux in z
-    for (int xy = 0; xy < {{nDof*nDof}}; y++){
+    for (int xy = 0; xy < {{nDof*nDof}}; xy++){
       for (int z = 0; z < {{nDof}}; z++) {
         solver.{{solverName}}::flux_z(lQi+{{idx(z,0,xy,0)}}, lPi+{{idxLPi(z,0,xy,0)}}, tmpArray+z*{{nVarPad}}); //nVar
       }
@@ -516,7 +516,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% endif %}
 {% if useFlux %}
   //call flux in z
-  for (int xy = 0; xy < {{nDof*nDof}}; y++){
+  for (int xy = 0; xy < {{nDof*nDof}}; xy++){
     for (int z = 0; z < {{nDof}}; z++) {
       solver.{{solverName}}::flux_z(lQhi+{{idx(z,0,xy,0)}}, lPi+{{idxLPi(z,0,xy,0)}}, tmpArray+z*{{nVarPad}}); //nVar
     }
