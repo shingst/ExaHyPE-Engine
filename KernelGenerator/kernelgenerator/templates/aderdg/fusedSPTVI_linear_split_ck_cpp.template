@@ -97,9 +97,11 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   // local tmp array
   double tmpArray[{{nVarPad*nDof}}] __attribute__((aligned(ALIGNMENT))); //used by flux and ncp
   double dudxT_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
+  double negativeDudxT_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
 {% if useLibxsmm %}
 #if defined(USE_IPO) && ! defined(UNSAFE_IPO)
-  double doNotOptimizeAway = dudxT_by_dx[0]; // used to prevent the compiler from optimizing dudxT_by_dx away
+  double doNotOptimizeAway1 = dudxT_by_dx[0]; // used to prevent the compiler from optimizing dudxT_by_dx away
+  double doNotOptimizeAway2 = negativeDudxT_by_dx[0]; // used to prevent the compiler from optimizing dudxT_by_dx away
 #endif
 {% endif %}
 
@@ -158,9 +160,10 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 
 
   // 0. precompute 1/dx * dudx_T. Assume dx[0] == dx[1] == dx[2]
-  #pragma omp simd aligned(dudxT_by_dx,dudx_T:ALIGNMENT)
+  #pragma omp simd aligned(dudxT_by_dx,negativeDudxT_by_dx,dudx_T:ALIGNMENT)
   for (int it = 0; it < {{nDof*nDofPad}}; it++) {
     dudxT_by_dx[it] = invDx * dudx_T[it];
+    negativeDudxT_by_dx[it] = -dudxT_by_dx[it];
   }
 
   //***************************
@@ -204,7 +207,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
       for (int x = 0; x < {{nDof}} ; x++){
         solver.{{solverName}}::flux_x(lQi+{{idx(0,yz,x,0)}}, lPi+{{idxLPi(0,yz,x,0)}}, tmpArray+x*{{nVarPad}}); //nVar
       }
-      {{ m.matmul('flux_x_sck', 'tmpArray', 'dudxT_by_dx', 'lQi_next', '0', '0', idx(0,yz,0,0)) | indent(6) }}{##}
+      {{ m.matmul('flux_x_sck', 'tmpArray', 'negativeDudxT_by_dx', 'lQi_next', '0', '0', idx(0,yz,0,0)) | indent(6) }}{##}
     }
 {% endif %}
 
@@ -230,7 +233,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
         for (int y = 0; y < {{nDof}} ; y++){
           solver.{{solverName}}::flux_y(lQi+{{idx(z,y,x,0)}}, lPi+{{idxLPi(z,y,x,0)}}, tmpArray+y*{{nVarPad}}); //nVar
         }
-        {{ m.matmul('flux_y_sck', 'tmpArray', 'dudxT_by_dx', 'lQi_next', '0', '0', idx(z,0,x,0)) | indent(8) }}{##}
+        {{ m.matmul('flux_y_sck', 'tmpArray', 'negativeDudxT_by_dx', 'lQi_next', '0', '0', idx(z,0,x,0)) | indent(8) }}{##}
       }
     }
 {% endif %}
@@ -259,7 +262,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
       for (int z = 0; z < {{nDof}}; z++) {
         solver.{{solverName}}::flux_z(lQi+{{idx(z,0,xy,0)}}, lPi+{{idxLPi(z,0,xy,0)}}, tmpArray+z*{{nVarPad}}); //nVar
       }
-      {{ m.matmul('flux_z_sck', 'tmpArray', 'dudxT_by_dx', 'lQi_next', '0', '0', idx(0,0,xy,0)) | indent(6) }}{##}
+      {{ m.matmul('flux_z_sck', 'tmpArray', 'negativeDudxT_by_dx', 'lQi_next', '0', '0', idx(0,0,xy,0)) | indent(6) }}{##}
     }
 {% endif %}
     
