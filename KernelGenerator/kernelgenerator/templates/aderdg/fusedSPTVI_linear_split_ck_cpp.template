@@ -280,7 +280,17 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
         lQi_next[{{idx(0,0,xyz,n)}}] -= tmpArray[n]; 
       }
     }
-{% endif%}
+{% endif %}
+{% if useSource %}
+    //call source
+    for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
+      solver.{{solverName}}::algebraicSource_scalar(lQi+{{idx(0,0,xyz,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(0,0,xyz,0)}}{% else %}nullptr{%endif%}, tmpArray, center, tStep);
+      #pragma omp simd aligned(lQi_next,tmpArray:ALIGNMENT)
+      for (int n = 0; n < {{nVarPad}}; n++) {
+        lQi_next[{{idx(0,0,xyz,n)}}] -= tmpArray[n]; 
+      }
+    }
+{% endif %}
 {% if usePointSources %}
     //add ith Ps derivative to lQi_next
     for (int it_t = 0; it_t < {{nDof}}; it_t++) {
@@ -555,6 +565,17 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
       }
     }
   }
+{% endif %}
+
+{% if useSource %}
+    //call source
+    for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
+      solver.{{solverName}}::algebraicSource_scalar(lQhi+{{idx(0,0,xyz,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(0,0,xyz,0)}}{% else %}nullptr{%endif%}, tmpArray, center, tStep);
+      #pragma omp simd aligned(lduh,tmpArray:ALIGNMENT)
+      for (int n = 0; n < {{nVarPad}}; n++) {
+        lduh[{{idx(0,0,xyz,n)}}] -= tmpArray[n] * weights3[{{idxW3(0,0,xyz)}}]; 
+      }
+    }
 {% endif %}
 
   return -1; //no picard iteration in linear case
