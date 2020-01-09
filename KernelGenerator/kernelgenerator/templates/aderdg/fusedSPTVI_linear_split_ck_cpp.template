@@ -205,7 +205,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     //call flux in x
     for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
       for (int x = 0; x < {{nDof}} ; x++){
-        solver.{{solverName}}::flux_x(lQi+{{idx(0,yz,x,0)}}, lPi+{{idxLPi(0,yz,x,0)}}, tmpArray+x*{{nVarPad}}); //nVar
+        solver.{{solverName}}::flux_x(lQi+{{idx(0,yz,x,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(0,yz,x,0)}}{% else %}nullptr{%endif%}, tmpArray+x*{{nVarPad}}); //nVar
       }
       {{ m.matmul('flux_x_sck', 'tmpArray', 'negativeDudxT_by_dx', 'lQi_next', '0', '0', idx(0,yz,0,0)) | indent(6) }}{##}
     }
@@ -231,7 +231,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     for (int z = 0; z < {{nDof3D}}; z++) {
       for (int x = 0; x < {{nDof}}; x++) {
         for (int y = 0; y < {{nDof}} ; y++){
-          solver.{{solverName}}::flux_y(lQi+{{idx(z,y,x,0)}}, lPi+{{idxLPi(z,y,x,0)}}, tmpArray+y*{{nVarPad}}); //nVar
+          solver.{{solverName}}::flux_y(lQi+{{idx(z,y,x,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,y,x,0)}}{% else %}nullptr{%endif%}, tmpArray+y*{{nVarPad}}); //nVar
         }
         {{ m.matmul('flux_y_sck', 'tmpArray', 'negativeDudxT_by_dx', 'lQi_next', '0', '0', idx(z,0,x,0)) | indent(8) }}{##}
       }
@@ -260,7 +260,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     //call flux in z
     for (int xy = 0; xy < {{nDof*nDof}}; xy++){
       for (int z = 0; z < {{nDof}}; z++) {
-        solver.{{solverName}}::flux_z(lQi+{{idx(z,0,xy,0)}}, lPi+{{idxLPi(z,0,xy,0)}}, tmpArray+z*{{nVarPad}}); //nVar
+        solver.{{solverName}}::flux_z(lQi+{{idx(z,0,xy,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,0,xy,0)}}{% else %}nullptr{%endif%}, tmpArray+z*{{nVarPad}}); //nVar
       }
       {{ m.matmul('flux_z_sck', 'tmpArray', 'negativeDudxT_by_dx', 'lQi_next', '0', '0', idx(0,0,xy,0)) | indent(6) }}{##}
     }
