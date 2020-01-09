@@ -220,7 +220,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% if useFlux %}
     //call flux in x
     for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
-      solver.{{solverName}}::flux_x_vect(lQi+{{idx(0,yz,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(0,yz,0,0)}}{% else %}nullptr{%endif%}, tmpArray); //tmpArray[N][X]
+      solver.{{solverName}}::flux_x_vect(lQi+{{idx(0,yz,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(0,yz,0,0)}}{% else %}nullptr{%endif%}, tmpArray, {{nDofPad}}); //tmpArray[N][X]
       {{ m.matmul('flux_x_sck_vect', 'negativeDudx_by_dx', 'tmpArray', 'lQi_next', '0', '0', idx(0,yz,0,0)) | indent(6) }}{##}
     }
 {% endif %}
@@ -242,12 +242,11 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% if useFlux %}
     //call flux in y
     for (int z = 0; z < {{nDof3D}}; z++) {
-        for (int y = 0; y < {{nDof}} ; y++){
-          solver.{{solverName}}::flux_y_vect(lQi+{{idx(z,y,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,y,0,0)}}{% else %}nullptr{%endif%}, tmpArray+y*{{nDofPad*nVar}}); //tmpArray[Y][N][X]
-        }
-        //fuse n and x
-        {{ m.matmul('flux_y_sck_vect', 'tmpArray', 'negativeDudxT_by_dx', 'lQi_next', '0', '0', idx(z,0,0,0)) | indent(8) }}{##}
+      for (int y = 0; y < {{nDof}} ; y++){
+        solver.{{solverName}}::flux_y_vect(lQi+{{idx(z,y,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,y,0,0)}}{% else %}nullptr{%endif%}, tmpArray+y*{{nDofPad*nVar}}, {{nDofPad}}); //tmpArray[Y][N][X]
       }
+      //fuse n and x
+      {{ m.matmul('flux_y_sck_vect', 'tmpArray', 'negativeDudxT_by_dx', 'lQi_next', '0', '0', idx(z,0,0,0)) | indent(6) }}{##}
     }
 {% endif %}
     
@@ -271,7 +270,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     //call flux in z
     for (int y = 0; y < {{nDof}}; y++){
       for (int z = 0; z < {{nDof}}; z++) {
-        solver.{{solverName}}::flux_z(lQi+{{idx(z,y,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,y,0,0)}}{% else %}nullptr{%endif%}, tmpArray+z*{{nDofPad*nVar}}); //tmpArray[Z][N][X]
+        solver.{{solverName}}::flux_z_vect(lQi+{{idx(z,y,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,y,0,0)}}{% else %}nullptr{%endif%}, tmpArray+z*{{nDofPad*nVar}}, {{nDofPad}}); //tmpArray[Z][N][X]
       }
       //fuse n and x
       {{ m.matmul('flux_z_sck_vect', 'tmpArray', 'negativeDudxT_by_dx', 'lQi_next', '0', '0', idx(0,y,0,0)) | indent(6) }}{##}
@@ -295,7 +294,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% if useSource %}
     //call source
     for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
-      solver.{{solverName}}::algebraicSource_scalar(lQi+{{idx(0,yz,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(0,yz,0,0)}}{% else %}nullptr{%endif%}, tmpArray, center, tStep, {{nDofPad}});
+      solver.{{solverName}}::algebraicSource_vect(lQi+{{idx(0,yz,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(0,yz,0,0)}}{% else %}nullptr{%endif%}, tmpArray, center, tStep, {{nDofPad}});
       #pragma omp simd aligned(lQi_next,tmpArray:ALIGNMENT)
       for (int nx = 0; nx < {{nVar*nDofPad}}; nx++) {
         lQi_next[{{idx(0,0,0,nx)}}] -= tmpArray[nx]; 
@@ -445,7 +444,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% if useFlux %}
   // flux in x
   for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
-    solver.{{solverName}}::flux_x_vect(lQhi+{{idx(0,yz,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(0,yz,0,0)}}{% else %}nullptr{%endif%}, tmpArray); //tmpArray[N][X]
+    solver.{{solverName}}::flux_x_vect(lQhi+{{idx(0,yz,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(0,yz,0,0)}}{% else %}nullptr{%endif%}, tmpArray, {{nDofPad}}); //tmpArray[N][X]
     {{ m.matmul('flux_x_sck_vect', 'dudx_by_dx', 'tmpArray', 'lFhi', '0', '0', idx(0,yz,0,0)) | indent(4) }}{##}
   }
 {% endif %}
@@ -485,12 +484,11 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% if useFlux %}
   // flux in y
   for (int z = 0; z < {{nDof3D}}; z++) {
-      for (int y = 0; y < {{nDof}} ; y++){
-        solver.{{solverName}}::flux_y_vect(lQhi+{{idx(z,y,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,y,0,0)}}{% else %}nullptr{%endif%}, tmpArray+y*{{nDofPad*nVar}}); //tmpArray[Y][N][X]
-      }
-      //fuse n and x
-      {{ m.matmul('flux_y_sck_vect', 'tmpArray', 'dudxT_by_dx', 'lFhi', '0', '0', idx(z,0,0,0)) | indent(6) }}{##}
+    for (int y = 0; y < {{nDof}} ; y++){
+      solver.{{solverName}}::flux_y_vect(lQhi+{{idx(z,y,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,y,0,0)}}{% else %}nullptr{%endif%}, tmpArray+y*{{nDofPad*nVar}}, {{nDofPad}}); //tmpArray[Y][N][X]
     }
+    //fuse n and x
+    {{ m.matmul('flux_y_sck_vect', 'tmpArray', 'dudxT_by_dx', 'lFhi', '0', '0', idx(z,0,0,0)) | indent(4) }}{##}
   }
 {% endif %}
   // ncp in y
@@ -536,7 +534,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   //flux in z
   for (int y = 0; y < {{nDof}}; y++){
     for (int z = 0; z < {{nDof}}; z++) {
-      solver.{{solverName}}::flux_z(lQhi+{{idx(z,y,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,y,0,0)}}{% else %}nullptr{%endif%}, tmpArray+z*{{nDofPad*nVar}}); //tmpArray[Z][N][X]
+      solver.{{solverName}}::flux_z_vect(lQhi+{{idx(z,y,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,y,0,0)}}{% else %}nullptr{%endif%}, tmpArray+z*{{nDofPad*nVar}}, {{nDofPad}}); //tmpArray[Z][N][X]
     }
     //fuse n and x
     {{ m.matmul('flux_z_sck_vect', 'tmpArray', 'dudxT_by_dx', 'lFhi', '0', '0', idx(0,y,0,0)) | indent(6) }}{##}
@@ -576,7 +574,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% if useSource %}
     //call source
     for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
-      solver.{{solverName}}::algebraicSource_scalar(lQhi+{{idx(0,yz,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(0,yz,0,0)}}{% else %}nullptr{%endif%}, tmpArray, center, tStep, {{nDofPad}});
+      solver.{{solverName}}::algebraicSource_vect(lQhi+{{idx(0,yz,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(0,yz,0,0)}}{% else %}nullptr{%endif%}, tmpArray, center, tStep, {{nDofPad}});
       for (int x = 0; x < {{nDof}}; x++) {
         for (int n = 0; n < {{nVar}}; n++) {
           lduh[{{idxLduh(0,yz,x,n)}}] -= tmpArray[x*{{nDofPad}}+n] * weights3[{{idxW3(0,yz,x)}}];
