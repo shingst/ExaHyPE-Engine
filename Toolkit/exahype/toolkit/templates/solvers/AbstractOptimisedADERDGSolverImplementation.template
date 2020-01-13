@@ -181,13 +181,8 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   {% set SPTbufferSignature="lQi, lFi, lSi, lQhi, lFhi, lShi, gradQ, PSi, PSderivatives" %}
   double* lQi = memory + {{optNamespace}}::getlQiShift();
   double* lQhi = memory + {{optNamespace}}::getlQhiShift();
-  {% if useFlux %}
   double* lFi = memory + {{optNamespace}}::getlFiShift();
   double* lFhi = memory + {{optNamespace}}::getlFhiShift();
-  {% else %}
-  constexpr double* lFi = nullptr;
-  constexpr double* lFhi = nullptr;
-  {% endif %}
   {% if useSource %}
   double* lSi = memory + {{optNamespace}}::getlSiShift();
   double* lShi = memory + {{optNamespace}}::getlShiShift();

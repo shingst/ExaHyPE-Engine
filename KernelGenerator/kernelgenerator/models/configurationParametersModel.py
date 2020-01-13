@@ -85,7 +85,7 @@ class ConfigurationParametersModel(AbstractModelBaseClass):
                     # default linear
                     self.context["lQiSize"]   = nDataPad*(nDof**nDim)*(1+nDof)
                     self.context["lQhiSize"]  = nDataPad*(nDof**nDim)
-                    self.context["lFiSize"]   = nVarPad*(nDof**(nDim+1))*(2*nDim+1) # Todo JMG see if 2dim+1 or 2dim
+                    self.context["lFiSize"]   = nDim*nDof*(nDof**nDim)*nVarPad#nVarPad*(nDof**(nDim+1))*(2*nDim+1) # Todo JMG see if 2dim+1 or 2dim
                     self.context["lFhiSize"]  = nVarPad*(nDof**nDim)*nDim
                     if self.context["useSource"]:
                         self.context["lSiSize"]   = nVarPad*(nDof**(nDim+1))
