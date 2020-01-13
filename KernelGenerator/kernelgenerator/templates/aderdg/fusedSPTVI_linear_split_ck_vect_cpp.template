@@ -215,7 +215,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     //put source here
     
     // reset lQi_next
-    std::memset(lQi_next, 0, {{(nDof**nDim)*nVarPad}} *sizeof(double));
+    std::memset(lQi_next, 0, {{nDof3D*nDof*nDofPad*nVar}} *sizeof(double));
 
 {% if useFlux %}
     //call flux in x
@@ -297,7 +297,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
       solver.{{solverName}}::algebraicSource_vect(lQi+{{idx(0,yz,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(0,yz,0,0)}}{% else %}nullptr{%endif%}, tmpArray, center, tStep, {{nDofPad}});
       #pragma omp simd aligned(lQi_next,tmpArray:ALIGNMENT)
       for (int nx = 0; nx < {{nVar*nDofPad}}; nx++) {
-        lQi_next[{{idx(0,0,0,nx)}}] -= tmpArray[nx]; 
+        lQi_next[{{idx(0,yz,0,nx)}}] -= tmpArray[nx];
       }
     }
 {% endif %}
@@ -577,7 +577,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
       solver.{{solverName}}::algebraicSource_vect(lQhi+{{idx(0,yz,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(0,yz,0,0)}}{% else %}nullptr{%endif%}, tmpArray, center, tStep, {{nDofPad}});
       for (int x = 0; x < {{nDof}}; x++) {
         for (int n = 0; n < {{nVar}}; n++) {
-          lduh[{{idxLduh(0,yz,x,n)}}] -= tmpArray[x*{{nDofPad}}+n] * weights3[{{idxW3(0,yz,x)}}];
+          lduh[{{idxLduh(0,yz,x,n)}}] -= tmpArray[n*{{nDofPad}}+x] * weights3[{{idxW3(0,yz,x)}}];
         }
       }
     }
