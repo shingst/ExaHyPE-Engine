@@ -41,6 +41,13 @@ public:
   static constexpr double CFL                    = {{CFL}};
   static constexpr double PNPM                   = {{PNPM}};
   
+  // vectorisation parameters not used by the solver but required to compile vectorised user method if present
+  // array stride of the fastest dim to vectorize upon.
+  static constexpr int VectStride                = 1;
+  // length of the useful data in the array's fastest dim.
+  // If VectLength < VectStride the rest is padding (might contain junk values).
+  static constexpr int VectLength                = 1;
+  
   // quadrature weights and operators
   static constexpr bool UseLobattoBasis = {{"true" if basis == "lobatto" else "false"}};
   // [order][node i]
