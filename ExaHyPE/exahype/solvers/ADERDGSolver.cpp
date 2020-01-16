@@ -2964,6 +2964,8 @@ void exahype::solvers::ADERDGSolver::receiveBackMigratableJob(int tag, int src, 
         exahype::offloading::RequestType::receiveBack, solver, false);
 }
 
+
+#if defined(TaskSharing)
 void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahype::solvers::ADERDGSolver *solver) {
   MPI_Comm interTeamComm = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamCommunicatorData();
 
@@ -3031,6 +3033,7 @@ void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahyp
          false);
 #endif
 }
+#endif
 
 void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exahype::solvers::ADERDGSolver *solver) {
   MPI_Status stat, statMapped;
