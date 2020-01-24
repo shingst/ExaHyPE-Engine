@@ -907,6 +907,10 @@ void exahype::runners::Runner::initHPCEnvironment() {
     logInfo("initHPCEnvironment()","\trun touchVertexFirstTime=" << (mappings::Empty::UseTouchVertexFirstTime ? "on" : "off"));
   }
 
+  #if defined(MemoryMonitoring) && defined(MemoryMonitoringTrack)
+  exahype::offloading::MemoryMonitor::getInstance().setOutputDir(_parser.getMemoryStatsOutputDir());
+  #endif
+
   //
   // Configure ITAC profiling
   // ================================================

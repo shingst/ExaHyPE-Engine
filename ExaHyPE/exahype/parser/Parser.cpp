@@ -228,7 +228,7 @@ void exahype::parser::Parser::readFile(std::istream& inputStream, std::string fi
     _impl->data = json::parse(inputStream);
   } catch(json::parse_error& e) {
     logError("readFile()", "Could not read specification file " << filename
-      << " becaue the file is not a valid JSON file.");
+      << " because the file is not a valid JSON file.");
     logError("readFile()", "Syntax Error (Error type " << e.id << "): " << e.what() << " at byte position " << e.byte);
     logError("readFile()", "Hint: Please ensure the given specification file is of the novel JSON format. We recently "
       << "switched formats and if you have an old-style specification file, use the toolkit to translate it to JSON.");
@@ -1190,6 +1190,10 @@ std::string exahype::parser::Parser::getMetricsIdentifierList() const {
 
 std::string exahype::parser::Parser::getProfilingOutputFilename() const {
   return getStringFromPath("/profiling/profiling_output", "", isOptional);
+}
+
+std::string exahype::parser::Parser::getMemoryStatsOutputDir() const {
+  return getStringFromPath("/memory_monitoring/memory_stats_output_dir", "", isOptional);
 }
 
 void exahype::parser::Parser::checkSolverConsistency(int solverNumber) const {

@@ -56,6 +56,8 @@ class exahype::offloading::MemoryMonitor : public tarch::services::Service {
 
   std::chrono::system_clock::time_point _lastMeasurementTimestamp, _start;
 
+  std::string _output_dir;
+
   public:
   MemoryMonitor();
   static MemoryMonitor& getInstance();
@@ -69,6 +71,8 @@ class exahype::offloading::MemoryMonitor : public tarch::services::Service {
   virtual void receiveDanglingMessages();
 
   virtual void dumpMemoryUsage();
+
+  virtual void setOutputDir(std::string output_dir);
 };
 
 

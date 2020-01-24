@@ -18,6 +18,8 @@
 #include "tarch/multicore/Jobs.h"
 #include "peano/utils/UserInterface.h"
 
+#include "exahype/parser/Parser.h"
+
 #include <fstream>
 #include <iostream>
 
@@ -89,10 +91,14 @@ void exahype::offloading::MemoryMonitor::dumpMemoryUsage() {
   team = TMPI_GetTeamNumber();
 #endif
 
-  std::string outputFilename = "memory_stats_r"+std::to_string(rank)+"_t"+std::to_string(team)+".csv";
+  std::string outputFilename = _output_dir + "/memory_stats_r"+std::to_string(rank)+"_t"+std::to_string(team)+".csv";
 
   std::ofstream file;
   file.open(outputFilename);
+
+  if (!file) {
+    logInfo("dumpMemoryUsage()","Failed to open file for writing " << outputFilename);
+  }
 
   file<<"timestamp usedMem freeMem\n";
 
@@ -109,7 +115,7 @@ void exahype::offloading::MemoryMonitor::receiveDanglingMessages() {
 
   if(freeMem<1000)
     logInfo("receiveDanglingMessage(...)", "used memory =" << usedMem << " MB"
-                                          <<" free memory = "<< freeMem << " MB ");
+                                          <<" free memory ="<< freeMem << " MB ");
 
 #if defined(MemoryMonitoringTrack)
   if(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-_lastMeasurementTimestamp).count()>=1) {
@@ -118,6 +124,10 @@ void exahype::offloading::MemoryMonitor::receiveDanglingMessages() {
   }
 #endif
 
+}
+
+void exahype::offloading::MemoryMonitor::setOutputDir(std::string output_dir) {
+  _output_dir = output_dir;
 }
 
 exahype::offloading::MemoryMonitor& exahype::offloading::MemoryMonitor::getInstance() {

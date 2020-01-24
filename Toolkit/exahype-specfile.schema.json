@@ -167,6 +167,16 @@
         "measure_cell_processing_times_iter" : ["measure_cell_processing_times"]
       }
     },
+    "memory_monitoring" : {
+      "type" : "object",
+      "properties" : {
+        "memory_stats_output_dir" : {
+          "type" : "string", 
+          "title" : "The directory to store memory statistics into.", 
+          "default" : ""
+        }
+      }
+    },
     "architecture" : {
       "type" : "string", 
       "title" : "Computational target architecture", 
