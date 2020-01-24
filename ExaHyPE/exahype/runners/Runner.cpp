@@ -110,6 +110,8 @@
 
 #include "exahype/offloading/OffloadingProfiler.h"
 
+#include "exahype/offloading/MemoryMonitor.h"
+
 #if defined(TaskSharing)
 #include "teaMPI.h"
 #endif
@@ -1074,6 +1076,10 @@ int exahype::runners::Runner::run() {
   logInfo("shutdownDistributedMemoryConfiguration()","destroyed MPI communicators");
 #if defined(TaskSharing)
   exahype::offloading::ReplicationStatistics::getInstance().printStatistics();
+#endif
+
+#if defined(MemoryMonitoring) && defined(MemoryMonitoringTrack)
+  exahype::offloading::MemoryMonitor::getInstance().dumpMemoryUsage();
 #endif
 //  exahype::offloading::OffloadingProfiler::getInstance().endPhase();
 //  logInfo("shutdownDistributedMemoryConfiguration()","ended profiling phase");

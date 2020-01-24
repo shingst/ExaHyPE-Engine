@@ -2502,16 +2502,15 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleReplicatedSTPs(bool isFinal) {
                                                                     <<" allocated jobs send "<<AllocatedSTPsSend
                                                                     <<" allocated jobs receive "<<AllocatedSTPsReceive
                                                                     <<" estimated additional mem consumption "<<(double) getAdditionalCurrentMemoryUsageReplication()/1E9<<"GB"
-					 			    <<" actual mem usage "<<peano::utils::UserInterface::getMemoryUsageMB()
+					 			                                                    <<" actual mem usage "<<peano::utils::UserInterface::getMemoryUsageMB()
                                                                     <<" memory per stp "<< sizeof(StealablePredictionJobData) + sizeof(double) * ( getDataPerCell() + getUpdateSize() + getBndTotalSize() + getBndFluxTotalSize() )
                                                                     <<" allocated stps (constructor) "<<AllocatedSTPs
-							   	    <<" entrys in hash map "<<_jobDatabase.size()
-								    <<" sent STPs "<<SentSTPs
-								    <<" completed sends "<<CompletedSentSTPs
-								    <<" outstanding requests "<<exahype::offloading::OffloadingManager::getInstance().getNumberOfOutstandingRequests(exahype::offloading::RequestType::sendReplica)
-											                           +exahype::offloading::OffloadingManager::getInstance().getNumberOfOutstandingRequests(exahype::offloading::RequestType::receiveReplica)
-																	   );
-
+							   	                                                  <<" entrys in hash map "<<_jobDatabase.size()
+								                                                    <<" sent STPs "<<SentSTPs
+				         				                                            <<" completed sends "<<CompletedSentSTPs
+								                                                    <<" outstanding requests "<<exahype::offloading::OffloadingManager::getInstance().getNumberOfOutstandingRequests(exahype::offloading::RequestType::sendReplica)
+											                                                +exahype::offloading::OffloadingManager::getInstance().getNumberOfOutstandingRequests(exahype::offloading::RequestType::receiveReplica)
+																	                                  );
 
   while( (i< unsafe_size || isFinal) && gotOne) {
 	JobTableKey key;
@@ -2521,7 +2520,7 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleReplicatedSTPs(bool isFinal) {
        //logInfo("cleanUpStaleReplicatedSTPs()", " time stamp of key ="<<key.timestamp);
 	i++;
   
-        assertion(key.center!=nullptr);
+  assertion(key.center!=nullptr);
         //logInfo("cleanUpStaleReplicatedSTPs()", " trying to find key - "
         //                                        <<" center[0] = "<<key.center[0]
          //                                       <<" center[1] = "<<key.center[1]
@@ -2598,8 +2597,8 @@ void exahype::solvers::ADERDGSolver::sendRequestForJobAndReceive(int jobTag, int
       MPI_Isend(&REQUEST_JOB_ACK, 1, MPI_INTEGER, rank, jobTag, teamInterCommAck, &sendRequest);
       exahype::offloading::OffloadingManager::getInstance().submitRequests(&sendRequest, 1, jobTag, rank,
     		                                                   MigratablePredictionJob::sendAckHandlerReplication,
-															   exahype::offloading::RequestType::sendReplica,
-															   this, false);
+													                          		   exahype::offloading::RequestType::sendReplica,
+															                             this, false);
       std::memcpy(data->_metadata, key, sizeof(double)*(2*DIMENSIONS+3));
       MPI_Request receiveReplicaRequests[4];
       irecvStealablePredictionJob(
@@ -2670,10 +2669,10 @@ void exahype::solvers::ADERDGSolver::sendKeyOfReplicatedSTPToOtherTeams(Migratab
       if(i!=interCommRank) {
  		  logDebug("sendKeyOfReplicatedSTPToOtherTeams"," team "<< interCommRank
                                                  <<" send replica job: center[0] = "<<data->_metadata[0]
- 			                                    <<" center[1] = "<<data->_metadata[1]
- 				                                <<" center[2] = "<<data->_metadata[2]
- 				                                <<" time stamp = "<<job->_predictorTimeStamp
- 												<<" to team "<<i);
+ 			                                           <<" center[1] = "<<data->_metadata[1]
+ 				                                         <<" center[2] = "<<data->_metadata[2]
+ 				                                         <<" time stamp = "<<job->_predictorTimeStamp
+ 												                         <<" to team "<<i);
          MPI_Isend(data->_metadata, 2*DIMENSIONS+3, MPI_DOUBLE, i, tag, teamInterCommKey, &sendRequests[j]);
    	     j++;
       }
@@ -2723,18 +2722,18 @@ void exahype::solvers::ADERDGSolver::sendFullReplicatedSTPToOtherTeams(Migratabl
         logDebug("sendReplicatedSTPToOtherTeams"," team "<< interCommRank
                                                 <<" send replica job: center[0] = "<<metadata[0]
                                                 <<" center[1] = "<<metadata[1]
-				                <<" center[2] = "<<metadata[2]
+				                                        <<" center[2] = "<<metadata[2]
                                                 <<" time stamp = "<<job->_predictorTimeStamp
-	                                        <<" to team "<<i);
+	                                              <<" to team "<<i);
         sendMigratablePredictionJobOffload(&luh[0],
-        		                 &lduh[0],
-					 &lQhbnd[0],
-					 &lFhbnd[0],
-					 i,
-					 tag,
-					 teamInterComm,
-					 metadata);
-	j++;
+        		                               &lduh[0],
+					                                 &lQhbnd[0],
+				                                	 &lFhbnd[0],
+			                                		 i,
+					                                 tag,
+				                                 	 teamInterComm,
+				                                	 metadata);
+	      j++;
       }	
     }
 
@@ -2771,9 +2770,9 @@ void exahype::solvers::ADERDGSolver::sendFullReplicatedSTPToOtherTeams(Migratabl
           logDebug("sendReplicatedSTPToOtherTeams"," team "<< interCommRank
                                                 <<" send replica job: center[0] = "<<data->_metadata[0]
                                                 <<" center[1] = "<<data->_metadata[1]
-				                <<" center[2] = "<<data->_metadata[2]
+				                                        <<" center[2] = "<<data->_metadata[2]
                                                 <<" time stamp = "<<job->_predictorTimeStamp
-	                                        <<" to team "<<i);
+	                                              <<" to team "<<i);
           isendStealablePredictionJob(&data->_luh[0],
                                       &data->_lduh[0],
                                       &data->_lQhbnd[0],
@@ -2789,9 +2788,9 @@ void exahype::solvers::ADERDGSolver::sendFullReplicatedSTPToOtherTeams(Migratabl
 
 	exahype::offloading::OffloadingManager::getInstance().submitRequests(sendRequests, (teams-1)*5, tag, -1,
 			                                                             MigratablePredictionJob::sendHandlerReplication,
- 										     exahype::offloading::RequestType::sendReplica,
-										     this, false);
-        delete[] sendRequests;
+ 										                                               exahype::offloading::RequestType::sendReplica,
+										                                              this, false);
+  delete[] sendRequests;
 #endif
 }
 

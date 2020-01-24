@@ -21,12 +21,27 @@
 
 #include "exahype/solvers/ADERDGSolver.h"
 
+#include <chrono>
+#include <ctime>
+
 namespace exahype {
   namespace offloading {
     class MemoryMonitor;
+    class MemoryMeasurement;
   }
 }
 
+
+class exahype::offloading::MemoryMeasurement {
+  private:
+    unsigned long _elapsed;
+    size_t _freeMem;
+    size_t _usedMem;
+  public:
+    MemoryMeasurement(unsigned long, std::size_t freeMem, std::size_t usedMem );
+
+    std::string to_string();
+};
 
 class exahype::offloading::MemoryMonitor : public tarch::services::Service {
 
@@ -36,6 +51,10 @@ class exahype::offloading::MemoryMonitor : public tarch::services::Service {
    * The log device of this class.
    */
   static tarch::logging::Log _log;
+
+  std::vector<MemoryMeasurement> _measurements;
+
+  std::chrono::system_clock::time_point _lastMeasurementTimestamp, _start;
 
   public:
   MemoryMonitor();
@@ -49,6 +68,7 @@ class exahype::offloading::MemoryMonitor : public tarch::services::Service {
    */
   virtual void receiveDanglingMessages();
 
+  virtual void dumpMemoryUsage();
 };
 
 

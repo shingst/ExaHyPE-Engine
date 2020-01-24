@@ -18,12 +18,30 @@
 #include "tarch/multicore/Jobs.h"
 #include "peano/utils/UserInterface.h"
 
+#include <fstream>
+#include <iostream>
+
+#ifdef TMPI
+#include "teaMPI.h"
+#endif
+
 registerService(exahype::offloading::MemoryMonitor);
 
 tarch::logging::Log exahype::offloading::MemoryMonitor::_log("exahype::offloading::MemoryMonitor");
 
+exahype::offloading::MemoryMeasurement::MemoryMeasurement(unsigned long elapsed, std::size_t freeMem, std::size_t usedMem )
+ : _elapsed(elapsed), _freeMem(freeMem), _usedMem(usedMem)
+{}
+
+std::string exahype::offloading::MemoryMeasurement::to_string() {
+  std::string result = "";
+  result = result +  std::to_string(_elapsed) + " " + std::to_string(_usedMem) + " " + std::to_string(_freeMem);
+  return result;
+}
+
 exahype::offloading::MemoryMonitor::MemoryMonitor()
- {}
+ : _start(std::chrono::system_clock::now()), _lastMeasurementTimestamp(std::chrono::system_clock::now())
+{}
 
 exahype::offloading::MemoryMonitor::~MemoryMonitor() {}
 
@@ -47,7 +65,6 @@ std::size_t exahype::offloading::MemoryMonitor::getFreeMemMB() {
   size_t line_size = 0;
   line_size = getline(&line_buf, &size, f);
   line_size = getline(&line_buf, &size, f);
-  //logInfo("getFreeMemMB",  line_buf);
 
   fclose(f);
 
@@ -61,20 +78,45 @@ std::size_t exahype::offloading::MemoryMonitor::getFreeMemMB() {
     }
   }
 
-  //logInfo("getFreeMemMB", "result "<<result);
-
-
   return result/1024;
 }
 
+void exahype::offloading::MemoryMonitor::dumpMemoryUsage() {
+  int rank = tarch::parallel::Node::getInstance().getRank();
+
+  int team = 0;
+#ifdef TMPI
+  team = TMPI_GetTeamNumber();
+#endif
+
+  std::string outputFilename = "memory_stats_r"+std::to_string(rank)+"_t"+std::to_string(team)+".csv";
+
+  std::ofstream file;
+  file.open(outputFilename);
+
+  file<<"timestamp usedMem freeMem\n";
+
+  for(auto& measurement : _measurements) {
+    file<<measurement.to_string()<<"\n";
+  }
+
+}
 
 void exahype::offloading::MemoryMonitor::receiveDanglingMessages() {
 
   size_t freeMem = getFreeMemMB();
+  size_t usedMem = peano::utils::UserInterface::getMemoryUsageMB();
 
   if(freeMem<1000)
-    logInfo("receiveDanglingMessage(...)", "memoryUsage    =" << peano::utils::UserInterface::getMemoryUsageMB() << " MB"
-                                          <<" free memory = "<< getFreeMemMB()<< " MB ");
+    logInfo("receiveDanglingMessage(...)", "used memory =" << usedMem << " MB"
+                                          <<" free memory = "<< freeMem << " MB ");
+
+#if defined(MemoryMonitoringTrack)
+  if(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-_lastMeasurementTimestamp).count()>=1) {
+    _lastMeasurementTimestamp = std::chrono::system_clock::now();
+    _measurements.push_back(MemoryMeasurement(std::chrono::duration_cast<std::chrono::seconds>((_lastMeasurementTimestamp-_start)).count(), freeMem, usedMem));
+  }
+#endif
 
 }
 
