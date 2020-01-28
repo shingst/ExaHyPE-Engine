@@ -11,7 +11,7 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if defined(SharedTBB)  && defined(Parallel) && defined(MemoryMonitoring)
+#if defined(SharedTBB)  && defined(Parallel)
 
 #include "exahype/offloading/MemoryMonitor.h"
 #include "tarch/services/ServiceFactory.h"
@@ -27,7 +27,9 @@
 #include "teaMPI.h"
 #endif
 
+#if defined(MemoryMonitoring)
 registerService(exahype::offloading::MemoryMonitor);
+#endif
 
 tarch::logging::Log exahype::offloading::MemoryMonitor::_log("exahype::offloading::MemoryMonitor");
 

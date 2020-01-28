@@ -2821,7 +2821,7 @@ public:
 
   static void receiveBackMigratableJob(int tag, int src, exahype::solvers::ADERDGSolver *solver);
 
-  static void pollForOutstandingCommunicationRequests(exahype::solvers::ADERDGSolver *solver);
+  static void pollForOutstandingCommunicationRequests(exahype::solvers::ADERDGSolver *solver, bool calledOnMaster);
 
   static void setMaxNumberOfIprobesInProgressOffloading(int maxNumIprobes);
 

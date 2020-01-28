@@ -2720,19 +2720,19 @@ void exahype::solvers::ADERDGSolver::sendFullReplicatedSTPToOtherTeams(Migratabl
     for(int i=0; i<teams; i++) {
       if(i!=interCommRank) {
         logDebug("sendReplicatedSTPToOtherTeams"," team "<< interCommRank
-                                                <<" send replica job: center[0] = "<<metadata[0]
-                                                <<" center[1] = "<<metadata[1]
-				                                        <<" center[2] = "<<metadata[2]
-                                                <<" time stamp = "<<job->_predictorTimeStamp
-	                                              <<" to team "<<i);
+                                                         <<" send replica job: center[0] = "<<metadata[0]
+                                                         <<" center[1] = "<<metadata[1]
+				                                         <<" center[2] = "<<metadata[2]
+                                                         <<" time stamp = "<<job->_predictorTimeStamp
+	                                                     <<" to team "<<i);
         sendMigratablePredictionJobOffload(&luh[0],
-        		                               &lduh[0],
-					                                 &lQhbnd[0],
-				                                	 &lFhbnd[0],
-			                                		 i,
-					                                 tag,
-				                                 	 teamInterComm,
-				                                	 metadata);
+        		                           &lduh[0],
+					                       &lQhbnd[0],
+				                           &lFhbnd[0],
+			                               i,
+					                       tag,
+				                           teamInterComm,
+				                           metadata);
 	      j++;
       }	
     }
@@ -3034,7 +3034,7 @@ void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahyp
 }
 #endif
 
-void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exahype::solvers::ADERDGSolver *solver) {
+void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exahype::solvers::ADERDGSolver *solver, bool calledOnMaster) {
   MPI_Status stat, statMapped;
   int receivedTask = 0;
   int receivedTaskBack = 0;
@@ -3237,8 +3237,17 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
      }
      ierr = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamCommAck, &receivedReplicaAck, &statRepAck );
      assertion( ierr==MPI_SUCCESS );
+
+#ifndef OffloadingUseProgressThread
+     tarch::multicore::RecursiveLock lock( tarch::services::Service::receiveDanglingMessagesSemaphore, false );
+     if(lock.tryLock()) {
+       tarch::parallel::Node::getInstance().receiveDanglingMessages();
+       lock.free();
+     }
+#endif
 #endif
      exahype::offloading::OffloadingManager::getInstance().progressRequests();
+     if(calledOnMaster) break;
 #endif
   }
   time+= MPI_Wtime();
@@ -3274,7 +3283,7 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
   exahype::offloading::PerformanceMonitor::getInstance().run();
 
   // 4. detect whether local rank should anything
-  pollForOutstandingCommunicationRequests(solver);
+  pollForOutstandingCommunicationRequests(solver, runOnMaster);
 
   lock.free();
 

@@ -110,7 +110,6 @@
 
 #include "exahype/offloading/OffloadingProfiler.h"
 
-#include "exahype/offloading/MemoryMonitor.h"
 
 #if defined(TaskSharing)
 #include "teaMPI.h"
@@ -119,6 +118,10 @@
 
 #if defined(TMPI_Heartbeats)
 #include "exahype/offloading/HeartbeatJob.h"
+#endif
+
+#if defined(MemoryMonitoring)
+#include "exahype/offloading/MemoryMonitor.h"
 #endif
 
 tarch::logging::Log exahype::runners::Runner::_log("exahype::runners::Runner");
@@ -1082,13 +1085,14 @@ int exahype::runners::Runner::run() {
   exahype::offloading::ReplicationStatistics::getInstance().printStatistics();
 #endif
 
-#if defined(MemoryMonitoring) && defined(MemoryMonitoringTrack)
-  exahype::offloading::MemoryMonitor::getInstance().dumpMemoryUsage();
-#endif
 //  exahype::offloading::OffloadingProfiler::getInstance().endPhase();
 //  logInfo("shutdownDistributedMemoryConfiguration()","ended profiling phase");
 //  exahype::offloading::OffloadingProfiler::getInstance().printStatistics();
 //  logInfo("shutdownDistributedMemoryConfiguration()","printed stats");
+#endif
+
+#if defined(MemoryMonitoring) && defined(MemoryMonitoringTrack)
+  exahype::offloading::MemoryMonitor::getInstance().dumpMemoryUsage();
 #endif
 
    logInfo("run()","shutdownDistributedMemoryConfiguration");
