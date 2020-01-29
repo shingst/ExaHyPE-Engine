@@ -306,6 +306,8 @@ void exahype::offloading::OffloadingManager::cancelOutstandingRequests() {
       RequestType::sendReplica,
       RequestType::receiveReplica
   };
+  tarch::multicore::Lock lock(_progressSemaphore, false);
+  lock.lock();
 
   for(auto type : types) {
     while(hasOutstandingRequestOfType(type)) {
@@ -331,6 +333,7 @@ void exahype::offloading::OffloadingManager::cancelOutstandingRequests() {
       createRequestArray( type, _activeRequests[i], _internalIdsOfActiveRequests[i] );
     }
   }
+  lock.free();
 }
 #endif
 

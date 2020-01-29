@@ -215,7 +215,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 #endif
     }
 #ifndef OffloadingUseProgressThread
-//    if(!isRunOnMaster)
+    if(!isRunOnMaster)
       exahype::solvers::ADERDGSolver::progressOffloading(&_solver, isRunOnMaster);
 #endif
   }

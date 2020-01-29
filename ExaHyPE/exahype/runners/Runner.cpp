@@ -1078,9 +1078,6 @@ int exahype::runners::Runner::run() {
     if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
       static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->stopOffloadingManager();
     }
-#if defined(DirtyCleanUp)
-    exahype::offloading::OffloadingManager::getInstance().cancelOutstandingRequests();
-#endif
   }
 
   logInfo("shutdownDistributedMemoryConfiguration()","stopped offloading manager");
