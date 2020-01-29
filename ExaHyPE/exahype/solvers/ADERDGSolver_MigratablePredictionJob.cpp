@@ -81,7 +81,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run( bool isCalled
      if(curr%1000==0) {
        tarch::timing::Watch watch("exahype::StealablePredictionJob::", "-", false,false);
        watch.startTimer();
-       result = handleExecution();
+       result = handleExecution(isCalledOnMaster);
        watch.stopTimer();
 
        logDebug("run()","measured time per STP "<<watch.getCalendarTime());
@@ -89,7 +89,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run( bool isCalled
        exahype::offloading::OffloadingAnalyser::getInstance().setTimePerSTP(watch.getCalendarTime());
      }
      else
-       result = handleExecution();
+       result = handleExecution(isCalledOnMaster);
 
 #ifdef USE_ITAC
       VT_end(event_stp);
@@ -97,7 +97,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run( bool isCalled
   return result;
 }
 
-bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecution() {
+bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecution(bool isRunOnMaster) {
   int myRank = tarch::parallel::Node::getInstance().getRank();
   bool result = false;
 
@@ -126,7 +126,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 					                  <<" time stamp = "<<_predictorTimeStamp
 	                                  <<" hash = "<<(size_t) key);
 
-  exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false);
+  //exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false);
   //exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(&_solver);
 
   tbb::concurrent_hash_map<JobTableKey, JobTableEntry>::accessor a_jobToData;
@@ -214,6 +214,10 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
       }
 #endif
     }
+#ifndef OffloadingUseProgressThread
+//    if(!isRunOnMaster)
+      exahype::solvers::ADERDGSolver::progressOffloading(&_solver, isRunOnMaster);
+#endif
   }
 #endif
 
@@ -221,10 +225,12 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     exahype::offloading::PerformanceMonitor::getInstance().decRemainingTasks();
     exahype::offloading::PerformanceMonitor::getInstance().decCurrentTasks();
   }
+
+
   return result;
 }
 
-bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution() {
+bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(bool isRunOnMaster) {
   int myRank = tarch::parallel::Node::getInstance().getRank();
   bool result = false;
 
@@ -235,7 +241,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution() 
 #endif
   //local treatment if this job belongs to the local rank
   if(_originRank==myRank) {
-    result = handleLocalExecution();
+    result = handleLocalExecution(isRunOnMaster);
     NumberOfEnclaveJobs--;
     assertion( NumberOfEnclaveJobs>=0 );
   }
@@ -262,7 +268,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution() 
     MPI_Request sendBackRequests[4];
     //logInfo("handleLocalExecution()", "postSendBack");
     _solver.isendStealablePredictionJob(_luh,
-         	                            _lduh,
+         	                              _lduh,
                                         _lQhbnd,
                                         _lFhbnd,
                                         _originRank,
@@ -270,13 +276,13 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution() 
                                         exahype::offloading::OffloadingManager::getInstance().getMPICommunicatorMapped(),
                                         sendBackRequests);
     exahype::offloading::OffloadingManager::getInstance().submitRequests(
-    		                            sendBackRequests,
-										4,
-										_tag,
-										_originRank,
-										sendBackHandler,
-										exahype::offloading::RequestType::sendBack,
-										&_solver);
+    		                                sendBackRequests,
+									    	                4,
+										                    _tag,
+										                    _originRank,
+										                    sendBackHandler,
+									                    	exahype::offloading::RequestType::sendBack,
+									                     	&_solver);
   }
   return result;
 }

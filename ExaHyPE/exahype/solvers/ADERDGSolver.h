@@ -1106,8 +1106,8 @@ private:
       static std::atomic<int> JobCounter;
 
       // actual execution of a STP job
-      bool handleExecution();
-      bool handleLocalExecution();
+      bool handleExecution(bool isCalledOnMaster);
+      bool handleLocalExecution(bool isCalledOnMaster);
 
     public:
       // constructor for local jobs that can be stolen

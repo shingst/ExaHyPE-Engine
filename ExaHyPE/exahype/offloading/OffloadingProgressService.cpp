@@ -16,7 +16,10 @@
 #include "exahype/offloading/OffloadingProgressService.h"
 #include "tarch/services/ServiceFactory.h"
 #include "tarch/multicore/Jobs.h"
+
+#ifndef TaskSharing
 registerService(exahype::offloading::OffloadingProgressService);
+#endif
 
 tarch::logging::Log exahype::offloading::OffloadingProgressService::_log("exahype::offloading::OffloadingProgressService");
 
