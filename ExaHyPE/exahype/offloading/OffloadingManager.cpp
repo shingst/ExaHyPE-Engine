@@ -297,6 +297,41 @@ void exahype::offloading::OffloadingManager::createRequestArray(
   }
 }
 
+void exahype::offloading::OffloadingManager::cancelOutstandingRequests() {
+  std::vector<RequestType> types = {RequestType::send,
+      RequestType::sendBack,
+      RequestType::receive,
+      RequestType::receiveBack,
+      RequestType::sendReplica,
+      RequestType::receiveReplica
+  };
+
+  for(auto type : types) {
+    while(hasOutstandingRequestOfType(type)) {
+      int i = requestTypeToMsgQueueIdx(type);
+      logInfo("cancelOutstandingRequests ", " cancelling i "<<i<<" size "<<_activeRequests[i].size());
+      for(int j=0; j<_activeRequests[i].size(); j++) {
+        if(_activeRequests[i][j]==MPI_REQUEST_NULL) continue;      
+
+        int ierr = MPI_Cancel(&_activeRequests[i][j]);
+        
+        if(ierr!=MPI_SUCCESS) {
+           char err_buffer[MPI_MAX_ERROR_STRING];
+           int resultlen = 0;
+         
+           MPI_Error_string(ierr,err_buffer,&resultlen);
+          fprintf(stderr,err_buffer);
+        }
+        assert(ierr==MPI_SUCCESS);
+        ierr = MPI_Request_free(&_activeRequests[i][j]);
+        assert(ierr==MPI_SUCCESS);
+      }
+      _activeRequests[i].clear();
+      createRequestArray( type, _activeRequests[i], _internalIdsOfActiveRequests[i] );
+    }
+  }
+}
+
 bool exahype::offloading::OffloadingManager::hasOutstandingRequestOfType(RequestType requestType) {
   logDebug("hasOutstandingRequestOfType",
            " type "

@@ -1068,14 +1068,19 @@ int exahype::runners::Runner::run() {
     if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
       //static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopOffloadingManager();
 #if defined(TaskSharing)
+#if !defined(DirtyCleanUp)
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->finishOutstandingInterTeamCommunication();
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->cleanUpStaleReplicatedSTPs(true);
+#endif
 #endif
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopOffloadingManager();
     }
     if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
       static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->stopOffloadingManager();
     }
+#if defined(DirtyCleanUp)
+    exahype::offloading::OffloadingManager::getInstance().cancelOutstandingRequests();
+#endif
   }
 
   logInfo("shutdownDistributedMemoryConfiguration()","stopped offloading manager");
