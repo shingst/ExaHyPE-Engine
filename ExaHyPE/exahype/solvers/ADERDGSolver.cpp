@@ -3672,26 +3672,26 @@ void exahype::solvers::ADERDGSolver::startOffloadingManager(bool spawn) {
 
 #ifndef OffloadingUseProgressThread
 void exahype::solvers::ADERDGSolver::pauseOffloadingManager() {
-  tarch::multicore::Lock lock(OffloadingSemaphore, true);
+//  tarch::multicore::Lock lock(OffloadingSemaphore, true);
   //logInfo("pauseOffloadingManager", "pausing ");
   if(_offloadingManagerJob!=nullptr){
     _offloadingManagerJob->pause();
     _offloadingManagerJob = nullptr;
   }
-  lock.free();
+//  lock.free();
 }
 
 void exahype::solvers::ADERDGSolver::resumeOffloadingManager() {
   //logInfo("resumeOffloadingManager", "resuming ");
   //old job will be deleted so we create a new one here
-  tarch::multicore::Lock lock(OffloadingSemaphore, true);
+//  tarch::multicore::Lock lock(OffloadingSemaphore, true);
   // assertion(_offloadingManagerJob==nullptr);
   if(_offloadingManagerJob==nullptr) {
     _offloadingManagerJob = new OffloadingManagerJob(*this);
     _offloadingManagerJob->resume();
     peano::datatraversal::TaskSet spawnedSet(_offloadingManagerJob);
   }
-  lock.free();
+//  lock.free();
 }
 #endif
 
