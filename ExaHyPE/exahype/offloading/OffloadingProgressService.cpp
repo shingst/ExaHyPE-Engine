@@ -36,7 +36,7 @@ void exahype::offloading::OffloadingProgressService::receiveDanglingMessages() {
   if(_isSet && _isEnabled) {
     exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressOffloading(1);
     // ToDo (Philipp): pass number of iterations through progress engine directly
-    exahype::solvers::ADERDGSolver::progressOffloading(_solver, true);
+    exahype::solvers::ADERDGSolver::progressOffloading(_solver, true, 1);
     exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressOffloading(std::numeric_limits<int>::max());
   }
 }

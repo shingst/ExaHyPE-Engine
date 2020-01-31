@@ -215,8 +215,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 #endif
     }
 #ifndef OffloadingUseProgressThread
-    if(!isRunOnMaster)
-      exahype::solvers::ADERDGSolver::progressOffloading(&_solver, isRunOnMaster);
+   // if(!isRunOnMaster)
+   //   exahype::solvers::ADERDGSolver::progressOffloading(&_solver, isRunOnMaster);
 #endif
   }
 #endif
@@ -244,6 +244,10 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(bo
     result = handleLocalExecution(isRunOnMaster);
     NumberOfEnclaveJobs--;
     assertion( NumberOfEnclaveJobs>=0 );
+#ifndef OffloadingUseProgressThread
+    if(!isRunOnMaster)
+      exahype::solvers::ADERDGSolver::progressOffloading(&_solver, isRunOnMaster, std::numeric_limits<int>::max());
+#endif
   }
   //remote task, need to execute and send it back
   else {
@@ -268,7 +272,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(bo
     MPI_Request sendBackRequests[4];
     //logInfo("handleLocalExecution()", "postSendBack");
     _solver.isendStealablePredictionJob(_luh,
-         	                              _lduh,
+         	                        _lduh,
                                         _lQhbnd,
                                         _lFhbnd,
                                         _originRank,
@@ -277,12 +281,12 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(bo
                                         sendBackRequests);
     exahype::offloading::OffloadingManager::getInstance().submitRequests(
     		                                sendBackRequests,
-									    	                4,
-										                    _tag,
-										                    _originRank,
-										                    sendBackHandler,
-									                    	exahype::offloading::RequestType::sendBack,
-									                     	&_solver);
+			    	                4,
+   			                        _tag,
+   			                        _originRank,
+					        sendBackHandler,
+					        exahype::offloading::RequestType::sendBack,
+			                  	&_solver);
   }
   return result;
 }

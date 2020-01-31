@@ -2478,14 +2478,14 @@ void exahype::solvers::ADERDGSolver::finishOutstandingInterTeamCommunication () 
 
   while(exahype::offloading::OffloadingManager::getInstance().hasOutstandingRequestOfType(exahype::offloading::RequestType::sendReplica)
     || exahype::offloading::OffloadingManager::getInstance().hasOutstandingRequestOfType(exahype::offloading::RequestType::receiveReplica) ) {
-    progressOffloading(this, false);
+    progressOffloading(this, false, std::numeric_limits<int>::max());
   }
   MPI_Request request;
 
   MPI_Ibarrier(interTeamComm, &request);
   int finished = 0;
   while(!finished) {
-    progressOffloading(this, false);
+    progressOffloading(this, false, std::numeric_limits<int>::max());
     MPI_Test(&request, &finished, MPI_STATUS_IGNORE);
   }
 }
@@ -2502,13 +2502,13 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleReplicatedSTPs(bool isFinal) {
                                                                     <<" allocated jobs send "<<AllocatedSTPsSend
                                                                     <<" allocated jobs receive "<<AllocatedSTPsReceive
                                                                     <<" estimated additional mem consumption "<<(double) getAdditionalCurrentMemoryUsageReplication()/1E9<<"GB"
-					 			                                                    <<" actual mem usage "<<peano::utils::UserInterface::getMemoryUsageMB()
+					 			    <<" actual mem usage "<<peano::utils::UserInterface::getMemoryUsageMB()
                                                                     <<" memory per stp "<< sizeof(StealablePredictionJobData) + sizeof(double) * ( getDataPerCell() + getUpdateSize() + getBndTotalSize() + getBndFluxTotalSize() )
                                                                     <<" allocated stps (constructor) "<<AllocatedSTPs
-							   	                                                  <<" entrys in hash map "<<_jobDatabase.size()
-								                                                    <<" sent STPs "<<SentSTPs
-				         				                                            <<" completed sends "<<CompletedSentSTPs
-								                                                    <<" outstanding requests "<<exahype::offloading::OffloadingManager::getInstance().getNumberOfOutstandingRequests(exahype::offloading::RequestType::sendReplica)
+							   	    <<" entrys in hash map "<<_jobDatabase.size()
+								    <<" sent STPs "<<SentSTPs
+				         			    <<" completed sends "<<CompletedSentSTPs
+							            <<" outstanding requests "<<exahype::offloading::OffloadingManager::getInstance().getNumberOfOutstandingRequests(exahype::offloading::RequestType::sendReplica)
 											                                                +exahype::offloading::OffloadingManager::getInstance().getNumberOfOutstandingRequests(exahype::offloading::RequestType::receiveReplica)
 																	                                  );
 
@@ -3034,7 +3034,7 @@ void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahyp
 }
 #endif
 
-void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exahype::solvers::ADERDGSolver *solver, bool calledOnMaster) {
+void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exahype::solvers::ADERDGSolver *solver, bool calledOnMaster, int maxIts) {
   MPI_Status stat, statMapped;
   int receivedTask = 0;
   int receivedTaskBack = 0;
@@ -3084,7 +3084,8 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
 #if defined (TaskSharing)
   while(
       (receivedTask || receivedTaskBack || receivedReplicaTask || receivedReplicaAck || receivedReplicaKey)
-      && (iprobesCounter<MaxIprobesInOffloadingProgress || receivedReplicaKey || receivedReplicaAck || receivedReplicaTask) && !terminateImmediately )
+      && (iprobesCounter<MaxIprobesInOffloadingProgress || receivedReplicaKey || receivedReplicaAck || receivedReplicaTask) && !terminateImmediately
+	  && iprobesCounter<maxIts)
   {
 #else
   while( (receivedTask || receivedTaskBack) && iprobesCounter<MaxIprobesInOffloadingProgress && !terminateImmediately ) {
@@ -3253,7 +3254,7 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
   time+= MPI_Wtime();
 }
 
-void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDGSolver* solver, bool runOnMaster) {
+void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDGSolver* solver, bool runOnMaster, int maxIts) {
 
   bool canRun;
   tarch::multicore::Lock lock(OffloadingSemaphore, false);
@@ -3263,6 +3264,7 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
   else
     canRun = lock.tryLock();
 #else
+  //assert(!runOnMaster);
   // First, we ensure here that only one thread at a time progresses offloading
   // this avoids multithreaded MPI problems
   canRun = lock.tryLock();
@@ -3275,6 +3277,12 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
   //VT_begin(event_progress);
 #endif
 
+  //if(tarch::multicore::Core::getInstance().getThreadNum()==0) {  
+     //std::cout<<"Error!!!!!!"<<std::endl;
+ //    lock.free();  
+ //     return;
+ // }
+
   // 2. make progress on any outstanding MPI communication
   //if(!runOnMaster)
   exahype::offloading::OffloadingManager::getInstance().progressRequests();
@@ -3283,9 +3291,8 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
   exahype::offloading::PerformanceMonitor::getInstance().run();
 
   // 4. detect whether local rank should anything
-  if(!runOnMaster)
-  pollForOutstandingCommunicationRequests(solver, runOnMaster);
-
+  //if(!runOnMaster)
+  pollForOutstandingCommunicationRequests(solver, runOnMaster, maxIts);
   lock.free();
 
 #ifdef USE_ITAC
@@ -3602,7 +3609,7 @@ bool exahype::solvers::ADERDGSolver::OffloadingManagerJob::run( bool isCalledOnM
       //    logInfo("run()", "WARNING: memory usage is quite high!");
       //}
 
-      exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false);
+      exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, std::numeric_limits<int>::max());
       
       if(_solver._offloadingManagerJobTriggerTerminate) {
     	  _state = State::Terminate;

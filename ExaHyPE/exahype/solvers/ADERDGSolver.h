@@ -2813,7 +2813,7 @@ public:
   /*
    * Makes progress on all offloading-related MPI communication.
    */
-  static void progressOffloading(exahype::solvers::ADERDGSolver* solver, bool isCalledOnMaster);
+  static void progressOffloading(exahype::solvers::ADERDGSolver* solver, bool isCalledOnMaster, int maxIts);
 
   static void receiveTaskOutcome(int tag, int src, exahype::solvers::ADERDGSolver *solver);
 
@@ -2821,7 +2821,7 @@ public:
 
   static void receiveBackMigratableJob(int tag, int src, exahype::solvers::ADERDGSolver *solver);
 
-  static void pollForOutstandingCommunicationRequests(exahype::solvers::ADERDGSolver *solver, bool calledOnMaster);
+  static void pollForOutstandingCommunicationRequests(exahype::solvers::ADERDGSolver *solver, bool calledOnMaster, int maxIts);
 
   static void setMaxNumberOfIprobesInProgressOffloading(int maxNumIprobes);
 
