@@ -3239,15 +3239,15 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
      assertion( ierr==MPI_SUCCESS );
 
 #ifndef OffloadingUseProgressThread
-     tarch::multicore::RecursiveLock lock( tarch::services::Service::receiveDanglingMessagesSemaphore, false );
-     if(lock.tryLock()) {
-       tarch::parallel::Node::getInstance().receiveDanglingMessages();
-       lock.free();
-     }
+   //  tarch::multicore::RecursiveLock lock( tarch::services::Service::receiveDanglingMessagesSemaphore, false );
+   //  if(lock.tryLock()) {
+   //    tarch::parallel::Node::getInstance().receiveDanglingMessages();
+   //    lock.free();
+   //  }
 #endif
 #endif
      exahype::offloading::OffloadingManager::getInstance().progressRequests();
-     if(calledOnMaster) break;
+   //  if(calledOnMaster) break;
 #endif
   }
   time+= MPI_Wtime();

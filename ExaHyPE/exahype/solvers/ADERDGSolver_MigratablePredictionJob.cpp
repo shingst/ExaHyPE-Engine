@@ -200,8 +200,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
       delete data;
     }
     else {
-      bool sendTaskOutcome = AllocatedSTPsSend<=exahype::offloading::PerformanceMonitor::getInstance().getTasksPerTimestep()
-                           && exahype::offloading::MemoryMonitor::getInstance().getFreeMemMB()>10000;
+      bool sendTaskOutcome = AllocatedSTPsSend<=exahype::offloading::PerformanceMonitor::getInstance().getTasksPerTimestep();
+                          // && exahype::offloading::MemoryMonitor::getInstance().getFreeMemMB()>10000;
 #if defined(TaskSharingUseHandshake)
       if(sendTaskOutcome) {
         _solver.sendKeyOfReplicatedSTPToOtherTeams(this);
@@ -343,9 +343,9 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerRepl
   key.timestamp = data->_metadata[2*DIMENSIONS];
   key.element = data->_metadata[2*DIMENSIONS+2];
 
-  bool criticalMemoryConsumption =  exahype::offloading::MemoryMonitor::getInstance().getFreeMemMB()<1000;
+  //bool criticalMemoryConsumption =  exahype::offloading::MemoryMonitor::getInstance().getFreeMemMB()<1000;
 
-  if(key.timestamp<static_cast<exahype::solvers::ADERDGSolver*> (solver)->getMinTimeStamp() || criticalMemoryConsumption) {
+  if(key.timestamp<static_cast<exahype::solvers::ADERDGSolver*> (solver)->getMinTimeStamp()) {// || criticalMemoryConsumption) {
     exahype::offloading::ReplicationStatistics::getInstance().notifyLateTask();
     delete data;
     AllocatedSTPsReceive--;
