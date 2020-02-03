@@ -3283,6 +3283,7 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
   exahype::offloading::PerformanceMonitor::getInstance().run();
 
   // 4. detect whether local rank should anything
+  if(!runOnMaster)
   pollForOutstandingCommunicationRequests(solver, runOnMaster);
 
   lock.free();
