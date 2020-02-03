@@ -297,6 +297,7 @@ void exahype::offloading::OffloadingManager::createRequestArray(
   }
 }
 
+#if defined(DirtyCleanUp)
 void exahype::offloading::OffloadingManager::cancelOutstandingRequests() {
   std::vector<RequestType> types = {RequestType::send,
       RequestType::sendBack,
@@ -331,6 +332,7 @@ void exahype::offloading::OffloadingManager::cancelOutstandingRequests() {
     }
   }
 }
+#endif
 
 bool exahype::offloading::OffloadingManager::hasOutstandingRequestOfType(RequestType requestType) {
   logDebug("hasOutstandingRequestOfType",
