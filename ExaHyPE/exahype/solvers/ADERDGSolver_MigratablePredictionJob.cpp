@@ -1,5 +1,10 @@
 #if defined(DistributedOffloading) && defined(Parallel) && defined(SharedTBB)
 
+#if defined(ScoreP)
+#include "scorep/SCOREP_User.h"
+#endif
+
+
 #include "ADERDGSolver.h"
 
 #include "exahype/offloading/PerformanceMonitor.h"
@@ -73,6 +78,9 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run( bool isCalled
 
 #ifdef USE_ITAC
       VT_begin(event_stp);
+#endif
+#if defined ScoreP
+	SCOREP_USER_REGION( "exahype::solvers::ADERDGSolver::MigratablePredictionJob::run", SCOREP_USER_REGION_TYPE_FUNCTION )
 #endif
      bool result = false;
      int curr = std::atomic_fetch_add(&JobCounter, 1);

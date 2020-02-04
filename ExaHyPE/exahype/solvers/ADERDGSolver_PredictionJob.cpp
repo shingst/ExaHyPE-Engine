@@ -1,5 +1,10 @@
 #include "ADERDGSolver.h"
 
+#if defined(ScoreP)
+#include "scorep/SCOREP_User.h"
+#endif
+
+
 #if defined(SharedTBB) && !defined(noTBBPrefetchesJobData)
 #include <immintrin.h>
 #endif
@@ -36,6 +41,10 @@ exahype::solvers::ADERDGSolver::PredictionJob::PredictionJob(
 
 
 bool exahype::solvers::ADERDGSolver::PredictionJob::run(bool runOnMasterThread) {
+  #if defined ScoreP
+	SCOREP_USER_REGION( "exahype::solvers::ADERDGSolver::PredictionJob::run", SCOREP_USER_REGION_TYPE_FUNCTION )
+#endif
+
   _solver.predictionAndVolumeIntegralBody(
       _cellDescription,_predictorTimeStamp,_predictorTimeStepSize,
       _uncompressBefore,_isSkeletonJob,_addVolumeIntegralResultToUpdate); // ignore return value

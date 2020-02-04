@@ -22,6 +22,11 @@
 
 #if DIMENSIONS == 3
 
+#if defined(ScoreP)
+#include "scorep/SCOREP_User.h"
+#endif
+
+
 namespace kernels {
 namespace aderdg {
 namespace generic {
@@ -428,7 +433,13 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
   if (useViscousFlux) {
     delete gradQCur;
   }
-
+  #ifdef ScoreP
+	for(int i=0;i<iter;i++){
+		SCOREP_USER_REGION_DEFINE( my_region_handle )
+		SCOREP_USER_REGION_BEGIN( my_region_handle, "iter_counter",SCOREP_USER_REGION_TYPE_COMMON )
+		SCOREP_USER_REGION_END( my_region_handle )
+	}
+  #endif
   return iter;
 }
 
