@@ -94,9 +94,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run( bool isCalled
 	SCOREP_USER_REGION( "exahype::solvers::ADERDGSolver::MigratablePredictionJob::run", SCOREP_USER_REGION_TYPE_FUNCTION )
 #endif
      #if defined FileTrace
-     struct timeval start_time, end_time;
-     long milli_time, seconds, useconds;
-     gettimeofday(&start_time, NULL);
+     auto start = std::chrono::high_resolution_clock::now();
      #endif
 
      bool result = false;
@@ -115,29 +113,24 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run( bool isCalled
      else
        result = handleExecution();
 
-  #if defined FileTrace
-  gettimeofday(&end_time, NULL);
-  seconds = end_time.tv_sec - start_time.tv_sec; //seconds
-  useconds = end_time.tv_usec - start_time.tv_usec; //milliseconds
-  milli_time = ((seconds) * 1000 + useconds/1000.0);
+     #if defined FileTrace 
+     auto stop = std::chrono::high_resolution_clock::now(); 
+     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start); 
 
-  std::stringstream stream;
-  stream<<"./TraceOutput/exahype_solvers_ADERDGSolver_MigratablePredictionJob_run_rank_";
-  int rank=tarch::parallel::Node::getInstance().getRank();
-  stream<<rank<<"_";
-  //this will only work for 2 cores per Rank
-  int threadId=tarch::multicore::Core::getInstance().getThreadNum();
-  stream<<threadId<<".txt";
-  std::string path=stream.str();
+     std::stringstream stream;
+     stream<<"./TraceOutput/exahype_solvers_ADERDGSolver_MigratablePredictionJob_run_rank_";
+     int rank=tarch::parallel::Node::getInstance().getRank();
+     stream<<rank<<"_";
+     //this will only work for 2 cores per Rank
+     int threadId=tarch::multicore::Core::getInstance().getThreadNum();
+     stream<<threadId<<".txt";
+     std::string path=stream.str();
 
-  //char cstr[path.size()];
-  //path.copy(cstr,path.size());
-  std::ofstream file;
-  file.open(path,std::fstream::app);
-  file << milli_time << std::endl;
-  file.close();
-  #endif
-
+     std::ofstream file;
+     file.open(path,std::fstream::app);
+     file << duration.count() << std::endl;
+     file.close();
+     #endif
 
 #ifdef USE_ITAC
       VT_end(event_stp);
