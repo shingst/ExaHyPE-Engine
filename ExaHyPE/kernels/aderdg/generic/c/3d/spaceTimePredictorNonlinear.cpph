@@ -27,6 +27,19 @@
 #endif
 
 
+#if defined(FileTrace)
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <ctime>
+#include <unistd.h>
+#include <sys/time.h>
+#include <sstream>
+#include "tarch/parallel/Node.h"
+#include "tarch/multicore/Core.h"
+#endif
+
+
 namespace kernels {
 namespace aderdg {
 namespace generic {
@@ -440,6 +453,22 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
 		SCOREP_USER_REGION_END( my_region_handle )
 	}
   #endif
+  #if defined FileTrace
+  std::stringstream stream;
+  stream<<"./TraceOutput/iter_counter_rank_";
+  int rank=tarch::parallel::Node::getInstance().getRank();
+  stream<<rank<<"_";
+  //this will only work for 2 cores per Rank
+  int threadId=tarch::multicore::Core::getInstance().getThreadNum();
+  stream<<threadId<<".txt";
+  std::string path=stream.str();
+
+  std::ofstream file;
+  file.open(path,std::fstream::app);
+  file << iter << std::endl;
+  file.close();
+  #endif
+
   return iter;
 }
 

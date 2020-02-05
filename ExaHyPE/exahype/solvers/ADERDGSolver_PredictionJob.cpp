@@ -4,6 +4,17 @@
 #include "scorep/SCOREP_User.h"
 #endif
 
+#if defined(FileTrace)
+#include <iostream>
+#include <fstream> 
+#include <string>
+#include <ctime>
+#include <unistd.h>
+#include <sys/time.h>
+#include <sstream>
+#include "tarch/parallel/Node.h"
+#include "tarch/multicore/Core.h"
+#endif
 
 #if defined(SharedTBB) && !defined(noTBBPrefetchesJobData)
 #include <immintrin.h>
@@ -42,8 +53,14 @@ exahype::solvers::ADERDGSolver::PredictionJob::PredictionJob(
 
 bool exahype::solvers::ADERDGSolver::PredictionJob::run(bool runOnMasterThread) {
   #if defined ScoreP
-	SCOREP_USER_REGION( "exahype::solvers::ADERDGSolver::PredictionJob::run", SCOREP_USER_REGION_TYPE_FUNCTION )
-#endif
+  SCOREP_USER_REGION( "exahype::solvers::ADERDGSolver::PredictionJob::run", SCOREP_USER_REGION_TYPE_FUNCTION ) 
+  #endif
+  
+  #if defined FileTrace
+  struct timeval start_time, end_time;
+  long milli_time, seconds, useconds;
+  gettimeofday(&start_time, NULL);
+  #endif
 
   _solver.predictionAndVolumeIntegralBody(
       _cellDescription,_predictorTimeStamp,_predictorTimeStepSize,
@@ -56,6 +73,29 @@ bool exahype::solvers::ADERDGSolver::PredictionJob::run(bool runOnMasterThread) 
     NumberOfEnclaveJobs.fetch_sub(1);
     assertion( NumberOfEnclaveJobs.load()>=0 );
   }
+  #if defined FileTrace
+  gettimeofday(&end_time, NULL);
+  seconds = end_time.tv_sec - start_time.tv_sec; //seconds
+  useconds = end_time.tv_usec - start_time.tv_usec; //milliseconds
+  milli_time = ((seconds) * 1000 + useconds/1000.0);
+
+  std::stringstream stream;
+  stream<<"./TraceOutput/exahype_solvers_ADERDGSolver_PredictionJob_run_rank_";
+  int rank=tarch::parallel::Node::getInstance().getRank();
+  stream<<rank<<"_";
+  //this will only work for 2 cores per Rank
+  int threadId=tarch::multicore::Core::getInstance().getThreadNum();
+  stream<<threadId<<".txt";
+  std::string path=stream.str();
+
+  //char cstr[path.size()];
+  //path.copy(cstr,path.size());
+  std::ofstream file;
+  file.open(path,std::fstream::app);
+  file << milli_time << std::endl;
+  file.close();
+  #endif
+
   return false;
 }
 
