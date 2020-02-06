@@ -3320,11 +3320,11 @@ public:
 
       //switch ( JobSystemWaitBehaviour ) {
       //   case JobSystemWaitBehaviourType::ProcessJobsWithSamePriority:
-      #ifndef OffloadingProgressTask
-        tarch::multicore::jobs::processBackgroundJobs( 1, -1, true );
+      #ifndef OffloadingUseProgressTask
+        tarch::multicore::jobs::processBackgroundJobs( 1, getTaskPriority(waitForHighPriorityJob), true );
       #else
         //Receive Job may be active and yield a deadlock situation when only local jobs are processed
-        tarch::multicore::jobs::processBackgroundJobs( 1, getTaskPriority(waitForHighPriorityJob), true );
+        tarch::multicore::jobs::processBackgroundJobs( 1, -1, true );
       #endif
 
       // tarch::multicore::jobs::processBackgroundJobs( 1, -1, true );
