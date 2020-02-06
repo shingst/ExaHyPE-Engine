@@ -794,7 +794,7 @@ tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask, 0, 
 
 bool exahype::offloading::OffloadingManager::ProgressJob::run( bool calledFromMaster ) {
 
-  if(calledFromMaster) return true;
+  if(calledFromMaster) return false;
 
   int flag;
   //logInfo("submitRequests()", "executing progress job (high priority)");

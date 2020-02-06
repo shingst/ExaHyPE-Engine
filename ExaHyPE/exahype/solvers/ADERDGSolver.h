@@ -3292,8 +3292,8 @@ public:
    if ( !cellDescription.getHasCompletedLastStep() ) {
       peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
  #if !defined(OffloadingUseProgressThread)
+      pauseOffloadingManager();
       if ( responsibleRank!=myRank) {
-        pauseOffloadingManager();
         logInfo("waitUntil", "cell missing from responsible rank: "<<responsibleRank);
         tryToReceiveTaskBack(this) ;
       }
@@ -3320,8 +3320,16 @@ public:
 
       //switch ( JobSystemWaitBehaviour ) {
       //   case JobSystemWaitBehaviourType::ProcessJobsWithSamePriority:
-           tarch::multicore::jobs::processBackgroundJobs( 1, getTaskPriority(waitForHighPriorityJob), true );
-      //     break;
+      #ifndef OffloadingUseProgressTask
+        tarch::multicore::jobs::processBackgroundJobs( 1, getTaskPriority(waitForHighPriorityJob), true );
+      #else
+        //Receive Job may be active and yield a deadlock situation when only local jobs are processed
+        tarch::multicore::jobs::processBackgroundJobs( 1, -1, true );
+      #endif
+
+      // tarch::multicore::jobs::processBackgroundJobs( 1, -1, true );
+ 
+     //     break;
       //   case JobSystemWaitBehaviourType::ProcessAnyJobs:
       //     tarch::multicore::jobs::processBackgroundJobs( 1, -1, true );
       //     break;
@@ -3365,9 +3373,9 @@ public:
 
     }
  #if !defined(OffloadingUseProgressThread)
-    if ( responsibleRank!=myRank) {
+    //if ( responsibleRank!=myRank) {
       resumeOffloadingManager();
-    }
+    //}
     exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressOffloading( std::numeric_limits<int>::max() );
  #endif
 
