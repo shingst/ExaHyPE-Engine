@@ -3664,13 +3664,13 @@ void exahype::solvers::ADERDGSolver::startOffloadingManager(bool spawn) {
 
 #ifndef OffloadingUseProgressThread
 void exahype::solvers::ADERDGSolver::pauseOffloadingManager() {
-  tarch::multicore::Lock lock(OffloadingSemaphore, true);
+  //tarch::multicore::Lock lock(OffloadingSemaphore, true);
   //logInfo("pauseOffloadingManager", "pausing ");
   if(_offloadingManagerJob!=nullptr){
     _offloadingManagerJob->pause();
     _offloadingManagerJob = nullptr;
   }
-  lock.free();
+  //lock.free();
 }
 
 void exahype::solvers::ADERDGSolver::resumeOffloadingManager() {
