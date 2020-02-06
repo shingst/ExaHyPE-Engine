@@ -3676,14 +3676,14 @@ void exahype::solvers::ADERDGSolver::pauseOffloadingManager() {
 void exahype::solvers::ADERDGSolver::resumeOffloadingManager() {
   //logInfo("resumeOffloadingManager", "resuming ");
   //old job will be deleted so we create a new one here
-  tarch::multicore::Lock lock(OffloadingSemaphore, true);
+  //tarch::multicore::Lock lock(OffloadingSemaphore, true);
   // assertion(_offloadingManagerJob==nullptr);
   if(_offloadingManagerJob==nullptr) {
     _offloadingManagerJob = new OffloadingManagerJob(*this);
     _offloadingManagerJob->resume();
     peano::datatraversal::TaskSet spawnedSet(_offloadingManagerJob);
   }
-  lock.free();
+  //lock.free();
 }
 #endif
 
