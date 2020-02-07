@@ -198,6 +198,8 @@ public:
 
   static std::atomic<int> NumberOfReceiveJobs;
   static std::atomic<int> NumberOfReceiveBackJobs;
+  static std::atomic<int> NumberOfOffloadingManagers;
+  static std::atomic<int> NumberOfRunningManagers;
 
   static std::atomic<int> LocalStealableSTPCounter;
 
@@ -1005,6 +1007,7 @@ private:
 	  State 	_state;
     private:
 	  ADERDGSolver& _solver;
+          bool _started;
   };
 
   class ReceiveJob : public tarch::multicore::jobs::Job {
@@ -1349,6 +1352,7 @@ private:
   // offloading manager job associated to the solver
   OffloadingManagerJob *_offloadingManagerJob;
   std::atomic<bool> _offloadingManagerJobTerminated;
+  std::atomic<bool> _offloadingManagerJobStarted;
   std::atomic<bool> _offloadingManagerJobTriggerTerminate;
 
   // limit the maximum number of iprobes in progressOffloading()
@@ -3280,6 +3284,7 @@ public:
    bool hasTriggeredEmergency = false;
 
  #if !defined(OffloadingUseProgressThread)
+     //pauseOffloadingManager();
      //exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressOffloading(1);
      setMaxNumberOfIprobesInProgressOffloading(1);
  #endif
@@ -3292,7 +3297,6 @@ public:
    if ( !cellDescription.getHasCompletedLastStep() ) {
       peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
  #if !defined(OffloadingUseProgressThread)
-      pauseOffloadingManager();
       if ( responsibleRank!=myRank) {
         logInfo("waitUntil", "cell missing from responsible rank: "<<responsibleRank);
         tryToReceiveTaskBack(this) ;
@@ -3320,12 +3324,12 @@ public:
 
       //switch ( JobSystemWaitBehaviour ) {
       //   case JobSystemWaitBehaviourType::ProcessJobsWithSamePriority:
-      #ifndef OffloadingUseProgressTask
-        tarch::multicore::jobs::processBackgroundJobs( 1, getTaskPriority(waitForHighPriorityJob), true );
-      #else
+      //#ifndef OffloadingUseProgressTask
+      //  tarch::multicore::jobs::processBackgroundJobs( 1, getTaskPriority(waitForHighPriorityJob), true );
+      //#else
         //Receive Job may be active and yield a deadlock situation when only local jobs are processed
-        tarch::multicore::jobs::processBackgroundJobs( 1, -1, true );
-      #endif
+        tarch::multicore::jobs::processBackgroundJobs( 3, -1, true );
+      //#endif
 
       // tarch::multicore::jobs::processBackgroundJobs( 1, -1, true );
  
@@ -3374,7 +3378,7 @@ public:
     }
  #if !defined(OffloadingUseProgressThread)
     //if ( responsibleRank!=myRank) {
-      resumeOffloadingManager();
+    //  resumeOffloadingManager();
     //}
     exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressOffloading( std::numeric_limits<int>::max() );
  #endif
