@@ -3425,7 +3425,7 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::run( bool isCalledOnMaster ) {
        }*/
 
          tarch::multicore::RecursiveLock lock2( tarch::services::Service::receiveDanglingMessagesSemaphore, false );
-         if(lock.tryLock()) {
+         if(lock2.tryLock()) {
            tarch::parallel::Node::getInstance().receiveDanglingMessages();
            lock2.free();
          }
