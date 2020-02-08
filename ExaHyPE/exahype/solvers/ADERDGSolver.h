@@ -198,8 +198,8 @@ public:
 
   static std::atomic<int> NumberOfReceiveJobs;
   static std::atomic<int> NumberOfReceiveBackJobs;
-  static std::atomic<int> NumberOfOffloadingManagers;
-  static std::atomic<int> NumberOfRunningManagers;
+  //static std::atomic<int> NumberOfOffloadingManagers;
+  //static std::atomic<int> NumberOfRunningManagers;
 
   static std::atomic<int> LocalStealableSTPCounter;
 
@@ -3341,9 +3341,9 @@ public:
       //     break;
      // }
 
-      if((MPI_Wtime()-startTime)>0.001  && responsibleRank!=myRank) {
+      if((MPI_Wtime()-startTime)>10.001) {//  && responsibleRank!=myRank) {
         startTime = MPI_Wtime();
-        logInfo("waitUntilCompletedTimeStep()","warning: rank waiting too long for missing task from rank "<<responsibleRank<< " outstanding jobs:"<<NumberOfRemoteJobs);
+        logInfo("waitUntilCompletedTimeStep()","warning: rank waiting too long for missing task from rank "<<responsibleRank<< " outstanding jobs:"<<NumberOfRemoteJobs<< " outstanding enclave "<<NumberOfEnclaveJobs<< " outstanding skeleton "<<NumberOfSkeletonJobs<< " celldescription "<<cellDescription.toString() << " waiting jobs "<<tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs());
       }
 
 
