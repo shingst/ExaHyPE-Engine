@@ -198,8 +198,6 @@ public:
 
   static std::atomic<int> NumberOfReceiveJobs;
   static std::atomic<int> NumberOfReceiveBackJobs;
-  //static std::atomic<int> NumberOfOffloadingManagers;
-  //static std::atomic<int> NumberOfRunningManagers;
 
   static std::atomic<int> LocalStealableSTPCounter;
 

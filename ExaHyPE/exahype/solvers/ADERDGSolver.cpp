@@ -2801,30 +2801,16 @@ void exahype::solvers::ADERDGSolver::sendFullReplicatedSTPToOtherTeams(Migratabl
 #endif
 
 void exahype::solvers::ADERDGSolver::submitOrSendStealablePredictionJob(MigratablePredictionJob* job) {
-   //return; 
 
    int myRank = tarch::parallel::Node::getInstance().getRank();
    int nRanks = tarch::parallel::Node::getInstance().getNumberOfNodes();
    int destRank = myRank;
 
-   //CellDescription& cellDescription = getCellDescription(job->_cellDescriptionsIndex, job->_element);
-
-
-//  static std::atomic<int> sends=0;
-//  //sends++;
-
-   //if(NumberOfEnclaveJobs+NumberOfSkeletonJobs-NumberOfRemoteJobs>tarch::multicore::Core::getInstance().getNumberOfThreads()*2) {
    bool lastSend = false;
    exahype::offloading::OffloadingManager::getInstance().selectVictimRank(destRank, lastSend);
-   //}
-   //else
-   //  exahype::offloading::OffloadingProfiler::getInstance().notifyThresholdFail();
    assert(destRank>=0);
 
    if(myRank!=destRank) {
-     //logInfo("submitOrSend()","sending to "<<destRank<<" cell "<<cellDescription.toString());
-   
-//    sends++;
     // logInfo("submitOrSendStealablePredictionJob","element "<<job->_element<<" predictor time stamp"<<job->_predictorTimeStamp<<" predictor time step size "<<job->_predictorTimeStepSize);
      OffloadEntry entry = {destRank, job->_cellDescriptionsIndex, job->_element, job->_predictorTimeStamp, job->_predictorTimeStepSize};
      //_outstandingOffloads.push( entry );
@@ -2890,8 +2876,6 @@ void exahype::solvers::ADERDGSolver::submitOrSendStealablePredictionJob(Migratab
      delete job;
   }
   else {
-    //logInfo("submitOrSend()","spawning locally cell "<<cellDescription.toString());
-  
     peano::datatraversal::TaskSet spawnedSet( job );
   }
 }
@@ -3587,7 +3571,6 @@ exahype::solvers::ADERDGSolver::OffloadingManagerJob::OffloadingManagerJob(ADERD
 #endif
   _solver(solver),
   _state(State::Running) {}
-//, _started(false) {}
 
 exahype::solvers::ADERDGSolver::OffloadingManagerJob::~OffloadingManagerJob() {}
 
@@ -3614,13 +3597,6 @@ bool exahype::solvers::ADERDGSolver::OffloadingManagerJob::run( bool isCalledOnM
   switch (_state) {
     case State::Running:
     {
-     /* tarch::multicore::RecursiveLock lock( 
-        tarch::services::Service::receiveDanglingMessagesSemaphore, false );
-      bool acquired = lock.tryLock();
-      if(acquired) {
-        tarch::parallel::Node::getInstance().receiveDanglingMessages();
-        lock.free();
-      }*/
       if( isCalledOnMaster ) {
           return true; 
       }
@@ -3635,27 +3611,13 @@ bool exahype::solvers::ADERDGSolver::OffloadingManagerJob::run( bool isCalledOnM
     	  _state = State::Terminate;
       }
 
-      //exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressOffloading( std::numeric_limits<int>::max() );
-
-    //  logInfo("run()", "reschedule... ");
       break;
     }
     case State::Resume:
       _state = State::Running;
-      //_started = true;
-      //NumberOfRunningManagers++; 
-      //logInfo("offloadingManager", " resumed , num running "<<NumberOfRunningManagers.load());
-      //assert(NumberOfRunningManagers.load()==1);
       break;
     case State::Paused:
-      //logInfo("offloadingManager", " before paused , num running "<<NumberOfRunningManagers.load());
       result = false;
-      //if(_started) {
-      //  NumberOfRunningManagers--;
-      //logInfo("offloadingManager", " after paused , num running "<<NumberOfRunningManagers.load());
-
-        //assert(NumberOfRunningManagers.load()==0);
-      //}
       break;
     case State::Terminate:
     {
@@ -3663,8 +3625,6 @@ bool exahype::solvers::ADERDGSolver::OffloadingManagerJob::run( bool isCalledOnM
       logInfo("offloadingManager", " terminated ");
       _solver._offloadingManagerJobTerminated = true;
       result = false;
-      //NumberOfRunningManagers--; assert(NumberOfRunningManagers==0);
-
       break;
     }
   }
@@ -3704,7 +3664,6 @@ void exahype::solvers::ADERDGSolver::startOffloadingManager(bool spawn) {
   _offloadingManagerJob = new OffloadingManagerJob(*this);
   if(spawn) {
     peano::datatraversal::TaskSet spawnedSet(_offloadingManagerJob);
-    //NumberOfOffloadingManagers++; assert(NumberOfOffloadingManagers.load()==1);
   }  
   //peano::datatraversal::TaskSet spawnedSet(_offloadingManagerJob, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible);
   _offloadingManagerJobStarted = true;
@@ -3715,27 +3674,21 @@ void exahype::solvers::ADERDGSolver::startOffloadingManager(bool spawn) {
 void exahype::solvers::ADERDGSolver::pauseOffloadingManager() {
   //tarch::multicore::Lock lock(OffloadingSemaphore, true);
   logInfo("pauseOffloadingManager", "pausing ");
-  //assert(_offloadingManagerJob!=nullptr || !_offloadingManagerJobStarted);
   if(_offloadingManagerJob!=nullptr){
     _offloadingManagerJob->pause();
     _offloadingManagerJob = nullptr;
-    //NumberOfOffloadingManagers--; assert(NumberOfOffloadingManagers.load()==0);
   }
-
   //lock.free();
 }
 
 void exahype::solvers::ADERDGSolver::resumeOffloadingManager() {
   logInfo("resumeOffloadingManager", "resuming ");
   //old job will be deleted so we create a new one here
-  //tarch::multicore::Lock lock(OffloadingSemaphore, true);
-  // assertion(_offloadingManagerJob==nullptr);
   //assert(_offloadingManagerJob==nullptr);
   if(_offloadingManagerJob==nullptr) {
     _offloadingManagerJob = new OffloadingManagerJob(*this);
     _offloadingManagerJob->resume();
     peano::datatraversal::TaskSet spawnedSet(_offloadingManagerJob);
-    //NumberOfOffloadingManagers++;   assert(NumberOfOffloadingManagers.load()==1);
   }
   //lock.free();
 }
@@ -3745,9 +3698,7 @@ void exahype::solvers::ADERDGSolver::stopOffloadingManager() {
   logInfo("stopOffloadingManager", " stopping ");
   //assertion(_offloadingManagerJob != nullptr);
   _offloadingManagerJobTriggerTerminate = true;
-  //_offloadingManagerJob->terminate();
 
-  //NumberOfOffloadingManagers--; assert(NumberOfOffloadingManagers.load()==0);
 #if defined(OffloadingUseProgressThread)
   while(!_offloadingManagerJobTerminated) {};
   //delete _offloadingManagerJob;
