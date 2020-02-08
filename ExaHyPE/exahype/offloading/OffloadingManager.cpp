@@ -199,6 +199,13 @@ void exahype::offloading::OffloadingManager::submitRequests(
     RequestType type,
     exahype::solvers::Solver *solver,
     bool block ) {
+  
+  //bug only appears when using scorep
+  #ifdef ScoreP
+  for(int i=0; i<nRequests; i++) {
+	assert(requests[i]!=MPI_REQUEST_NULL);
+  }
+  #endif
 
   switch(type) {
     case RequestType::send:
@@ -218,6 +225,12 @@ void exahype::offloading::OffloadingManager::submitRequests(
     handler(solver, tag, remoteRank);
     return;
   }
+   //check if ok after test
+  #ifdef ScoreP
+  for(int i=0; i<nRequests; i++) {
+        assert(requests[i]!=MPI_REQUEST_NULL);
+  }
+  #endif
 
   if(block) {
     int ierr = MPI_Waitall(nRequests, requests, MPI_STATUSES_IGNORE);
@@ -225,6 +238,12 @@ void exahype::offloading::OffloadingManager::submitRequests(
     handler(solver, tag, remoteRank);
     return;
   }
+   //check if ok after wait
+  #ifdef ScoreP
+  for(int i=0; i<nRequests; i++) {
+        assert(requests[i]!=MPI_REQUEST_NULL);
+  }
+  #endif
 
   int mapId = requestTypeToMsgQueueIdx(type);
 
@@ -245,6 +264,13 @@ void exahype::offloading::OffloadingManager::submitRequests(
   _outstandingReqsForGroup[mapId].insert(outstandingElem);
   _groupIdToRank[mapId].insert(remoteRankElem);
   _groupIdToTag[mapId].insert(remoteTagElem);
+
+   //check if ok before pushing to queue
+  #ifdef ScoreP
+  for(int i=0; i<nRequests; i++) {
+        assert(requests[i]!=MPI_REQUEST_NULL);
+  }
+  #endif
 
   // push requests into queue
   for(int i=0; i<nRequests; i++) {

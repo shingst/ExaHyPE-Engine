@@ -292,7 +292,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution() 
 #if defined(FileTrace)
   std::stringstream stream;
   stream.str(std::string());
-  stream<<"./TraceOutput/exahype_solvers_ADERDGSolver_MigratableJob_iterations_rank_";
+  stream<<"./TraceOutput/exahype_solvers_ADERDGSolver_OwnMigratableJob_iterations_rank_";
   int rank=tarch::parallel::Node::getInstance().getRank();
   stream<<rank<<"_";
   //this will only work for 2 cores per Rank
@@ -315,8 +315,10 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution() 
   if(_originRank!=myRank) {
     MPI_Request sendBackRequests[4];
     //logInfo("handleLocalExecution()", "postSendBack");
-    _solver.isendStealablePredictionJob(_luh,
-         	                            _lduh,
+    //TODO would be nice to have the amount of picard iterations returned here
+    _solver.isendStealablePredictionJob(
+					_luh,
+         	                        _lduh,
                                         _lQhbnd,
                                         _lFhbnd,
                                         _originRank,
@@ -324,13 +326,28 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution() 
                                         exahype::offloading::OffloadingManager::getInstance().getMPICommunicatorMapped(),
                                         sendBackRequests);
     exahype::offloading::OffloadingManager::getInstance().submitRequests(
-    		                            sendBackRequests,
-										4,
-										_tag,
-										_originRank,
-										sendBackHandler,
-										exahype::offloading::RequestType::sendBack,
-										&_solver);
+    		                        sendBackRequests,4,
+					_tag,
+					_originRank,
+					sendBackHandler,
+					exahype::offloading::RequestType::sendBack,
+					&_solver);
+  /*#if defined(FileTrace)
+  std::stringstream stream;
+  stream.str(std::string());
+  stream<<"./TraceOutput/exahype_solvers_ADERDGSolver_ForeignMigratableJob_iterations_rank_";
+  int rank=tarch::parallel::Node::getInstance().getRank();
+  stream<<rank<<"_";
+  //this will only work for 2 cores per Rank
+  int threadId=tarch::multicore::Core::getInstance().getThreadNum();
+  stream<<threadId<<".txt";
+  std::string path=stream.str();
+
+  std::ofstream file;
+  file.open(path,std::fstream::app);
+  file << iterations << std::endl;
+  file.close();
+  #endif*/
   }
   return result;
 }

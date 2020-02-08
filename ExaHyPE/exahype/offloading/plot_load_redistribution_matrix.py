@@ -98,7 +98,7 @@ for line in file:
     #print cur_tasks_to_offload
   m=blacklist_pattern.match(line)
   if m:
-    print line
+    print (line)
     #print float(m.group(2))
     cur_blacklist_values[int(m.group(1))]=float(m.group(2))
 
