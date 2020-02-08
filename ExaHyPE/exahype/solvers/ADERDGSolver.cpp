@@ -2807,7 +2807,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendStealablePredictionJob(Migratab
    int nRanks = tarch::parallel::Node::getInstance().getNumberOfNodes();
    int destRank = myRank;
 
-  CellDescription& cellDescription = getCellDescription(job->_cellDescriptionsIndex, job->_element);
+   //CellDescription& cellDescription = getCellDescription(job->_cellDescriptionsIndex, job->_element);
 
 
 //  static std::atomic<int> sends=0;
@@ -2822,7 +2822,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendStealablePredictionJob(Migratab
    assert(destRank>=0);
 
    if(myRank!=destRank) {
-     logInfo("submitOrSend()","sending to "<<destRank<<" cell "<<cellDescription.toString());
+     //logInfo("submitOrSend()","sending to "<<destRank<<" cell "<<cellDescription.toString());
    
 //    sends++;
     // logInfo("submitOrSendStealablePredictionJob","element "<<job->_element<<" predictor time stamp"<<job->_predictorTimeStamp<<" predictor time step size "<<job->_predictorTimeStepSize);
@@ -2890,7 +2890,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendStealablePredictionJob(Migratab
      delete job;
   }
   else {
-    logInfo("submitOrSend()","spawning locally cell "<<cellDescription.toString());
+    //logInfo("submitOrSend()","spawning locally cell "<<cellDescription.toString());
   
     peano::datatraversal::TaskSet spawnedSet( job );
   }
@@ -3586,7 +3586,8 @@ exahype::solvers::ADERDGSolver::OffloadingManagerJob::OffloadingManagerJob(ADERD
  tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask, 0, tarch::multicore::DefaultPriority-1),
 #endif
   _solver(solver),
-  _state(State::Resume), _started(false) {}
+  _state(State::Running) {}
+//, _started(false) {}
 
 exahype::solvers::ADERDGSolver::OffloadingManagerJob::~OffloadingManagerJob() {}
 
@@ -3621,7 +3622,7 @@ bool exahype::solvers::ADERDGSolver::OffloadingManagerJob::run( bool isCalledOnM
         lock.free();
       }*/
       if( isCalledOnMaster ) {
-          return false; 
+          return true; 
       }
 
       //if(peano::utils::UserInterface::getMemoryUsageMB()>50000) {
@@ -3641,7 +3642,7 @@ bool exahype::solvers::ADERDGSolver::OffloadingManagerJob::run( bool isCalledOnM
     }
     case State::Resume:
       _state = State::Running;
-      _started = true;
+      //_started = true;
       //NumberOfRunningManagers++; 
       //logInfo("offloadingManager", " resumed , num running "<<NumberOfRunningManagers.load());
       //assert(NumberOfRunningManagers.load()==1);
@@ -3700,8 +3701,8 @@ void exahype::solvers::ADERDGSolver::startOffloadingManager(bool spawn) {
   //assertion(_offloadingManagerJob!=nullptr);
   tbb::task::enqueue(*_offloadingManagerJob);
 #else
+  _offloadingManagerJob = new OffloadingManagerJob(*this);
   if(spawn) {
-    _offloadingManagerJob = new OffloadingManagerJob(*this);
     peano::datatraversal::TaskSet spawnedSet(_offloadingManagerJob);
     //NumberOfOffloadingManagers++; assert(NumberOfOffloadingManagers.load()==1);
   }  
@@ -3715,7 +3716,7 @@ void exahype::solvers::ADERDGSolver::pauseOffloadingManager() {
   //tarch::multicore::Lock lock(OffloadingSemaphore, true);
   logInfo("pauseOffloadingManager", "pausing ");
   //assert(_offloadingManagerJob!=nullptr || !_offloadingManagerJobStarted);
-  if(_offloadingManagerJob!=nullptr && _offloadingManagerJobStarted){
+  if(_offloadingManagerJob!=nullptr){
     _offloadingManagerJob->pause();
     _offloadingManagerJob = nullptr;
     //NumberOfOffloadingManagers--; assert(NumberOfOffloadingManagers.load()==0);
@@ -3730,7 +3731,7 @@ void exahype::solvers::ADERDGSolver::resumeOffloadingManager() {
   //tarch::multicore::Lock lock(OffloadingSemaphore, true);
   // assertion(_offloadingManagerJob==nullptr);
   //assert(_offloadingManagerJob==nullptr);
-  if(_offloadingManagerJob==nullptr && _offloadingManagerJobStarted) {
+  if(_offloadingManagerJob==nullptr) {
     _offloadingManagerJob = new OffloadingManagerJob(*this);
     _offloadingManagerJob->resume();
     peano::datatraversal::TaskSet spawnedSet(_offloadingManagerJob);

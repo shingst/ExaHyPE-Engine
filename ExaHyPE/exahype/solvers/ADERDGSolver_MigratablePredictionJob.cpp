@@ -103,9 +103,9 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 
   CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,_element);
 
-  logInfo("handleLocalExecution()","processed "<<cellDescription.toString());
+  //logInfo("handleLocalExecution()","processed "<<cellDescription.toString());
 
-  assert(_solver.getResponsibleRankForCellDescription((const void*) &cellDescription)==myRank);
+  //assert(_solver.getResponsibleRankForCellDescription((const void*) &cellDescription)==myRank);
 
   double *luh    = static_cast<double*>(cellDescription.getSolution());
   double *lduh   = static_cast<double*>(cellDescription.getUpdate());
