@@ -55,12 +55,12 @@ bool exahype::solvers::ADERDGSolver::PredictionJob::run(bool runOnMasterThread) 
   #if defined ScoreP
   SCOREP_USER_REGION( "exahype::solvers::ADERDGSolver::PredictionJob::run", SCOREP_USER_REGION_TYPE_FUNCTION ) 
   #endif
-  
+   
   #if defined FileTrace
   auto start = std::chrono::high_resolution_clock::now();
   #endif
 
-  _solver.predictionAndVolumeIntegralBody(
+  int numberIterations =  _solver.predictionAndVolumeIntegralBody(
       _cellDescription,_predictorTimeStamp,_predictorTimeStepSize,
       _uncompressBefore,_isSkeletonJob,_addVolumeIntegralResultToUpdate); // ignore return value
 
@@ -79,7 +79,6 @@ bool exahype::solvers::ADERDGSolver::PredictionJob::run(bool runOnMasterThread) 
   stream<<"./TraceOutput/exahype_solvers_ADERDGSolver_PredictionJob_run_rank_";
   int rank=tarch::parallel::Node::getInstance().getRank();
   stream<<rank<<"_";
-  //this will only work for 2 cores per Rank
   int threadId=tarch::multicore::Core::getInstance().getThreadNum();
   stream<<threadId<<".txt";
   std::string path=stream.str();
@@ -88,6 +87,17 @@ bool exahype::solvers::ADERDGSolver::PredictionJob::run(bool runOnMasterThread) 
   file.open(path,std::fstream::app);
   file << duration.count() << std::endl;
   file.close();
+
+  stream.str(std::string());
+  stream<<"./TraceOutput/exahype_solvers_ADERDGSolver_PredictionJob_iterations_rank_";
+  stream<<rank<<"_";
+  stream<<threadId<<".txt";
+  path=stream.str();
+
+  std::ofstream fileIter;
+  fileIter.open(path,std::fstream::app);
+  fileIter << numberIterations << std::endl;
+  fileIter.close();
   #endif
 
   return false;

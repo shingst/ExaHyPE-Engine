@@ -267,7 +267,6 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution() 
   int myRank = tarch::parallel::Node::getInstance().getRank();
   bool result = false;
 
-
 #if defined(OffloadingUseProfiler)
   exahype::offloading::OffloadingProfiler::getInstance().beginComputation();
   double time = -MPI_Wtime();
@@ -282,7 +281,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution() 
   else {
 	result = false;
     //TODO: support for lGradQhbnd
-    _solver.fusedSpaceTimePredictorVolumeIntegral(
+    int iterations=_solver.fusedSpaceTimePredictorVolumeIntegral(
       _lduh,_lQhbnd,nullptr,_lFhbnd,
       _luh,
       _center,
@@ -290,6 +289,22 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution() 
       _predictorTimeStamp,
       _predictorTimeStepSize,
       true);
+#if defined(FileTrace)
+  std::stringstream stream;
+  stream.str(std::string());
+  stream<<"./TraceOutput/exahype_solvers_ADERDGSolver_MigratableJob_iterations_rank_";
+  int rank=tarch::parallel::Node::getInstance().getRank();
+  stream<<rank<<"_";
+  //this will only work for 2 cores per Rank
+  int threadId=tarch::multicore::Core::getInstance().getThreadNum();
+  stream<<threadId<<".txt";
+  std::string path=stream.str();
+
+  std::ofstream file;
+  file.open(path,std::fstream::app);
+  file << iterations << std::endl;
+  file.close();
+#endif
   }
 #if defined(OffloadingUseProfiler)
   time += MPI_Wtime();
