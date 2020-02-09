@@ -110,6 +110,7 @@
 
 #include "exahype/offloading/OffloadingProfiler.h"
 
+
 #if defined(TaskSharing)
 #include "teaMPI.h"
 #endif
@@ -117,6 +118,10 @@
 
 #if defined(TMPI_Heartbeats)
 #include "exahype/offloading/HeartbeatJob.h"
+#endif
+
+#if defined(MemoryMonitoring)
+#include "exahype/offloading/MemoryMonitor.h"
 #endif
 
 tarch::logging::Log exahype::runners::Runner::_log("exahype::runners::Runner");
@@ -905,6 +910,10 @@ void exahype::runners::Runner::initHPCEnvironment() {
     logInfo("initHPCEnvironment()","\trun touchVertexFirstTime=" << (mappings::Empty::UseTouchVertexFirstTime ? "on" : "off"));
   }
 
+  #if defined(MemoryMonitoring) && defined(MemoryMonitoringTrack)
+  exahype::offloading::MemoryMonitor::getInstance().setOutputDir(_parser.getMemoryStatsOutputDir());
+  #endif
+
   //
   // Configure ITAC profiling
   // ================================================
@@ -1059,8 +1068,10 @@ int exahype::runners::Runner::run() {
     if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
       //static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopOffloadingManager();
 #if defined(TaskSharing)
+#if !defined(DirtyCleanUp)
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->finishOutstandingInterTeamCommunication();
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->cleanUpStaleReplicatedSTPs(true);
+#endif
 #endif
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopOffloadingManager();
     }
@@ -1075,10 +1086,15 @@ int exahype::runners::Runner::run() {
 #if defined(TaskSharing)
   exahype::offloading::ReplicationStatistics::getInstance().printStatistics();
 #endif
+
 //  exahype::offloading::OffloadingProfiler::getInstance().endPhase();
 //  logInfo("shutdownDistributedMemoryConfiguration()","ended profiling phase");
 //  exahype::offloading::OffloadingProfiler::getInstance().printStatistics();
 //  logInfo("shutdownDistributedMemoryConfiguration()","printed stats");
+#endif
+
+#if defined(MemoryMonitoring) && defined(MemoryMonitoringTrack)
+  exahype::offloading::MemoryMonitor::getInstance().dumpMemoryUsage();
 #endif
 
    logInfo("run()","shutdownDistributedMemoryConfiguration");

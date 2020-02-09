@@ -597,6 +597,8 @@ class exahype::parser::Parser {
   std::string getMetricsIdentifierList() const;
   std::string getProfilingOutputFilename() const;
 
+  std::string getMemoryStatsOutputDir() const;
+
   /**
    * The profiling target.
    */

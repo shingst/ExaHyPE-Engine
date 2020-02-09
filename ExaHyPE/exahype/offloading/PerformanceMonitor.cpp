@@ -33,7 +33,7 @@ tarch::logging::Log exahype::offloading::PerformanceMonitor::_log( "exahype::off
 
 exahype::offloading::PerformanceMonitor::PerformanceMonitor() :
     _isRankActive(true),
-	_isDisabled(false),
+	  _isDisabled(false),
     _fusedGatherRequest(MPI_REQUEST_NULL),
     _currentTasksLocal(0),
     _remainingTasks(0),

@@ -314,6 +314,10 @@ class exahype::offloading::OffloadingManager {
     bool progressReceiveBackRequests();
     bool hasOutstandingRequestOfType(RequestType requestType);
 
+#if defined (DirtyCleanUp)
+    void cancelOutstandingRequests();
+#endif
+
 #if defined (TaskSharing)
     void setTMPIInterTeamCommunicators(MPI_Comm comm, MPI_Comm commKey, MPI_Comm commAck);
     MPI_Comm getTMPIInterTeamCommunicatorData();
