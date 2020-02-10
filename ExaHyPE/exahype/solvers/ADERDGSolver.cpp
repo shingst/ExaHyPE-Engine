@@ -141,6 +141,8 @@ std::atomic<int> exahype::solvers::ADERDGSolver::MaxIprobesInOffloadingProgress 
 std::atomic<int> exahype::solvers::ADERDGSolver::MigratablePredictionJob::JobCounter (0);
 std::atomic<int> exahype::solvers::ADERDGSolver::NumberOfReceiveJobs (0);
 std::atomic<int> exahype::solvers::ADERDGSolver::NumberOfReceiveBackJobs (0);
+//std::atomic<int> exahype::solvers::ADERDGSolver::NumberOfOffloadingManagers (0);
+//std::atomic<int> exahype::solvers::ADERDGSolver::NumberOfRunningManagers (0);
 std::atomic<int> exahype::solvers::ADERDGSolver::LocalStealableSTPCounter (0);
 
 std::atomic<int> exahype::solvers::ADERDGSolver::CompletedSentSTPs(0);
@@ -270,7 +272,9 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
 #if defined(DistributedOffloading)
         ,_lastReceiveTag(tarch::parallel::Node::getInstance().getNumberOfNodes()),
          _lastReceiveBackTag(tarch::parallel::Node::getInstance().getNumberOfNodes()),
-        _offloadingManagerJob(nullptr)
+        _offloadingManagerJob(nullptr),
+        _offloadingManagerJobStarted(false),
+        _offloadingManagerJobTerminated(false)
 #if defined(TaskSharing)
         ,_lastReceiveReplicaTag(tarch::parallel::Node::getInstance().getNumberOfNodes()),
         _allocatedJobs(),
@@ -2797,24 +2801,16 @@ void exahype::solvers::ADERDGSolver::sendFullReplicatedSTPToOtherTeams(Migratabl
 #endif
 
 void exahype::solvers::ADERDGSolver::submitOrSendStealablePredictionJob(MigratablePredictionJob* job) {
-   //return; 
 
    int myRank = tarch::parallel::Node::getInstance().getRank();
    int nRanks = tarch::parallel::Node::getInstance().getNumberOfNodes();
    int destRank = myRank;
 
-//  static std::atomic<int> sends=0;
-//  //sends++;
-
-   //if(NumberOfEnclaveJobs+NumberOfSkeletonJobs-NumberOfRemoteJobs>tarch::multicore::Core::getInstance().getNumberOfThreads()*2) {
    bool lastSend = false;
    exahype::offloading::OffloadingManager::getInstance().selectVictimRank(destRank, lastSend);
-   //}
-   //else
-   //  exahype::offloading::OffloadingProfiler::getInstance().notifyThresholdFail();
+   assert(destRank>=0);
 
    if(myRank!=destRank) {
-//    sends++;
     // logInfo("submitOrSendStealablePredictionJob","element "<<job->_element<<" predictor time stamp"<<job->_predictorTimeStamp<<" predictor time step size "<<job->_predictorTimeStepSize);
      OffloadEntry entry = {destRank, job->_cellDescriptionsIndex, job->_element, job->_predictorTimeStamp, job->_predictorTimeStepSize};
      //_outstandingOffloads.push( entry );
@@ -3428,6 +3424,13 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::run( bool isCalledOnMaster ) {
          ActiveSenders.erase(terminatedSender);
        }*/
 
+         tarch::multicore::RecursiveLock lock2( tarch::services::Service::receiveDanglingMessagesSemaphore, false );
+         if(lock2.tryLock()) {
+           tarch::parallel::Node::getInstance().receiveDanglingMessages();
+           lock2.free();
+         }
+
+
        int ierr = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
        assertion(ierr==MPI_SUCCESS);
      
@@ -3572,7 +3575,7 @@ bool exahype::solvers::ADERDGSolver::ReceiveBackJob::run( bool isCalledOnMaster 
 
 exahype::solvers::ADERDGSolver::OffloadingManagerJob::OffloadingManagerJob(ADERDGSolver& solver) :
 #ifndef OffloadingUseProgressThread
- tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask, 0, tarch::multicore::DefaultPriority),
+ tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask, 0, tarch::multicore::DefaultPriority-1),
 #endif
   _solver(solver),
   _state(State::Running) {}
@@ -3602,13 +3605,6 @@ bool exahype::solvers::ADERDGSolver::OffloadingManagerJob::run( bool isCalledOnM
   switch (_state) {
     case State::Running:
     {
-     /* tarch::multicore::RecursiveLock lock( 
-        tarch::services::Service::receiveDanglingMessagesSemaphore, false );
-      bool acquired = lock.tryLock();
-      if(acquired) {
-        tarch::parallel::Node::getInstance().receiveDanglingMessages();
-        lock.free();
-      }*/
       if( isCalledOnMaster ) {
           return true; 
       }
@@ -3623,17 +3619,12 @@ bool exahype::solvers::ADERDGSolver::OffloadingManagerJob::run( bool isCalledOnM
     	  _state = State::Terminate;
       }
 
-      //exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressOffloading( std::numeric_limits<int>::max() );
-
-    //  logInfo("run()", "reschedule... ");
       break;
     }
     case State::Resume:
-      //logInfo("offloadingManager", " resumed ");
       _state = State::Running;
       break;
     case State::Paused:
-      //logInfo("offloadingManager", " paused ");
       result = false;
       break;
     case State::Terminate:
@@ -3642,7 +3633,6 @@ bool exahype::solvers::ADERDGSolver::OffloadingManagerJob::run( bool isCalledOnM
       logInfo("offloadingManager", " terminated ");
       _solver._offloadingManagerJobTerminated = true;
       result = false;
-
       break;
     }
   }
@@ -3680,34 +3670,35 @@ void exahype::solvers::ADERDGSolver::startOffloadingManager(bool spawn) {
   tbb::task::enqueue(*_offloadingManagerJob);
 #else
   _offloadingManagerJob = new OffloadingManagerJob(*this);
-  if(spawn)
+  if(spawn) {
     peano::datatraversal::TaskSet spawnedSet(_offloadingManagerJob);
+  }  
   //peano::datatraversal::TaskSet spawnedSet(_offloadingManagerJob, peano::datatraversal::TaskSet::TaskType::IsTaskAndRunAsSoonAsPossible);
+  _offloadingManagerJobStarted = true;
 #endif
 }
 
 #ifndef OffloadingUseProgressThread
 void exahype::solvers::ADERDGSolver::pauseOffloadingManager() {
-//  tarch::multicore::Lock lock(OffloadingSemaphore, true);
-  //logInfo("pauseOffloadingManager", "pausing ");
+  //tarch::multicore::Lock lock(OffloadingSemaphore, true);
+  logInfo("pauseOffloadingManager", "pausing ");
   if(_offloadingManagerJob!=nullptr){
     _offloadingManagerJob->pause();
     _offloadingManagerJob = nullptr;
   }
-//  lock.free();
+  //lock.free();
 }
 
 void exahype::solvers::ADERDGSolver::resumeOffloadingManager() {
-  //logInfo("resumeOffloadingManager", "resuming ");
+  logInfo("resumeOffloadingManager", "resuming ");
   //old job will be deleted so we create a new one here
-//  tarch::multicore::Lock lock(OffloadingSemaphore, true);
-  // assertion(_offloadingManagerJob==nullptr);
+  //assert(_offloadingManagerJob==nullptr);
   if(_offloadingManagerJob==nullptr) {
     _offloadingManagerJob = new OffloadingManagerJob(*this);
     _offloadingManagerJob->resume();
     peano::datatraversal::TaskSet spawnedSet(_offloadingManagerJob);
   }
-//  lock.free();
+  //lock.free();
 }
 #endif
 
@@ -3715,7 +3706,6 @@ void exahype::solvers::ADERDGSolver::stopOffloadingManager() {
   logInfo("stopOffloadingManager", " stopping ");
   //assertion(_offloadingManagerJob != nullptr);
   _offloadingManagerJobTriggerTerminate = true;
-  //_offloadingManagerJob->terminate();
 
 #if defined(OffloadingUseProgressThread)
   while(!_offloadingManagerJobTerminated) {};

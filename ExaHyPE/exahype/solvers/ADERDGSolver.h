@@ -1005,6 +1005,7 @@ private:
 	  State 	_state;
     private:
 	  ADERDGSolver& _solver;
+          bool _started;
   };
 
   class ReceiveJob : public tarch::multicore::jobs::Job {
@@ -1349,6 +1350,7 @@ private:
   // offloading manager job associated to the solver
   OffloadingManagerJob *_offloadingManagerJob;
   std::atomic<bool> _offloadingManagerJobTerminated;
+  std::atomic<bool> _offloadingManagerJobStarted;
   std::atomic<bool> _offloadingManagerJobTriggerTerminate;
 
   // limit the maximum number of iprobes in progressOffloading()
@@ -3280,6 +3282,7 @@ public:
    bool hasTriggeredEmergency = false;
 
  #if !defined(OffloadingUseProgressThread)
+     //pauseOffloadingManager();
      //exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressOffloading(1);
      setMaxNumberOfIprobesInProgressOffloading(1);
  #endif
@@ -3293,7 +3296,6 @@ public:
       peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
  #if !defined(OffloadingUseProgressThread)
       if ( responsibleRank!=myRank) {
-        pauseOffloadingManager();
         logInfo("waitUntil", "cell missing from responsible rank: "<<responsibleRank);
         tryToReceiveTaskBack(this) ;
       }
@@ -3320,8 +3322,16 @@ public:
 
       //switch ( JobSystemWaitBehaviour ) {
       //   case JobSystemWaitBehaviourType::ProcessJobsWithSamePriority:
-           tarch::multicore::jobs::processBackgroundJobs( 1, getTaskPriority(waitForHighPriorityJob), true );
-      //     break;
+      #ifndef OffloadingUseProgressTask
+        tarch::multicore::jobs::processBackgroundJobs( 1, getTaskPriority(waitForHighPriorityJob), true );
+      #else
+        //Receive Job may be active and yield a deadlock situation when only local jobs are processed
+        tarch::multicore::jobs::processBackgroundJobs( 1, -1, true );
+      #endif
+
+      // tarch::multicore::jobs::processBackgroundJobs( 1, -1, true );
+ 
+     //     break;
       //   case JobSystemWaitBehaviourType::ProcessAnyJobs:
       //     tarch::multicore::jobs::processBackgroundJobs( 1, -1, true );
       //     break;
@@ -3329,9 +3339,9 @@ public:
       //     break;
      // }
 
-      if((MPI_Wtime()-startTime)>0.001  && responsibleRank!=myRank) {
+      if((MPI_Wtime()-startTime)>10.001) {//  && responsibleRank!=myRank) {
         startTime = MPI_Wtime();
-        logInfo("waitUntilCompletedTimeStep()","warning: rank waiting too long for missing task from rank "<<responsibleRank<< " outstanding jobs:"<<NumberOfRemoteJobs);
+        logInfo("waitUntilCompletedTimeStep()","warning: rank waiting too long for missing task from rank "<<responsibleRank<< " outstanding jobs:"<<NumberOfRemoteJobs<< " outstanding enclave "<<NumberOfEnclaveJobs<< " outstanding skeleton "<<NumberOfSkeletonJobs<< " celldescription "<<cellDescription.toString() << " waiting jobs "<<tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs());
       }
 
 
@@ -3365,9 +3375,9 @@ public:
 
     }
  #if !defined(OffloadingUseProgressThread)
-    if ( responsibleRank!=myRank) {
-      resumeOffloadingManager();
-    }
+    //if ( responsibleRank!=myRank) {
+    //  resumeOffloadingManager();
+    //}
     exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressOffloading( std::numeric_limits<int>::max() );
  #endif
 
