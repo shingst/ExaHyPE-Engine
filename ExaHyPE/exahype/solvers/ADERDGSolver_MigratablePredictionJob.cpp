@@ -360,15 +360,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(bo
   file << iterations << std::endl;
   file.close();
   #endif*/
-=======
-    		                                sendBackRequests,
-			    	                4,
-   			                        _tag,
-   			                        _originRank,
-					        sendBackHandler,
-					        exahype::offloading::RequestType::sendBack,
-			                  	&_solver);
->>>>>>> 55db76787f33e2c60ea06ed1ef2613e41f7ee933
+
   }
   return result;
 }
