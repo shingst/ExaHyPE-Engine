@@ -3277,11 +3277,13 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
   //VT_begin(event_progress);
 #endif
 
-  //if(tarch::multicore::Core::getInstance().getThreadNum()==0) {  
-     //std::cout<<"Error!!!!!!"<<std::endl;
+  tarch::timing::Watch watch("ADERDGSolver","progress", false, false);
+  if(tarch::multicore::Core::getInstance().getThreadNum()==0) {  
+     watch.startTimer(); 
+    //std::cout<<"Error!!!!!!"<<std::endl;
  //    lock.free();  
  //     return;
- // }
+  }
 
   // 2. make progress on any outstanding MPI communication
   //if(!runOnMaster)
@@ -3294,7 +3296,13 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
   //if(!runOnMaster)
   pollForOutstandingCommunicationRequests(solver, runOnMaster, maxIts);
   lock.free();
-
+  
+  if(tarch::multicore::Core::getInstance().getThreadNum()==0) {  
+    watch.stopTimer();
+    if(watch.getCalendarTime()>1)
+      std::cout<<"Master blocked for "<<watch.getCalendarTime()<< " s "<<std::endl;
+  }
+ 
 #ifdef USE_ITAC
   //VT_end(event_progress);
 #endif

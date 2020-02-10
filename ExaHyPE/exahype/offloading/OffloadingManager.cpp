@@ -200,6 +200,7 @@ void exahype::offloading::OffloadingManager::submitRequests(
     exahype::solvers::Solver *solver,
     bool block ) {
 
+
   switch(type) {
     case RequestType::send:
     _postedSendsPerRank[remoteRank]++; break;
