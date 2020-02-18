@@ -321,14 +321,14 @@ void exahype::offloading::AggressiveHybridDistributor::printOffloadingStatistics
     if(i==myRank)
       continue;
     if(_tasksToOffload[i]>0)
-      logDebug("printOffloadingStatistics()", "target tasks to rank "<<i<<" ntasks "<<_tasksToOffload[i]<<" not offloaded "
+      logInfo("printOffloadingStatistics()", "target tasks to rank "<<i<<" ntasks "<<_tasksToOffload[i]<<" not offloaded "
                                             <<_tasksNotOffloaded[i]<<" actually offloaded "<<_tasksActuallyOffloaded[i]); 
     _tasksNotOffloaded[i] = 0;
     _tasksActuallyOffloaded[i] = 0;
   }
-  logDebug("printOffloadingStatistics()", "temperature value CCP "<<_temperatureCCP );
-  logDebug("printOffloadingStatistics()", "temperature value diffusion "<<_temperatureDiffusion );
-  logDebug("printOffloadingStatistics()", "time per STP  "<< exahype::offloading::OffloadingAnalyser::getInstance().getTimePerSTP());
+  logInfo("printOffloadingStatistics()", "temperature value CCP "<<_temperatureCCP );
+  logInfo("printOffloadingStatistics()", "temperature value diffusion "<<_temperatureDiffusion );
+  logInfo("printOffloadingStatistics()", "time per STP  "<< exahype::offloading::OffloadingAnalyser::getInstance().getTimePerSTP());
 }
 
 
