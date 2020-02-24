@@ -216,7 +216,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 #endif
 
     //TODO: add support for lGradQhbnd
-    _solver.fusedSpaceTimePredictorVolumeIntegral(
+    int iterations=_solver.fusedSpaceTimePredictorVolumeIntegral(
       lduh,lQhbnd,nullptr, lFhbnd,
       luh,
       cellDescription.getOffset()+0.5*cellDescription.getSize(),
@@ -227,6 +227,24 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     cellDescription.setHasCompletedLastStep(true);
 
     result = false;
+
+#if defined(FileTrace)
+    std::stringstream stream;
+    stream.str(std::string());
+    stream<<"./TraceOutput/exahype_solvers_ADERDGSolver_OwnMigratableJob_iterations_rank_";
+    int rank=tarch::parallel::Node::getInstance().getRank();
+    stream<<rank<<"_";
+    //this will only work for 2 cores per Rank
+    int threadId=tarch::multicore::Core::getInstance().getThreadNum();
+    stream<<threadId<<".txt";
+    std::string path=stream.str();
+
+    std::ofstream file;
+    file.open(path,std::fstream::app);
+    file << iterations << std::endl;
+    file.close();
+#endif
+
 
 #if defined (TaskSharing)
     //check one more time
@@ -303,20 +321,20 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(bo
       _predictorTimeStepSize,
       true);
 #if defined(FileTrace)
-  std::stringstream stream;
-  stream.str(std::string());
-  stream<<"./TraceOutput/exahype_solvers_ADERDGSolver_OwnMigratableJob_iterations_rank_";
-  int rank=tarch::parallel::Node::getInstance().getRank();
-  stream<<rank<<"_";
-  //this will only work for 2 cores per Rank
-  int threadId=tarch::multicore::Core::getInstance().getThreadNum();
-  stream<<threadId<<".txt";
-  std::string path=stream.str();
+    std::stringstream stream;
+    stream.str(std::string());
+    stream<<"./TraceOutput/exahype_solvers_ADERDGSolver_AlienMigratableJob_iterations_rank_";
+    int rank=tarch::parallel::Node::getInstance().getRank();
+    stream<<rank<<"_";
 
-  std::ofstream file;
-  file.open(path,std::fstream::app);
-  file << iterations << std::endl;
-  file.close();
+    int threadId=tarch::multicore::Core::getInstance().getThreadNum();
+    stream<<threadId<<".txt";
+    std::string path=stream.str();
+
+    std::ofstream file;
+    file.open(path,std::fstream::app);
+    file << iterations << std::endl;
+    file.close();
 #endif
   }
 #if defined(OffloadingUseProfiler)
@@ -328,7 +346,6 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(bo
   if(_originRank!=myRank) {
     MPI_Request sendBackRequests[4];
     //logInfo("handleLocalExecution()", "postSendBack");
-    //TODO would be nice to have the amount of picard iterations returned here
     _solver.isendStealablePredictionJob(_luh,
          	                        _lduh,
                                         _lQhbnd,
@@ -344,23 +361,6 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(bo
 					sendBackHandler,
 					exahype::offloading::RequestType::sendBack,
 					&_solver);
-  /*#if defined(FileTrace)
-  std::stringstream stream;
-  stream.str(std::string());
-  stream<<"./TraceOutput/exahype_solvers_ADERDGSolver_ForeignMigratableJob_iterations_rank_";
-  int rank=tarch::parallel::Node::getInstance().getRank();
-  stream<<rank<<"_";
-  //this will only work for 2 cores per Rank
-  int threadId=tarch::multicore::Core::getInstance().getThreadNum();
-  stream<<threadId<<".txt";
-  std::string path=stream.str();
-
-  std::ofstream file;
-  file.open(path,std::fstream::app);
-  file << iterations << std::endl;
-  file.close();
-  #endif*/
-
   }
   return result;
 }
