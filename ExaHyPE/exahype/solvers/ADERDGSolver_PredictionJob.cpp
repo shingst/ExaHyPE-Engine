@@ -76,7 +76,11 @@ bool exahype::solvers::ADERDGSolver::PredictionJob::run(bool runOnMasterThread) 
   auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
 
   std::stringstream stream;
+  #if defined Picard
+  stream<<"./Picard/exahype_solvers_ADERDGSolver_PredictionJob_run_rank_";
+  #else
   stream<<"./TraceOutput/exahype_solvers_ADERDGSolver_PredictionJob_run_rank_";
+  #endif 
   int rank=tarch::parallel::Node::getInstance().getRank();
   stream<<rank<<"_";
   int threadId=tarch::multicore::Core::getInstance().getThreadNum();
@@ -85,7 +89,13 @@ bool exahype::solvers::ADERDGSolver::PredictionJob::run(bool runOnMasterThread) 
 
   std::ofstream file;
   file.open(path,std::fstream::app);
+  #if defined Picard
+  file << duration.count() <<":"<<numberIterations<< std::endl;
+  file.close();
+  return false;
+  #else
   file << duration.count() << std::endl;
+  #endif
   file.close();
 
   stream.str(std::string());

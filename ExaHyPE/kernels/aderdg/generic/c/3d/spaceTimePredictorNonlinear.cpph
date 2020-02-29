@@ -453,7 +453,7 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
 		SCOREP_USER_REGION_END( my_region_handle )
 	}
   #endif
-  #if defined FileTrace
+  #if defined FileTrace && !defined Picard
   std::stringstream stream;
   stream<<"./TraceOutput/iter_counter_rank_";
   int rank=tarch::parallel::Node::getInstance().getRank();
