@@ -234,14 +234,14 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     stream<<"./TraceOutput/exahype_solvers_ADERDGSolver_OwnMigratableJob_iterations_rank_";
     int rank=tarch::parallel::Node::getInstance().getRank();
     stream<<rank<<"_";
-    //this will only work for 2 cores per Rank
+    k
     int threadId=tarch::multicore::Core::getInstance().getThreadNum();
     stream<<threadId<<".txt";
     std::string path=stream.str();
 
     std::ofstream file;
     file.open(path,std::fstream::app);
-    file << iterations << std::endl;
+    file << (iterations+1) << std::endl;
     file.close();
 #endif
 
@@ -333,7 +333,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(bo
 
     std::ofstream file;
     file.open(path,std::fstream::app);
-    file << iterations << std::endl;
+    file << (iterations+1) << std::endl;
     file.close();
 #endif
   }

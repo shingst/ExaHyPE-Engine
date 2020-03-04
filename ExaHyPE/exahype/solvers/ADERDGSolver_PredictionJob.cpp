@@ -90,7 +90,7 @@ bool exahype::solvers::ADERDGSolver::PredictionJob::run(bool runOnMasterThread) 
   std::ofstream file;
   file.open(path,std::fstream::app);
   #if defined Picard
-  file << duration.count() <<":"<<numberIterations<< std::endl;
+  file << duration.count() <<":"<<(numberIterations+1)<< std::endl;
   file.close();
   return false;
   #else
@@ -106,7 +106,7 @@ bool exahype::solvers::ADERDGSolver::PredictionJob::run(bool runOnMasterThread) 
 
   std::ofstream fileIter;
   fileIter.open(path,std::fstream::app);
-  fileIter << numberIterations << std::endl;
+  fileIter << (numberIterations+1) << std::endl;
   fileIter.close();
   #endif
 

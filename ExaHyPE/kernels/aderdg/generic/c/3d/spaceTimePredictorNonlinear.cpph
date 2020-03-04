@@ -465,7 +465,7 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
 
   std::ofstream file;
   file.open(path,std::fstream::app);
-  file << iter << std::endl;
+  file << (iter+1) << std::endl;
   file.close();
   #endif
 
