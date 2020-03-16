@@ -16,6 +16,7 @@
 #include "tarch/la/MatrixVectorOperations.h"
 
 #include <algorithm>
+#include <cstring> // memset
 
 #include <string>
 
@@ -51,11 +52,20 @@ void Euler::EulerSolver_ADERDG::flux(const double* const Q, double** const F) {
   F[0][4] = irho*(Q[4]+p)*Q[1];
 
   // col 2
+  /*
   F[1][0] = Q[2];
   F[1][1] = irho*Q[1]*Q[2];
   F[1][2] = irho*Q[2]*Q[2] + p;
   F[1][3] = irho*Q[3]*Q[2];
   F[1][4] = irho*(Q[4]+p)*Q[2];
+  */
+  
+  // done in ncp
+  F[1][0] = 0.;//Q[2];
+  F[1][1] = 0.;//irho*Q[1]*Q[2];
+  F[1][2] = 0.;//irho*Q[2]*Q[2] + p;
+  F[1][3] = 0.;//irho*Q[3]*Q[2];
+  F[1][4] = 0.;//irho*Q[4]*Q[2]+irho*p*Q[2];
 
   #if DIMENSIONS==3
   // col 3
@@ -68,11 +78,42 @@ void Euler::EulerSolver_ADERDG::flux(const double* const Q, double** const F) {
 }
 
 void Euler::EulerSolver_ADERDG::nonConservativeProduct(const double* const Q, const double* const gradQ, double* const BgradQ) {
-  BgradQ[0] = 0.;
-  BgradQ[1] = 0.;
-  BgradQ[2] = 0.;
-  BgradQ[3] = 0.;
-  BgradQ[4] = 0.;
+  
+  //ncp is div(F(Q))
+  
+  std::memset(BgradQ,0,NumberOfVariables*sizeof(double));
+  constexpr double gamma = 1.4;
+  const double irho = 1./Q[0];
+
+  // x
+  
+  // done in flux
+  
+  // y
+  const double* const Q_dy = gradQ+NumberOfVariables;
+  const double irho_dy = -Q_dy[0]*irho*irho;
+  #if DIMENSIONS==3
+  const double j2      = Q[1]*Q[1] + Q[2]*Q[2] + Q[3]*Q[3];
+  const double j2_dy   = 2*Q[1]*Q_dy[1] + 2*Q[2]*Q_dy[2] + 2*Q[3]*Q_dy[3];
+  #else
+  const double j2      = Q[1]*Q[1] + Q[2]*Q[2];
+  const double j2_dy   = 2*Q[1]*Q_dy[1] + 2*Q[2]*Q_dy[2];
+  #endif
+  const double p = (gamma-1) * (Q[4] - 0.5*irho*j2);
+  const double p_dy = (gamma-1) * (Q_dy[4] - 0.5*(j2_dy*irho+j2*irho_dy));
+  
+  BgradQ[0] += Q_dy[2];
+  BgradQ[1] += irho_dy*Q[1]*Q[2] + irho*Q_dy[1]*Q[2] + irho*Q[1]*Q_dy[2];
+  BgradQ[2] += irho_dy*Q[2]*Q[2] + irho*Q_dy[2]*Q[2]*2                  + p_dy;
+  BgradQ[3] += irho_dy*Q[3]*Q[2] + irho*Q_dy[3]*Q[2] + irho*Q[3]*Q_dy[2];
+  BgradQ[4] += irho_dy*Q[4]*Q[2] + irho*Q_dy[4]*Q[2] + irho*Q[4]*Q_dy[2] + irho_dy*p*Q[2] + irho*p_dy*Q[2] + irho*p*Q_dy[2];
+
+  #if DIMENSIONS==3
+  // z
+  
+  // done in flux
+  #endif
+
 }
 
 void Euler::EulerSolver_ADERDG::eigenvalues(const double* const Q,
