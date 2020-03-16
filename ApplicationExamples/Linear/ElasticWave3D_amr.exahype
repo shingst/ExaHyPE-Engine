@@ -1,0 +1,151 @@
+/**
+ * This file is part of the ExaHyPE project.
+ * Copyright (c) 2016  http://exahype.eu
+ * All rights reserved.
+ *
+ * The project has received funding from the European Union's Horizon 
+ * 2020 research and innovation programme under grant agreement
+ * No 671698. For copyrights and licensing, please consult the webpage.
+ *
+ * Released under the BSD 3 Open Source License.
+ * For the full license text, see LICENSE.txt
+ **/
+ 
+/**
+
+ Elastic Wave
+
+ A simple project. (well, it was simple, in the beginning).
+
+ */
+exahype-project  Elastic
+
+  peano-kernel-path const = ./Peano
+  exahype-path const      = ./ExaHyPE
+  output-directory const  = ./ApplicationExamples/Linear/ElasticWave3D_amr
+  architecture const      = hsw
+  log-file                = mylogfile.log
+
+  computational-domain
+    dimension const          = 3
+    width                    = 40.0, 40.0, 40.0
+    offset                   = -20.0, 0.0, -20.0
+//    width                    = 10.0, 10.0, 10.0
+//    offset                   = -5.0, 0.0, -5.0
+    end-time                 = 10.0
+  end computational-domain
+
+  shared-memory
+    identifier               = dummy
+    configure                = {background-tasks:28}	
+    cores                    = 28
+    properties-file          = sharedmemory.properties
+  end shared-memory
+
+  distributed-memory
+     identifier               = static_load_balancing
+     configure                = {hotspot,fair,ranks-per-node:28}
+     buffer-size              = 1600
+     timeout                  = 6000
+  end distributed-memory 
+
+  global-optimisation
+    fuse-algorithmic-steps          = all
+    fuse-algorithmic-steps-rerun-factor   = 0.99
+    fuse-algorithmic-steps-diffusion-factor   = 0.99
+    spawn-predictor-as-background-thread = on
+    spawn-amr-background-threads         = off
+    /* 0.0 und 0.8 sind schon mal zwei Faktoren */
+    disable-vertex-exchange-in-time-steps = on
+    time-step-batch-factor           = 0.0
+    disable-metadata-exchange-in-batched-time-steps = off
+    double-compression = 0.0
+    spawn-double-compression-as-background-thread = off
+  end global-optimisation
+
+  solver ADER-DG MyElasticWaveSolver
+    variables const    = v:3,sigma:6
+    parameters const  = rho:1,cp:1,cs:1
+    order const        = 5
+    /* 27 points: 0.05, 9 points: 0.15 */
+    maximum-mesh-size  = 9.0
+    maximum-mesh-depth = 2
+    time-stepping      = global
+    type const         = linear, Legendre
+    terms const        = flux,ncp,materialparameters,pointsources:1
+    optimisation const = generic,patchwiseadjust
+    language const     = C
+
+/*    plot vtk::Legendre::vertices::ascii ConservedQuantitiesWriter
+      variables const = 12
+      time            = 0.0
+      repeat          = 0.01
+      output          = ./loh1_amr/conserved
+    end plot*/
+
+/*    /* Do not need the time series for a point in the moment*/
+/*    plot probe::ascii ProbeWriter_1
+      variables const = 9
+      time            = 0.0
+      repeat          = 0.05
+      output          = ./receiver_1
+      select          = x:0.0,y:0.0,z:0.693
+    end plot
+    plot probe::ascii ProbeWriter_2
+      variables const = 9
+      time            = 0.0
+      repeat          = 0.05
+      output          = ./receiver_2
+      select          = x:0.0,y:0.0,z:5.543
+    end plot
+    plot probe::ascii ProbeWriter_3
+      variables const = 9
+      time            = 0.0
+      repeat          = 0.05
+      output          = ./receiver_3
+      select          = x:0.0,y:0.0,z:10.392
+    end plot
+    plot probe::ascii ProbeWriter_4
+      variables const = 9
+      time            = 0.0
+      repeat          = 0.05
+      output          = ./receiver_4
+      select          = x:0.49,y:0.0,z:0.49
+    end plot */
+    plot probe::ascii ProbeWriter_5
+      variables const = 9
+      time            = 0.0
+      repeat          = 0.05
+      output          = ./loh1_amr/receiver_5
+      select          = x:3.919,y:0.0,z:3.919
+    end plot
+/*    plot probe::ascii ProbeWriter_6
+      variables const = 9
+      time            = 0.0
+      repeat          = 0.05
+      output          = ./receiver_6
+      select          = x:7.348,y:0.0,z:7.348
+    end plot
+    plot probe::ascii ProbeWriter_7
+      variables const = 9
+      time            = 0.0
+      repeat          = 0.05
+      output          = ./receiver_7
+      select          = x:0.577,y:0.0,z:0.384
+    end plot
+    plot probe::ascii ProbeWriter_8
+      variables const = 9
+      time            = 0.0
+      repeat          = 0.05
+      output          = ./receiver_8
+      select          = x:4.612,y:0.0,z:3.075
+    end plot
+    plot probe::ascii ProbeWriter_9
+      variables const = 9
+      time            = 0.0
+      repeat          = 0.05
+      output          = ./receiver_9
+      select          = x:8.647,y:0.0,z:5.764
+    end plot*/
+  end solver 
+end exahype-project

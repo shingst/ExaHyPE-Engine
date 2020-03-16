@@ -1,0 +1,98 @@
+/**
+ * This file is part of the ExaHyPE project.
+ * Copyright (c) 2016  http://exahype.eu
+ * All rights reserved.
+ *
+ * The project has received funding from the European Union's Horizon 
+ * 2020 research and innovation programme under grant agreement
+ * No 671698. For copyrights and licensing, please consult the webpage.
+ *
+ * Released under the BSD 3 Open Source License.
+ * For the full license text, see LICENSE.txt
+ **/
+ 
+/**
+
+ Elastic Wave
+
+ A simple project. (well, it was simple, in the beginning).
+
+ */
+exahype-project  Elastic
+
+  peano-kernel-path const = ./Peano
+  exahype-path const      = ./ExaHyPE
+  output-directory const  = ./ApplicationExamples/Linear/ElasticWave3D
+  architecture const      = hsw
+
+  computational-domain
+    dimension const          = 3
+//    width                  =  58.0, 58.0,  58.0
+//    offset                 = -26.0,  0.0, -26.0
+    width                    =  24.0, 24.0,  24.0
+    offset                   = -12.0,  0.0, -12.0
+    end-time                 =  10.0
+  end computational-domain
+
+  shared-memory
+    identifier               = dummy
+    configure                = {background-tasks:1,manual-pinning}	
+    cores                    = 1
+    properties-file          = sharedmemory.properties
+  end shared-memory
+ 
+  distributed-memory	
+    identifier               = static_load_balancing
+    configure                = {hotspot,fair,ranks-per-node:1}
+    buffer-size              = 1600
+    timeout                  = 6000
+  end distributed-memory
+
+  global-optimisation
+    fuse-algorithmic-steps                          = all
+    fuse-algorithmic-steps-rerun-factor                   = 0.99
+    fuse-algorithmic-steps-diffusion-factor                   = 0.99
+    spawn-predictor-as-background-thread            = on
+    spawn-amr-background-threads                    = on
+    disable-vertex-exchange-in-time-steps           = on
+    time-step-batch-factor                          = 1.0
+    disable-metadata-exchange-in-batched-time-steps = on
+    double-compression                              = 0.0
+    spawn-double-compression-as-background-thread   = on
+  end global-optimisation
+
+  solver ADER-DG MyElasticWaveSolver
+    variables const    = v:3,sigma:6
+    parameters const  = rho:1,cp:1,cs:1
+    order const        = 5
+    /* 27 points: 0.05, 9 points: 0.15 */
+    maximum-mesh-size  = 3.0
+    maximum-mesh-depth = 3
+    time-stepping      = globalfixed
+    type const         = linear, Legendre
+    terms const        = flux,ncp,materialparameters,pointsources:1
+    optimisation const = generic,patchwiseadjust,usestack
+    language const     = C
+    /*amr_regulatization:0 refinement only for the top layer in y*/
+    /*amr_regulatization:1 highest refinement down to point source in y*/
+    constants          = amr_regularization:1
+
+    plot vtu::Legendre::vertices::ascii ConservedQuantitiesWriter
+      variables const = 12
+      time            = 0.0
+      repeat          = 0.05
+      output          = ./ExaHyPE-output/cuboid_conserved
+    end plot
+
+    /* Do not need the time series for a point in the moment*/
+    plot probe::ascii ProbeWriter
+      variables const = 9
+      time            = 0.0
+      repeat          = 0.005
+      output          = ./seismogram
+      select          = x:3.919,y:0.0,z:3.919
+//      select          = x:3.0,y:0.0,z:3.0
+    end plot
+    
+  end solver
+end exahype-project
