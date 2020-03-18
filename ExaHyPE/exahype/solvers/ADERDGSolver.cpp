@@ -2699,10 +2699,10 @@ void exahype::solvers::ADERDGSolver::sendFullReplicatedSTPToOtherTeams(Migratabl
     MPI_Comm teamInterComm = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamCommunicatorData();
 
     OffloadEntry entry = {-1,
-    		          job->_cellDescriptionsIndex,
-    		          job->_element,
-		          job->_predictorTimeStamp,
-			  job->_predictorTimeStepSize};
+    		              job->_cellDescriptionsIndex,
+    		              job->_element,
+		                  job->_predictorTimeStamp,
+			              job->_predictorTimeStepSize};
 
     auto& cellDescription = getCellDescription(job->_cellDescriptionsIndex, job->_element);
 
@@ -2772,11 +2772,11 @@ void exahype::solvers::ADERDGSolver::sendFullReplicatedSTPToOtherTeams(Migratabl
     for(int i=0; i<teams; i++) {
       if(i!=interCommRank) {
           logDebug("sendReplicatedSTPToOtherTeams"," team "<< interCommRank
-                                                <<" send replica job: center[0] = "<<data->_metadata[0]
-                                                <<" center[1] = "<<data->_metadata[1]
-				                                        <<" center[2] = "<<data->_metadata[2]
-                                                <<" time stamp = "<<job->_predictorTimeStamp
-	                                              <<" to team "<<i);
+                                                   <<" send replica job: center[0] = "<<data->_metadata[0]
+                                                   <<" center[1] = "<<data->_metadata[1]
+				                                   <<" center[2] = "<<data->_metadata[2]
+                                                   <<" time stamp = "<<job->_predictorTimeStamp
+	                                               <<" to team "<<i);
           isendStealablePredictionJob(&data->_luh[0],
                                       &data->_lduh[0],
                                       &data->_lQhbnd[0],
@@ -2792,8 +2792,8 @@ void exahype::solvers::ADERDGSolver::sendFullReplicatedSTPToOtherTeams(Migratabl
 
 	exahype::offloading::OffloadingManager::getInstance().submitRequests(sendRequests, (teams-1)*5, tag, -1,
 			                                                             MigratablePredictionJob::sendHandlerReplication,
- 										                                               exahype::offloading::RequestType::sendReplica,
-										                                              this, false);
+ 										                                 exahype::offloading::RequestType::sendReplica,
+										                                 this, false);
   delete[] sendRequests;
 #endif
 }
@@ -2852,7 +2852,10 @@ void exahype::solvers::ADERDGSolver::submitOrSendStealablePredictionJob(Migratab
 		exahype::offloading::RequestType::send, this);
 
      //logInfo("submitOrSendStealablePredictionJob()","send away with tag "<<tag);
-
+#ifdef OffloadingLocalRecompute
+     logInfo("submitOrSendStealablePredictionJob", "keeping local job in queue");
+     peano::datatraversal::TaskSet spawnedSet( job );
+#endif
      // post receive back requests
 //     MPI_Request recvRequests[4];
 //     irecvStealablePredictionJob(
