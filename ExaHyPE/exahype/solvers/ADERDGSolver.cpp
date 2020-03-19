@@ -2867,8 +2867,10 @@ void exahype::solvers::ADERDGSolver::submitOrSendStealablePredictionJob(Migratab
 //         exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveBackHandler,
 //	    exahype::offloading::RequestType::receiveBack, this);
 
+     //todo adapt later
 #ifndef OffloadingLocalRecompute
      NumberOfRemoteJobs++;
+     delete job;
 #endif
 
      exahype::offloading::OffloadingProfiler::getInstance().notifyOffloadedTask(destRank);
@@ -2877,9 +2879,6 @@ void exahype::solvers::ADERDGSolver::submitOrSendStealablePredictionJob(Migratab
 #ifdef OffloadingUseProgressTask
      if(lastSend)
         exahype::offloading::OffloadingManager::getInstance().notifyAllVictimsSendCompletedIfNotNotified();
-#endif
-#ifndef OffloadingLocalRecompute
-     delete job;
 #endif
   }
   else {
@@ -2956,14 +2955,41 @@ void exahype::solvers::ADERDGSolver::receiveBackMigratableJob(int tag, int src, 
   double *lQhbnd = static_cast<double*>(cellDescription->getExtrapolatedPredictor());
   double *lFhbnd = static_cast<double*>(cellDescription->getFluctuation());
 
+#if defined (OffloadingLocalRecompute)
+  //Todo (Philipp): we actually may not need to transfer back metadata as it may be available locally
+  StealablePredictionJobData *data = new StealablePredictionJobData(*solver);
+  AllocatedSTPsReceive++;
+  MPI_Request recvRequests[5];
+  solver->irecvStealablePredictionJob(
+      luh,
+	  lduh,
+	  lQhbnd,
+      lFhbnd,
+	  src,
+	  tag,
+	  commMapped,
+	  recvRequests,
+	  &(data->_metadata[0]));
+
+  exahype::offloading::OffloadingManager::getInstance().submitRequests(
+      recvRequests,
+	  5,
+	  tag,
+	  src,
+      exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler,
+      exahype::offloading::RequestType::receiveBack,
+	  solver,
+	  false);
+#else
   MPI_Request recvRequests[4];
   solver->irecvStealablePredictionJob(
       luh, lduh, lQhbnd,
       lFhbnd, src, tag, commMapped, recvRequests);
-  exahype::offloading::OffloadingManager::getInstance().submitRequests(
-        recvRequests, 4, tag, src,
-        exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler,
-        exahype::offloading::RequestType::receiveBack, solver, false);
+      exahype::offloading::OffloadingManager::getInstance().submitRequests(
+      recvRequests, 4, tag, src,
+      exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler,
+      exahype::offloading::RequestType::receiveBack, solver, false);
+#endif
 }
 
 

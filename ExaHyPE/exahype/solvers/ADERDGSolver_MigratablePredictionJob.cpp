@@ -108,7 +108,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   double *lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
   double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
 
-#if defined(TaskSharing)
+#if defined(TaskSharing) || defined(OffloadingLocalRecompute)
   //check if task outcome has been received already
   tarch::la::Vector<DIMENSIONS, double> center;
   center = cellDescription.getOffset()+0.5*cellDescription.getSize();
@@ -119,8 +119,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   key.timestamp = _predictorTimeStamp;
   key.element = _element;
 
-  logDebug("handleLocalExecution()", "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
-  	                          	      <<" looking for replica center[0] = "<< center[0]
+  logInfo("handleLocalExecution()", "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
+  	                          	      <<" looking for job center[0] = "<< center[0]
 					                  <<" center[1] = "<< center[1]
 			                          <<" center[2] = "<< center[2]
 					                  <<" time stamp = "<<_predictorTimeStamp
@@ -135,7 +135,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   	StealablePredictionJobData *data = a_jobToData->second.data;
   	assert(data->_metadata[2*DIMENSIONS]==_predictorTimeStamp);
   	logDebug("handleLocalExecution()", "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
-  			                           <<" found STP in received replica jobs:"
+  			                           <<" found STP in received jobs:"
   			                           <<" center[0] = "<<data->_metadata[0]
                                        <<" center[1] = "<<data->_metadata[1]
                                        <<" center[2] = "<<data->_metadata[2]
@@ -164,7 +164,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   }
   else {
     a_jobToData.release();
-    logDebug("handleLocalExecution()",   "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
+    logInfo("handleLocalExecution()",   "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
                                           <<" Data not available, gotta do it on my own!"
                                           <<" center[0] = "<<center[0]
                                           <<" center[1] = "<<center[1]
@@ -269,10 +269,49 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(bo
 
   //send back
   if(_originRank!=myRank) {
+#if OffloadingLocalRecompute
+	//send away task outcome for receiving it into job table
+    OffloadEntry entry = {-1,
+	   		              _cellDescriptionsIndex,
+	   		              _element,
+		                  _predictorTimeStamp,
+			              _predictorTimeStepSize};
+
+    tbb::concurrent_hash_map<std::pair<int, int>, StealablePredictionJobData*>::accessor a_tagRankToData;
+    StealablePredictionJobData *data;
+    static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagRankToStolenData.find(a_tagRankToData, std::make_pair(remoteRank, tag));
+    data = a_tagRankToData->second;
+    a_tagRankToData.release();
+
+    MPI_Request sendBackRequests[5];
+
+    packMetadataToBuffer(entry, data->_metadata);
+
+    logInfo("handleExecution", " send replica job: center[0] = "<<data->_metadata[0]
+                                      <<" center[1] = "<<data->_metadata[1]
+				                      <<" center[2] = "<<data->_metadata[2]
+                                      <<" time stamp = "<_predictorTimeStamp);
+
+    isendStealablePredictionJob(&_luh[0],
+                                 &_lduh[0],
+                                 &_lQhbnd[0],
+                                 &_lFhbnd[0],
+                                 i,
+                                 tag,
+                                 teamInterComm,
+                                 &sendBackRequests[0],
+								 &data->__metadata[0]);
+
+	exahype::offloading::OffloadingManager::getInstance().submitRequests(sendBackRequests, 5, _tag, _originRank,
+			                                                             sendBackHandler,
+ 										                                 exahype::offloading::RequestType::sendBack,
+										                                 this, false);
+
+#else
     MPI_Request sendBackRequests[4];
     //logInfo("handleLocalExecution()", "postSendBack");
     _solver.isendStealablePredictionJob(_luh,
-         	                        _lduh,
+         	                            _lduh,
                                         _lQhbnd,
                                         _lFhbnd,
                                         _originRank,
@@ -280,13 +319,14 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(bo
                                         exahype::offloading::OffloadingManager::getInstance().getMPICommunicatorMapped(),
                                         sendBackRequests);
     exahype::offloading::OffloadingManager::getInstance().submitRequests(
-    		                                sendBackRequests,
-			    	                4,
-   			                        _tag,
-   			                        _originRank,
-					        sendBackHandler,
-					        exahype::offloading::RequestType::sendBack,
-			                  	&_solver);
+    	                                sendBackRequests,
+	    		    	                4,
+   		    	                        _tag,
+   			                            _originRank,
+				            	        sendBackHandler,
+					                    exahype::offloading::RequestType::sendBack,
+			                  	        &_solver);
+#endif
   }
   return result;
 }
@@ -300,9 +340,9 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandler(exa
   data = a_tagRankToData->second;
   a_tagRankToData.release();
 
-  //exahype::offloading::OffloadingAnalyser::getInstance().notifyReceivedSTPJob();
-  //MigratablePredictionJob *job= static_cast<exahype::solvers::ADERDGSolver*> (solver)->createFromData(data, remoteRank, tag);
-  //peano::datatraversal::TaskSet spawnedSet(job);
+  exahype::offloading::OffloadingAnalyser::getInstance().notifyReceivedSTPJob();
+  MigratablePredictionJob *job= static_cast<exahype::solvers::ADERDGSolver*> (solver)->createFromData(data, remoteRank, tag);
+  peano::datatraversal::TaskSet spawnedSet(job);
 
   exahype::offloading::OffloadingProfiler::getInstance().notifyReceivedTask(remoteRank);
 }
@@ -387,7 +427,6 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
   auto cellDescription = a_tagToCellDesc->second;
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToCellDesc.erase(a_tagToCellDesc);
   a_tagToCellDesc.release();
-  cellDescription->setHasCompletedLastStep(true);
 
   tbb::concurrent_hash_map<const CellDescription*, std::pair<int,int>>::accessor a_cellDescToTagRank;
   found =  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapCellDescToTagRank.find(a_cellDescToTagRank, cellDescription);
@@ -395,8 +434,13 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapCellDescToTagRank.erase(a_cellDescToTagRank);
   a_cellDescToTagRank.release();
 
+#ifndef OffloadingLocalRecompute
+  cellDescription->setHasCompletedLastStep(true);
   NumberOfEnclaveJobs--;
   NumberOfRemoteJobs--;
+#else
+  // Todo: insert into job table!
+#endif
 
   tbb::concurrent_hash_map<int, double>::accessor a_tagToOffloadTime;
   found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToOffloadTime.find(a_tagToOffloadTime, tag);
