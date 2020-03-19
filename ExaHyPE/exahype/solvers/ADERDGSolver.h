@@ -1189,7 +1189,7 @@ private:
       bool run(bool calledFromMaster) override;
   };
 
-#if defined(TaskSharing)
+#if defined(TaskSharing) || defined(OffloadingLocalRecompute)
 
   static int REQUEST_JOB_CANCEL;
   static int REQUEST_JOB_ACK;

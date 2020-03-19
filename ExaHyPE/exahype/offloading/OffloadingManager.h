@@ -214,14 +214,12 @@ class exahype::offloading::OffloadingManager {
      */
     MPI_Comm _offloadingCommMapped;
 
-#if defined(TaskSharing)
     /**
      * Communicator for communication between replicating ranks.
      */
     MPI_Comm _interTeamComm, _interTeamCommKey, _interTeamCommAck; 
     int _team;
     int _interTeamRank;
-#endif
 
     /**
      * The request handler job aims to distribute the work that is to be done
@@ -318,7 +316,7 @@ class exahype::offloading::OffloadingManager {
     void cancelOutstandingRequests();
 #endif
 
-#if defined (TaskSharing)
+//#if defined (TaskSharing)
     void setTMPIInterTeamCommunicators(MPI_Comm comm, MPI_Comm commKey, MPI_Comm commAck);
     MPI_Comm getTMPIInterTeamCommunicatorData();
     MPI_Comm getTMPIInterTeamCommunicatorKey();
@@ -329,7 +327,7 @@ class exahype::offloading::OffloadingManager {
 
     void setTMPIInterTeamRank(int interTeamRank);
     int getTMPIInterTeamRank();
-#endif
+//#endif
 
     /**
      * Creates offloading MPI communicators.

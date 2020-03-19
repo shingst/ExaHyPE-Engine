@@ -86,7 +86,6 @@ exahype::offloading::OffloadingManager::~OffloadingManager() {
   delete[] _localBlacklist;
 }
 
-#if defined(TaskSharing)
 
 void exahype::offloading::OffloadingManager::setTMPIInterTeamCommunicators(MPI_Comm comm, MPI_Comm commKey, MPI_Comm commAck) {
   _interTeamComm = comm;
@@ -121,7 +120,6 @@ void exahype::offloading::OffloadingManager::setTMPIInterTeamRank(int interTeamR
 int exahype::offloading::OffloadingManager::getTMPIInterTeamRank(){
   return _interTeamRank;
 }
-#endif
 
 void exahype::offloading::OffloadingManager::createMPICommunicator() {
   int ierr = MPI_Comm_dup(MPI_COMM_WORLD, &_offloadingComm);
