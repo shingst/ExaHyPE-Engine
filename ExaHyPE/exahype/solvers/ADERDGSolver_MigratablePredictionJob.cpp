@@ -300,9 +300,9 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandler(exa
   data = a_tagRankToData->second;
   a_tagRankToData.release();
 
-  exahype::offloading::OffloadingAnalyser::getInstance().notifyReceivedSTPJob();
-  MigratablePredictionJob *job= static_cast<exahype::solvers::ADERDGSolver*> (solver)->createFromData(data, remoteRank, tag);
-  peano::datatraversal::TaskSet spawnedSet(job);
+  //exahype::offloading::OffloadingAnalyser::getInstance().notifyReceivedSTPJob();
+  //MigratablePredictionJob *job= static_cast<exahype::solvers::ADERDGSolver*> (solver)->createFromData(data, remoteRank, tag);
+  //peano::datatraversal::TaskSet spawnedSet(job);
 
   exahype::offloading::OffloadingProfiler::getInstance().notifyReceivedTask(remoteRank);
 }

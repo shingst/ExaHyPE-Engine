@@ -2867,7 +2867,9 @@ void exahype::solvers::ADERDGSolver::submitOrSendStealablePredictionJob(Migratab
 //         exahype::solvers::ADERDGSolver::StealablePredictionJob::receiveBackHandler,
 //	    exahype::offloading::RequestType::receiveBack, this);
 
+#ifndef OffloadingLocalRecompute
      NumberOfRemoteJobs++;
+#endif
 
      exahype::offloading::OffloadingProfiler::getInstance().notifyOffloadedTask(destRank);
      exahype::offloading::PerformanceMonitor::getInstance().decCurrentTasks();
@@ -2876,7 +2878,9 @@ void exahype::solvers::ADERDGSolver::submitOrSendStealablePredictionJob(Migratab
      if(lastSend)
         exahype::offloading::OffloadingManager::getInstance().notifyAllVictimsSendCompletedIfNotNotified();
 #endif
+#ifndef OffloadingLocalRecompute
      delete job;
+#endif
   }
   else {
     peano::datatraversal::TaskSet spawnedSet( job );
