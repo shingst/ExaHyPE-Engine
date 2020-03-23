@@ -1028,7 +1028,7 @@ private:
    * This class encapsulates all the data that a victim rank
    * needs when a STP task is offloaded to this rank.
    */
-  class StealablePredictionJobData {
+  class MigratablePredictionJobData {
     public:
 	  std::vector<double>   _luh; // ndata *ndof^DIM
 	  std::vector<double>	_lduh; // nvar *ndof^DIM
@@ -1042,10 +1042,10 @@ private:
 	  // 4. predictorTimeStepSize
 	  double  _metadata[2*DIMENSIONS+3];
 
-	  StealablePredictionJobData(ADERDGSolver& solver);
-      ~StealablePredictionJobData();
-      StealablePredictionJobData(const StealablePredictionJobData&) = delete;                                      //deleted copy constructor
-      StealablePredictionJobData& operator = (const StealablePredictionJobData &) = delete;                //deleted copy assignment operator
+	  MigratablePredictionJobData(ADERDGSolver& solver);
+      ~MigratablePredictionJobData();
+      MigratablePredictionJobData(const MigratablePredictionJobData&) = delete;                                      //deleted copy constructor
+      MigratablePredictionJobData& operator = (const MigratablePredictionJobData &) = delete;                //deleted copy assignment operator
   };
 
   /**
@@ -1053,18 +1053,19 @@ private:
    * and triggering a finished event on the cell description when a STP has finished
    * and its data has been sent back.
    */
-  tbb::concurrent_hash_map<std::pair<int,int>, StealablePredictionJobData*> _mapTagRankToStolenData;
+  tbb::concurrent_hash_map<std::pair<int,int>, MigratablePredictionJobData*> _mapTagRankToStolenData;
 #if defined(TaskSharing)
-  tbb::concurrent_hash_map<std::pair<int,int>, StealablePredictionJobData*> _mapTagRankToReplicaData;
+  tbb::concurrent_hash_map<std::pair<int,int>, MigratablePredictionJobData*> _mapTagRankToReplicaData;
   tbb::concurrent_hash_map<std::pair<int,int>, double*> _mapTagRankToReplicaKey;
 #endif
   tbb::concurrent_hash_map<int, CellDescription*> _mapTagToCellDesc;
   tbb::concurrent_hash_map<const CellDescription*, std::pair<int,int>> _mapCellDescToTagRank;
   tbb::concurrent_hash_map<int, double*> _mapTagToMetaData;
+  tbb::concurrent_hash_map<int, MigratablePredictionJobData*> _mapTagToSTPData;
   // Used in order to time offloaded tasks.
   tbb::concurrent_hash_map<int, double> _mapTagToOffloadTime;
 #if defined(TaskSharing)
-  tbb::concurrent_hash_map<int, StealablePredictionJobData*> _mapTagToReplicationSendData;
+  tbb::concurrent_hash_map<int, MigratablePredictionJobData*> _mapTagToReplicationSendData;
 #endif
   
   /**
@@ -1238,7 +1239,7 @@ private:
   enum class ReplicationStatus { received, transit };
 
   struct JobTableEntry {
-	  StealablePredictionJobData *data;
+	  MigratablePredictionJobData *data;
 	  ReplicationStatus status;
   };
   tbb::concurrent_hash_map<JobTableKey, JobTableEntry> _jobDatabase;
@@ -1271,7 +1272,7 @@ private:
    * Creates a StealablePredictionJob from StealablePredictionJobData.
    */
   MigratablePredictionJob* createFromData(
-      StealablePredictionJobData *data,
+      MigratablePredictionJobData *data,
 	  const int origin,
 	  const int tag);
 
