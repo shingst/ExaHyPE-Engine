@@ -208,10 +208,27 @@ void exahype::offloading::OffloadingManager::submitRequests(
     _postedSendBacksPerRank[remoteRank]++; break;
     case RequestType::receiveBack:
     _postedReceiveBacksPerRank[remoteRank]++; break;
-  }
+  } 
 
   int finished = -1;
+
+/*  for(int i=0;i<nRequests; i++) {
+    assert(requests[i]!=MPI_REQUEST_NULL); 
+    int ierr = MPI_Test(&requests[i], &finished, MPI_STATUS_IGNORE); 
+    if(ierr!=MPI_SUCCESS) {
+      char err_buffer[MPI_MAX_ERROR_STRING];
+      int resultlen = 0;
+      MPI_Error_string(ierr,err_buffer,&resultlen);
+      fprintf(stderr,err_buffer);
+      fprintf(stderr, "request id %d\n", i);
+    }
+
+    assert(ierr==MPI_SUCCESS);
+    finished = -1;
+  } */ 
+
   int ierr = MPI_Testall(nRequests, requests, &finished, MPI_STATUSES_IGNORE);
+
   assert(ierr==MPI_SUCCESS);
   if(finished) {
     handler(solver, tag, remoteRank);

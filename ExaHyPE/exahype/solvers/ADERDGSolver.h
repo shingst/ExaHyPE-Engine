@@ -1084,7 +1084,7 @@ private:
   std::vector<int> _lastReceiveBackTag;
 
   /**
-   * A StealablePredictionJob represents a PredictionJob that can be
+   * A MigratablePredictionJob represents a PredictionJob that can be
    * executed remotely on a different rank than the one where it
    * was spawned.
    */
@@ -1269,7 +1269,7 @@ private:
       OffloadEntry& entry,
 	  double *buf) const;
   /*
-   * Creates a StealablePredictionJob from StealablePredictionJobData.
+   * Creates a MigratablePredictionJob from MigratablePredictionJobData.
    */
   MigratablePredictionJob* createFromData(
       MigratablePredictionJobData *data,
@@ -1277,7 +1277,7 @@ private:
 	  const int tag);
 
   /*
-   *  Sends away data of a StealablePredictionJob to a destination rank 
+   *  Sends away data of a MigratablePredictionJob to a destination rank
    *  using MPI offloading. 
    */
   void sendMigratablePredictionJobOffload(
@@ -1291,9 +1291,9 @@ private:
           double *metadata =nullptr);
 
   /*
-   * Sends away data of a StealablePredictionJob to a destination rank.
+   * Sends away data of a MigratablePredictionJob to a destination rank.
    */
-  void isendStealablePredictionJob(
+  void isendMigratablePredictionJob(
 	  double *luh,
 	  double *lduh,
 	  double *lQhbnd,
@@ -1304,9 +1304,9 @@ private:
 	  MPI_Request *requests,
 	  double *metadata =nullptr);
   /*
-   * Receives data of a StealablePredictionJob from a destination rank.
+   * Receives data of a MigratablePredictionJob from a destination rank.
    */
-  void irecvStealablePredictionJob(
+  void irecvMigratablePredictionJob(
 	  double *luh,
 	  double *lduh,
 	  double *lQhbnd,
@@ -1318,9 +1318,9 @@ private:
 	  double *metadata =nullptr);
 
   /*
-   * Receives data of a StealablePredictionJob from a destination rank.
+   * Receives data of a MigratablePredictionJob from a destination rank.
    */
-  void recvStealablePredictionJob(
+  void recvMigratablePredictionJob(
     double *luh,
     double *lduh,
     double *lQhbnd,
@@ -1342,11 +1342,11 @@ private:
 
 
 
-  /* If a StealablePredictionJob has been spawned by the master thread,
+  /* If a MigratablePredictionJob has been spawned by the master thread,
    * it can either be submitted to Peano's job system or sent away
    * to another rank.
    */
-  void submitOrSendStealablePredictionJob(MigratablePredictionJob *job);
+  void submitOrSendMigratablePredictionJob(MigratablePredictionJob *job);
 
   // offloading manager job associated to the solver
   OffloadingManagerJob *_offloadingManagerJob;

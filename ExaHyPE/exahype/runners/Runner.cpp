@@ -290,28 +290,6 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
   }
 
   if ( _parser.isValid() ) {
-    tarch::parallel::NodePool::getInstance().restart();
-
-    tarch::parallel::Node::getInstance().setDeadlockTimeOut(_parser.getMPITimeOut());
-    tarch::parallel::Node::getInstance().setTimeOutWarning(_parser.getMPITimeOut()/2);
-
-    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-      logInfo("initDistributedMemoryConfiguration()", "use MPI time out of " << _parser.getMPITimeOut() << " (warn after half the timeout span)");
-    }
-
-    const int bufferSize = _parser.getMPIBufferSize();
-    peano::parallel::SendReceiveBufferPool::getInstance().setBufferSize(bufferSize);
-    peano::parallel::JoinDataBufferPool::getInstance().setBufferSize(bufferSize);
-
-    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-      logInfo("initDistributedMemoryConfiguration()", "use MPI buffer size of " << bufferSize);
-      if ( _parser.getSkipReductionInBatchedTimeSteps() ) {
-        logInfo("initDistributedMemoryConfiguration()", "allow ranks to skip reduction and broadcasts within a batch" );
-      } else {
-        logWarning("initDistributedMemoryConfiguration()", "ranks are not allowed to skip any reduction (might harm performance). Use optimisation section to switch feature on" );
-      }
-    }
-
     //always use offloading analyser
     peano::performanceanalysis::Analysis::getInstance().setDevice(&exahype::offloading::OffloadingAnalyser::getInstance());
 #if defined(DistributedOffloading)
@@ -372,6 +350,28 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
 #endif
 
 #endif
+    tarch::parallel::NodePool::getInstance().restart();
+
+    tarch::parallel::Node::getInstance().setDeadlockTimeOut(_parser.getMPITimeOut());
+    tarch::parallel::Node::getInstance().setTimeOutWarning(_parser.getMPITimeOut()/2);
+
+    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+      logInfo("initDistributedMemoryConfiguration()", "use MPI time out of " << _parser.getMPITimeOut() << " (warn after half the timeout span)");
+    }
+
+    const int bufferSize = _parser.getMPIBufferSize();
+    peano::parallel::SendReceiveBufferPool::getInstance().setBufferSize(bufferSize);
+    peano::parallel::JoinDataBufferPool::getInstance().setBufferSize(bufferSize);
+
+    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+      logInfo("initDistributedMemoryConfiguration()", "use MPI buffer size of " << bufferSize);
+      if ( _parser.getSkipReductionInBatchedTimeSteps() ) {
+        logInfo("initDistributedMemoryConfiguration()", "allow ranks to skip reduction and broadcasts within a batch" );
+      } else {
+        logWarning("initDistributedMemoryConfiguration()", "ranks are not allowed to skip any reduction (might harm performance). Use optimisation section to switch feature on" );
+      }
+    }
+
 
     tarch::parallel::NodePool::getInstance().waitForAllNodesToBecomeIdle();
   }
