@@ -83,6 +83,11 @@ exahype::offloading::OffloadingManager::OffloadingManager() :
 }
 
 exahype::offloading::OffloadingManager::~OffloadingManager() {
+  
+  delete[] _postedSendsPerRank;
+  delete[] _postedReceivesPerRank;
+  delete[] _postedSendBacksPerRank;
+  delete[] _postedReceiveBacksPerRank;
   delete[] _localBlacklist;
 }
 

@@ -315,7 +315,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(bo
 #else
     MPI_Request sendBackRequests[4];
     //logInfo("handleLocalExecution()", "postSendBack");
-    _solver.isendStealablePredictionJob(_luh,
+    _solver.isendMigratablePredictionJob(_luh,
                                         _lduh,
                                         _lQhbnd,
                                         _lFhbnd,
