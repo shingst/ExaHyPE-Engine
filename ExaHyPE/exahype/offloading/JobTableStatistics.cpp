@@ -18,10 +18,10 @@ namespace exahype {
 namespace offloading {
 
 
-tarch::logging::Log ReplicationStatistics::_log( "exahype::offloading::ReplicationStatistics" );
+tarch::logging::Log JobTableStatistics::_log( "exahype::offloading::ReplicationStatistics" );
 
 
-ReplicationStatistics::ReplicationStatistics() :
+JobTableStatistics::JobTableStatistics() :
   _spawnedTasks(0),
   _executedTasks(0),
   _savedTasks(0),
@@ -36,52 +36,52 @@ ReplicationStatistics::ReplicationStatistics() :
 
 }
 
-ReplicationStatistics::~ReplicationStatistics() {
+JobTableStatistics::~JobTableStatistics() {
 	// TODO Auto-generated destructor stub
 }
 
-ReplicationStatistics& ReplicationStatistics::getInstance() {
-	static ReplicationStatistics replicationStats;
+JobTableStatistics& JobTableStatistics::getInstance() {
+	static JobTableStatistics replicationStats;
 	return replicationStats;
 }
 
-void ReplicationStatistics::notifyLateTask() {
+void JobTableStatistics::notifyLateTask() {
 	_lateTasks++;
 }
 
-void ReplicationStatistics::notifyDeclinedTask() {
+void JobTableStatistics::notifyDeclinedTask() {
 	_declinedTasks++;
 }
 
-void ReplicationStatistics::notifyReceivedTask(){
+void JobTableStatistics::notifyReceivedTask(){
 	_receivedTasks++;
 }
 
-void ReplicationStatistics::notifySentTask(){
+void JobTableStatistics::notifySentTask(){
 	_sentTasks++;
 }
 
-void ReplicationStatistics::notifySavedTask(){
+void JobTableStatistics::notifySavedTask(){
 	_savedTasks++;
 }
 
-void ReplicationStatistics::notifySpawnedTask(){
+void JobTableStatistics::notifySpawnedTask(){
     _spawnedTasks++;
 }
 
-void ReplicationStatistics::notifyExecutedTask(){
+void JobTableStatistics::notifyExecutedTask(){
     _executedTasks++;
 }
 
-void ReplicationStatistics::notifySentKey() {
+void JobTableStatistics::notifySentKey() {
 	_sentKeys++;
 }
 
-void ReplicationStatistics::notifyReceivedKey() {
+void JobTableStatistics::notifyReceivedKey() {
 	_receivedKeys++;
 }
 
-void ReplicationStatistics::printStatistics() {
+void JobTableStatistics::printStatistics() {
 #if defined(TaskSharing)	
      int team = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank();
      logInfo("printStatistics", " team "<<team

@@ -26,7 +26,7 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
 {
   LocalStealableSTPCounter++;
   NumberOfEnclaveJobs++;
-  exahype::offloading::ReplicationStatistics::getInstance().notifySpawnedTask();
+  exahype::offloading::JobTableStatistics::getInstance().notifySpawnedTask();
   exahype::offloading::PerformanceMonitor::getInstance().incCurrentTasks();
 };
 
@@ -145,7 +145,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     std::memcpy(lduh, &data->_lduh[0], data->_lduh.size()*sizeof(double));
     std::memcpy(lQhbnd, &data->_lQhbnd[0], data->_lQhbnd.size()*sizeof(double));
     std::memcpy(lFhbnd, &data->_lFhbnd[0], data->_lFhbnd.size()*sizeof(double));
-    exahype::offloading::ReplicationStatistics::getInstance().notifySavedTask();
+    exahype::offloading::JobTableStatistics::getInstance().notifySavedTask();
 
     _solver._jobDatabase.erase(a_jobToData);
     a_jobToData.release();
@@ -170,7 +170,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
                                           <<" center[1] = "<<center[1]
                                           <<" center[2] = "<<center[2]
                                           <<" time stamp = "<<_predictorTimeStamp);
-    exahype::offloading::ReplicationStatistics::getInstance().notifyExecutedTask();
+    exahype::offloading::JobTableStatistics::getInstance().notifyExecutedTask();
   }
 #endif
 
@@ -193,7 +193,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     found = _solver._jobDatabase.find(a_jobToData, key);
     if(found && a_jobToData->second.status==JobOutcomeStatus::received) {
       MigratablePredictionJobData *data = a_jobToData->second.data;
-      exahype::offloading::ReplicationStatistics::getInstance().notifyLateTask();
+      exahype::offloading::JobTableStatistics::getInstance().notifyLateTask();
 
       _solver._jobDatabase.erase(a_jobToData);
       a_jobToData.release();
@@ -400,7 +400,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerRepl
   //bool criticalMemoryConsumption =  exahype::offloading::MemoryMonitor::getInstance().getFreeMemMB()<1000;
 
   if(key.timestamp<static_cast<exahype::solvers::ADERDGSolver*> (solver)->getMinTimeStamp()) {// || criticalMemoryConsumption) {
-    exahype::offloading::ReplicationStatistics::getInstance().notifyLateTask();
+    exahype::offloading::JobTableStatistics::getInstance().notifyLateTask();
     delete data;
     AllocatedSTPsReceive--;
   }
@@ -417,7 +417,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerRepl
     }
     static_cast<exahype::solvers::ADERDGSolver*> (solver)->_allocatedJobs.push(key);
   }
-  exahype::offloading::ReplicationStatistics::getInstance().notifyReceivedTask();
+  exahype::offloading::JobTableStatistics::getInstance().notifyReceivedTask();
 
 }
 #endif
@@ -515,7 +515,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackHandler(ex
 }
 
 #if defined(TaskSharing)
-void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendAckHandlerReplication(
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendAckHandlerTaskSharing(
     exahype::solvers::Solver* solver,
     int tag,
     int remoteRank)
@@ -525,7 +525,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendAckHandlerRepl
 
 }
 
-void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendKeyHandlerReplication(
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendKeyHandlerTaskSharing(
     exahype::solvers::Solver* solver,
     int tag,
     int remoteRank)
@@ -543,14 +543,14 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendKeyHandlerRepl
   //a_tagToData.release();
 }
 
-void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendHandlerReplication(
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendHandlerTaskSharing(
     exahype::solvers::Solver* solver,
     int tag,
     int remoteRank)
 {
 
   logDebug("sendHandlerReplication","successfully completed send to other teams");
-  exahype::offloading::ReplicationStatistics::getInstance().notifySentTask();
+  exahype::offloading::JobTableStatistics::getInstance().notifySentTask();
   tbb::concurrent_hash_map<int, MigratablePredictionJobData*>::accessor a_tagToData;
   bool found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToReplicationSendData.find(a_tagToData, tag);
   assertion(found);

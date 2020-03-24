@@ -20,7 +20,7 @@
 namespace exahype {
 namespace offloading {
 
-class ReplicationStatistics {
+class JobTableStatistics {
 
 private:
 
@@ -36,11 +36,11 @@ private:
     std::atomic<int> _declinedTasks;
     std::atomic<int> _lateTasks;
 
-	ReplicationStatistics();
-	virtual ~ReplicationStatistics();
+	JobTableStatistics();
+	virtual ~JobTableStatistics();
 public:
 
-    static ReplicationStatistics& getInstance();
+    static JobTableStatistics& getInstance();
 
     void printStatistics();
 
