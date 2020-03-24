@@ -100,6 +100,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run( bool isCalled
 bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecution(bool isRunOnMaster) {
   int myRank = tarch::parallel::Node::getInstance().getRank();
   bool result = false;
+  bool needToCompute = true;
 
   CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,_element);
 
@@ -154,12 +155,14 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 
     cellDescription.setHasCompletedLastStep(true);
     result = false;
+    needToCompute = false;
   }
   else if (found && a_jobToData->second.status == JobOutcomeStatus::transit) {
     logDebug("handleLocalExecution()", "task is in transit, we may want to wait!");
 #ifdef TaskSharingRescheduleIfInTransit
     a_jobToData.release();
     result = true;
+    needToCompute = false;
 #endif
   }
   else {
@@ -174,6 +177,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   }
 #endif
 
+  if(needToCompute) {
     //TODO: add support for lGradQhbnd
     _solver.fusedSpaceTimePredictorVolumeIntegral(
       lduh,lQhbnd,nullptr, lFhbnd,
@@ -186,6 +190,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     cellDescription.setHasCompletedLastStep(true);
 
     result = false;
+  }
 
 #if defined (TaskSharing)
     //check one more time
@@ -211,7 +216,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
       if(sendTaskOutcome) {
   //  if(AllocatedSTPsSend<=1000) {
         SentSTPs++;
-        _solver.sendFullReplicatedSTPToOtherTeams(this);
+        _solver.sendTaskOutcomeToOtherTeams(this);
       }
 #endif
     }
