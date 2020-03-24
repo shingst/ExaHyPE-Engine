@@ -56,7 +56,7 @@
 #include "exahype/offloading/OffloadingAnalyser.h"
 #include "exahype/offloading/OffloadingProgressService.h"
 #include "exahype/offloading/OffloadingProfiler.h"
-#include "exahype/offloading/ReplicationStatistics.h"
+#include "exahype/offloading/JobTableStatistics.h"
 #include "peano/utils/UserInterface.h"
 #endif
 
@@ -484,9 +484,9 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
   // call user code
   endTimeStep(_minTimeStamp,isLastTimeStepOfBatchOrNoBatch);
 
-#if defined(DistributedOffloading) && defined(TaskSharing)
-  exahype::offloading::ReplicationStatistics::getInstance().printStatistics();
-  cleanUpStaleReplicatedSTPs();
+#if defined(DistributedOffloading) && (defined(TaskSharing) || defined(OffloadingLocalRecompute))
+  exahype::offloading::JobTableStatistics::getInstance().printStatistics();
+  cleanUpStaleTaskOutcomes();
 #endif
 }
 
@@ -2469,40 +2469,16 @@ void exahype::solvers::ADERDGSolver::toString (std::ostream& out) const {
 
 #if defined(DistributedOffloading)
 
-#if defined (TaskSharing)
-
-size_t exahype::solvers::ADERDGSolver::getAdditionalCurrentMemoryUsageReplication() {
-  size_t sizePerSTP = sizeof(MigratablePredictionJobData)
-                    + sizeof(double) * ( getDataPerCell() + getUpdateSize() + getBndTotalSize() + getBndFluxTotalSize() );
-  return (AllocatedSTPsSend + AllocatedSTPsReceive) * sizePerSTP;
-}
-
-void exahype::solvers::ADERDGSolver::finishOutstandingInterTeamCommunication () {
-  MPI_Comm interTeamComm = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamCommunicatorData();
-
-  while(exahype::offloading::OffloadingManager::getInstance().hasOutstandingRequestOfType(exahype::offloading::RequestType::sendReplica)
-    || exahype::offloading::OffloadingManager::getInstance().hasOutstandingRequestOfType(exahype::offloading::RequestType::receiveReplica) ) {
-    progressOffloading(this, false, std::numeric_limits<int>::max());
-  }
-  MPI_Request request;
-
-  MPI_Ibarrier(interTeamComm, &request);
-  int finished = 0;
-  while(!finished) {
-    progressOffloading(this, false, std::numeric_limits<int>::max());
-    MPI_Test(&request, &finished, MPI_STATUS_IGNORE);
-  }
-}
-
-void exahype::solvers::ADERDGSolver::cleanUpStaleReplicatedSTPs(bool isFinal) {
+#if defined (TaskSharing) || defined(OffloadingLocalRecompute)
+void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
   int unsafe_size = _allocatedJobs.unsafe_size();
   assertion(unsafe_size>=0);
   bool gotOne = true;
   int i = 0;
 
   //Todo (Philipp): refactor and make nice
-  logInfo("cleanUpStaleReplicatedSTPs()", "before cleanup there are "<<_allocatedJobs.unsafe_size()<<" allocated received jobs left, "
-                                                                     <<_mapTagToReplicationSendData.size()<<" jobs to send,"
+  logInfo("cleanUpStaleTaskOutcomes()", "before cleanup there are "<<_allocatedJobs.unsafe_size()<<" allocated received jobs left, "
+                                                                     <<_mapTagToSTPData.size()<<" jobs to send,"
                                                                      <<" allocated jobs send "<<AllocatedSTPsSend
                                                                      <<" allocated jobs receive "<<AllocatedSTPsReceive
                                                                      <<" estimated additional mem consumption "<<(double) getAdditionalCurrentMemoryUsageReplication()/1E9<<"GB"
@@ -2521,15 +2497,15 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleReplicatedSTPs(bool isFinal) {
     gotOne = _allocatedJobs.try_pop(key);
 
     if(!gotOne) break;
-       //logInfo("cleanUpStaleReplicatedSTPs()", " time stamp of key ="<<key.timestamp);
-       i++;
+    logInfo("cleanUpStaleTaskOutcomes()", " time stamp of key ="<<key.timestamp);
+    i++;
   
-       assertion(key.center!=nullptr);
-        //logInfo("cleanUpStaleReplicatedSTPs()", " trying to find key - "
-        //                                        <<" center[0] = "<<key.center[0]
-         //                                       <<" center[1] = "<<key.center[1]
-         //                                       <<" center[2] = "<<key.center[2]
-         //                                       <<" time stamp = "<<key.timestamp);
+    assertion(key.center!=nullptr);
+    //logInfo("cleanUpStaleReplicatedSTPs()", " trying to find key - "
+    //                                        <<" center[0] = "<<key.center[0]
+    //                                       <<" center[1] = "<<key.center[1]
+    //                                       <<" center[2] = "<<key.center[2]
+    //                                       <<" time stamp = "<<key.timestamp);
 
     tbb::concurrent_hash_map<JobTableKey, JobTableEntry>::accessor a_jobToData;
 
@@ -2541,15 +2517,15 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleReplicatedSTPs(bool isFinal) {
 
       MigratablePredictionJobData * data = a_jobToData->second.data;
       _jobDatabase.erase(a_jobToData);
-      //logInfo("cleanUpStaleReplicatedSTPs()", " center[0] = "<<data->_metadata[0]
-    //                                         <<" center[1] = "<<data->_metadata[1]
-    //                                         <<" center[2] = "<<data->_metadata[2]
-    //                                         <<" time stamp = "<<data->_metadata[2*DIMENSIONS]
-        //                                     <<" element = "<<(int) data->_metadata[2*DIMENSIONS+2]);
+      logInfo("cleanUpStaleTaskOutcomes()",    " center[0] = "<<data->_metadata[0]
+                                             <<" center[1] = "<<data->_metadata[1]
+                                             <<" center[2] = "<<data->_metadata[2]
+                                             <<" time stamp = "<<data->_metadata[2*DIMENSIONS]
+                                             <<" element = "<<(int) data->_metadata[2*DIMENSIONS+2]);
       assertion(data!=nullptr);
       delete data;
       AllocatedSTPsReceive--;
-      exahype::offloading::ReplicationStatistics::getInstance().notifyLateTask();
+      exahype::offloading::JobTableStatistics::getInstance().notifyLateTask();
     }
     else if (found) {
       _allocatedJobs.push(key); // the job is in the map but it contains data that may be used later
@@ -2560,14 +2536,40 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleReplicatedSTPs(bool isFinal) {
   }
 
   if(isFinal) {
-      for(auto & elem: _mapTagToReplicationSendData) {
+      for(auto & elem: _mapTagToSTPData) {
           delete elem.second;
       }
   }
 
-  logInfo("cleanUpStaleReplicatedSTPs()", " there are "<<_allocatedJobs.unsafe_size()<<" allocated received jobs left, "<<_mapTagToReplicationSendData.size()<<" jobs to send,"
+  logInfo("cleanUpStaleTaskOutcomes()", " there are "<<_allocatedJobs.unsafe_size()<<" allocated received jobs left, "<<_mapTagToSTPData.size()<<" jobs to send,"
                                           <<" allocated jobs send "<<AllocatedSTPsSend<<" allocated jobs receive "<<AllocatedSTPsReceive);
 }
+
+size_t exahype::solvers::ADERDGSolver::getAdditionalCurrentMemoryUsageReplication() {
+  size_t sizePerSTP = sizeof(MigratablePredictionJobData)
+                    + sizeof(double) * ( getDataPerCell() + getUpdateSize() + getBndTotalSize() + getBndFluxTotalSize() );
+  return (AllocatedSTPsSend + AllocatedSTPsReceive) * sizePerSTP;
+}
+#endif
+
+#if defined(TaskSharing)
+void exahype::solvers::ADERDGSolver::finishOutstandingInterTeamCommunication () {
+  MPI_Comm interTeamComm = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamCommunicatorData();
+
+  while(exahype::offloading::OffloadingManager::getInstance().hasOutstandingRequestOfType(exahype::offloading::RequestType::sendReplica)
+    || exahype::offloading::OffloadingManager::getInstance().hasOutstandingRequestOfType(exahype::offloading::RequestType::receiveReplica) ) {
+    progressOffloading(this, false, std::numeric_limits<int>::max());
+  }
+  MPI_Request request;
+
+  MPI_Ibarrier(interTeamComm, &request);
+  int finished = 0;
+  while(!finished) {
+    progressOffloading(this, false, std::numeric_limits<int>::max());
+    MPI_Test(&request, &finished, MPI_STATUS_IGNORE);
+  }
+}
+
 
 void exahype::solvers::ADERDGSolver::sendRequestForJobAndReceive(int jobTag, int rank, double *key) {
     int teams = exahype::offloading::OffloadingManager::getInstance().getTMPITeamSize();
@@ -2583,7 +2585,7 @@ void exahype::solvers::ADERDGSolver::sendRequestForJobAndReceive(int jobTag, int
                                                                MigratablePredictionJob::sendAckHandlerReplication,
                                                                exahype::offloading::RequestType::sendReplica,
                                                                this, false);
-      exahype::offloading::ReplicationStatistics::getInstance().notifyDeclinedTask();
+      exahype::offloading::JobTableStatistics::getInstance().notifyDeclinedTask();
     }
     else {
       MigratablePredictionJobData *data = new MigratablePredictionJobData(*this);
@@ -2666,7 +2668,7 @@ void exahype::solvers::ADERDGSolver::sendKeyOfReplicatedSTPToOtherTeams(Migratab
     int tag = exahype::offloading::OffloadingManager::getInstance().getOffloadingTag();
 
     //_mapTagToReplicationSendKey.insert(std::make_pair(tag, metadata));
-    _mapTagToReplicationSendData.insert(std::make_pair(tag, data));
+    _mapTagToSTPData.insert(std::make_pair(tag, data));
 
     int j = 0;
     for(int i=0; i<teams; i++) {
@@ -2687,7 +2689,7 @@ void exahype::solvers::ADERDGSolver::sendKeyOfReplicatedSTPToOtherTeams(Migratab
                    MigratablePredictionJob::sendKeyHandlerReplication,
                    exahype::offloading::RequestType::sendReplica,
                    this, false);
-     exahype::offloading::ReplicationStatistics::getInstance().notifySentKey();
+     exahype::offloading::JobTableStatistics::getInstance().notifySentKey();
      delete[] sendRequests;
 
 }
@@ -2742,7 +2744,7 @@ void exahype::solvers::ADERDGSolver::sendFullReplicatedSTPToOtherTeams(Migratabl
     }
 
     CompletedSentSTPs++;
-    exahype::offloading::ReplicationStatistics::getInstance().notifySentTask();
+    exahype::offloading::JobTableStatistics::getInstance().notifySentTask();
 
 
     delete [] metadata;
@@ -2766,7 +2768,7 @@ void exahype::solvers::ADERDGSolver::sendFullReplicatedSTPToOtherTeams(Migratabl
 
     int tag = exahype::offloading::OffloadingManager::getInstance().getOffloadingTag();
 
-    _mapTagToReplicationSendData.insert(std::make_pair(tag, data));
+    _mapTagToSTPData.insert(std::make_pair(tag, data));
 
     int j = 0;
     for(int i=0; i<teams; i++) {
@@ -2826,7 +2828,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
       //need to create a copy
 #if defined(OffloadingLocalRecompute)
      MigratablePredictionJobData *data = new MigratablePredictionJobData(*this);
-     AllocatedSTPsSend++;
+     AllocatedSTPsReceive++;
 
      std::memcpy(&data->_luh[0], luh, data->_luh.size()*sizeof(double));
      std::memcpy(&data->_lduh[0], lduh, data->_lduh.size()*sizeof(double));
@@ -2978,8 +2980,15 @@ void exahype::solvers::ADERDGSolver::receiveBackMigratableJob(int tag, int src, 
 
 #if defined (OffloadingLocalRecompute)
   //Todo (Philipp): we actually may not need to transfer back metadata as it may be available locally
-  MigratablePredictionJobData *data = new MigratablePredictionJobData(*solver);
-  AllocatedSTPsReceive++;
+  tbb::concurrent_hash_map<int, MigratablePredictionJobData*>::accessor a_tagToData;
+  bool found = solver->_mapTagToSTPData.find(a_tagToData, tag);
+  assertion(found);
+  MigratablePredictionJobData *data = a_tagToData->second;
+  a_tagToData.release();
+
+  //MigratablePredictionJobData *data = new MigratablePredictionJobData(*solver);
+  //AllocatedSTPsReceive++;
+
   MPI_Request recvRequests[5];
   solver->irecvMigratablePredictionJob(
       &(data->_luh[0]),
@@ -3049,7 +3058,7 @@ void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahyp
   key.element = data->_metadata[2*DIMENSIONS+2];
 
   if(key.timestamp<solver->getMinTimeStamp()) {
-    exahype::offloading::ReplicationStatistics::getInstance().notifyLateTask();
+    exahype::offloading::JobTableStatistics::getInstance().notifyLateTask();
     delete data;
     AllocatedSTPsReceive--;
   }
@@ -3066,7 +3075,7 @@ void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahyp
   }
     solver->_allocatedJobs.push(key);
   }
-  exahype::offloading::ReplicationStatistics::getInstance().notifyReceivedTask();
+  exahype::offloading::JobTableStatistics::getInstance().notifyReceivedTask();
 #else
    //logInfo("progressOffloading", "allocated stps receive"<<AllocatedSTPsReceive);
   MPI_Request receiveReplicaRequests[5];
@@ -3250,7 +3259,7 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
            exahype::offloading::RequestType::receiveReplica,
            solver,
            false);
-       exahype::offloading::ReplicationStatistics::getInstance().notifyReceivedKey();
+       exahype::offloading::JobTableStatistics::getInstance().notifyReceivedKey();
     }
     ierr = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamCommKey, &receivedReplicaKey, &statRepKey );
     assertion( ierr==MPI_SUCCESS );
@@ -3259,7 +3268,7 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
        MPI_Recv(&buffer, 1, MPI_INTEGER, statRepAck.MPI_SOURCE, statRepAck.MPI_TAG, interTeamCommAck, MPI_STATUS_IGNORE );
 
        tbb::concurrent_hash_map<int, MigratablePredictionJobData*>::accessor a_tagToData;
-       bool found = solver->_mapTagToReplicationSendData.find(a_tagToData, statRepAck.MPI_TAG);
+       bool found = solver->_mapTagToSTPData.find(a_tagToData, statRepAck.MPI_TAG);
        assertion(found);
        MigratablePredictionJobData *data = a_tagToData->second;
        a_tagToData.release();
@@ -3291,7 +3300,7 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
          delete[] sendRequests;
        }
        else {
-         solver->_mapTagToReplicationSendData.erase(statRepAck.MPI_TAG);
+         solver->_mapTagToSTPData.erase(statRepAck.MPI_TAG);
          delete data;
          AllocatedSTPsSend--;
        }
@@ -3337,13 +3346,13 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
   //VT_begin(event_progress);
 #endif
 
-  tarch::timing::Watch watch("ADERDGSolver","progress", false, false);
-  if(tarch::multicore::Core::getInstance().getThreadNum()==0) {  
+  /*tarch::timing::Watch watch("ADERDGSolver","progress", false, false);
+  if(tarch::multicore::Core::getInstance().getThreadNum()==0) {
      watch.startTimer(); 
-    //std::cout<<"Error!!!!!!"<<std::endl;
- //    lock.free();  
- //     return;
-  }
+     std::cout<<"Error!!!!!!"<<std::endl;
+     lock.free();
+     return;
+  }*/
 
   // 2. make progress on any outstanding MPI communication
   //if(!runOnMaster)
@@ -3357,11 +3366,11 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
   pollForOutstandingCommunicationRequests(solver, runOnMaster, maxIts);
   lock.free();
   
-  if(tarch::multicore::Core::getInstance().getThreadNum()==0) {  
+  /*if(tarch::multicore::Core::getInstance().getThreadNum()==0) {
     watch.stopTimer();
     if(watch.getCalendarTime()>1)
       std::cout<<"Master blocked for "<<watch.getCalendarTime()<< " s "<<std::endl;
-  }
+  }*/
  
 #ifdef USE_ITAC
   //VT_end(event_progress);
@@ -3390,7 +3399,7 @@ bool exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(exahype::solvers::ADER
 #endif
     return true;
   }
-
+  //Todo (Philipp): fix when no early receive backs are active
   return exahype::offloading::OffloadingManager::getInstance().progressReceiveBackRequests();
 
 #if defined(OffloadingNoEarlyReceiveBacks)
@@ -3408,7 +3417,6 @@ bool exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(exahype::solvers::ADER
     }
     //logInfo("tryToReceiveTaskBack()","probing for tag "<<tag<<" from rank "<<srcRank);
   }
-  
   
   int receivedTaskBack = 0;
   MPI_Status statMapped;

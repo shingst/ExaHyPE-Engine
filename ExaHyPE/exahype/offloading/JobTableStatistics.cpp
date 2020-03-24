@@ -11,14 +11,14 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#include "ReplicationStatistics.h"
+#include "JobTableStatistics.h"
 #include "exahype/offloading/OffloadingManager.h"
 
 namespace exahype {
 namespace offloading {
 
 
-tarch::logging::Log JobTableStatistics::_log( "exahype::offloading::ReplicationStatistics" );
+tarch::logging::Log JobTableStatistics::_log( "exahype::offloading::JobTableStatistics" );
 
 
 JobTableStatistics::JobTableStatistics() :
@@ -32,37 +32,37 @@ JobTableStatistics::JobTableStatistics() :
   _sentKeys(0),
   _receivedKeys(0)
 {
-	// TODO Auto-generated constructor stub
+  // TODO Auto-generated constructor stub
 
 }
 
 JobTableStatistics::~JobTableStatistics() {
-	// TODO Auto-generated destructor stub
+  // TODO Auto-generated destructor stub
 }
 
 JobTableStatistics& JobTableStatistics::getInstance() {
-	static JobTableStatistics replicationStats;
-	return replicationStats;
+  static JobTableStatistics replicationStats;
+  return replicationStats;
 }
 
 void JobTableStatistics::notifyLateTask() {
-	_lateTasks++;
+  _lateTasks++;
 }
 
 void JobTableStatistics::notifyDeclinedTask() {
-	_declinedTasks++;
+  _declinedTasks++;
 }
 
 void JobTableStatistics::notifyReceivedTask(){
-	_receivedTasks++;
+  _receivedTasks++;
 }
 
 void JobTableStatistics::notifySentTask(){
-	_sentTasks++;
+  _sentTasks++;
 }
 
 void JobTableStatistics::notifySavedTask(){
-	_savedTasks++;
+  _savedTasks++;
 }
 
 void JobTableStatistics::notifySpawnedTask(){
@@ -74,26 +74,26 @@ void JobTableStatistics::notifyExecutedTask(){
 }
 
 void JobTableStatistics::notifySentKey() {
-	_sentKeys++;
+  _sentKeys++;
 }
 
 void JobTableStatistics::notifyReceivedKey() {
-	_receivedKeys++;
+  _receivedKeys++;
 }
 
 void JobTableStatistics::printStatistics() {
-#if defined(TaskSharing)	
+#if defined(TaskSharing) || defined(OffloadingLocalRecompute) 
      int team = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank();
      logInfo("printStatistics", " team "<<team
-			                   <<" spawned tasks = "<<_spawnedTasks
-							   <<" executed tasks = "<<_executedTasks
-							   <<" saved tasks =  "<<_savedTasks
-							   <<" sent tasks = "<<_sentTasks
-							   <<" received tasks = "<<_receivedTasks
-							   <<" received keys= "<<_receivedKeys
-							   <<" sent keys= "<<_sentKeys
-							   <<" declined tasks = "<<_declinedTasks
-							   <<" late tasks = "<<_lateTasks);
+           <<" spawned tasks = "<<_spawnedTasks
+           <<" executed tasks = "<<_executedTasks
+           <<" saved tasks =  "<<_savedTasks
+           <<" sent tasks = "<<_sentTasks
+           <<" received tasks = "<<_receivedTasks
+           <<" received keys= "<<_receivedKeys
+           <<" sent keys= "<<_sentKeys
+           <<" declined tasks = "<<_declinedTasks
+           <<" late tasks = "<<_lateTasks);
 #endif
 }
 

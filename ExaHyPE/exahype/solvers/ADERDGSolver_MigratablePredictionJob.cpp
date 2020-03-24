@@ -5,7 +5,7 @@
 #include "exahype/offloading/PerformanceMonitor.h"
 #include "exahype/offloading/OffloadingAnalyser.h"
 #include "exahype/offloading/OffloadingProfiler.h"
-#include "exahype/offloading/ReplicationStatistics.h"
+#include "exahype/offloading/JobTableStatistics.h"
 #include "exahype/offloading/MemoryMonitor.h"
 
 exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob(
@@ -310,6 +310,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(bo
                                                                          exahype::offloading::RequestType::sendBack,
                                                                          &_solver,
                                                                          false);
+    exahype::offloading::JobTableStatistics::getInstance().notifySentTask();
 
 #else
     MPI_Request sendBackRequests[4];
@@ -352,7 +353,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandler(exa
 }
 
 #if defined(TaskSharing)
-void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveKeyHandlerReplication(exahype::solvers::Solver* solver, int tag, int remoteRank) {
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveKeyHandlerTaskSharing(exahype::solvers::Solver* solver, int tag, int remoteRank) {
   logDebug("receiveKeyHandlerReplica","successful receive request");
 
   tbb::concurrent_hash_map<std::pair<int, int>, double*>::accessor a_tagRankToData;
@@ -373,7 +374,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveKeyHandlerR
 
 }
 
-void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerReplication(exahype::solvers::Solver* solver, int tag, int remoteRank) {
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTaskSharing(exahype::solvers::Solver* solver, int tag, int remoteRank) {
   logDebug("receiveHandlerReplica","successful receive request");
 
   tbb::concurrent_hash_map<std::pair<int, int>, MigratablePredictionJobData*>::accessor a_tagRankToData;
@@ -438,6 +439,13 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapCellDescToTagRank.erase(a_cellDescToTagRank);
   a_cellDescToTagRank.release();
 
+  tbb::concurrent_hash_map<int, double>::accessor a_tagToOffloadTime;
+  found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToOffloadTime.find(a_tagToOffloadTime, tag);
+  double elapsed = MPI_Wtime() + a_tagToOffloadTime->second;
+  assertion(found);
+  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToOffloadTime.erase(a_tagToOffloadTime);
+  a_tagToOffloadTime.release();
+
 #ifndef OffloadingLocalRecompute
   cellDescription->setHasCompletedLastStep(true);
   NumberOfEnclaveJobs--;
@@ -447,7 +455,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
   logInfo("receiveBackHandler", "received back STP job");
   MigratablePredictionJobData *data = nullptr;
   tbb::concurrent_hash_map<int, MigratablePredictionJobData*>::accessor a_tagToData;
-  found =  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToSTPData.find(a_tagToData, tag);
+  found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToSTPData.find(a_tagToData, tag);
   assertion(found);
   data = a_tagToData->second;
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToSTPData.erase(a_tagToData);
@@ -459,6 +467,8 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
                                                      <<" time stamp = "<<data->_metadata[2*DIMENSIONS]
                                                      <<" element = "<<(int) data->_metadata[2*DIMENSIONS+2]);
 
+  exahype::offloading::JobTableStatistics::getInstance().notifyReceivedTask();
+
   JobTableKey key; //{&data->_metadata[0], data->_metadata[2*DIMENSIONS], (int) data->_metadata[2*DIMENSIONS+2] };
   for(int i=0; i<DIMENSIONS; i++)
      key.center[i] = data->_metadata[i];
@@ -468,8 +478,9 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
    //bool criticalMemoryConsumption =  exahype::offloading::MemoryMonitor::getInstance().getFreeMemMB()<1000;
 
   if(key.timestamp<static_cast<exahype::solvers::ADERDGSolver*> (solver)->getMinTimeStamp()) {// || criticalMemoryConsumption) {
+	exahype::offloading::JobTableStatistics::getInstance().notifyLateTask();
     delete data;
-    AllocatedSTPsSend--;
+    AllocatedSTPsReceive--;
   }
   else {
     JobTableEntry entry {data, JobOutcomeStatus::received};
@@ -485,13 +496,6 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
     static_cast<exahype::solvers::ADERDGSolver*> (solver)->_allocatedJobs.push(key);
   }
 #endif
-
-  tbb::concurrent_hash_map<int, double>::accessor a_tagToOffloadTime;
-  found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToOffloadTime.find(a_tagToOffloadTime, tag);
-  double elapsed = MPI_Wtime() + a_tagToOffloadTime->second;
-  assertion(found);
-  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToOffloadTime.erase(a_tagToOffloadTime);
-  a_tagToOffloadTime.release();
  //logInfo("receiveBackHandler", "remote execution took "<<elapsed<<" s ");
 
   assertion( NumberOfEnclaveJobs>=0 );
@@ -552,10 +556,10 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendHandlerTaskSha
   logDebug("sendHandlerReplication","successfully completed send to other teams");
   exahype::offloading::JobTableStatistics::getInstance().notifySentTask();
   tbb::concurrent_hash_map<int, MigratablePredictionJobData*>::accessor a_tagToData;
-  bool found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToReplicationSendData.find(a_tagToData, tag);
+  bool found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToSTPData.find(a_tagToData, tag);
   assertion(found);
   MigratablePredictionJobData *data = a_tagToData->second;
-  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToReplicationSendData.erase(a_tagToData);
+  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToSTPData.erase(a_tagToData);
   delete data;
   AllocatedSTPsSend--;
   CompletedSentSTPs++;

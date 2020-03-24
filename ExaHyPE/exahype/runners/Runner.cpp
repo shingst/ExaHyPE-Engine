@@ -98,7 +98,7 @@
 #include "exahype/offloading/OffloadingAnalyser.h"
 
 #if defined(DistributedOffloading)
-#include "exahype/offloading/ReplicationStatistics.h"
+#include "exahype/offloading/JobTableStatistics.h"
 #include "exahype/offloading/PerformanceMonitor.h"
 #include "exahype/offloading/OffloadingProgressService.h"
 
@@ -1067,10 +1067,12 @@ int exahype::runners::Runner::run() {
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
     if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
       //static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopOffloadingManager();
-#if defined(TaskSharing)
 #if !defined(DirtyCleanUp)
+#if defined(TaskSharing)
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->finishOutstandingInterTeamCommunication();
-      static_cast<exahype::solvers::ADERDGSolver*>(solver)->cleanUpStaleReplicatedSTPs(true);
+#endif
+#if defined(TaskSharing) || defined(OffloadingLocalRecompute)
+      static_cast<exahype::solvers::ADERDGSolver*>(solver)->cleanUpStaleTaskOutcomes(true);
 #endif
 #endif
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopOffloadingManager();
@@ -1083,8 +1085,8 @@ int exahype::runners::Runner::run() {
   logInfo("shutdownDistributedMemoryConfiguration()","stopped offloading manager");
   exahype::offloading::OffloadingManager::getInstance().destroyMPICommunicator(); 
   logInfo("shutdownDistributedMemoryConfiguration()","destroyed MPI communicators");
-#if defined(TaskSharing)
-  exahype::offloading::ReplicationStatistics::getInstance().printStatistics();
+#if defined(TaskSharing) || defined(OffloadingLocalRecompute)
+  exahype::offloading::JobTableStatistics::getInstance().printStatistics();
 #endif
 
 //  exahype::offloading::OffloadingProfiler::getInstance().endPhase();
@@ -1094,17 +1096,14 @@ int exahype::runners::Runner::run() {
 #endif
 
 #if defined(MemoryMonitoring) && defined(MemoryMonitoringTrack)
-  exahype::offloading::MemoryMonitor::getInstance().dumpMemoryUsage();
+   exahype::offloading::MemoryMonitor::getInstance().dumpMemoryUsage();
 #endif
 
-   logInfo("run()","shutdownDistributedMemoryConfiguration");
+ logInfo("run()","shutdownDistributedMemoryConfiguration");
       
-    if ( _parser.isValid() )
-      shutdownSharedMemoryConfiguration();
-
-   logInfo("run()","shutdownSharedMemoryConfiguration");
-      
-
+  if ( _parser.isValid() )
+    shutdownSharedMemoryConfiguration();
+    logInfo("run()","shutdownSharedMemoryConfiguration");
     shutdownHeaps();
 
     delete repository;

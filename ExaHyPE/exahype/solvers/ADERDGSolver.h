@@ -1061,12 +1061,12 @@ private:
   tbb::concurrent_hash_map<int, CellDescription*> _mapTagToCellDesc;
   tbb::concurrent_hash_map<const CellDescription*, std::pair<int,int>> _mapCellDescToTagRank;
   tbb::concurrent_hash_map<int, double*> _mapTagToMetaData;
-  tbb::concurrent_hash_map<int, MigratablePredictionJobData*> _mapTagToSTPData;
+  //tbb::concurrent_hash_map<int, MigratablePredictionJobData*> _mapTagToSTPData;
   // Used in order to time offloaded tasks.
   tbb::concurrent_hash_map<int, double> _mapTagToOffloadTime;
-#if defined(TaskSharing)
-  tbb::concurrent_hash_map<int, MigratablePredictionJobData*> _mapTagToReplicationSendData;
-#endif
+//#if defined(TaskSharing)
+  tbb::concurrent_hash_map<int, MigratablePredictionJobData*> _mapTagToSTPData;
+//#endif
   
   /**
    * These vectors are used to avoid duplicate
@@ -2834,7 +2834,7 @@ public:
 
   void finishOutstandingInterTeamCommunication();
 
-  void cleanUpStaleReplicatedSTPs(bool isFinal=false);
+  void cleanUpStaleTaskOutcomes(bool isFinal=false);
   /*
    * Spawns a offloading manager job and submits it as a TBB task.
    */
