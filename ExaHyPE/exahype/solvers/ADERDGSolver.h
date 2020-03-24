@@ -1148,17 +1148,17 @@ private:
 		  int tag,
 		  int rank);
 #if defined(TaskSharing)
-      static void sendKeyHandlerReplication(
+      static void sendKeyHandlerTaskSharing(
     	  exahype::solvers::Solver* solver,
 		  int tag,
 		  int rank);
 
-      static void sendAckHandlerReplication(
+      static void sendAckHandlerTaskSharing(
     	  exahype::solvers::Solver* solver,
 		  int tag,
 		  int rank);
 
-      static void sendHandlerReplication(
+      static void sendHandlerTaskSharing(
     	  exahype::solvers::Solver* solver,
 		  int tag,
 		  int rank);
@@ -1176,12 +1176,12 @@ private:
 		  int rank);
 
 #if defined(TaskSharing)
-      static void receiveKeyHandlerReplication(
+      static void receiveKeyHandlerTaskSharing(
     	  exahype::solvers::Solver* solver,
 		  int tag,
 		  int rank);
       // call-back method: called when a job has been received from another rank
-      static void receiveHandlerReplication(
+      static void receiveHandlerTaskSharing(
     	  exahype::solvers::Solver* solver,
 		  int tag,
 		  int rank);
@@ -1197,9 +1197,9 @@ private:
 
   void sendRequestForJobAndReceive(int tag, int rank, double *key);
 
-  void sendKeyOfReplicatedSTPToOtherTeams(MigratablePredictionJob *job);
+  void sendKeyOfTaskOutcomeToOtherTeams(MigratablePredictionJob *job);
 
-  void sendFullReplicatedSTPToOtherTeams(MigratablePredictionJob *job);
+  void sendTaskOutcomeToOtherTeams(MigratablePredictionJob *job);
 
   struct JobTableKey {
 	  double center[DIMENSIONS];
@@ -1255,7 +1255,7 @@ private:
     int destRank;
 	int cellDescriptionsIndex;
 	int element;
-        double predictorTimeStamp;
+    double predictorTimeStamp;
 	double predictorTimeStepSize;
   };
 
@@ -1281,14 +1281,14 @@ private:
    *  using MPI offloading. 
    */
   void sendMigratablePredictionJobOffload(
-          double *luh,
-          double *lduh,
-          double *lQhbnd,
-          double *lFhbnd,
-          int dest,
-          int tag,
-          MPI_Comm comm,
-          double *metadata =nullptr);
+      double *luh,
+      double *lduh,
+      double *lQhbnd,
+      double *lFhbnd,
+      int dest,
+      int tag,
+      MPI_Comm comm,
+      double *metadata =nullptr);
 
   /*
    * Sends away data of a MigratablePredictionJob to a destination rank.
@@ -1311,34 +1311,34 @@ private:
 	  double *lduh,
 	  double *lQhbnd,
 	  double *lFhbnd,
-          int srcRank,
+      int srcRank,
 	  int tag,
 	  MPI_Comm comm,
-          MPI_Request *requests,
+      MPI_Request *requests,
 	  double *metadata =nullptr);
 
   /*
    * Receives data of a MigratablePredictionJob from a destination rank.
    */
   void recvMigratablePredictionJob(
-    double *luh,
-    double *lduh,
-    double *lQhbnd,
-    double *lFhbnd,
-    int srcRank,
-    int tag,
-    MPI_Comm comm,
-    double *metadata =nullptr);
+      double *luh,
+      double *lduh,
+      double *lQhbnd,
+      double *lFhbnd,
+      int srcRank,
+      int tag,
+      MPI_Comm comm,
+      double *metadata =nullptr);
 
   void recvMigratablePredictionJobOffload(
-    double *luh,
-    double *lduh,
-    double *lQhbnd,
-    double *lFhbnd,
-    int srcRank,
-    int tag,
-    MPI_Comm comm,
-    double *metadata =nullptr);
+      double *luh,
+      double *lduh,
+      double *lQhbnd,
+      double *lFhbnd,
+      int srcRank,
+      int tag,
+      MPI_Comm comm,
+      double *metadata =nullptr);
 
 
 

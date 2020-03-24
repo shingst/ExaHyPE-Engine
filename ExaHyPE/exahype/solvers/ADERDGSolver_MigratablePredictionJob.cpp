@@ -131,7 +131,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 
   tbb::concurrent_hash_map<JobTableKey, JobTableEntry>::accessor a_jobToData;
   bool found = _solver._jobDatabase.find(a_jobToData, key);
-  if(found && a_jobToData->second.status == ReplicationStatus::received ) {
+  if(found && a_jobToData->second.status == JobOutcomeStatus::received ) {
     MigratablePredictionJobData *data = a_jobToData->second.data;
     assert(data->_metadata[2*DIMENSIONS]==_predictorTimeStamp);
     logInfo("handleLocalExecution()", "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
@@ -155,7 +155,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     cellDescription.setHasCompletedLastStep(true);
     result = false;
   }
-  else if (found && a_jobToData->second.status == ReplicationStatus::transit) {
+  else if (found && a_jobToData->second.status == JobOutcomeStatus::transit) {
     logDebug("handleLocalExecution()", "task is in transit, we may want to wait!");
 #ifdef TaskSharingRescheduleIfInTransit
     a_jobToData.release();
@@ -191,7 +191,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     //check one more time
     //tbb::concurrent_hash_map<JobTableKey, StealablePredictionJobData*>::accessor a_jobToData;
     found = _solver._jobDatabase.find(a_jobToData, key);
-    if(found && a_jobToData->second.status==ReplicationStatus::received) {
+    if(found && a_jobToData->second.status==JobOutcomeStatus::received) {
       MigratablePredictionJobData *data = a_jobToData->second.data;
       exahype::offloading::ReplicationStatistics::getInstance().notifyLateTask();
 
@@ -405,11 +405,11 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerRepl
     AllocatedSTPsReceive--;
   }
   else {
-    JobTableEntry entry {data, ReplicationStatus::received};
+    JobTableEntry entry {data, JobOutcomeStatus::received};
     tbb::concurrent_hash_map<JobTableKey, JobTableEntry>::accessor a_jobToData;
     bool found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_jobDatabase.find(a_jobToData, key);
     if (found) {
-      a_jobToData->second.status = ReplicationStatus::received;
+      a_jobToData->second.status = JobOutcomeStatus::received;
       a_jobToData.release();
     }
     else{
@@ -472,11 +472,11 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
     AllocatedSTPsSend--;
   }
   else {
-    JobTableEntry entry {data, ReplicationStatus::received};
+    JobTableEntry entry {data, JobOutcomeStatus::received};
     tbb::concurrent_hash_map<JobTableKey, JobTableEntry>::accessor a_jobToData;
     found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_jobDatabase.find(a_jobToData, key);
     if (found) {
-      a_jobToData->second.status = ReplicationStatus::received;
+      a_jobToData->second.status = JobOutcomeStatus::received;
       a_jobToData.release();
     }
     else{
