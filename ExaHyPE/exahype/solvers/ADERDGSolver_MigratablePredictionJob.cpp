@@ -134,7 +134,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   if(found && a_jobToData->second.status == ReplicationStatus::received ) {
     MigratablePredictionJobData *data = a_jobToData->second.data;
     assert(data->_metadata[2*DIMENSIONS]==_predictorTimeStamp);
-    logDebug("handleLocalExecution()", "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
+    logInfo("handleLocalExecution()", "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
                                        <<" found STP in received jobs:"
                                        <<" center[0] = "<<data->_metadata[0]
                                        <<" center[1] = "<<data->_metadata[1]
@@ -152,8 +152,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     AllocatedSTPsReceive--;
     delete data;
 
-  cellDescription.setHasCompletedLastStep(true);
-  result = false;
+    cellDescription.setHasCompletedLastStep(true);
+    result = false;
   }
   else if (found && a_jobToData->second.status == ReplicationStatus::transit) {
     logDebug("handleLocalExecution()", "task is in transit, we may want to wait!");
@@ -445,6 +445,45 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
 #else
   // Todo: insert into job table!
   logInfo("receiveBackHandler", "received back STP job");
+  MigratablePredictionJobData *data = nullptr;
+  tbb::concurrent_hash_map<int, MigratablePredictionJobData*>::accessor a_tagToData;
+  found =  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToSTPData.find(a_tagToData, tag);
+  assertion(found);
+  data = a_tagToData->second;
+  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToSTPData.erase(a_tagToData);
+  a_tagToData.release();
+
+  logInfo("receiveBackHandler", " received task outcome: center[0] = "<<data->_metadata[0]
+                                                     <<" center[1] = "<<data->_metadata[1]
+                                                     <<" center[2] = "<<data->_metadata[2]
+                                                     <<" time stamp = "<<data->_metadata[2*DIMENSIONS]
+                                                     <<" element = "<<(int) data->_metadata[2*DIMENSIONS+2]);
+
+  JobTableKey key; //{&data->_metadata[0], data->_metadata[2*DIMENSIONS], (int) data->_metadata[2*DIMENSIONS+2] };
+  for(int i=0; i<DIMENSIONS; i++)
+     key.center[i] = data->_metadata[i];
+  key.timestamp = data->_metadata[2*DIMENSIONS];
+  key.element = data->_metadata[2*DIMENSIONS+2];
+
+   //bool criticalMemoryConsumption =  exahype::offloading::MemoryMonitor::getInstance().getFreeMemMB()<1000;
+
+  if(key.timestamp<static_cast<exahype::solvers::ADERDGSolver*> (solver)->getMinTimeStamp()) {// || criticalMemoryConsumption) {
+    delete data;
+    AllocatedSTPsSend--;
+  }
+  else {
+    JobTableEntry entry {data, ReplicationStatus::received};
+    tbb::concurrent_hash_map<JobTableKey, JobTableEntry>::accessor a_jobToData;
+    found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_jobDatabase.find(a_jobToData, key);
+    if (found) {
+      a_jobToData->second.status = ReplicationStatus::received;
+      a_jobToData.release();
+    }
+    else{
+      static_cast<exahype::solvers::ADERDGSolver*> (solver)->_jobDatabase.insert(std::make_pair(key,entry));
+    }
+    static_cast<exahype::solvers::ADERDGSolver*> (solver)->_allocatedJobs.push(key);
+  }
 #endif
 
   tbb::concurrent_hash_map<int, double>::accessor a_tagToOffloadTime;

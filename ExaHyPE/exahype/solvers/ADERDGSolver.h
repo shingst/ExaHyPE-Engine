@@ -1236,11 +1236,11 @@ private:
 	  }
   };
 
-  enum class ReplicationStatus { received, transit };
+  enum class JobOutcomeStatus { received, transit };
 
   struct JobTableEntry {
 	  MigratablePredictionJobData *data;
-	  ReplicationStatus status;
+	  JobOutcomeStatus status;
   };
   tbb::concurrent_hash_map<JobTableKey, JobTableEntry> _jobDatabase;
   tbb::concurrent_queue<JobTableKey> _allocatedJobs;
