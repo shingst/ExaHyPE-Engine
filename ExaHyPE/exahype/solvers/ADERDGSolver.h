@@ -130,6 +130,8 @@ public:
   static int restrictToTopMostParentHandle;
 
   static int event_stp;
+  static int event_stp_local_replica;
+  static int event_stp_remote;
   static int event_offloadingManager;
   static int event_spawn;
   static int event_initial;
@@ -1104,6 +1106,7 @@ private:
       double*                       _lFhbnd;
       double                        _center[DIMENSIONS];
       double                        _dx[DIMENSIONS];
+      bool 							_isLocalReplica;
 
       static std::atomic<int> JobCounter;
 
@@ -1130,7 +1133,7 @@ private:
 		  double *luh, double *lduh,
 		  double *lQhbnd, double *lFhbnd,
 		  double *dx, double *center,
-                  const int originRank,
+          const int originRank,
 		  const int tag
       );
   

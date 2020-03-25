@@ -933,6 +933,8 @@ void exahype::runners::Runner::initHPCEnvironment() {
   ierr=VT_funcdef("ADERDGSolver::prolongateFaceDataToVirtualCellHandle"   , VT_NOCLASS, &exahype::solvers::ADERDGSolver::prolongateFaceDataToVirtualCellHandle  ); assertion(ierr==0);
   ierr=VT_funcdef("ADERDGSolver::restrictToTopMostParentHandle"           , VT_NOCLASS, &exahype::solvers::ADERDGSolver::restrictToTopMostParentHandle          ); assertion(ierr==0);
   ierr=VT_funcdef("ADERDGSolver::computeSTP"                              , VT_NOCLASS, &exahype::solvers::ADERDGSolver::event_stp                              ); assertion(ierr==0);
+  ierr=VT_funcdef("ADERDGSolver::computeSTPLocalReplica"                  , VT_NOCLASS, &exahype::solvers::ADERDGSolver::event_stp_local_replica                ); assertion(ierr==0);
+  ierr=VT_funcdef("ADERDGSolver::computeSTPRemoteReplica"                 , VT_NOCLASS, &exahype::solvers::ADERDGSolver::event_stp_remote                       ); assertion(ierr==0);
   ierr=VT_funcdef("ADERDGSolver::offloadingManager"                       , VT_NOCLASS, &exahype::solvers::ADERDGSolver::event_offloadingManager                ); assertion(ierr==0);
   ierr=VT_funcdef("ADERDGSolver::spawnSTP"                                , VT_NOCLASS, &exahype::solvers::ADERDGSolver::event_spawn                            ); assertion(ierr==0);
   ierr=VT_funcdef("ADERDGSolver::initialSTP"                              , VT_NOCLASS, &exahype::solvers::ADERDGSolver::event_initial                          ); assertion(ierr==0);

@@ -96,6 +96,8 @@ int exahype::solvers::ADERDGSolver::prolongateFaceDataToVirtualCellHandle = 0;
 int exahype::solvers::ADERDGSolver::restrictToTopMostParentHandle         = 0;
 
 int exahype::solvers::ADERDGSolver::event_stp = 0;
+int exahype::solvers::ADERDGSolver::event_stp_remote = 0;
+int exahype::solvers::ADERDGSolver::event_stp_local_replica = 0;
 int exahype::solvers::ADERDGSolver::event_offloadingManager = 0;
 int exahype::solvers::ADERDGSolver::event_spawn = 0;
 int exahype::solvers::ADERDGSolver::event_initial = 0;
@@ -2885,7 +2887,14 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
 
      //logInfo("submitOrSendMigratablePredictionJob()","send away with tag "<<tag);
 #ifdef OffloadingLocalRecompute
-     logInfo("submitOrSendMigratablePredictionJob", "keeping local job in queue");
+     //logInfo("submitOrSendMigratablePredictionJob()", "keeping job in local queue");
+     logInfo("submitOrSendMigratablePredictionJob()", "keeping job in local queue"
+                                               <<" center[0] = "<<data->_metadata[0]
+                                               <<" center[1] = "<<data->_metadata[1]
+                                               <<" center[2] = "<<data->_metadata[2]
+                                               <<" time stamp = "<<job->_predictorTimeStamp);
+     //job->resetPriority(job->getPriority()/2);
+     job->_isLocalReplica = true;
      peano::datatraversal::TaskSet spawnedSet( job );
 #endif
      // post receive back requests
@@ -3868,7 +3877,7 @@ void exahype::solvers::ADERDGSolver::packMetadataToBuffer(
   memcpy(buf+offset, &element, sizeof(double));
   offset+=1;
 
-//  logInfo("packMetadata","center "<<center_src[0]<<" dx "<<dx_src[0]<<" predictorTmeStamp "<< entry.predictorTimeStamp << " predictorTimeStepSize "<< entry.predictorTimeStepSize);
+  logInfo("packMetadata","center "<<center_src[0]<<" dx "<<dx_src[0]<<" predictorTmeStamp "<< entry.predictorTimeStamp << " predictorTimeStepSize "<< entry.predictorTimeStepSize);
 }
 
 exahype::solvers::ADERDGSolver::MigratablePredictionJob* exahype::solvers::ADERDGSolver::createFromData(

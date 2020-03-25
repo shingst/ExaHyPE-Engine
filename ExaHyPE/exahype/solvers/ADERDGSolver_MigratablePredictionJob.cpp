@@ -22,7 +22,8 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
         _predictorTimeStepSize(predictorTimeStepSize),
         _originRank(tarch::parallel::Node::getInstance().getRank()),
         _tag(-1),
-        _luh(nullptr),_lduh(nullptr),_lQhbnd(nullptr), _lFhbnd(nullptr)
+        _luh(nullptr),_lduh(nullptr),_lQhbnd(nullptr), _lFhbnd(nullptr),
+		_isLocalReplica(false)
 {
   LocalStealableSTPCounter++;
   NumberOfEnclaveJobs++;
@@ -52,7 +53,9 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
         _predictorTimeStepSize(predictorTimeStepSize),
         _originRank(originRank),
         _tag(tag),
-        _luh(luh),_lduh(lduh),_lQhbnd(lQhbnd), _lFhbnd(lFhbnd) {
+        _luh(luh),_lduh(lduh),_lQhbnd(lQhbnd), _lFhbnd(lFhbnd),
+		_isLocalReplica(false)
+{
 
   for(int i=0; i<DIMENSIONS; i++) {
     _center[i] = center[i];
@@ -167,18 +170,24 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   }
   else {
     a_jobToData.release();
-    logInfo("handleLocalExecution()",   "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
+    if(_isLocalReplica) {
+        logInfo("handleLocalExecution()",   "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
                                           <<" Data not available, gotta do it on my own!"
                                           <<" center[0] = "<<center[0]
                                           <<" center[1] = "<<center[1]
                                           <<" center[2] = "<<center[2]
                                           <<" time stamp = "<<_predictorTimeStamp);
+    }
     exahype::offloading::JobTableStatistics::getInstance().notifyExecutedTask();
   }
 #endif
 
   if(needToCompute) {
     //TODO: add support for lGradQhbnd
+#if defined(USE_ITAC)
+	if(_isLocalReplica)
+	  VT_begin(event_stp_local_replica);
+#endif
     _solver.fusedSpaceTimePredictorVolumeIntegral(
       lduh,lQhbnd,nullptr, lFhbnd,
       luh,
@@ -188,7 +197,10 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
       _predictorTimeStepSize,
       true);
     cellDescription.setHasCompletedLastStep(true);
-
+#if defined(USE_ITAC)
+    if(_isLocalReplica)
+      VT_end(event_stp_local_replica);
+#endif
     result = false;
   }
 
@@ -255,7 +267,10 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(bo
   }
   //remote task, need to execute and send it back
   else {
-  result = false;
+#if defined(USE_ITAC)
+    VT_begin(event_stp_remote);
+#endif
+    result = false;
     //TODO: support for lGradQhbnd
     _solver.fusedSpaceTimePredictorVolumeIntegral(
       _lduh,_lQhbnd,nullptr,_lFhbnd,
@@ -265,6 +280,9 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(bo
       _predictorTimeStamp,
       _predictorTimeStepSize,
       true);
+#if defined(USE_ITAC)
+    VT_end(event_stp_remote);
+#endif
   }
 #if defined(OffloadingUseProfiler)
   time += MPI_Wtime();
