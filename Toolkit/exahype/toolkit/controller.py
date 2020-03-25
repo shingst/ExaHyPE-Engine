@@ -303,6 +303,7 @@ class Controller:
             context["offloading"]  = self.spec["distributed_memory"]["offloading"]
             context["offloadingProgress"] = self.spec["distributed_memory"]["offloading_progress"]
             context["useReplicationSaving"] = self.spec["distributed_memory"]["task_sharing"]
+            context["useLocalRecompute"] = self.spec["distributed_memory"]["offloading_local_recompute"]
         else:
             context["offloading"] = "none"
             context["offloadingProgress"] = "none"
