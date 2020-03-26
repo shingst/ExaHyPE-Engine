@@ -96,7 +96,7 @@ PROJECT_CFLAGS += -DUSE_TMPI -DDistributedOffloading -DTaskSharing
 {% endif %}
 
 {% if useLocalRecompute %}
-PROJECT_CFLAGS += -DOffloadingUseLocalRecompute
+PROJECT_CFLAGS += -DOffloadingLocalRecompute
 {% endif %}
 
 {% if offloadingProgress=="progress_thread" %}

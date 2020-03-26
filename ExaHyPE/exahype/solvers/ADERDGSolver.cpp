@@ -3877,7 +3877,7 @@ void exahype::solvers::ADERDGSolver::packMetadataToBuffer(
   memcpy(buf+offset, &element, sizeof(double));
   offset+=1;
 
-  logInfo("packMetadata","center "<<center_src[0]<<" dx "<<dx_src[0]<<" predictorTmeStamp "<< entry.predictorTimeStamp << " predictorTimeStepSize "<< entry.predictorTimeStepSize);
+  //logInfo("packMetadata","center "<<center_src[0]<<" dx "<<dx_src[0]<<" predictorTmeStamp "<< entry.predictorTimeStamp << " predictorTimeStepSize "<< entry.predictorTimeStepSize);
 }
 
 exahype::solvers::ADERDGSolver::MigratablePredictionJob* exahype::solvers::ADERDGSolver::createFromData(
