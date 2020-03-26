@@ -465,7 +465,7 @@
         "offloading_local_recompute" : {
           "type" : "boolean",
           "title" : "If true, offloaded tasks can also be computed locally.",
-          "default"  : "false"
+          "default"  : false
         },
         "offloading_progress": {
           "type" : "string",

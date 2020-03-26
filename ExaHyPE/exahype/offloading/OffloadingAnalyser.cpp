@@ -45,6 +45,7 @@ exahype::offloading::OffloadingAnalyser::OffloadingAnalyser():
   _waitForWorkerDataWatch("exahype::offloading::OffloadingAnalyser", "-", false,false),
   _waitForMasterDataWatch("exahype::offloading::OffloadingAnalyser", "-", false,false),
   _waitForGlobalMasterDataWatch("exahype::offloading::OffloadingAnalyser", "-", false,false),
+  _timeStepWatch("exahype::offloading::OffloadingAnalyser", "-", false,false),
   _waitForOtherRank(0),
   _currentZeroThreshold(0.002),
   _iterationCounter(0),
@@ -72,8 +73,6 @@ exahype::offloading::OffloadingAnalyser& exahype::offloading::OffloadingAnalyser
   if(analyser==nullptr) {
     analyser = new OffloadingAnalyser();
   }  
-
-
   return *analyser;
 }
 
@@ -95,12 +94,20 @@ double exahype::offloading::OffloadingAnalyser::getZeroThreshold() {
 }
 
 void exahype::offloading::OffloadingAnalyser::setTimePerSTP(double timePerSTP) {
-  _timePerStealablePredictionJob.setValue(timePerSTP);
+  _timePerMigratablePredictionJob.setValue(timePerSTP);
   //logInfo("setTimePerSTP()", "submitted new STP measurement, current time per stp: "<<getTimePerSTP());
 }
 
 double exahype::offloading::OffloadingAnalyser::getTimePerSTP() {
-  return _timePerStealablePredictionJob.getValue();
+  return _timePerMigratablePredictionJob.getValue();
+}
+
+void exahype::offloading::OffloadingAnalyser::setTimePerTimeStep(double timePerStep) {
+  return _timePerTimeStep.setValue(timePerStep);
+}
+
+double exahype::offloading::OffloadingAnalyser::getTimePerTimeStep() {
+  return _timePerTimeStep.getValue();
 }
 
 void exahype::offloading::OffloadingAnalyser::updateZeroTresholdAndFilteredSnapshot() {
@@ -167,6 +174,10 @@ void exahype::offloading::OffloadingAnalyser::beginIteration() {
 #if !defined(AnalyseWaitingTimes)
   if(_iterationCounter%2 !=0) return;
 
+  if(_isSwitchedOn) {
+    _timeStepWatch.startTimer();
+  }
+
   exahype::offloading::OffloadingManager::getInstance().resetVictimFlag(); //TODO: correct position here?
   exahype::offloading::OffloadingManager::getInstance().recoverBlacklistedRanks();
 #endif
@@ -177,9 +188,15 @@ void exahype::offloading::OffloadingAnalyser::endIteration(double numberOfInnerL
 #if !defined(AnalyseWaitingTimes)
   exahype::offloading::OffloadingManager::getInstance().printBlacklist();
   if(_iterationCounter%2 !=0) {
-     _iterationCounter++; 
-     return;
+    _iterationCounter++;
+    return;
   }
+
+  if(_isSwitchedOn) {
+    _timeStepWatch.stopTimer();
+    setTimePerSTP(_timeStepWatch.getCalendarTime());
+  }
+
   _currentAccumulatedWorkerTime = 0;
  
   for(int i=0; i<_waitForOtherRank.size(); i++) {

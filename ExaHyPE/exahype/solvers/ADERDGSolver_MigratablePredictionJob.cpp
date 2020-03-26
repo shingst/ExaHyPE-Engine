@@ -7,6 +7,7 @@
 #include "exahype/offloading/OffloadingProfiler.h"
 #include "exahype/offloading/JobTableStatistics.h"
 #include "exahype/offloading/MemoryMonitor.h"
+#include "exahype/offloading/NoiseGenerator.h"
 
 exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob(
     ADERDGSolver& solver,
@@ -81,8 +82,12 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run( bool isCalled
      bool result = false;
      int curr = std::atomic_fetch_add(&JobCounter, 1);
 
+#if defined(NOISE)
+     exahype::offloading::NoiseGenerator::getInstance().generateNoise();
+#endif
+
      if(curr%1000==0) {
-       tarch::timing::Watch watch("exahype::StealablePredictionJob::", "-", false,false);
+       tarch::timing::Watch watch("exahype::MigratablePredictionJob::", "-", false,false);
        watch.startTimer();
        result = handleExecution(isCalledOnMaster);
        watch.stopTimer();
