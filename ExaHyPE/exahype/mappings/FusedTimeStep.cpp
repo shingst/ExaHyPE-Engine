@@ -37,6 +37,8 @@
 #include "exahype/offloading/OffloadingAnalyser.h"
 #endif
 
+#include "exahype/offloading/NoiseGenerator.h"
+
 tarch::logging::Log exahype::mappings::FusedTimeStep::_log("exahype::mappings::FusedTimeStep");
 
 bool exahype::mappings::FusedTimeStep::issuePredictionJobsInThisIteration() {
@@ -196,7 +198,13 @@ void exahype::mappings::FusedTimeStep::beginIteration(
 #endif 
 #endif
 
-    // ensure reductions are inititated from worker side
+#if defined(NOISE)
+  if(issuePredictionJobsInThisIteration()) {
+     exahype::offloading::NoiseGenerator::getInstance().generateNoise();
+  }
+#endif
+
+  // ensure reductions are inititated from worker side
   solverState.setReduceStateAndCell( exahype::State::isLastIterationOfBatchOrNoBatch() );
 
 #endif

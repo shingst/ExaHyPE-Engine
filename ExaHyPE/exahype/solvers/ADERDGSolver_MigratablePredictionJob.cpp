@@ -82,10 +82,6 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run( bool isCalled
      bool result = false;
      int curr = std::atomic_fetch_add(&JobCounter, 1);
 
-#if defined(NOISE)
-     exahype::offloading::NoiseGenerator::getInstance().generateNoise();
-#endif
-
      if(curr%1000==0) {
        tarch::timing::Watch watch("exahype::MigratablePredictionJob::", "-", false,false);
        watch.startTimer();
