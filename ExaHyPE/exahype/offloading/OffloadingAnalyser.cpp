@@ -55,7 +55,7 @@ exahype::offloading::OffloadingAnalyser::OffloadingAnalyser():
 {
   enable(true);
 #ifdef USE_ITAC
-  VT_funcdef(event_name_waitForWorker, VT_NOCLASS, &event_waitForWorker ); assertion(ierr==0)
+  VT_funcdef(event_name_waitForWorker, VT_NOCLASS, &event_waitForWorker ); assertion(ierr==0);
 #endif
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   _currentFilteredWaitingTimesSnapshot = new double[nnodes*nnodes];
@@ -193,7 +193,10 @@ void exahype::offloading::OffloadingAnalyser::endIteration(double numberOfInnerL
   }
 
   _timeStepWatch.stopTimer();
-  setTimePerTimeStep(_timeStepWatch.getCalendarTime());
+  //only measure the first few time steps
+  if(_iterationCounter/2 <=3) {
+    setTimePerTimeStep(_timeStepWatch.getCalendarTime());
+  }
 
 #if !defined(AnalyseWaitingTimes)
   _currentAccumulatedWorkerTime = 0;

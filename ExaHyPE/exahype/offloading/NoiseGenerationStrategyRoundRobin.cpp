@@ -25,31 +25,37 @@ namespace offloading {
 tarch::logging::Log  exahype::offloading::NoiseGenerationStrategyRoundRobin::_log( "exahype::offloading::NoiseGenerationStrategyRoundRobin" );
 
 
-NoiseGenerationStrategyRoundRobin::NoiseGenerationStrategyRoundRobin() {
-	// TODO Auto-generated constructor stub
+NoiseGenerationStrategyRoundRobin::NoiseGenerationStrategyRoundRobin() : _frequency(1), _factor(0.5){
+}
 
+NoiseGenerationStrategyRoundRobin::NoiseGenerationStrategyRoundRobin(int frequency, double factor)
+ : _frequency(frequency), _factor(factor){
 }
 
 NoiseGenerationStrategyRoundRobin::~NoiseGenerationStrategyRoundRobin() {
-	// TODO Auto-generated destructor stub
 }
 
 void NoiseGenerationStrategyRoundRobin::generateNoise(int rank, std::chrono::system_clock::time_point timestamp) {
   pid_t pid = getpid();
   static int cnt = 0;
+  static int phase_cnt = 0;
   
   int nranks = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
-  if(cnt==rank) {
+  if(phase_cnt==rank) {
     double timePerTimeStep = exahype::offloading::OffloadingAnalyser::getInstance().getTimePerTimeStep();
-    double timeToWait = timePerTimeStep/2;
+    double timeToWait = timePerTimeStep*_factor;
 
     std::string call = " kill -STOP "+std::to_string(pid)+" ; sleep "+std::to_string(timeToWait)+"; kill -CONT "+std::to_string(pid);
 
     logInfo("generateNoise()", "running cmd "<<call<<std::endl);
     std::system( call.c_str() );
   }
-  cnt = (cnt+1)%nranks;
+  cnt = cnt + 1;
+  if(cnt==_frequency) {
+	  phase_cnt = (phase_cnt+1) % nranks;
+	  cnt = 0;
+  }
   //usleep(10000000);
 }
 

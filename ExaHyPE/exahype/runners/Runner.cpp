@@ -124,6 +124,11 @@
 #include "exahype/offloading/MemoryMonitor.h"
 #endif
 
+#if defined(GenerateNoise)
+#include "exahype/offloading/NoiseGenerator.h"
+#include "exahype/offloading/NoiseGenerationStrategyRoundRobin.h"
+#endif
+
 tarch::logging::Log exahype::runners::Runner::_log("exahype::runners::Runner");
 
 exahype::runners::Runner::Runner(exahype::parser::Parser& parser, std::vector<std::string>& cmdlineargs) :
@@ -914,6 +919,13 @@ void exahype::runners::Runner::initHPCEnvironment() {
   exahype::offloading::MemoryMonitor::getInstance().setOutputDir(_parser.getMemoryStatsOutputDir());
   #endif
 
+  #if defined(GenerateNoise)
+  exahype::offloading::NoiseGenerator::getInstance().setStrategy(new exahype::offloading::NoiseGenerationStrategyRoundRobin(
+		  	  	  	  	  	  	  	  	  	  	  	  	  	  	 _parser.getNoiseGenerationRRFrequency(),
+																 _parser.getNoiseGenerationFactor()
+  	  	  	  	  	  	  	  	  	  	  	  	  	  	  	  	 )
+  	  	  	  	  	  	  	  	  	  	  	  	  	  	  	  	 );
+  #endif
   //
   // Configure ITAC profiling
   // ================================================

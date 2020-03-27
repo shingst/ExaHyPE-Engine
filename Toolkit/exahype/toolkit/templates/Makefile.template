@@ -99,6 +99,10 @@ PROJECT_CFLAGS += -DUSE_TMPI -DDistributedOffloading -DTaskSharing
 PROJECT_CFLAGS += -DOffloadingLocalRecompute
 {% endif %}
 
+{% if useNoiseGenerator %}
+PROJECT_CFLAGS += -DGenerateNoise
+{% endif %}
+
 {% if offloadingProgress=="progress_thread" %}
 PROJECT_CFLAGS += -DOffloadingUseProgressThread
 {% elif offloadingProgress=="progress_task" %}

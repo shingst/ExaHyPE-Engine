@@ -24,9 +24,13 @@ class NoiseGenerationStrategyRoundRobin : public NoiseGenerationStrategy {
 public:
   static tarch::logging::Log     _log;
   NoiseGenerationStrategyRoundRobin();
+  NoiseGenerationStrategyRoundRobin(int frequency, double factor);
   virtual ~NoiseGenerationStrategyRoundRobin();
 
   virtual void generateNoise(int rank, std::chrono::system_clock::time_point timestamp);
+private:
+  int _frequency;
+  double _factor;
 };
 
 } /* namespace offloading */

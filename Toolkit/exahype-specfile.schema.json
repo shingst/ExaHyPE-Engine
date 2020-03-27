@@ -167,6 +167,30 @@
         "measure_cell_processing_times_iter" : ["measure_cell_processing_times"]
       }
     },
+    "noise_generator" : {
+      "type" : "object",
+      "properties" : {
+         "enable" : {
+            "type" : "boolean",
+            "title" : "If set, noise is generated",
+            "default" : false
+         },
+         "round_robin_frequency" : {
+            "type" : "integer",
+            "title " : "Sets number of time steps after which the disturbed rank changes",
+            "scope" : "run-time",
+            "minimum" : 1,
+            "default" : 1 
+         },
+         "noise_factor" : {
+            "type" : "number",
+            "title" : "Controls how much a disturbed rank is affected by noise",
+            "scope" : "run-time",
+            "minimum" : 0,
+            "default" : 0.5
+         }
+      }
+    },
     "memory_monitoring" : {
       "type" : "object",
       "properties" : {

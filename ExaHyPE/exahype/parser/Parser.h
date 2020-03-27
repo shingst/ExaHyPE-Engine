@@ -599,6 +599,9 @@ class exahype::parser::Parser {
 
   std::string getMemoryStatsOutputDir() const;
 
+  int getNoiseGenerationRRFrequency() const;
+  double getNoiseGenerationFactor() const;
+
   /**
    * The profiling target.
    */
