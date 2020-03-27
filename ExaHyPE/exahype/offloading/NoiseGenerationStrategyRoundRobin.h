@@ -15,16 +15,18 @@
 #define EXAHYPE_EXAHYPE_OFFLOADING_NOISEGENERATIONSTRATEGYROUNDROBIN_H_
 
 #include "NoiseGenerationStrategy.h"
+#include "tarch/logging/Log.h"
 
 namespace exahype {
 namespace offloading {
 
 class NoiseGenerationStrategyRoundRobin : public NoiseGenerationStrategy {
 public:
-	NoiseGenerationStrategyRoundRobin();
-	virtual ~NoiseGenerationStrategyRoundRobin();
+  static tarch::logging::Log     _log;
+  NoiseGenerationStrategyRoundRobin();
+  virtual ~NoiseGenerationStrategyRoundRobin();
 
-	virtual void generateNoise(int rank, std::chrono::system_clock::time_point timestamp);
+  virtual void generateNoise(int rank, std::chrono::system_clock::time_point timestamp);
 };
 
 } /* namespace offloading */

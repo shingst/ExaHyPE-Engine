@@ -198,7 +198,7 @@ void exahype::mappings::FusedTimeStep::beginIteration(
 #endif 
 #endif
 
-#if defined(NOISE)
+#if defined(GenerateNoise)
   if(issuePredictionJobsInThisIteration()) {
      exahype::offloading::NoiseGenerator::getInstance().generateNoise();
   }

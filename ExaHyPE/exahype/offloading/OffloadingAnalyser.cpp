@@ -171,13 +171,11 @@ void exahype::offloading::OffloadingAnalyser::updateZeroTresholdAndFilteredSnaps
 }
 
 void exahype::offloading::OffloadingAnalyser::beginIteration() {
-#if !defined(AnalyseWaitingTimes)
   if(_iterationCounter%2 !=0) return;
 
-  if(_isSwitchedOn) {
-    _timeStepWatch.startTimer();
-  }
-
+  _timeStepWatch.startTimer();
+ 
+#if !defined(AnalyseWaitingTimes)
   exahype::offloading::OffloadingManager::getInstance().resetVictimFlag(); //TODO: correct position here?
   exahype::offloading::OffloadingManager::getInstance().recoverBlacklistedRanks();
 #endif
@@ -187,16 +185,17 @@ void exahype::offloading::OffloadingAnalyser::beginIteration() {
 void exahype::offloading::OffloadingAnalyser::endIteration(double numberOfInnerLeafCells, double numberOfOuterLeafCells, double numberOfInnerCells, double numberOfOuterCells, double numberOfLocalCells, double numberOfLocalVertices) {
 #if !defined(AnalyseWaitingTimes)
   exahype::offloading::OffloadingManager::getInstance().printBlacklist();
+#endif
+
   if(_iterationCounter%2 !=0) {
     _iterationCounter++;
     return;
   }
 
-  if(_isSwitchedOn) {
-    _timeStepWatch.stopTimer();
-    setTimePerSTP(_timeStepWatch.getCalendarTime());
-  }
+  _timeStepWatch.stopTimer();
+  setTimePerTimeStep(_timeStepWatch.getCalendarTime());
 
+#if !defined(AnalyseWaitingTimes)
   _currentAccumulatedWorkerTime = 0;
  
   for(int i=0; i<_waitForOtherRank.size(); i++) {
