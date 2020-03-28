@@ -204,14 +204,14 @@ update_others() {
 	else
 		echo "Update libxsmm submodule"
 		cd libxsmm
-		LOCAL=$(git rev-parse master)
-		REMOTE=$(git rev-parse origin/master)
-		if [ $LOCAL = $REMOTE ]; then
+		LIBXSMM_DIFF_COUNT=$(git rev-list HEAD...origin/release --count)
+		if [ $LIBXSMM_DIFF_COUNT -eq 0 ]; then
 			echo "Up-to-date"
 		else
 			REBUILD_LIBXSMM=true
-			git stash -q     #silently stash the changes (deleted directories)
-			git pull origin master
+			git checkout -- samples/
+			git checkout -- documentation/
+			git pull origin release
 			git stash pop -q #silently unstash the changes (deleted directories)
 			rm -rf samples/       #delete potential new stuff
 			rm -rf documentation/ #delete potential new stuff
