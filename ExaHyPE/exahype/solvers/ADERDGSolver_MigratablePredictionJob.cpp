@@ -172,8 +172,10 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   else {
     a_jobToData.release();
     if(_isLocalReplica) {
+    	int responsibleRank = _solver.getResponsibleRankForCellDescription((const void*) &cellDescription);
+        exahype::offloading::OffloadingManager::getInstance().triggerEmergencyForRank(responsibleRank);
         logInfo("handleLocalExecution()",   "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
-                                          <<" Data not available, gotta do it on my own!"
+                                          <<" Data not available from rank "<<responsibleRank<<", gotta do it on my own!"
                                           <<" center[0] = "<<center[0]
                                           <<" center[1] = "<<center[1]
                                           <<" center[2] = "<<center[2]
