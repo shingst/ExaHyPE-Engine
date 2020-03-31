@@ -2840,6 +2840,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
 
      _mapTagToSTPData.insert(std::make_pair(tag, data));
      _mapTagToCellDesc.insert(std::make_pair(tag, &cellDescription));
+     logInfo("submitOrSendMigratableJob", " inserting into map cell desc to tag/rank "<<&cellDescription);
      _mapCellDescToTagRank.insert(std::make_pair(&cellDescription, std::make_pair(tag, destRank)));
      _mapTagToOffloadTime.insert(std::make_pair(tag, -MPI_Wtime()));
     
@@ -2895,7 +2896,8 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
                                                <<" time stamp = "<<job->_predictorTimeStamp);
      //job->resetPriority(job->getPriority()/2);
      job->_isLocalReplica = true;
-     peano::datatraversal::TaskSet spawnedSet( job );
+     addRecomputeJobForCellDescription(job, &cellDescription);
+     //peano::datatraversal::TaskSet spawnedSet( job );
 #endif
      // post receive back requests
 //     MPI_Request recvRequests[4];
@@ -2909,8 +2911,8 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
 //      exahype::offloading::RequestType::receiveBack, this);
 
      //todo adapt later
-#ifndef OffloadingLocalRecompute
      NumberOfRemoteJobs++;
+#ifndef OffloadingLocalRecompute
      delete job;
 #endif
 
@@ -3823,6 +3825,29 @@ int exahype::solvers::ADERDGSolver::getResponsibleRankForCellDescription(const v
 
   return resultRank;
 }
+
+#if defined(OffloadingLocalRecompute)
+tarch::multicore::jobs::Job* exahype::solvers::ADERDGSolver::grabRecomputeJobForCellDescription(const void* cellDescription) {
+  tbb::concurrent_hash_map<const CellDescription*, tarch::multicore::jobs::Job* >::accessor a_cellDescToJob;
+  bool found = _mapCellDescToRecompJob.find(a_cellDescToJob, static_cast<const CellDescription*>(cellDescription));
+  tarch::multicore::jobs::Job *job = nullptr;
+  if(found) {
+	 job = a_cellDescToJob->second;
+     _mapCellDescToRecompJob.erase(a_cellDescToJob);
+  }
+
+  //assert(found);
+  return job;
+}
+
+void exahype::solvers::ADERDGSolver::addRecomputeJobForCellDescription(tarch::multicore::jobs::Job* job, const CellDescription* cellDescription) {
+  tbb::concurrent_hash_map<const CellDescription*, tarch::multicore::jobs::Job* >::accessor a_cellDescToJob;
+  bool found = _mapCellDescToRecompJob.find(a_cellDescToJob, static_cast<const CellDescription*>(cellDescription));
+  assert(!found);
+  _mapCellDescToRecompJob.insert(std::make_pair(cellDescription, job));
+}
+
+#endif
 
 void exahype::solvers::ADERDGSolver::getResponsibleRankTagForCellDescription(const void* cellDescription, int& rank, int& tag) {
 

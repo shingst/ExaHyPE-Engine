@@ -80,20 +80,22 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run( bool isCalled
       VT_begin(event_stp);
 #endif
      bool result = false;
+     bool hasComputed = false;
      int curr = std::atomic_fetch_add(&JobCounter, 1);
 
      if(curr%1000==0) {
        tarch::timing::Watch watch("exahype::MigratablePredictionJob::", "-", false,false);
        watch.startTimer();
-       result = handleExecution(isCalledOnMaster);
+       result = handleExecution(isCalledOnMaster, hasComputed);
        watch.stopTimer();
 
        logDebug("run()","measured time per STP "<<watch.getCalendarTime());
-
-       exahype::offloading::OffloadingAnalyser::getInstance().setTimePerSTP(watch.getCalendarTime());
+       if(hasComputed) {
+         exahype::offloading::OffloadingAnalyser::getInstance().setTimePerSTP(watch.getCalendarTime());
+       }
      }
      else
-       result = handleExecution(isCalledOnMaster);
+       result = handleExecution(isCalledOnMaster, hasComputed);
 
 #ifdef USE_ITAC
       VT_end(event_stp);
@@ -101,7 +103,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run( bool isCalled
   return result;
 }
 
-bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecution(bool isRunOnMaster) {
+bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecution(bool isRunOnMaster, bool& hasComputed) {
   int myRank = tarch::parallel::Node::getInstance().getRank();
   bool result = false;
   bool needToCompute = true;
@@ -129,6 +131,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
                                    <<" center[1] = "<< center[1]
                                    <<" center[2] = "<< center[2]
                                    <<" time stamp = "<<_predictorTimeStamp
+                                   <<" enclave jobs "<<NumberOfEnclaveJobs
+                                   <<" remote jobs "<<NumberOfRemoteJobs
                                    <<" hash = "<<(size_t) key);
 
   //exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false);
@@ -157,6 +161,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     AllocatedSTPsReceive--;
     delete data;
 
+    NumberOfRemoteJobs--;
     cellDescription.setHasCompletedLastStep(true);
     result = false;
     needToCompute = false;
@@ -171,7 +176,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   }
   else {
     a_jobToData.release();
-    if(_isLocalReplica) {
+    if(_isLocalReplica && (NumberOfEnclaveJobs-NumberOfRemoteJobs)==0) {
     	int responsibleRank = _solver.getResponsibleRankForCellDescription((const void*) &cellDescription);
         exahype::offloading::OffloadingManager::getInstance().triggerEmergencyForRank(responsibleRank);
         logInfo("handleLocalExecution()",   "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
@@ -199,6 +204,11 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
       _predictorTimeStamp,
       _predictorTimeStepSize,
       true);
+    hasComputed = true;
+    if(_isLocalReplica) {
+      NumberOfRemoteJobs--;
+    }
+
     cellDescription.setHasCompletedLastStep(true);
 #if defined(USE_ITAC)
     if(_isLocalReplica)
@@ -206,6 +216,23 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 #endif
     result = false;
   }
+
+#if defined(OffloadingLocalRecompute)
+  if(_isLocalReplica) {
+    tbb::concurrent_hash_map<const CellDescription*, std::pair<int,int>>::accessor a_cellDescToTagRank;
+    logInfo("handleExecution()", "cleaning up cell desc "<<&cellDescription);
+    found =  _solver._mapCellDescToTagRank.find(a_cellDescToTagRank, &cellDescription);
+    assert(found);
+    _solver._mapCellDescToTagRank.erase(a_cellDescToTagRank);
+    a_cellDescToTagRank.release();
+
+    //tbb::concurrent_hash_map<const CellDescription*, tarch::multicore::jobs::Job* >::accessor a_cellDescToJob;
+    //bool found = _solver._mapCellDescToRecompJob.find(a_cellDescToJob, &cellDescription);
+    //assert(found);
+    //_solver._mapCellDescToRecompJob.erase(a_cellDescToJob);
+    //a_cellDescToJob.release();
+  }
+#endif
 
 #if defined (TaskSharing)
     //check one more time
@@ -249,7 +276,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   return result;
 }
 
-bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(bool isRunOnMaster) {
+bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(bool isRunOnMaster, bool& hasComputed) {
   int myRank = tarch::parallel::Node::getInstance().getRank();
   bool result = false;
 
@@ -260,7 +287,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(bo
 #endif
   //local treatment if this job belongs to the local rank
   if(_originRank==myRank) {
-    result = handleLocalExecution(isRunOnMaster);
+    result = handleLocalExecution(isRunOnMaster, hasComputed);
     NumberOfEnclaveJobs--;
     assertion( NumberOfEnclaveJobs>=0 );
 #ifndef OffloadingUseProgressThread
@@ -283,6 +310,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(bo
       _predictorTimeStamp,
       _predictorTimeStepSize,
       true);
+    hasComputed = true;
 #if defined(USE_ITAC)
     VT_end(event_stp_remote);
 #endif
@@ -459,11 +487,15 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToCellDesc.erase(a_tagToCellDesc);
   a_tagToCellDesc.release();
 
+#ifndef OffloadingLocalRecompute
   tbb::concurrent_hash_map<const CellDescription*, std::pair<int,int>>::accessor a_cellDescToTagRank;
+  logInfo("receiveBackHandler", " cleaning up cell desc to tag/rank for "<<cellDescription);
   found =  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapCellDescToTagRank.find(a_cellDescToTagRank, cellDescription);
   assertion(found);
+  // do not erase for local recompute as we need this information later on
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapCellDescToTagRank.erase(a_cellDescToTagRank);
   a_cellDescToTagRank.release();
+#endif
 
   tbb::concurrent_hash_map<int, double>::accessor a_tagToOffloadTime;
   found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToOffloadTime.find(a_tagToOffloadTime, tag);

@@ -41,6 +41,7 @@
 #include <tbb/task.h>
 #include <tbb/task_group.h>
 #include <unordered_set>
+#include "tarch/multicore/Jobs.h"
 #endif
 
 namespace exahype {
@@ -1062,6 +1063,7 @@ private:
 #endif
   tbb::concurrent_hash_map<int, CellDescription*> _mapTagToCellDesc;
   tbb::concurrent_hash_map<const CellDescription*, std::pair<int,int>> _mapCellDescToTagRank;
+  tbb::concurrent_hash_map<const CellDescription*, tarch::multicore::jobs::Job*> _mapCellDescToRecompJob;
   tbb::concurrent_hash_map<int, double*> _mapTagToMetaData;
   //tbb::concurrent_hash_map<int, MigratablePredictionJobData*> _mapTagToSTPData;
   // Used in order to time offloaded tasks.
@@ -1111,8 +1113,8 @@ private:
       static std::atomic<int> JobCounter;
 
       // actual execution of a STP job
-      bool handleExecution(bool isCalledOnMaster);
-      bool handleLocalExecution(bool isCalledOnMaster);
+      bool handleExecution(bool isCalledOnMaster, bool& hasComputed);
+      bool handleLocalExecution(bool isCalledOnMaster, bool& hasComputed);
 
     public:
       // constructor for local jobs that can be stolen
@@ -2858,6 +2860,12 @@ public:
   int getResponsibleRankForCellDescription(const void* cellDescription);
 
   void getResponsibleRankTagForCellDescription(const void* cellDescription, int& rank, int& tag); 
+
+#if defined(OffloadingLocalRecompute)
+  tarch::multicore::jobs::Job* grabRecomputeJobForCellDescription(const void* cellDescription);
+  void addRecomputeJobForCellDescription(tarch::multicore::jobs::Job* job, const CellDescription* cellDescription);
+#endif
+
 #endif
 
 #endif
@@ -3321,6 +3329,21 @@ public:
           tarch::parallel::Node::getInstance().receiveDanglingMessages();
           lock.free();
         }
+      }
+      #endif
+
+      #if defined(OffloadingLocalRecompute)
+      if ( responsibleRank!=myRank ) {
+        tarch::la::Vector<DIMENSIONS, double> center;
+        center = cellDescription.getOffset()+0.5*cellDescription.getSize();
+      
+    
+        logInfo("waitUntil()", " looking for recompute job center[0] = "<< center[0]
+                                       <<" center[1] = "<< center[1]
+                                       <<" center[2] = "<< center[2]);
+        tarch::multicore::jobs::Job * recompJob = grabRecomputeJobForCellDescription((const void*) &cellDescription);
+        if(recompJob!=nullptr) // got one
+          recompJob->run(true);
       }
       #endif
 
