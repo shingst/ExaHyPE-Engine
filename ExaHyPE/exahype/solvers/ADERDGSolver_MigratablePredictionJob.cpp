@@ -558,6 +558,11 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
       double *lQhbnd = static_cast<double*>(cellDescription->getExtrapolatedPredictor());
       double *lFhbnd = static_cast<double*>(cellDescription->getFluctuation());
 
+      if(static_cast<MigratablePredictionJob*>(recompJob)->_predictorTimeStamp!=metadata[2*DIMENSIONS]) {
+        logInfo("receiveBackHandler","job timestamp "<<static_cast<MigratablePredictionJob*>(recompJob)->_predictorTimeStamp
+                   <<" metadata[2*DIMENSIONS] "<< metadata[2*DIMENSIONS]);
+      }
+
       assert(static_cast<MigratablePredictionJob*>(recompJob)->_predictorTimeStamp==metadata[2*DIMENSIONS]);
 
       std::memcpy(luh, &data->_luh[0], data->_luh.size()*sizeof(double));
