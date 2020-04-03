@@ -670,7 +670,9 @@ void exahype::offloading::OffloadingManager::triggerEmergencyForRank(int rank) {
 #endif
   _localBlacklist[rank]++;
   exahype::offloading::PerformanceMonitor::getInstance().submitBlacklistValueForRank(_localBlacklist[rank], rank);
-  logInfo("triggerEmergencyForRank()","blacklist value for rank "<<rank<<":"<<_localBlacklist[rank]);
+  logInfo("triggerEmergencyForRank()","blacklist value for rank "<<rank<<":"<<_localBlacklist[rank]
+	                                 <<" NumberOfRemoteJobs"<<  exahype::solvers::ADERDGSolver::NumberOfRemoteJobs
+									 <<" NumberOfEnclaveJobs"<<  exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs);
 }
 
 void exahype::offloading::OffloadingManager::recoverBlacklistedRanks() {

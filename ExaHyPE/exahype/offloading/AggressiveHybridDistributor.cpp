@@ -531,13 +531,14 @@ bool exahype::offloading::AggressiveHybridDistributor::selectVictimRank(int& vic
   int threshold = 1
 		         + std::max(1, tarch::multicore::Core::getInstance().getNumberOfThreads()-1)
                  * tarch::multicore::jobs::internal::_minimalNumberOfJobsPerConsumerRun;
-  logDebug("selectVictimRank", "threshold "<<threshold
-		                       << " there are "<<exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs-exahype::solvers::ADERDGSolver::NumberOfRemoteJobs
-							   <<" jobs "<< " and "<<tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs());
-  threshold = std::max(threshold, 20);
+    threshold = std::max(threshold, 20);
 
   if(exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs-exahype::solvers::ADERDGSolver::NumberOfRemoteJobs<
         threshold) {
+	  logInfo("selectVictimRank", "threshold "<<threshold
+	  		                       << " there are "<<exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs-exahype::solvers::ADERDGSolver::NumberOfRemoteJobs
+	  							   <<" jobs "<< " and "<<tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs());
+
     _tasksNotOffloaded[victim]++;
     victim = myRank;
   }

@@ -3310,6 +3310,7 @@ public:
       if ( responsibleRank!=myRank) {
         logInfo("waitUntil", "cell missing from responsible rank: "<<responsibleRank);
         tryToReceiveTaskBack(this) ;
+  	    //const_cast<CellDescription*>(&cellDescription)->setHasCompletedLastStep(true);
       }
  #endif
     }
@@ -3332,21 +3333,6 @@ public:
       }
       #endif
 
-      #if defined(OffloadingLocalRecompute)
-      if ( responsibleRank!=myRank ) {
-        tarch::la::Vector<DIMENSIONS, double> center;
-        center = cellDescription.getOffset()+0.5*cellDescription.getSize();
-      
-    
-        logInfo("waitUntil()", " looking for recompute job center[0] = "<< center[0]
-                                       <<" center[1] = "<< center[1]
-                                       <<" center[2] = "<< center[2]);
-        tarch::multicore::jobs::Job * recompJob = grabRecomputeJobForCellDescription((const void*) &cellDescription);
-        if(recompJob!=nullptr) // got one
-          recompJob->run(true);
-      }
-      #endif
-
       //switch ( JobSystemWaitBehaviour ) {
       //   case JobSystemWaitBehaviourType::ProcessJobsWithSamePriority:
       #ifndef OffloadingUseProgressTask
@@ -3356,6 +3342,30 @@ public:
         tarch::multicore::jobs::processBackgroundJobs( 1, -1, true );
       #endif
 
+#if defined(OffloadingLocalRecompute)
+      if ( responsibleRank!=myRank ) {
+        tarch::la::Vector<DIMENSIONS, double> center;
+        center = cellDescription.getOffset()+0.5*cellDescription.getSize();
+      
+    
+        logInfo("waitUntil()", " looking for recompute job center[0] = "<< center[0]
+                                       <<" center[1] = "<< center[1]
+                                       <<" center[2] = "<< center[2]);
+        if( (exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs
+           == exahype::solvers::ADERDGSolver::NumberOfRemoteJobs) && !hasTriggeredEmergency) {
+      	  hasTriggeredEmergency = true;
+            logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank);
+            exahype::offloading::OffloadingManager::getInstance().triggerEmergencyForRank(responsibleRank);
+        }
+#ifndef OffloadingDeactivateRecompute
+        tarch::multicore::jobs::Job * recompJob = grabRecomputeJobForCellDescription((const void*) &cellDescription);
+        if(recompJob!=nullptr) {// got one
+          recompJob->run(true);
+        }
+        continue;
+#endif
+      }
+#endif
       // tarch::multicore::jobs::processBackgroundJobs( 1, -1, true );
  
      //     break;
@@ -3366,12 +3376,13 @@ public:
       //     break;
      // }
 
-      if((MPI_Wtime()-startTime)>10.001) {//  && responsibleRank!=myRank) {
-        startTime = MPI_Wtime();
-        logInfo("waitUntilCompletedTimeStep()","warning: rank waiting too long for missing task from rank "<<responsibleRank<< " outstanding jobs:"<<NumberOfRemoteJobs<< " outstanding enclave "<<NumberOfEnclaveJobs<< " outstanding skeleton "<<NumberOfSkeletonJobs<< " celldescription "<<cellDescription.toString() << " waiting jobs "<<tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs());
-      }
+      //if((MPI_Wtime()-startTime)>0.0001) {//  && responsibleRank!=myRank) {
+      //  startTime = MPI_Wtime();
+      //  logInfo("waitUntilCompletedTimeStep()","warning: rank waiting too long for missing task from rank "<<responsibleRank<< " outstanding jobs:"<<NumberOfRemoteJobs<< " outstanding enclave "<<NumberOfEnclaveJobs<< " outstanding skeleton "<<NumberOfSkeletonJobs<< " celldescription "<<cellDescription.toString() << " waiting jobs "<<tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs());
+      //}
 
 
+#if !defined(OffloadingLocalRecompute)
  #if !defined(OffloadingUseProgressThread)
         if( !cellDescription.getHasCompletedLastStep()
           //&& tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()==1
@@ -3399,7 +3410,7 @@ public:
    // VT_end(event_emergency);
  #endif
         }
-
+#endif
     }
  #if !defined(OffloadingUseProgressThread)
     //if ( responsibleRank!=myRank) {
