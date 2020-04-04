@@ -552,6 +552,15 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
   else {
  	tarch::multicore::Lock lock(exahype::solvers::ADERDGSolver::EmergencySemaphore);
     tarch::multicore::jobs::Job *recompJob = static_cast<exahype::solvers::ADERDGSolver*> (solver)->grabRecomputeJobForCellDescription((const void*) cellDescription);
+
+    //hack: put the job back and ignore very late result
+    if(recompJob!=nullptr && static_cast<MigratablePredictionJob*>(recompJob)->_predictorTimeStamp>metadata[2*DIMENSIONS] ){
+      logInfo("receiveBackHandler","job timestamp "<<static_cast<MigratablePredictionJob*>(recompJob)->_predictorTimeStamp
+                                 <<" metadata[2*DIMENSIONS] "<< metadata[2*DIMENSIONS]);
+      static_cast<exahype::solvers::ADERDGSolver*> (solver)->addRecomputeJobForCellDescription(recompJob, cellDescription);
+      recompJob = nullptr;
+    }
+
     //copy into result buffer, I am responsible for result
     if(recompJob!=nullptr) {
       double *luh    = static_cast<double*>(cellDescription->getSolution());
@@ -559,13 +568,12 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
       double *lQhbnd = static_cast<double*>(cellDescription->getExtrapolatedPredictor());
       double *lFhbnd = static_cast<double*>(cellDescription->getFluctuation());
 
-      if(static_cast<MigratablePredictionJob*>(recompJob)->_predictorTimeStamp!=metadata[2*DIMENSIONS]) {
+      /*if(static_cast<MigratablePredictionJob*>(recompJob)->_predictorTimeStamp!=metadata[2*DIMENSIONS]) {
         logInfo("receiveBackHandler","job timestamp "<<static_cast<MigratablePredictionJob*>(recompJob)->_predictorTimeStamp
                    <<" metadata[2*DIMENSIONS] "<< metadata[2*DIMENSIONS]);
-      }
+      }*/
 
       assert(static_cast<MigratablePredictionJob*>(recompJob)->_predictorTimeStamp==metadata[2*DIMENSIONS]);
-
       std::memcpy(luh, &data->_luh[0], data->_luh.size()*sizeof(double));
       std::memcpy(lduh, &data->_lduh[0], data->_lduh.size()*sizeof(double));
       std::memcpy(lQhbnd, &data->_lQhbnd[0], data->_lQhbnd.size()*sizeof(double));
