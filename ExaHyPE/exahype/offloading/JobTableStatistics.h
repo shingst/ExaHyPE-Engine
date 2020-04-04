@@ -35,6 +35,7 @@ private:
 	std::atomic<int> _receivedKeys;
     std::atomic<int> _declinedTasks;
     std::atomic<int> _lateTasks;
+    std::atomic<int> _recomputedTasks;
 
 	JobTableStatistics();
 	virtual ~JobTableStatistics();
@@ -53,6 +54,7 @@ public:
     void notifySavedTask();
     void notifySpawnedTask();
     void notifyExecutedTask();
+    void notifyRecomputedTask();
 };
 
 } /* namespace offloading */

@@ -153,6 +153,10 @@ std::atomic<int> exahype::solvers::ADERDGSolver::AllocatedSTPs (0);
 std::atomic<int> exahype::solvers::ADERDGSolver::AllocatedSTPsSend (0);
 std::atomic<int> exahype::solvers::ADERDGSolver::AllocatedSTPsReceive (0);
 
+std::atomic<bool> exahype::solvers::ADERDGSolver::VetoEmergency(false);
+const exahype::solvers::ADERDGSolver::CellDescription* exahype::solvers::ADERDGSolver::LastEmergencyCell;
+tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::EmergencySemaphore;
+
 #ifdef TaskSharing
 int exahype::solvers::ADERDGSolver::REQUEST_JOB_CANCEL = 0;
 int exahype::solvers::ADERDGSolver::REQUEST_JOB_ACK = 1;

@@ -218,20 +218,20 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   }
 
 #if defined(OffloadingLocalRecompute)
-  if(_isLocalReplica) {
-    tbb::concurrent_hash_map<const CellDescription*, std::pair<int,int>>::accessor a_cellDescToTagRank;
+  //if(_isLocalReplica) {
+    //tbb::concurrent_hash_map<const CellDescription*, std::pair<int,int>>::accessor a_cellDescToTagRank;
     //logInfo("handleExecution()", "cleaning up cell desc "<<&cellDescription);
-    bool found =  _solver._mapCellDescToTagRank.find(a_cellDescToTagRank, &cellDescription);
-    assert(found);
-    _solver._mapCellDescToTagRank.erase(a_cellDescToTagRank);
-    a_cellDescToTagRank.release();
+    //bool found =  _solver._mapCellDescToTagRank.find(a_cellDescToTagRank, &cellDescription);
+   // assert(found);
+    //_solver._mapCellDescToTagRank.erase(a_cellDescToTagRank);
+    //a_cellDescToTagRank.release();
 
     //tbb::concurrent_hash_map<const CellDescription*, tarch::multicore::jobs::Job* >::accessor a_cellDescToJob;
     //bool found = _solver._mapCellDescToRecompJob.find(a_cellDescToJob, &cellDescription);
     //assert(found);
     //_solver._mapCellDescToRecompJob.erase(a_cellDescToJob);
     //a_cellDescToJob.release();
-  }
+ // }
   if(hasComputed)
     exahype::offloading::JobTableStatistics::getInstance().notifyExecutedTask();
 #endif
@@ -496,15 +496,15 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToCellDesc.erase(a_tagToCellDesc);
   a_tagToCellDesc.release();
 
-#ifndef OffloadingLocalRecompute
+//#ifndef OffloadingLocalRecompute
   tbb::concurrent_hash_map<const CellDescription*, std::pair<int,int>>::accessor a_cellDescToTagRank;
-  logInfo("receiveBackHandler", " cleaning up cell desc to tag/rank for "<<cellDescription);
+  //logInfo("receiveBackHandler", " cleaning up cell desc to tag/rank for "<<cellDescription);
   found =  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapCellDescToTagRank.find(a_cellDescToTagRank, cellDescription);
   assertion(found);
   // do not erase for local recompute as we need this information later on
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapCellDescToTagRank.erase(a_cellDescToTagRank);
   a_cellDescToTagRank.release();
-#endif
+//#endif
 
   tbb::concurrent_hash_map<int, double>::accessor a_tagToOffloadTime;
   found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToOffloadTime.find(a_tagToOffloadTime, tag);
@@ -550,6 +550,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
     AllocatedSTPsReceive--;
   }
   else {
+ 	tarch::multicore::Lock lock(exahype::solvers::ADERDGSolver::EmergencySemaphore);
     tarch::multicore::jobs::Job *recompJob = static_cast<exahype::solvers::ADERDGSolver*> (solver)->grabRecomputeJobForCellDescription((const void*) cellDescription);
     //copy into result buffer, I am responsible for result
     if(recompJob!=nullptr) {
@@ -577,11 +578,20 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
       cellDescription->setHasCompletedLastStep(true);
     }
     //sb else has to do it
-     else {
-       exahype::offloading::JobTableStatistics::getInstance().notifyLateTask();
-       delete data;
-       AllocatedSTPsReceive--;
-     }
+    else {
+       //exahype::offloading::OffloadingManager::getInstance().triggerEmergencyForRank(remoteRank); //test
+       //cellDescription->setHasCompletedLastStep(true); //test
+    	 //tarch::multicore::jobs::Job* recompJob = grabRecomputeJobForCellDescription((&cellDescription));//test
+      if(LastEmergencyCell==cellDescription) {
+        VetoEmergency = false;
+        LastEmergencyCell = nullptr;
+      }
+
+      exahype::offloading::JobTableStatistics::getInstance().notifyLateTask();
+      //delete data; //probably not safe to do here
+      //AllocatedSTPsReceive--; //probably not safe to do here, race with job
+    }
+    lock.free();
   }
  /* tbb::concurrent_hash_map<int, double*>::accessor a_tagToMetaData;
   found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToMetaData.find(a_tagToMetaData, tag);

@@ -30,7 +30,8 @@ JobTableStatistics::JobTableStatistics() :
   _declinedTasks(0),
   _lateTasks(0),
   _sentKeys(0),
-  _receivedKeys(0)
+  _receivedKeys(0),
+  _recomputedTasks(0)
 {
   // TODO Auto-generated constructor stub
 
@@ -81,6 +82,10 @@ void JobTableStatistics::notifyReceivedKey() {
   _receivedKeys++;
 }
 
+void JobTableStatistics::notifyRecomputedTask() {
+  _recomputedTasks++;
+}
+
 void JobTableStatistics::printStatistics() {
 #if defined(TaskSharing) || defined(OffloadingLocalRecompute) 
      int team = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank();
@@ -93,7 +98,8 @@ void JobTableStatistics::printStatistics() {
            <<" received keys= "<<_receivedKeys
            <<" sent keys= "<<_sentKeys
            <<" declined tasks = "<<_declinedTasks
-           <<" late tasks = "<<_lateTasks);
+           <<" late tasks = "<<_lateTasks
+		   <<" recomputed tasks = "<<_recomputedTasks);
 #endif
 }
 
