@@ -23,6 +23,8 @@ class NoiseGenerationStrategy {
 public:
 
 	virtual void generateNoise(int rank, std::chrono::system_clock::time_point timestamp ) = 0;
+
+	virtual void generateNoiseSTP(int rank, std::chrono::system_clock::time_point timestamp ) = 0;
 };
 
 } /* namespace offloading */

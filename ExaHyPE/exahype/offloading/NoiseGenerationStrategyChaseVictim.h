@@ -11,8 +11,8 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#ifndef EXAHYPE_EXAHYPE_OFFLOADING_NOISEGENERATIONSTRATEGYROUNDROBIN_H_
-#define EXAHYPE_EXAHYPE_OFFLOADING_NOISEGENERATIONSTRATEGYROUNDROBIN_H_
+#ifndef EXAHYPE_EXAHYPE_OFFLOADING_NOISEGENERATIONSTRATEGYCHASEVICTIM_H_
+#define EXAHYPE_EXAHYPE_OFFLOADING_NOISEGENERATIONSTRATEGYCHASEVICTIM_H_
 
 #include "NoiseGenerationStrategy.h"
 #include "tarch/logging/Log.h"
@@ -20,14 +20,15 @@
 namespace exahype {
 namespace offloading {
 
-class NoiseGenerationStrategyRoundRobin : public NoiseGenerationStrategy {
+class NoiseGenerationStrategyChaseVictim : public NoiseGenerationStrategy {
 public:
   static tarch::logging::Log     _log;
-  NoiseGenerationStrategyRoundRobin();
-  NoiseGenerationStrategyRoundRobin(int frequency, double factor);
-  virtual ~NoiseGenerationStrategyRoundRobin();
+  NoiseGenerationStrategyChaseVictim();
+  NoiseGenerationStrategyChaseVictim(int frequency, double factor);
+  virtual ~NoiseGenerationStrategyChaseVictim();
 
   virtual void generateNoise(int rank, std::chrono::system_clock::time_point timestamp);
+
   virtual void generateNoiseSTP(int rank, std::chrono::system_clock::time_point timestamp);
 private:
   int _frequency;
@@ -37,4 +38,4 @@ private:
 } /* namespace offloading */
 } /* namespace exahype */
 
-#endif /* EXAHYPE_EXAHYPE_OFFLOADING_NOISEGENERATIONSTRATEGYROUNDROBIN_H_ */
+#endif /* EXAHYPE_EXAHYPE_OFFLOADING_NOISEGENERATIONSTRATEGYCHASEVICTIM_H_ */

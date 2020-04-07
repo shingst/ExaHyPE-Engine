@@ -2850,7 +2850,12 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
      //_mapTagToSTPData.insert(std::make_pair(tag, data));
      _mapTagToCellDesc.insert(std::make_pair(tag, &cellDescription));
      _mapTagToMetaData.insert(std::make_pair(tag, metadata));
-     //logInfo("submitOrSendMigratableJob", " inserting into map cell desc to tag/rank "<<&cellDescription);
+
+     tbb::concurrent_hash_map<const CellDescription*, std::pair<int,int>>::accessor a_cellDescToTagRank;
+     //logInfo("receiveBackHandler", " cleaning up cell desc to tag/rank for "<<cellDescription);
+     bool found = _mapCellDescToTagRank.find(a_cellDescToTagRank, &cellDescription);
+     assert(!found);
+     a_cellDescToTagRank.release();
      _mapCellDescToTagRank.insert(std::make_pair(&cellDescription, std::make_pair(tag, destRank)));
      _mapTagToOffloadTime.insert(std::make_pair(tag, -MPI_Wtime()));
     

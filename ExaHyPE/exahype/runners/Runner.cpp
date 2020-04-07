@@ -64,6 +64,7 @@
 #include "exahype/plotters/Plotter.h"
 
 #include "exahype/mappings/Empty.h"
+#include "exahype/mappings/FusedTimeStep.h"
 #include "exahype/mappings/MeshRefinement.h"
 #include "exahype/mappings/RefinementStatusSpreading.h"
 
@@ -127,6 +128,7 @@
 #if defined(GenerateNoise)
 #include "exahype/offloading/NoiseGenerator.h"
 #include "exahype/offloading/NoiseGenerationStrategyRoundRobin.h"
+#include "exahype/offloading/NoiseGenerationStrategyChaseVictim.h"
 #endif
 
 tarch::logging::Log exahype::runners::Runner::_log("exahype::runners::Runner");
@@ -920,7 +922,7 @@ void exahype::runners::Runner::initHPCEnvironment() {
   #endif
 
   #if defined(GenerateNoise)
-  exahype::offloading::NoiseGenerator::getInstance().setStrategy(new exahype::offloading::NoiseGenerationStrategyRoundRobin(
+  exahype::offloading::NoiseGenerator::getInstance().setStrategy(new exahype::offloading::NoiseGenerationStrategyChaseVictim(
 		  	  	  	  	  	  	  	  	  	  	  	  	  	  	 _parser.getNoiseGenerationRRFrequency(),
 																 _parser.getNoiseGenerationFactor()
   	  	  	  	  	  	  	  	  	  	  	  	  	  	  	  	 )
@@ -932,6 +934,7 @@ void exahype::runners::Runner::initHPCEnvironment() {
   //
   #ifdef USE_ITAC
   int ierr=0;
+  ierr=VT_funcdef("FusedTimeStep::noiseHandle"                                , VT_NOCLASS, &exahype::mappings::FusedTimeStep::noiseHandle                              ); assertion(ierr==0);
   ierr=VT_funcdef("Empty::iterationHandle"                                , VT_NOCLASS, &exahype::mappings::Empty::iterationHandle                              ); assertion(ierr==0);
   ierr=VT_funcdef("Solver::waitUntilCompletedLastStepHandle"              , VT_NOCLASS, &exahype::solvers::Solver::waitUntilCompletedLastStepHandle             ); assertion(ierr==0);
   ierr=VT_funcdef("Solver::ensureAllJobsHaveTerminatedHandle"             , VT_NOCLASS, &exahype::solvers::Solver::ensureAllJobsHaveTerminatedHandle            ); assertion(ierr==0);

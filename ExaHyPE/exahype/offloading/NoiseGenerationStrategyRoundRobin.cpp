@@ -59,5 +59,8 @@ void NoiseGenerationStrategyRoundRobin::generateNoise(int rank, std::chrono::sys
   //usleep(10000000);
 }
 
+
+void NoiseGenerationStrategyRoundRobin::generateNoiseSTP(int rank, std::chrono::system_clock::time_point timestamp) {}
+
 } /* namespace offloading */
 } /* namespace exahype */

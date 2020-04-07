@@ -39,6 +39,14 @@
 
 #include "exahype/offloading/NoiseGenerator.h"
 
+#ifdef USE_ITAC
+#include "VT.h"
+#endif
+
+#ifdef USE_ITAC
+int exahype::mappings::FusedTimeStep::noiseHandle = 0;
+#endif
+
 tarch::logging::Log exahype::mappings::FusedTimeStep::_log("exahype::mappings::FusedTimeStep");
 
 bool exahype::mappings::FusedTimeStep::issuePredictionJobsInThisIteration() {
@@ -200,7 +208,13 @@ void exahype::mappings::FusedTimeStep::beginIteration(
 
 #if defined(GenerateNoise)
   if(issuePredictionJobsInThisIteration()) {
+#ifdef USE_ITAC
+  VT_begin(noiseHandle);
+#endif
      exahype::offloading::NoiseGenerator::getInstance().generateNoise();
+#ifdef USE_ITAC
+     VT_end(noiseHandle);
+#endif
   }
 #endif
 

@@ -97,6 +97,11 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run( bool isCalled
      else
        result = handleExecution(isCalledOnMaster, hasComputed);
 
+//#if defined(GenerateNoise)
+//exahype::offloading::NoiseGenerator::getInstance().generateNoiseSTP();
+//#endif
+
+
 #ifdef USE_ITAC
       VT_end(event_stp);
 #endif
@@ -218,20 +223,20 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   }
 
 #if defined(OffloadingLocalRecompute)
-  //if(_isLocalReplica) {
-    //tbb::concurrent_hash_map<const CellDescription*, std::pair<int,int>>::accessor a_cellDescToTagRank;
+  if(_isLocalReplica) {
+    tbb::concurrent_hash_map<const CellDescription*, std::pair<int,int>>::accessor a_cellDescToTagRank;
     //logInfo("handleExecution()", "cleaning up cell desc "<<&cellDescription);
-    //bool found =  _solver._mapCellDescToTagRank.find(a_cellDescToTagRank, &cellDescription);
-   // assert(found);
-    //_solver._mapCellDescToTagRank.erase(a_cellDescToTagRank);
-    //a_cellDescToTagRank.release();
+    bool found =  _solver._mapCellDescToTagRank.find(a_cellDescToTagRank, &cellDescription);
+    assert(found);
+    _solver._mapCellDescToTagRank.erase(a_cellDescToTagRank);
+    a_cellDescToTagRank.release();
 
     //tbb::concurrent_hash_map<const CellDescription*, tarch::multicore::jobs::Job* >::accessor a_cellDescToJob;
     //bool found = _solver._mapCellDescToRecompJob.find(a_cellDescToJob, &cellDescription);
     //assert(found);
     //_solver._mapCellDescToRecompJob.erase(a_cellDescToJob);
     //a_cellDescToJob.release();
- // }
+  }
   if(hasComputed)
     exahype::offloading::JobTableStatistics::getInstance().notifyExecutedTask();
 #endif
@@ -325,6 +330,10 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(bo
 
   //send back
   if(_originRank!=myRank) {
+#if defined(GenerateNoise)
+//exahype::offloading::NoiseGenerator::getInstance().generateNoiseSTP();
+#endif
+
 #if defined(AOffloadingLocalRecompute)
     //send away task outcome for receiving it into job table
     OffloadEntry entry = {
@@ -371,6 +380,10 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(bo
 
 #else
     MPI_Request sendBackRequests[4];
+    logInfo("handleExecution", " send job outcome: center[0] = "<<_center[0]
+                                               <<" center[1] = "<<_center[1]
+                                               <<" center[2] = "<<_center[2]
+                                               <<" time stamp = "<<_predictorTimeStamp);
     //logInfo("handleLocalExecution()", "postSendBack");
     _solver.isendMigratablePredictionJob(_luh,
                                         _lduh,
@@ -496,7 +509,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToCellDesc.erase(a_tagToCellDesc);
   a_tagToCellDesc.release();
 
-//#ifndef OffloadingLocalRecompute
+#ifndef OffloadingLocalRecompute
   tbb::concurrent_hash_map<const CellDescription*, std::pair<int,int>>::accessor a_cellDescToTagRank;
   //logInfo("receiveBackHandler", " cleaning up cell desc to tag/rank for "<<cellDescription);
   found =  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapCellDescToTagRank.find(a_cellDescToTagRank, cellDescription);
@@ -504,7 +517,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
   // do not erase for local recompute as we need this information later on
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapCellDescToTagRank.erase(a_cellDescToTagRank);
   a_cellDescToTagRank.release();
-//#endif
+#endif
 
   tbb::concurrent_hash_map<int, double>::accessor a_tagToOffloadTime;
   found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToOffloadTime.find(a_tagToOffloadTime, tag);
@@ -535,16 +548,17 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
   a_tagToMetaData.release();
 
 
-  /*logInfo("receiveBackHandler", " received task outcome: center[0] = "<<metadata[0]
+  logInfo("receiveBackHandler", " received task outcome: center[0] = "<<metadata[0]
                                                      <<" center[1] = "<<metadata[1]
                                                      <<" center[2] = "<<metadata[2]
-                                                     <<" time stamp = "<metadata[2*DIMENSIONS]
-                                                     <<" element = "<<(int) metadata[2*DIMENSIONS+2]);*/
+                                                     <<" time stamp = "<<metadata[2*DIMENSIONS]
+                                                     <<" element = "<<(int) metadata[2*DIMENSIONS+2]);
 
 
   exahype::offloading::JobTableStatistics::getInstance().notifyReceivedTask();
   //timestamp
   if(metadata[2*DIMENSIONS]<static_cast<exahype::solvers::ADERDGSolver*> (solver)->getMinTimeStamp()) {
+ // if(true) {
     exahype::offloading::JobTableStatistics::getInstance().notifyLateTask();
     delete data;
     AllocatedSTPsReceive--;
@@ -583,6 +597,17 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
       delete data;
       AllocatedSTPsReceive--;
       delete recompJob;
+
+      tbb::concurrent_hash_map<const CellDescription*, std::pair<int,int>>::accessor a_cellDescToTagRank;
+      //logInfo("receiveBackHandler", " cleaning up cell desc to tag/rank for "<<cellDescription);
+      found =  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapCellDescToTagRank.find(a_cellDescToTagRank, cellDescription);
+      assertion(found);
+      // do not erase for local recompute as we need this information later on
+      static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapCellDescToTagRank.erase(a_cellDescToTagRank);
+      a_cellDescToTagRank.release();
+
+      logInfo("receiveBackHandler", " applied task outcome");
+
       cellDescription->setHasCompletedLastStep(true);
     }
     //sb else has to do it

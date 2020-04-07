@@ -30,6 +30,7 @@ public:
   static NoiseGenerator& getInstance();
 
   void generateNoise();
+  void generateNoiseSTP();
   void setStrategy(NoiseGenerationStrategy* strategy);
 private:
   NoiseGenerationStrategy *_strategy;

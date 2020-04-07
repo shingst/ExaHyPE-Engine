@@ -43,7 +43,9 @@ exahype::offloading::AggressiveHybridDistributor::AggressiveHybridDistributor() 
   _adaptTemperature(false),
   _CCPFrequency(0),
   _CCPStepsPerPhase(0),
-  _thresholdTempAdaptation(1)
+  _thresholdTempAdaptation(1),
+  _currentOptimalVictim(-1),
+  _currentCriticalRank(-1)
 {
 
   int nnodes                = tarch::parallel::Node::getInstance().getNumberOfNodes();
@@ -487,6 +489,11 @@ void exahype::offloading::AggressiveHybridDistributor::updateLoadDistributionDif
     _tasksToOffload[currentCriticalRank] = std::max( (1-_temperatureDiffusion), 0.0)*_tasksToOffload[currentCriticalRank];
   }
 #endif
+
+  //store decision
+  _currentOptimalVictim = currentOptimalVictim;
+  _currentCriticalRank = currentCriticalRank;
+
   resetRemainingTasksToOffload();
 
 }
@@ -496,6 +503,14 @@ void exahype::offloading::AggressiveHybridDistributor::getAllVictimRanks(std::ve
   for(int i=0; i<nnodes; i++) {
     if(_tasksToOffload[i]>0 && _tasksNotOffloaded[i]!=_tasksToOffload[i] ) victims.push_back(i);
   }
+}
+
+int exahype::offloading::AggressiveHybridDistributor::getCurrentOptimalVictim() {
+  return _currentOptimalVictim;
+}
+
+int exahype::offloading::AggressiveHybridDistributor::getCurrentCriticalRank() {
+  return _currentCriticalRank;
 }
 
 bool exahype::offloading::AggressiveHybridDistributor::selectVictimRank(int& victim, bool& last) {

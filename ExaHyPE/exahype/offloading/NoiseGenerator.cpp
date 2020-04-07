@@ -39,6 +39,11 @@ void exahype::offloading::NoiseGenerator::generateNoise() {
 	_strategy->generateNoise(tarch::parallel::Node::getInstance().getRank(), std::chrono::system_clock::now());
 }
 
+void exahype::offloading::NoiseGenerator::generateNoiseSTP() {
+  if(_strategy!=nullptr)
+    _strategy->generateNoiseSTP(tarch::parallel::Node::getInstance().getRank(), std::chrono::system_clock::now());
+}
+
 void exahype::offloading::NoiseGenerator::setStrategy(NoiseGenerationStrategy *strategy) {
   delete _strategy;
   _strategy = strategy;

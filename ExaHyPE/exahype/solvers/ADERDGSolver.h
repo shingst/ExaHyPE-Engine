@@ -3349,12 +3349,15 @@ public:
       #endif
 
 #if defined(OffloadingLocalRecompute)
-      /*tarch::la::Vector<DIMENSIONS, double> center;
+      tarch::la::Vector<DIMENSIONS, double> center;
       center = cellDescription.getOffset()+0.5*cellDescription.getSize();
       
       logInfo("waitUntil()", " looking for recompute job center[0] = "<< center[0]
                                      <<" center[1] = "<< center[1]
-                                     <<" center[2] = "<< center[2]);*/
+                                     <<" center[2] = "<< center[2]);
+     // if(NumberOfEnclaveJobs==NumberOfRemoteJobs && NumberOfRemoteJobs>0)
+     //   assert(responsibleRank!=myRank || NumberOfSkeletonJobs>0);
+
       if( responsibleRank!=myRank
          &&      (exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs
               == exahype::solvers::ADERDGSolver::NumberOfRemoteJobs)) {

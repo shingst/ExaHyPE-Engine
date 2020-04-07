@@ -171,10 +171,21 @@ void exahype::offloading::OffloadingAnalyser::updateZeroTresholdAndFilteredSnaps
 }
 
 void exahype::offloading::OffloadingAnalyser::beginIteration() {
+  static int timestep_cnt = 0;
+
   if(_iterationCounter%2 !=0) return;
 
-  _timeStepWatch.startTimer();
- 
+  if (_isSwitchedOn) {
+     
+     if(_timeStepWatch.isOn()) {
+       _timeStepWatch.stopTimer();
+       if(timestep_cnt <=5) {
+          setTimePerTimeStep(_timeStepWatch.getCalendarTime());
+       }
+       timestep_cnt++;
+     }
+     _timeStepWatch.startTimer();
+  }
 #if !defined(AnalyseWaitingTimes)
   exahype::offloading::OffloadingManager::getInstance().resetVictimFlag(); //TODO: correct position here?
   exahype::offloading::OffloadingManager::getInstance().recoverBlacklistedRanks();
@@ -187,16 +198,24 @@ void exahype::offloading::OffloadingAnalyser::endIteration(double numberOfInnerL
   exahype::offloading::OffloadingManager::getInstance().printBlacklist();
 #endif
 
-  if(_iterationCounter%2 !=0) {
-    _iterationCounter++;
-    return;
-  }
-
-  _timeStepWatch.stopTimer();
-  //only measure the first few time steps
-  if(_iterationCounter/2 <=3) {
-    setTimePerTimeStep(_timeStepWatch.getCalendarTime());
-  }
+//  static int timestep_cnt = 0; //skip first
+//  if (_isSwitchedOn) {
+//    if(timestep_cnt>0) {
+//
+      if(_iterationCounter%2 !=0) {
+        _iterationCounter++;
+        return;
+      }
+//
+//      _timeStepWatch.stopTimer();
+//
+//       //only measure the first few time steps
+//       if(timestep_cnt <=5) {
+//         setTimePerTimeStep(_timeStepWatch.getCalendarTime());
+//       }
+//    }
+//    timestep_cnt++;
+//  }
 
 #if !defined(AnalyseWaitingTimes)
   _currentAccumulatedWorkerTime = 0;
