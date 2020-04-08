@@ -41,6 +41,7 @@ void NoiseGenerationStrategyChaseVictim::generateNoise(int rank, std::chrono::sy
   pid_t pid = getpid();
   static int cnt = 0;
 
+#if defined(DistributedOffloading)
   static bool triggeredVictim = false;
 
   static const int kRecover = 10;
@@ -66,12 +67,15 @@ void NoiseGenerationStrategyChaseVictim::generateNoise(int rank, std::chrono::sy
   }
 
   cnt++;
+#else
+  //todo
+#endif
 }
 
 void NoiseGenerationStrategyChaseVictim::generateNoiseSTP(int rank, std::chrono::system_clock::time_point timestamp) {
 
-  int nranks = tarch::parallel::Node::getInstance().getNumberOfNodes();
-
+/*  int nranks = tarch::parallel::Node::getInstance().getNumberOfNodes();
+#if defined(DistributedOffloading)
   if( OffloadingManager::getInstance().isVictim()) {
     double timePerSTP = exahype::offloading::OffloadingAnalyser::getInstance().getTimePerSTP();
     double timeToWait = timePerSTP*_factor*1e06;
@@ -83,7 +87,9 @@ void NoiseGenerationStrategyChaseVictim::generateNoiseSTP(int rank, std::chrono:
 
     logInfo("generateNoiseSTP()", "slept "<<std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now()-timestamp).count()<<std::endl);
   }
-
+#else
+  //todo
+#endif */
 }
 
 } /* namespace offloading */

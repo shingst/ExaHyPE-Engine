@@ -925,7 +925,7 @@ void exahype::runners::Runner::initHPCEnvironment() {
   //
   #ifdef USE_ITAC
   int ierr=0;
-  ierr=VT_funcdef("FusedTimeStep::noiseHandle"                                , VT_NOCLASS, &exahype::mappings::FusedTimeStep::noiseHandle                              ); assertion(ierr==0);
+  ierr=VT_funcdef("FusedTimeStep::noiseHandle"                            , VT_NOCLASS, &exahype::mappings::FusedTimeStep::noiseHandle                              ); assertion(ierr==0);
   ierr=VT_funcdef("Empty::iterationHandle"                                , VT_NOCLASS, &exahype::mappings::Empty::iterationHandle                              ); assertion(ierr==0);
   ierr=VT_funcdef("Solver::waitUntilCompletedLastStepHandle"              , VT_NOCLASS, &exahype::solvers::Solver::waitUntilCompletedLastStepHandle             ); assertion(ierr==0);
   ierr=VT_funcdef("Solver::ensureAllJobsHaveTerminatedHandle"             , VT_NOCLASS, &exahype::solvers::Solver::ensureAllJobsHaveTerminatedHandle            ); assertion(ierr==0);
@@ -1028,17 +1028,6 @@ int exahype::runners::Runner::run() {
     if ( _parser.isValid() )
       initSharedMemoryConfiguration();
 
-/*    #if defined(DistributedOffloading)
-    for (auto* solver : exahype::solvers::RegisteredSolvers) {
-      if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
-        static_cast<exahype::solvers::ADERDGSolver*>(solver)->startOffloadingManager();
-      }
-      if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->startOffloadingManager();
-      }
-    } 
-    #endif
-*/
     if ( _parser.isValid() )
       initDataCompression();
     if ( _parser.isValid() )
@@ -1097,10 +1086,6 @@ int exahype::runners::Runner::run() {
   exahype::offloading::JobTableStatistics::getInstance().printStatistics();
 #endif
 
-//  exahype::offloading::OffloadingProfiler::getInstance().endPhase();
-//  logInfo("shutdownDistributedMemoryConfiguration()","ended profiling phase");
-//  exahype::offloading::OffloadingProfiler::getInstance().printStatistics();
-//  logInfo("shutdownDistributedMemoryConfiguration()","printed stats");
 #endif
 
 #if defined(MemoryMonitoring) && defined(MemoryMonitoringTrack)
@@ -1320,14 +1305,6 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
         solvers::Solver::getMinTimeStampOfAllSolvers() < simulationEndTime         &&
         timeStep < simulationTimeSteps
     ) {
-
-#ifdef USE_ITAC
-      if(timeStep>18 && timeStep<21) {
-         VT_traceon(); // turn ITAC tracing off during mesh refinement; is switched on again in mapping Prediction
-      }
-      else 
-         VT_traceoff();
-#endif
 
       bool plot = exahype::plotters::checkWhetherPlotterBecomesActive(
           solvers::Solver::getMinTimeStampOfAllSolvers()); // has no side effects
