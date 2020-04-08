@@ -76,7 +76,7 @@
 
 #include "peano/datatraversal/TaskSet.h"
 
-#ifdef TMPI
+#if defined(TMPI) || defined(TaskSharing)
 #include "teaMPI.h"
 #endif
 
@@ -95,7 +95,6 @@
 #include "VT.h"
 #endif
 
-
 #include "exahype/offloading/OffloadingAnalyser.h"
 
 #if defined(DistributedOffloading)
@@ -111,10 +110,6 @@
 
 #include "exahype/offloading/OffloadingProfiler.h"
 
-
-#if defined(TaskSharing)
-#include "teaMPI.h"
-#endif
 #endif
 
 #if defined(TMPI_Heartbeats)
@@ -378,8 +373,6 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
         logWarning("initDistributedMemoryConfiguration()", "ranks are not allowed to skip any reduction (might harm performance). Use optimisation section to switch feature on" );
       }
     }
-
-
     tarch::parallel::NodePool::getInstance().waitForAllNodesToBecomeIdle();
   }
 
@@ -923,10 +916,8 @@ void exahype::runners::Runner::initHPCEnvironment() {
 
   #if defined(GenerateNoise)
   exahype::offloading::NoiseGenerator::getInstance().setStrategy(new exahype::offloading::NoiseGenerationStrategyChaseVictim(
-		  	  	  	  	  	  	  	  	  	  	  	  	  	  	 _parser.getNoiseGenerationRRFrequency(),
-																 _parser.getNoiseGenerationFactor()
-  	  	  	  	  	  	  	  	  	  	  	  	  	  	  	  	 )
-  	  	  	  	  	  	  	  	  	  	  	  	  	  	  	  	 );
+																 _parser.getNoiseGenerationFactor(),
+																 _parser.getNoiseBaseTime()));
   #endif
   //
   // Configure ITAC profiling

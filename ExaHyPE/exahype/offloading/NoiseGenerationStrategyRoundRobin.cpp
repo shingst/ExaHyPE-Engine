@@ -53,14 +53,14 @@ void NoiseGenerationStrategyRoundRobin::generateNoise(int rank, std::chrono::sys
   }
   cnt = cnt + 1;
   if(cnt==_frequency) {
-	  phase_cnt = (phase_cnt+1) % nranks;
-	  cnt = 0;
+    phase_cnt = (phase_cnt+1) % nranks;
+    cnt = 0;
   }
-  //usleep(10000000);
 }
 
 
 void NoiseGenerationStrategyRoundRobin::generateNoiseSTP(int rank, std::chrono::system_clock::time_point timestamp) {}
-
+  //Todo: nothing here yet
 } /* namespace offloading */
+
 } /* namespace exahype */

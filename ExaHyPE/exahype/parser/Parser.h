@@ -599,8 +599,19 @@ class exahype::parser::Parser {
 
   std::string getMemoryStatsOutputDir() const;
 
+  /**
+   * Returns number of steps between switching to next noisy rank for round-robin noise generation
+   * strategy.
+   */
   int getNoiseGenerationRRFrequency() const;
+  /**
+   * Returns a factor that determines the strength of the noise.
+   */
   double getNoiseGenerationFactor() const;
+  /**
+   * Base time a rank is sleeping for "chase victim" noise generation strategy.
+   */
+  double getNoiseBaseTime() const;
 
   /**
    * The profiling target.

@@ -198,24 +198,10 @@ void exahype::offloading::OffloadingAnalyser::endIteration(double numberOfInnerL
   exahype::offloading::OffloadingManager::getInstance().printBlacklist();
 #endif
 
-//  static int timestep_cnt = 0; //skip first
-//  if (_isSwitchedOn) {
-//    if(timestep_cnt>0) {
-//
-      if(_iterationCounter%2 !=0) {
-        _iterationCounter++;
-        return;
-      }
-//
-//      _timeStepWatch.stopTimer();
-//
-//       //only measure the first few time steps
-//       if(timestep_cnt <=5) {
-//         setTimePerTimeStep(_timeStepWatch.getCalendarTime());
-//       }
-//    }
-//    timestep_cnt++;
-//  }
+  if(_iterationCounter%2 !=0) {
+    _iterationCounter++;
+    return;
+  }
 
 #if !defined(AnalyseWaitingTimes)
   _currentAccumulatedWorkerTime = 0;

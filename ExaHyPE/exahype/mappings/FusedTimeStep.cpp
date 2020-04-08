@@ -175,7 +175,6 @@ void exahype::mappings::FusedTimeStep::beginIteration(
   }
 
 #ifdef Parallel
-
 #ifdef DistributedOffloading
     static bool isFirst = true;
     isFirst = false;
@@ -200,22 +199,7 @@ void exahype::mappings::FusedTimeStep::beginIteration(
   if(issuePredictionJobsInThisIteration()) {
     exahype::offloading::StaticDistributor::getInstance().resetRemainingTasksToOffload();
   }
-  //exahype::offloading::OffloadingAnalyser::getInstance().beginIteration();
-#elif defined(OffloadingStrategyAggressive) || defined(OffloadingStrategyAggressiveHybrid) || defined(OffloadingStrategyAggressiveDiffusive)
-  //exahype::offloading::OffloadingAnalyser::getInstance().beginIteration();
-#endif 
 #endif
-
-#if defined(GenerateNoise)
-  if(issuePredictionJobsInThisIteration()) {
-#ifdef USE_ITAC
-  VT_begin(noiseHandle);
-#endif
-     exahype::offloading::NoiseGenerator::getInstance().generateNoise();
-#ifdef USE_ITAC
-     VT_end(noiseHandle);
-#endif
-  }
 #endif
 
   // ensure reductions are inititated from worker side
@@ -228,6 +212,18 @@ void exahype::mappings::FusedTimeStep::beginIteration(
 void exahype::mappings::FusedTimeStep::endIteration(
     exahype::State& state) {
   logTraceInWith1Argument("endIteration(State)", state);
+
+#if defined(GenerateNoise)
+  if(issuePredictionJobsInThisIteration()) {
+#ifdef USE_ITAC
+    VT_begin(noiseHandle);
+#endif
+    exahype::offloading::NoiseGenerator::getInstance().generateNoise();
+#ifdef USE_ITAC
+    VT_end(noiseHandle);
+#endif
+  }
+#endif
 
   if ( sendOutRiemannDataInThisIteration() ) {
      exahype::plotters::finishedPlotting();
@@ -252,7 +248,6 @@ void exahype::mappings::FusedTimeStep::endIteration(
 
 #if defined(Parallel) && defined(DistributedOffloading)
 #if defined(OffloadingStrategyAggressive) || defined(OffloadingStrategyAggressiveHybrid) || defined(OffloadingStrategyAggressiveDiffusive) || defined(OffloadingStrategyStaticHardcoded)
-  //exahype::offloading::OffloadingAnalyser::getInstance().endIteration();
 #ifdef OffloadingUseProgressTask
   if(issuePredictionJobsInThisIteration() ) { 
     exahype::offloading::OffloadingManager::getInstance().notifyAllVictimsSendCompletedIfNotNotified();

@@ -232,8 +232,14 @@ class exahype::offloading::AggressiveHybridDistributor {
      */
     void getAllVictimRanks(std::vector<int>& victimRanks);
 
+    /**
+     * Returns current optimal victim
+     */
     int getCurrentOptimalVictim();
 
+    /**
+     * Returns current critical rank.
+     */
     int getCurrentCriticalRank();
  
     /**

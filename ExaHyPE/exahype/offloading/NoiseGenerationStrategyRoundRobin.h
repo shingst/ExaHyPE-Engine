@@ -20,6 +20,11 @@
 namespace exahype {
 namespace offloading {
 
+/**
+ * Implements a noise generation strategy where noisy ranks
+ * are selected in a round-robin fashion.
+ */
+
 class NoiseGenerationStrategyRoundRobin : public NoiseGenerationStrategy {
 public:
   static tarch::logging::Log     _log;
@@ -30,7 +35,9 @@ public:
   virtual void generateNoise(int rank, std::chrono::system_clock::time_point timestamp);
   virtual void generateNoiseSTP(int rank, std::chrono::system_clock::time_point timestamp);
 private:
+  // the number k of steps after which the next noisy rank is selected
   int _frequency;
+  // factor determines the strength of the noise
   double _factor;
 };
 

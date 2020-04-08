@@ -1204,6 +1204,9 @@ double exahype::parser::Parser::getNoiseGenerationFactor() const{
   return getDoubleFromPath("/noise_generator/noise_factor", 0.5, isOptional);
 }
 
+double exahype::parser::Parser::getNoiseBaseTime() const{
+  return getDoubleFromPath("/noise_generator/noise_base_time", 1, isOptional);
+}
 
 void exahype::parser::Parser::checkSolverConsistency(int solverNumber) const {
   assertion1(solverNumber <

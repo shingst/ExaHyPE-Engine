@@ -19,11 +19,19 @@
 namespace exahype {
 namespace offloading {
 
+/**
+ * Generic strategy pattern for noise generation. A specific noise
+ * generation strategy needs to implement this interface. The
+ * noise generator context class will call the contained
+ * noise generation methods during the simulation.
+ */
+
 class NoiseGenerationStrategy {
 public:
-
+    // generates noise at the beginning of a time step
 	virtual void generateNoise(int rank, std::chrono::system_clock::time_point timestamp ) = 0;
 
+	//generates noise when executing STPs
 	virtual void generateNoiseSTP(int rank, std::chrono::system_clock::time_point timestamp ) = 0;
 };
 

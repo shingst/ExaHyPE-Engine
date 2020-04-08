@@ -20,19 +20,25 @@
 namespace exahype {
 namespace offloading {
 
+/**
+ * Implements a noise generation strategy where victim ranks are disturbed.
+ */
 class NoiseGenerationStrategyChaseVictim : public NoiseGenerationStrategy {
+
 public:
   static tarch::logging::Log     _log;
+
   NoiseGenerationStrategyChaseVictim();
-  NoiseGenerationStrategyChaseVictim(int frequency, double factor);
+  NoiseGenerationStrategyChaseVictim(double factor, double baseNoise);
+
   virtual ~NoiseGenerationStrategyChaseVictim();
 
   virtual void generateNoise(int rank, std::chrono::system_clock::time_point timestamp);
-
   virtual void generateNoiseSTP(int rank, std::chrono::system_clock::time_point timestamp);
 private:
-  int _frequency;
+
   double _factor;
+  double _baseNoise;
 };
 
 } /* namespace offloading */

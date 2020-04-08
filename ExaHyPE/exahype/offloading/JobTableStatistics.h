@@ -20,41 +20,44 @@
 namespace exahype {
 namespace offloading {
 
+/**
+ * Gathers statistics about job execution and job migration at runtime (only with local recompute or task sharing).
+ */
 class JobTableStatistics {
 
 private:
 
-    static tarch::logging::Log _log;
+  static tarch::logging::Log _log;
 
-	std::atomic<int> _spawnedTasks;
-	std::atomic<int> _executedTasks;
-	std::atomic<int> _savedTasks;
-	std::atomic<int> _receivedTasks;
-	std::atomic<int> _sentTasks;
-	std::atomic<int> _sentKeys;
-	std::atomic<int> _receivedKeys;
-    std::atomic<int> _declinedTasks;
-    std::atomic<int> _lateTasks;
-    std::atomic<int> _recomputedTasks;
+  std::atomic<int> _spawnedTasks;
+  std::atomic<int> _executedTasks;
+  std::atomic<int> _savedTasks;
+  std::atomic<int> _receivedTasks;
+  std::atomic<int> _sentTasks;
+  std::atomic<int> _sentKeys;
+  std::atomic<int> _receivedKeys;
+  std::atomic<int> _declinedTasks;
+  std::atomic<int> _lateTasks;
+  std::atomic<int> _recomputedTasks;
 
-	JobTableStatistics();
-	virtual ~JobTableStatistics();
+  JobTableStatistics();
+  virtual ~JobTableStatistics();
 public:
 
-    static JobTableStatistics& getInstance();
+  static JobTableStatistics& getInstance();
 
-    void printStatistics();
+  void printStatistics();
 
-    void notifyLateTask();
-    void notifyDeclinedTask();
-    void notifyReceivedTask();
-    void notifySentTask();
-    void notifySentKey();
-    void notifyReceivedKey();
-    void notifySavedTask();
-    void notifySpawnedTask();
-    void notifyExecutedTask();
-    void notifyRecomputedTask();
+  void notifyLateTask();
+  void notifyDeclinedTask();
+  void notifyReceivedTask();
+  void notifySentTask();
+  void notifySentKey();
+  void notifyReceivedKey();
+  void notifySavedTask();
+  void notifySpawnedTask();
+  void notifyExecutedTask();
+  void notifyRecomputedTask();
 };
 
 } /* namespace offloading */
