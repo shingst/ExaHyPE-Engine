@@ -1197,7 +1197,7 @@ private:
       bool run(bool calledFromMaster) override;
   };
 
-#if defined(TaskSharing) || defined(OffloadingLocalRecompute) //Todo(Philipp): do we still need this for local recompute?
+#if defined(TaskSharing) // || defined(OffloadingLocalRecompute) //Todo(Philipp): do we still need this for local recompute?
 
   static int REQUEST_JOB_CANCEL;
   static int REQUEST_JOB_ACK;

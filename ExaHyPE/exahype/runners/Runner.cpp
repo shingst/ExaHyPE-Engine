@@ -1068,7 +1068,7 @@ int exahype::runners::Runner::run() {
 #if defined(TaskSharing)
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->finishOutstandingInterTeamCommunication();
 #endif
-#if defined(TaskSharing) || defined(OffloadingLocalRecompute)
+#if defined(TaskSharing)
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->cleanUpStaleTaskOutcomes(true);
 #endif
 #endif

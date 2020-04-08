@@ -95,6 +95,7 @@ int exahype::solvers::ADERDGSolver::mergeNeighboursHandle                 = 0;
 int exahype::solvers::ADERDGSolver::prolongateFaceDataToVirtualCellHandle = 0;
 int exahype::solvers::ADERDGSolver::restrictToTopMostParentHandle         = 0;
 
+//Todo(Philipp) : remove unused
 int exahype::solvers::ADERDGSolver::event_stp = 0;
 int exahype::solvers::ADERDGSolver::event_stp_remote = 0;
 int exahype::solvers::ADERDGSolver::event_stp_local_replica = 0;
@@ -492,6 +493,8 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
 
 #if defined(DistributedOffloading) && (defined(TaskSharing) || defined(OffloadingLocalRecompute))
   exahype::offloading::JobTableStatistics::getInstance().printStatistics();
+#endif
+#if defined(DistributedOffloading) && defined(TaskSharing)
   cleanUpStaleTaskOutcomes();
 #endif
 }
@@ -2473,9 +2476,12 @@ void exahype::solvers::ADERDGSolver::toString (std::ostream& out) const {
   out <<  ")";
 }
 
+///////////////////////////////////
+// DISTRIBUTED OFFLOADING
+///////////////////////////////////
 #if defined(DistributedOffloading)
 
-#if defined (TaskSharing) || defined(OffloadingLocalRecompute)
+#if defined (TaskSharing) //|| defined(OffloadingLocalRecompute)
 void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
   int unsafe_size = _allocatedJobs.unsafe_size();
   assertion(unsafe_size>=0);
