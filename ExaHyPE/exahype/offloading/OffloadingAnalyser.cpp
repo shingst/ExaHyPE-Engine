@@ -307,6 +307,13 @@ void exahype::offloading::OffloadingAnalyser::endToReceiveDataFromWorker( int fr
   }
 }
 
+void exahype::offloading::OffloadingAnalyser::resetMeasurements() {
+  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
+
+  for(int i=0; i<nnodes; i++)
+     //_waitForOtherRank.push_back(tarch::timing::GlidingAverageMeasurement(0.1,16));
+     _waitForOtherRank[i].erase();
+}
 
 void exahype::offloading::OffloadingAnalyser::beginToReceiveDataFromMaster(int master) {
   //if (_isSwitchedOn && !_waitForMasterDataWatch.isOn()) {

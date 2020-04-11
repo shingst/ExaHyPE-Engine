@@ -87,6 +87,8 @@ class exahype::offloading::OffloadingAnalyser : public peano::performanceanalysi
     virtual void beginIteration();
     virtual void endIteration(double numberOfInnerLeafCells, double numberOfOuterLeafCells, double numberOfInnerCells, double numberOfOuterCells, double numberOfLocalCells, double numberOfLocalVertices);
 
+    void resetMeasurements();
+
     virtual void enterCentralElementOfEnclosingSpacetree();
     virtual void leaveCentralElementOfEnclosingSpacetree();
 

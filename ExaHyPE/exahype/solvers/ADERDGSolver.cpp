@@ -3915,15 +3915,13 @@ tarch::multicore::jobs::Job* exahype::solvers::ADERDGSolver::grabRecomputeJobFor
 	 job = a_cellDescToJob->second;
      _mapCellDescToRecompJob.erase(a_cellDescToJob);
   }
-
-  //assert(found);
   return job;
 }
 
 void exahype::solvers::ADERDGSolver::addRecomputeJobForCellDescription(tarch::multicore::jobs::Job* job, const CellDescription* cellDescription) {
   tbb::concurrent_hash_map<const CellDescription*, tarch::multicore::jobs::Job* >::accessor a_cellDescToJob;
   bool found = _mapCellDescToRecompJob.find(a_cellDescToJob, static_cast<const CellDescription*>(cellDescription));
-  assert(!found);
+  assertion(!found);
   _mapCellDescToRecompJob.insert(std::make_pair(cellDescription, job));
 }
 
@@ -4004,45 +4002,9 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob* exahype::solvers::ADERD
       tag);
 }
 
-#ifdef UseMPIOffloading
-
-void exahype::solvers::ADERDGSolver::sendMigratablePredictionJobOffload(
-  double *luh,
-  double *lduh,
-  double *lQhbnd,
-  double *lFhbnd,
-  int dest,
-  int tag,
-  MPI_Comm comm,
-  double *metadata) {
-
-  int i = 0;
-  int ierr;
-  //MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
-
-  if(metadata != nullptr) {
-    ierr = MPI_Send_offload(metadata, 2*DIMENSIONS+3, MPI_DOUBLE, dest, tag, comm);
-    assertion(ierr==MPI_SUCCESS);
-  }
-
-  assertion(luh!=NULL);
-  ierr = MPI_Send_offload(luh, getDataPerCell(), MPI_DOUBLE, dest, tag, comm);
-  assertion(ierr==MPI_SUCCESS);
-
-  assertion(lduh!=NULL);
-  ierr = MPI_Send_offload(lduh, getUpdateSize(), MPI_DOUBLE, dest, tag, comm);
-  assertion(ierr==MPI_SUCCESS);
-
-  assertion(lQhbnd!=NULL);
-  ierr = MPI_Send_offload(lQhbnd, getBndTotalSize(), MPI_DOUBLE, dest, tag, comm);
-  assertion(ierr==MPI_SUCCESS);
-
-  assertion(lFhbnd!=NULL);
-  ierr = MPI_Send_offload(lFhbnd, getBndFluxTotalSize(), MPI_DOUBLE, dest, tag, comm);
-  assertion(ierr==MPI_SUCCESS);
-
-};
-#endif
+///////////////////////////////////
+// COMMUNICATION_ROUTINES
+///////////////////////////////////
 
 void exahype::solvers::ADERDGSolver::isendMigratablePredictionJob(
   double *luh,
@@ -4203,6 +4165,43 @@ void exahype::solvers::ADERDGSolver::recvMigratablePredictionJobOffload(
   assertion(ierr==MPI_SUCCESS);
 
 };
+
+void exahype::solvers::ADERDGSolver::sendMigratablePredictionJobOffload(
+  double *luh,
+  double *lduh,
+  double *lQhbnd,
+  double *lFhbnd,
+  int dest,
+  int tag,
+  MPI_Comm comm,
+  double *metadata) {
+
+  int i = 0;
+  int ierr;
+  //MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
+
+  if(metadata != nullptr) {
+    ierr = MPI_Send_offload(metadata, 2*DIMENSIONS+3, MPI_DOUBLE, dest, tag, comm);
+    assertion(ierr==MPI_SUCCESS);
+  }
+
+  assertion(luh!=NULL);
+  ierr = MPI_Send_offload(luh, getDataPerCell(), MPI_DOUBLE, dest, tag, comm);
+  assertion(ierr==MPI_SUCCESS);
+
+  assertion(lduh!=NULL);
+  ierr = MPI_Send_offload(lduh, getUpdateSize(), MPI_DOUBLE, dest, tag, comm);
+  assertion(ierr==MPI_SUCCESS);
+
+  assertion(lQhbnd!=NULL);
+  ierr = MPI_Send_offload(lQhbnd, getBndTotalSize(), MPI_DOUBLE, dest, tag, comm);
+  assertion(ierr==MPI_SUCCESS);
+
+  assertion(lFhbnd!=NULL);
+  ierr = MPI_Send_offload(lFhbnd, getBndFluxTotalSize(), MPI_DOUBLE, dest, tag, comm);
+  assertion(ierr==MPI_SUCCESS);
+
+};
 #endif
 
 #endif
@@ -4222,7 +4221,6 @@ exahype::solvers::ADERDGSolver::CompressionJob::CompressionJob(
   }
 }
 
-
 bool exahype::solvers::ADERDGSolver::CompressionJob::run(bool runOnMasterThread) {
   _solver.determineUnknownAverages(_cellDescription);
   _solver.computeHierarchicalTransform(_cellDescription,-1.0);
@@ -4237,7 +4235,6 @@ bool exahype::solvers::ADERDGSolver::CompressionJob::run(bool runOnMasterThread)
   }
   return false;
 }
-
 
 void exahype::solvers::ADERDGSolver::compress( CellDescription& cellDescription, const bool isSkeletonCell ) const {
   assertion1( cellDescription.getCompressionState() ==  CellDescription::Uncompressed, cellDescription.toString() );
@@ -4262,7 +4259,6 @@ void exahype::solvers::ADERDGSolver::compress( CellDescription& cellDescription,
     }
   }
 }
-
 
 void exahype::solvers::ADERDGSolver::uncompress(CellDescription& cellDescription) const {
   #ifdef SharedMemoryParallelisation
@@ -4294,7 +4290,6 @@ void exahype::solvers::ADERDGSolver::uncompress(CellDescription& cellDescription
     lock.free();
   }
 }
-
 
 void exahype::solvers::ADERDGSolver::determineUnknownAverages(
   CellDescription& cellDescription) const {
@@ -4372,7 +4367,6 @@ void exahype::solvers::ADERDGSolver::determineUnknownAverages(
     }
   }
 }
-
 
 void exahype::solvers::ADERDGSolver::computeHierarchicalTransform(
     CellDescription& cellDescription, double sign) const {
@@ -4697,7 +4691,6 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
     true
   );
 }
-
 
 void exahype::solvers::ADERDGSolver::pullUnknownsFromByteStream(
     CellDescription& cellDescription) const {

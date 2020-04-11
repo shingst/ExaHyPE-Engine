@@ -210,6 +210,8 @@ class exahype::offloading::AggressiveHybridDistributor {
      */
     void resetRemainingTasksToOffload();
 
+    void resetTasksToOffload();
+
     /**
      * Print some useful statistics for offloading.
      */

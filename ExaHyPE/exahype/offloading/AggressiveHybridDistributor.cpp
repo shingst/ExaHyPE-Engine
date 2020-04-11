@@ -316,6 +316,9 @@ void exahype::offloading::AggressiveHybridDistributor::configure(
 }
 
 void exahype::offloading::AggressiveHybridDistributor::printOffloadingStatistics() {
+
+  if(!_isEnabled) return;
+
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();
 
@@ -343,6 +346,16 @@ void exahype::offloading::AggressiveHybridDistributor::resetRemainingTasksToOffl
     if(i==myRank)
       continue;
     _remainingTasksToOffload[i] = _tasksToOffload[i];
+  }
+}
+
+void exahype::offloading::AggressiveHybridDistributor::resetTasksToOffload() {
+  
+  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
+  int myRank = tarch::parallel::Node::getInstance().getRank();
+
+  for(int i=0; i<nnodes; i++) {
+    _tasksToOffload[i] = 0;
   }
 }
 
