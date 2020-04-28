@@ -203,19 +203,34 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   constexpr double* PSderivatives = nullptr;
   {% endif %}
   {% endif %}{# useSplitCKScalar or useSplitCKVect #}
-  {% else %}{# nonlinear case #}
+  {% else %}{#
+
+  nonlinear case 
+
+#}
   double* lQi = memory + {{optNamespace}}::getlQiShift();
   double* lQhi = memory + {{optNamespace}}::getlQhiShift();
+  {% if predictorRecompute %}
+  {% if numberOfMaterialParameters > 0 %}
+  double* lPi  = memory + {{optNamespace}}::getlPiShift();
+  {% else %}
+  constexpr double* lPi = nullptr;
+  {% endif %}
+  {% endif %}
   double* rhs = memory + {{optNamespace}}::getrhsShift(); //same size as lQi
   {% if useFlux %}
+  {% if not predictorRecompute %}
   double* lFi = memory + {{optNamespace}}::getlFiShift();
+  {% endif %}
   double* lFhi = memory + {{optNamespace}}::getlFhiShift();
   {% else %}
   constexpr double* lFi = nullptr;
   constexpr double* lFhi = nullptr;
   {% endif %}
   {% if useNCP or useSource %}
+  {% if not predictorRecompute %}
   double* lSi = memory + {{optNamespace}}::getlSiShift();
+  {% endif %}
   double* lShi = memory + {{optNamespace}}::getlShiShift();
   {% else %}
   constexpr double* lSi = nullptr;
@@ -226,10 +241,10 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   {% else %}
   constexpr double* gradQ = nullptr;
   {% endif %}
-    {% if useViscousFlux %}
+    {% if useViscousFlux and not predictorRecompute %}
   double* gradQAvg = memory + {{optNamespace}}::getgradQAvgShift();
     {% else %}
-  double* gradQAvg = nullptr;
+  constexpr double* gradQAvg = nullptr;
     {% endif %}
   {% endif %}{# if case useNCP or useViscousFlux #}
 
@@ -261,7 +276,11 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   {% endif %}
 
   {% else %}{# case non linear #}
+  {% if predictorRecompute %}
+  const int picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), update, lQhbnd, lGradQhbnd, lFhbnd, lQi, rhs, lPi, lQhi, lFhi, lShi, gradQ, luh, 1./cellSize[0] /*inverseDx*/, dt);
+  {% else %}
   const int picardIt = {{optNamespace}}::fusedSpaceTimePredictorVolumeIntegral(*static_cast<{{solver}}*>(this), update, lQhbnd, lGradQhbnd, lFhbnd, lQi, rhs, lFi, lSi, lQhi, lFhi, lShi, gradQ, gradQAvg, luh, 1./cellSize[0] /*inverseDx*/, dt);
+  {% endif %}
   {% endif %}
 
   // this switch should probably moved into the fusedSpaceTimePredictorVolumeIntegral kernel

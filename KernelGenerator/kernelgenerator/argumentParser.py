@@ -77,6 +77,7 @@ class ArgumentParser:
         ("useSplitCKScalar",    ArgType.OptionalBool,    "use split Cauchy–Kowalevski formulation (linear only)"),
         ("useSplitCKVect",      ArgType.OptionalBool,    "use split Cauchy–Kowalevski formulation with vect PDE (linear only)"),
         ("useGaussLobatto",     ArgType.OptionalBool,    "use Gauss Lobatto Quadrature instead of Gauss Legendre"),
+        ("predictorRecompute",  ArgType.OptionalBool,    "predictor step will recompute the PDE instead of relying on stored values from the picard loop (nonlinear only)"),
         ("tempVarsOnStack",     ArgType.OptionalBool,    "put the big scratch arrays on the stack instead of the heap (you can use ulimit -s to increase the stack size)")
     ]
     

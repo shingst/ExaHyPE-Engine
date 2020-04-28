@@ -64,6 +64,7 @@ class KernelgeneratorModel:
                 "useSplitCKScalar"   : solverContext["useSplitCKScalar"],
                 "useSplitCKVect"     : solverContext["useSplitCKVect"],
                 "useGaussLobatto"    : solverContext["basis"] == "lobatto",
+                "predictorRecompute" : solverContext["predictorRecompute"],
                 # Optional int parameters (may set redundant flags)
                 "usePointSources"    : solverContext["numberOfPointSources"] if solverContext["numberOfPointSources"] > 0 else -1,
                 "tempVarsOnStack"    : solverContext["tempVarsOnStack"]

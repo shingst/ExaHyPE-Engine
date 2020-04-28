@@ -222,6 +222,7 @@ class SolverController:
         context["useSplitCKVect"]          = kernel.get("space_time_predictor",{}).get("split_ck","disabled") == "vectorised"
         context["noTimeAveraging"]         = kernel.get("space_time_predictor",{}).get("notimeavg",False)
         context["noTimeAveraging_s"]       = "true" if kernel.get("space_time_predictor",{}).get("notimeavg",False) else "false"
+        context["predictorRecompute"]      = kernel.get("space_time_predictor",{}).get("predictor_recompute",False)
         context.update(self.buildKernelTermsContext(kernel["terms"]))
         return context
 
