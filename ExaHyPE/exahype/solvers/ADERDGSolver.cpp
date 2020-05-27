@@ -3154,11 +3154,11 @@ void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahyp
     AllocatedSTPsReceive--;
   }
   else {
-    JobTableEntry entry {data, ReplicationStatus::received};
+    JobTableEntry entry {data, JobOutcomeStatus::received};
     tbb::concurrent_hash_map<JobTableKey, JobTableEntry>::accessor a_jobToData;
     bool found = solver->_jobDatabase.find(a_jobToData, key);
     if (found) {
-      a_jobToData->second.status = ReplicationStatus::received;
+      a_jobToData->second.status = JobOutcomeStatus::received;
     a_jobToData.release();
   }
   else{
