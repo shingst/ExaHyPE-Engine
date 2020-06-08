@@ -1,0 +1,108 @@
+{
+  "project_name": "ElasticWave",
+  "paths": {
+    "peano_kernel_path": "./Peano",
+    "exahype_path": "./ExaHyPE",
+    "output_directory": "./ApplicationExamples/AdjointTest2D"
+  },
+  "architecture": "noarch",
+  "computational_domain": {
+    "dimension": 2,
+    "end_time": 1.0,
+    "offset": [
+      0.0,
+      0.0
+    ],
+    "width": [
+      10.0,
+      10.0
+    ]
+  },
+  "solvers": [
+    {
+      "type": "ADER-DG",
+      "name": "MyElasticWaveSolver",
+      "order": 3,
+      "maximum_mesh_size": 0.5,
+      "time_stepping": "globalfixed",
+      "aderdg_kernel": {
+        "language": "C",
+        "nonlinear": false,
+        "terms": [
+          "flux",
+          "ncp",
+          "point_sources"
+        ],
+        "space_time_predictor": {},
+        "optimised_terms": [],
+        "optimised_kernel_debugging": [],
+        "implementation": "generic"
+      },
+      "point_sources": 1,
+      "variables": [
+        {
+          "name": "v",
+          "multiplicity": 2
+        },
+        {
+          "name": "sigma",
+          "multiplicity": 3
+        },
+        {
+          "name": "lambda",
+          "multiplicity": 1
+        },
+        {
+          "name": "mu",
+          "multiplicity": 1
+        }
+      ],
+      "plotters": [
+        {
+          "type": "vtu::Cartesian::cells::ascii",
+          "name": "ConservedWriter",
+          "time": 0.0,
+          "repeat": 0.05,
+          "output": "./output/plot",
+          "variables": 7
+        },
+        {
+          "type": "probe::ascii",
+          "name": "ProbeWriter",
+          "time": 0.0,
+          "repeat": 0.05,
+          "output": "./output/seismogram-1-",
+          "variables": 5,
+          "select": {
+            "x": 0.2,
+            "y": 9.99
+          }
+        },
+        {
+          "type": "probe::ascii",
+          "name": "ProbeWriter",
+          "time": 0.0,
+          "repeat": 0.05,
+          "output": "./output/seismogram-2-",
+          "variables": 5,
+          "select": {
+            "x": 0.5,
+            "y": 9.99
+          }
+        },
+        {
+          "type": "probe::ascii",
+          "name": "ProbeWriter",
+          "time": 0.0,
+          "repeat": 0.05,
+          "output": "./output/seismogram-3-",
+          "variables": 5,
+          "select": {
+            "x": 0.8,
+            "y": 9.99
+          }
+        }
+      ]
+    }
+  ]
+}
