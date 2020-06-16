@@ -61,8 +61,7 @@ class KernelgeneratorModel:
                 "useMaterialParam"   : solverContext["useMaterialParameters"],
                 "useMaterialParamVect" : solverContext["useMaterialParametersVect"],  #TODO JMG: legacy
                 "useCERKGuess"       : solverContext["useCERK"],
-                "useSplitCKScalar"   : solverContext["useSplitCKScalar"],  #TODO JMG: legacy, merge with vect and use usePDEVect
-                "useSplitCKVect"     : solverContext["useSplitCKVect"],    #TODO JMG: legacy, merge with scalar and use usePDEVect
+                "useSplitCK"         : solverContext["useSplitCK"],
                 "useGaussLobatto"    : solverContext["basis"] == "lobatto",
                 "predictorRecompute" : solverContext["predictorRecompute"],
                 "useVectPDE"         : solverContext["useVectPDE"],

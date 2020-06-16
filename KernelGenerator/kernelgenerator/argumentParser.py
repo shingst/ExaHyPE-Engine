@@ -74,8 +74,7 @@ class ArgumentParser:
         ("useMaterialParamVect",ArgType.OptionalBool,    "enable vectorized material parameters"), #TODO JMG: legacy, use usePDEVect instead
         ("usePointSources",     ArgType.OptionalInt ,    "enable numberOfPointSources point sources", -1, "numberOfPointSources"),
         ("useCERKGuess",        ArgType.OptionalBool,    "use CERK for SpaceTimePredictor inital guess (nonlinear only)"),
-        ("useSplitCKScalar",    ArgType.OptionalBool,    "use split Cauchy–Kowalevski formulation (linear only)"), #TODO JMG: legacy, merge with vect and use usePDEVect
-        ("useSplitCKVect",      ArgType.OptionalBool,    "use split Cauchy–Kowalevski formulation with vect PDE (linear only)"), #TODO JMG: legacy, merge with scalar and use usePDEVect
+        ("useSplitCK",          ArgType.OptionalBool,    "use split Cauchy–Kowalevski formulation (linear only)"),
         ("useGaussLobatto",     ArgType.OptionalBool,    "use Gauss Lobatto Quadrature instead of Gauss Legendre"),
         ("predictorRecompute",  ArgType.OptionalBool,    "predictor step will recompute the PDE instead of relying on stored values from the picard loop (nonlinear only)"),
         ("useVectPDE",          ArgType.OptionalBool,    "use vectorized PDE terms (applies when present to: Flux, NCP, Source, FusedSource and MaterialParam)"),

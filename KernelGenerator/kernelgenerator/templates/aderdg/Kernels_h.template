@@ -36,7 +36,7 @@ namespace {{namespaceName}} {
     double* restrict lduh,
     double* restrict lQhbnd,
     double* restrict lFhbnd,
-{% if useSplitCKScalar or useSplitCKVect %}
+{% if useSplitCK %}
     double* restrict lQi,
     double* restrict lQiNext,
     double* restrict lPi,   // for NCP or Source
@@ -68,7 +68,7 @@ namespace {{namespaceName}} {
     double* restrict lduh,
     double* restrict lQhbnd,
     double* restrict lFhbnd,
-{% if useSplitCKScalar or useSplitCKVect %}
+{% if useSplitCK %}
     double* restrict lQi,
     double* restrict lQiNext,
     double* restrict lPi,   // for NCP or Source
