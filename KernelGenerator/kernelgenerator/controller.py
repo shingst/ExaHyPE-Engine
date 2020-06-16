@@ -100,6 +100,7 @@ class Controller:
                 "useCERKGuess"          : args["useCERKGuess"],
                 "useSplitCKScalar"      : args["useSplitCKScalar"],
                 "useSplitCKVect"        : args["useSplitCKVect"],
+                "useVectPDE"            : args["useVectPDE"],
                 "predictorRecompute"    : args["predictorRecompute"]
             })
             self.config["useSourceOrNCP"] = self.config["useSource"] or self.config["useNCP"]

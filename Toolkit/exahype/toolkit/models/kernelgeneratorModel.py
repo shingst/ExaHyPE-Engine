@@ -50,21 +50,22 @@ class KernelgeneratorModel:
                 "architecture"       : solverContext["architecture"],
                 # Optional bool parameters (may set redundant flags and default false flag)
                 "useFlux"            : solverContext["useFlux"],
-                "useFluxVect"        : solverContext["useFluxVect"],
+                "useFluxVect"        : solverContext["useFluxVect"], #TODO JMG: legacy, use usePDEVect instead
                 "useViscousFlux"     : solverContext["useViscousFlux"],
                 "useNCP"             : solverContext["useNCP"],
-                "useNCPVect"         : solverContext["useNCPVect"],
+                "useNCPVect"         : solverContext["useNCPVect"], #TODO JMG: legacy, use usePDEVect instead
                 "useSource"          : solverContext["useSource"],
-                "useSourceVect"      : solverContext["useSourceVect"],
+                "useSourceVect"      : solverContext["useSourceVect"],  #TODO JMG: legacy, use usePDEVect instead
                 "useFusedSource"     : solverContext["useFusedSource"],
-                "useFusedSourceVect" : solverContext["useFusedSourceVect"],
+                "useFusedSourceVect" : solverContext["useFusedSourceVect"],  #TODO JMG: legacy, use usePDEVect instead
                 "useMaterialParam"   : solverContext["useMaterialParameters"],
-                "useMaterialParamVect" : solverContext["useMaterialParametersVect"],
+                "useMaterialParamVect" : solverContext["useMaterialParametersVect"],  #TODO JMG: legacy
                 "useCERKGuess"       : solverContext["useCERK"],
-                "useSplitCKScalar"   : solverContext["useSplitCKScalar"],
-                "useSplitCKVect"     : solverContext["useSplitCKVect"],
+                "useSplitCKScalar"   : solverContext["useSplitCKScalar"],  #TODO JMG: legacy, merge with vect and use usePDEVect
+                "useSplitCKVect"     : solverContext["useSplitCKVect"],    #TODO JMG: legacy, merge with scalar and use usePDEVect
                 "useGaussLobatto"    : solverContext["basis"] == "lobatto",
                 "predictorRecompute" : solverContext["predictorRecompute"],
+                "useVectPDE"         : solverContext["useVectPDE"],
                 # Optional int parameters (may set redundant flags)
                 "usePointSources"    : solverContext["numberOfPointSources"] if solverContext["numberOfPointSources"] > 0 else -1,
                 "tempVarsOnStack"    : solverContext["tempVarsOnStack"]
