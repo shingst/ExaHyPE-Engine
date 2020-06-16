@@ -30,6 +30,8 @@ private:
    * See also chapter 7.13.2 in "I do like CFD, VOL.1" by Katate Masatsuka.
    */
   static void entropyWave(const double* const x,double t, double* const Q);
+  // traveling sin waves in x and y directions
+  static void sinWave(const double* const x,double t, double* const Q);
 
   /**
    * Log device

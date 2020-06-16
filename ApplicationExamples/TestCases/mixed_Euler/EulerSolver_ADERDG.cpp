@@ -21,6 +21,7 @@
 #include <string>
 
 #include <math.h>
+#include <cmath> //sin
 
 #include "peano/utils/Loop.h"
 
@@ -162,9 +163,32 @@ void Euler::EulerSolver_ADERDG::entropyWave(const double* const x,double t, doub
   Q[4] = p / (gamma-1)  +  0.5*Q[0] * (v0[0]*v0[0]+v0[1]*v0[1]); // v*v; assumes: v0[2]=0
 }
 
+void Euler::EulerSolver_ADERDG::sinWave(const double* const x,double t, double* const Q) {
+  const double gamma         = 1.4;
+  constexpr double width     = 0.3;
+  constexpr double amplitude = 1.5;
+ 
+  #if DIMENSIONS==2
+  tarch::la::Vector<DIMENSIONS,double> xVec(x[0],x[1]);
+  tarch::la::Vector<DIMENSIONS,double> v0(2.,1.);
+  #else
+  tarch::la::Vector<DIMENSIONS,double> xVec(x[0],x[1],x[2]);
+  tarch::la::Vector<DIMENSIONS,double> v0(2.,1.,0.0);
+  #endif
+
+  Q[0] = 2 + amplitude/4 * sin(10*2*M_PI*(x[0]-v0[0]*t)) * (3+sin(5*2*M_PI*(x[1]-v0[1]*t)))/4;
+  Q[1] = Q[0] * v0[0];
+  Q[2] = Q[0] * v0[1];
+  Q[3] = 0.0;
+  // total energy = internal energy + kinetic energy
+  const double p = 1.;
+  Q[4] = p / (gamma-1)  +  0.5*Q[0] * (v0[0]*v0[0]+v0[1]*v0[1]); // v*v; assumes: v0[2]=0
+}
+
 
 void Euler::EulerSolver_ADERDG::referenceSolution(const double* const x,double t, double* const Q) {
-  entropyWave(x,t,Q);
+  //entropyWave(x,t,Q);
+  sinWave(x,t,Q);
 }
 
 void Euler::EulerSolver_ADERDG::adjustPointSolution(const double* const x,const double t,const double dt, double* const Q) {
