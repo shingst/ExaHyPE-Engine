@@ -296,6 +296,11 @@ class Controller:
         context["linkerFlags"]       = self.spec["linker_flags"]
         context["useSharedMem"]      = "shared_memory" in self.spec;
         context["useDistributedMem"] = "distributed_memory" in self.spec;
+
+        context["useNoiseGenerator"] = False
+        if "noise_generator" in self.spec:
+            context["useNoiseGenerator"] = self.spec["noise_generator"]["enable"]
+
         context["useIpcm"]   = False # TODO
         context["useLikwid"] = False # TODO
         context["likwidInc"] = ""    # TODO
@@ -303,11 +308,13 @@ class Controller:
             context["offloading"]  = self.spec["distributed_memory"]["offloading"]
             context["offloadingProgress"] = self.spec["distributed_memory"]["offloading_progress"]
             context["useReplicationSaving"] = self.spec["distributed_memory"]["task_sharing"]
+            context["useLocalRecompute"] = self.spec["distributed_memory"]["offloading_local_recompute"]
         else:
             context["offloading"] = "none"
             context["offloadingProgress"] = "none"
             context["useReplicationSaving"] = False
-
+ 
+           
         # kernels
         useOptKernel = False
         useFortran   = False

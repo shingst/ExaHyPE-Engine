@@ -40,14 +40,17 @@ class exahype::offloading::OffloadingAnalyser : public peano::performanceanalysi
 
     bool _isSwitchedOn;
 
-
     tarch::timing::Watch           _waitForWorkerDataWatch;
     tarch::timing::Watch           _waitForMasterDataWatch;
     tarch::timing::Watch           _waitForGlobalMasterDataWatch;
 
+    tarch::timing::Watch           _timeStepWatch;
+
     std::vector<tarch::timing::GlidingAverageMeasurement>    _waitForOtherRank;
 
-    tarch::timing::GlidingAverageMeasurement     _timePerStealablePredictionJob;
+    tarch::timing::GlidingAverageMeasurement     _timePerMigratablePredictionJob;
+
+    tarch::timing::GlidingAverageMeasurement     _timePerTimeStep;
 
     double _currentZeroThreshold;
     int _iterationCounter;
@@ -78,8 +81,13 @@ class exahype::offloading::OffloadingAnalyser : public peano::performanceanalysi
     void setTimePerSTP(double timePerSTP);
     double getTimePerSTP();
 
+    void setTimePerTimeStep(double timePerStep);
+    double getTimePerTimeStep();
+
     virtual void beginIteration();
     virtual void endIteration(double numberOfInnerLeafCells, double numberOfOuterLeafCells, double numberOfInnerCells, double numberOfOuterCells, double numberOfLocalCells, double numberOfLocalVertices);
+
+    void resetMeasurements();
 
     virtual void enterCentralElementOfEnclosingSpacetree();
     virtual void leaveCentralElementOfEnclosingSpacetree();

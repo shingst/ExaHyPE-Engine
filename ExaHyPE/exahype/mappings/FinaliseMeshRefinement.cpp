@@ -31,6 +31,7 @@
 #include "exahype/offloading/AggressiveDistributor.h"
 #include "exahype/offloading/AggressiveCCPDistributor.h"
 #include "exahype/offloading/AggressiveHybridDistributor.h"
+#include "exahype/offloading/OffloadingAnalyser.h"
 #endif
 
 #if defined(TMPI_Heartbeats)
@@ -255,6 +256,11 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
     }
   }
 
+#if defined(OffloadingStrategyAggressiveHybrid)
+  exahype::offloading::AggressiveHybridDistributor::getInstance().resetTasksToOffload();
+  exahype::offloading::OffloadingAnalyser::getInstance().resetMeasurements();
+  exahype::offloading::AggressiveHybridDistributor::getInstance().enable();  
+#endif
 #endif
 
 #if defined(TMPI_Heartbeats)

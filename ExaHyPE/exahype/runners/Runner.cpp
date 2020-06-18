@@ -64,6 +64,7 @@
 #include "exahype/plotters/Plotter.h"
 
 #include "exahype/mappings/Empty.h"
+#include "exahype/mappings/FusedTimeStep.h"
 #include "exahype/mappings/MeshRefinement.h"
 #include "exahype/mappings/RefinementStatusSpreading.h"
 
@@ -75,7 +76,7 @@
 
 #include "peano/datatraversal/TaskSet.h"
 
-#ifdef TMPI
+#if defined(TMPI) || defined(TaskSharing)
 #include "teaMPI.h"
 #endif
 
@@ -94,11 +95,10 @@
 #include "VT.h"
 #endif
 
-
 #include "exahype/offloading/OffloadingAnalyser.h"
 
 #if defined(DistributedOffloading)
-#include "exahype/offloading/ReplicationStatistics.h"
+#include "exahype/offloading/JobTableStatistics.h"
 #include "exahype/offloading/PerformanceMonitor.h"
 #include "exahype/offloading/OffloadingProgressService.h"
 
@@ -110,10 +110,6 @@
 
 #include "exahype/offloading/OffloadingProfiler.h"
 
-
-#if defined(TaskSharing)
-#include "teaMPI.h"
-#endif
 #endif
 
 #if defined(TMPI_Heartbeats)
@@ -122,6 +118,12 @@
 
 #if defined(MemoryMonitoring)
 #include "exahype/offloading/MemoryMonitor.h"
+#endif
+
+#if defined(GenerateNoise)
+#include "exahype/offloading/NoiseGenerator.h"
+#include "exahype/offloading/NoiseGenerationStrategyRoundRobin.h"
+#include "exahype/offloading/NoiseGenerationStrategyChaseVictim.h"
 #endif
 
 tarch::logging::Log exahype::runners::Runner::_log("exahype::runners::Runner");
@@ -290,28 +292,6 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
   }
 
   if ( _parser.isValid() ) {
-    tarch::parallel::NodePool::getInstance().restart();
-
-    tarch::parallel::Node::getInstance().setDeadlockTimeOut(_parser.getMPITimeOut());
-    tarch::parallel::Node::getInstance().setTimeOutWarning(_parser.getMPITimeOut()/2);
-
-    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-      logInfo("initDistributedMemoryConfiguration()", "use MPI time out of " << _parser.getMPITimeOut() << " (warn after half the timeout span)");
-    }
-
-    const int bufferSize = _parser.getMPIBufferSize();
-    peano::parallel::SendReceiveBufferPool::getInstance().setBufferSize(bufferSize);
-    peano::parallel::JoinDataBufferPool::getInstance().setBufferSize(bufferSize);
-
-    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-      logInfo("initDistributedMemoryConfiguration()", "use MPI buffer size of " << bufferSize);
-      if ( _parser.getSkipReductionInBatchedTimeSteps() ) {
-        logInfo("initDistributedMemoryConfiguration()", "allow ranks to skip reduction and broadcasts within a batch" );
-      } else {
-        logWarning("initDistributedMemoryConfiguration()", "ranks are not allowed to skip any reduction (might harm performance). Use optimisation section to switch feature on" );
-      }
-    }
-
     //always use offloading analyser
     peano::performanceanalysis::Analysis::getInstance().setDevice(&exahype::offloading::OffloadingAnalyser::getInstance());
 #if defined(DistributedOffloading)
@@ -372,7 +352,27 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
 #endif
 
 #endif
+    tarch::parallel::NodePool::getInstance().restart();
 
+    tarch::parallel::Node::getInstance().setDeadlockTimeOut(_parser.getMPITimeOut());
+    tarch::parallel::Node::getInstance().setTimeOutWarning(_parser.getMPITimeOut()/2);
+
+    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+      logInfo("initDistributedMemoryConfiguration()", "use MPI time out of " << _parser.getMPITimeOut() << " (warn after half the timeout span)");
+    }
+
+    const int bufferSize = _parser.getMPIBufferSize();
+    peano::parallel::SendReceiveBufferPool::getInstance().setBufferSize(bufferSize);
+    peano::parallel::JoinDataBufferPool::getInstance().setBufferSize(bufferSize);
+
+    if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
+      logInfo("initDistributedMemoryConfiguration()", "use MPI buffer size of " << bufferSize);
+      if ( _parser.getSkipReductionInBatchedTimeSteps() ) {
+        logInfo("initDistributedMemoryConfiguration()", "allow ranks to skip reduction and broadcasts within a batch" );
+      } else {
+        logWarning("initDistributedMemoryConfiguration()", "ranks are not allowed to skip any reduction (might harm performance). Use optimisation section to switch feature on" );
+      }
+    }
     tarch::parallel::NodePool::getInstance().waitForAllNodesToBecomeIdle();
   }
 
@@ -914,12 +914,18 @@ void exahype::runners::Runner::initHPCEnvironment() {
   exahype::offloading::MemoryMonitor::getInstance().setOutputDir(_parser.getMemoryStatsOutputDir());
   #endif
 
+  #if defined(GenerateNoise)
+  exahype::offloading::NoiseGenerator::getInstance().setStrategy(new exahype::offloading::NoiseGenerationStrategyChaseVictim(
+																 _parser.getNoiseGenerationFactor(),
+																 _parser.getNoiseBaseTime()));
+  #endif
   //
   // Configure ITAC profiling
   // ================================================
   //
   #ifdef USE_ITAC
   int ierr=0;
+  ierr=VT_funcdef("FusedTimeStep::noiseHandle"                            , VT_NOCLASS, &exahype::mappings::FusedTimeStep::noiseHandle                              ); assertion(ierr==0);
   ierr=VT_funcdef("Empty::iterationHandle"                                , VT_NOCLASS, &exahype::mappings::Empty::iterationHandle                              ); assertion(ierr==0);
   ierr=VT_funcdef("Solver::waitUntilCompletedLastStepHandle"              , VT_NOCLASS, &exahype::solvers::Solver::waitUntilCompletedLastStepHandle             ); assertion(ierr==0);
   ierr=VT_funcdef("Solver::ensureAllJobsHaveTerminatedHandle"             , VT_NOCLASS, &exahype::solvers::Solver::ensureAllJobsHaveTerminatedHandle            ); assertion(ierr==0);
@@ -933,6 +939,8 @@ void exahype::runners::Runner::initHPCEnvironment() {
   ierr=VT_funcdef("ADERDGSolver::prolongateFaceDataToVirtualCellHandle"   , VT_NOCLASS, &exahype::solvers::ADERDGSolver::prolongateFaceDataToVirtualCellHandle  ); assertion(ierr==0);
   ierr=VT_funcdef("ADERDGSolver::restrictToTopMostParentHandle"           , VT_NOCLASS, &exahype::solvers::ADERDGSolver::restrictToTopMostParentHandle          ); assertion(ierr==0);
   ierr=VT_funcdef("ADERDGSolver::computeSTP"                              , VT_NOCLASS, &exahype::solvers::ADERDGSolver::event_stp                              ); assertion(ierr==0);
+  ierr=VT_funcdef("ADERDGSolver::computeSTPLocalReplica"                  , VT_NOCLASS, &exahype::solvers::ADERDGSolver::event_stp_local_replica                ); assertion(ierr==0);
+  ierr=VT_funcdef("ADERDGSolver::computeSTPRemoteReplica"                 , VT_NOCLASS, &exahype::solvers::ADERDGSolver::event_stp_remote                       ); assertion(ierr==0);
   ierr=VT_funcdef("ADERDGSolver::offloadingManager"                       , VT_NOCLASS, &exahype::solvers::ADERDGSolver::event_offloadingManager                ); assertion(ierr==0);
   ierr=VT_funcdef("ADERDGSolver::spawnSTP"                                , VT_NOCLASS, &exahype::solvers::ADERDGSolver::event_spawn                            ); assertion(ierr==0);
   ierr=VT_funcdef("ADERDGSolver::initialSTP"                              , VT_NOCLASS, &exahype::solvers::ADERDGSolver::event_initial                          ); assertion(ierr==0);
@@ -1020,17 +1028,6 @@ int exahype::runners::Runner::run() {
     if ( _parser.isValid() )
       initSharedMemoryConfiguration();
 
-/*    #if defined(DistributedOffloading)
-    for (auto* solver : exahype::solvers::RegisteredSolvers) {
-      if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
-        static_cast<exahype::solvers::ADERDGSolver*>(solver)->startOffloadingManager();
-      }
-      if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->startOffloadingManager();
-      }
-    } 
-    #endif
-*/
     if ( _parser.isValid() )
       initDataCompression();
     if ( _parser.isValid() )
@@ -1067,10 +1064,12 @@ int exahype::runners::Runner::run() {
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
     if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
       //static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopOffloadingManager();
-#if defined(TaskSharing)
 #if !defined(DirtyCleanUp)
+#if defined(TaskSharing)
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->finishOutstandingInterTeamCommunication();
-      static_cast<exahype::solvers::ADERDGSolver*>(solver)->cleanUpStaleReplicatedSTPs(true);
+#endif
+#if defined(TaskSharing)
+      static_cast<exahype::solvers::ADERDGSolver*>(solver)->cleanUpStaleTaskOutcomes(true);
 #endif
 #endif
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopOffloadingManager();
@@ -1083,28 +1082,21 @@ int exahype::runners::Runner::run() {
   logInfo("shutdownDistributedMemoryConfiguration()","stopped offloading manager");
   exahype::offloading::OffloadingManager::getInstance().destroyMPICommunicator(); 
   logInfo("shutdownDistributedMemoryConfiguration()","destroyed MPI communicators");
-#if defined(TaskSharing)
-  exahype::offloading::ReplicationStatistics::getInstance().printStatistics();
+#if defined(TaskSharing) || defined(OffloadingLocalRecompute)
+  exahype::offloading::JobTableStatistics::getInstance().printStatistics();
 #endif
 
-//  exahype::offloading::OffloadingProfiler::getInstance().endPhase();
-//  logInfo("shutdownDistributedMemoryConfiguration()","ended profiling phase");
-//  exahype::offloading::OffloadingProfiler::getInstance().printStatistics();
-//  logInfo("shutdownDistributedMemoryConfiguration()","printed stats");
 #endif
 
 #if defined(MemoryMonitoring) && defined(MemoryMonitoringTrack)
-  exahype::offloading::MemoryMonitor::getInstance().dumpMemoryUsage();
+   exahype::offloading::MemoryMonitor::getInstance().dumpMemoryUsage();
 #endif
 
-   logInfo("run()","shutdownDistributedMemoryConfiguration");
+ logInfo("run()","shutdownDistributedMemoryConfiguration");
       
-    if ( _parser.isValid() )
-      shutdownSharedMemoryConfiguration();
-
-   logInfo("run()","shutdownSharedMemoryConfiguration");
-      
-
+  if ( _parser.isValid() )
+    shutdownSharedMemoryConfiguration();
+    logInfo("run()","shutdownSharedMemoryConfiguration");
     shutdownHeaps();
 
     delete repository;
@@ -1313,14 +1305,6 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
         solvers::Solver::getMinTimeStampOfAllSolvers() < simulationEndTime         &&
         timeStep < simulationTimeSteps
     ) {
-
-#ifdef USE_ITAC
-      if(timeStep>18 && timeStep<21) {
-         VT_traceon(); // turn ITAC tracing off during mesh refinement; is switched on again in mapping Prediction
-      }
-      else 
-         VT_traceoff();
-#endif
 
       bool plot = exahype::plotters::checkWhetherPlotterBecomesActive(
           solvers::Solver::getMinTimeStampOfAllSolvers()); // has no side effects

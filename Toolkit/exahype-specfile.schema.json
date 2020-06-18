@@ -167,6 +167,30 @@
         "measure_cell_processing_times_iter" : ["measure_cell_processing_times"]
       }
     },
+    "noise_generator" : {
+      "type" : "object",
+      "properties" : {
+         "enable" : {
+            "type" : "boolean",
+            "title" : "If set, noise is generated",
+            "default" : false
+         },
+         "round_robin_frequency" : {
+            "type" : "integer",
+            "title " : "Sets number of time steps after which the disturbed rank changes",
+            "scope" : "run-time",
+            "minimum" : 1,
+            "default" : 1 
+         },
+         "noise_factor" : {
+            "type" : "number",
+            "title" : "Controls how much a disturbed rank is affected by noise",
+            "scope" : "run-time",
+            "minimum" : 0,
+            "default" : 0.5
+         }
+      }
+    },
     "memory_monitoring" : {
       "type" : "object",
       "properties" : {
@@ -457,11 +481,16 @@
         }, 
         "offloading" : {
           "type" : "string", 
-          "title" : "Offloading strategy (TODO)",  
+          "title" : "Offloading strategy.",  
           "enum"  : ["none", "static", "dynamic", "hybrid", "static_hardcoded", "dynamic_diffusive", "aggressive_diffusive", "aggressiveCCP_diffusive", "aggressiveHybrid"],
           "default" : "none",
           "old_format" : { "token_after" : "offloading" }
 	 },
+        "offloading_local_recompute" : {
+          "type" : "boolean",
+          "title" : "If true, offloaded tasks can also be computed locally.",
+          "default"  : false
+        },
         "offloading_progress": {
           "type" : "string",
           "title": "Enable progress in MPI for offloading communication.",
@@ -500,7 +529,7 @@
         },
         "offloading_input_file" : {
           "type" : "string",
-          "title" : "Path to file that specifies offloading rules",
+          "title" : "Path to file that specifies offloading rules for the hardcoded offloading strategy.",
           "default" : ""
         },
         "buffer_size" : {

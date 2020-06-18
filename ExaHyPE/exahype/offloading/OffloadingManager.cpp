@@ -83,10 +83,14 @@ exahype::offloading::OffloadingManager::OffloadingManager() :
 }
 
 exahype::offloading::OffloadingManager::~OffloadingManager() {
+  
+  delete[] _postedSendsPerRank;
+  delete[] _postedReceivesPerRank;
+  delete[] _postedSendBacksPerRank;
+  delete[] _postedReceiveBacksPerRank;
   delete[] _localBlacklist;
 }
 
-#if defined(TaskSharing)
 
 void exahype::offloading::OffloadingManager::setTMPIInterTeamCommunicators(MPI_Comm comm, MPI_Comm commKey, MPI_Comm commAck) {
   _interTeamComm = comm;
@@ -121,7 +125,6 @@ void exahype::offloading::OffloadingManager::setTMPIInterTeamRank(int interTeamR
 int exahype::offloading::OffloadingManager::getTMPIInterTeamRank(){
   return _interTeamRank;
 }
-#endif
 
 void exahype::offloading::OffloadingManager::createMPICommunicator() {
   int ierr = MPI_Comm_dup(MPI_COMM_WORLD, &_offloadingComm);
@@ -207,6 +210,7 @@ void exahype::offloading::OffloadingManager::submitRequests(
   }
   #endif
 
+
   switch(type) {
     case RequestType::send:
     _postedSendsPerRank[remoteRank]++; break;
@@ -216,10 +220,27 @@ void exahype::offloading::OffloadingManager::submitRequests(
     _postedSendBacksPerRank[remoteRank]++; break;
     case RequestType::receiveBack:
     _postedReceiveBacksPerRank[remoteRank]++; break;
-  }
+  } 
 
   int finished = -1;
+
+/*  for(int i=0;i<nRequests; i++) {
+    assert(requests[i]!=MPI_REQUEST_NULL); 
+    int ierr = MPI_Test(&requests[i], &finished, MPI_STATUS_IGNORE); 
+    if(ierr!=MPI_SUCCESS) {
+      char err_buffer[MPI_MAX_ERROR_STRING];
+      int resultlen = 0;
+      MPI_Error_string(ierr,err_buffer,&resultlen);
+      fprintf(stderr,err_buffer);
+      fprintf(stderr, "request id %d\n", i);
+    }
+
+    assert(ierr==MPI_SUCCESS);
+    finished = -1;
+  } */ 
+
   int ierr = MPI_Testall(nRequests, requests, &finished, MPI_STATUSES_IGNORE);
+
   assert(ierr==MPI_SUCCESS);
   if(finished) {
     handler(solver, tag, remoteRank);
@@ -675,7 +696,9 @@ void exahype::offloading::OffloadingManager::triggerEmergencyForRank(int rank) {
 #endif
   _localBlacklist[rank]++;
   exahype::offloading::PerformanceMonitor::getInstance().submitBlacklistValueForRank(_localBlacklist[rank], rank);
-  logInfo("triggerEmergencyForRank()","blacklist value for rank "<<rank<<":"<<_localBlacklist[rank]);
+  logInfo("triggerEmergencyForRank()","blacklist value for rank "<<rank<<":"<<_localBlacklist[rank]
+	                                 <<" NumberOfRemoteJobs"<<  exahype::solvers::ADERDGSolver::NumberOfRemoteJobs
+									 <<" NumberOfEnclaveJobs"<<  exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs);
 }
 
 void exahype::offloading::OffloadingManager::recoverBlacklistedRanks() {

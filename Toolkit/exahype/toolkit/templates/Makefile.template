@@ -95,6 +95,14 @@ PROJECT_CFLAGS += -DAnalyseWaitingTimes
 PROJECT_CFLAGS += -DUSE_TMPI -DDistributedOffloading -DTaskSharing 
 {% endif %}
 
+{% if useLocalRecompute %}
+PROJECT_CFLAGS += -DOffloadingLocalRecompute
+{% endif %}
+
+{% if useNoiseGenerator %}
+PROJECT_CFLAGS += -DGenerateNoise
+{% endif %}
+
 {% if offloadingProgress=="progress_thread" %}
 PROJECT_CFLAGS += -DOffloadingUseProgressThread
 {% elif offloadingProgress=="progress_task" %}

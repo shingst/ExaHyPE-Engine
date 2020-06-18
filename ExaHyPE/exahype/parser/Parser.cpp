@@ -1196,6 +1196,18 @@ std::string exahype::parser::Parser::getMemoryStatsOutputDir() const {
   return getStringFromPath("/memory_monitoring/memory_stats_output_dir", "", isOptional);
 }
 
+int exahype::parser::Parser::getNoiseGenerationRRFrequency() const {
+  return getIntFromPath("/noise_generator/frequency", 1, isOptional);
+}
+
+double exahype::parser::Parser::getNoiseGenerationFactor() const{
+  return getDoubleFromPath("/noise_generator/noise_factor", 0.5, isOptional);
+}
+
+double exahype::parser::Parser::getNoiseBaseTime() const{
+  return getDoubleFromPath("/noise_generator/noise_base_time", 1, isOptional);
+}
+
 void exahype::parser::Parser::checkSolverConsistency(int solverNumber) const {
   assertion1(solverNumber <
                  static_cast<int>(exahype::solvers::RegisteredSolvers.size()),

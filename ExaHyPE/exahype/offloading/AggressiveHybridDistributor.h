@@ -148,6 +148,9 @@ class exahype::offloading::AggressiveHybridDistributor {
      */
     bool _isEnabled;
 
+    int _currentOptimalVictim;
+    int _currentCriticalRank;
+
     /**
      * Conducts a CCP step.
      */
@@ -207,6 +210,8 @@ class exahype::offloading::AggressiveHybridDistributor {
      */
     void resetRemainingTasksToOffload();
 
+    void resetTasksToOffload();
+
     /**
      * Print some useful statistics for offloading.
      */
@@ -228,6 +233,16 @@ class exahype::offloading::AggressiveHybridDistributor {
      * @param victimRanks Result
      */
     void getAllVictimRanks(std::vector<int>& victimRanks);
+
+    /**
+     * Returns current optimal victim
+     */
+    int getCurrentOptimalVictim();
+
+    /**
+     * Returns current critical rank.
+     */
+    int getCurrentCriticalRank();
  
     /**
      * Conducts another update of the load re-distribution. This is

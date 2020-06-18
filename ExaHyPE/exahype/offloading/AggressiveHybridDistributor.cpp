@@ -43,7 +43,9 @@ exahype::offloading::AggressiveHybridDistributor::AggressiveHybridDistributor() 
   _adaptTemperature(false),
   _CCPFrequency(0),
   _CCPStepsPerPhase(0),
-  _thresholdTempAdaptation(1)
+  _thresholdTempAdaptation(1),
+  _currentOptimalVictim(-1),
+  _currentCriticalRank(-1)
 {
 
   int nnodes                = tarch::parallel::Node::getInstance().getNumberOfNodes();
@@ -314,6 +316,9 @@ void exahype::offloading::AggressiveHybridDistributor::configure(
 }
 
 void exahype::offloading::AggressiveHybridDistributor::printOffloadingStatistics() {
+
+  if(!_isEnabled) return;
+
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();
 
@@ -341,6 +346,16 @@ void exahype::offloading::AggressiveHybridDistributor::resetRemainingTasksToOffl
     if(i==myRank)
       continue;
     _remainingTasksToOffload[i] = _tasksToOffload[i];
+  }
+}
+
+void exahype::offloading::AggressiveHybridDistributor::resetTasksToOffload() {
+  
+  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
+  int myRank = tarch::parallel::Node::getInstance().getRank();
+
+  for(int i=0; i<nnodes; i++) {
+    _tasksToOffload[i] = 0;
   }
 }
 
@@ -487,6 +502,11 @@ void exahype::offloading::AggressiveHybridDistributor::updateLoadDistributionDif
     _tasksToOffload[currentCriticalRank] = std::max( (1-_temperatureDiffusion), 0.0)*_tasksToOffload[currentCriticalRank];
   }
 #endif
+
+  //store decision
+  _currentOptimalVictim = currentOptimalVictim;
+  _currentCriticalRank = currentCriticalRank;
+
   resetRemainingTasksToOffload();
 
 }
@@ -496,6 +516,14 @@ void exahype::offloading::AggressiveHybridDistributor::getAllVictimRanks(std::ve
   for(int i=0; i<nnodes; i++) {
     if(_tasksToOffload[i]>0 && _tasksNotOffloaded[i]!=_tasksToOffload[i] ) victims.push_back(i);
   }
+}
+
+int exahype::offloading::AggressiveHybridDistributor::getCurrentOptimalVictim() {
+  return _currentOptimalVictim;
+}
+
+int exahype::offloading::AggressiveHybridDistributor::getCurrentCriticalRank() {
+  return _currentCriticalRank;
 }
 
 bool exahype::offloading::AggressiveHybridDistributor::selectVictimRank(int& victim, bool& last) {
@@ -531,13 +559,14 @@ bool exahype::offloading::AggressiveHybridDistributor::selectVictimRank(int& vic
   int threshold = 1
 		         + std::max(1, tarch::multicore::Core::getInstance().getNumberOfThreads()-1)
                  * tarch::multicore::jobs::internal::_minimalNumberOfJobsPerConsumerRun;
-  logDebug("selectVictimRank", "threshold "<<threshold
-		                       << " there are "<<exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs-exahype::solvers::ADERDGSolver::NumberOfRemoteJobs
-							   <<" jobs "<< " and "<<tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs());
-  threshold = std::max(threshold, 20);
+    threshold = std::max(threshold, 20);
 
   if(exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs-exahype::solvers::ADERDGSolver::NumberOfRemoteJobs<
         threshold) {
+	  logInfo("selectVictimRank", "threshold "<<threshold
+	  		                       << " there are "<<exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs-exahype::solvers::ADERDGSolver::NumberOfRemoteJobs
+	  							   <<" jobs "<< " and "<<tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs());
+
     _tasksNotOffloaded[victim]++;
     victim = myRank;
   }

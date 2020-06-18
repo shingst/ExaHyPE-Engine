@@ -36,6 +36,10 @@
 
 #include "exahype/mappings/RefinementStatusSpreading.h"
 
+#if defined(DistributedOffloading)
+#include "exahype/offloading/AggressiveHybridDistributor.h"
+#endif
+
 #include <sstream>
 
 bool exahype::mappings::MeshRefinement::DynamicLoadBalancing    = false;
@@ -147,6 +151,13 @@ void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverSt
   if (! MetadataHeap::getInstance().validateThatIncomingJoinBuffersAreEmpty() ) {
       exit(-1);
   }
+  
+  #if defined(DistributedOffloading)
+  #if defined(OffloadingStrategyAggressiveHybrid)
+    exahype::offloading::AggressiveHybridDistributor::getInstance().disable();  
+  #endif
+  #endif
+
   #endif
 }
 

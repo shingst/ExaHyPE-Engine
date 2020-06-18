@@ -45,6 +45,7 @@ exahype::offloading::OffloadingAnalyser::OffloadingAnalyser():
   _waitForWorkerDataWatch("exahype::offloading::OffloadingAnalyser", "-", false,false),
   _waitForMasterDataWatch("exahype::offloading::OffloadingAnalyser", "-", false,false),
   _waitForGlobalMasterDataWatch("exahype::offloading::OffloadingAnalyser", "-", false,false),
+  _timeStepWatch("exahype::offloading::OffloadingAnalyser", "-", false,false),
   _waitForOtherRank(0),
   _currentZeroThreshold(0.002),
   _iterationCounter(0),
@@ -54,7 +55,7 @@ exahype::offloading::OffloadingAnalyser::OffloadingAnalyser():
 {
   enable(true);
 #ifdef USE_ITAC
-  VT_funcdef(event_name_waitForWorker, VT_NOCLASS, &event_waitForWorker ); assertion(ierr==0)
+  VT_funcdef(event_name_waitForWorker, VT_NOCLASS, &event_waitForWorker ); assertion(ierr==0);
 #endif
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   _currentFilteredWaitingTimesSnapshot = new double[nnodes*nnodes];
@@ -72,8 +73,6 @@ exahype::offloading::OffloadingAnalyser& exahype::offloading::OffloadingAnalyser
   if(analyser==nullptr) {
     analyser = new OffloadingAnalyser();
   }  
-
-
   return *analyser;
 }
 
@@ -95,12 +94,20 @@ double exahype::offloading::OffloadingAnalyser::getZeroThreshold() {
 }
 
 void exahype::offloading::OffloadingAnalyser::setTimePerSTP(double timePerSTP) {
-  _timePerStealablePredictionJob.setValue(timePerSTP);
+  _timePerMigratablePredictionJob.setValue(timePerSTP);
   //logInfo("setTimePerSTP()", "submitted new STP measurement, current time per stp: "<<getTimePerSTP());
 }
 
 double exahype::offloading::OffloadingAnalyser::getTimePerSTP() {
-  return _timePerStealablePredictionJob.getValue();
+  return _timePerMigratablePredictionJob.getValue();
+}
+
+void exahype::offloading::OffloadingAnalyser::setTimePerTimeStep(double timePerStep) {
+  return _timePerTimeStep.setValue(timePerStep);
+}
+
+double exahype::offloading::OffloadingAnalyser::getTimePerTimeStep() {
+  return _timePerTimeStep.getValue();
 }
 
 void exahype::offloading::OffloadingAnalyser::updateZeroTresholdAndFilteredSnapshot() {
@@ -164,9 +171,22 @@ void exahype::offloading::OffloadingAnalyser::updateZeroTresholdAndFilteredSnaps
 }
 
 void exahype::offloading::OffloadingAnalyser::beginIteration() {
-#if !defined(AnalyseWaitingTimes)
+  static int timestep_cnt = 0;
+
   if(_iterationCounter%2 !=0) return;
 
+  if (_isSwitchedOn) {
+     
+     if(_timeStepWatch.isOn()) {
+       _timeStepWatch.stopTimer();
+       if(timestep_cnt <=5) {
+          setTimePerTimeStep(_timeStepWatch.getCalendarTime());
+       }
+       timestep_cnt++;
+     }
+     _timeStepWatch.startTimer();
+  }
+#if !defined(AnalyseWaitingTimes)
   exahype::offloading::OffloadingManager::getInstance().resetVictimFlag(); //TODO: correct position here?
   exahype::offloading::OffloadingManager::getInstance().recoverBlacklistedRanks();
 #endif
@@ -176,10 +196,14 @@ void exahype::offloading::OffloadingAnalyser::beginIteration() {
 void exahype::offloading::OffloadingAnalyser::endIteration(double numberOfInnerLeafCells, double numberOfOuterLeafCells, double numberOfInnerCells, double numberOfOuterCells, double numberOfLocalCells, double numberOfLocalVertices) {
 #if !defined(AnalyseWaitingTimes)
   exahype::offloading::OffloadingManager::getInstance().printBlacklist();
+#endif
+
   if(_iterationCounter%2 !=0) {
-     _iterationCounter++; 
-     return;
+    _iterationCounter++;
+    return;
   }
+
+#if !defined(AnalyseWaitingTimes)
   _currentAccumulatedWorkerTime = 0;
  
   for(int i=0; i<_waitForOtherRank.size(); i++) {
@@ -283,6 +307,13 @@ void exahype::offloading::OffloadingAnalyser::endToReceiveDataFromWorker( int fr
   }
 }
 
+void exahype::offloading::OffloadingAnalyser::resetMeasurements() {
+  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
+
+  for(int i=0; i<nnodes; i++)
+     //_waitForOtherRank.push_back(tarch::timing::GlidingAverageMeasurement(0.1,16));
+     _waitForOtherRank[i].erase();
+}
 
 void exahype::offloading::OffloadingAnalyser::beginToReceiveDataFromMaster(int master) {
   //if (_isSwitchedOn && !_waitForMasterDataWatch.isOn()) {
