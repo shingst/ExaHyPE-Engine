@@ -301,6 +301,10 @@ class Controller:
         if "noise_generator" in self.spec:
             context["useNoiseGenerator"] = self.spec["noise_generator"]["enable"]
 
+        context["useSTPStatsTracing"] = False
+        if "stp_stats_tracing" in self.spec:
+            context["useSTPStatsTracing"] = True
+
         context["useIpcm"]   = False # TODO
         context["useLikwid"] = False # TODO
         context["likwidInc"] = ""    # TODO

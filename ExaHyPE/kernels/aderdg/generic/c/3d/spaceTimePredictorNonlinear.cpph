@@ -453,21 +453,24 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
 		SCOREP_USER_REGION_END( my_region_handle )
 	}
   #endif
-  #if defined FileTrace && !defined Picard
+/*  #if defined FileTrace && !defined Picard
   std::stringstream stream;
   stream<<"./TraceOutput/iter_counter_rank_";
   int rank=tarch::parallel::Node::getInstance().getRank();
   stream<<rank<<"_";
+#if defined(SharedTBB)
   //this will only work for 2 cores per Rank
   int threadId=tarch::multicore::Core::getInstance().getThreadNum();
-  stream<<threadId<<".txt";
+  stream<<threadId
+#endif
+  stream<<".txt";
   std::string path=stream.str();
 
   std::ofstream file;
   file.open(path,std::fstream::app);
   file << (iter+1) << std::endl;
   file.close();
-  #endif
+  #endif*/
 
   return iter;
 }

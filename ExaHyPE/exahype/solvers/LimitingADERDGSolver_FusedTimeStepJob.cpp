@@ -1,15 +1,7 @@
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
 #if defined(FileTrace)
-#include <iostream>
-#include <fstream> 
-#include <string>
-#include <ctime>
-#include <unistd.h>
-#include <sys/time.h>
-#include <sstream>
-#include "tarch/parallel/Node.h"
-#include "tarch/multicore/Core.h"
+#include "exahype/offloading/STPStatsTracer.h"
 #endif
 
 
@@ -71,7 +63,9 @@ bool exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::run(bool runOnMas
   #if defined FileTrace
   auto stop = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-
+  exahype::offloading::STPStatsTracer::getInstance().writeTracingEventRun(duration.count(), exahype::offloading::STPType::LimitingFusedTimeStep);
+  
+  /*
   std::stringstream stream;
   stream<<"./TraceOutput/exahype_solvers_LimitingADERDGSolver_FusedTimeStepJob_run_rank_";
   int rank=tarch::parallel::Node::getInstance().getRank();
@@ -83,7 +77,7 @@ bool exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::run(bool runOnMas
   std::ofstream file;
   file.open(path,std::fstream::app);
   file << duration.count() << std::endl;
-  file.close();
+  file.close();*/
   #endif
   return false;
 }

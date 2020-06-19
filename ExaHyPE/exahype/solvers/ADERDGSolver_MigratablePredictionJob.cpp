@@ -5,15 +5,7 @@
 #endif
 
 #if defined(FileTrace)
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <ctime>
-#include <unistd.h>
-#include <sys/time.h>
-#include <sstream>
-#include "tarch/parallel/Node.h"
-#include "tarch/multicore/Core.h"
+#include "exahype/offloading/STPStatsTracer.h"
 #endif
 
 #include "ADERDGSolver.h"
@@ -130,19 +122,23 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run(
   auto stop = std::chrono::high_resolution_clock::now(); 
   auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start); 
 
-  std::stringstream stream;
-  stream<<"./TraceOutput/exahype_solvers_ADERDGSolver_MigratablePredictionJob_run_rank_";
-  int rank=tarch::parallel::Node::getInstance().getRank();
-  stream<<rank<<"_";
-  //this will only work for 2 cores per Rank
-  int threadId=tarch::multicore::Core::getInstance().getThreadNum();
-  stream<<threadId<<".txt";
-  std::string path=stream.str();
-
-  std::ofstream file;
-  file.open(path,std::fstream::app);
-  file << duration.count() << std::endl;
-  file.close();
+  exahype::offloading::STPStatsTracer::getInstance().writeTracingEventRun(duration.count(), exahype::offloading::STPType::ADERDGOwnMigratable);
+//  std::stringstream stream;
+//  stream<<exahype::parser::Parser::getSTPTracingOutputDirName()<<"/exahype_solvers_ADERDGSolver_MigratablePredictionJob_run_rank_";
+//  int rank = tarch::parallel::Node::getInstance().getRank();
+//  stream<<rank<<"_";
+//  //this will only work for 2 cores per Rank
+//#if defined (SharedTBB)
+//  int threadId=tarch::multicore::Core::getInstance().getThreadNum();
+//  stream<<threadId;
+//#endif
+//  stream<<".txt";
+//  std::string path=stream.str();
+//
+//  std::ofstream file;
+//  file.open(path,std::fstream::app);
+//  file << duration.count() << std::endl;
+//  file.close();
   #endif
 
 #ifdef USE_ITAC
@@ -235,13 +231,15 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   }
 #endif
 
+  int iterations = 0;
+
   if (needToCompute) {
     //TODO: add support for lGradQhbnd
 #if defined(USE_ITAC)
     if(_isLocalReplica)
     VT_begin(event_stp_local_replica);
 #endif
-    int iterations = _solver.fusedSpaceTimePredictorVolumeIntegral(lduh, lQhbnd, nullptr, lFhbnd,
+    iterations = _solver.fusedSpaceTimePredictorVolumeIntegral(lduh, lQhbnd, nullptr, lFhbnd,
         luh, cellDescription.getOffset() + 0.5 * cellDescription.getSize(),
         cellDescription.getSize(), _predictorTimeStamp, _predictorTimeStepSize,
         true);
@@ -270,21 +268,28 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 #endif
 
 #if defined(FileTrace)
-    std::stringstream stream;
-    stream.str(std::string());
-    stream<<"./TraceOutput/exahype_solvers_ADERDGSolver_OwnMigratableJob_iterations_rank_";
-    int rank=tarch::parallel::Node::getInstance().getRank();
-    stream<<rank<<"_";
-    k
-    int threadId=tarch::multicore::Core::getInstance().getThreadNum();
-    stream<<threadId<<".txt";
-    std::string path=stream.str();
-
-    std::ofstream file;
-    file.open(path,std::fstream::app);
-    file << (iterations+1) << std::endl;
-    file.close();
+  if(hasComputed) {
+    exahype::offloading::STPStatsTracer::getInstance().writeTracingEventIteration(iterations, exahype::offloading::STPType::ADERDGOwnMigratable);
+  }
 #endif
+  //#if defined(FileTrace)
+//    std::stringstream stream;
+//    stream.str(std::string());
+//    stream<<"./TraceOutput/exahype_solvers_ADERDGSolver_OwnMigratableJob_iterations_rank_";
+//    int rank=tarch::parallel::Node::getInstance().getRank();
+//    stream<<rank<<"_";
+//#if defined(SharedTBB)
+//    int threadId=tarch::multicore::Core::getInstance().getThreadNum();
+//    stream<<threadId;
+//#endif
+//    stream<<".txt";
+//    std::string path=stream.str();
+//
+//    std::ofstream file;
+//    file.open(path,std::fstream::app);
+//    file << (iterations+1) << std::endl;
+//    file.close();
+//#endif
 
 
 #if defined (TaskSharing)
@@ -371,21 +376,25 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
     VT_end(event_stp_remote);
 #endif
 #if defined(FileTrace)
-    std::stringstream stream;
-    stream.str(std::string());
-    stream<<"./TraceOutput/exahype_solvers_ADERDGSolver_AlienMigratableJob_iterations_rank_";
-    int rank=tarch::parallel::Node::getInstance().getRank();
-    stream<<rank<<"_";
-
-    int threadId=tarch::multicore::Core::getInstance().getThreadNum();
-    stream<<threadId<<".txt";
-    std::string path=stream.str();
-
-    std::ofstream file;
-    file.open(path,std::fstream::app);
-    file << (iterations+1) << std::endl;
-    file.close();
+    exahype::offloading::STPStatsTracer::getInstance().writeTracingEventIteration(iterations, exahype::offloading::STPType::ADERDGRemoteMigratable);
 #endif
+//    std::stringstream stream;
+//    stream.str(std::string());
+//    stream<<"./TraceOutput/exahype_solvers_ADERDGSolver_AlienMigratableJob_iterations_rank_";
+//    int rank=tarch::parallel::Node::getInstance().getRank();
+//    stream<<rank<<"_";
+//#if defined(SharedTBB)
+//    int threadId=tarch::multicore::Core::getInstance().getThreadNum();
+//    stream<<threadId;
+//#endif
+//    stream<<".txt";
+//    std::string path=stream.str();
+//
+//    std::ofstream file;
+//    file.open(path,std::fstream::app);
+//    file << (iterations+1) << std::endl;
+//    file.close();
+//#endif
   }
 #if defined(OffloadingUseProfiler)
   time += MPI_Wtime();

@@ -5,15 +5,7 @@
 #endif
 
 #if defined(FileTrace)
-#include <iostream>
-#include <fstream> 
-#include <string>
-#include <ctime>
-#include <unistd.h>
-#include <sys/time.h>
-#include <sstream>
-#include "tarch/parallel/Node.h"
-#include "tarch/multicore/Core.h"
+#include "exahype/offloading/STPStatsTracer.h"
 #endif
 
 #if defined(SharedTBB) && !defined(noTBBPrefetchesJobData)
@@ -75,39 +67,43 @@ bool exahype::solvers::ADERDGSolver::PredictionJob::run(bool runOnMasterThread) 
   auto stop = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
 
-  std::stringstream stream;
+  //std::stringstream stream;
   #if defined Picard
-  stream<<"./Picard/exahype_solvers_ADERDGSolver_PredictionJob_run_rank_";
+  exahype::offloading::STPStatsTracer::getInstance().writeTracingEventRunIterations(duration.count(), numberIterations, exahype::offloading::STPType::ADERDGPrediction);
   #else
-  stream<<"./TraceOutput/exahype_solvers_ADERDGSolver_PredictionJob_run_rank_";
+  exahype::offloading::STPStatsTracer::getInstance().writeTracingEventRun(duration.count(), exahype::offloading::STPType::ADERDGPrediction);
+  exahype::offloading::STPStatsTracer::getInstance().writeTracingEventIterations(numberIterations, exahype::offloading::STPType::ADERDGPrediction);
   #endif 
-  int rank=tarch::parallel::Node::getInstance().getRank();
-  stream<<rank<<"_";
-  int threadId=tarch::multicore::Core::getInstance().getThreadNum();
-  stream<<threadId<<".txt";
-  std::string path=stream.str();
-
-  std::ofstream file;
-  file.open(path,std::fstream::app);
-  #if defined Picard
-  file << duration.count() <<":"<<(numberIterations+1)<< std::endl;
-  file.close();
-  return false;
-  #else
-  file << duration.count() << std::endl;
-  #endif
-  file.close();
-
-  stream.str(std::string());
-  stream<<"./TraceOutput/exahype_solvers_ADERDGSolver_PredictionJob_iterations_rank_";
-  stream<<rank<<"_";
-  stream<<threadId<<".txt";
-  path=stream.str();
-
-  std::ofstream fileIter;
-  fileIter.open(path,std::fstream::app);
-  fileIter << (numberIterations+1) << std::endl;
-  fileIter.close();
+//  int rank=tarch::parallel::Node::getInstance().getRank();
+//  #if defined SharedTBB
+//  stream<<rank<<"_";
+//  int threadId=tarch::multicore::Core::getInstance().getThreadNum();
+//  stream<<threadId;
+//  #endif
+//  stream<<".txt";
+//  std::string path=stream.str();
+//
+//  std::ofstream file;
+//  file.open(path,std::fstream::app);
+//  #if defined Picard
+//  file << duration.count() <<":"<<(numberIterations+1)<< std::endl;
+//  file.close();
+//  return false;
+//  #else
+//  file << duration.count() << std::endl;
+//  #endif
+//  file.close();
+//
+//  stream.str(std::string());
+//  stream<<"./TraceOutput/exahype_solvers_ADERDGSolver_PredictionJob_iterations_rank_";
+//  stream<<rank<<"_";
+//  stream<<threadId<<".txt";
+//  path=stream.str();
+//
+//  std::ofstream fileIter;
+//  fileIter.open(path,std::fstream::app);
+//  fileIter << (numberIterations+1) << std::endl;
+//  fileIter.close();
   #endif
 
   return false;
