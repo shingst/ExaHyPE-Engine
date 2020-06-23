@@ -49,6 +49,11 @@
 #endif
 
 #if defined(DistributedOffloading)
+
+#ifndef MPI_BLOCKING
+#define MPI_BLOCKING false
+#endif
+
 #include "exahype/offloading/PerformanceMonitor.h"
 #include "exahype/offloading/StaticDistributor.h"
 #include "exahype/offloading/DiffusiveDistributor.h"
@@ -2700,7 +2705,7 @@ void exahype::solvers::ADERDGSolver::sendKeyOfTaskOutcomeToOtherTeams(Migratable
                    sendRequests, teams-1, tag, -1,
                    MigratablePredictionJob::sendKeyHandlerTaskSharing,
                    exahype::offloading::RequestType::sendReplica,
-                   this, false);
+                   this, MPI_BLOCKING);
      exahype::offloading::JobTableStatistics::getInstance().notifySentKey();
      delete[] sendRequests;
 
@@ -2807,7 +2812,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
     exahype::offloading::OffloadingManager::getInstance().submitRequests(sendRequests, (teams-1)*5, tag, -1,
                                                                          MigratablePredictionJob::sendHandlerTaskSharing,
                                                                          exahype::offloading::RequestType::sendReplica,
-                                                                         this, false);
+                                                                         this, MPI_BLOCKING);
   delete[] sendRequests;
 #endif
 }
@@ -3189,7 +3194,7 @@ void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahyp
          MigratablePredictionJob::receiveHandlerTaskSharing,
          exahype::offloading::RequestType::receiveReplica,
          solver,
-         false);
+         MPI_BLOCKING);
 #endif
 }
 #endif

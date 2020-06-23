@@ -82,6 +82,11 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run(
   bool hasComputed = false;
   int curr = std::atomic_fetch_add(&JobCounter, 1);
 
+#if defined(TaskSharing)
+ // exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(&_solver, false, 10000);
+  exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, 10000);
+#endif
+
   if (curr % 1000 == 0) {
     tarch::timing::Watch watch("exahype::MigratablePredictionJob::", "-", false,
         false);
@@ -146,8 +151,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
       <<" enclave jobs "<<NumberOfEnclaveJobs <<" remote jobs "<<NumberOfRemoteJobs
       <<" hash = "<<(size_t) key);
 
-  //exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false);
-  //exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(&_solver);
+//  exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(&_solver,10000);
+//  exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false,10000);
 
   tbb::concurrent_hash_map<JobTableKey, JobTableEntry>::accessor a_jobToData;
   bool found = _solver._jobDatabase.find(a_jobToData, key);
