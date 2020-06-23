@@ -299,7 +299,6 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 
 #if defined (TaskSharing)
   //check one more time
-  //tbb::concurrent_hash_map<JobTableKey, StealablePredictionJobData*>::accessor a_jobToData;
   found = _solver._jobDatabase.find(a_jobToData, key);
   if (found && a_jobToData->second.status == JobOutcomeStatus::received) {
     MigratablePredictionJobData *data = a_jobToData->second.data;
@@ -311,9 +310,9 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     delete data;
   }
   else {
-    bool sendTaskOutcome =
-        AllocatedSTPsSend
-            <= exahype::offloading::PerformanceMonitor::getInstance().getTasksPerTimestep();
+    bool sendTaskOutcome = hasComputed &&
+        (AllocatedSTPsSend
+            <= exahype::offloading::PerformanceMonitor::getInstance().getTasksPerTimestep());
     // && exahype::offloading::MemoryMonitor::getInstance().getFreeMemMB()>10000;
 #if defined(TaskSharingUseHandshake)
     if(sendTaskOutcome) {
