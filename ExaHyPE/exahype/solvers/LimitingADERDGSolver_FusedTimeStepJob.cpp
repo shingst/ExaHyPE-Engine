@@ -1,5 +1,10 @@
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
+#if defined(FileTrace)
+#include "exahype/offloading/STPStatsTracer.h"
+#endif
+
+
 #if defined(SharedTBB) && !defined(noTBBPrefetchesJobData)
 #include <immintrin.h>
 #endif
@@ -36,6 +41,10 @@ exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::FusedTimeStepJob(
 }
 
 bool exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::run(bool runOnMasterThread) {
+  #if defined FileTrace
+  auto start = std::chrono::high_resolution_clock::now();
+  #endif
+
   _solver.fusedTimeStepBody(
       _solverPatch,_cellInfo,
       _predictionTimeStamp,_predictionTimeStepSize,
@@ -51,5 +60,24 @@ bool exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::run(bool runOnMas
     NumberOfEnclaveJobs.fetch_sub(1);
     assertion( NumberOfEnclaveJobs.load()>=0 );
   }
+  #if defined FileTrace
+  auto stop = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+  exahype::offloading::STPStatsTracer::getInstance().writeTracingEventRun(duration.count(), exahype::offloading::STPType::LimitingFusedTimeStep);
+  
+  /*
+  std::stringstream stream;
+  stream<<"./TraceOutput/exahype_solvers_LimitingADERDGSolver_FusedTimeStepJob_run_rank_";
+  int rank=tarch::parallel::Node::getInstance().getRank();
+  stream<<rank<<"_";
+  int threadId=tarch::multicore::Core::getInstance().getThreadNum();
+  stream<<threadId<<".txt";
+  std::string path=stream.str();
+
+  std::ofstream file;
+  file.open(path,std::fstream::app);
+  file << duration.count() << std::endl;
+  file.close();*/
+  #endif
   return false;
 }

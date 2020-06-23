@@ -126,6 +126,10 @@
 #include "exahype/offloading/NoiseGenerationStrategyChaseVictim.h"
 #endif
 
+#if defined(FileTrace)
+#include "exahype/offloading/STPStatsTracer.h"
+#endif
+
 tarch::logging::Log exahype::runners::Runner::_log("exahype::runners::Runner");
 
 exahype::runners::Runner::Runner(exahype::parser::Parser& parser, std::vector<std::string>& cmdlineargs) :
@@ -918,6 +922,10 @@ void exahype::runners::Runner::initHPCEnvironment() {
   exahype::offloading::NoiseGenerator::getInstance().setStrategy(new exahype::offloading::NoiseGenerationStrategyChaseVictim(
 																 _parser.getNoiseGenerationFactor(),
 																 _parser.getNoiseBaseTime()));
+  #endif
+
+  #if defined(FileTrace)
+  exahype::offloading::STPStatsTracer::getInstance().setOutputDir(_parser.getSTPTracingOutputDirName());
   #endif
   //
   // Configure ITAC profiling

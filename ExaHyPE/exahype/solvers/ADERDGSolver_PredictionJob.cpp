@@ -1,5 +1,13 @@
 #include "ADERDGSolver.h"
 
+#if defined(ScoreP)
+#include "scorep/SCOREP_User.h"
+#endif
+
+#if defined(FileTrace)
+#include "exahype/offloading/STPStatsTracer.h"
+#endif
+
 #if defined(SharedTBB) && !defined(noTBBPrefetchesJobData)
 #include <immintrin.h>
 #endif
@@ -36,7 +44,15 @@ exahype::solvers::ADERDGSolver::PredictionJob::PredictionJob(
 
 
 bool exahype::solvers::ADERDGSolver::PredictionJob::run(bool runOnMasterThread) {
-  _solver.predictionAndVolumeIntegralBody(
+  #if defined ScoreP
+  SCOREP_USER_REGION( "exahype::solvers::ADERDGSolver::PredictionJob::run", SCOREP_USER_REGION_TYPE_FUNCTION ) 
+  #endif
+   
+  #if defined FileTrace
+  auto start = std::chrono::high_resolution_clock::now();
+  #endif
+
+  int numberIterations =  _solver.predictionAndVolumeIntegralBody(
       _cellDescription,_predictorTimeStamp,_predictorTimeStepSize,
       _uncompressBefore,_isSkeletonJob,_addVolumeIntegralResultToUpdate); // ignore return value
 
@@ -47,6 +63,49 @@ bool exahype::solvers::ADERDGSolver::PredictionJob::run(bool runOnMasterThread) 
     NumberOfEnclaveJobs.fetch_sub(1);
     assertion( NumberOfEnclaveJobs.load()>=0 );
   }
+  #if defined FileTrace
+  auto stop = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+
+  //std::stringstream stream;
+  #if defined Picard
+  exahype::offloading::STPStatsTracer::getInstance().writeTracingEventRunIterations(duration.count(), numberIterations, exahype::offloading::STPType::ADERDGPrediction);
+  #else
+  exahype::offloading::STPStatsTracer::getInstance().writeTracingEventRun(duration.count(), exahype::offloading::STPType::ADERDGPrediction);
+  exahype::offloading::STPStatsTracer::getInstance().writeTracingEventIterations(numberIterations, exahype::offloading::STPType::ADERDGPrediction);
+  #endif 
+//  int rank=tarch::parallel::Node::getInstance().getRank();
+//  #if defined SharedTBB
+//  stream<<rank<<"_";
+//  int threadId=tarch::multicore::Core::getInstance().getThreadNum();
+//  stream<<threadId;
+//  #endif
+//  stream<<".txt";
+//  std::string path=stream.str();
+//
+//  std::ofstream file;
+//  file.open(path,std::fstream::app);
+//  #if defined Picard
+//  file << duration.count() <<":"<<(numberIterations+1)<< std::endl;
+//  file.close();
+//  return false;
+//  #else
+//  file << duration.count() << std::endl;
+//  #endif
+//  file.close();
+//
+//  stream.str(std::string());
+//  stream<<"./TraceOutput/exahype_solvers_ADERDGSolver_PredictionJob_iterations_rank_";
+//  stream<<rank<<"_";
+//  stream<<threadId<<".txt";
+//  path=stream.str();
+//
+//  std::ofstream fileIter;
+//  fileIter.open(path,std::fstream::app);
+//  fileIter << (numberIterations+1) << std::endl;
+//  fileIter.close();
+  #endif
+
   return false;
 }
 

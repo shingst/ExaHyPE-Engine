@@ -1362,3 +1362,8 @@ std::string exahype::parser::Parser::getOffloadingInputFile() const {
   return result;
 }
 
+std::string exahype::parser::Parser::getSTPTracingOutputDirName() const {
+  std::string result = getStringFromPath("/stp_stats_tracing/stp_tracing_output_dir","", isOptional);
+  return result;
+}
+

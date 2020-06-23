@@ -191,6 +191,16 @@
          }
       }
     },
+    "stp_stats_tracing" : {
+      "type" : "object",
+      "properties" : {
+        "stp_tracing_output_dir" : {
+          "type" : "string", 
+          "title" : "The directory to store STP statistics into.", 
+          "default" : ""
+        }
+      }
+    },
     "memory_monitoring" : {
       "type" : "object",
       "properties" : {

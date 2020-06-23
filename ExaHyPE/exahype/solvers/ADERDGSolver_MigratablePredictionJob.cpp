@@ -1,5 +1,13 @@
 #if defined(DistributedOffloading) && defined(Parallel) && defined(SharedTBB)
 
+#if defined(ScoreP)
+#include "scorep/SCOREP_User.h"
+#endif
+
+#if defined(FileTrace)
+#include "exahype/offloading/STPStatsTracer.h"
+#endif
+
 #include "ADERDGSolver.h"
 
 #include "exahype/offloading/PerformanceMonitor.h"
@@ -78,6 +86,14 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run(
 #ifdef USE_ITAC
   VT_begin(event_stp);
 #endif
+
+#if defined ScoreP
+  SCOREP_USER_REGION( "exahype::solvers::ADERDGSolver::MigratablePredictionJob::run", SCOREP_USER_REGION_TYPE_FUNCTION )
+#endif
+  #if defined FileTrace
+  auto start = std::chrono::high_resolution_clock::now();
+  #endif
+
   bool result = false;
   bool hasComputed = false;
   int curr = std::atomic_fetch_add(&JobCounter, 1);
@@ -104,8 +120,31 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run(
     result = handleExecution(isCalledOnMaster, hasComputed);
 
 #if defined(GenerateNoise)
-exahype::offloading::NoiseGenerator::getInstance().generateNoiseSTP();
+    exahype::offloading::NoiseGenerator::getInstance().generateNoiseSTP();
 #endif
+
+  #if defined FileTrace 
+  auto stop = std::chrono::high_resolution_clock::now(); 
+  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start); 
+
+  exahype::offloading::STPStatsTracer::getInstance().writeTracingEventRun(duration.count(), exahype::offloading::STPType::ADERDGOwnMigratable);
+//  std::stringstream stream;
+//  stream<<exahype::parser::Parser::getSTPTracingOutputDirName()<<"/exahype_solvers_ADERDGSolver_MigratablePredictionJob_run_rank_";
+//  int rank = tarch::parallel::Node::getInstance().getRank();
+//  stream<<rank<<"_";
+//  //this will only work for 2 cores per Rank
+//#if defined (SharedTBB)
+//  int threadId=tarch::multicore::Core::getInstance().getThreadNum();
+//  stream<<threadId;
+//#endif
+//  stream<<".txt";
+//  std::string path=stream.str();
+//
+//  std::ofstream file;
+//  file.open(path,std::fstream::app);
+//  file << duration.count() << std::endl;
+//  file.close();
+  #endif
 
 #ifdef USE_ITAC
   VT_end(event_stp);
@@ -197,13 +236,15 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   }
 #endif
 
+  int iterations = 0;
+
   if (needToCompute) {
     //TODO: add support for lGradQhbnd
 #if defined(USE_ITAC)
     if(_isLocalReplica)
     VT_begin(event_stp_local_replica);
 #endif
-    _solver.fusedSpaceTimePredictorVolumeIntegral(lduh, lQhbnd, nullptr, lFhbnd,
+    iterations = _solver.fusedSpaceTimePredictorVolumeIntegral(lduh, lQhbnd, nullptr, lFhbnd,
         luh, cellDescription.getOffset() + 0.5 * cellDescription.getSize(),
         cellDescription.getSize(), _predictorTimeStamp, _predictorTimeStepSize,
         true);
@@ -230,6 +271,31 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   if (hasComputed)
     exahype::offloading::JobTableStatistics::getInstance().notifyExecutedTask();
 #endif
+
+#if defined(FileTrace)
+  if(hasComputed) {
+    exahype::offloading::STPStatsTracer::getInstance().writeTracingEventIteration(iterations, exahype::offloading::STPType::ADERDGOwnMigratable);
+  }
+#endif
+  //#if defined(FileTrace)
+//    std::stringstream stream;
+//    stream.str(std::string());
+//    stream<<"./TraceOutput/exahype_solvers_ADERDGSolver_OwnMigratableJob_iterations_rank_";
+//    int rank=tarch::parallel::Node::getInstance().getRank();
+//    stream<<rank<<"_";
+//#if defined(SharedTBB)
+//    int threadId=tarch::multicore::Core::getInstance().getThreadNum();
+//    stream<<threadId;
+//#endif
+//    stream<<".txt";
+//    std::string path=stream.str();
+//
+//    std::ofstream file;
+//    file.open(path,std::fstream::app);
+//    file << (iterations+1) << std::endl;
+//    file.close();
+//#endif
+
 
 #if defined (TaskSharing)
   //check one more time
@@ -302,21 +368,38 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
 #endif
     result = false;
     //TODO: support for lGradQhbnd
-    _solver.fusedSpaceTimePredictorVolumeIntegral(
-        _lduh,
-        _lQhbnd,
-        nullptr,
-        _lFhbnd,
-        _luh,
-        _center,
-        _dx,
-        _predictorTimeStamp,
-        _predictorTimeStepSize,
-        true);
+    int iterations=_solver.fusedSpaceTimePredictorVolumeIntegral(
+      _lduh,_lQhbnd,nullptr,_lFhbnd,
+      _luh,
+      _center,
+      _dx,
+      _predictorTimeStamp,
+      _predictorTimeStepSize,
+      true);
     hasComputed = true;
 #if defined(USE_ITAC)
     VT_end(event_stp_remote);
 #endif
+#if defined(FileTrace)
+    exahype::offloading::STPStatsTracer::getInstance().writeTracingEventIteration(iterations, exahype::offloading::STPType::ADERDGRemoteMigratable);
+#endif
+//    std::stringstream stream;
+//    stream.str(std::string());
+//    stream<<"./TraceOutput/exahype_solvers_ADERDGSolver_AlienMigratableJob_iterations_rank_";
+//    int rank=tarch::parallel::Node::getInstance().getRank();
+//    stream<<rank<<"_";
+//#if defined(SharedTBB)
+//    int threadId=tarch::multicore::Core::getInstance().getThreadNum();
+//    stream<<threadId;
+//#endif
+//    stream<<".txt";
+//    std::string path=stream.str();
+//
+//    std::ofstream file;
+//    file.open(path,std::fstream::app);
+//    file << (iterations+1) << std::endl;
+//    file.close();
+//#endif
   }
 #if defined(OffloadingUseProfiler)
   time += MPI_Wtime();
