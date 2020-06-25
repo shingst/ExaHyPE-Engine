@@ -98,6 +98,11 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run(
   bool hasComputed = false;
   int curr = std::atomic_fetch_add(&JobCounter, 1);
 
+#if defined(TaskSharing)
+ // exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(&_solver, false, 10000);
+  exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, 10000);
+#endif
+
   if (curr % 1000 == 0) {
     tarch::timing::Watch watch("exahype::MigratablePredictionJob::", "-", false,
         false);
@@ -185,8 +190,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
       <<" enclave jobs "<<NumberOfEnclaveJobs <<" remote jobs "<<NumberOfRemoteJobs
       <<" hash = "<<(size_t) key);
 
-  //exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false);
-  //exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(&_solver);
+//  exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(&_solver,10000);
+//  exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false,10000);
 
   tbb::concurrent_hash_map<JobTableKey, JobTableEntry>::accessor a_jobToData;
   bool found = _solver._jobDatabase.find(a_jobToData, key);
@@ -294,7 +299,6 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 
 #if defined (TaskSharing)
   //check one more time
-  //tbb::concurrent_hash_map<JobTableKey, StealablePredictionJobData*>::accessor a_jobToData;
   found = _solver._jobDatabase.find(a_jobToData, key);
   if (found && a_jobToData->second.status == JobOutcomeStatus::received) {
     MigratablePredictionJobData *data = a_jobToData->second.data;
@@ -306,9 +310,9 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     delete data;
   }
   else {
-    bool sendTaskOutcome =
-        AllocatedSTPsSend
-            <= exahype::offloading::PerformanceMonitor::getInstance().getTasksPerTimestep();
+    bool sendTaskOutcome = hasComputed &&
+        (AllocatedSTPsSend
+            <= exahype::offloading::PerformanceMonitor::getInstance().getTasksPerTimestep());
     // && exahype::offloading::MemoryMonitor::getInstance().getFreeMemMB()>10000;
 #if defined(TaskSharingUseHandshake)
     if(sendTaskOutcome) {

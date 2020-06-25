@@ -39,8 +39,8 @@ namespace exahype {
       sendBack = 1,
       receive = 2,
       receiveBack = 3,
-	  sendReplica = 4,
-	  receiveReplica = 5
+      sendReplica = 4,
+      receiveReplica = 5
     };
   }
 }

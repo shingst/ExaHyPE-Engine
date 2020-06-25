@@ -49,6 +49,11 @@
 #endif
 
 #if defined(DistributedOffloading)
+
+#ifndef MPI_BLOCKING
+#define MPI_BLOCKING false
+#endif
+
 #include "exahype/offloading/PerformanceMonitor.h"
 #include "exahype/offloading/StaticDistributor.h"
 #include "exahype/offloading/DiffusiveDistributor.h"
@@ -2594,14 +2599,14 @@ void exahype::solvers::ADERDGSolver::sendRequestForJobAndReceive(int jobTag, int
     if(key[2*DIMENSIONS]<_minTimeStamp) {
       MPI_Isend(&REQUEST_JOB_CANCEL, 1, MPI_INTEGER, rank, jobTag, teamInterCommAck, &sendRequest);
       exahype::offloading::OffloadingManager::getInstance().submitRequests(&sendRequest, 1, jobTag, rank,
-                                                               MigratablePredictionJob::sendAckHandlerReplication,
+                                                               MigratablePredictionJob::sendAckHandlerTaskSharing,
                                                                exahype::offloading::RequestType::sendReplica,
                                                                this, false);
       exahype::offloading::JobTableStatistics::getInstance().notifyDeclinedTask();
     }
     else {
       MigratablePredictionJobData *data = new MigratablePredictionJobData(*this);
-      JobTableEntry entry {data, ReplicationStatus::transit};
+      JobTableEntry entry {data, JobOutcomeStatus::transit};
       JobTableKey key_struct;
       for(int i=0; i<DIMENSIONS; i++)
         key_struct.center[i] = key[i];
@@ -2614,7 +2619,7 @@ void exahype::solvers::ADERDGSolver::sendRequestForJobAndReceive(int jobTag, int
       logDebug("sendRequestForJobAndReceive()", " allocated STPs receive "<<AllocatedSTPsReceive<<" allocated STPs send "<<AllocatedSTPsSend);
       MPI_Isend(&REQUEST_JOB_ACK, 1, MPI_INTEGER, rank, jobTag, teamInterCommAck, &sendRequest);
       exahype::offloading::OffloadingManager::getInstance().submitRequests(&sendRequest, 1, jobTag, rank,
-                                                                           MigratablePredictionJob::sendAckHandlerReplication,
+                                                                           MigratablePredictionJob::sendAckHandlerTaskSharing,
                                                                            exahype::offloading::RequestType::sendReplica,
                                                                             this, false);
       std::memcpy(data->_metadata, key, sizeof(double)*(2*DIMENSIONS+3));
@@ -2635,7 +2640,7 @@ void exahype::solvers::ADERDGSolver::sendRequestForJobAndReceive(int jobTag, int
                     4,
                     jobTag,
                     rank,
-                    MigratablePredictionJob::receiveHandlerReplication,
+                    MigratablePredictionJob::receiveHandlerTaskSharing,
                     exahype::offloading::RequestType::receiveReplica,
                     this,
                     false);
@@ -2644,7 +2649,7 @@ void exahype::solvers::ADERDGSolver::sendRequestForJobAndReceive(int jobTag, int
 
 }
 
-void exahype::solvers::ADERDGSolver::sendKeyOfReplicatedSTPToOtherTeams(MigratablePredictionJob *job) {
+void exahype::solvers::ADERDGSolver::sendKeyOfTaskOutcomeToOtherTeams(MigratablePredictionJob *job) {
     int teams = exahype::offloading::OffloadingManager::getInstance().getTMPITeamSize();
     int interCommRank = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank();
     MPI_Comm teamInterCommKey = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamCommunicatorKey();
@@ -2698,15 +2703,15 @@ void exahype::solvers::ADERDGSolver::sendKeyOfReplicatedSTPToOtherTeams(Migratab
 
      exahype::offloading::OffloadingManager::getInstance().submitRequests(
                    sendRequests, teams-1, tag, -1,
-                   MigratablePredictionJob::sendKeyHandlerReplication,
+                   MigratablePredictionJob::sendKeyHandlerTaskSharing,
                    exahype::offloading::RequestType::sendReplica,
-                   this, false);
+                   this, MPI_BLOCKING);
      exahype::offloading::JobTableStatistics::getInstance().notifySentKey();
      delete[] sendRequests;
 
 }
 
-void exahype::solvers::ADERDGSolver::sendFullReplicatedSTPToOtherTeams(MigratablePredictionJob *job) {
+void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredictionJob *job) {
 
     int teams = exahype::offloading::OffloadingManager::getInstance().getTMPITeamSize();
     int interCommRank = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank();
@@ -2805,9 +2810,9 @@ void exahype::solvers::ADERDGSolver::sendFullReplicatedSTPToOtherTeams(Migratabl
      }
 
     exahype::offloading::OffloadingManager::getInstance().submitRequests(sendRequests, (teams-1)*5, tag, -1,
-                                                                         MigratablePredictionJob::sendHandlerReplication,
+                                                                         MigratablePredictionJob::sendHandlerTaskSharing,
                                                                          exahype::offloading::RequestType::sendReplica,
-                                                                         this, false);
+                                                                         this, MPI_BLOCKING);
   delete[] sendRequests;
 #endif
 }
@@ -3154,11 +3159,11 @@ void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahyp
     AllocatedSTPsReceive--;
   }
   else {
-    JobTableEntry entry {data, ReplicationStatus::received};
+    JobTableEntry entry {data, JobOutcomeStatus::received};
     tbb::concurrent_hash_map<JobTableKey, JobTableEntry>::accessor a_jobToData;
     bool found = solver->_jobDatabase.find(a_jobToData, key);
     if (found) {
-      a_jobToData->second.status = ReplicationStatus::received;
+      a_jobToData->second.status = JobOutcomeStatus::received;
     a_jobToData.release();
   }
   else{
@@ -3186,10 +3191,10 @@ void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahyp
          5,
          tag,
          src,
-         MigratablePredictionJob::receiveHandlerReplication,
+         MigratablePredictionJob::receiveHandlerTaskSharing,
          exahype::offloading::RequestType::receiveReplica,
          solver,
-         false);
+         MPI_BLOCKING);
 #endif
 }
 #endif
@@ -3346,7 +3351,7 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
            1,
            statRepKey.MPI_TAG,
            statRepKey.MPI_SOURCE,
-           MigratablePredictionJob::receiveKeyHandlerReplication,
+           MigratablePredictionJob::receiveKeyHandlerTaskSharing,
            exahype::offloading::RequestType::receiveReplica,
            solver,
            false);
@@ -3385,7 +3390,7 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
 
          exahype::offloading::OffloadingManager::getInstance().submitRequests(
                              sendRequests, 4, statRepAck.MPI_TAG, statRepAck.MPI_SOURCE,
-                             MigratablePredictionJob::sendHandlerReplication,
+                             MigratablePredictionJob::sendHandlerTaskSharing,
                              exahype::offloading::RequestType::sendReplica,
                              solver, false);
          delete[] sendRequests;

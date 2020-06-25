@@ -66,7 +66,7 @@ exahype::offloading::OffloadingManager::OffloadingManager() :
   static const char *event_name_receiveB = "progressReceiveBacks";
   ierr = VT_funcdef(event_name_receiveB, VT_NOCLASS, &event_progress_receiveBack); assertion(ierr==0);
 #endif
-  MPI_Errhandler_set(MPI_COMM_WORLD, MPI_ERRORS_RETURN);
+  MPI_Comm_set_errhandler(MPI_COMM_WORLD, MPI_ERRORS_RETURN);
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   _localBlacklist = new double[nnodes];
@@ -533,7 +533,7 @@ bool exahype::offloading::OffloadingManager::progressRequestsOfType( RequestType
 
   tbb::concurrent_hash_map<int, std::function<void(exahype::solvers::Solver*, int, int)>>::accessor a_handler;
   tbb::concurrent_hash_map<int, exahype::solvers::Solver*>::accessor a_solver;
-  tbb::concurrent_hash_map<MPI_Request, int>::accessor a_groupId;
+  tbb::concurrent_hash_map<int, int>::accessor a_groupId;
   tbb::concurrent_hash_map<int, int>::accessor a_outstandingGroup;
   tbb::concurrent_hash_map<int, int>::accessor a_remoteRank;
   tbb::concurrent_hash_map<int, int>::accessor a_remoteTag;
