@@ -5,6 +5,7 @@
 #endif
 
 #if defined(FileTrace)
+#include <chrono>
 #include "exahype/offloading/STPStatsTracer.h"
 #endif
 
