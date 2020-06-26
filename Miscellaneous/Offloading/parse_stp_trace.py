@@ -1,26 +1,28 @@
 #!/usr/bin/env python3
 
 import sys
+import os
 
-basename = "exahype_solvers_ADERDGSolver_MigratablePredictionJob__run_iterations_rank_"
+#basename = "exahype_solvers_ADERDGSolver_MigratablePredictionJob__run_iterations_rank_"
 
 def readFile(filename):
-  f = open(filename, "r")
-   
   accIterations = 0
   accTime = 0
+  
+  if os.path.isfile(filename):
 
-  for line in f:
-    splitted = (line[:-1].split(":"))
-    iterations = int(splitted[0])
-    run = int(splitted[1])
-    accIterations += iterations+1
-    accTime += run
+    f = open(filename, "r")
+    for line in f:
+      splitted = (line[:-1].split(":"))
+      iterations = int(splitted[0])
+      run = int(splitted[1])
+      accIterations += iterations+1
+      accTime += run
+    f.close()
 
   return (accIterations, accTime)
-  f.close()
 
-def parseDir(dirname, ranks, threads):
+def parseDir(dirname, ranks, threads,basename):
   totaliterations = []
   totaltime = []
 

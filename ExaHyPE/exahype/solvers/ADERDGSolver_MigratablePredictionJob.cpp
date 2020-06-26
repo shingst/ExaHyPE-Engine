@@ -90,9 +90,6 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run(
 #if defined ScoreP
   SCOREP_USER_REGION( "exahype::solvers::ADERDGSolver::MigratablePredictionJob::run", SCOREP_USER_REGION_TYPE_FUNCTION )
 #endif
-  #if defined FileTrace
-  auto start = std::chrono::high_resolution_clock::now();
-  #endif
 
   bool result = false;
   bool hasComputed = false;
@@ -123,28 +120,6 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run(
     exahype::offloading::NoiseGenerator::getInstance().generateNoiseSTP();
 #endif
 
-  #if defined FileTrace 
-  auto stop = std::chrono::high_resolution_clock::now(); 
-  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start); 
-
-  exahype::offloading::STPStatsTracer::getInstance().writeTracingEventRun(duration.count(), exahype::offloading::STPType::ADERDGOwnMigratable);
-//  std::stringstream stream;
-//  stream<<exahype::parser::Parser::getSTPTracingOutputDirName()<<"/exahype_solvers_ADERDGSolver_MigratablePredictionJob_run_rank_";
-//  int rank = tarch::parallel::Node::getInstance().getRank();
-//  stream<<rank<<"_";
-//  //this will only work for 2 cores per Rank
-//#if defined (SharedTBB)
-//  int threadId=tarch::multicore::Core::getInstance().getThreadNum();
-//  stream<<threadId;
-//#endif
-//  stream<<".txt";
-//  std::string path=stream.str();
-//
-//  std::ofstream file;
-//  file.open(path,std::fstream::app);
-//  file << duration.count() << std::endl;
-//  file.close();
-  #endif
 
 #ifdef USE_ITAC
   VT_end(event_stp);
@@ -244,11 +219,23 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     if(_isLocalReplica)
     VT_begin(event_stp_local_replica);
 #endif
+#if defined FileTrace
+    auto start = std::chrono::high_resolution_clock::now();
+#endif
     iterations = _solver.fusedSpaceTimePredictorVolumeIntegral(lduh, lQhbnd, nullptr, lFhbnd,
         luh, cellDescription.getOffset() + 0.5 * cellDescription.getSize(),
         cellDescription.getSize(), _predictorTimeStamp, _predictorTimeStepSize,
         true);
     hasComputed = true;
+
+#if defined(FileTrace)
+    auto stop = std::chrono::high_resolution_clock::now(); 
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start); 
+
+   // exahype::offloading::STPStatsTracer::getInstance().writeTracingEventIteration(iterations, exahype::offloading::STPType::ADERDGRemoteMigratable);
+    exahype::offloading::STPStatsTracer::getInstance().writeTracingEventRunIterations(duration.count(), iterations, exahype::offloading::STPType::ADERDGOwnMigratable);
+    //exahype::offloading::STPStatsTracer::getInstance().writeTracingEventIteration(iterations, exahype::offloading::STPType::ADERDGOwnMigratable);
+#endif
 
     cellDescription.setHasCompletedLastStep(true);
 #if defined(USE_ITAC)
@@ -272,11 +259,6 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     exahype::offloading::JobTableStatistics::getInstance().notifyExecutedTask();
 #endif
 
-#if defined(FileTrace)
-  if(hasComputed) {
-    exahype::offloading::STPStatsTracer::getInstance().writeTracingEventIteration(iterations, exahype::offloading::STPType::ADERDGOwnMigratable);
-  }
-#endif
   //#if defined(FileTrace)
 //    std::stringstream stream;
 //    stream.str(std::string());
@@ -365,6 +347,9 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
 #if defined(USE_ITAC)
     VT_begin(event_stp_remote);
 #endif
+    #if defined FileTrace
+    auto start = std::chrono::high_resolution_clock::now();
+    #endif
     result = false;
     //TODO: support for lGradQhbnd
     int iterations=_solver.fusedSpaceTimePredictorVolumeIntegral(
@@ -380,7 +365,11 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
     VT_end(event_stp_remote);
 #endif
 #if defined(FileTrace)
-    exahype::offloading::STPStatsTracer::getInstance().writeTracingEventIteration(iterations, exahype::offloading::STPType::ADERDGRemoteMigratable);
+    auto stop = std::chrono::high_resolution_clock::now(); 
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start); 
+
+   // exahype::offloading::STPStatsTracer::getInstance().writeTracingEventIteration(iterations, exahype::offloading::STPType::ADERDGRemoteMigratable);
+    exahype::offloading::STPStatsTracer::getInstance().writeTracingEventRunIterations(duration.count(), iterations, exahype::offloading::STPType::ADERDGRemoteMigratable);
 #endif
 //    std::stringstream stream;
 //    stream.str(std::string());
