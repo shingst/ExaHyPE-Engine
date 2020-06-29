@@ -24,7 +24,7 @@
 {% macro idxLQi(t,z,y,n,x) %}{{i.index_5(t,z,y,n,x,nDof3D,nDof,nVar,nDofPad)}}{% endmacro %}{# lQhi #}
 {% macro idxLQhbnd(f,z_y,y_x,n) %}{{i.index_4(f,z_y,y_x,n,nDof3D,nDof,nDataPad)}}{% endmacro %}{# f = face | x face: z_y = z, y_x = y | y face: z_y = z, y_x = x | z face: z_y = y, y_x = x #}
 {% macro idxLFhbnd(f,z_y,y_x,n) %}{{i.index_4(f,z_y,y_x,n,nDof3D,nDof,nVarPad)}}{% endmacro %}{#  f = face | x face: z_y = z, y_x = y | y face: z_y = z, y_x = x | z face: z_y = y, y_x = x #}
-{% macro idxLGradQhbnd(f,d,z_y,y_x,n) %}{{i.index_5(f,z_y,y_x,n,nDim,nDof3D,nDof,nVarPad)}}{% endmacro %}{# f = face | x face: z_y = z, y_x = y | y face: z_y = z, y_x = x | z face: z_y = y, y_x = x #}
+{% macro idxLGradQhbnd(f,d,z_y,y_x,n) %}{{i.index_5(f,d,z_y,y_x,n,nDim,nDof3D,nDof,nVarPad)}}{% endmacro %}{# f = face | x face: z_y = z, y_x = y | y face: z_y = z, y_x = x | z face: z_y = y, y_x = x #}
 {% set x,y,z,n,t,f,zyx,it,it_t="x","y","z","n","t","f","zyx","it","it_t" %}{# shortcut for the idx #}
 {% set yx,zy,nx="yx","zy","nx" %}{# shortcut for the idx #}
 {% set dzy,dz,d="dzy","dz","d" %}{# shortcut for the idx #}
