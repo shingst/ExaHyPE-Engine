@@ -32,11 +32,11 @@ if __name__=="__main__":
   (x, iterations_pred, time_pred) = pt.parseDir(dirname, ranks, threads, basename1) 
   plot_stp_trace_single(ax1, x, iterations_pred, time_pred, x_label, y_label, 'b',0)
    
- # (x, iterations_own, time_own) = pt.parseDir(dirname, ranks, threads, basename2) 
- # plot_stp_trace_single(ax1, x, iterations_own, time_own, x_label, y_label, 'g',time_pred)
+  (x, iterations_own, time_own) = pt.parseDir(dirname, ranks, threads, basename2) 
+  plot_stp_trace_single(ax1, x, iterations_own, time_own, x_label, y_label, 'g',time_pred)
 
- # (x, iterations_remote, time_remote) = pt.parseDir(dirname, ranks, threads, basename3) 
- # plot_stp_trace_single(ax1, x, iterations_remote, time_remote, x_label, y_label, 'r',  [time_pred[i]+time_own[i] for i in range(0,ranks-1)])
+  (x, iterations_remote, time_remote) = pt.parseDir(dirname, ranks, threads, basename3) 
+  plot_stp_trace_single(ax1, x, iterations_remote, time_remote, x_label, y_label, 'r',  [time_pred[i]+time_own[i] for i in range(0,ranks-1)])
   
   plt.show()
   
