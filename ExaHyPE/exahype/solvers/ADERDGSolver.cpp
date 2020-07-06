@@ -4148,6 +4148,8 @@ void exahype::solvers::ADERDGSolver::recvMigratablePredictionJobOffload(
   int i = 0;
   MPI_Status_Offload stat;
 
+  double timing = -MPI_Wtime();
+
   if(metadata != nullptr) {
     ierr = MPI_Recv_offload(metadata, 2*DIMENSIONS+3, MPI_DOUBLE, srcRank, tag, comm, &stat);
     assertion(ierr==MPI_SUCCESS);
@@ -4168,6 +4170,9 @@ void exahype::solvers::ADERDGSolver::recvMigratablePredictionJobOffload(
   assertion(lFhbnd!=NULL);
   ierr = MPI_Recv_offload(lFhbnd, getBndFluxTotalSize(), MPI_DOUBLE, srcRank, tag, comm, &stat);
   assertion(ierr==MPI_SUCCESS);
+  
+  timing += MPI_Wtime();
+  logInfo("recvMigratablePredictionJobOffload"," receive "<<" took "<<timing);
 
 };
 
@@ -4184,28 +4189,38 @@ void exahype::solvers::ADERDGSolver::sendMigratablePredictionJobOffload(
   int i = 0;
   int ierr;
   //MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
+  int tid = tarch::multicore::Core::getInstance().getThreadNum(); 
+ 
+  double timing = -MPI_Wtime();
 
   if(metadata != nullptr) {
+    //ierr = MPI_Send_offload(metadata, 2*DIMENSIONS+3, MPI_DOUBLE, dest, tag, comm, tid);
     ierr = MPI_Send_offload(metadata, 2*DIMENSIONS+3, MPI_DOUBLE, dest, tag, comm);
     assertion(ierr==MPI_SUCCESS);
   }
 
   assertion(luh!=NULL);
+  //ierr = MPI_Send_offload(luh, getDataPerCell(), MPI_DOUBLE, dest, tag, comm, tid);
   ierr = MPI_Send_offload(luh, getDataPerCell(), MPI_DOUBLE, dest, tag, comm);
   assertion(ierr==MPI_SUCCESS);
 
   assertion(lduh!=NULL);
+  //ierr = MPI_Send_offload(lduh, getUpdateSize(), MPI_DOUBLE, dest, tag, comm, tid);
   ierr = MPI_Send_offload(lduh, getUpdateSize(), MPI_DOUBLE, dest, tag, comm);
   assertion(ierr==MPI_SUCCESS);
 
   assertion(lQhbnd!=NULL);
+  //ierr = MPI_Send_offload(lQhbnd, getBndTotalSize(), MPI_DOUBLE, dest, tag, comm, tid);
   ierr = MPI_Send_offload(lQhbnd, getBndTotalSize(), MPI_DOUBLE, dest, tag, comm);
   assertion(ierr==MPI_SUCCESS);
 
   assertion(lFhbnd!=NULL);
+  //ierr = MPI_Send_offload(lFhbnd, getBndFluxTotalSize(), MPI_DOUBLE, dest, tag, comm, tid);
   ierr = MPI_Send_offload(lFhbnd, getBndFluxTotalSize(), MPI_DOUBLE, dest, tag, comm);
   assertion(ierr==MPI_SUCCESS);
 
+  timing += MPI_Wtime();
+  logInfo("sendMigratablePredictionJobOffload"," send "<<" took "<<timing);
 };
 #endif
 

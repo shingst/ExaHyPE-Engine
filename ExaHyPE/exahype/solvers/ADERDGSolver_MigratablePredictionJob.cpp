@@ -98,7 +98,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run(
   bool hasComputed = false;
   int curr = std::atomic_fetch_add(&JobCounter, 1);
 
-#if defined(TaskSharing)
+#if defined(TaskSharing) && !defined(OffloadingUseProgressThread)
  // exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(&_solver, false, 10000);
   exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, 10000);
 #endif
