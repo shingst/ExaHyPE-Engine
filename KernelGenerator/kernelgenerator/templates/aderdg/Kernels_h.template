@@ -36,7 +36,7 @@ namespace {{namespaceName}} {
     double* restrict lduh,
     double* restrict lQhbnd,
     double* restrict lFhbnd,
-{% if useSplitCKScalar or useSplitCKVect %}
+{% if useSplitCK %}
     double* restrict lQi,
     double* restrict lQiNext,
     double* restrict lPi,   // for NCP or Source
@@ -68,7 +68,7 @@ namespace {{namespaceName}} {
     double* restrict lduh,
     double* restrict lQhbnd,
     double* restrict lFhbnd,
-{% if useSplitCKScalar or useSplitCKVect %}
+{% if useSplitCK %}
     double* restrict lQi,
     double* restrict lQiNext,
     double* restrict lPi,   // for NCP or Source
@@ -104,13 +104,19 @@ namespace {{namespaceName}} {
     double* restrict lFhbnd,
     double* restrict lQi,
     double* restrict rhs,
+{% if predictorRecompute %}
+    double* restrict lPi,
+{% else %}
     double* restrict lFi,
     double* restrict lSi,   // for NCP or Source
+{% endif %}
     double* restrict lQhi,
     double* restrict lFhi,
     double* restrict lShi,  // for NCP or Source
     double* restrict gradQ, // for NCP or Source or viscousFlux
+{% if not predictorRecompute %}
     double* restrict gradQVg, // for viscousFlux
+{% endif %}
     const double* const restrict luh,
     const double inverseDx, //Assume dx[0] == dx[1] == dx[2]
     const double dt

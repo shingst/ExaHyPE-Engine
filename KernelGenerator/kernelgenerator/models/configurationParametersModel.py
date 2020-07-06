@@ -63,24 +63,25 @@ class ConfigurationParametersModel(AbstractModelBaseClass):
             self.context["PSiSize"]   =   -1
             self.context["PSiDerivativeSize"] =   -1
             if self.context["isLinear"]:
-                if(self.context["useSplitCKScalar"]):
-                    # Linear + split CK
-                    self.context["lQiSize"]   = nVarPad*(nDof**nDim)
-                    self.context["lQiNextSize"] = nVarPad*(nDof**nDim)
-                    self.context["lPiSize"]   = nParPad*(nDof**nDim)
-                    self.context["lQhiSize"]  = nVarPad*(nDof**nDim)
-                    self.context["lFhiSize"]  = nVarPad*(nDof**nDim)
-                    self.context["gradQSize"] = nVarPad*(nDof**nDim)
-                    self.context["PSiSize"]   = nDof*(nDof**nDim)*nVarPad
-                elif(self.context["useSplitCKVect"]):
-                    # Linear + split CK
-                    self.context["lQiSize"]   = nDof3D*nDof*nVar*nDofPad
-                    self.context["lQiNextSize"] = nDof3D*nDof*nVar*nDofPad
-                    self.context["lPiSize"]   = nDof3D*nDof*nPar*nDofPad
-                    self.context["lQhiSize"]  = nDof3D*nDof*nVar*nDofPad
-                    self.context["lFhiSize"]  = nDof3D*nDof*nVar*nDofPad
-                    self.context["gradQSize"] = nDof3D*nDof*nVar*nDofPad
-                    self.context["PSiSize"]   = nDof*nDof3D*nDof*nVar*nDofPad
+                if(self.context["useSplitCK"]):
+                    if self.context["useVectPDE"]:
+                        # Linear + split CK vect
+                        self.context["lQiSize"]   = nDof3D*nDof*nVar*nDofPad
+                        self.context["lQiNextSize"] = nDof3D*nDof*nVar*nDofPad
+                        self.context["lPiSize"]   = nDof3D*nDof*nPar*nDofPad
+                        self.context["lQhiSize"]  = nDof3D*nDof*nVar*nDofPad
+                        self.context["lFhiSize"]  = nDof3D*nDof*nVar*nDofPad
+                        self.context["gradQSize"] = nDof3D*nDof*nVar*nDofPad
+                        self.context["PSiSize"]   = nDof*nDof3D*nDof*nVar*nDofPad
+                    else:
+                        # Linear + split CK scalar
+                        self.context["lQiSize"]   = nVarPad*(nDof**nDim)
+                        self.context["lQiNextSize"] = nVarPad*(nDof**nDim)
+                        self.context["lPiSize"]   = nParPad*(nDof**nDim)
+                        self.context["lQhiSize"]  = nVarPad*(nDof**nDim)
+                        self.context["lFhiSize"]  = nVarPad*(nDof**nDim)
+                        self.context["gradQSize"] = nVarPad*(nDof**nDim)
+                        self.context["PSiSize"]   = nDof*(nDof**nDim)*nVarPad
                 else: 
                     # default linear
                     self.context["lQiSize"]   = nDataPad*(nDof**nDim)*(1+nDof)
@@ -96,17 +97,41 @@ class ConfigurationParametersModel(AbstractModelBaseClass):
                         self.context["PSiSize"]   = (nDof+1)*(nDof**nDim)*nVarPad
                         self.context["PSiDerivativeSize"] = self.context["PSiSize"]
             else:
-                # nonlinear
-                self.context["lQiSize"]   = nDataPad*(nDof**(nDim+1))
-                self.context["lQhiSize"]  = nDataPad*(nDof**nDim)
-                if self.context["useFlux"]:
-                    self.context["lFiSize"]   = nVarPad*(nDof**(nDim+1))*nDim
-                    self.context["lFhiSize"]  = nVarPad*(nDof**nDim)*nDim
-                if self.context["useSource"] or self.context["useNCP"]:
-                    self.context["lSiSize"]   = nVarPad*(nDof**(nDim+1))
-                    self.context["lShiSize"]  = nVarPad*(nDof**nDim)
-                if self.context["useNCP"]:
-                    self.context["gradQSize"] = nVarPad*(nDof**nDim)*nDim
+            # nonlinear
+                if self.context["predictorRecompute"]:
+                    if self.context["useVectPDE"]:
+                        self.context["lQiSize"]   = nDofPad*nVar*(nDof**nDim)
+                        self.context["lQhiSize"]  = nDofPad*nVar*nDof*nDof3D
+                        if nPar > 0:
+                            self.context["lPiSize"]   = nDofPad*nPar*nDof*nDof3D
+                        if self.context["useFlux"]:
+                            self.context["lFhiSize"]  = nDofPad*nVar*nDof*nDof3D*nDim
+                        if self.context["useSource"] or self.context["useNCP"]:
+                            self.context["lShiSize"]  = nDofPad*nVar*nDof*nDof3D
+                        if self.context["useNCP"] or self.context["useViscousFlux"]:
+                            self.context["gradQSize"] = nDofPad*nVar*nDof*nDof3D*nDim
+                    else: #scalar predictorRecompute
+                        self.context["lQiSize"]   = nVarPad*(nDof**(nDim+1))
+                        self.context["lQhiSize"]  = nVarPad*(nDof**nDim)
+                        if nPar > 0:
+                            self.context["lPiSize"]   = nParPad*(nDof**nDim)
+                        if self.context["useFlux"]:
+                            self.context["lFhiSize"]  = nVarPad*(nDof**nDim)*nDim
+                        if self.context["useSource"] or self.context["useNCP"]:
+                            self.context["lShiSize"]  = nVarPad*(nDof**nDim)
+                        if self.context["useNCP"] or self.context["useViscousFlux"]:
+                            self.context["gradQSize"] = nVarPad*(nDof**nDim)*nDim
+                else: # default nonlinear
+                    self.context["lQiSize"]   = nDataPad*(nDof**(nDim+1))
+                    self.context["lQhiSize"]  = nDataPad*(nDof**nDim)
+                    if self.context["useFlux"]:
+                        self.context["lFiSize"]   = nVarPad*(nDof**(nDim+1))*nDim
+                        self.context["lFhiSize"]  = nVarPad*(nDof**nDim)*nDim
+                    if self.context["useSource"] or self.context["useNCP"]:
+                        self.context["lSiSize"]   = nVarPad*(nDof**(nDim+1))
+                        self.context["lShiSize"]  = nVarPad*(nDof**nDim)
+                    if self.context["useNCP"] or self.context["useViscousFlux"]:
+                        self.context["gradQSize"] = nVarPad*(nDof**nDim)*nDim
             
             # Face buffer size (Riemann)
             self.context["BndFaceSize"]      = nDataPad*(nDof*nDof3D)

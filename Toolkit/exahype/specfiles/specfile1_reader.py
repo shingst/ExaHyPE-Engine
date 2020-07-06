@@ -319,7 +319,7 @@ class SpecFile1Reader():
                 if token_s==term:
                     context[opt_dbg].append(term)
                     found_token=True
-            for term in ["cerkguess","notimeavg","maxpicarditer","split_ck"]:
+            for term in ["cerkguess","notimeavg","maxpicarditer"]:
                 if token_s.startswith(term):
                     mappedTerm = term.replace("maxpicarditer","fix_picard_iterations")
                     context[stp][mappedTerm]=True

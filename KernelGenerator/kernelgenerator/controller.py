@@ -95,8 +95,9 @@ class Controller:
                 "useMaterialParamVect"  : args["useMaterialParamVect"],
                 "quadratureType"        : ("Gauss-Lobatto" if args["useGaussLobatto"] else "Gauss-Legendre"),
                 "useCERKGuess"          : args["useCERKGuess"],
-                "useSplitCKScalar"      : args["useSplitCKScalar"],
-                "useSplitCKVect"        : args["useSplitCKVect"]
+                "useSplitCK"            : args["useSplitCK"],
+                "useVectPDE"            : args["useVectPDE"],
+                "predictorRecompute"    : args["predictorRecompute"]
             })
             self.config["useSourceOrNCP"] = self.config["useSource"] or self.config["useNCP"]
         elif self.config["kernelType"] == "limiter":

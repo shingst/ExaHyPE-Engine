@@ -27,6 +27,8 @@ extern double *nodes;
 extern double *weights1;
 extern double *weights2;
 extern double *weights3;
+extern double *weights4;
+extern double *iweights1;
 extern double *iweights3;
 
 {% if kernelType=="limiter" %}
