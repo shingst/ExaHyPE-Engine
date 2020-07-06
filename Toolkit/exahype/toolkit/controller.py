@@ -58,8 +58,6 @@ class Controller:
     
     def __init__(self):
         """TODO"""
-        # Check the python version according to the configuration
-        Configuration.checkPythonVersion()
         
         logging.basicConfig(format="%(filename)s:%(lineno)s(%(funcName)s):%(levelname)s %(message)s")
         self.log = logging.getLogger()

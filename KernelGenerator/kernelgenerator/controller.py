@@ -50,9 +50,6 @@ class Controller:
     
     def __init__(self, inputConfig = None):
         """Initialize the base config from the command line inputs"""
-        
-        Configuration.checkPythonVersion()
-        
         if inputConfig == None:
             args = ArgumentParser.parseArgs()
         else:

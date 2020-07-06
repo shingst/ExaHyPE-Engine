@@ -61,13 +61,15 @@ class Configuration:
     # set to true to print models runtime
     runtimeDebug = False;
 
-    @staticmethod
-    def checkPythonVersion():
-        """check version. Python 3.3 required"""
-        requiredVersion = (3,3)
-        currentVersion  = sys.version_info
-        if(requiredVersion > currentVersion):
-            sys.exit("Requires Python 3.3 or newer. Abort.")
+
+
+def checkPythonVersion():
+    """check version. Python 3.6 required"""
+    requiredVersion = (3,6)
+    currentVersion  = sys.version_info
+    if(requiredVersion > currentVersion):
+        sys.exit("Requires Python 3.6 or newer. Abort.")
+
 
 
 def checkDependencies():

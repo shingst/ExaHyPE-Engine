@@ -115,52 +115,53 @@ void SWE::MySWESolver::flux(const double* const Q,double** const F) {
   g[3] = 0.0;
 
 }
-double SWE::MySWESolver::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, const double* gradQL, const double* gradQR, const double* cellSize, int direction){
-    double LL[NumberOfVariables] = {0.0};
-    double LR[NumberOfVariables] = {0.0};
 
-    eigenvalues(qL, direction, LL);
-    eigenvalues(qR, direction, LR);
+// double SWE::MySWESolver::riemannSolver(double* fL, double *fR, const double* qL, const double* qR, const double* gradQL, const double* gradQR, const double* cellSize, int direction) {
+//     double LL[NumberOfVariables] = {0.0};
+//     double LR[NumberOfVariables] = {0.0};
 
-    double smax = 0.0;
-    for (int i = 0; i < NumberOfVariables; i++) {
-        const double abs_sL_i = std::abs(LL[i]);
-        smax = std::max( abs_sL_i, smax );
-    }
-    for (int i = 0; i < NumberOfVariables; i++) {
-        const double abs_sR_i = std::abs(LR[i]);
-        smax = std::max( abs_sR_i, smax );
-    }
+//     eigenvalues(qL, direction, LL);
+//     eigenvalues(qR, direction, LR);
 
-    double FL2[DIMENSIONS][NumberOfVariables] = {0.0};
-    double FR2[DIMENSIONS][NumberOfVariables] = {0.0};
-    double* FL[DIMENSIONS]={FL2[0], FL2[1]};
-    double* FR[DIMENSIONS]={FR2[0], FR2[1]};
-    flux(qL, FL);
-    flux(qR, FR);
+//     double smax = 0.0;
+//     for (int i = 0; i < NumberOfVariables; i++) {
+//         const double abs_sL_i = std::abs(LL[i]);
+//         smax = std::max( abs_sL_i, smax );
+//     }
+//     for (int i = 0; i < NumberOfVariables; i++) {
+//         const double abs_sR_i = std::abs(LR[i]);
+//         smax = std::max( abs_sR_i, smax );
+//     }
 
-    double flux[NumberOfVariables] = {0.0};
+//     double FL2[DIMENSIONS][NumberOfVariables] = {0.0};
+//     double FR2[DIMENSIONS][NumberOfVariables] = {0.0};
+//     double* FL[DIMENSIONS]={FL2[0], FL2[1]};
+//     double* FR[DIMENSIONS]={FR2[0], FR2[1]};
+//     flux(qL, FL);
+//     flux(qR, FR);
 
-    flux[0] = 0.5 * (FL[direction][0] + FR[direction][0]) - 0.5 * smax * (qR[0] + qR[3] - qL[0] - qL[3]);
-    flux[1] = 0.5 * (FL[direction][1] + FR[direction][1]) - 0.5 * smax * (qR[1] - qL[1]);
-    flux[2] = 0.5 * (FL[direction][2] + FR[direction][2]) - 0.5 * smax * (qR[2] - qL[2]);
-    flux[3] = 0.5 * (FL[direction][3] + FR[direction][3]);
+//     double flux[NumberOfVariables] = {0.0};
 
-    double hRoe = 0.5*(qL[0] + qR[0]);
+//     flux[0] = 0.5 * (FL[direction][0] + FR[direction][0]) - 0.5 * smax * (qR[0] + qR[3] - qL[0] - qL[3]);
+//     flux[1] = 0.5 * (FL[direction][1] + FR[direction][1]) - 0.5 * smax * (qR[1] - qL[1]);
+//     flux[2] = 0.5 * (FL[direction][2] + FR[direction][2]) - 0.5 * smax * (qR[2] - qL[2]);
+//     flux[3] = 0.5 * (FL[direction][3] + FR[direction][3]);
 
-    double bm = std::max(qL[3], qR[3]);
-    double Deta = std::max(qR[0]+qR[3] - bm, 0.0) - std::max(qL[0]+qL[3] - bm, 0.0);
+//     double hRoe = 0.5*(qL[0] + qR[0]);
 
-    double djump[NumberOfVariables] = {0.0};
+//     double bm = std::max(qL[3], qR[3]);
+//     double Deta = std::max(qR[0]+qR[3] - bm, 0.0) - std::max(qL[0]+qL[3] - bm, 0.0);
 
-    djump[direction + 1] = 0.5*grav*hRoe*Deta;
+//     double djump[NumberOfVariables] = {0.0};
+
+//     djump[direction + 1] = 0.5*grav*hRoe*Deta;
 
 
-    flux[0] = 0.5 * (FL[direction][0] + FR[direction][0]) - 0.5*smax*Deta;
-    for (int i = 0; i < NumberOfVariables; i++){
-        fL[i] = flux[i] + djump[i];
-        fR[i] = flux[i] - djump[i];
-    }
+//     flux[0] = 0.5 * (FL[direction][0] + FR[direction][0]) - 0.5*smax*Deta;
+//     for (int i = 0; i < NumberOfVariables; i++){
+//         fL[i] = flux[i] + djump[i];
+//         fR[i] = flux[i] - djump[i];
+//     }
 
-    return smax;
-}
+//     return smax;
+// }
