@@ -149,7 +149,7 @@ def parseRanksNodesCoreCounts(jobs):
             sys.exit()
         ranks = entryMatch[1]
         nodes = entryMatch[2]
-        serversPerRank = entryMatch[3]
+        serversPerRank = entryMatch[5]
         if int(nodes) > int(ranks):
             print("ERROR: specified ranks ("+ranks+") must always be greater than or equal to specified nodes ("+nodes+").\n"\
                   "       Error occured in entry: '"+entryMatch[0]+"'",file=sys.stderr) 

@@ -661,7 +661,7 @@ def verifyAllJobScriptsExist():
     
     allJobScriptsExist = True
     for run in runNumbers:
-        for configId,config in enumerate(ranksNodesCoreCounts):
+        for configId,config in enumerate(ranksNodesCoreCountsServers):
             ranks = config.ranks
             nodes = config.nodes
             ranksPerNode = str( math.ceil(float(ranks)/float(nodes)) )
@@ -701,7 +701,7 @@ def verifyAllSpecFilesExist():
     for parameterDict in dictProduct(parameterSpace):
         parameterDictHash = hashDictionary(parameterDict)
         
-        for config in ranksNodesCoreCounts:
+        for config in ranksNodesCoreCountsServers:
             ranks = config.ranks
             nodes = config.nodes
             ranksPerNode = str( math.ceil(float(ranks)/float(nodes)) )
@@ -726,7 +726,7 @@ def verifyAllSpecFilesExist():
 
 def hashSweep():
     chain = ""
-    for config in ranksNodesCoreCounts:
+    for config in ranksNodesCoreCountsServers:
         chain += config.ranks+";"+config.nodes+";"
         for coreCount in config.coreCounts:
             chain += coreCount.cores+";"+coreCount.consumers
@@ -796,7 +796,7 @@ def submitJobs(submitAllJobs=False):
     # loop over job scrips
     numberOfJobs = 0
     for run in runNumbers:
-        for configId,config in enumerate(ranksNodesCoreCounts):
+        for configId,config in enumerate(ranksNodesCoreCountsServers):
             ranks = config.ranks
             nodes = config.nodes
             ranksPerNode = str( math.ceil(float(ranks)/float(nodes)) )
