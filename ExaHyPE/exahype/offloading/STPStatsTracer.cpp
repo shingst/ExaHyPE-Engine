@@ -13,6 +13,7 @@
 
 #include <sstream>
 #include <fstream>
+#include <iostream>
 
 #include "tarch/parallel/Node.h"
 #include "tarch/multicore/Core.h"
@@ -33,6 +34,10 @@ STPStatsTracer::~STPStatsTracer() {
 
 void STPStatsTracer::setOutputDir(std::string outputDir) {
   _outputDir = outputDir;
+  std::stringstream stream;
+  stream.str(std::string());
+  stream<<"mkdir -p "<<outputDir;
+  system(stream.str().c_str());
 }
 
 void STPStatsTracer::writeTracingEventIteration(unsigned int iterations, STPType type) {
@@ -75,7 +80,7 @@ void STPStatsTracer::writeTracingEventRun(unsigned int elapsed, STPType type) {
 
   switch(type) {
     case STPType::ADERDGPrediction:
-      stream<<"solvers_ADERDGSolver_MigratablePredictionJob_"; break;
+      stream<<"solvers_ADERDGSolver_PredictionJob_"; break;
     case STPType::ADERDGOwnMigratable:
       stream<<"_solvers_ADERDGSolver_OwnMigratableJob_"; break;
     case STPType::ADERDGRemoteMigratable:
@@ -106,7 +111,7 @@ void STPStatsTracer::writeTracingEventRunIterations(unsigned int iterations, uns
 
   switch(type) {
     case STPType::ADERDGPrediction:
-      stream<<"solvers_ADERDGSolver_MigratablePredictionJob_"; break;
+      stream<<"solvers_ADERDGSolver_PredictionJob_"; break;
     case STPType::ADERDGOwnMigratable:
       stream<<"_solvers_ADERDGSolver_OwnMigratableJob_"; break;
     case STPType::ADERDGRemoteMigratable:

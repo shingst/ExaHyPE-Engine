@@ -1,7 +1,10 @@
+/*
 #include "AbstractGRMHDSolver_ADERDG.h"
 #include "GRMHDSolver_ADERDG_Variables.h"
 #include "InitialData/InitialData.h"
 #include "Fortran/PDE.h"
+
+#undef RNSID_AVAILABLE
 
 #ifndef RNSID_AVAILABLE
 
@@ -15,7 +18,7 @@ rnsid::rnsid() {
 
 void rnsid::Interpolate(const double* x, double t, double* Q) {}
 
-#else /* RNSID_AVAILABLE */
+#else 
 
 #include "rnsid/rnsid.h"
 
@@ -112,7 +115,7 @@ void rnsid::Interpolate(const double* pos, double t, double* Q) {
 	} else {
 		get_conserved_quantities(this, pos, Q);
 	}
-	
+	*/
 	/*
 	double V[nVar] = {0.0};
 	#if DIMENSIONS == 2
@@ -130,7 +133,7 @@ void rnsid::Interpolate(const double* pos, double t, double* Q) {
 	#endif
 	*/
 	
+/*
+} */
 
-}
-
-#endif /* RNSID_AVAILABLE */
+//#endif /* RNSID_AVAILABLE */ 

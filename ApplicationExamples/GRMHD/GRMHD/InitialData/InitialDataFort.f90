@@ -19,8 +19,8 @@ RECURSIVE SUBROUTINE InitialData(x, t, Q)
 	! Call InitialOrsagTang(x, 0.0 , Q)
 	
 	! CALL InitialAccretionDisc(x, 0.0,  Q)
-	!CALL InitialAccretionDisc3D(x, 0.0, Q)
-	CALL InitialDataTN(x, t,  Q)
+	CALL InitialAccretionDisc3D(x, 0.0, Q)
+	!CALL InitialDataTN(x, t,  Q)
     
 END SUBROUTINE InitialData
 
