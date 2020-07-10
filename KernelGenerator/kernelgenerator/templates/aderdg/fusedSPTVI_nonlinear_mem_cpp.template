@@ -93,16 +93,16 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   const double inverseDt = 1.0 / dt;
   const double dtBydx = inverseDx * dt; //Assume dx[0] == dx[1] == dx[2]
 {% if useNCP or (useFlux and useCERKGuess)  or useViscousFlux %}
-  double dudxT_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
+  double dudx_T_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
   
   // 0. precompute 1/dx * dudx_T. Assume dx[0] == dx[1] == dx[2]
-  #pragma omp simd aligned(dudxT_by_dx,dudx_T:ALIGNMENT)
+  #pragma omp simd aligned(dudx_T_by_dx,dudx_T:ALIGNMENT)
   for(int it=0;it<{{nDof*nDofPad}};it++) {
-    dudxT_by_dx[it] = inverseDx * dudx_T[it];
+    dudx_T_by_dx[it] = inverseDx * dudx_T[it];
   }
 {% if useLibxsmm %}
 #if defined(USE_IPO) && ! defined(UNSAFE_IPO)
-  volatile double doNotOptimizeAway_dudx_by_dt = dudxT_by_dx[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
+  volatile double doNotOptimizeAway_dudx_by_dt = dudx_T_by_dx[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
 #endif   
 {% endif %}
 {% endif %}
@@ -227,20 +227,20 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       // Compute the "derivatives" (contributions of the stiffness matrix)      
       // x direction (independent from the y and z derivatives)
       for (int zy = 0; zy < {{nDof3D*nDof}}; zy++) {
-        {{ m.matmul('gradQ_x', 'lQi', 'dudxT_by_dx', 'gradQ', idxLQi(t,0,zy,0,0), '0', idxGradQ(0,0,zy,0,0)) | indent(8) }}{##}
+        {{ m.matmul('gradQ_x', 'lQi', 'dudx_T_by_dx', 'gradQ', idxLQi(t,0,zy,0,0), '0', idxGradQ(0,0,zy,0,0)) | indent(8) }}{##}
       }
       
       // y direction (independent from the x and z derivatives)
       for (int z = 0; z < {{nDof3D}}; z++) {
         for (int x = 0; x < {{nDof}}; x++) {
-          {{ m.matmul('gradQ_y', 'lQi', 'dudxT_by_dx', 'gradQ', idxLQi(t,z,0,x,0), '0', idxGradQ(1,z,0,x,0)) | indent(10) }}{##}
+          {{ m.matmul('gradQ_y', 'lQi', 'dudx_T_by_dx', 'gradQ', idxLQi(t,z,0,x,0), '0', idxGradQ(1,z,0,x,0)) | indent(10) }}{##}
         }
       }
        
 {% if nDim==3 %}
       // z direction (independent from the x and y derivatives)
       for (int yx = 0; yx < {{nDof*nDof}}; yx++) {
-        {{ m.matmul('gradQ_z', 'lQi', 'dudxT_by_dx', 'gradQ', idxLQi(t,0,0,yx,0), '0', idxGradQ(2,0,0,yx,0)) | indent(8) }}{##}
+        {{ m.matmul('gradQ_z', 'lQi', 'dudx_T_by_dx', 'gradQ', idxLQi(t,0,0,yx,0), '0', idxGradQ(2,0,0,yx,0)) | indent(8) }}{##}
       }
 {% endif %}
 {% endif %}{# useNCP or useViscousFlux #}
@@ -406,20 +406,20 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
     // Compute the "derivatives" (contributions of the stiffness matrix)      
     // x direction (independent from the y and z derivatives)
     for (int zy = 0; zy < {{nDof3D*nDof}}; zy++) {
-      {{ m.matmul('gradQ_x', 'lQi', 'dudxT_by_dx', 'gradQ', idxLQi(t,0,zy,0,0), '0', idxGradQ(0,0,zy,0,0)) | indent(8) }}{##}
+      {{ m.matmul('gradQ_x', 'lQi', 'dudx_T_by_dx', 'gradQ', idxLQi(t,0,zy,0,0), '0', idxGradQ(0,0,zy,0,0)) | indent(8) }}{##}
     }
     
     // y direction (independent from the x and z derivatives)
     for (int z = 0; z < {{nDof3D}}; z++) {
       for (int x = 0; x < {{nDof}}; x++) {
-        {{ m.matmul('gradQ_y', 'lQi', 'dudxT_by_dx', 'gradQ', idxLQi(t,z,0,x,0), '0', idxGradQ(1,z,0,x,0)) | indent(10) }}{##}
+        {{ m.matmul('gradQ_y', 'lQi', 'dudx_T_by_dx', 'gradQ', idxLQi(t,z,0,x,0), '0', idxGradQ(1,z,0,x,0)) | indent(10) }}{##}
       }
     }
      
 {% if nDim==3 %}
     // z direction (independent from the x and y derivatives)
     for (int yx = 0; yx < {{nDof*nDof}}; yx++) {
-      {{ m.matmul('gradQ_z', 'lQi', 'dudxT_by_dx', 'gradQ', idxLQi(t,0,0,yx,0), '0', idxGradQ(2,0,0,yx,0)) | indent(8) }}{##}
+      {{ m.matmul('gradQ_z', 'lQi', 'dudx_T_by_dx', 'gradQ', idxLQi(t,0,0,yx,0), '0', idxGradQ(2,0,0,yx,0)) | indent(8) }}{##}
     }
 {% endif %}
 {% endif %}
@@ -623,20 +623,20 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   // Compute the "derivatives" (contributions of the stiffness matrix)      
   // x direction (independent from the y and z derivatives)
   for (int zy = 0; zy < {{nDof3D*nDof}}; zy++) {
-    {{ m.matmul('gradQ_x', 'lQhi', 'dudxT_by_dx', 'gradQ', idxLQhi(0,zy,0,0), '0', idxGradQ(0,0,zy,0,0)) | indent(4) }}{##}
+    {{ m.matmul('gradQ_x', 'lQhi', 'dudx_T_by_dx', 'gradQ', idxLQhi(0,zy,0,0), '0', idxGradQ(0,0,zy,0,0)) | indent(4) }}{##}
   }
   
   // y direction (independent from the x and z derivatives)
   for (int z = 0; z < {{nDof3D}}; z++) {
     for (int x = 0; x < {{nDof}}; x++) {
-      {{ m.matmul('gradQ_y', 'lQhi', 'dudxT_by_dx', 'gradQ', idxLQhi(z,0,x,0), '0', idxGradQ(1,z,0,x,0)) | indent(6) }}{##}
+      {{ m.matmul('gradQ_y', 'lQhi', 'dudx_T_by_dx', 'gradQ', idxLQhi(z,0,x,0), '0', idxGradQ(1,z,0,x,0)) | indent(6) }}{##}
     }
   }
    
 {% if nDim==3 %}
   // z direction (independent from the x and y derivatives)
   for (int yx = 0; yx < {{nDof*nDof}}; yx++) {
-    {{ m.matmul('gradQ_z', 'lQhi', 'dudxT_by_dx', 'gradQ', idxLQhi(0,0,yx,0), '0', idxGradQ(2,0,0,yx,0)) | indent(4) }}{##}
+    {{ m.matmul('gradQ_z', 'lQhi', 'dudx_T_by_dx', 'gradQ', idxLQhi(0,0,yx,0), '0', idxGradQ(2,0,0,yx,0)) | indent(4) }}{##}
   }
 {% endif %}
 
