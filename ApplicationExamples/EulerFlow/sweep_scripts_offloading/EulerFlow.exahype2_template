@@ -8,7 +8,7 @@
   "architecture": "{{architecture}}",
   "computational_domain": {
     "dimension": {{dimension}},
-    "end_time": 0.1,
+    "end_time" : 0.1,
     "offset": [
       0.0,
       0.0,
@@ -29,7 +29,7 @@
       "thread_stack_size" : 12582912
   },
   "stp_stats_tracing" : {
-     "stp_tracing_output_dir" : "{{stp_tracing_output_dir}}
+     "stp_tracing_output_dir" : "{{stp_tracing_output_dir}}"
   },
   "distributed_memory": {
     "offloading": "{{offloading}}",
