@@ -69,8 +69,14 @@ class MatmulConfig:
     # prefetching
     prefetchStrategy = ""
     
+    # precision
+    precision="DP" # "DP" = double, "SP" = float
+    
     # Constructor
-    def __init__(self, M, N, K, LDA, LDB, LDC, alpha, beta, alignment_A, alignment_C, name, prefetchStrategy, operationType="gemm"):
+    def __init__(self, M, N, K, LDA, LDB, LDC, alpha, beta, alignment_A, alignment_C, name, prefetchStrategy, operationType="gemm", precision="DP"):
+        if precision not in ["DP", "SP"]:
+            print("MatmulConfig: Unknown precision")
+            exit()
         if((M > LDC) or (K > LDB) or (M > LDA)):
             print("MatmulConfig: Incompatible matrix sizes and leading dimensions")
             exit()
@@ -95,6 +101,7 @@ class MatmulConfig:
         self.name = name
         self.prefetchStrategy = prefetchStrategy
         self.baseroutinename = operationType+"_"+str(M)+"_"+str(N)+"_"+str(K)+"_"+name
+        self.precision = precision
         
 
     def __repr__(self):

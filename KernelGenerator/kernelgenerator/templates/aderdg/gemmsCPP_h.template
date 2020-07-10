@@ -20,8 +20,12 @@
 namespace {{namespaceName}} {
 {% endfor %}
 
-{% for gemm in gemmList %}
-void {{gemm}}(const double* A, const double* B, double* C); 
+{% for gemm,precision in gemmList %}
+{% if precision == "DP" %}
+void {{gemm}}(const double* A, const double* B, double* C);
+{% else %}
+void {{gemm}}(const float* A, const float* B, float* C);
+{% endif %}
 {% endfor %}
 
 {% for namespaceName in codeNamespaceList %}
