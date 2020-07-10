@@ -31,8 +31,8 @@
     "autotuning_strategy": "dummy"
   },
   "optimisation": {
-    "fuse_algorithmic_steps": true,
-    "fuse_algorithmic_steps_factor": 0.99
+    "fuse_algorithmic_steps": "all",
+    "fuse_algorithmic_steps_diffusion_factor": 0.99
   },
   "solvers": [
     {
