@@ -67,7 +67,8 @@ class Controller:
             "codeNamespace"         : args["namespace"],
             "tempVarsOnStack"       : args["tempVarsOnStack"],
             "architecture"          : args["architecture"],
-            "useLibxsmm"            : Configuration.useLibxsmm,
+            "useLibxsmm"            : Configuration.matmulLib == "Libxsmm",
+            "useEigen"              : Configuration.matmulLib == "Eigen",
             "pathToLibxsmmGemmGenerator"  : Configuration.pathToLibxsmmGemmGenerator,
             "runtimeDebug"          : Configuration.runtimeDebug #for debug
         }
@@ -209,11 +210,14 @@ class Controller:
             if exception.errno != errno.EEXIST:
                 raise
         
-        # remove all .cpp, .cpph, .c and .h files (we are in append mode!)
+        # remove all .cpp, .cpph, .c and .h files (we are in append mode!) as well as previous symlink (see symlinkBLASlib())
         for fileName in os.listdir(self.config["pathToOutputDirectory"]):
             _ , ext = os.path.splitext(fileName)
-            if(ext in [".cpp", ".cpph", ".c", ".h"]):
+            if ext in [".cpp", ".cpph", ".c", ".h"] or fileName in ["Eigen"]:
                 os.remove(self.config["pathToOutputDirectory"] + "/" + fileName)
+        
+        # Symlink the BLAS library if needed
+        self.symlinkBLASlib()
         
         # run the models new files
         
@@ -287,3 +291,7 @@ class Controller:
                 " " + matmul.precision
             bashCommand = self.config["pathToLibxsmmGemmGenerator"] + commandLineArguments
             subprocess.call(bashCommand.split())
+            
+    def symlinkBLASlib(self):
+        if self.config["useEigen"]:
+            os.symlink(os.path.join(Configuration.pathToEigen, "Eigen"), os.path.join(self.config["pathToOutputDirectory"], "Eigen"))

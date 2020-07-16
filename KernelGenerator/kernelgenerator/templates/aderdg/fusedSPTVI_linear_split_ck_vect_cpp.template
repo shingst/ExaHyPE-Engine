@@ -29,9 +29,8 @@
 #include "{{pathToOptKernel}}/Kernels.h"
 #include "{{pathToOptKernel}}/DGMatrices.h"
 #include "{{pathToOptKernel}}/Quadrature.h"
-{% if useLibxsmm %}
-#include "{{pathToOptKernel}}/gemmsCPP.h"
-{% endif %}
+
+{{ m.matmulInclude() }}{# include required headers for matmul #}
 
 #include "{{solverHeader}}"
 
@@ -84,6 +83,14 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   __assume_aligned(weights3, ALIGNMENT);
   __assume_aligned(iweights3,ALIGNMENT);
 #endif
+
+  {{ m.setupMatmul('flux_x_sck_vect') | indent(2) }}{##}
+  {{ m.setupMatmul('flux_y_or_z_sck_vect') | indent(2) }}{##}
+  {{ m.setupMatmul('flux_y_sck_vect') | indent(2) }}{##}
+  {{ m.setupMatmul('flux_z_sck_vect') | indent(2) }}{##}
+  {{ m.setupMatmul('gradQ_x_sck_vect')| indent(2) }}{##}
+  {{ m.setupMatmul('gradQ_y_sck_vect')| indent(2) }}{##}
+  {{ m.setupMatmul('gradQ_z_sck_vect')| indent(2) }}{##}
 
 
   const double invDt = 1. / dt;

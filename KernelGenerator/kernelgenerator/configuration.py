@@ -38,13 +38,16 @@ class Configuration:
 
     # path to the gemm generator from this file
     pathToLibxsmmGemmGenerator = os.path.abspath(os.path.join(pathToExaHyPERoot, "Submodules", "libxsmm", "bin", "libxsmm_gemm_generator"))
-    
+
+    # path to eigen, will be symlinked into the kernels directory if eigen is used (see matmulLib)
+    pathToEigen                = os.path.abspath(os.path.join(pathToExaHyPERoot, "Submodules", "eigen"))
+
     # path to jinja2
     pathToJinja2               = os.path.abspath(os.path.join(pathToExaHyPERoot, "Submodules", "jinja", "src"))
-    
+
     # path to markupsafe
     pathToMarkupsafe           = os.path.abspath(os.path.join(pathToExaHyPERoot, "Submodules", "markupsafe", "src"))
-    
+
     # simd size of the accepted architectures
     simdWidth = { "noarch" : 1,
                   "wsm"    : 2,
@@ -55,9 +58,11 @@ class Configuration:
                   "skx"    : 8
                 }
 
-    # set to false to use standard loops instead of libxsmm
-    useLibxsmm = True;
-    
+    # choose the BLAS library for the matmul: "None" (= C++ loops), "Libxsmm" or "Eigen"
+    matmulLib = "Libxsmm";
+    #matmulLib = "Eigen";
+    #matmulLib = "None";
+
     # set to true to print models runtime
     runtimeDebug = False;
 
