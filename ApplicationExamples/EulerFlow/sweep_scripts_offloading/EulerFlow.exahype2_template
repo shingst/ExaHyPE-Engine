@@ -1,0 +1,150 @@
+{
+  "project_name": "Euler",
+  "paths": {
+    "peano_kernel_path": "./Peano",
+    "exahype_path": "./ExaHyPE",
+    "output_directory": "./ApplicationExamples/EulerFlow/EulerFlow"
+  },
+  "architecture": "{{architecture}}",
+  "computational_domain": {
+    "dimension": {{dimension}},
+    "end_time" : 0.1,
+    "offset": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "width": [
+      15.0,
+      15.0,
+      15.0
+    ]
+  },
+  "shared_memory": {
+      "cores": {{coresPerRank}},
+      "properties_file": "sharedmemory.properties",
+      "autotuning_strategy": "dummy",
+      "background_job_consumers": {{consumerTasks}},
+      "manual_pinning": false,
+      "thread_stack_size" : 12582912
+  },
+  "stp_stats_tracing" : {
+     "stp_tracing_output_dir" : "{{stp_tracing_output_dir}}"
+  },
+  "distributed_memory": {
+    "offloading": "{{offloading}}",
+    "offloading_input_file" : "",
+    "offloading_progress" : "{{offloading_progress}}",
+    "offloading_CCP_temperature" : {{offloading_CCP_temperature}},
+    "offloading_diffusion_temperature" : {{offloading_diffusion_temperature}},
+    "offloading_CCP_frequency" : {{offloading_CCP_frequency}},
+    "offloading_CCP_steps" : {{offloading_CCP_steps}},
+    "offloading_update_temperature" : {{offloading_update_temperature}},
+    "offloading_increase_temp_threshold" : {{offloading_increase_temp_threshold}},
+    "timeout": 12000,
+    "load_balancing_type": "static",
+    "buffer_size"            : {{bufferSize}},    
+    "load_balancing_strategy": "hotspot",
+    "node_pool_strategy": "fair",
+    "ranks_per_node"         : {{ranksPerNode}}   
+  },
+  "optimisation": {
+    "fuse_algorithmic_steps"				: "all",
+    "fuse_algorithmic_steps_rerun_factor"		  	: 0.99,
+    "fuse_algorithmic_steps_diffusion_factor"		  	: 0.99,
+    "spawn_predictor_as_background_thread"           : {{spawnBackgroundThread}},    
+    "spawn_amr_background_threads"			: true,
+    "spawn_update_as_background_thread"                 : false,
+    "disable_vertex_exchange_in_time_steps"     : true,
+    "time_step_batch_factor"                : 1.0,
+    "disable_metadata_exchange_in_batched_time_steps"   : true,
+    "double_compression"                : 0.0,
+    "spawn_double_compression_as_background_thread" : false                       
+  },
+  "solvers": [
+    {
+      "type": "ADER-DG",
+      "name": "MyEulerSolver",
+      "order": {{order}},
+      "maximum_mesh_size": {{maximumMeshSize}},
+      "maximum_mesh_depth": {{maximumMeshDepth}},
+      "time_stepping": "{{timeStepping}}",
+      "aderdg_kernel": {
+        "language": "C",
+        "nonlinear": true,
+        "terms": [
+          "flux"
+        ],
+        "space_time_predictor": {},
+        "optimised_terms": [],
+        "optimised_kernel_debugging": [],
+        "implementation": "{{kernels}}"
+      },
+      "point_sources": 0,
+      "variables": [
+        {
+          "name": "rho",
+          "multiplicity": 1
+        },
+        {
+          "name": "j",
+          "multiplicity": 3
+        },
+        {
+          "name": "E",
+          "multiplicity": 1
+        }
+      ],
+      "_plotters": [
+        {
+          "type": "Peano::Legendre::cells::hdf5",
+          "name": "ConservedQuantitiesWriter",
+          "time": 0.0,
+          "repeat": 0.05,
+          "output": "./conserved",
+          "variables": 5,
+          "select": {
+            "x": 0.0,
+            "y": 0.0
+          }
+        },
+        {
+          "type": "vtk::Cartesian::vertices::ascii",
+          "name": "IntegralsWriter",
+          "time": 0.0,
+          "repeat": 0.05,
+          "output": "./output/these-files-should-not-be-there",
+          "variables": 0,
+          "select": {
+            "x": 0.0,
+            "y": 0.0
+          }
+        },
+        {
+          "type": "vtk::Cartesian::vertices::ascii",
+          "name": "PrimitivesWriter",
+          "time": 0.0,
+          "repeat": 0.05,
+          "output": "./primitive",
+          "variables": 5,
+          "select": {
+            "x": 0.0,
+            "y": 0.0
+          }
+        },
+        {
+          "type": "vtk::Cartesian::vertices::ascii",
+          "name": "ExactPrimitivesWriter",
+          "time": 0.0,
+          "repeat": 0.05,
+          "output": "./exact-primitive",
+          "variables": 5,
+          "select": {
+            "x": 0.0,
+            "y": 0.0
+          }
+        }
+      ]
+    }
+  ]
+}

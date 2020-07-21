@@ -15,9 +15,7 @@
     "width": [
       1000.0,
       1000.0
-    ],
-    "outside_cells": 0,
-    "outside_cells_left": 0  
+    ]
   },
   "shared_memory": {
     "cores": 12,
@@ -38,7 +36,7 @@
     "double_compression": 0.0,
     "spawn_double_compression_as_background_thread": false
   },
-  "architecture": "hsw",
+  "architecture": "skx",
   "solvers": [
     {
       "type": "ADER-DG",
