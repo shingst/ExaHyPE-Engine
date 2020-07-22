@@ -390,11 +390,12 @@ def renderJobScript(jobScriptTemplate,jobScriptBody,jobs,
     
     # put optional sweep options in context
     context["mail"]         = jobs["mail"]
-    context["ranksPerNode"]        = ranksPerNode
+    context["ranksPerNode"] = ranksPerNode
     context["time"]         = jobs["time"]
     context["class"]        = jobClass
     context["islands"]      = islands
     context["coresPerRank"] = str( int ( int(jobs["num_cpus"]) / int(ranksPerNode) ) )
+    context["cores"]        = cores
     context["serversPerRank"] = serversPerRank    
  
     # now verify template parameters are defined in options file
