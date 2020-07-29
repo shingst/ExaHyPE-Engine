@@ -40,7 +40,7 @@ class Configuration:
     pathToLibxsmmGemmGenerator = os.path.abspath(os.path.join(pathToExaHyPERoot, "Submodules", "libxsmm", "bin", "libxsmm_gemm_generator"))
     
     # path to jinja2
-    pathToJinja2               = os.path.abspath(os.path.join(pathToExaHyPERoot, "Submodules", "jinja"))
+    pathToJinja2               = os.path.abspath(os.path.join(pathToExaHyPERoot, "Submodules", "jinja", "src"))
     
     # path to markupsafe
     pathToMarkupsafe           = os.path.abspath(os.path.join(pathToExaHyPERoot, "Submodules", "markupsafe", "src"))
