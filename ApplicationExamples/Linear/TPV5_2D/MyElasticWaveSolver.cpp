@@ -12,10 +12,11 @@
 
 #include <algorithm>
 #include "kernels/KernelUtils.h"
+#include "kernels/DGMatrices.h"
 #if defined(_GLL)
-#include "kernels/GaussLobattoBasis.h"
+#include "kernels/GaussLobattoQuadrature.h"
 #else
-#include "kernels/GaussLegendreBasis.h"
+#include "kernels/GaussLegendreQuadrature.h"
 #endif
 
 
@@ -79,11 +80,11 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double* const luh, const tarch
 //       //				     q_x,q_y,
 //       //				     r_x,r_y);
 
-//       //double x  =  (offset_x+width_x*kernels::lobatto::nodes[basisSize-1][basisSize-1-i]);
-//       //double y  =  (offset_y+width_y*kernels::lobatto::nodes[basisSize-1][basisSize-1-j]);
+//       //double x  =  (offset_x+width_x*kernels::gaussLobattoNodes[basisSize-1][basisSize-1-i]);
+//       //double y  =  (offset_y+width_y*kernels::gaussLobattoNodes[basisSize-1][basisSize-1-j]);
 
-//      double x  =  (offset_x+width_x*kernels::legendre::nodes[basisSize-1][i]);
-//      double y  =  (offset_y+width_y*kernels::legendre::nodes[basisSize-1][j]);
+//      double x  =  (offset_x+width_x*kernels::gaussLegendreNodes[basisSize-1][i]);
+//      double y  =  (offset_y+width_y*kernels::gaussLegendreNodes[basisSize-1][j]);
     
       
 //     }
@@ -92,8 +93,8 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double* const luh, const tarch
     for (int j=0; j< num_nodes; j++){
       for (int i=0; i< num_nodes; i++){
 
-	double x  =  (offset_x+width_x*kernels::legendre::nodes[basisSize-1][i]);
-	double y  =  (offset_y+width_y*kernels::legendre::nodes[basisSize-1][j]);
+	double x  =  (offset_x+width_x*kernels::gaussLegendreNodes[basisSize-1][i]);
+	double y  =  (offset_y+width_y*kernels::gaussLegendreNodes[basisSize-1][j]);
 
 	// if( level <= getCoarsestMeshLevel()){ 
 // 	  double x= gl_vals_x[id_xy(j,i)];

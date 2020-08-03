@@ -12,7 +12,7 @@ class Configuration:
     pathToExaHyPERoot   = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
     
     # absolute path to jinja2
-    pathToJinja2        = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "Submodules", "jinja"))
+    pathToJinja2        = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "Submodules", "jinja", "src"))
     
     # absolute path to markupsafe (jinja2 dependency)
     pathToMarkupsafe    = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "Submodules", "markupsafe", "src"))
@@ -34,13 +34,13 @@ class Configuration:
     }
 
 
-    @staticmethod
-    def checkPythonVersion():
-        """check version. Python 3.3 required"""
-        requiredVersion = (3,3)
-        currentVersion  = sys.version_info
-        if(requiredVersion > currentVersion):
-            sys.exit("Requires Python 3.3 or newer. Abort.")
+
+def checkPythonVersion():
+    """check version. Python 3.6 required"""
+    requiredVersion = (3,6)
+    currentVersion  = sys.version_info
+    if(requiredVersion > currentVersion):
+        sys.exit("Requires Python 3.6 or newer. Abort.")
 
 
 

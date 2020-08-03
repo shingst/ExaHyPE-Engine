@@ -10,10 +10,6 @@ namespace idx = FOCCZ4::FOCCZ4Solver_ADERDG_Variables::shortcuts;
 constexpr int nVar  = FOCCZ4::AbstractFOCCZ4Solver_ADERDG::NumberOfVariables;
 constexpr int order = FOCCZ4::AbstractFOCCZ4Solver_ADERDG::Order;
 
-#define TDIM DIMENSIONS
-#include "SVEC/tensish.cpph"     // We use tensish for simplicity
-//#include "InitialData/ADMBase.h" // We use ADMBase for nonconformal computation
-
 #include <cmath>
 #include <cassert>
 #include <stdexcept>
@@ -28,22 +24,19 @@ ADMIntegralsSimple::Sphere::Sphere(double radius, int ntheta, int nphi) :
 }
 
 void ADMIntegralsSimple::Sphere::reset() {
-	TDO(i, sphereDim) measured_points[i] = 0;
-	TDO(i, numIntegrands) I[i] = 0;
+	for(int i=0; i< sphereDim; i++)
+        measured_points[i] = 0;
+	for(int i=0; i<numIntegrands; i++)
+        I[i] = 0;
 	times.clear();
 }
 
 constexpr double pi = M_PI;
 
-using namespace ADMIntegralsSimple;
 using namespace std;
-using namespace tensish;
-//using namespace FOCCZ4_InitialData; // ADMBase
-
 using array3 = std::array<double,3>; // instead of using dvec = tarch::la::Vector<DIMENSIONS, double>;
 
 // helpers:
-
 inline array3 cartesian(const double R, const double theta, const double phi) {
 	array3 pos;
 	pos[0] = R * sin(theta) * cos(phi);
@@ -57,13 +50,6 @@ namespace SphericalCoordinates { ///< to avoid magic numbers
 	constexpr int theta = 1;
 	constexpr int phi   = 2;
 }
-
-
-#define eps  tensish::sym::levi  // epsilon function alias
-
-// These are stolen from ADMBase.cpp
-using metric_t = tensish::metric::generic<square::const_shadow_D>;
-using auxGamma_t = tensish::generic::stored<square::const_shadow<sym::row_major, DIMENSIONS>, DIMENSIONS>;
 
 void ADMIntegralsSimple::Sphere::Integrand(const double* const xpos, const double* const dxpos, const double* const Q, double* I) {
 	using namespace SphericalCoordinates;
@@ -213,11 +199,9 @@ void ADMIntegralsSimple::Sphere::plotPatch(const double* const offsetOfPatch,
 	assert(DIMENSIONS == 3);
 	assertTimes(timeStamp);
 	
-	// This code comes from the GRMHD/Writers/SphereIntegrals.cpp, a dumb an inefficient
-	// way to sample the 2d sphere with a uniform rectangular grid with ntheta x nphi points
-	// and a loop which just checks for each one whether it is contained in the current patch or not.
-
-	const double dx[3] = { /* dr */ 0, /* dtheta */ pi/num_points[0], /* dphi */ 2*pi/num_points[1] };
+	const double dx[3] = { /* dr */ 0, 
+                           /* dtheta */ pi/num_points[0],
+                           /* dphi */ 2*pi/num_points[1] };
 	int ind[3]; // running indices for rho (not used), theta, phi
 	
 	array3 pos; // integration point
@@ -228,14 +212,15 @@ void ADMIntegralsSimple::Sphere::plotPatch(const double* const offsetOfPatch,
 		
 		// check if it is inside the current cell
 		bool isinside = true;
-		DFOR(d) 
+		for(int d=0; d<DIMENSIONS;d++)
             isinside = isinside && offsetOfPatch[d] < pos[d] && pos[d] < (offsetOfPatch[d]+sizeOfPatch[d]);
 		if(!isinside) continue;
 		
 		double Q[nVar], dI[numIntegrands];
 		
 		// for the time being, evaluate all quantities on the integration point
-		TDO(k,nVar) Q[k] = kernels::legendre::interpolate(offsetOfPatch, sizeOfPatch, pos.data(), nVar, k, order, uPatch);
+		for(int k=0; k < nVar; k++)
+            Q[k] = kernels::legendre::interpolate(offsetOfPatch, sizeOfPatch, pos.data(), nVar, k, order, uPatch);
 
 		// Evaluate Integral contribution at point pos
 		Integrand(pos.data(), (double*)dx, (double*)Q, (double*)dI);
@@ -263,10 +248,12 @@ void ADMIntegralsSimple::Sphere::assertTimes(double timeStamp) {
 
 double ADMIntegralsSimple::Sphere::coverage() const {
 	double coverage[sphereDim];
-	TDO(d,sphereDim) coverage[d] = (double)measured_points[d] / num_points[d];
+	for(int d=0; d<sphereDim; d++)
+        coverage[d] = (double)measured_points[d] / num_points[d];
 	
 	double totalCoverage = 0;
-	TDO(d,sphereDim) totalCoverage += coverage[d] / sphereDim;
+	for(int d=0; d<sphereDim; d++)
+        totalCoverage += coverage[d] / sphereDim;
 	
 	return totalCoverage;
 }

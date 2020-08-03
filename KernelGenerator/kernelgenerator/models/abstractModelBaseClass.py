@@ -36,6 +36,8 @@ sys.path.insert(1, Configuration.pathToMarkupsafe)
 
 import jinja2
 
+#print(jinja2.__version__) #debug
+
 class AbstractModelBaseClass():
     """Base class of a Models
     

@@ -23,29 +23,9 @@ A script is provided to fetch them, and if necessary build them.
 
 ### Instalation and demo ###
 
-Copy and paste these commands to start with a working ExaHyPE application and compile the demo application _EulerFlow_:
-
-    git clone git@gitlab.lrz.de:exahype/ExaHyPE-Engine.git
-    ./ExaHyPE-Engine/Submodules/updateSubmodules.sh
-
-Now you are ready to follow compile and run an ExaHyPE application [according to the guidebook](http://www5.in.tum.de/exahype/guidebook.pdf):
-
-    cd ExaHyPE-Engine/
-    ./Toolkit/toolkit.sh ApplicationExamples/EulerFlow.exahype
-    cd ApplicationExamples/EulerFlow/
-    
-    export COMPILER=gnu
-    export TBB_INC=/usr/include/tbb
-    export TBB_LIB=/usr/lib/tbb
-    make
-    ./ExaHyPE-Euler ../EulerFlow.exahype
-
-Look into `RUN.sh` for an alternative, more elaborate way how to setp the installation and it's dependencies. You also might want to use the `exa` tool which makes it super simple to start and use an installation from the scratch: After downloading, just execute
-
-    exa=Miscellaneous/BuildScripts/exa.sh 
-    $exa bootstrap
-    $exa compile-run EulerFlow
-    
+The wiki contains a mini installation guide as well as a short demo
+You can find it at:
+https://gitlab.lrz.de/exahype/ExaHyPE-Engine/-/wikis/Intro
 
 ## General remarks ##
 
@@ -64,12 +44,6 @@ Please, don't commit the following:
 
 Please write good commit messages that document how you changed ExaHyPE.
 
-
-## Regenerate ExaHyPE's kernel gluecode ##
- 
-```
-java -jar ~/workspace/peano/pdt/pdt.jar --generate-gluecode exahype/exahype.specification exahype ~/workspace/peano/pdt/usrtemplates:../Peano/multiscalelinkedcell
-```
 
 
 ## Build a new release ##

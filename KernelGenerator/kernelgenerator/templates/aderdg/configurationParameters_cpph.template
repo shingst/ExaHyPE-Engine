@@ -32,6 +32,10 @@ namespace {{namespaceName}} {
                                              
   constexpr bool isLinear()                  {return {{isLinearCText}};}
 
+  // Vect methods configuration
+  constexpr int getVectStride()              {return {{nDofPad}};}
+  constexpr int getVectLength()              {return {{nDof}};}
+
   // Array sizes
   constexpr int getlQiSize()     {return {{lQiSize}};}
   constexpr int getlFiSize()     {return {{lFiSize}};} 
