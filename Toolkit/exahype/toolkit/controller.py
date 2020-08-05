@@ -317,6 +317,7 @@ class Controller:
             context["offloading"] = "none"
             context["offloadingProgress"] = "none"
             context["useReplicationSaving"] = False
+            context["useLocalRecompute"] = False
  
            
         # kernels

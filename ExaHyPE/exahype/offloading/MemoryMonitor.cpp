@@ -44,7 +44,8 @@ std::string exahype::offloading::MemoryMeasurement::to_string() {
 }
 
 exahype::offloading::MemoryMonitor::MemoryMonitor()
- : _start(std::chrono::system_clock::now()), _lastMeasurementTimestamp(std::chrono::system_clock::now())
+ : _lastMeasurementTimestamp(std::chrono::system_clock::now()),
+   _start(std::chrono::system_clock::now())
 {}
 
 exahype::offloading::MemoryMonitor::~MemoryMonitor() {}
@@ -66,16 +67,16 @@ std::size_t exahype::offloading::MemoryMonitor::getFreeMemMB() {
 
   char *line_buf = work;
   size_t size = 256;
-  size_t line_size = 0;
-  line_size = getline(&line_buf, &size, f);
-  line_size = getline(&line_buf, &size, f);
+  //size_t line_size = 0;
+  (void) getline(&line_buf, &size, f);
+  (void) getline(&line_buf, &size, f);
 
   fclose(f);
 
-  size_t result;
-  char *p;
+  size_t result = 0;
+  //char *p;
 
-  for(int i=0; i<size; i++) {
+  for(unsigned int i=0; i<size; i++) {
     if(isdigit(line_buf[i])) {
       result = strtol(&line_buf[i], &line_buf, 10);
       break;

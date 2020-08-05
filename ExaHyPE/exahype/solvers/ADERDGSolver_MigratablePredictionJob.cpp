@@ -35,6 +35,7 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
       _lduh(nullptr),
       _lQhbnd(nullptr),
       _lFhbnd(nullptr),
+	  _lGradQhbnd(nullptr),
       _isLocalReplica(false) {
   LocalStealableSTPCounter++;
   NumberOfEnclaveJobs++;
@@ -45,7 +46,7 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
 exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob(
     ADERDGSolver& solver, const int cellDescriptionsIndex, const int element,
     const double predictorTimeStamp, const double predictorTimeStepSize,
-    double *luh, double *lduh, double *lQhbnd, double *lFhbnd, double *dx,
+    double *luh, double *lduh, double *lQhbnd, double *lFhbnd, double *lGradQhbnd, double *dx,
     double *center, const int originRank, const int tag) :
       tarch::multicore::jobs::Job(
         tarch::multicore::jobs::JobType::BackgroundTask, 0,
@@ -61,6 +62,7 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
       _lduh(lduh),
       _lQhbnd(lQhbnd),
       _lFhbnd(lFhbnd),
+	  _lGradQhbnd(lGradQhbnd),
       _isLocalReplica(false) {
 
   for (int i = 0; i < DIMENSIONS; i++) {
@@ -101,8 +103,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run(
 #endif
 
   if (curr % 1000 == 0) {
-    tarch::timing::Watch watch("exahype::MigratablePredictionJob::", "-", false,
-        false);
+    tarch::timing::Watch watch("exahype::MigratablePredictionJob::", "-", false, false);
     watch.startTimer();
     result = handleExecution(isCalledOnMaster, hasComputed);
     watch.stopTimer();
@@ -139,6 +140,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   double *luh = static_cast<double*>(cellDescription.getSolution());
   double *lduh = static_cast<double*>(cellDescription.getUpdate());
   double *lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
+  double *lGradQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictorGradient());
   double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
 
 #if defined(TaskSharing)
@@ -185,6 +187,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     std::memcpy(lduh, &data->_lduh[0], data->_lduh.size() * sizeof(double));
     std::memcpy(lQhbnd, &data->_lQhbnd[0], data->_lQhbnd.size() * sizeof(double));
     std::memcpy(lFhbnd, &data->_lFhbnd[0], data->_lFhbnd.size() * sizeof(double));
+    std::memcpy(lGradQhbnd, &data->_lGradQhbnd[0], data->_lGradQhbnd.size() * sizeof(double));
     exahype::offloading::JobTableStatistics::getInstance().notifySavedTask();
 
     _solver._jobDatabase.erase(a_jobToData);
@@ -222,9 +225,15 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 #if defined FileTrace
     auto start = std::chrono::high_resolution_clock::now();
 #endif
-    iterations = _solver.fusedSpaceTimePredictorVolumeIntegral(lduh, lQhbnd, nullptr, lFhbnd,
-        luh, cellDescription.getOffset() + 0.5 * cellDescription.getSize(),
-        cellDescription.getSize(), _predictorTimeStamp, _predictorTimeStepSize,
+    iterations = _solver.fusedSpaceTimePredictorVolumeIntegral(lduh,
+    	lQhbnd,
+		lGradQhbnd,
+		lFhbnd,
+        luh,
+		cellDescription.getOffset() + 0.5 * cellDescription.getSize(),
+        cellDescription.getSize(),
+		_predictorTimeStamp,
+		_predictorTimeStepSize,
         true);
     hasComputed = true;
 
@@ -351,9 +360,12 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
     auto start = std::chrono::high_resolution_clock::now();
     #endif
     result = false;
-    //TODO: support for lGradQhbnd
+
     int iterations=_solver.fusedSpaceTimePredictorVolumeIntegral(
-      _lduh,_lQhbnd,nullptr,_lFhbnd,
+      _lduh,
+	  _lQhbnd,
+	  _lGradQhbnd,
+	  _lFhbnd,
       _luh,
       _center,
       _dx,
@@ -396,21 +408,26 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
 
   //send back
   if (_originRank != myRank) {
-    MPI_Request sendBackRequests[4];
+    MPI_Request sendBackRequests[NUM_REQUESTS_MIGRATABLE_COMM];
     logInfo("handleExecution",
         " send job outcome: center[0] = "<<_center[0]
       <<" center[1] = "<<_center[1]
       <<" center[2] = "<<_center[2]
       <<" time stamp = "<<_predictorTimeStamp);
     //logInfo("handleLocalExecution()", "postSendBack");
-    _solver.isendMigratablePredictionJob(_luh, _lduh, _lQhbnd, _lFhbnd,
+    _solver.isendMigratablePredictionJob(
+      _luh,
+	  _lduh,
+	  _lQhbnd,
+	  _lFhbnd,
+	  _lGradQhbnd,
       _originRank,
       _tag,
       exahype::offloading::OffloadingManager::getInstance().getMPICommunicatorMapped(),
       sendBackRequests);
     exahype::offloading::OffloadingManager::getInstance().submitRequests(
       sendBackRequests,
-      4,
+	  NUM_REQUESTS_MIGRATABLE_COMM,
       _tag,
       _originRank,
       sendBackHandler,
@@ -571,8 +588,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
   logInfo("receiveBackHandler", "received back STP job");
   MigratablePredictionJobData *data = nullptr;
   tbb::concurrent_hash_map<int, MigratablePredictionJobData*>::accessor a_tagToData;
-  found =
-      static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagToSTPData.find(
+  found = static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagToSTPData.find(
           a_tagToData, tag);
   assertion(found);
   data = a_tagToData->second;
@@ -628,9 +644,9 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
     if (recompJob != nullptr) {
       double *luh = static_cast<double*>(cellDescription->getSolution());
       double *lduh = static_cast<double*>(cellDescription->getUpdate());
-      double *lQhbnd =
-          static_cast<double*>(cellDescription->getExtrapolatedPredictor());
+      double *lQhbnd = static_cast<double*>(cellDescription->getExtrapolatedPredictor());
       double *lFhbnd = static_cast<double*>(cellDescription->getFluctuation());
+      double *lGradQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictorGradient());
 
       /*if(static_cast<MigratablePredictionJob*>(recompJob)->_predictorTimeStamp!=metadata[2*DIMENSIONS]) {
        logInfo("receiveBackHandler","job timestamp "<<static_cast<MigratablePredictionJob*>(recompJob)->_predictorTimeStamp
@@ -647,6 +663,8 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
           data->_lQhbnd.size() * sizeof(double));
       std::memcpy(lFhbnd, &data->_lFhbnd[0],
           data->_lFhbnd.size() * sizeof(double));
+      std::memcpy(lGradQhbnd, &data->_lGradQhbnd[0],
+          data->_lGradQhbnd.size() * sizeof(double));
       exahype::offloading::JobTableStatistics::getInstance().notifySavedTask();
 
       delete data;
@@ -765,8 +783,11 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendHandler(
 
 exahype::solvers::ADERDGSolver::MigratablePredictionJobData::MigratablePredictionJobData(
     ADERDGSolver& solver) :
-        _luh(solver.getDataPerCell()), _lduh(solver.getUpdateSize()),
-        _lQhbnd(solver.getBndTotalSize()), _lFhbnd(solver.getBndFluxTotalSize()) {
+      _luh(solver.getDataPerCell()),
+      _lduh(solver.getUpdateSize()),
+      _lQhbnd(solver.getBndTotalSize()),
+   	  _lFhbnd(solver.getBndFluxTotalSize()),
+      _lGradQhbnd(solver.getBndGradQTotalSize()){
   AllocatedSTPs++;
 }
 

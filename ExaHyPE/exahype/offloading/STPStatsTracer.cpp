@@ -37,7 +37,7 @@ void STPStatsTracer::setOutputDir(std::string outputDir) {
   std::stringstream stream;
   stream.str(std::string());
   stream<<"mkdir -p "<<outputDir;
-  system(stream.str().c_str());
+  (void) system(stream.str().c_str());
 }
 
 void STPStatsTracer::writeTracingEventIteration(unsigned int iterations, STPType type) {

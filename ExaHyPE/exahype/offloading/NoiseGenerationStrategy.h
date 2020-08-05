@@ -33,6 +33,8 @@ public:
 
 	//generates noise when executing STPs
 	virtual void generateNoiseSTP(int rank, std::chrono::system_clock::time_point timestamp ) = 0;
+
+	virtual ~NoiseGenerationStrategy(){};
 };
 
 } /* namespace offloading */
