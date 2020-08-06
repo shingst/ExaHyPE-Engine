@@ -9,7 +9,7 @@
   },
   "computational_domain": {
     "dimension": 2,
-    "end_time": 10,
+    "end_time": 50,
     "offset": [
       0.0,
       0.0
@@ -21,7 +21,7 @@
     "max_mesh_setup_iterations": 400
   },
   "shared_memory": {
-    "cores": 16,
+    "cores": 2,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
     "background_job_processing": "job_system",
@@ -32,14 +32,22 @@
     "manual_pinning": false
   },
   "distributed_memory": {
-    "ranks_per_node": 1,
-    "load_balancing_strategy": "greedy_naive",
+    "offloading": "aggressiveHybrid",
+    "offloading_input_file" : "",
+    "offloading_progress" : "none",
+    "offloading_CCP_temperature" : 0,
+    "offloading_diffusion_temperature" : 1,
+    "offloading_CCP_frequency" : 0,
+    "offloading_CCP_steps" : 0,
+    "offloading_update_temperature" : true,
+    "offloading_increase_temp_threshold" : 1.0,
+    "task_sharing" : false,
+    "timeout": 12000,
     "load_balancing_type": "static",
+    "buffer_size"            : 1600,    
+    "load_balancing_strategy": "hotspot",
     "node_pool_strategy": "fair",
-    "timeout": 6000,
-    "buffer_size": 1600,
-    "node_pool_timeout": 1,
-    "max_forks_at_once": -1
+    "ranks_per_node"         : 1   
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",
@@ -142,6 +150,6 @@
     }
   ],
   "architecture": "noarch",
-  "compiler_flags": "",
+  "compiler_flags": "-DOffloadingGradQhbnd",
   "linker_flags": ""
 }

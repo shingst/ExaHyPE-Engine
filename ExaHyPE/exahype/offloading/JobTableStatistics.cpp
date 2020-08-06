@@ -27,10 +27,10 @@ JobTableStatistics::JobTableStatistics() :
   _savedTasks(0),
   _receivedTasks(0),
   _sentTasks(0),
-  _declinedTasks(0),
-  _lateTasks(0),
   _sentKeys(0),
   _receivedKeys(0),
+  _declinedTasks(0),
+  _lateTasks(0),
   _recomputedTasks(0)
 {
   // TODO Auto-generated constructor stub

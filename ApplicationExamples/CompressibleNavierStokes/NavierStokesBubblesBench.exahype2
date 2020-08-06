@@ -43,7 +43,7 @@
       "name": "NavierStokesSolver_ADERDG",
       "order": 4,
       "maximum_mesh_size": 200,
-      "maximum_mesh_depth": 2,
+      "maximum_mesh_depth": 0,
       "time_stepping": "global",
       "halo_cells": 0,
       "aderdg_kernel": {

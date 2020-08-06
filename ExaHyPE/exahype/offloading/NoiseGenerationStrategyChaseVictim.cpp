@@ -38,10 +38,11 @@ NoiseGenerationStrategyChaseVictim::~NoiseGenerationStrategyChaseVictim() {
 }
 
 void NoiseGenerationStrategyChaseVictim::generateNoise(int rank, std::chrono::system_clock::time_point timestamp) {
+#if defined(DistributedOffloading)
   pid_t pid = getpid();
   static int cnt = 0;
 
-#if defined(DistributedOffloading)
+
   static bool triggeredVictim = false;
 
   static const int kRecover = 10;

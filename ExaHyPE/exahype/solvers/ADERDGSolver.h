@@ -35,6 +35,15 @@
 #include "exahype/records/ADERDGCellDescription.h"
 
 #if defined(DistributedOffloading)
+
+#define OFFLOADING_SLOW_OPERATION_THRESHOLD 0.001
+
+#if defined(OffloadingGradQhbnd)
+#define NUM_REQUESTS_MIGRATABLE_COMM 5
+#else
+#define NUM_REQUESTS_MIGRATABLE_COMM 4
+#endif
+
 #include "exahype/offloading/OffloadingManager.h"
 #include <tbb/concurrent_hash_map.h>
 #include <tbb/concurrent_queue.h>
@@ -941,7 +950,6 @@ private:
       CellDescription& cellDescription);
 
 #if defined(DistributedOffloading)
-
   static int getTaskPriorityLocalStealableJob(int cellDescriptionsIndex, int element, double timeStamp) {
 #if defined(TaskSharing)
     int team = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank();
@@ -957,8 +965,10 @@ private:
     logDebug("getTaskPriorityLocalStealableJob()", "team = "<<team
                                                  <<" center[0] = "<< center[0]
                                                  <<" center[1] = "<< center[1]
+#if DIMENSIONS==3
                                                  <<" center[2] = "<< center[2]
-                                                 <<" time stamp = "<<timeStamp
+#endif
+						 <<" time stamp = "<<timeStamp
                                                  <<" prio = "<<prio);
 
     return prio;
@@ -995,18 +1005,18 @@ private:
         Running,
         Resume,
         Paused,
-	      Terminate,
+	    Terminate,
        	Terminated
       };
 	  OffloadingManagerJob(ADERDGSolver& solver);
 	  ~OffloadingManagerJob();
 	  bool run( bool isCalledOnMaster );
 #ifdef OffloadingUseProgressThread
-    tbb::task* execute();
+      tbb::task* execute();
 #endif
 #ifndef OffloadingUseProgressThread
-    void pause();
-    void resume();
+      void pause();
+      void resume();
 #endif
 	  void terminate();
     public:
@@ -1042,6 +1052,7 @@ private:
 	  std::vector<double>	_lduh; // nvar *ndof^DIM
 	  std::vector<double>   _lQhbnd;
 	  std::vector<double>	_lFhbnd;
+      std::vector<double>   _lGradQhbnd;
 
 	  // stores metadata for a stolen/offloaded task
 	  // 1. center
@@ -1050,7 +1061,7 @@ private:
 	  // 4. predictorTimeStepSize
 	  double  _metadata[2*DIMENSIONS+3];
 
-	  MigratablePredictionJobData(ADERDGSolver& solver);
+	MigratablePredictionJobData(ADERDGSolver& solver);
     ~MigratablePredictionJobData();
     //deleted copy constructor
     MigratablePredictionJobData(const MigratablePredictionJobData&) = delete;
@@ -1109,6 +1120,7 @@ private:
       double*                     _lduh; // nvar *ndof^DIM
       double*                     _lQhbnd;
       double*                     _lFhbnd;
+      double*                     _lGradQhbnd;
       double                      _center[DIMENSIONS];
       double                      _dx[DIMENSIONS];
       bool 							          _isLocalReplica;
@@ -1137,8 +1149,9 @@ private:
 		    const double predictorTimeStepSize,
 		    double *luh, double *lduh,
 		    double *lQhbnd, double *lFhbnd,
+			double *lGradQhbnd,
 		    double *dx, double *center,
-        const int originRank,
+            const int originRank,
 		    const int tag
       );
   
@@ -1264,10 +1277,10 @@ private:
    */
   struct OffloadEntry {
     int destRank;
-	  int cellDescriptionsIndex;
-	  int element;
+	int cellDescriptionsIndex;
+	int element;
     double predictorTimeStamp;
-	  double predictorTimeStepSize;
+	double predictorTimeStepSize;
   };
 
   /*
@@ -1293,6 +1306,7 @@ private:
       double *lduh,
       double *lQhbnd,
       double *lFhbnd,
+	  double *lGradQhbnd,
       int dest,
       int tag,
       MPI_Comm comm,
@@ -1306,6 +1320,7 @@ private:
 	  double *lduh,
 	  double *lQhbnd,
 	  double *lFhbnd,
+	  double *lGradQhbnd,
 	  int dest,
 	  int tag,
 	  MPI_Comm comm,
@@ -1319,10 +1334,11 @@ private:
 	  double *lduh,
 	  double *lQhbnd,
 	  double *lFhbnd,
-    int srcRank,
+	  double *lGradQhbnd,
+      int srcRank,
 	  int tag,
 	  MPI_Comm comm,
-    MPI_Request *requests,
+      MPI_Request *requests,
 	  double *metadata =nullptr);
 
   /*
@@ -1333,6 +1349,7 @@ private:
       double *lduh,
       double *lQhbnd,
       double *lFhbnd,
+	  double *lGradQhbnd,
       int srcRank,
       int tag,
       MPI_Comm comm,
@@ -1343,12 +1360,11 @@ private:
       double *lduh,
       double *lQhbnd,
       double *lFhbnd,
+	  double *lGradQhbnd,
       int srcRank,
       int tag,
       MPI_Comm comm,
       double *metadata =nullptr);
-
-
 
   /* If a MigratablePredictionJob has been spawned by the master thread,
    * it can either be submitted to Peano's job system or sent away

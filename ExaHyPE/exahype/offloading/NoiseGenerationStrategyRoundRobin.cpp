@@ -49,7 +49,7 @@ void NoiseGenerationStrategyRoundRobin::generateNoise(int rank, std::chrono::sys
     std::string call = " kill -STOP "+std::to_string(pid)+" ; sleep "+std::to_string(timeToWait)+"; kill -CONT "+std::to_string(pid);
 
     logInfo("generateNoise()", "running cmd "<<call<<std::endl);
-    std::system( call.c_str() );
+    (void) std::system( call.c_str() );
   }
   cnt = cnt + 1;
   if(cnt==_frequency) {
