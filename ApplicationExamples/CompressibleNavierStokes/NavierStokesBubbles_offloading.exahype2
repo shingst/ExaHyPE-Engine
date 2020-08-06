@@ -9,7 +9,7 @@
   },
   "computational_domain": {
     "dimension": 2,
-    "time_steps": 40,
+    "time_steps": 400,
     "offset": [
       0.0,
       0.0

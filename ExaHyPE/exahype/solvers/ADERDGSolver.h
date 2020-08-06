@@ -963,8 +963,10 @@ private:
     logDebug("getTaskPriorityLocalStealableJob()", "team = "<<team
                                                  <<" center[0] = "<< center[0]
                                                  <<" center[1] = "<< center[1]
+#if DIMENSIONS==3
                                                  <<" center[2] = "<< center[2]
-                                                 <<" time stamp = "<<timeStamp
+#endif
+						 <<" time stamp = "<<timeStamp
                                                  <<" prio = "<<prio);
 
     return prio;

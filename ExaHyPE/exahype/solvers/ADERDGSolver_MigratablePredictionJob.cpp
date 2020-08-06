@@ -160,8 +160,10 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
       << center[0]
       <<" center[1] = "
       << center[1]
+#if DIMENSION==3
       <<" center[2] = "
       << center[2]
+#endif
       <<" time stamp = "
       <<_predictorTimeStamp
       <<" enclave jobs "<<NumberOfEnclaveJobs <<" remote jobs "<<NumberOfRemoteJobs
@@ -180,7 +182,9 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
         <<" found STP in received jobs:"
         <<" center[0] = "<<data->_metadata[0]
         <<" center[1] = "<<data->_metadata[1]
-        <<" center[2] = "<<data->_metadata[2]
+#if DIMENSIONS==3
+	<<" center[2] = "<<data->_metadata[2]
+#endif
         <<" time stamp = "<<data->_metadata[2*DIMENSIONS]
         <<" element = "<<(int) data->_metadata[2*DIMENSIONS+2]);
     std::memcpy(luh, &data->_luh[0], data->_luh.size() * sizeof(double));
@@ -226,14 +230,14 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     auto start = std::chrono::high_resolution_clock::now();
 #endif
     iterations = _solver.fusedSpaceTimePredictorVolumeIntegral(lduh,
-    	lQhbnd,
-		lGradQhbnd,
-		lFhbnd,
+       	lQhbnd,
+        lGradQhbnd,
+	lFhbnd,
         luh,
-		cellDescription.getOffset() + 0.5 * cellDescription.getSize(),
+        cellDescription.getOffset() + 0.5 * cellDescription.getSize(),
         cellDescription.getSize(),
-		_predictorTimeStamp,
-		_predictorTimeStepSize,
+        _predictorTimeStamp,
+        _predictorTimeStepSize,
         true);
     hasComputed = true;
 
@@ -412,22 +416,24 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
     logInfo("handleExecution",
         " send job outcome: center[0] = "<<_center[0]
       <<" center[1] = "<<_center[1]
+#if DIMENSIONS==3
       <<" center[2] = "<<_center[2]
+#endif
       <<" time stamp = "<<_predictorTimeStamp);
     //logInfo("handleLocalExecution()", "postSendBack");
     _solver.isendMigratablePredictionJob(
-      _luh,
+           _luh,
 	  _lduh,
 	  _lQhbnd,
 	  _lFhbnd,
 	  _lGradQhbnd,
-      _originRank,
-      _tag,
-      exahype::offloading::OffloadingManager::getInstance().getMPICommunicatorMapped(),
-      sendBackRequests);
+          _originRank,
+          _tag,
+          exahype::offloading::OffloadingManager::getInstance().getMPICommunicatorMapped(),
+          sendBackRequests);
     exahype::offloading::OffloadingManager::getInstance().submitRequests(
       sendBackRequests,
-	  NUM_REQUESTS_MIGRATABLE_COMM,
+      NUM_REQUESTS_MIGRATABLE_COMM,
       _tag,
       _originRank,
       sendBackHandler,
@@ -457,7 +463,9 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandler(
   logInfo("receiveHandler",
       " received task : center[0] = "<<data->_metadata[0]
       <<" center[1] = "<<data->_metadata[1]
+#if DIMENSIONS==3
       <<" center[2] = "<<data->_metadata[2]
+#endif
       <<" time stamp = "<<data->_metadata[2*DIMENSIONS]
       <<" element = "<<(int) data->_metadata[2*DIMENSIONS+2]);
 
@@ -481,7 +489,9 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveKeyHandlerT
   logDebug("receiveKeyHandlerReplica", "team "
       <<" received replica job key: center[0] = "<<key[0]
       <<" center[1] = "<<key[1]
+#if DIMENSIONS==3
       <<" center[2] = "<<key[2]
+#endif
       <<" time stamp = "<<key[2*DIMENSIONS]
       <<" element = "<<(int) key[2*DIMENSIONS+2]);
 
@@ -507,7 +517,9 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
       <<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
       <<" received replica job: center[0] = "<<data->_metadata[0]
       <<" center[1] = "<<data->_metadata[1]
+#if DIMENSIONS==3
       <<" center[2] = "<<data->_metadata[2]
+#endif
       <<" time stamp = "<<data->_metadata[2*DIMENSIONS]
       <<" element = "<<(int) data->_metadata[2*DIMENSIONS+2]);
 
@@ -609,7 +621,9 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
   logInfo("receiveBackHandler",
       " received task outcome: center[0] = "<<metadata[0]
       <<" center[1] = "<<metadata[1]
+#if DIMENSIONS==3
       <<" center[2] = "<<metadata[2]
+#endif
       <<" time stamp = "<<metadata[2*DIMENSIONS] <<" element = "<<(int) metadata[2*DIMENSIONS+2]);
 
   exahype::offloading::JobTableStatistics::getInstance().notifyReceivedTask();

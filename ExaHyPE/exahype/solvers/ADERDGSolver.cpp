@@ -50,6 +50,10 @@
 
 #if defined(DistributedOffloading)
 
+#if defined(TaskSharing)
+#include "teaMPI.h"
+#endif
+
 #ifndef MPI_BLOCKING
 #define MPI_BLOCKING false
 #endif
@@ -288,7 +292,7 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
         _offloadingManagerJobStarted(false),
         _offloadingManagerJobTerminated(false)
 #if defined(TaskSharing)
-        ,_lastReceiveReplicaTag(tarch::parallel::Node::getInstance().getNumberOfNodes()),
+        ,_lastReceiveReplicaTag(tarch::parallel::Node::getInstance().getNumberOfNodes()*TMPI_GetInterTeamCommSize()),
         _allocatedJobs(),
          _jobDatabase()
 #endif
@@ -3350,6 +3354,7 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
       MPI_Get_count(&statRepData, MPI_DOUBLE, &msgLenDouble);
       // is this message metadata? -> if true, we are about to receive a new STP task
       if(msgLenDouble==2*DIMENSIONS+3) {
+	printf("source : %d\n",statRepData.MPI_SOURCE);
         assertion(solver->_lastReceiveReplicaTag[statRepData.MPI_SOURCE]!=statRepData.MPI_TAG);
         solver->_lastReceiveReplicaTag[statRepData.MPI_SOURCE] = statRepData.MPI_TAG;
          logDebug("progressOffloading","received replica task from "<<statRepData.MPI_SOURCE<<" , tag "<<statRepData.MPI_TAG);
