@@ -9,7 +9,7 @@
   },
   "computational_domain": {
     "dimension": 2,
-    "time_steps": 400,
+    "time_steps": 4000,
     "offset": [
       0.0,
       0.0
@@ -21,7 +21,7 @@
     "max_mesh_setup_iterations": 400
   },
   "shared_memory": {
-    "cores": 16,
+    "cores": 3,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
     "background_job_processing": "job_system",
@@ -34,7 +34,7 @@
   "distributed_memory": {
     "offloading": "none",
     "offloading_input_file" : "",
-    "offloading_progress" : "none",
+    "offloading_progress" : "progress_thread",
     "offloading_CCP_temperature" : 0,
     "offloading_diffusion_temperature" : 1,
     "offloading_CCP_frequency" : 0,

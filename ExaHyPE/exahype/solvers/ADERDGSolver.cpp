@@ -2802,19 +2802,21 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
           logDebug("sendReplicatedSTPToOtherTeams"," team "<< interCommRank
                                                    <<" send replica job: center[0] = "<<data->_metadata[0]
                                                    <<" center[1] = "<<data->_metadata[1]
+#if DIMENSIONS==3
                                                    <<" center[2] = "<<data->_metadata[2]
+#endif
                                                    <<" time stamp = "<<job->_predictorTimeStamp
                                                    <<" to team "<<i);
-          isendMigratablePredictionJob(&data->_luh[0],
-                                      &data->_lduh[0],
-                                      &data->_lQhbnd[0],
-                                      &data->_lFhbnd[0],
-									  &data->_lGradQhbnd[0],
+          isendMigratablePredictionJob(&(data->_luh[0]),
+                                      &(data->_lduh[0]),
+                                      &(data->_lQhbnd[0]),
+                                      &(data->_lFhbnd[0]),
+									  &(data->_lGradQhbnd[0]),
                                       i,
                                       tag,
                                       teamInterComm,
                                       &sendRequests[(NUM_REQUESTS_MIGRATABLE_COMM+1)*j],
-                                      &data->_metadata[0]);
+                                      &(data->_metadata[0]));
                                       j++;
        }
      }
@@ -2837,7 +2839,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
 
    bool lastSend = false;
    exahype::offloading::OffloadingManager::getInstance().selectVictimRank(destRank, lastSend);
-   assert(destRank>=0);
+   assertion(destRank>=0);
 
    logInfo("submitOrSendMigratablePredictionJob", "there are "<<NumberOfEnclaveJobs<<" NumberOfRemoteJobs "<<NumberOfRemoteJobs);
 
@@ -2876,7 +2878,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
      tbb::concurrent_hash_map<const CellDescription*, std::pair<int,int>>::accessor a_cellDescToTagRank;
      //logInfo("receiveBackHandler", " cleaning up cell desc to tag/rank for "<<cellDescription);
      bool found = _mapCellDescToTagRank.find(a_cellDescToTagRank, &cellDescription);
-     assert(!found);
+     assertion(!found);
      a_cellDescToTagRank.release();
      _mapCellDescToTagRank.insert(std::make_pair(&cellDescription, std::make_pair(tag, destRank)));
      _mapTagToOffloadTime.insert(std::make_pair(tag, -MPI_Wtime()));
@@ -3354,7 +3356,6 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
       MPI_Get_count(&statRepData, MPI_DOUBLE, &msgLenDouble);
       // is this message metadata? -> if true, we are about to receive a new STP task
       if(msgLenDouble==2*DIMENSIONS+3) {
-	printf("source : %d\n",statRepData.MPI_SOURCE);
         assertion(solver->_lastReceiveReplicaTag[statRepData.MPI_SOURCE]!=statRepData.MPI_TAG);
         solver->_lastReceiveReplicaTag[statRepData.MPI_SOURCE] = statRepData.MPI_TAG;
          logDebug("progressOffloading","received replica task from "<<statRepData.MPI_SOURCE<<" , tag "<<statRepData.MPI_TAG);
@@ -3454,7 +3455,7 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
   else
     canRun = lock.tryLock();
 #else
-  //assert(!runOnMaster);
+  //assertion(!runOnMaster);
   // First, we ensure here that only one thread at a time progresses offloading
   // this avoids multithreaded MPI problems
   canRun = lock.tryLock();
@@ -3887,7 +3888,7 @@ void exahype::solvers::ADERDGSolver::pauseOffloadingManager() {
 void exahype::solvers::ADERDGSolver::resumeOffloadingManager() {
   logInfo("resumeOffloadingManager", "resuming ");
   //old job will be deleted so we create a new one here
-  //assert(_offloadingManagerJob==nullptr);
+  //assertion(_offloadingManagerJob==nullptr);
   if(_offloadingManagerJob==nullptr) {
     _offloadingManagerJob = new OffloadingManagerJob(*this);
     _offloadingManagerJob->resume();

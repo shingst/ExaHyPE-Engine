@@ -36,7 +36,7 @@
 
 #if defined(DistributedOffloading)
 
-#if defined(OffloadinglGradQhbnd)
+#if defined(OffloadingGradQhbnd)
 #define NUM_REQUESTS_MIGRATABLE_COMM 5
 #else
 #define NUM_REQUESTS_MIGRATABLE_COMM 4
