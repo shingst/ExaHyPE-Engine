@@ -1,0 +1,83 @@
+\documentclass[border=0pt,sigconf,crop,tikz]{standalone}
+\usepackage{pgfplots}
+% style
+\usepackage[eulergreek]{sansmath}
+\usepackage{lmodern}
+\renewcommand*{\familydefault}{\sfdefault}
+\pgfplotsset{
+  tick label style = {font=\sansmath\sffamily},
+  every axis label = {font=\sansmath\sffamily},
+  legend style = {font=\sansmath\sffamily},
+  label style = {font=\sansmath\sffamily}
+}
+  
+\definecolor{c0}{rgb}{1.0,0,0}
+\definecolor{c1}{rgb}{0,0.5,0}
+
+\begin{document}
+
+\scriptsize
+
+\begin{tikzpicture}
+ % \selectcolormodel{gray}
+  \begin{axis} [
+    width=2.8in,
+    height=2.8in,
+    xlabel={cores},
+    ylabel={time per degree of freedom update [s]},
+    x label style={at={(axis description cs:0.5,0.05)},anchor=north},
+    y label style={at={(axis description cs:0.05,.5)}},
+    %xtick={10,100,1000,10000},
+    %xticklabels={$10^1$,$10^2$,$10^3$,$10^4$},
+    xtick style={draw=none},
+    xmajorgrids,
+    xmode=log,
+    log basis x={10},
+    xminorgrids, 
+    %ytick={1e-6,1e-7,1e-8,1e-9},
+    %yticklabels={$10^{-6}$,$10^{-7}$,$10^{-8}$,$10^{-9}$},
+    ymax=1e-6, ymin=1e-8, 
+    ytick style={draw=none},
+    ymajorgrids,
+    ymode=log,
+    log basis y={10},
+    legend style={nodes={scale=0.65},at={(0.99,0.99)},anchor=north east,draw=gray,fill=white},
+    legend cell align={left},
+    legend columns = 2
+  ]
+
+  % legend
+  \addlegendentry{order 7, replicated computation};
+  \addlegendentry{order 7, replication saving};
+  \addlegendentry{order 8, replicated computation};
+  \addlegendentry{order 8, replication saving};
+  \addlegendentry{order 9, replicated computation};
+  \addlegendentry{order 9, replication saving};
+  %\addlegendentry{};
+  
+
+  \addlegendimage{color=c0!99, mark=*};        
+  \addlegendimage{color=c1!99, mark=*};        
+  \addlegendimage{color=c0!99, mark=triangle*};        
+  \addlegendimage{color=c1!99, mark=triangle*};        
+  \addlegendimage{color=c0!99, mark=x};        
+  \addlegendimage{color=c1!99, mark=x};        
+  
+  %\addlegendimage{no marks,color=black,dashed};
+
+  % text
+  \addplot[mark options={scale=1}, color=c0!99, mark=*]         table[col sep=comma,header=true,x={consumerTasks},y={normalised_realtime_min}] {data_56r_28_nodes_no_replication_7.csv}; 
+  \addplot[mark options={scale=1}, color=c1!99, mark=*]         table[col sep=comma,header=true,x={consumerTasks},y={normalised_realtime_min}] {data_56r_28_nodes_replication_7.csv}; 
+  \addplot[mark options={scale=1}, color=c0!99, mark=triangle*]         table[col sep=comma,header=true,x={consumerTasks},y={normalised_realtime_min}] {data_56r_28_nodes_no_replication_8.csv}; 
+  \addplot[mark options={scale=1}, color=c1!99, mark=triangle*]         table[col sep=comma,header=true,x={consumerTasks},y={normalised_realtime_min}] {data_56r_28_nodes_replication_8.csv}; 
+  \addplot[mark options={scale=1}, color=c0!99, mark=x]         table[col sep=comma,header=true,x={consumerTasks},y={normalised_realtime_min}] {data_56r_28_nodes_no_replication_9.csv}; 
+  \addplot[mark options={scale=1}, color=c1!99, mark=x]         table[col sep=comma,header=true,x={consumerTasks},y={normalised_realtime_min}] {data_56r_28_nodes_replication_9.csv}; 
+  
+  % ideal
+  %\addplot[gray,thick,dashed,no marks,domain=48:10000, samples=100]{48*2e-7/x};
+  %\addlegendentry{linear};
+  \end{axis}
+\end{tikzpicture}
+\end{document}
+
+
