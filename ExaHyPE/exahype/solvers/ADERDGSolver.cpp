@@ -2643,7 +2643,7 @@ void exahype::solvers::ADERDGSolver::sendRequestForJobAndReceive(int jobTag, int
                    data->_lduh.data(),
                    data->_lQhbnd.data(),
                    data->_lFhbnd.data(),
-	               data->_lGradQhbnd.data(),
+	           data->_lGradQhbnd.data(),
                    rank,
                    jobTag,
                    teamInterComm,
@@ -2689,8 +2689,9 @@ void exahype::solvers::ADERDGSolver::sendKeyOfTaskOutcomeToOtherTeams(Migratable
     std::memcpy(&data->_lduh[0], lduh, data->_lduh.size()*sizeof(double));
     std::memcpy(&data->_lQhbnd[0], lQhbnd, data->_lQhbnd.size()*sizeof(double));
     std::memcpy(&data->_lFhbnd[0], lFhbnd, data->_lFhbnd.size()*sizeof(double));
+#if defined(OffloadingGradQhbnd)
     std::memcpy(&data->_lGradQhbnd[0], lGradQhbnd, data->_lGradQhbnd.size()*sizeof(double));
-
+#endif
     AllocatedSTPsSend++;
     logDebug("sendKeyOfReplicatedSTPToOtherTeams","allocated STPs send "<<AllocatedSTPsSend );
 
@@ -2763,13 +2764,16 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
         logDebug("sendReplicatedSTPToOtherTeams"," team "<< interCommRank
                                                          <<" send replica job: center[0] = "<<metadata[0]
                                                          <<" center[1] = "<<metadata[1]
+#if DIMENSIONS==3
                                                          <<" center[2] = "<<metadata[2]
+#endif
                                                          <<" time stamp = "<<job->_predictorTimeStamp
                                                          <<" to team "<<i);
-        sendMigratablePredictionJobOffload(&luh[0],
-                                           &lduh[0],
-                                           &lQhbnd[0],
-                                           &lFhbnd[0], // Todo: lGradQhbnd
+        sendMigratablePredictionJobOffload(&(luh[0]),
+                                           &(lduh[0]),
+                                           &(lQhbnd[0]),
+                                           &(lFhbnd[0]), 
+                                           &(lGradQhbnd[0]),
                                            i,
                                            tag,
                                            teamInterComm,
@@ -2796,7 +2800,9 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
     std::memcpy(&data->_lduh[0], lduh, data->_lduh.size()*sizeof(double));
     std::memcpy(&data->_lQhbnd[0], lQhbnd, data->_lQhbnd.size()*sizeof(double));
     std::memcpy(&data->_lFhbnd[0], lFhbnd, data->_lFhbnd.size()*sizeof(double));
+#if OffloadingGradQhbnd
     std::memcpy(&data->_lGradQhbnd[0], lGradQhbnd, data->_lGradQhbnd.size()*sizeof(double));
+#endif
     //double *metadata = new double[2*DIMENSIONS+2];
     packMetadataToBuffer(entry, data->_metadata);
 
@@ -2821,7 +2827,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
                                       &(data->_lduh[0]),
                                       &(data->_lQhbnd[0]),
                                       &(data->_lFhbnd[0]),
-									  &(data->_lGradQhbnd[0]),
+				      &(data->_lGradQhbnd[0]),
                                       i,
                                       tag,
                                       teamInterComm,
@@ -2908,7 +2914,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
               &lduh[0],
               &lQhbnd[0],
               &lFhbnd[0],
-			  &lGradQhbnd[0],
+              &lGradQhbnd[0],
               destRank,
               tag,
               exahype::offloading::OffloadingManager::getInstance().getMPICommunicator(),
@@ -2929,7 +2935,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
          lduh,
          lQhbnd,
          lFhbnd,
-		 lGradQhbnd,
+         lGradQhbnd,
          destRank,
          tag,
          exahype::offloading::OffloadingManager::getInstance().getMPICommunicator(),
@@ -3006,7 +3012,7 @@ void exahype::solvers::ADERDGSolver::receiveMigratableJob(int tag, int src, exah
        data->_lduh.data(),
        data->_lQhbnd.data(),
        data->_lFhbnd.data(),
-	   data->_lGradQhbnd.data(),
+       data->_lGradQhbnd.data(),
        src,
        tag,
        exahype::offloading::OffloadingManager::getInstance().getMPICommunicator(),
@@ -3083,7 +3089,7 @@ void exahype::solvers::ADERDGSolver::receiveBackMigratableJob(int tag, int src, 
       &(data->_lduh[0]),
       &(data->_lQhbnd[0]),
       &(data->_lFhbnd[0]),
-	  &(data->_lGradQhbnd[0]),
+      &(data->_lGradQhbnd[0]),
       src,
       tag,
       commMapped,
@@ -3148,14 +3154,14 @@ void exahype::solvers::ADERDGSolver::receiveBackMigratableJob(int tag, int src, 
   MPI_Request recvRequests[NUM_REQUESTS_MIGRATABLE_COMM];
   solver->irecvMigratablePredictionJob(
       luh,
-	  lduh,
-	  lQhbnd,
+      lduh,
+      lQhbnd,
       lFhbnd,
-	  lGradQhbnd,
-	  src,
-	  tag,
-	  commMapped,
-	  recvRequests);
+      lGradQhbnd,
+      src,
+      tag,
+      commMapped,
+      recvRequests);
   exahype::offloading::OffloadingManager::getInstance().submitRequests(
       recvRequests, NUM_REQUESTS_MIGRATABLE_COMM, tag, src,
       exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler,
@@ -3176,7 +3182,8 @@ void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahyp
          data->_luh.data(),
          data->_lduh.data(),
          data->_lQhbnd.data(),
-         data->_lFhbnd.data(), //Todo: missing lGradQhbnd
+         data->_lFhbnd.data(), 
+         data->_lGradQhbnd.data(),
          src,
          tag,
          interTeamComm,
@@ -3215,7 +3222,7 @@ void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahyp
          data->_lduh.data(),
          data->_lQhbnd.data(),
          data->_lFhbnd.data(),
-		 data->_lGradQhbnd.data(),
+	 data->_lGradQhbnd.data(),
          src,
          tag,
          interTeamComm,
@@ -4057,7 +4064,7 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob* exahype::solvers::ADERD
       data->_lduh.data(),
       data->_lQhbnd.data(),
       data->_lFhbnd.data(),
-	  data->_lGradQhbnd.data(),
+      data->_lGradQhbnd.data(),
       &(data->_metadata[DIMENSIONS]),
       &(data->_metadata[0]),
       origin,
@@ -4134,7 +4141,7 @@ void exahype::solvers::ADERDGSolver::irecvMigratablePredictionJob(
     double *lduh,
     double *lQhbnd,
     double *lFhbnd,
-	double *lGradQhbnd,
+    double *lGradQhbnd,
     int srcRank,
     int tag,
     MPI_Comm comm,
@@ -4246,7 +4253,7 @@ void exahype::solvers::ADERDGSolver::recvMigratablePredictionJobOffload(
     double *lduh,
     double *lQhbnd,
     double *lFhbnd,
-	double *lGradQhbnd,
+    double *lGradQhbnd,
     int srcRank,
     int tag,
     MPI_Comm comm,

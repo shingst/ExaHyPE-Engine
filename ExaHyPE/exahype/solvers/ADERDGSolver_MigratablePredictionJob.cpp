@@ -35,7 +35,7 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
       _lduh(nullptr),
       _lQhbnd(nullptr),
       _lFhbnd(nullptr),
-	  _lGradQhbnd(nullptr),
+      _lGradQhbnd(nullptr),
       _isLocalReplica(false) {
   LocalStealableSTPCounter++;
   NumberOfEnclaveJobs++;
@@ -62,7 +62,7 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
       _lduh(lduh),
       _lQhbnd(lQhbnd),
       _lFhbnd(lFhbnd),
-	  _lGradQhbnd(lGradQhbnd),
+      _lGradQhbnd(lGradQhbnd),
       _isLocalReplica(false) {
 
   for (int i = 0; i < DIMENSIONS; i++) {
@@ -191,7 +191,9 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     std::memcpy(lduh, &data->_lduh[0], data->_lduh.size() * sizeof(double));
     std::memcpy(lQhbnd, &data->_lQhbnd[0], data->_lQhbnd.size() * sizeof(double));
     std::memcpy(lFhbnd, &data->_lFhbnd[0], data->_lFhbnd.size() * sizeof(double));
+#if OffloadingGradQhbnd
     std::memcpy(lGradQhbnd, &data->_lGradQhbnd[0], data->_lGradQhbnd.size() * sizeof(double));
+#endif
     exahype::offloading::JobTableStatistics::getInstance().notifySavedTask();
 
     _solver._jobDatabase.erase(a_jobToData);
@@ -367,9 +369,9 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
 
     int iterations=_solver.fusedSpaceTimePredictorVolumeIntegral(
       _lduh,
-	  _lQhbnd,
-	  _lGradQhbnd,
-	  _lFhbnd,
+      _lQhbnd,
+      _lGradQhbnd,
+      _lFhbnd,
       _luh,
       _center,
       _dx,
@@ -677,8 +679,10 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
           data->_lQhbnd.size() * sizeof(double));
       std::memcpy(lFhbnd, &data->_lFhbnd[0],
           data->_lFhbnd.size() * sizeof(double));
+#if OffloadingGradQhbnd
       std::memcpy(lGradQhbnd, &data->_lGradQhbnd[0],
           data->_lGradQhbnd.size() * sizeof(double));
+#endif
       exahype::offloading::JobTableStatistics::getInstance().notifySavedTask();
 
       delete data;
@@ -800,8 +804,8 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJobData::MigratablePredictio
       _luh(solver.getDataPerCell()),
       _lduh(solver.getUpdateSize()),
       _lQhbnd(solver.getBndTotalSize()),
-   	  _lFhbnd(solver.getBndFluxTotalSize()),
-      _lGradQhbnd(solver.getBndGradQTotalSize()){
+      _lFhbnd(solver.getBndFluxTotalSize()),
+     _lGradQhbnd(solver.getBndGradQTotalSize()){
   AllocatedSTPs++;
 }
 
