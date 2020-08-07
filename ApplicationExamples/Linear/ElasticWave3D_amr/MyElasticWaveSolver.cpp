@@ -11,7 +11,7 @@
 #include "MyElasticWaveSolver_Variables.h"
 
 #include "../../../ExaHyPE/kernels/KernelUtils.h"
-#include "../../../ExaHyPE/kernels/GaussLegendreBasis.h"
+#include "../../../ExaHyPE/kernels/GaussLegendreQuadrature.h"
 
 #ifdef OPT_KERNELS
 #include "kernels/MyElasticWaveSolver/converter.h"
@@ -58,9 +58,9 @@ void Elastic::MyElasticWaveSolver::adjustSolution(double* const luh, const tarch
       for (int j=0; j< num_nodes; j++){
 	for (int i=0; i< num_nodes; i++){
 
-	  double x  =  (offset_x+width_x*kernels::legendre::nodes[basisSize-1][i]);
-	  double y  =  (offset_y+width_y*kernels::legendre::nodes[basisSize-1][j]);
-	  double z  =  (offset_z+width_z*kernels::legendre::nodes[basisSize-1][k]);
+	  double x  =  (offset_x+width_x*kernels::gaussLegendreNodes[basisSize-1][i]);
+	  double y  =  (offset_y+width_y*kernels::gaussLegendreNodes[basisSize-1][j]);
+	  double z  =  (offset_z+width_z*kernels::gaussLegendreNodes[basisSize-1][k]);
 
 	  // velocity
 	  luh[id_xyzf(k,j,i,0)]  = 0;

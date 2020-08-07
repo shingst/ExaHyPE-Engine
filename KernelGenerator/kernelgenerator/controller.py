@@ -50,9 +50,6 @@ class Controller:
     
     def __init__(self, inputConfig = None):
         """Initialize the base config from the command line inputs"""
-        
-        Configuration.checkPythonVersion()
-        
         if inputConfig == None:
             args = ArgumentParser.parseArgs()
         else:
@@ -98,8 +95,11 @@ class Controller:
                 "useMaterialParamVect"  : args["useMaterialParamVect"],
                 "quadratureType"        : ("Gauss-Lobatto" if args["useGaussLobatto"] else "Gauss-Legendre"),
                 "useCERKGuess"          : args["useCERKGuess"],
-                "useSplitCKScalar"      : args["useSplitCKScalar"],
-                "useSplitCKVect"        : args["useSplitCKVect"]
+                "useSplitCK"            : args["useSplitCK"],
+                "useVectPDE"            : args["useVectPDE"],
+                "predictorRecompute"    : args["predictorRecompute"],
+                "initialGuess"          : "mixedPicard" #TODO JMG put as proper toolkit arg
+                #"initialGuess"          : "default" #TODO JMG put as proper toolkit arg
             })
             self.config["useSourceOrNCP"] = self.config["useSource"] or self.config["useNCP"]
         elif self.config["kernelType"] == "limiter":
@@ -267,7 +267,7 @@ class Controller:
         """Generate the gemms with the given config list using LIBXSMM"""
         for matmul in matmulConfigList:
             # add the gemm name to the list of generated gemm
-            self.gemmList.append(matmul.baseroutinename)
+            self.gemmList.append((matmul.baseroutinename, matmul.precision))
             # for plain assembly code (rather than inline assembly) choose dense_asm
             commandLineArguments = " " + "dense"  + \
                 " " + os.path.join(self.config["pathToOutputDirectory"], outputFileName) + \
@@ -284,6 +284,6 @@ class Controller:
                 " " + str(matmul.alignment_C) + \
                 " " + self.config["architecture"] + \
                 " " + matmul.prefetchStrategy + \
-                " " + "DP" #always use double precision, "SP" for single
+                " " + matmul.precision
             bashCommand = self.config["pathToLibxsmmGemmGenerator"] + commandLineArguments
             subprocess.call(bashCommand.split())

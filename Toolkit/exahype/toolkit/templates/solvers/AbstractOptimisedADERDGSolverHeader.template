@@ -49,6 +49,14 @@ public:
   static constexpr double CFL                    = {{CFL}};
   static constexpr double PNPM                   = {{PNPM}};
   
+  // TODO JMG make it true for nonlinear vect methods too
+  // vectorisation parameters used by vectorised user method if present
+  // array stride of the fastest dim to vectorize upon.
+  static constexpr int VectStride                = {{optNamespace}}::getVectStride();
+  // length of the useful data in the array's fastest dim.
+  // If VectLength < VectStride the rest is padding (might contain junk values).
+  static constexpr int VectLength                = {{optNamespace}}::getVectLength();
+  
   // [order][node i]
   static kernels::UnivariateFunction** basisFunction;
   static kernels::UnivariateFunction** basisFunctionFirstDerivative;

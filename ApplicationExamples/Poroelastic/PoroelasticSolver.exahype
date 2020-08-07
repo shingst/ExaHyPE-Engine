@@ -1,0 +1,93 @@
+{
+  "project_name": "Poroelastic",
+  "paths": {
+    "peano_kernel_path": "./Peano",
+    "exahype_path"     : "./ExaHyPE",
+    "output_directory" : "./ApplicationExamples/Poroelastic"
+  },
+  "architecture": "hsw",
+  "computational_domain": {
+    "dimension": 3,
+    "end_time": 1.0,
+    "offset": [  -20.5, 0.0 , -20.5  ],
+    "width" : [   47.0, 47.0,   47.0 ]
+  },
+  "shared_memory": {
+    "cores": 28,
+    "properties_file": "sharedmemory.properties",
+    "autotuning_strategy": "dummy",
+    "background_job_consumers": 28,
+    "manual_pinning": false
+  },
+  "distributed_memory": {
+    "timeout": 6000,
+    "load_balancing_type": "static",
+    "buffer_size": 1600,
+    "load_balancing_strategy": "hotspot",
+    "node_pool_strategy": "fair",
+    "ranks_per_node": 1
+  },
+  "optimisation": {
+    "fuse_algorithmic_steps"				: "all",
+    "fuse_algorithmic_steps_rerun_factor"		: 0.99,
+    "fuse_algorithmic_steps_diffusion_factor"		: 0.99,
+    "spawn_predictor_as_background_thread"		: true,
+    "spawn_amr_background_threads"			: true,
+    "disable_vertex_exchange_in_time_steps"		: true,
+    "time_step_batch_factor"				: 1.0,
+    "disable_metadata_exchange_in_batched_time_steps"	: true,
+    "double_compression"				: 0.0,
+    "spawn_double_compression_as_background_thread"	: false
+  },
+  "solvers": [
+    {
+      "type": "ADER-DG",
+      "name": "PoroelasticSolver",
+      "order": 7,
+      "maximum_mesh_size": 3.0,
+      "maximum_mesh_depth": 0,
+      "time_stepping": "globalfixed",
+      "aderdg_kernel": {
+        "language": "C",
+        "nonlinear": false,
+        "terms": ["ncp", "source", "point_sources"],
+        "implementation": "generic",        
+        "space_time_predictor": {"split_ck":false},
+        "optimised_terms": [],
+        "optimised_kernel_debugging": [],
+        "basis": "Lobatto"
+      },
+      "point_sources": 1,
+      "variables": [
+        { "name": "sigma","multiplicity": 6 },       
+        { "name": "v"    ,"multiplicity": 3 },
+        { "name": "p"    ,"multiplicity": 1 },        
+        { "name": "v_f"  ,"multiplicity": 3 }
+      ],
+      "material_parameters": [
+        { "name": "bulk_solid" ,"multiplicity": 1 },      
+        { "name": "rho_solid","multiplicity": 1 },
+        { "name": "lambda" ,"multiplicity": 1 },
+        { "name": "mue","multiplicity": 1 },
+        { "name": "porosity" ,"multiplicity": 1 },
+        { "name": "permeability" ,"multiplicity": 1 },
+        { "name": "tortuosity" ,"multiplicity": 1 },
+        { "name": "bulk_fluid" ,"multiplicity": 1 },
+        { "name": "rho_fluid" ,"multiplicity": 1 },        
+        { "name": "viscosity" ,"multiplicity": 1 }
+      ],
+      "parameters": {
+      },
+      "plotters": [
+          {
+          "type": "vtu::Legendre::Vertices::Ascii",
+          "name": "ConservedWriter",
+          "time": 0.0,
+          "repeat": 0.1,
+          "output": "./conserved",
+          "variables": 23
+         }
+        ]
+    }
+  ]
+}

@@ -156,9 +156,13 @@ class NavierStokes::NavierStokesSolver_ADERDG : public NavierStokes::AbstractNav
      */
   //void flux(const double* const Q,double** F) final override;
   void viscousFlux(const double* const Q, const double* const gradQ, double** F) final override;
+  void viscousFlux2(const double* const Q, const double* const P, const double* const * const gradQ, double** F);
+  void viscousFlux_vect(const double* const Q, const double* const P, const double* const * const gradQ, double** F);
 
   // TODO(Lukas) Add to toolkit!
     void algebraicSource(const tarch::la::Vector<DIMENSIONS, double>& x, double t, const double *const Q, double *S) override;
+    inline void algebraicSource2(const tarch::la::Vector<DIMENSIONS, double>& x, double t, const double *const Q, const double *const P, double *S) {algebraicSource(x,t,Q,S);}
+    void algebraicSource_vect(const tarch::la::Vector<DIMENSIONS, double>& x, double t, const double *const Q, const double *const P, double *S);
 
 /* nonConservativeProduct() function is not included, as requested in the specification file */
 

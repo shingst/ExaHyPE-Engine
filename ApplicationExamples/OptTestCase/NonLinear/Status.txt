@@ -1,2 +1,0 @@
-5 broken
-6 issue with link due to initial conditions

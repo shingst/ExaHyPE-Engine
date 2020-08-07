@@ -4,6 +4,10 @@ This is the exahype.toolkit package and holds the code of the "toolkit2", also c
 main glue code generator for ExaHyPE supposed to be runned by users.
 """
 
+#Check Python version
+from .configuration import checkPythonVersion
+checkPythonVersion()
+
 #High level API
-from .controller import Controller
 from .configuration import checkDependencies
+from .controller import Controller

@@ -19,8 +19,8 @@
 #include "kernels/KernelUtils.h"
 
 #ifdef OPT_KERNELS
-#include "kernels/NavierStokes_NavierStokesSolver_ADERDG/Kernels.h"
-#include "kernels/NavierStokes_NavierStokesSolver_ADERDG/converter.h"
+#include "kernels/NavierStokes_NavierStokesSolver_ADERDG/aderdg/Kernels.h"
+#include "kernels/NavierStokes_NavierStokesSolver_ADERDG/aderdg/converter.h"
 
 #endif
 
@@ -55,6 +55,25 @@ void NavierStokes::NavierStokesSolver_ADERDG::adjustPointSolution(const double* 
 
 void NavierStokes::NavierStokesSolver_ADERDG::algebraicSource(const tarch::la::Vector<DIMENSIONS, double>& x, double t, const double *const Q, double *S) {
    scenario->source(x, t, ns, Q, S);
+}
+
+void NavierStokes::NavierStokesSolver_ADERDG::algebraicSource_vect(const tarch::la::Vector<DIMENSIONS, double>& x, double t, const double *const Q, const double *const P, double *S) {
+   // naive fallback to scalar
+  double Q2[NumberOfVariables + NumberOfParameters];
+  double S2[NumberOfVariables];
+  
+  for(int i=0; i<VectLength; i++) {
+    for(int j=0 ; j<NumberOfVariables; j++) {
+      Q2[j] = Q[j*VectStride+i];
+    }
+    for(int j=0; j<NumberOfParameters; j++) {
+      Q2[j+NumberOfVariables] = P[j*VectStride+i];
+    }
+    algebraicSource(x,t,Q2,S2);
+    for(int j=0 ; j<NumberOfVariables; j++) {
+      S[j*VectStride+i] = S2[j];
+    }
+  }
 }
 
 void NavierStokes::NavierStokesSolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) {
@@ -383,6 +402,47 @@ void NavierStokes::NavierStokesSolver_ADERDG::viscousEigenvalues(const double* c
 
 void NavierStokes::NavierStokesSolver_ADERDG::viscousFlux(const double *const Q, const double *const gradQ, double **F) {
   ns.evaluateFlux(Q, gradQ, F, true);
+}
+
+void NavierStokes::NavierStokesSolver_ADERDG::viscousFlux2(const double *const Q, const double *const P, const double *const *const gradQ, double **F) {
+  constexpr auto gradQ2Size = NumberOfVariables*DIMENSIONS;
+  double gradQ2[gradQ2Size];
+  for(int d = 0; d < DIMENSIONS; d++) {
+    for(int i=0; i < NumberOfVariables; i++) {
+      gradQ2[i+NumberOfVariables*d] = gradQ[d][i];
+    }
+  }
+  ns.evaluateFlux(Q, gradQ2, F, true);
+}
+
+void NavierStokes::NavierStokesSolver_ADERDG::viscousFlux_vect(const double *const Q, const double *const P, const double *const *const gradQ, double **F) {
+  // naive fallback to scalar
+  double Q2[NumberOfVariables + NumberOfParameters];
+  double gradQ2[NumberOfVariables*DIMENSIONS];
+  double Fx[NumberOfVariables];
+  double Fy[NumberOfVariables];
+  double Fz[NumberOfVariables];
+  double* F2[3] = {Fx,Fy,Fz};
+  
+  for(int i=0; i<VectLength; i++) {
+    for(int j=0 ; j<NumberOfVariables; j++) {
+      Q2[j] = Q[j*VectStride+i];
+    }
+    for(int j=0; j<NumberOfParameters; j++) {
+      Q2[j+NumberOfVariables] = P[j*VectStride+i];
+    }
+    for(int d = 0; d < DIMENSIONS; d++) {
+      for(int j=0; j < NumberOfVariables; j++) {
+        gradQ2[j+NumberOfVariables*d] = gradQ[d][j*VectStride+i];
+      }
+    }
+    viscousFlux(Q2,gradQ2,F2);
+    for(int d=0 ; d<DIMENSIONS; d++) {
+      for(int j=0; j < NumberOfVariables; j++) {
+        F[d][j*VectStride+i] = F2[d][j];
+      }
+    }
+  }
 }
 
 void NavierStokes::NavierStokesSolver_ADERDG::boundaryConditions( double* const fluxIn, const double* const stateIn, const double* const gradStateIn, const double* const luh, const tarch::la::Vector<DIMENSIONS, double>& cellCentre, const tarch::la::Vector<DIMENSIONS,double>&  cellSize, const double t,const double dt, const int direction, const int orientation) {
