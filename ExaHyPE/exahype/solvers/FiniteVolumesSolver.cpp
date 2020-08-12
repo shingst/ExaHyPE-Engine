@@ -103,10 +103,6 @@ exahype::solvers::FiniteVolumesSolver::FiniteVolumesSolver(
     _profiler->registerTag(tag);
   }
 
-  // TODO(WORKAROUND)
-  const int dataPerFace = getBndFaceSize();
-  _invalidExtrapolatedSolution.resize(dataPerFace);
-  std::fill_n(_invalidExtrapolatedSolution.data(),_invalidExtrapolatedSolution.size(),-1);
 }
 
 int exahype::solvers::FiniteVolumesSolver::getDataPerPatch() const {
@@ -201,6 +197,11 @@ void exahype::solvers::FiniteVolumesSolver::initSolver(
   _nextGlobalObservables.resize(_numberOfGlobalObservables);
   resetGlobalObservables(_globalObservables.data()    );
   resetGlobalObservables(_nextGlobalObservables.data());
+  
+  // TODO(WORKAROUND)
+  const int dataPerFace = getBndFaceSize();
+  _invalidExtrapolatedSolution.resize(dataPerFace);
+  std::fill_n(_invalidExtrapolatedSolution.data(),_invalidExtrapolatedSolution.size(),-1);
 
   init(cmdlineargs,parserView); // call user defined initalisation
 }

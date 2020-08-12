@@ -367,9 +367,9 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
 
     int iterations=_solver.fusedSpaceTimePredictorVolumeIntegral(
       _lduh,
-	  _lQhbnd,
-	  _lGradQhbnd,
-	  _lFhbnd,
+      _lQhbnd,
+      _lGradQhbnd,
+      _lFhbnd,
       _luh,
       _center,
       _dx,

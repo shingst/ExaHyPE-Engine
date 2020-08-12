@@ -156,7 +156,6 @@ std::atomic<int> exahype::solvers::ADERDGSolver::NumberOfReceiveBackJobs (0);
 //std::atomic<int> exahype::solvers::ADERDGSolver::NumberOfOffloadingManagers (0);
 //std::atomic<int> exahype::solvers::ADERDGSolver::NumberOfRunningManagers (0);
 std::atomic<int> exahype::solvers::ADERDGSolver::LocalStealableSTPCounter (0);
-
 std::atomic<int> exahype::solvers::ADERDGSolver::CompletedSentSTPs(0);
 std::atomic<int> exahype::solvers::ADERDGSolver::SentSTPs (0);
 std::atomic<int> exahype::solvers::ADERDGSolver::AllocatedSTPs (0);
@@ -304,16 +303,6 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
   }
 
   #ifdef Parallel
-  _invalidExtrapolatedPredictor.resize(getBndFaceSize());
-  _invalidFluctuations.resize(getBndFluxSize());
-  std::fill_n(_invalidExtrapolatedPredictor.data(),_invalidExtrapolatedPredictor.size(),-1);
-  std::fill_n(_invalidFluctuations.data(),_invalidFluctuations.size(),-1);
-
-  _receivedExtrapolatedPredictor.resize(getBndFaceSize());
-  _receivedFluctuations.resize(getBndFluxSize());
-
-  _receivedUpdate.reserve(getUpdateSize());
-
 #if defined(DistributedOffloading)
   exahype::offloading::OffloadingProgressService::getInstance().setSolver(this);
 #endif
@@ -603,6 +592,19 @@ void exahype::solvers::ADERDGSolver::initSolver(
   resetGlobalObservables(_nextGlobalObservables.data());
 
   init(cmdlineargs,parserView); // call user define initalisiation
+
+  
+  #ifdef Parallel
+  _invalidExtrapolatedPredictor.resize(getBndFaceSize());
+  _invalidFluctuations.resize(getBndFluxSize());
+  std::fill_n(_invalidExtrapolatedPredictor.data(),_invalidExtrapolatedPredictor.size(),-1);
+  std::fill_n(_invalidFluctuations.data(),_invalidFluctuations.size(),-1);
+
+  _receivedExtrapolatedPredictor.resize(getBndFaceSize());
+  _receivedFluctuations.resize(getBndFluxSize());
+
+  _receivedUpdate.reserve(getUpdateSize());
+  #endif
 }
 
 bool exahype::solvers::ADERDGSolver::isPerformingPrediction(
@@ -2169,7 +2171,7 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourData(
       DataHeap::getInstance().receiveData(                              // TODO const-correct peano
           const_cast<double*>(_receivedExtrapolatedPredictor.data()),dataPerFace,
           fromRank, barycentre, level, peano::heap::MessageType::NeighbourCommunication);
-
+      
       solveRiemannProblemAtInterface(
           cellDescription, face,
           _receivedExtrapolatedPredictor.data(),
