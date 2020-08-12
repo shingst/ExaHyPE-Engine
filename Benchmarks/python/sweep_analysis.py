@@ -155,7 +155,9 @@ def parseResultFile(filePath):
     '''
     environmentDict = {}
     parameterDict   = {}
-    
+   
+    print(filePath)
+ 
     stats = {}
     stats["run_time_steps"]  = 0
     stats["inner_cells_min"] = 10**20
@@ -227,6 +229,7 @@ def parseResultFile(filePath):
             anchor = '|'
             header = '||'
             if anchor in line and header not in line:
+                print (line)
                 segments = line.split('|')
                 adapter = segments[1].strip();
                 adapters[adapter]                   = {}

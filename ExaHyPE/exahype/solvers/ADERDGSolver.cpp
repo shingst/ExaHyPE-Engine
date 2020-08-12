@@ -2499,6 +2499,10 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
   bool gotOne = true;
   int i = 0;
 
+#if defined(OffloadingCheckForSlowOperations)
+  double timing = - MPI_Wtime();
+#endif
+
   //Todo (Philipp): refactor and make nice
   logInfo("cleanUpStaleTaskOutcomes()", "before cleanup there are "<<_allocatedJobs.unsafe_size()<<" allocated received jobs left, "
                                                                      <<_mapTagToSTPData.size()<<" jobs to send,"
@@ -2566,6 +2570,12 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
 
   logInfo("cleanUpStaleTaskOutcomes()", " there are "<<_allocatedJobs.unsafe_size()<<" allocated received jobs left, "<<_mapTagToSTPData.size()<<" jobs to send,"
                                           <<" allocated jobs send "<<AllocatedSTPsSend<<" allocated jobs receive "<<AllocatedSTPsReceive);
+#if defined(OffloadingCheckForSlowOperations)
+  timing += MPI_Wtime();
+  if(timing > OFFLOADING_SLOW_OPERATION_THRESHOLD)
+    logError("cleanUpStaleTaskOutcomes()", " took "<<timing<<"s");
+#endif
+
 }
 
 size_t exahype::solvers::ADERDGSolver::getAdditionalCurrentMemoryUsageReplication() {
@@ -3228,6 +3238,11 @@ void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahyp
 #endif
 
 void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exahype::solvers::ADERDGSolver *solver, bool calledOnMaster, int maxIts) {
+
+#if defined(OffloadingCheckForSlowOperations)
+  double timing = - MPI_Wtime();
+#endif
+
   MPI_Status stat, statMapped;
   int receivedTask = 0;
   int receivedTaskBack = 0;
@@ -3270,7 +3285,6 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
   MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamCommAck, &receivedReplicaAck, &statRepAck);
   MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamCommKey, &receivedReplicaKey, &statRepKey);
 #endif
-  double time = -MPI_Wtime();
 
   bool terminateImmediately = false;
 
@@ -3444,10 +3458,18 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
    //  if(calledOnMaster) break;
 #endif
   }
-  time+= MPI_Wtime();
+#if defined(OffloadingCheckForSlowOperations)
+  timing += MPI_Wtime();
+  if(timing > OFFLOADING_SLOW_OPERATION_THRESHOLD)
+    logError("pollForOutstandingCommunicationRequests()", " took "<<timing<<"s");
+#endif
 }
 
 void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDGSolver* solver, bool runOnMaster, int maxIts) {
+
+#if defined(OffloadingCheckForSlowOperations)
+  double timing = -MPI_Wtime();
+#endif
 
   bool canRun;
   tarch::multicore::Lock lock(OffloadingSemaphore, false);
@@ -3498,6 +3520,12 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
  
 #ifdef USE_ITAC
   //VT_end(event_progress);
+#endif
+
+#if defined(OffloadingCheckForSlowOperations)
+  timing += MPI_Wtime();
+  if(timing > OFFLOADING_SLOW_OPERATION_THRESHOLD)
+    logError("progressOffloading()", " took "<<timing<<"s");
 #endif
 }
 
@@ -4054,6 +4082,10 @@ void exahype::solvers::ADERDGSolver::isendMigratablePredictionJob(
   MPI_Request *requests,
   double *metadata) {
 
+#if defined(OffloadingCheckForSlowOperations)
+  double timing = - MPI_Wtime();
+#endif
+
   int i = 0;
   int ierr;
   //MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
@@ -4091,6 +4123,12 @@ void exahype::solvers::ADERDGSolver::isendMigratablePredictionJob(
   assertion(requests[i-1]!=MPI_REQUEST_NULL);
 #endif
 
+#if defined(OffloadingCheckForSlowOperations)
+  timing += MPI_Wtime();
+  if(timing > OFFLOADING_SLOW_OPERATION_THRESHOLD)
+    logError("isendMigratablePredictionJob()", " took "<<timing<<"s");
+#endif
+
 };
 
 void exahype::solvers::ADERDGSolver::irecvMigratablePredictionJob(
@@ -4107,7 +4145,10 @@ void exahype::solvers::ADERDGSolver::irecvMigratablePredictionJob(
   int ierr;
   //MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
   int i = 0;
-  
+
+#if defined(OffloadingCheckForSlowOperations)
+  double timing = - MPI_Wtime();
+#endif
   //logInfo("irecvMigratablePredictionJob", "receiving job "<<tag<<" from srcRank "<<srcRank);
 
   if(metadata != nullptr) {
@@ -4142,6 +4183,12 @@ void exahype::solvers::ADERDGSolver::irecvMigratablePredictionJob(
   assertion(ierr==MPI_SUCCESS);
   assertion(requests[i-1]!=MPI_REQUEST_NULL);
 #endif
+
+#if defined(OffloadingCheckForSlowOperations)
+  timing += MPI_Wtime();
+  if(timing > OFFLOADING_SLOW_OPERATION_THRESHOLD)
+    logError("irecvMigratablePredictionJob()", " took "<<timing<<"s");
+#endif
 };
 
 void exahype::solvers::ADERDGSolver::recvMigratablePredictionJob(
@@ -4156,6 +4203,9 @@ void exahype::solvers::ADERDGSolver::recvMigratablePredictionJob(
   double *metadata ) {
   int ierr;
   //MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
+#if defined(OffloadingCheckForSlowOperations)
+  double timing = - MPI_Wtime();
+#endif
 
   if(metadata != nullptr) {
     ierr = MPI_Recv(metadata, 2*DIMENSIONS+3, MPI_DOUBLE, srcRank, tag, comm, MPI_STATUS_IGNORE);
@@ -4184,6 +4234,12 @@ void exahype::solvers::ADERDGSolver::recvMigratablePredictionJob(
   assertion(ierr==MPI_SUCCESS);
 #endif
 
+#if defined(OffloadingCheckForSlowOperations)
+  timing += MPI_Wtime();
+  if(timing > OFFLOADING_SLOW_OPERATION_THRESHOLD)
+    logError("recvMigratablePredictionJob()", " took "<<timing<<"s");
+#endif
+
 };
 
 #if defined(UseMPIOffloading)
@@ -4192,6 +4248,7 @@ void exahype::solvers::ADERDGSolver::recvMigratablePredictionJobOffload(
     double *lduh,
     double *lQhbnd,
     double *lFhbnd,
+	double *lGradQhbnd,
     int srcRank,
     int tag,
     MPI_Comm comm,
@@ -4201,7 +4258,9 @@ void exahype::solvers::ADERDGSolver::recvMigratablePredictionJobOffload(
   int i = 0;
   MPI_Status_Offload stat;
 
-  double timing = -MPI_Wtime();
+#if defined(OffloadingCheckForSlowOperations)
+  double timing = - MPI_Wtime();
+#endif
 
   if(metadata != nullptr) {
     ierr = MPI_Recv_offload(metadata, 2*DIMENSIONS+3, MPI_DOUBLE, srcRank, tag, comm, &stat);
@@ -4223,10 +4282,18 @@ void exahype::solvers::ADERDGSolver::recvMigratablePredictionJobOffload(
   assertion(lFhbnd!=NULL);
   ierr = MPI_Recv_offload(lFhbnd, getBndFluxTotalSize(), MPI_DOUBLE, srcRank, tag, comm, &stat);
   assertion(ierr==MPI_SUCCESS);
-  
-  timing += MPI_Wtime();
-  logInfo("recvMigratablePredictionJobOffload"," receive "<<" took "<<timing);
 
+#if defined(OffloadingGradQhbnd)
+  assertion(lGradQhbnd!=NULL);
+  ierr = MPI_Recv_offload(lGradQhbnd, getBndGradQSize(), MPI_DOUBLE, srcRank, tag, comm, &stat);
+  assertion(ierr==MPI_SUCCESS);
+#endif
+  
+#if defined(OffloadingCheckForSlowOperations)
+  timing += MPI_Wtime();
+  if(timing > OFFLOADING_SLOW_OPERATION_THRESHOLD)
+    logError("recvMigratablePredictionJobOffload()", " took "<<timing<<"s");
+#endif
 };
 
 void exahype::solvers::ADERDGSolver::sendMigratablePredictionJobOffload(
@@ -4234,6 +4301,7 @@ void exahype::solvers::ADERDGSolver::sendMigratablePredictionJobOffload(
   double *lduh,
   double *lQhbnd,
   double *lFhbnd,
+  double *lGradQhbnd,
   int dest,
   int tag,
   MPI_Comm comm,
@@ -4242,9 +4310,11 @@ void exahype::solvers::ADERDGSolver::sendMigratablePredictionJobOffload(
   int i = 0;
   int ierr;
   //MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
-  int tid = tarch::multicore::Core::getInstance().getThreadNum(); 
- 
-  double timing = -MPI_Wtime();
+  //int tid = tarch::multicore::Core::getInstance().getThreadNum();
+
+#if defined(OffloadingCheckForSlowOperations)
+  double timing = - MPI_Wtime();
+#endif
 
   int rail = get_next_rail();
 
@@ -4274,8 +4344,17 @@ void exahype::solvers::ADERDGSolver::sendMigratablePredictionJobOffload(
   ierr = MPI_Send_offload(lFhbnd, getBndFluxTotalSize(), MPI_DOUBLE, dest, tag, comm, rail);
   assertion(ierr==MPI_SUCCESS);
 
+#if defined(OffloadingGradQhbnd)
+  assertion(lGradQhbnd!=NULL);
+  ierr = MPI_Send_offload(lGradQhbnd, getBndGradQSize(), MPI_DOUBLE, dest, tag, comm, rail);
+  assertion(ierr==MPI_SUCCESS);
+#endif
+
+#if defined(OffloadingCheckForSlowOperations)
   timing += MPI_Wtime();
-  logInfo("sendMigratablePredictionJobOffload"," send "<<" took "<<timing);
+  if(timing > OFFLOADING_SLOW_OPERATION_THRESHOLD)
+    logError("sendMigratablePredictionJobOffload()", " took "<<timing<<"s");
+#endif
 };
 #endif
 

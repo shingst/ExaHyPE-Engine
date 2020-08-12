@@ -36,6 +36,8 @@
 
 #if defined(DistributedOffloading)
 
+#define OFFLOADING_SLOW_OPERATION_THRESHOLD 0.001
+
 #if defined(OffloadingGradQhbnd)
 #define NUM_REQUESTS_MIGRATABLE_COMM 5
 #else

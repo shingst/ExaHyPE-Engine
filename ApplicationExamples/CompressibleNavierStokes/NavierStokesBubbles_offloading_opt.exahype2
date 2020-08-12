@@ -9,7 +9,7 @@
   },
   "computational_domain": {
     "dimension": 2,
-    "end_time": 50,
+    "time_steps": 4000,
     "offset": [
       0.0,
       0.0
@@ -21,7 +21,7 @@
     "max_mesh_setup_iterations": 400
   },
   "shared_memory": {
-    "cores": 2,
+    "cores": 3,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
     "background_job_processing": "job_system",
@@ -32,16 +32,16 @@
     "manual_pinning": false
   },
   "distributed_memory": {
-    "offloading": "aggressiveHybrid",
+    "offloading": "none",
     "offloading_input_file" : "",
-    "offloading_progress" : "none",
+    "offloading_progress" : "progress_thread",
     "offloading_CCP_temperature" : 0,
     "offloading_diffusion_temperature" : 1,
     "offloading_CCP_frequency" : 0,
     "offloading_CCP_steps" : 0,
     "offloading_update_temperature" : true,
     "offloading_increase_temp_threshold" : 1.0,
-    "task_sharing" : false,
+    "task_sharing" : true,
     "timeout": 12000,
     "load_balancing_type": "static",
     "buffer_size"            : 1600,    
@@ -70,7 +70,7 @@
     {
       "type": "ADER-DG",
       "name": "NavierStokesSolver_ADERDG",
-      "order":  4,
+      "order": 4,
       "maximum_mesh_size": 112.0,
       "maximum_mesh_depth": 0,
       "time_stepping": "global",
@@ -84,13 +84,14 @@
           "source"
         ],
         "space_time_predictor": {
-          "fix_picard_iterations": false
+          "fix_picard_iterations": false,
+          "split_ck": "disabled"
         },
         "optimised_terms": [],
         "optimised_kernel_debugging": [],
         "implementation": "optimised",
         "adjust_solution": "pointwise",
-        "allocate_temporary_arrays": "stack",
+        "allocate_temporary_arrays": "heap",
         "basis": "Legendre"
       },
       "point_sources": 0,
@@ -116,7 +117,7 @@
         {
           "name": "backgroundstate",
           "multiplicity": 2
-        } 
+        }
       ],
       "global_observables": [
         {
@@ -148,7 +149,7 @@
       ]
     }
   ],
-  "architecture": "skx",
+  "architecture": "hsw",
   "compiler_flags": "-DOffloadingGradQhbnd",
   "linker_flags": ""
 }
