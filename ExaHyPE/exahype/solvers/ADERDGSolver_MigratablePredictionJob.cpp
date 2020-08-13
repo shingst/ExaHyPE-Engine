@@ -190,7 +190,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 #endif
         <<" time stamp = "<<data->_metadata[2*DIMENSIONS]
         <<" element = "<<(int) data->_metadata[2*DIMENSIONS+2]);
-    std::memcpy(luh, &data->_luh[0], data->_luh.size() * sizeof(double));
+
     std::memcpy(lduh, &data->_lduh[0], data->_lduh.size() * sizeof(double));
     std::memcpy(lQhbnd, &data->_lQhbnd[0], data->_lQhbnd.size() * sizeof(double));
     std::memcpy(lFhbnd, &data->_lFhbnd[0], data->_lFhbnd.size() * sizeof(double));
@@ -440,7 +440,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
 
   //send back
   if (_originRank != myRank) {
-    MPI_Request sendBackRequests[NUM_REQUESTS_MIGRATABLE_COMM];
+    MPI_Request sendBackRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME];
     logInfo("handleExecution",
         " send job outcome: center[0] = "<<_center[0]
       <<" center[1] = "<<_center[1]
@@ -449,8 +449,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
 #endif
       <<" time stamp = "<<_predictorTimeStamp);
     //logInfo("handleLocalExecution()", "postSendBack");
-    _solver.isendMigratablePredictionJob(
-           _luh,
+    _solver.isendMigratablePredictionJobOutcome(
            _lduh,
            _lQhbnd,
            _lFhbnd,
@@ -461,7 +460,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
           sendBackRequests);
     exahype::offloading::OffloadingManager::getInstance().submitRequests(
       sendBackRequests,
-      NUM_REQUESTS_MIGRATABLE_COMM,
+	  NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME,
       _tag,
       _originRank,
       sendBackHandler,
@@ -685,7 +684,6 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
 
     //copy into result buffer as I am responsible for result
     if (recompJob != nullptr) {
-      double *luh = static_cast<double*>(cellDescription->getSolution());
       double *lduh = static_cast<double*>(cellDescription->getUpdate());
       double *lQhbnd = static_cast<double*>(cellDescription->getExtrapolatedPredictor());
       double *lFhbnd = static_cast<double*>(cellDescription->getFluctuation());
@@ -700,14 +698,15 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
           static_cast<MigratablePredictionJob*>(recompJob)->_predictorTimeStamp
               == metadata[2 * DIMENSIONS]);
 
-      std::memcpy(luh, &data->_luh[0], data->_luh.size() * sizeof(double));
       std::memcpy(lduh, &data->_lduh[0], data->_lduh.size() * sizeof(double));
       std::memcpy(lQhbnd, &data->_lQhbnd[0],
           data->_lQhbnd.size() * sizeof(double));
       std::memcpy(lFhbnd, &data->_lFhbnd[0],
           data->_lFhbnd.size() * sizeof(double));
+#if defined(OffloadingGradQhbnd)
       std::memcpy(lGradQhbnd, &data->_lGradQhbnd[0],
           data->_lGradQhbnd.size() * sizeof(double));
+#endif
       exahype::offloading::JobTableStatistics::getInstance().notifySavedTask();
 
       delete data;

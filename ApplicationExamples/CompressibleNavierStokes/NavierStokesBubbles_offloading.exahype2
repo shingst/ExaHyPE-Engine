@@ -148,7 +148,7 @@
       ]
     }
   ],
-  "architecture": "skx",
+  "architecture": "hsw",
   "compiler_flags": "-DOffloadingGradQhbnd",
   "linker_flags": ""
 }

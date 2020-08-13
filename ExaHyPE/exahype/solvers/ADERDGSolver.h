@@ -38,10 +38,12 @@
 
 #define OFFLOADING_SLOW_OPERATION_THRESHOLD 0.001
 
+#define NUM_REQUESTS_MIGRATABLE_COMM 2
+
 #if defined(OffloadingGradQhbnd)
-#define NUM_REQUESTS_MIGRATABLE_COMM 5
+#define NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME 4
 #else
-#define NUM_REQUESTS_MIGRATABLE_COMM 4
+#define NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME 3
 #endif
 
 #include "exahype/offloading/OffloadingManager.h"
@@ -1301,8 +1303,7 @@ private:
    *  Sends away data of a MigratablePredictionJob to a destination rank
    *  using MPI offloading. 
    */
-  void sendMigratablePredictionJobOffload(
-      double *luh,
+  void sendMigratablePredictionJobOutcomeOffload(
       double *lduh,
       double *lQhbnd,
       double *lFhbnd,
@@ -1313,10 +1314,20 @@ private:
       double *metadata =nullptr);
 
   /*
-   * Sends away data of a MigratablePredictionJob to a destination rank.
+   * Sends away a MigratablePredictionJob to a destination rank.
    */
   void isendMigratablePredictionJob(
 	  double *luh,
+	  int dest,
+	  int tag,
+	  MPI_Comm comm,
+	  MPI_Request *requests,
+	  double *metadata =nullptr);
+
+  /*
+   * Sends away task outcome of a MigratablePredictionJob to a destination rank.
+   */
+  void isendMigratablePredictionJobOutcome(
 	  double *lduh,
 	  double *lQhbnd,
 	  double *lFhbnd,
@@ -1326,11 +1337,22 @@ private:
 	  MPI_Comm comm,
 	  MPI_Request *requests,
 	  double *metadata =nullptr);
+
   /*
-   * Receives data of a MigratablePredictionJob from a destination rank.
+   * Receives a MigratablePredictionJob from a destination rank.
    */
   void irecvMigratablePredictionJob(
 	  double *luh,
+      int srcRank,
+	  int tag,
+	  MPI_Comm comm,
+      MPI_Request *requests,
+	  double *metadata =nullptr);
+
+  /*
+   * Receives task outcome of a MigratablePredictionJob from a destination rank.
+   */
+  void irecvMigratablePredictionJobOutcome(
 	  double *lduh,
 	  double *lQhbnd,
 	  double *lFhbnd,
@@ -1342,10 +1364,9 @@ private:
 	  double *metadata =nullptr);
 
   /*
-   * Receives data of a MigratablePredictionJob from a destination rank.
+   * Receives task outcome of a MigratablePredictionJob from a destination rank.
    */
-  void recvMigratablePredictionJob(
-      double *luh,
+  void recvMigratablePredictionJobOutcome(
       double *lduh,
       double *lQhbnd,
       double *lFhbnd,
@@ -1355,8 +1376,7 @@ private:
       MPI_Comm comm,
       double *metadata =nullptr);
 
-  void recvMigratablePredictionJobOffload(
-      double *luh,
+  void recvMigratablePredictionJobOutcomeOffload(
       double *lduh,
       double *lQhbnd,
       double *lFhbnd,
