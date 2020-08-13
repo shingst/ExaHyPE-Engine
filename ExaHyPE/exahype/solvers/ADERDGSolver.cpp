@@ -2853,7 +2853,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
    exahype::offloading::OffloadingManager::getInstance().selectVictimRank(destRank, lastSend);
    assertion(destRank>=0);
 
-   logInfo("submitOrSendMigratablePredictionJob", "there are "<<NumberOfEnclaveJobs<<" NumberOfRemoteJobs "<<NumberOfRemoteJobs);
+   logInfo("submitOrSendMigratablePredictionJob", "there are "<<NumberOfEnclaveJobs<<" Enclave Jobs and "<<NumberOfRemoteJobs<< " Remote Jobs");
 
    if(myRank!=destRank) {
     // logInfo("submitOrSendMigratablePredictionJob","element "<<job->_element<<" predictor time stamp"<<job->_predictorTimeStamp<<" predictor time step size "<<job->_predictorTimeStepSize);
@@ -2925,6 +2925,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
      _mapTagToCellDesc.insert(std::make_pair(tag, &cellDescription));
      _mapCellDescToTagRank.insert(std::make_pair(&cellDescription, std::make_pair(tag, destRank)));
      _mapTagToOffloadTime.insert(std::make_pair(tag, -MPI_Wtime()));
+     logInfo("submitOrSendMigratablePredictionJob()","send away with tag "<<tag);
      // send away
      isendMigratablePredictionJob(
          luh,
@@ -2962,7 +2963,6 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
           exahype::offloading::RequestType::send,
           this); 
 
-     //logInfo("submitOrSendMigratablePredictionJob()","send away with tag "<<tag);
 
      // post receive back requests
 //     MPI_Request recvRequests[4];
@@ -3691,6 +3691,7 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::run( bool isCalledOnMaster ) {
                  data->_lduh.data(),
                  data->_lQhbnd.data(),
                  data->_lFhbnd.data(),
+                 data->_lGradQhbnd.data(),
                  stat.MPI_SOURCE,
              stat.MPI_TAG,
              exahype::offloading::OffloadingManager::getInstance().getMPICommunicator(),
@@ -3775,6 +3776,7 @@ bool exahype::solvers::ADERDGSolver::ReceiveBackJob::run( bool isCalledOnMaster 
       double *lduh   = static_cast<double*>(cellDescription->getUpdate());
       double *lQhbnd = static_cast<double*>(cellDescription->getExtrapolatedPredictor());
       double *lFhbnd = static_cast<double*>(cellDescription->getFluctuation());
+      double* lGradQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictorGradient());
 
       assertion(statMapped.MPI_TAG!=_solver._lastReceiveBackTag[statMapped.MPI_SOURCE]);
       _solver._lastReceiveBackTag[statMapped.MPI_SOURCE] =  statMapped.MPI_TAG;
@@ -3782,7 +3784,7 @@ bool exahype::solvers::ADERDGSolver::ReceiveBackJob::run( bool isCalledOnMaster 
       MPI_Request recvRequests[NUM_REQUESTS_MIGRATABLE_COMM];
       _solver.irecvMigratablePredictionJob(
         luh, lduh, lQhbnd,
-        lFhbnd, statMapped.MPI_SOURCE, statMapped.MPI_TAG, commMapped, recvRequests);
+        lFhbnd, lGradQhbnd, statMapped.MPI_SOURCE, statMapped.MPI_TAG, commMapped, recvRequests);
 
       exahype::offloading::OffloadingManager::getInstance().submitRequests(
         recvRequests, NUM_REQUESTS_MIGRATABLE_COMM, statMapped.MPI_TAG, statMapped.MPI_SOURCE,

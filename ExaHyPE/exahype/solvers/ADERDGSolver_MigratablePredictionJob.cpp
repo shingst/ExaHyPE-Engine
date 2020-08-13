@@ -17,6 +17,9 @@
 #include "exahype/offloading/MemoryMonitor.h"
 #include "exahype/offloading/NoiseGenerator.h"
 
+//#undef assertion
+//#define assertion assert
+
 exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob(
     ADERDGSolver& solver, const int cellDescriptionsIndex, const int element,
     const double predictorTimeStamp, const double predictorTimeStepSize) :
@@ -365,6 +368,21 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
     #endif
     result = false;
 
+   assertion(_lduh!=nullptr);
+   assertion(_lQhbnd!=nullptr);
+   assertion(_lGradQhbnd!=nullptr);
+   assertion(_lFhbnd!=nullptr);
+   assertion(_luh!=nullptr);
+    
+   logInfo("handleExecution",
+        " processJob: center[0] = "<<_center[0]
+      <<" center[1] = "<<_center[1]
+#if DIMENSIONS==3
+      <<" center[2] = "<<_center[2]
+#endif
+      <<" time stamp = "<<_predictorTimeStamp
+      <<" origin rank = "<<_originRank);
+
     int iterations=_solver.fusedSpaceTimePredictorVolumeIntegral(
       _lduh,
       _lQhbnd,
@@ -376,7 +394,17 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
       _predictorTimeStamp,
       _predictorTimeStepSize,
       true);
-    hasComputed = true;
+   
+   logInfo("handleExecution",
+        " finished job: center[0] = "<<_center[0]
+      <<" center[1] = "<<_center[1]
+#if DIMENSIONS==3
+      <<" center[2] = "<<_center[2]
+#endif
+      <<" time stamp = "<<_predictorTimeStamp
+      <<" origin rank = "<<_originRank);
+   
+   hasComputed = true;
 #if defined(USE_ITAC)
     VT_end(event_stp_remote);
 #endif
@@ -423,12 +451,12 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
     //logInfo("handleLocalExecution()", "postSendBack");
     _solver.isendMigratablePredictionJob(
            _luh,
-	  _lduh,
-	  _lQhbnd,
-	  _lFhbnd,
-	  _lGradQhbnd,
-          _originRank,
-          _tag,
+           _lduh,
+           _lQhbnd,
+           _lFhbnd,
+           _lGradQhbnd,
+           _originRank,
+           _tag,
           exahype::offloading::OffloadingManager::getInstance().getMPICommunicatorMapped(),
           sendBackRequests);
     exahype::offloading::OffloadingManager::getInstance().submitRequests(
@@ -449,8 +477,9 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandler(
 
   tbb::concurrent_hash_map<std::pair<int, int>, MigratablePredictionJobData*>::accessor a_tagRankToData;
   MigratablePredictionJobData *data;
-  static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagRankToStolenData.find(
+  bool found = static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagRankToStolenData.find(
       a_tagRankToData, std::make_pair(remoteRank, tag));
+  assertion(found);
   data = a_tagRankToData->second;
   a_tagRankToData.release();
 
@@ -800,7 +829,7 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJobData::MigratablePredictio
       _luh(solver.getDataPerCell()),
       _lduh(solver.getUpdateSize()),
       _lQhbnd(solver.getBndTotalSize()),
-   	  _lFhbnd(solver.getBndFluxTotalSize()),
+      _lFhbnd(solver.getBndFluxTotalSize()),
       _lGradQhbnd(solver.getBndGradQTotalSize()){
   AllocatedSTPs++;
 }
@@ -810,3 +839,6 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJobData::~MigratablePredicti
 }
 
 #endif
+
+//#undef assertion
+//#define assertion(expr) 
