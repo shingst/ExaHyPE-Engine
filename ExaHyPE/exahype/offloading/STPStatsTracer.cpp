@@ -23,6 +23,8 @@
 namespace exahype {
 namespace offloading {
 
+tarch::logging::Log  exahype::offloading::STPStatsTracer::_log( "exahype::offloading::STPStatsTracer" );
+
 STPStatsTracer::STPStatsTracer() : _outputDir(".") {
 	// TODO Auto-generated constructor stub
 
@@ -71,6 +73,8 @@ void STPStatsTracer::writeTracingEventIteration(unsigned int iterations, STPType
   file.open(pathIt,std::fstream::app);
   file << (iterations+1) << std::endl;
   file.close();
+
+  //logInfo("writeTracingEventIteration", " wrote to file "<<pathIt);
 }
 
 void STPStatsTracer::writeTracingEventRun(unsigned int elapsed, STPType type) {
@@ -102,6 +106,8 @@ void STPStatsTracer::writeTracingEventRun(unsigned int elapsed, STPType type) {
   file.open(path,std::fstream::app);
   file << elapsed << std::endl;
   file.close();
+  
+  //logInfo("writeTracingEventRun", " wrote to file "<<path);
 }
 
 void STPStatsTracer::writeTracingEventRunIterations(unsigned int iterations, unsigned int elapsed, STPType type) {
@@ -121,7 +127,7 @@ void STPStatsTracer::writeTracingEventRunIterations(unsigned int iterations, uns
   }
 
   int rank = tarch::parallel::Node::getInstance().getRank();
-  stream<<"_run_iterations_rank_"<<rank;
+  stream<<"run_iterations_rank_"<<rank;
 #if defined (SharedTBB)
   int threadId=tarch::multicore::Core::getInstance().getThreadNum();
   stream<<"_"<<threadId;
@@ -133,6 +139,8 @@ void STPStatsTracer::writeTracingEventRunIterations(unsigned int iterations, uns
   file.open(path,std::fstream::app);
   file << elapsed<< ":" << iterations+1 << std::endl;
   file.close();
+
+  //logInfo("writeTracingEventRunIterations", " wrote to file "<<path);
 }
 
 STPStatsTracer& STPStatsTracer::getInstance() {

@@ -26,6 +26,7 @@ class STPStatsTracer {
 
 private:
 	std::string _outputDir;
+    static tarch::logging::Log     _log;
 
 public:
 	STPStatsTracer();

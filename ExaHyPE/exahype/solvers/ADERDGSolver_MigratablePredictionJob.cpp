@@ -17,8 +17,8 @@
 #include "exahype/offloading/MemoryMonitor.h"
 #include "exahype/offloading/NoiseGenerator.h"
 
-//#undef assertion
-//#define assertion assert
+#undef assertion
+#define assertion assert
 
 exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob(
     ADERDGSolver& solver, const int cellDescriptionsIndex, const int element,
@@ -839,5 +839,5 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJobData::~MigratablePredicti
 
 #endif
 
-//#undef assertion
-//#define assertion(expr) 
+#undef assertion
+#define assertion(expr) 

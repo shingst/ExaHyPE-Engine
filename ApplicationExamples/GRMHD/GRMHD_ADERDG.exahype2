@@ -10,7 +10,7 @@
   "architecture": "skx",
   "computational_domain": {
     "dimension": 3,
-    "end_time": 10.01,
+    "time_steps": 10,
     "offset": [
       3.0,
       3.0,
@@ -36,6 +36,9 @@
     "load_balancing_strategy": "hotspot",
     "node_pool_strategy": "fair",
     "ranks_per_node": 6
+  },
+  "stp_stats_tracing" : {
+     "stp_tracing_output_dir" : "test_stp"
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",

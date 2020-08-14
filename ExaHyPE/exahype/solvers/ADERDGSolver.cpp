@@ -69,6 +69,9 @@
 #include "peano/utils/UserInterface.h"
 #endif
 
+#undef assertion
+#define assertion assert
+
 #if defined(UseMPIOffloading)
 #include "mpi_offloading.h"
 #endif
@@ -2518,7 +2521,7 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
                                                                      <<" outstanding requests "<<exahype::offloading::OffloadingManager::getInstance().getNumberOfOutstandingRequests(exahype::offloading::RequestType::sendReplica)
                                                                                             +exahype::offloading::OffloadingManager::getInstance().getNumberOfOutstandingRequests(exahype::offloading::RequestType::receiveReplica)
                                                                                                       );
-
+  //Todo: improve performance as this sometimes takes too long/wastes resources on master thread
   while( (i< unsafe_size || isFinal) && gotOne) {
     JobTableKey key;
     gotOne = _allocatedJobs.try_pop(key);
@@ -5135,3 +5138,6 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::ADERDGSolver::me
 
   return result;
 }
+
+#undef assertion
+#define assertion(expr) 
