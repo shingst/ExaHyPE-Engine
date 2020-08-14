@@ -43,8 +43,8 @@ static int event_progress_sendBack;
 static int event_progress_receiveBack;
 #endif
 
-#undef assertion
-#define assertion assert
+//#undef assertion
+//#define assertion assert
 
 tarch::logging::Log exahype::offloading::OffloadingManager::_log( "exahype::offloading::OffloadingManager" );
 
@@ -917,5 +917,5 @@ bool exahype::offloading::OffloadingManager::ProgressReceiveBackJob::operator()(
 
 #endif
 
-#undef assertion
-#define assertion(expr) 
+//#undef assertion
+//#define assertion(expr) 

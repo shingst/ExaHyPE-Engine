@@ -69,8 +69,8 @@
 #include "peano/utils/UserInterface.h"
 #endif
 
-#undef assertion
-#define assertion assert
+//#undef assertion
+//#define assertion assert
 
 #if defined(UseMPIOffloading)
 #include "mpi_offloading.h"
@@ -5139,5 +5139,5 @@ exahype::solvers::Solver::CellProcessingTimes exahype::solvers::ADERDGSolver::me
   return result;
 }
 
-#undef assertion
-#define assertion(expr) 
+//#undef assertion
+//#define assertion(expr) 
