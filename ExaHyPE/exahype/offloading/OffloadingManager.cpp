@@ -128,16 +128,16 @@ int exahype::offloading::OffloadingManager::getTMPIInterTeamRank(){
 
 void exahype::offloading::OffloadingManager::createMPICommunicator() {
   int ierr = MPI_Comm_dup(MPI_COMM_WORLD, &_offloadingComm);
-  assert(ierr==MPI_SUCCESS);
+  assertion(ierr==MPI_SUCCESS);
   ierr = MPI_Comm_dup(MPI_COMM_WORLD, &_offloadingCommMapped);
-  assert(ierr==MPI_SUCCESS);
+  assertion(ierr==MPI_SUCCESS);
 }
 
 void exahype::offloading::OffloadingManager::destroyMPICommunicator() {
   int ierr = MPI_Comm_free( &_offloadingComm);
-  assert(ierr==MPI_SUCCESS);
+  assertion(ierr==MPI_SUCCESS);
   ierr =MPI_Comm_free(&_offloadingCommMapped);
-  assert(ierr==MPI_SUCCESS);
+  assertion(ierr==MPI_SUCCESS);
 }
 
 void exahype::offloading::OffloadingManager::resetPostedRequests() {
@@ -206,7 +206,7 @@ void exahype::offloading::OffloadingManager::submitRequests(
   //bug only appears when using scorep
   #ifdef ScoreP
   for(int i=0; i<nRequests; i++) {
-	assert(requests[i]!=MPI_REQUEST_NULL);
+	assertion(requests[i]!=MPI_REQUEST_NULL);
   }
   #endif
 
@@ -225,7 +225,7 @@ void exahype::offloading::OffloadingManager::submitRequests(
   int finished = -1;
 
 /*  for(int i=0;i<nRequests; i++) {
-    assert(requests[i]!=MPI_REQUEST_NULL); 
+    assertion(requests[i]!=MPI_REQUEST_NULL); 
     int ierr = MPI_Test(&requests[i], &finished, MPI_STATUS_IGNORE); 
     if(ierr!=MPI_SUCCESS) {
       char err_buffer[MPI_MAX_ERROR_STRING];
@@ -235,13 +235,13 @@ void exahype::offloading::OffloadingManager::submitRequests(
       fprintf(stderr, "request id %d\n", i);
     }
 
-    assert(ierr==MPI_SUCCESS);
+    assertion(ierr==MPI_SUCCESS);
     finished = -1;
   } */ 
 
   int ierr = MPI_Testall(nRequests, requests, &finished, MPI_STATUSES_IGNORE);
 
-  assert(ierr==MPI_SUCCESS);
+  assertion(ierr==MPI_SUCCESS);
   if(finished) {
     handler(solver, tag, remoteRank);
     return;
@@ -249,20 +249,20 @@ void exahype::offloading::OffloadingManager::submitRequests(
    //check if ok after test
   #ifdef ScoreP
   for(int i=0; i<nRequests; i++) {
-        assert(requests[i]!=MPI_REQUEST_NULL);
+        assertion(requests[i]!=MPI_REQUEST_NULL);
   }
   #endif
 
   if(block) {
     int ierr = MPI_Waitall(nRequests, requests, MPI_STATUSES_IGNORE);
-    assert(ierr==MPI_SUCCESS);
+    assertion(ierr==MPI_SUCCESS);
     handler(solver, tag, remoteRank);
     return;
   }
    //check if ok after wait
   #ifdef ScoreP
   for(int i=0; i<nRequests; i++) {
-        assert(requests[i]!=MPI_REQUEST_NULL);
+        assertion(requests[i]!=MPI_REQUEST_NULL);
   }
   #endif
 
@@ -289,7 +289,7 @@ void exahype::offloading::OffloadingManager::submitRequests(
    //check if ok before pushing to queue
   #ifdef ScoreP
   for(int i=0; i<nRequests; i++) {
-        assert(requests[i]!=MPI_REQUEST_NULL);
+        assertion(requests[i]!=MPI_REQUEST_NULL);
   }
   #endif
 
@@ -372,9 +372,9 @@ void exahype::offloading::OffloadingManager::cancelOutstandingRequests() {
            MPI_Error_string(ierr,err_buffer,&resultlen);
           fprintf(stderr,err_buffer);
         }
-        assert(ierr==MPI_SUCCESS);
+        assertion(ierr==MPI_SUCCESS);
         ierr = MPI_Request_free(&_activeRequests[i][j]);
-        assert(ierr==MPI_SUCCESS);
+        assertion(ierr==MPI_SUCCESS);
       }
       _activeRequests[i].clear();
       createRequestArray( type, _activeRequests[i], _internalIdsOfActiveRequests[i] );
@@ -580,7 +580,7 @@ bool exahype::offloading::OffloadingManager::progressRequestsOfType( RequestType
     }
     MPI_Abort(MPI_COMM_WORLD, ierr); /* abort*/
   }
-  assert(ierr==MPI_SUCCESS);
+  assertion(ierr==MPI_SUCCESS);
   time += MPI_Wtime();
 
   if(outcount>0)
@@ -597,19 +597,19 @@ bool exahype::offloading::OffloadingManager::progressRequestsOfType( RequestType
   for(int i=0; i<outcount; i++) {
     int reqIdx = arrOfIndices[i];
     int reqId = _internalIdsOfActiveRequests[mapId][reqIdx];
-    assert(_activeRequests[mapId][reqIdx]==MPI_REQUEST_NULL);
+    assertion(_activeRequests[mapId][reqIdx]==MPI_REQUEST_NULL);
 
     _reqIdToReqHandle[mapId].erase(reqId);
     int groupId;
     found = _reqIdToGroup[mapId].find(a_groupId, reqId);
 
-    assert(found);
+    assertion(found);
     groupId = a_groupId->second;
     _reqIdToGroup[mapId].erase(a_groupId);
     a_groupId.release();
 
     found = _outstandingReqsForGroup[mapId].find(a_outstandingGroup, groupId);
-    assert(found);
+    assertion(found);
     a_outstandingGroup->second--;
     bool finished = a_outstandingGroup->second==0;
     a_outstandingGroup.release();
@@ -617,23 +617,23 @@ bool exahype::offloading::OffloadingManager::progressRequestsOfType( RequestType
     if(finished) {
       std::function<void(exahype::solvers::Solver*, int ,int)> handler;
       found = _handlers[mapId].find(a_handler, groupId);
-      assert(found);
+      assertion(found);
       handler=a_handler->second;
       a_handler.release();
       exahype::solvers::Solver *solver;
       found=_solvers[mapId].find(a_solver, groupId);
-      assert(found);
+      assertion(found);
       solver = a_solver->second;
       a_solver.release();
       int remoteRank = -1;
       found= _groupIdToRank[mapId].find(a_remoteRank, groupId);
       remoteRank = a_remoteRank->second;
-      assert(found);
+      assertion(found);
       a_remoteRank.release();
       int remoteTag = -1;
       found= _groupIdToTag[mapId].find(a_remoteTag, groupId);
       remoteTag = a_remoteTag->second;
-      assert(found);
+      assertion(found);
       a_remoteTag.release();
 
       handler(solver, remoteTag, remoteRank);
