@@ -15,6 +15,7 @@
 #define EXAHYPE_EXAHYPE_OFFLOADING_STPSTATSTRACER_H_
 
 #include <string>
+#include "tarch/logging/Log.h"
 
 namespace exahype {
 namespace offloading {
