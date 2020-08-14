@@ -58,8 +58,6 @@ class Controller:
     
     def __init__(self):
         """TODO"""
-        # Check the python version according to the configuration
-        Configuration.checkPythonVersion()
         
         logging.basicConfig(format="%(filename)s:%(lineno)s(%(funcName)s):%(levelname)s %(message)s")
         self.log = logging.getLogger()
@@ -301,6 +299,10 @@ class Controller:
         if "noise_generator" in self.spec:
             context["useNoiseGenerator"] = self.spec["noise_generator"]["enable"]
 
+        context["useSTPStatsTracing"] = False
+        if "stp_stats_tracing" in self.spec:
+            context["useSTPStatsTracing"] = True
+
         context["useIpcm"]   = False # TODO
         context["useLikwid"] = False # TODO
         context["likwidInc"] = ""    # TODO
@@ -313,6 +315,7 @@ class Controller:
             context["offloading"] = "none"
             context["offloadingProgress"] = "none"
             context["useReplicationSaving"] = False
+            context["useLocalRecompute"] = False
  
            
         # kernels

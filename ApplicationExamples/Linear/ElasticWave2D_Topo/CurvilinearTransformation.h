@@ -1,5 +1,5 @@
 #include "kernels/KernelUtils.h"
-#include "kernels/GaussLegendreBasis.h"
+#include "kernels/GaussLegendreQuadrature.h"
 
 
 

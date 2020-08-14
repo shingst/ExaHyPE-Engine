@@ -1,0 +1,223 @@
+{
+  "project_name": "GRMHD",
+  "paths": {
+    "peano_kernel_path": "./Peano",
+    "exahype_path": "./ExaHyPE",
+    "output_directory": "./ApplicationExamples/GRMHD/GRMHD",
+    "log_file": "whatever.log",
+    "plotter_subdirectory": "Writers"
+  },
+  "architecture": "{{architecture}}",
+  "computational_domain": {
+    "dimension": {{dimension}},
+    "end_time": {{simulationTime}},
+    "offset": [
+      3.0,
+      3.0,
+      3.0
+    ],
+    "width": [
+      10.0,
+      10.0,
+      10.0
+    ]
+  },
+  "shared_memory": {
+    "cores": {{coresPerRank}},
+    "properties_file": "sharedmemory.properties",
+    "thread_stack_size": 8000000,
+    "autotuning_strategy": "dummy",
+    "background_job_consumers": {{consumerTasks}}
+  },
+  "stp_stats_tracing" : {
+     "stp_tracing_output_dir" : "{{stp_tracing_output_dir}}"
+  },
+  "distributed_memory": {
+     "offloading": "{{offloading}}",
+     "offloading_input_file" : "",
+     "offloading_progress" : "{{offloading_progress}}",
+     "offloading_CCP_temperature" : {{offloading_CCP_temperature}},
+     "offloading_diffusion_temperature" : {{offloading_diffusion_temperature}},
+     "offloading_CCP_frequency" : {{offloading_CCP_frequency}},
+     "offloading_CCP_steps" : {{offloading_CCP_steps}},
+     "offloading_update_temperature" : {{offloading_update_temperature}},
+     "offloading_increase_temp_threshold" :  {{offloading_increase_temp_threshold}},
+     "timeout": 12000,
+     "load_balancing_type": "static",
+     "buffer_size"            : {{bufferSize}},
+     "load_balancing_strategy": "hotspot",
+     "node_pool_strategy": "fair",
+     "ranks_per_node"         : {{ranksPerNode}}
+  }, 
+  "optimisation": {
+    "fuse_algorithmic_steps": "all",
+    "spawn_predictor_as_background_thread": {{spawnBackgroundThread}},
+    "spawn_update_as_background_thread": true,
+    "spawn_amr_background_threads": true,
+    "disable_vertex_exchange_in_time_steps": true,
+    "time_step_batch_factor": 0.0,
+    "disable_metadata_exchange_in_batched_time_steps": false,
+    "double_compression": 0.0,
+    "spawn_double_compression_as_background_thread": false
+  },
+  "solvers": [
+    {
+      "type": "ADER-DG",
+      "name": "GRMHDSolver_ADERDG",
+      "order": {{order}},
+      "maximum_mesh_size": {{maximumMeshSize}},
+      "maximum_mesh_depth": {{maximumMeshDepth}},
+      "time_stepping": "{{timeStepping}}",
+      "aderdg_kernel": {
+        "nonlinear": true,
+        "terms": [
+          "flux",
+          "ncp"
+        ],
+        "space_time_predictor": {},
+        "optimised_terms": [],
+        "optimised_kernel_debugging": [],
+        "implementation": "{{kernels}}"
+      },
+      "point_sources": 0,
+      "variables": [
+        {
+          "name": "rho",
+          "multiplicity": 1
+        },
+        {
+          "name": "vel",
+          "multiplicity": 3
+        },
+        {
+          "name": "E",
+          "multiplicity": 1
+        },
+        {
+          "name": "B",
+          "multiplicity": 3
+        },
+        {
+          "name": "psi",
+          "multiplicity": 1
+        },
+        {
+          "name": "lapse",
+          "multiplicity": 1
+        },
+        {
+          "name": "shift",
+          "multiplicity": 3
+        },
+        {
+          "name": "gij",
+          "multiplicity": 6
+        }
+      ],
+      "_plotters": [
+        {
+          "type": "vtk::Cartesian::cells::ascii",
+          "name": "IntegralsWriter",
+          "time": 0.0,
+          "repeat": 0.1,
+          "output": "./output/global-integrals",
+          "variables": 0
+        },
+        {
+          "type": "user::defined",
+          "name": "TimingStatistics_DG",
+          "time": 0.0,
+          "repeat": 0.1,
+          "output": "./output/timing-benchmarks",
+          "variables": 0
+        },
+        {
+          "type": "vtu::Cartesian::vertices::ascii",
+          "name": "ConservedWriter",
+          "time": 0.0,
+          "repeat": 0.5,
+          "output": "./vtk-output/primitive",
+          "variables": 1
+        },
+        {
+          "type": "Carpet::Cartesian::Vertices::hdf5",
+          "name": "PrimitiveWriter",
+          "time": 0.0,
+          "repeat": 0.01,
+          "output": "./hdf5-output/prims1d",
+          "variables": 19,
+          "select": {
+            "y": 0,
+            "z": 0,
+            "one_file_per_timestep": false,
+            "all_unknowns_in_one_file": false
+          }
+        },
+        {
+          "type": "Carpet::Cartesian::Vertices::hdf5",
+          "name": "PrimitiveWriter",
+          "time": 0.0,
+          "repeat": 0.01,
+          "output": "./hdf5-output/prims2d",
+          "variables": 19,
+          "select": {
+            "z": 0,
+            "one_file_per_timestep": false,
+            "all_unknowns_in_one_file": false
+          }
+        },
+        {
+          "type": "Carpet::Cartesian::Vertices::hdf5",
+          "name": "PrimitiveWriter",
+          "time": 0.0,
+          "repeat": 0.01,
+          "output": "./hdf5-output/prims3d",
+          "variables": 19,
+          "select": {
+            "one_file_per_timestep": false,
+            "all_unknowns_in_one_file": false
+          }
+        },
+        {
+          "type": "Carpet::Cartesian::Vertices::hdf5",
+          "name": "H5Writer",
+          "time": 0.0,
+          "repeat": 0.01,
+          "output": "./hdf5-output/demo1d",
+          "variables": 9,
+          "select": {
+            "y": 0,
+            "z": 0,
+            "one_file_per_timestep": false,
+            "all_unknowns_in_one_file": false
+          }
+        },
+        {
+          "type": "Carpet::Cartesian::Vertices::hdf5",
+          "name": "H5Writer",
+          "time": 0.0,
+          "repeat": 0.01,
+          "output": "./hdf5-output/demo2d",
+          "variables": 9,
+          "select": {
+            "z": 0,
+            "one_file_per_timestep": false,
+            "all_unknowns_in_one_file": false
+          }
+        },
+        {
+          "type": "Carpet::Cartesian::Vertices::hdf5",
+          "name": "H5Writer",
+          "time": 0.0,
+          "repeat": 0.01,
+          "output": "./hdf5-output/demo3d",
+          "variables": 9,
+          "select": {
+            "one_file_per_timestep": false,
+            "all_unknowns_in_one_file": false
+          }
+        }
+      ]
+    }
+  ]
+}

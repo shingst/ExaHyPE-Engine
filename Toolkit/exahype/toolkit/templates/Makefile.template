@@ -103,6 +103,10 @@ PROJECT_CFLAGS += -DOffloadingLocalRecompute
 PROJECT_CFLAGS += -DGenerateNoise
 {% endif %}
 
+{% if useSTPStatsTracing %}
+PROJECT_CFLAGS += -DFileTrace -DPicard
+{% endif %}
+
 {% if offloadingProgress=="progress_thread" %}
 PROJECT_CFLAGS += -DOffloadingUseProgressThread
 {% elif offloadingProgress=="progress_task" %}

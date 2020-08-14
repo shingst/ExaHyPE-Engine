@@ -47,14 +47,14 @@ void Euler::MyEulerSolver::init(const std::vector<std::string>& cmdlineargs,cons
   const char* _id = std::getenv("EXAHYPE_INITIALDATA");
   const char* _bc = std::getenv("EXAHYPE_BOUNDC");
 
-  std::string id("DiffusingGauss"), bc("outflow");
+  std::string id("MovingGauss"), bc("outflow");
 
   if(_id) id=_id; else logInfo("ID", "Loading default Initial Data");
   if(_bc) id=_bc; else logInfo("BC", "Loading default Boundary Conditions");
 
   logInfo("ID", std::string("Loading Initial data: '")+id+std::string("'"));
   if(id == "ShuVortex") idfunc = ShuVortex2D;
-  if(id == "MovingGauss2D") idfunc = MovingGauss;
+  if(id == "MovingGauss") idfunc = MovingGauss;
   if(id == "DiffusingGauss") idfunc = DiffusingGauss;
   if(!idfunc) {
       logError("ID", "Cannot understand requested ID.");

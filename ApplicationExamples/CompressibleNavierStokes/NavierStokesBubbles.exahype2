@@ -9,7 +9,7 @@
   },
   "computational_domain": {
     "dimension": 2,
-    "end_time": 800,
+    "end_time": 100,
     "offset": [
       0.0,
       0.0
@@ -18,10 +18,7 @@
       1000.0,
       1000.0
     ],
-    "max_mesh_setup_iterations": 400,
-    "outside_cells": 2,
-    "outside_cells_left": 1,
-    "one_third_of_cells_outside": false
+    "max_mesh_setup_iterations": 400
   },
   "shared_memory": {
     "cores": 16,
@@ -66,7 +63,7 @@
       "type": "ADER-DG",
       "name": "NavierStokesSolver_ADERDG",
       "order": 4,
-      "maximum_mesh_size": 38.0,
+      "maximum_mesh_size": 112.0,
       "maximum_mesh_depth": 0,
       "time_stepping": "global",
       "halo_cells": 0,
@@ -137,7 +134,7 @@
           "type": "vtu::Cartesian::vertices::ascii",
           "name": "Plotter",
           "time": 1e-06,
-          "repeat": 30.0,
+          "repeat": 0.5,
           "output": "./results/solution",
           "variables": 5
         }

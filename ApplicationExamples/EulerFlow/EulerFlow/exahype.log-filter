@@ -17,5 +17,32 @@ info mpibalancing -1 black
 # too many messages
 
 info  exahype::runners::Runner::runAsWorker       -1  black 
+info  exahype::solvers::ADERDGSolver -1 black
+info  exahype::solvers::Plotter               -1  black
+info  exahype::runner::Runner::runAsWorker    -1  black
+info  exahype::mappings::LoadBalancing        -1  white
+info  exahype::runners::Runner::runAsWorker   -1  black
+info  exahype::runners::Runner::init          -1  black
+info  exahype::runners::Runner::createRepository -1  white
+info  exahype::runners::Runner::createGrid       -1  white
+info  exahype::runners::Runner::startNewTimeStep -1  white
 
+info  exahype::offloading::AggressiveHybridDistributor::printOffloadingStatistics -1 black
+info  exahype::offloading::OffloadingAnalyser::endIteration -1 black
+
+info  exahype::offloading::OffloadingManager::run -1 black
+info  exahype::solvers::ADERDGSolver::run   -1 black
+info  exahype::offloading::AggressiveHybridDistributor::selectVictimRank -1 black
+info  exahype::offloading::AggressiveHybridDistributor::selectVicimtRank -1 black
+info  exahype::mappings::LoadBalancing::endIteration -1 black
+info  exahype::offloading::OffloadingAnalyser::endToReceiveDataFromGlobalMaster -1 black
+info  exahype::offloading::OffloadingAnalyser::endToReceiveDataFromWorker -1 black 
+info  exahype::offloading::OffloadingAnalyser::endToSendDataToMaster -1 black  
+info  exahype::offloading::OffloadingAnalyser::beginToReceiveDataFromWorker -1 black
+info  exahype::offloading::OffloadingAnalyser::beginToReceiveDataFromMaster -1 black
+info  exahype::offloading::OffloadingAnalyser::updateZeroTresholdAndFilteredSnapshot -1 black
+info  exahype::offloading::OffloadingAnalyser::printWaitingTimes -1 black
+info  exahype::offloading::OffloadingManager::printPostedRequests -1 black
+info  exahype::offloading::OffloadingManager::printFinishedRequests -1 black
+info  exahype::offloading::OffloadingManager::progressRequests -1 black
 

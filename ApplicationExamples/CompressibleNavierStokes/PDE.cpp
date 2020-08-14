@@ -2,7 +2,7 @@
 #include "Scenarios/Scenario.h"
 
 #ifdef OPT_KERNELS
-#include "kernels/NavierStokes_NavierStokesSolver_ADERDG/Kernels.h"
+#include "kernels/NavierStokes_NavierStokesSolver_ADERDG/aderdg/Kernels.h"
 #endif
 
 NavierStokes::PDE::PDE() :

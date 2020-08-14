@@ -161,10 +161,10 @@ update_others() {
 			cd "$scriptDir" #move back
 		fi
 	fi
-	# comment last two lines of module init file (hot fix)
+	# comment two lines of module init file (hot fix)
 	cd jsonschema
-	sed -i -e "s,^from pkg_resources import get_distribution,#from pkg_resources import get_distribution,g" jsonschema/__init__.py
-	sed -i -e "s,^__version__ = get_distribution(__name__).version,#__version__ = get_distribution(__name__).version,g" jsonschema/__init__.py
+	sed -i -e "s,^    from importlib import metadata,    pass #from importlib import metadata,g" jsonschema/__init__.py
+	sed -i -e "s,^__version__ = metadata.version(\"jsonschema\"),#__version__ = metadata.version(\"jsonschema\"),g" jsonschema/__init__.py
 	cd ..
 	#six
 	if [ ! -d six ]; then
@@ -198,23 +198,22 @@ update_others() {
 		cd "$scriptDir" #move back
 		#Clean documentation to save space
 		cd libxsmm
-		rm -rf samples/
-		rm -rf documentation/
+		rm -rf samples/ #over 100M of not needed stuff
+		rm -rf documentation/ #around 10M of documentation
 		cd ..
 	else
 		echo "Update libxsmm submodule"
 		cd libxsmm
-		LOCAL=$(git rev-parse master)
-		REMOTE=$(git rev-parse origin/master)
-		if [ $LOCAL = $REMOTE ]; then
+		LIBXSMM_DIFF_COUNT=$(git rev-list HEAD...origin/release --count)
+		if [ $LIBXSMM_DIFF_COUNT -eq 0 ]; then
 			echo "Up-to-date"
 		else
 			REBUILD_LIBXSMM=true
-			git stash -q     #silently stash the changes (deleted directories)
-			git pull origin master
-			git stash pop -q #silently unstash the changes (deleted directories)
-			rm -rf samples/       #delete potential new stuff
-			rm -rf documentation/ #delete potential new stuff
+			git checkout -- samples/       #restore samples to avoid conflict
+			git checkout -- documentation/ #restore documentation to avoid conflict
+			git pull origin release
+			rm -rf samples/       #delete again
+			rm -rf documentation/ #delete again
 		fi
 		cd ..
 	fi

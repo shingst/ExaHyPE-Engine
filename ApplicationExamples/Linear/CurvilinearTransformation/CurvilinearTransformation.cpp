@@ -2,10 +2,11 @@
 
 #include <algorithm>
 #include "kernels/KernelUtils.h"
+#include "kernels/DGMatrices.h"
 #if defined(_GLL)
-#include "kernels/GaussLobattoBasis.h"
+#include "kernels/GaussLobattoQuadrature.h"
 #else
-#include "kernels/GaussLegendreBasis.h"
+#include "kernels/GaussLegendreQuadrature.h"
 #endif
 
 #if defined(USE_ASAGI)
@@ -92,10 +93,10 @@ CurvilinearTransformation::CurvilinearTransformation(const int num_nodes, const 
     for (int j = 0 ; j< num_nodes ; j ++){
 #if defined(_GLL)
       lagrange_basis_at_nodes[id_xy(j,i)]
-	=lagrangeBasis_uniform(kernels::lobatto::nodes[num_nodes-1][num_nodes-j-1],i);
+	=lagrangeBasis_uniform(kernels::gaussLobattoNodes[num_nodes-1][num_nodes-j-1],i);
 #else
       lagrange_basis_at_nodes[id_xy(j,i)]
-	=lagrangeBasis_uniform(kernels::legendre::nodes[num_nodes-1][j],i);
+	=lagrangeBasis_uniform(kernels::gaussLegendreNodes[num_nodes-1][j],i);
 #endif
     }
   }

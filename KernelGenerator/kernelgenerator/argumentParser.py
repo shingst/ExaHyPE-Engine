@@ -62,21 +62,22 @@ class ArgumentParser:
         ("architecture",        ArgType.MandatoryString, "the microarchitecture of the target device"),
         # optional arguments       
         ("useFlux",             ArgType.OptionalBool,    "enable flux"),
-        ("useFluxVect",         ArgType.OptionalBool,    "enable vectorized flux (include useFlux)"),
+        ("useFluxVect",         ArgType.OptionalBool,    "enable vectorized flux (include useFlux)"), #TODO JMG: legacy, use usePDEVect instead
         ("useViscousFlux",      ArgType.OptionalBool,    "enable viscous flux"),
         ("useNCP",              ArgType.OptionalBool,    "enable non conservative product"),
-        ("useNCPVect",          ArgType.OptionalBool,    "enable vectorized non conservative product (include useNCP)"),
+        ("useNCPVect",          ArgType.OptionalBool,    "enable vectorized non conservative product (include useNCP)"), #TODO JMG: legacy, use usePDEVect instead
         ("useSource",           ArgType.OptionalBool,    "enable source terms"),
-        ("useSourceVect",       ArgType.OptionalBool,    "enable vectorized source terms (include useSource)"),
+        ("useSourceVect",       ArgType.OptionalBool,    "enable vectorized source terms (include useSource)"), #TODO JMG: legacy, use usePDEVect instead
         ("useFusedSource",      ArgType.OptionalBool,    "enable fused source terms (include useSource)"),
-        ("useFusedSourceVect",  ArgType.OptionalBool,    "enable vectorized fused source terms (include useFusedSource and useSourceVect)"),
+        ("useFusedSourceVect",  ArgType.OptionalBool,    "enable vectorized fused source terms (include useFusedSource and useSourceVect)"), #TODO JMG: legacy, use usePDEVect instead
         ("useMaterialParam",    ArgType.OptionalBool,    "enable material parameters"),
-        ("useMaterialParamVect",ArgType.OptionalBool,    "enable vectorized material parameters"),
+        ("useMaterialParamVect",ArgType.OptionalBool,    "enable vectorized material parameters"), #TODO JMG: legacy, use usePDEVect instead
         ("usePointSources",     ArgType.OptionalInt ,    "enable numberOfPointSources point sources", -1, "numberOfPointSources"),
         ("useCERKGuess",        ArgType.OptionalBool,    "use CERK for SpaceTimePredictor inital guess (nonlinear only)"),
-        ("useSplitCKScalar",    ArgType.OptionalBool,    "use split Cauchy–Kowalevski formulation (linear only)"),
-        ("useSplitCKVect",      ArgType.OptionalBool,    "use split Cauchy–Kowalevski formulation with vect PDE (linear only)"),
+        ("useSplitCK",          ArgType.OptionalBool,    "use split Cauchy–Kowalevski formulation (linear only)"),
         ("useGaussLobatto",     ArgType.OptionalBool,    "use Gauss Lobatto Quadrature instead of Gauss Legendre"),
+        ("predictorRecompute",  ArgType.OptionalBool,    "predictor step will recompute the PDE instead of relying on stored values from the picard loop (nonlinear only)"),
+        ("useVectPDE",          ArgType.OptionalBool,    "use vectorized PDE terms (applies when present to: Flux, NCP, Source, FusedSource and MaterialParam)"),
         ("tempVarsOnStack",     ArgType.OptionalBool,    "put the big scratch arrays on the stack instead of the heap (you can use ulimit -s to increase the stack size)")
     ]
     

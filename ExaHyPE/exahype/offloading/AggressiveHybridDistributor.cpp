@@ -372,7 +372,7 @@ void exahype::offloading::AggressiveHybridDistributor::updateLoadDistribution() 
   if(!_isEnabled) {
     return;
   }
-  logInfo("updateLoadDistribution()","total offloaded: "<<_totalTasksOffloaded<<" previous: "<<_oldTotalTasksOffloaded);
+  logInfo("updateLoadDistribution()","total offloaded (target): "<<_totalTasksOffloaded<<" previous: "<<_oldTotalTasksOffloaded);
   logInfo("updateLoadDistribution()","increment current "<<_incrementCurrent<<" previous: "<<_incrementPrevious);
 
 
@@ -559,7 +559,8 @@ bool exahype::offloading::AggressiveHybridDistributor::selectVictimRank(int& vic
   int threshold = 1
 		         + std::max(1, tarch::multicore::Core::getInstance().getNumberOfThreads()-1)
                  * tarch::multicore::jobs::internal::_minimalNumberOfJobsPerConsumerRun;
-    threshold = std::max(threshold, 20);
+            
+  threshold = std::max(threshold, 20);
 
   if(exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs-exahype::solvers::ADERDGSolver::NumberOfRemoteJobs<
         threshold) {

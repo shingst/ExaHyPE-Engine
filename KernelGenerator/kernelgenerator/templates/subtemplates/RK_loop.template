@@ -15,7 +15,7 @@
    **** call to flux function over {{inputLuh}} into lF_guess ****
    ******************************************************/ #}
 {% with inputQ=inputLuh, inputQ_dataSize=nData, outputF='lF_guess', timeInterleaved=False, time_var='0' %}
-{% filter indent(width=2, indentfirst=True) %}{% include 'subtemplates/flux_PDE_over_xyz.template' %}{% endfilter %}
+{% filter indent(width=2, first=True) %}{% include 'subtemplates/flux_PDE_over_xyz.template' %}{% endfilter %}
 {% endwith %}
 
   // x direction
@@ -67,7 +67,7 @@
    **** call to Source and NCP (or FusedSource) functions ****
    ***********************************************************/ #}
 {% with time_var='0', inputQ=inputLuh, output=outputKi, writeSource=False, multiplyByWeights=False, substractToOutput=True, inputQ_dataSize=inputLuh_dataSize, timeInterleaved=False %}
-{% filter indent(width=4, indentfirst=True) %}{% include 'subtemplates/source_ncp_PDE_over_xyz.template' %}{% endfilter %}
+{% filter indent(width=4, first=True) %}{% include 'subtemplates/source_ncp_PDE_over_xyz.template' %}{% endfilter %}
 {% endwith %}
   }
 {% endif %}

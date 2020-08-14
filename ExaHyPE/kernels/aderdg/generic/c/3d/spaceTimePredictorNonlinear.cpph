@@ -22,6 +22,24 @@
 
 #if DIMENSIONS == 3
 
+#if defined(ScoreP)
+#include "scorep/SCOREP_User.h"
+#endif
+
+
+#if defined(FileTrace)
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <ctime>
+#include <unistd.h>
+#include <sys/time.h>
+#include <sstream>
+#include "tarch/parallel/Node.h"
+#include "tarch/multicore/Core.h"
+#endif
+
+
 namespace kernels {
 namespace aderdg {
 namespace generic {
@@ -428,6 +446,31 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
   if (useViscousFlux) {
     delete gradQCur;
   }
+  #ifdef ScoreP
+	for(int i=0;i<iter;i++){
+		SCOREP_USER_REGION_DEFINE( my_region_handle )
+		SCOREP_USER_REGION_BEGIN( my_region_handle, "iter_counter",SCOREP_USER_REGION_TYPE_COMMON )
+		SCOREP_USER_REGION_END( my_region_handle )
+	}
+  #endif
+/*  #if defined FileTrace && !defined Picard
+  std::stringstream stream;
+  stream<<"./TraceOutput/iter_counter_rank_";
+  int rank=tarch::parallel::Node::getInstance().getRank();
+  stream<<rank<<"_";
+#if defined(SharedTBB)
+  //this will only work for 2 cores per Rank
+  int threadId=tarch::multicore::Core::getInstance().getThreadNum();
+  stream<<threadId
+#endif
+  stream<<".txt";
+  std::string path=stream.str();
+
+  std::ofstream file;
+  file.open(path,std::fstream::app);
+  file << (iter+1) << std::endl;
+  file.close();
+  #endif*/
 
   return iter;
 }

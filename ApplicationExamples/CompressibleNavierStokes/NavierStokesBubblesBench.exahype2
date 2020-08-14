@@ -15,9 +15,7 @@
     "width": [
       1000.0,
       1000.0
-    ],
-    "outside_cells": 0,
-    "outside_cells_left": 0  
+    ]
   },
   "shared_memory": {
     "cores": 12,
@@ -38,14 +36,14 @@
     "double_compression": 0.0,
     "spawn_double_compression_as_background_thread": false
   },
-  "architecture": "hsw",
+  "architecture": "skx",
   "solvers": [
     {
       "type": "ADER-DG",
       "name": "NavierStokesSolver_ADERDG",
       "order": 4,
       "maximum_mesh_size": 200,
-      "maximum_mesh_depth": 2,
+      "maximum_mesh_depth": 0,
       "time_stepping": "global",
       "halo_cells": 0,
       "aderdg_kernel": {

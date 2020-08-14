@@ -636,7 +636,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 
 
   #ifdef __INTEL_COMPILER
-{% if useFlux %}
+{% if useFlux or useNCP %}
   __assume_aligned(lFhi,     ALIGNMENT);
 {% endif %}{# useFlux #}
   __assume_aligned(lduh,     ALIGNMENT); //lduh should be aligned, see Solver.h
@@ -654,7 +654,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     for (int n = 0; n < {{nVarPad}}; n++) {
         lduh[xyz*{{nVarPad}}+n] -= weights3[xyz] *
             (
-{% if useFlux %}
+{% if useFlux or useNCP %}
                 lFhi[xyz*{{nVarPad}}+n+{{0*nVarPad*nDof**nDim}}] //x
               + lFhi[xyz*{{nVarPad}}+n+{{1*nVarPad*nDof**nDim}}] //y
 {% if nDim==3 %}
@@ -662,7 +662,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% endif %}
 {% endif %}
 {% if useSource %}
-              {{'+' if useFlux}} lShi[xyz*{{nVarPad}}+n] // source
+              {{'+' if useFlux or useNCP }} lShi[xyz*{{nVarPad}}+n] // source
 {% endif %}
             );
 

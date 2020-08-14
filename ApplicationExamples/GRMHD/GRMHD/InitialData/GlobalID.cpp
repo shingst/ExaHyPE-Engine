@@ -13,7 +13,7 @@ bool prepare_id(std::string idname) {
 	if(idname == "Fortran") {
 		id = new fortranid();
 		return true;
-	} else if(idname == "PizzaTOV") {
+	}/* else if(idname == "PizzaTOV") {
 		id = new pizzatov();
 		return true;
 	} else if(idname == "RNSID") {
@@ -22,6 +22,6 @@ bool prepare_id(std::string idname) {
 	} else if(idname == "TOVSolver") {
 		id = new TovSolverAdapter();
 		return true;
-	}
+	}*/
 	return false; // no success
 }

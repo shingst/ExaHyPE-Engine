@@ -115,9 +115,9 @@ optional arguments:
 *  --useMaterialParamVect enable vectorized material parameters
 *  --usePointSources numberOfPointSources enable numberOfPointSources point sources
 *  --useCERKGuess        use CERK for SpaceTimePredictor inital guess (nonlinear only)
-*  --useSplitCKScalar    use split Cauchy–Kowalevski formulation (linear only)
-*  --useSplitCKVect      use split Cauchy–Kowalevski formulation with vect PDE (linear only)
+*  --useSplitCK          use split Cauchy–Kowalevski formulation (linear only)
 *  --useGaussLobatto     use Gauss Lobatto Quadrature instead of Gauss Legendre
+*  --useVectPDE          use vectorized PDE terms (applies when present to: Flux, NCP, Source, FusedSource and MaterialParam)
 *  --tempVarsOnStack     put the big scratch arrays on the stack instead of the
                          heap (you can use ulimit -s to increase the stack size)
 
@@ -194,7 +194,7 @@ generated converter
 
 Using the C index order convention with index in italic being absent in dim 2
 
-Advanced options like ``--useSplitCKVect`` may use other data layout, see the 
+Advanced options like ``--useSplitCK`` or ``--useVectPDE`` may use other data layout, see the 
 respective templates
 
 

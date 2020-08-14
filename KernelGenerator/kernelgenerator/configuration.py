@@ -40,7 +40,7 @@ class Configuration:
     pathToLibxsmmGemmGenerator = os.path.abspath(os.path.join(pathToExaHyPERoot, "Submodules", "libxsmm", "bin", "libxsmm_gemm_generator"))
     
     # path to jinja2
-    pathToJinja2               = os.path.abspath(os.path.join(pathToExaHyPERoot, "Submodules", "jinja"))
+    pathToJinja2               = os.path.abspath(os.path.join(pathToExaHyPERoot, "Submodules", "jinja", "src"))
     
     # path to markupsafe
     pathToMarkupsafe           = os.path.abspath(os.path.join(pathToExaHyPERoot, "Submodules", "markupsafe", "src"))
@@ -61,13 +61,15 @@ class Configuration:
     # set to true to print models runtime
     runtimeDebug = False;
 
-    @staticmethod
-    def checkPythonVersion():
-        """check version. Python 3.3 required"""
-        requiredVersion = (3,3)
-        currentVersion  = sys.version_info
-        if(requiredVersion > currentVersion):
-            sys.exit("Requires Python 3.3 or newer. Abort.")
+
+
+def checkPythonVersion():
+    """check version. Python 3.6 required"""
+    requiredVersion = (3,6)
+    currentVersion  = sys.version_info
+    if(requiredVersion > currentVersion):
+        sys.exit("Requires Python 3.6 or newer. Abort.")
+
 
 
 def checkDependencies():

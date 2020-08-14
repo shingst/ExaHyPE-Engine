@@ -148,9 +148,8 @@ void exahype::mappings::FusedTimeStep::beginIteration(
   static int itcount = 0;
   itcount++;
 
-  int timestep = itcount % 2;
-
 #ifdef USE_ITAC
+  int timestep = itcount % 2;
 /*  if (timestep>18 && timestep<21) {
          VT_traceon();
   }

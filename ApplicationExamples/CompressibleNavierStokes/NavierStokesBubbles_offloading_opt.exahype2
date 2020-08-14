@@ -1,0 +1,155 @@
+{
+  "project_name": "NavierStokes",
+  "paths": {
+    "peano_kernel_path": "./Peano/",
+    "exahype_path": "./ExaHyPE",
+    "output_directory": "./ApplicationExamples/CompressibleNavierStokes",
+    "plotter_subdirectory": "",
+    "log_file": ""
+  },
+  "computational_domain": {
+    "dimension": 2,
+    "time_steps": 4000,
+    "offset": [
+      0.0,
+      0.0
+    ],
+    "width": [
+      1000.0,
+      1000.0
+    ],
+    "max_mesh_setup_iterations": 400
+  },
+  "shared_memory": {
+    "cores": 3,
+    "properties_file": "sharedmemory.properties",
+    "autotuning_strategy": "dummy",
+    "background_job_processing": "job_system",
+    "background_job_consumers": 1,
+    "min_background_jobs_in_one_rush": 1,
+    "max_background_jobs_in_one_rush": 2147483647,
+    "invasion_strategy": "no_invade",
+    "manual_pinning": false
+  },
+  "distributed_memory": {
+    "offloading": "none",
+    "offloading_input_file" : "",
+    "offloading_progress" : "progress_thread",
+    "offloading_CCP_temperature" : 0,
+    "offloading_diffusion_temperature" : 1,
+    "offloading_CCP_frequency" : 0,
+    "offloading_CCP_steps" : 0,
+    "offloading_update_temperature" : true,
+    "offloading_increase_temp_threshold" : 1.0,
+    "task_sharing" : true,
+    "timeout": 12000,
+    "load_balancing_type": "static",
+    "buffer_size"            : 1600,    
+    "load_balancing_strategy": "hotspot",
+    "node_pool_strategy": "fair",
+    "ranks_per_node"         : 1   
+  },
+  "optimisation": {
+    "fuse_algorithmic_steps": "all",
+    "fuse_algorithmic_steps_diffusion_factor": 0.99,
+    "fuse_algorithmic_steps_rerun_factor": 0.99,
+    "spawn_predictor_as_background_thread": true,
+    "spawn_amr_background_threads": true,
+    "disable_vertex_exchange_in_time_steps": true,
+    "time_step_batch_factor": 0.99,
+    "disable_metadata_exchange_in_batched_time_steps": true,
+    "double_compression": 0.0,
+    "spawn_double_compression_as_background_thread": false,
+    "limiting": "dynamic",
+    "mesh_refinement": "dynamic",
+    "spawn_update_as_background_thread": false,
+    "spawn_prolongation_as_background_thread": false,
+    "spawn_neighbour_merge_as_thread": false
+  },
+  "solvers": [
+    {
+      "type": "ADER-DG",
+      "name": "NavierStokesSolver_ADERDG",
+      "order": 4,
+      "maximum_mesh_size": 112.0,
+      "maximum_mesh_depth": 0,
+      "time_stepping": "global",
+      "halo_cells": 0,
+      "aderdg_kernel": {
+        "language": "C",
+        "nonlinear": true,
+        "terms": [
+          "flux",
+          "viscous_flux",
+          "source"
+        ],
+        "space_time_predictor": {
+          "fix_picard_iterations": false,
+          "split_ck": "disabled"
+        },
+        "optimised_terms": [],
+        "optimised_kernel_debugging": [],
+        "implementation": "optimised",
+        "adjust_solution": "pointwise",
+        "allocate_temporary_arrays": "heap",
+        "basis": "Legendre"
+      },
+      "point_sources": 0,
+      "variables": [
+        {
+          "name": "rho",
+          "multiplicity": 1
+        },
+        {
+          "name": "j",
+          "multiplicity": 2
+        },
+        {
+          "name": "E",
+          "multiplicity": 1
+        }
+      ],
+      "material_parameters": [
+        {
+          "name": "height",
+          "multiplicity": 1
+        },
+        {
+          "name": "backgroundstate",
+          "multiplicity": 2
+        }
+      ],
+      "global_observables": [
+        {
+          "name": "gobs",
+          "multiplicity": 3
+        }
+      ],
+      "parameters": {
+        "use-gravity": true,
+        "use-background-state": true,
+        "viscosity": 0.1,
+        "scenario": "cosine-bubble",
+        "use-amr": true,
+        "use-tv-amr": true,
+        "use-tv-volume-correction": true,
+        "amr-indicator": "potential-temperature",
+        "amr-factor-refine": 2.5,
+        "amr-factor-erase": 0.5
+      },
+      "plotters": [
+        {
+          "type": "vtu::Cartesian::vertices::ascii",
+          "name": "Plotter",
+          "time": 1e-06,
+          "repeat": 0.5,
+          "output": "./results/solution",
+          "variables": 5
+        }
+      ]
+    }
+  ],
+  "architecture": "hsw",
+  "compiler_flags": "-DOffloadingGradQhbnd",
+  "linker_flags": ""
+}

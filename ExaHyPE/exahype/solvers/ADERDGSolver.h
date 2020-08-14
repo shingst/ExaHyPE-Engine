@@ -35,6 +35,17 @@
 #include "exahype/records/ADERDGCellDescription.h"
 
 #if defined(DistributedOffloading)
+
+#define OFFLOADING_SLOW_OPERATION_THRESHOLD 0.001
+
+#define NUM_REQUESTS_MIGRATABLE_COMM 1
+
+#if defined(OffloadingGradQhbnd)
+#define NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME 4
+#else
+#define NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME 3
+#endif
+
 #include "exahype/offloading/OffloadingManager.h"
 #include <tbb/concurrent_hash_map.h>
 #include <tbb/concurrent_queue.h>
@@ -941,7 +952,6 @@ private:
       CellDescription& cellDescription);
 
 #if defined(DistributedOffloading)
-
   static int getTaskPriorityLocalStealableJob(int cellDescriptionsIndex, int element, double timeStamp) {
 #if defined(TaskSharing)
     int team = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank();
@@ -957,8 +967,10 @@ private:
     logDebug("getTaskPriorityLocalStealableJob()", "team = "<<team
                                                  <<" center[0] = "<< center[0]
                                                  <<" center[1] = "<< center[1]
+#if DIMENSIONS==3
                                                  <<" center[2] = "<< center[2]
-                                                 <<" time stamp = "<<timeStamp
+#endif
+						 <<" time stamp = "<<timeStamp
                                                  <<" prio = "<<prio);
 
     return prio;
@@ -995,18 +1007,18 @@ private:
         Running,
         Resume,
         Paused,
-	      Terminate,
+	    Terminate,
        	Terminated
       };
 	  OffloadingManagerJob(ADERDGSolver& solver);
 	  ~OffloadingManagerJob();
 	  bool run( bool isCalledOnMaster );
 #ifdef OffloadingUseProgressThread
-    tbb::task* execute();
+      tbb::task* execute();
 #endif
 #ifndef OffloadingUseProgressThread
-    void pause();
-    void resume();
+      void pause();
+      void resume();
 #endif
 	  void terminate();
     public:
@@ -1038,10 +1050,11 @@ private:
    */
   class MigratablePredictionJobData {
     public:
-	  std::vector<double>   _luh; // ndata *ndof^DIM
-	  std::vector<double>	_lduh; // nvar *ndof^DIM
-	  std::vector<double>   _lQhbnd;
-	  std::vector<double>	_lFhbnd;
+	  std::vector<double, AlignedAllocator> _luh; // ndata *ndof^DIM
+	  std::vector<double, AlignedAllocator>	_lduh; // nvar *ndof^DIM
+	  std::vector<double, AlignedAllocator> _lQhbnd;
+	  std::vector<double, AlignedAllocator> _lFhbnd;
+      std::vector<double, AlignedAllocator> _lGradQhbnd;
 
 	  // stores metadata for a stolen/offloaded task
 	  // 1. center
@@ -1050,7 +1063,7 @@ private:
 	  // 4. predictorTimeStepSize
 	  double  _metadata[2*DIMENSIONS+3];
 
-	  MigratablePredictionJobData(ADERDGSolver& solver);
+	MigratablePredictionJobData(ADERDGSolver& solver);
     ~MigratablePredictionJobData();
     //deleted copy constructor
     MigratablePredictionJobData(const MigratablePredictionJobData&) = delete;
@@ -1109,6 +1122,7 @@ private:
       double*                     _lduh; // nvar *ndof^DIM
       double*                     _lQhbnd;
       double*                     _lFhbnd;
+      double*                     _lGradQhbnd;
       double                      _center[DIMENSIONS];
       double                      _dx[DIMENSIONS];
       bool 							          _isLocalReplica;
@@ -1137,8 +1151,9 @@ private:
 		    const double predictorTimeStepSize,
 		    double *luh, double *lduh,
 		    double *lQhbnd, double *lFhbnd,
+			double *lGradQhbnd,
 		    double *dx, double *center,
-        const int originRank,
+            const int originRank,
 		    const int tag
       );
   
@@ -1264,10 +1279,10 @@ private:
    */
   struct OffloadEntry {
     int destRank;
-	  int cellDescriptionsIndex;
-	  int element;
+	int cellDescriptionsIndex;
+	int element;
     double predictorTimeStamp;
-	  double predictorTimeStepSize;
+	double predictorTimeStepSize;
   };
 
   /*
@@ -1288,67 +1303,88 @@ private:
    *  Sends away data of a MigratablePredictionJob to a destination rank
    *  using MPI offloading. 
    */
-  void sendMigratablePredictionJobOffload(
-      double *luh,
+  void sendMigratablePredictionJobOutcomeOffload(
       double *lduh,
       double *lQhbnd,
       double *lFhbnd,
+	  double *lGradQhbnd,
       int dest,
       int tag,
       MPI_Comm comm,
       double *metadata =nullptr);
 
   /*
-   * Sends away data of a MigratablePredictionJob to a destination rank.
+   * Sends away a MigratablePredictionJob to a destination rank.
    */
   void isendMigratablePredictionJob(
 	  double *luh,
-	  double *lduh,
-	  double *lQhbnd,
-	  double *lFhbnd,
 	  int dest,
 	  int tag,
 	  MPI_Comm comm,
 	  MPI_Request *requests,
 	  double *metadata =nullptr);
+
   /*
-   * Receives data of a MigratablePredictionJob from a destination rank.
+   * Sends away task outcome of a MigratablePredictionJob to a destination rank.
    */
-  void irecvMigratablePredictionJob(
-	  double *luh,
+  void isendMigratablePredictionJobOutcome(
 	  double *lduh,
 	  double *lQhbnd,
 	  double *lFhbnd,
-    int srcRank,
+	  double *lGradQhbnd,
+	  int dest,
 	  int tag,
 	  MPI_Comm comm,
-    MPI_Request *requests,
+	  MPI_Request *requests,
 	  double *metadata =nullptr);
 
   /*
-   * Receives data of a MigratablePredictionJob from a destination rank.
+   * Receives a MigratablePredictionJob from a destination rank.
    */
-  void recvMigratablePredictionJob(
-      double *luh,
+  void irecvMigratablePredictionJob(
+	  double *luh,
+      int srcRank,
+	  int tag,
+	  MPI_Comm comm,
+      MPI_Request *requests,
+	  double *metadata =nullptr);
+
+  /*
+   * Receives task outcome of a MigratablePredictionJob from a destination rank.
+   */
+  void irecvMigratablePredictionJobOutcome(
+	  double *lduh,
+	  double *lQhbnd,
+	  double *lFhbnd,
+	  double *lGradQhbnd,
+      int srcRank,
+	  int tag,
+	  MPI_Comm comm,
+      MPI_Request *requests,
+	  double *metadata =nullptr);
+
+  /*
+   * Receives task outcome of a MigratablePredictionJob from a destination rank.
+   */
+  void recvMigratablePredictionJobOutcome(
       double *lduh,
       double *lQhbnd,
       double *lFhbnd,
+	  double *lGradQhbnd,
       int srcRank,
       int tag,
       MPI_Comm comm,
       double *metadata =nullptr);
 
-  void recvMigratablePredictionJobOffload(
-      double *luh,
+  void recvMigratablePredictionJobOutcomeOffload(
       double *lduh,
       double *lQhbnd,
       double *lFhbnd,
+	  double *lGradQhbnd,
       int srcRank,
       int tag,
       MPI_Comm comm,
       double *metadata =nullptr);
-
-
 
   /* If a MigratablePredictionJob has been spawned by the master thread,
    * it can either be submitted to Peano's job system or sent away
