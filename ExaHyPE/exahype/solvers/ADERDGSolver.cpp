@@ -2640,7 +2640,7 @@ void exahype::solvers::ADERDGSolver::sendRequestForJobAndReceive(int jobTag, int
                                                                           this, false);
     std::memcpy(data->_metadata, key, sizeof(double)*(2*DIMENSIONS+3));
     MPI_Request receiveReplicaRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME];
-    irecvMigratablePredictionJob(
+    irecvMigratablePredictionJobOutcome(
                    data->_lduh.data(),
                    data->_lQhbnd.data(),
                    data->_lFhbnd.data(),

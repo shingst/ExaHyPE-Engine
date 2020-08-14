@@ -21,7 +21,7 @@
     "max_mesh_setup_iterations": 400
   },
   "shared_memory": {
-    "cores": 2,
+    "cores": 3,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
     "background_job_processing": "job_system",
@@ -32,16 +32,16 @@
     "manual_pinning": false
   },
   "distributed_memory": {
-    "offloading": "aggressiveHybrid",
+    "offloading": "none",
     "offloading_input_file" : "",
-    "offloading_progress" : "progress_task",
+    "offloading_progress" : "progress_thread",
     "offloading_CCP_temperature" : 0,
     "offloading_diffusion_temperature" : 1,
     "offloading_CCP_frequency" : 0,
     "offloading_CCP_steps" : 0,
     "offloading_update_temperature" : true,
     "offloading_increase_temp_threshold" : 1.0,
-    "task_sharing" : false,
+    "task_sharing" : true,
     "timeout": 12000,
     "load_balancing_type": "static",
     "buffer_size"            : 1600,    
@@ -70,7 +70,7 @@
     {
       "type": "ADER-DG",
       "name": "NavierStokesSolver_ADERDG",
-      "order":  4,
+      "order":  6,
       "maximum_mesh_size": 113.0,
       "maximum_mesh_depth": 0,
       "time_stepping": "global",
