@@ -38,7 +38,7 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
       _lduh(nullptr),
       _lQhbnd(nullptr),
       _lFhbnd(nullptr),
-	  _lGradQhbnd(nullptr),
+      _lGradQhbnd(nullptr),
       _isLocalReplica(false) {
   LocalStealableSTPCounter++;
   NumberOfEnclaveJobs++;
@@ -65,7 +65,7 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
       _lduh(lduh),
       _lQhbnd(lQhbnd),
       _lFhbnd(lFhbnd),
-	  _lGradQhbnd(lGradQhbnd),
+      _lGradQhbnd(lGradQhbnd),
       _isLocalReplica(false) {
 
   for (int i = 0; i < DIMENSIONS; i++) {
