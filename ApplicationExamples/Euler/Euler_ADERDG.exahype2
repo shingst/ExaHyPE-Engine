@@ -22,6 +22,9 @@
   },
   "shared_memory": {
     "cores" : 2
+    "cores": 2,
+    "properties_file": "sharedmemory.properties",
+    "autotuning_strategy": "dummy"
   },
   "distributed_memory": {
     "offloading" : "aggressiveHybrid",
@@ -83,16 +86,9 @@
       "parameters": {
         "reference": "entropywave"
       },
-      "_plotters": [{
-          "type": "user::defined",
-          "name": "ErrorWriter",
-          "time": 0.0,
-          "repeat": 0.3,
-          "output": "not-available",
-          "variables": 5
-        },
-{
-          "type": "vtk::Cartesian::cells::limited::ascii",
+      "_plotters": [
+        {
+          "type": "vtk::Cartesian::vertices::ascii",
           "name": "ErrorPlotter",
           "time": 0.0,
           "repeat": 0.01,
