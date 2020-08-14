@@ -2826,14 +2826,14 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
                                       i,
                                       tag,
                                       teamInterComm,
-                                      &sendRequests[(NUM_REQUESTS_MIGRATABLE_COMM+1)*j],
+                                      &sendRequests[(NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME+1)*j],
                                       &(data->_metadata[0]));
                                       j++;
        }
      }
 
     exahype::offloading::OffloadingManager::getInstance().submitRequests(sendRequests,
-                                                                         (teams-1)*(NUM_REQUESTS_MIGRATABLE_COMM+1),
+                                                                         (teams-1)*(NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME+1),
                                                                          tag,
                                                                          -1,
                                                                          MigratablePredictionJob::sendHandlerTaskSharing,
