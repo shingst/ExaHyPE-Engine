@@ -785,11 +785,22 @@
                     "title" : "Use the continous extrapolated Runge Kutta initial guess for the space time predictor"
                   },
                   "split_ck" : {
-                    "type" : "string",
+                    "type" : "boolean",
                     "available-for" : ["optimised"],
                     "title" : "Use a split Cauchy–Kowalevski for the space time predictor (linear only)",
-                    "enum" : ["disabled","scalar","vectorised"],
-                    "default" : "disabled"
+                    "default" : false
+                  },
+                  "predictor_recompute" : {
+                    "type" : "boolean",
+                    "available-for" : ["optimised"],
+                    "title" : "Recompute on-the-fly the PDE outputs (e.g. flux, source, ncp) during the predictor step to avoid storing them all during the picard iteration and saving memory requirement at the cost of more flops (nonlinear only).",
+                    "default" : false
+                  },
+                 "vectorise_terms" : {
+                    "type" : "boolean",
+                    "available-for" : ["optimised"],
+                    "title" : "WiP: Use vectorised user function formulations (SoA data layout) for PDE functions related to the terms' options: flux, source, ncp, viscous_flux and fusedsource. Only available for optimised kernels with either split_ck (linear) or predictor_recompute (nonlinear)",
+                    "default" : false
                   }
                 }
               },

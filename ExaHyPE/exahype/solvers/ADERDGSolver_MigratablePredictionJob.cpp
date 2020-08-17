@@ -17,6 +17,9 @@
 #include "exahype/offloading/MemoryMonitor.h"
 #include "exahype/offloading/NoiseGenerator.h"
 
+//#undef assertion
+//#define assertion assert
+
 exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob(
     ADERDGSolver& solver, const int cellDescriptionsIndex, const int element,
     const double predictorTimeStamp, const double predictorTimeStepSize) :
@@ -187,7 +190,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 #endif
         <<" time stamp = "<<data->_metadata[2*DIMENSIONS]
         <<" element = "<<(int) data->_metadata[2*DIMENSIONS+2]);
-    std::memcpy(luh, &data->_luh[0], data->_luh.size() * sizeof(double));
+
     std::memcpy(lduh, &data->_lduh[0], data->_lduh.size() * sizeof(double));
     std::memcpy(lQhbnd, &data->_lQhbnd[0], data->_lQhbnd.size() * sizeof(double));
     std::memcpy(lFhbnd, &data->_lFhbnd[0], data->_lFhbnd.size() * sizeof(double));
@@ -367,6 +370,21 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
     #endif
     result = false;
 
+   assertion(_lduh!=nullptr);
+   assertion(_lQhbnd!=nullptr);
+   assertion(_lGradQhbnd!=nullptr);
+   assertion(_lFhbnd!=nullptr);
+   assertion(_luh!=nullptr);
+    
+   logInfo("handleExecution",
+        " processJob: center[0] = "<<_center[0]
+      <<" center[1] = "<<_center[1]
+#if DIMENSIONS==3
+      <<" center[2] = "<<_center[2]
+#endif
+      <<" time stamp = "<<_predictorTimeStamp
+      <<" origin rank = "<<_originRank);
+
     int iterations=_solver.fusedSpaceTimePredictorVolumeIntegral(
       _lduh,
       _lQhbnd,
@@ -378,7 +396,17 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
       _predictorTimeStamp,
       _predictorTimeStepSize,
       true);
-    hasComputed = true;
+   
+   logInfo("handleExecution",
+        " finished job: center[0] = "<<_center[0]
+      <<" center[1] = "<<_center[1]
+#if DIMENSIONS==3
+      <<" center[2] = "<<_center[2]
+#endif
+      <<" time stamp = "<<_predictorTimeStamp
+      <<" origin rank = "<<_originRank);
+   
+   hasComputed = true;
 #if defined(USE_ITAC)
     VT_end(event_stp_remote);
 #endif
@@ -414,7 +442,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
 
   //send back
   if (_originRank != myRank) {
-    MPI_Request sendBackRequests[NUM_REQUESTS_MIGRATABLE_COMM];
+    MPI_Request sendBackRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME];
     logInfo("handleExecution",
         " send job outcome: center[0] = "<<_center[0]
       <<" center[1] = "<<_center[1]
@@ -423,19 +451,18 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
 #endif
       <<" time stamp = "<<_predictorTimeStamp);
     //logInfo("handleLocalExecution()", "postSendBack");
-    _solver.isendMigratablePredictionJob(
-           _luh,
-	  _lduh,
-	  _lQhbnd,
-	  _lFhbnd,
-	  _lGradQhbnd,
-          _originRank,
-          _tag,
+    _solver.isendMigratablePredictionJobOutcome(
+           _lduh,
+           _lQhbnd,
+           _lFhbnd,
+           _lGradQhbnd,
+           _originRank,
+           _tag,
           exahype::offloading::OffloadingManager::getInstance().getMPICommunicatorMapped(),
           sendBackRequests);
     exahype::offloading::OffloadingManager::getInstance().submitRequests(
       sendBackRequests,
-      NUM_REQUESTS_MIGRATABLE_COMM,
+	  NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME,
       _tag,
       _originRank,
       sendBackHandler,
@@ -451,8 +478,9 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandler(
 
   tbb::concurrent_hash_map<std::pair<int, int>, MigratablePredictionJobData*>::accessor a_tagRankToData;
   MigratablePredictionJobData *data;
-  static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagRankToStolenData.find(
+  bool found = static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagRankToStolenData.find(
       a_tagRankToData, std::make_pair(remoteRank, tag));
+  assertion(found);
   data = a_tagRankToData->second;
   a_tagRankToData.release();
 
@@ -658,7 +686,6 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
 
     //copy into result buffer as I am responsible for result
     if (recompJob != nullptr) {
-      double *luh = static_cast<double*>(cellDescription->getSolution());
       double *lduh = static_cast<double*>(cellDescription->getUpdate());
       double *lQhbnd = static_cast<double*>(cellDescription->getExtrapolatedPredictor());
       double *lFhbnd = static_cast<double*>(cellDescription->getFluctuation());
@@ -673,13 +700,12 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
           static_cast<MigratablePredictionJob*>(recompJob)->_predictorTimeStamp
               == metadata[2 * DIMENSIONS]);
 
-      std::memcpy(luh, &data->_luh[0], data->_luh.size() * sizeof(double));
       std::memcpy(lduh, &data->_lduh[0], data->_lduh.size() * sizeof(double));
       std::memcpy(lQhbnd, &data->_lQhbnd[0],
           data->_lQhbnd.size() * sizeof(double));
       std::memcpy(lFhbnd, &data->_lFhbnd[0],
           data->_lFhbnd.size() * sizeof(double));
-#if OffloadingGradQhbnd
+#if defined(OffloadingGradQhbnd)
       std::memcpy(lGradQhbnd, &data->_lGradQhbnd[0],
           data->_lGradQhbnd.size() * sizeof(double));
 #endif
@@ -805,7 +831,7 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJobData::MigratablePredictio
       _lduh(solver.getUpdateSize()),
       _lQhbnd(solver.getBndTotalSize()),
       _lFhbnd(solver.getBndFluxTotalSize()),
-     _lGradQhbnd(solver.getBndGradQTotalSize()){
+      _lGradQhbnd(solver.getBndGradQTotalSize()){
   AllocatedSTPs++;
 }
 
@@ -814,3 +840,6 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJobData::~MigratablePredicti
 }
 
 #endif
+
+//#undef assertion
+//#define assertion(expr) 

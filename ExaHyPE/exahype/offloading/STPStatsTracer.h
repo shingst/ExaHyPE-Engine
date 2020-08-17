@@ -15,6 +15,7 @@
 #define EXAHYPE_EXAHYPE_OFFLOADING_STPSTATSTRACER_H_
 
 #include <string>
+#include "tarch/logging/Log.h"
 
 namespace exahype {
 namespace offloading {
@@ -26,6 +27,7 @@ class STPStatsTracer {
 
 private:
 	std::string _outputDir;
+    static tarch::logging::Log     _log;
 
 public:
 	STPStatsTracer();

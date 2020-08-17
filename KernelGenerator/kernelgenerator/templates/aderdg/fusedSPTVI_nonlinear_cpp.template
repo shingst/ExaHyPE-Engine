@@ -29,7 +29,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         {{solverName}}& solver, 
         double* restrict lduh,
         double* restrict lQhbnd, 
-	double* restrict lGradQhbnd,
+        double* restrict lGradQhbnd,
         double* restrict lFhbnd,
         double* restrict lQi,
         double* restrict rhs,

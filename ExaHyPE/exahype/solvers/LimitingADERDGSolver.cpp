@@ -63,17 +63,6 @@ exahype::solvers::LimitingADERDGSolver::LimitingADERDGSolver(
 
   assertion(_solver->getTimeStepping()==_limiter->getTimeStepping());
 
-  #ifdef Parallel
-  // TODO(WORKAROUND): Not sure for what anymore
-  const int numberOfObservables = _solver->getDMPObservables();
-  _invalidObservables.resize(numberOfObservables);
-  std::fill_n(_invalidObservables.data(),_invalidObservables.size(),-1);
-
-  _receivedMax.resize(numberOfObservables);
-  _receivedMin.resize(numberOfObservables);
-  assertion( numberOfObservables==0 || !_receivedMax.empty());
-  assertion( numberOfObservables==0 || !_receivedMin.empty());
-  #endif
 }
 /** Wire through to limiting ADER-DG solver */
 void exahype::solvers::LimitingADERDGSolver::updateMeshUpdateEvent(exahype::solvers::Solver::MeshUpdateEvent meshUpdateEvent) {
@@ -115,6 +104,18 @@ void exahype::solvers::LimitingADERDGSolver::initSolver(
     const std::vector<std::string>&             cmdlineargs,
     const exahype::parser::ParserView&          parserView
 ) {
+  #ifdef Parallel
+  // TODO(WORKAROUND): Not sure for what anymore
+  const int numberOfObservables = _solver->getDMPObservables();
+  _invalidObservables.resize(numberOfObservables);
+  std::fill_n(_invalidObservables.data(),_invalidObservables.size(),-1);
+
+  _receivedMax.resize(numberOfObservables);
+  _receivedMin.resize(numberOfObservables);
+  assertion( numberOfObservables==0 || !_receivedMax.empty());
+  assertion( numberOfObservables==0 || !_receivedMin.empty());
+  #endif
+  
   _domainOffset=domainOffset;
   _domainSize=domainSize;
   std::pair<double,int> coarsestMeshInfo =

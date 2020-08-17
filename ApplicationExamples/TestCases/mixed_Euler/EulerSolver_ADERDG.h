@@ -50,7 +50,7 @@ public:
    * calls ::entropyWave 
    * ErrorWriter, ErrorPlotter write errors of numerical solution.
    */
-  static void referenceSolution(const double* const x, const double t, double* const Q);
+  inline static void referenceSolution(const double* const x, const double t, double* const Q) {entropyWave(x,t,Q);}
 
   /**
    * Adjust the conserved variables and parameters (together: Q) at a given time t at the (quadrature) point x.
@@ -74,8 +74,12 @@ public:
    * \param[inout] F the fluxes at that point as C array (already allocated).
    */
   virtual void flux(const double* const Q,double** const F);
+  inline void flux2(const double* const Q,const double* const P,double** const F){flux(Q,F);} //add P array
+  void flux_vect(const double* const Q,const double* const P,double** const F); //add P array
 
   virtual void nonConservativeProduct(const double* const Q, const double* const gradQ, double* const BgradQ);
+  void nonConservativeProduct2(const double* const Q, const double* const P, const double* const * const gradQ, double* const BgradQ); // add P array and gradQ like F
+  void nonConservativeProduct_vect(const double* const Q, const double* const P, const double* const * const gradQ, double* const BgradQ); // add P array and gradQ like F
 
   /**
    * Compute the eigenvalues of the flux tensor per coordinate direction \p d.
