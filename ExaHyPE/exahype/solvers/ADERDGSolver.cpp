@@ -3163,7 +3163,7 @@ void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahyp
   AllocatedSTPsReceive++;
 
 #ifdef UseMPIOffloading  
-  solver->recvMigratablePredictionJobOffload(
+  solver->recvMigratablePredictionJobOutcomeOffload(
          data->_lduh.data(),
          data->_lQhbnd.data(),
          data->_lFhbnd.data(),
