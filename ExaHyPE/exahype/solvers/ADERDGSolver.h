@@ -1360,10 +1360,11 @@ private:
       double *lduh,
       double *lQhbnd,
       double *lFhbnd,
-	  double *lGradQhbnd,
+      double *lGradQhbnd,
       int srcRank,
       int tag,
       MPI_Comm comm,
+      int rail,
       double *metadata =nullptr);
 
   /* If a MigratablePredictionJob has been spawned by the master thread,
@@ -2849,7 +2850,8 @@ public:
   static void receiveTaskOutcome(
       int tag,
       int src,
-      exahype::solvers::ADERDGSolver *solver);
+      exahype::solvers::ADERDGSolver *solver,
+      int rail = -1);
 
   static void receiveMigratableJob(
       int tag,
