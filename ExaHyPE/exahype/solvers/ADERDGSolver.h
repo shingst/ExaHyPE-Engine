@@ -1050,20 +1050,28 @@ private:
    */
   class MigratablePredictionJobData {
     public:
-	  std::vector<double, AlignedAllocator> _luh; // ndata *ndof^DIM
-	  std::vector<double, AlignedAllocator>	_lduh; // nvar *ndof^DIM
-	  std::vector<double, AlignedAllocator> _lQhbnd;
-	  std::vector<double, AlignedAllocator> _lFhbnd;
+#ifdef ALIGNMENT
+      std::vector<double, AlignedAllocator> _luh; // ndata *ndof^DIM
+      std::vector<double, AlignedAllocator>	_lduh; // nvar *ndof^DIM
+      std::vector<double, AlignedAllocator> _lQhbnd;
+      std::vector<double, AlignedAllocator> _lFhbnd;
       std::vector<double, AlignedAllocator> _lGradQhbnd;
+#else
+      std::vector<double> _luh; // ndata *ndof^DIM
+      std::vector<double> _lduh; // nvar *ndof^DIM
+      std::vector<double> _lQhbnd;
+      std::vector<double> _lFhbnd;
+      std::vector<double> _lGradQhbnd;
+#endif
 
-	  // stores metadata for a stolen/offloaded task
-	  // 1. center
-	  // 2. dx
-	  // 3. predictorTimeStamp
-	  // 4. predictorTimeStepSize
-	  double  _metadata[2*DIMENSIONS+3];
+    // stores metadata for a stolen/offloaded task
+    // 1. center
+    // 2. dx
+    // 3. predictorTimeStamp
+    // 4. predictorTimeStepSize
+    double  _metadata[2*DIMENSIONS+3];
 
-	MigratablePredictionJobData(ADERDGSolver& solver);
+    MigratablePredictionJobData(ADERDGSolver& solver);
     ~MigratablePredictionJobData();
     //deleted copy constructor
     MigratablePredictionJobData(const MigratablePredictionJobData&) = delete;
