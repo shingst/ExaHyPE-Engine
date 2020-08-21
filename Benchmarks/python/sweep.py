@@ -390,7 +390,7 @@ def renderJobScript(jobScriptTemplate,jobScriptBody,jobs,
     
     # put optional sweep options in context
     context["mail"]         = jobs["mail"]
-    context["ranksPerNode"]        = ranksPerNode
+    context["ranksPerNode"] = ranksPerNode
     context["time"]         = jobs["time"]
     context["class"]        = jobClass
     context["islands"]      = islands
