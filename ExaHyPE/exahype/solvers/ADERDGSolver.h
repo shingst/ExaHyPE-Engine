@@ -1309,9 +1309,9 @@ private:
 
   /*
    *  Sends away data of a MigratablePredictionJob to a destination rank
-   *  using MPI offloading. 
+   *  using MPI offloading (SmartMPI).
    */
-  void sendMigratablePredictionJobOutcomeOffload(
+  void mpiSendMigratablePredictionJobOutcomeOffload(
       double *lduh,
       double *lQhbnd,
       double *lFhbnd,
@@ -1324,7 +1324,19 @@ private:
   /*
    * Sends away a MigratablePredictionJob to a destination rank.
    */
-  void isendMigratablePredictionJob(
+  void mpiIsendMigratablePredictionJob(
+	  double *luh,
+	  int dest,
+	  int tag,
+	  MPI_Comm comm,
+	  MPI_Request *requests,
+	  double *metadata =nullptr);
+
+  /*
+   * Sends away a MigratablePredictionJob to a destination rank
+   * using MPI offloading (SmartMPI).
+   */
+  void mpiSendMigratablePredictionJobOffload(
 	  double *luh,
 	  int dest,
 	  int tag,
@@ -1335,7 +1347,7 @@ private:
   /*
    * Sends away task outcome of a MigratablePredictionJob to a destination rank.
    */
-  void isendMigratablePredictionJobOutcome(
+  void mpiIsendMigratablePredictionJobOutcome(
 	  double *lduh,
 	  double *lQhbnd,
 	  double *lFhbnd,
@@ -1347,9 +1359,21 @@ private:
 	  double *metadata =nullptr);
 
   /*
+   * Receives a MigratablePredictionJob from a destination rank
+   * using MPI offloading (SmartMPI).
+   */
+  void mpiRecvMigratablePredictionJobOffload(
+	  double *luh,
+      int srcRank,
+	  int tag,
+	  MPI_Comm comm,
+      MPI_Request *requests,
+	  double *metadata =nullptr);
+
+  /*
    * Receives a MigratablePredictionJob from a destination rank.
    */
-  void irecvMigratablePredictionJob(
+  void mpiIrecvMigratablePredictionJob(
 	  double *luh,
       int srcRank,
 	  int tag,
@@ -1360,7 +1384,7 @@ private:
   /*
    * Receives task outcome of a MigratablePredictionJob from a destination rank.
    */
-  void irecvMigratablePredictionJobOutcome(
+  void mpiIrecvMigratablePredictionJobOutcome(
 	  double *lduh,
 	  double *lQhbnd,
 	  double *lFhbnd,
@@ -1374,7 +1398,7 @@ private:
   /*
    * Receives task outcome of a MigratablePredictionJob from a destination rank.
    */
-  void recvMigratablePredictionJobOutcome(
+  void mpiRecvMigratablePredictionJobOutcome(
       double *lduh,
       double *lQhbnd,
       double *lFhbnd,
@@ -1384,7 +1408,11 @@ private:
       MPI_Comm comm,
       double *metadata =nullptr);
 
-  void recvMigratablePredictionJobOutcomeOffload(
+  /*
+   * Receives task outcome of a MigratablePredictionJob from a destination rank using
+   * MPI offloading (SmartMPI).
+   */
+  void mpiRecvMigratablePredictionJobOutcomeOffload(
       double *lduh,
       double *lQhbnd,
       double *lFhbnd,

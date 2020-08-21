@@ -2643,7 +2643,7 @@ void exahype::solvers::ADERDGSolver::sendRequestForJobAndReceive(int jobTag, int
                                                                           this, false);
     std::memcpy(data->_metadata, key, sizeof(double)*(2*DIMENSIONS+3));
     MPI_Request receiveReplicaRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME];
-    irecvMigratablePredictionJobOutcome(
+    mpiIrecvMigratablePredictionJobOutcome(
                    data->_lduh.data(),
                    data->_lQhbnd.data(),
                    data->_lFhbnd.data(),
@@ -2772,7 +2772,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
 #endif
                                                          <<" time stamp = "<<job->_predictorTimeStamp
                                                          <<" to team "<<i);
-        sendMigratablePredictionJobOutcomeOffload(&lduh[0],
+        mpiSendMigratablePredictionJobOutcomeOffload(&lduh[0],
                                            &lQhbnd[0],
                                            &lFhbnd[0],
                                            &lGradQhbnd[0],
@@ -2824,7 +2824,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
 #endif
                                                    <<" time stamp = "<<job->_predictorTimeStamp
                                                    <<" to team "<<i);
-          isendMigratablePredictionJobOutcome(&(data->_lduh[0]),
+          mpiIsendMigratablePredictionJobOutcome(&(data->_lduh[0]),
                                       &(data->_lQhbnd[0]),
                                       &(data->_lFhbnd[0]),
                                       &(data->_lGradQhbnd[0]),
@@ -2898,7 +2898,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
      _mapCellDescToTagRank.insert(std::make_pair(&cellDescription, std::make_pair(tag, destRank)));
      _mapTagToOffloadTime.insert(std::make_pair(tag, -MPI_Wtime()));
     
-     /*isendMigratablePredictionJob(
+     /*mpiIsendMigratablePredictionJobOutcome(
          &data->_luh[0],
          &data->_lduh[0],
          &data->_lQhbnd[0],
@@ -2908,7 +2908,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
          exahype::offloading::OffloadingManager::getInstance().getMPICommunicator(),
          sendRequests,
          data->_metadata);*/
-     isendMigratablePredictionJob(
+     mpiIsendMigratablePredictionJob(
               luh,
               destRank,
               tag,
@@ -2926,7 +2926,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
      _mapTagToOffloadTime.insert(std::make_pair(tag, -MPI_Wtime()));
      logInfo("submitOrSendMigratablePredictionJob()","send away with tag "<<tag);
      // send away
-     isendMigratablePredictionJob(
+     mpiIsendMigratablePredictionJob(
          luh,
          destRank,
          tag,
@@ -2961,7 +2961,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
 
      // post receive back requests
 //     MPI_Request recvRequests[4];
-//     irecvMigratablePredictionJob(
+//     mpiIrecvMigratablePredictionJob(
 //        luh, lduh, lQhbnd,
 //      lFhbnd, destRank, tag, recvRequests);
 //
@@ -2998,7 +2998,7 @@ void exahype::solvers::ADERDGSolver::receiveMigratableJob(int tag, int src, exah
   MPI_Request receiveRequests[NUM_REQUESTS_MIGRATABLE_COMM+1];
   MigratablePredictionJobData *data = new MigratablePredictionJobData(*solver);
   solver->_mapTagRankToStolenData.insert(std::make_pair(std::make_pair(src, tag), data));
-  solver->irecvMigratablePredictionJob(
+  solver->mpiIrecvMigratablePredictionJob(
        data->_luh.data(),
        src,
        tag,
@@ -3069,7 +3069,7 @@ void exahype::solvers::ADERDGSolver::receiveBackMigratableJob(int tag, int src, 
   double *lGradQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictorGradient());
 
   MPI_Request recvRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME];
-  solver->irecvMigratablePredictionJobOutcome(
+  solver->mpiIrecvMigratablePredictionJobOutcome(
       &(data->_lduh[0]),
       &(data->_lQhbnd[0]),
       &(data->_lFhbnd[0]),
@@ -3101,7 +3101,7 @@ void exahype::solvers::ADERDGSolver::receiveBackMigratableJob(int tag, int src, 
   double *lFhbnd = static_cast<double*>(cellDescription->getFluctuation());
 
   MPI_Request recvRequests[5];
-   solver->irecvMigratablePredictionJob(
+   solver->mpiIrecvMigratablePredictionJob(
        luh,
        lduh,
        lQhbnd,
@@ -3135,7 +3135,7 @@ void exahype::solvers::ADERDGSolver::receiveBackMigratableJob(int tag, int src, 
   double *lGradQhbnd = static_cast<double*>(cellDescription->getExtrapolatedPredictorGradient());
 
   MPI_Request recvRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME];
-  solver->irecvMigratablePredictionJobOutcome(
+  solver->mpiIrecvMigratablePredictionJobOutcome(
 	  lduh,
 	  lQhbnd,
           lFhbnd,
@@ -3163,7 +3163,7 @@ void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahyp
   AllocatedSTPsReceive++;
 
 #ifdef UseMPIOffloading  
-  solver->recvMigratablePredictionJobOutcomeOffload(
+  solver->mpiRecvMigratablePredictionJobOutcomeOffload(
          data->_lduh.data(),
          data->_lQhbnd.data(),
          data->_lFhbnd.data(),
@@ -3202,7 +3202,7 @@ void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahyp
 #else
    //logInfo("progressOffloading", "allocated stps receive"<<AllocatedSTPsReceive);
   MPI_Request receiveReplicaRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME+1];
-  solver->irecvMigratablePredictionJobOutcome(
+  solver->mpiIrecvMigratablePredictionJobOutcome(
          data->_lduh.data(),
          data->_lQhbnd.data(),
          data->_lFhbnd.data(),
@@ -3409,7 +3409,7 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
 
        if(buffer==REQUEST_JOB_ACK) {
          MPI_Request *sendRequests = new MPI_Request[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME];
-         solver->isendMigratablePredictionJobOutcome(
+         solver->mpiIsendMigratablePredictionJobOutcome(
                                              &data->_lduh[0],
                                              &data->_lQhbnd[0],
                                              &data->_lFhbnd[0],
@@ -3584,7 +3584,7 @@ bool exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(exahype::solvers::ADER
       solver->_lastReceiveBackTag[statMapped.MPI_SOURCE] = statMapped.MPI_TAG;
 
       MPI_Request recvRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME];
-      solver->irecvMigratablePredictionJobOutcome(
+      solver->mpiIrecvMigratablePredictionJobOutcome(
         lduh, lQhbnd,
         lFhbnd, lGradQhbnd, statMapped.MPI_SOURCE, statMapped.MPI_TAG, commMapped, recvRequests);
 
@@ -3680,7 +3680,7 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::run( bool isCalledOnMaster ) {
            MPI_Request receiveRequests[NUM_REQUESTS_MIGRATABLE_COMM+1];
            MigratablePredictionJobData *data = new MigratablePredictionJobData(_solver);
            _solver._mapTagRankToStolenData.insert(std::make_pair(std::make_pair(stat.MPI_SOURCE, stat.MPI_TAG), data));
-           _solver.irecvMigratablePredictionJob(
+           _solver.mpiIrecvMigratablePredictionJob(
                  data->_luh.data(),
                  stat.MPI_SOURCE,
                  stat.MPI_TAG,
@@ -3772,7 +3772,7 @@ bool exahype::solvers::ADERDGSolver::ReceiveBackJob::run( bool isCalledOnMaster 
       _solver._lastReceiveBackTag[statMapped.MPI_SOURCE] =  statMapped.MPI_TAG;
 
       MPI_Request recvRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME];
-      _solver.irecvMigratablePredictionJobOutcome(
+      _solver.mpiIrecvMigratablePredictionJobOutcome(
         lduh,
         lQhbnd,
         lFhbnd,
@@ -4068,7 +4068,7 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob* exahype::solvers::ADERD
 // COMMUNICATION_ROUTINES
 ///////////////////////////////////
 
-void exahype::solvers::ADERDGSolver::isendMigratablePredictionJob(
+void exahype::solvers::ADERDGSolver::mpiIsendMigratablePredictionJob(
   double *luh,
   int dest,
   int tag,
@@ -4099,13 +4099,13 @@ void exahype::solvers::ADERDGSolver::isendMigratablePredictionJob(
 #if defined(OffloadingCheckForSlowOperations)
   timing += MPI_Wtime();
   if(timing > OFFLOADING_SLOW_OPERATION_THRESHOLD)
-    logError("isendMigratablePredictionJob()", " took "<<timing<<"s");
+    logError("mpiIsendMigratablePredictionJobOutcome()", " took "<<timing<<"s");
 #endif
 
 };
 
 
-void exahype::solvers::ADERDGSolver::isendMigratablePredictionJobOutcome(
+void exahype::solvers::ADERDGSolver::mpiIsendMigratablePredictionJobOutcome(
   double *lduh,
   double *lQhbnd,
   double *lFhbnd,
@@ -4155,11 +4155,11 @@ void exahype::solvers::ADERDGSolver::isendMigratablePredictionJobOutcome(
 #if defined(OffloadingCheckForSlowOperations)
   timing += MPI_Wtime();
   if(timing > OFFLOADING_SLOW_OPERATION_THRESHOLD)
-    logError("isendMigratablePredictionJobOutcome()", " took "<<timing<<"s");
+    logError("mpiIsendMigratablePredictionJobOutcome()", " took "<<timing<<"s");
 #endif
 };
 
-void exahype::solvers::ADERDGSolver::irecvMigratablePredictionJob(
+void exahype::solvers::ADERDGSolver::mpiIrecvMigratablePredictionJob(
     double *luh,
     int srcRank,
     int tag,
@@ -4173,7 +4173,7 @@ void exahype::solvers::ADERDGSolver::irecvMigratablePredictionJob(
 #if defined(OffloadingCheckForSlowOperations)
   double timing = - MPI_Wtime();
 #endif
-  //logInfo("irecvMigratablePredictionJob", "receiving job "<<tag<<" from srcRank "<<srcRank);
+  //logInfo("mpiIrecvMigratablePredictionJob", "receiving job "<<tag<<" from srcRank "<<srcRank);
 
   if(metadata != nullptr) {
     ierr = MPI_Irecv(metadata, 2*DIMENSIONS+3, MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
@@ -4189,11 +4189,11 @@ void exahype::solvers::ADERDGSolver::irecvMigratablePredictionJob(
 #if defined(OffloadingCheckForSlowOperations)
   timing += MPI_Wtime();
   if(timing > OFFLOADING_SLOW_OPERATION_THRESHOLD)
-    logError("irecvMigratablePredictionJob()", " took "<<timing<<"s");
+    logError("mpiIrecvMigratablePredictionJob()", " took "<<timing<<"s");
 #endif
 };
 
-void exahype::solvers::ADERDGSolver::irecvMigratablePredictionJobOutcome(
+void exahype::solvers::ADERDGSolver::mpiIrecvMigratablePredictionJobOutcome(
     double *lduh,
     double *lQhbnd,
     double *lFhbnd,
@@ -4210,7 +4210,7 @@ void exahype::solvers::ADERDGSolver::irecvMigratablePredictionJobOutcome(
 #if defined(OffloadingCheckForSlowOperations)
   double timing = - MPI_Wtime();
 #endif
-  //logInfo("irecvMigratablePredictionJob", "receiving job "<<tag<<" from srcRank "<<srcRank);
+  //logInfo("mpiIrecvMigratablePredictionJob", "receiving job "<<tag<<" from srcRank "<<srcRank);
 
   if(metadata != nullptr) {
     ierr = MPI_Irecv(metadata, 2*DIMENSIONS+3, MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
@@ -4243,11 +4243,11 @@ void exahype::solvers::ADERDGSolver::irecvMigratablePredictionJobOutcome(
 #if defined(OffloadingCheckForSlowOperations)
   timing += MPI_Wtime();
   if(timing > OFFLOADING_SLOW_OPERATION_THRESHOLD)
-    logError("irecvMigratablePredictionJobOutcome()", " took "<<timing<<"s");
+    logError("mpiIrecvMigratablePredictionJobOutcome()", " took "<<timing<<"s");
 #endif
 };
 
-void exahype::solvers::ADERDGSolver::recvMigratablePredictionJobOutcome(
+void exahype::solvers::ADERDGSolver::mpiRecvMigratablePredictionJobOutcome(
   double *lduh,
   double *lQhbnd,
   double *lFhbnd,
@@ -4288,13 +4288,13 @@ void exahype::solvers::ADERDGSolver::recvMigratablePredictionJobOutcome(
 #if defined(OffloadingCheckForSlowOperations)
   timing += MPI_Wtime();
   if(timing > OFFLOADING_SLOW_OPERATION_THRESHOLD)
-    logError("recvMigratablePredictionJobOutcome()", " took "<<timing<<"s");
+    logError("mpiRecvMigratablePredictionJobOutcome()", " took "<<timing<<"s");
 #endif
 
 };
 
 #if defined(UseMPIOffloading)
-void exahype::solvers::ADERDGSolver::recvMigratablePredictionJobOutcomeOffload(
+void exahype::solvers::ADERDGSolver::mpiRecvMigratablePredictionJobOutcomeOffload(
     double *lduh,
     double *lQhbnd,
     double *lFhbnd,
@@ -4339,11 +4339,11 @@ void exahype::solvers::ADERDGSolver::recvMigratablePredictionJobOutcomeOffload(
 #if defined(OffloadingCheckForSlowOperations)
   timing += MPI_Wtime();
   if(timing > OFFLOADING_SLOW_OPERATION_THRESHOLD)
-    logError("recvMigratablePredictionJobOutcomeOffload()", " took "<<timing<<"s");
+    logError("mpiRecvMigratablePredictionJobOutcomeOffload()", " took "<<timing<<"s");
 #endif
 };
 
-void exahype::solvers::ADERDGSolver::sendMigratablePredictionJobOutcomeOffload(
+void exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOutcomeOffload(
   double *lduh,
   double *lQhbnd,
   double *lFhbnd,
@@ -4394,7 +4394,7 @@ void exahype::solvers::ADERDGSolver::sendMigratablePredictionJobOutcomeOffload(
 #if defined(OffloadingCheckForSlowOperations)
   timing += MPI_Wtime();
   if(timing > OFFLOADING_SLOW_OPERATION_THRESHOLD)
-    logError("sendMigratablePredictionJobOutcomeOffload()", " took "<<timing<<"s");
+    logError("mpiSendMigratablePredictionJobOutcomeOffload()", " took "<<timing<<"s");
 #endif
 };
 #endif
