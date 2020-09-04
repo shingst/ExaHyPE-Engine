@@ -210,7 +210,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 
 {% if useMaterialParam %}
       // store M*rhs in gradQ [x][n]
-      {{ m.matmul('flux_x_sck', 'tmpArray', 'negativeDudxT_by_dx', 'gradQ', '0', '0', '0') | indent(6) }}{##}
+      {{ m.matmul('gradQ_x_sck', 'tmpArray', 'negativeDudxT_by_dx', 'gradQ', '0', '0', '0') | indent(6) }}{##}
       for (int x = 0; x < {{nDof}} ; x++){
         solver.{{solverName}}::multiplyMaterialParameterMatrix_scalar(lPi+{{idxLPi(0,yz,x,0)}}, gradQ+x*{{nVarPad}});
         for (int n = 0; n < {{nVarPad}} ; n++){
@@ -247,7 +247,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
         }
 {% if useMaterialParam %}
       // store M*rhs in gradQ [y][n]
-      {{ m.matmul('flux_x_sck', 'tmpArray', 'negativeDudxT_by_dx', 'gradQ', '0', '0', '0') | indent(6) }}{##}
+      {{ m.matmul('gradQ_x_sck', 'tmpArray', 'negativeDudxT_by_dx', 'gradQ', '0', '0', '0') | indent(6) }}{##}
       for (int y = 0; y < {{nDof}} ; y++){
         solver.{{solverName}}::multiplyMaterialParameterMatrix_scalar(lPi+{{idxLPi(z,y,x,0)}}, gradQ+y*{{nVarPad}});
         for (int n = 0; n < {{nVarPad}} ; n++){
@@ -287,7 +287,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
       }
 {% if useMaterialParam %}
       // store M*rhs in gradQ [z][n]
-      {{ m.matmul('flux_x_sck', 'tmpArray', 'negativeDudxT_by_dx', 'gradQ', '0', '0', '0') | indent(6) }}{##}
+      {{ m.matmul('gradQ_x_sck', 'tmpArray', 'negativeDudxT_by_dx', 'gradQ', '0', '0', '0') | indent(6) }}{##}
       for (int z = 0; z < {{nDof}} ; z++){
         solver.{{solverName}}::multiplyMaterialParameterMatrix_scalar(lPi+{{idxLPi(z,0,xy,0)}}, gradQ+z*{{nVarPad}});
         for (int n = 0; n < {{nVarPad}} ; n++){
@@ -472,7 +472,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 
 {% if useMaterialParam %}
       // store M*rhs in gradQ [x][n]
-      {{ m.matmul('flux_x_sck', 'tmpArray', 'dudxT_by_dx', 'gradQ', '0', '0', '0') | indent(6) }}{##}
+      {{ m.matmul('gradQ_x_sck', 'tmpArray', 'dudxT_by_dx', 'gradQ', '0', '0', '0') | indent(6) }}{##}
       for (int x = 0; x < {{nDof}} ; x++){
         solver.{{solverName}}::multiplyMaterialParameterMatrix_scalar(lPi+{{idxLPi(0,yz,x,0)}}, gradQ+x*{{nVarPad}});
         for (int n = 0; n < {{nVarPad}} ; n++){
@@ -530,7 +530,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
       }
 {% if useMaterialParam %}
       // store M*rhs in gradQ [x][n]
-      {{ m.matmul('flux_x_sck', 'tmpArray', 'dudxT_by_dx', 'gradQ', '0', '0', '0') | indent(6) }}{##}
+      {{ m.matmul('gradQ_x_sck', 'tmpArray', 'dudxT_by_dx', 'gradQ', '0', '0', '0') | indent(6) }}{##}
       for (int y = 0; y < {{nDof}} ; y++){
         solver.{{solverName}}::multiplyMaterialParameterMatrix_scalar(lPi+{{idxLPi(z,y,x,0)}}, gradQ+y*{{nVarPad}});
         for (int n = 0; n < {{nVarPad}} ; n++){
@@ -592,7 +592,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     }
 {% if useMaterialParam %}
       // store M*rhs in gradQ [z][n]
-      {{ m.matmul('flux_x_sck', 'tmpArray', 'dudxT_by_dx', 'gradQ', '0', '0', '0') | indent(6) }}{##}
+      {{ m.matmul('gradQ_x_sck', 'tmpArray', 'dudxT_by_dx', 'gradQ', '0', '0', '0') | indent(6) }}{##}
       for (int z = 0; z < {{nDof}} ; z++){
         solver.{{solverName}}::multiplyMaterialParameterMatrix_scalar(lPi+{{idxLPi(z,0,xy,0)}}, gradQ+z*{{nVarPad}});
         for (int n = 0; n < {{nVarPad}} ; n++){
