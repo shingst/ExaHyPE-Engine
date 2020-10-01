@@ -18,9 +18,7 @@
 #include "{{pathToOptKernel}}/DGMatrices.h"
 #include "{{pathToOptKernel}}/Quadrature.h"
 
-{% if useLibxsmm %}
-#include "{{pathToOptKernel}}/gemmsCPP.h"
-{% endif %}
+{{ m.matmulInclude() }}{# include required headers for matmul #}
 
 // local help function
 inline int powOf3(int exp){
@@ -67,8 +65,8 @@ void {{codeNamespace}}::faceUnknownsProlongation(
 {% endif %}
 
   // read only input, start with the function input = coarse
-  const double* inputQ = lQhbndCoarse;
-  const double* inputF = lFhbndCoarse;
+  double* inputQ = const_cast<double*>(lQhbndCoarse);
+  double* inputF = const_cast<double*>(lFhbndCoarse);
 
   // output pointer, ensures that the output of the last iteration points to the function output
   double* outputQ;
@@ -88,6 +86,13 @@ void {{codeNamespace}}::faceUnknownsProlongation(
   int subfaceIndexPrevious_1 = subfaceIndex[1];
   int subfaceIndexCurrent_1;
   int subintervalIndex_1;
+{% endif %}
+
+  {{ m.setupMatmul('face_Q_x')| indent(2) }}{##}
+  {{ m.setupMatmul('face_F_x')| indent(2) }}{##}
+{% if nDim == 3 %}
+  {{ m.setupMatmul('face_Q_y')| indent(2) }}{##}
+  {{ m.setupMatmul('face_F_y')| indent(2) }}{##}
 {% endif %}
 
   // This loop decodes the elements of subfaceIndex into a tertiary basis
@@ -170,7 +175,7 @@ void {{codeNamespace}}::faceFluxRestriction(
 {% endif %}
 
   // read only input, start with the function input = fine
-  const double* inputF = lFhbndFine;
+  double* inputF = const_cast<double*>(lFhbndFine);
 
   // output pointer, ensures that the output of the last iteration points to the function output
   double* outputF;
@@ -185,6 +190,11 @@ void {{codeNamespace}}::faceFluxRestriction(
 {% if nDim==3 %}
   int subfaceIndexCurrent_1 = subfaceIndex[1];
   int subintervalIndex_1;
+{% endif %}
+
+  {{ m.setupMatmul('face_F_x')| indent(2) }}{##}
+{% if nDim == 3 %}
+  {{ m.setupMatmul('face_F_y')| indent(2) }}{##}
 {% endif %}
   
   // This loop decodes the indices of subfaceIndex into a tertiary basis
@@ -248,7 +258,7 @@ void {{codeNamespace}}::volumeUnknownsProlongation(
 {% endif %}
   
   // read only input, start with the function input = fine
-  const double* inputLuh = luhCoarse;
+  double* inputLuh = const_cast<double*>(luhCoarse);
 
   // output pointer, ensures that the output of the last iteration points to the function output
   double* outputLuh;
@@ -268,6 +278,12 @@ void {{codeNamespace}}::volumeUnknownsProlongation(
   int subcellIndexPrevious_2 = subcellIndex[2];
   int subcellIndexCurrent_2;
   int subintervalIndex_2;
+{% endif %}
+
+  {{ m.setupMatmul('volume_x')| indent(2) }}{##}
+  {{ m.setupMatmul('volume_y')| indent(2) }}{##}
+{% if nDim == 3 %}
+  {{ m.setupMatmul('volume_z')| indent(2) }}{##}
 {% endif %}
 
   // This loop step by step decodes the elements of subcellIndex into a tertiary basis
@@ -343,7 +359,7 @@ void {{codeNamespace}}::volumeUnknownsRestriction(
   const int levelDelta = fineGridLevel - coarseGridLevel;
   
   // read only input, start with the function input = fine
-  const double* inputLuh = luhFine;
+  double* inputLuh = const_cast<double*>(luhFine);
   int subintervalIndex_0 = subcellIndex[0];
   int subintervalIndex_1 = subcellIndex[1];
 {% if nDim==3 %}
@@ -359,6 +375,14 @@ void {{codeNamespace}}::volumeUnknownsRestriction(
   double* tmpLuh2; //allocated and freed only if levelDelta > 1
 {% endif %}
 
+  {{ m.setupMatmul('volume_x')| indent(2) }}{##}
+  {{ m.setupMatmul('volume_y')| indent(2) }}{##}
+{% if nDim == 2 %}
+  {{ m.setupMatmul('volume_y_add')| indent(2) }}{##}
+{% else %}
+  {{ m.setupMatmul('volume_z')| indent(2) }}{##}
+  {{ m.setupMatmul('volume_z_add')| indent(2) }}{##}
+{% endif %}
 
   if(levelDelta > 1) {
     {{m.allocateArray('tmpLuh', nDof3D*nDof*nDof*nDataPad, pointerExists=True ) | indent(2)}}{##}

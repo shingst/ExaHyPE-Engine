@@ -18,14 +18,18 @@
 #include "{{pathToOptKernel}}/Kernels.h"
 #include "{{pathToOptKernel}}/Quadrature.h"
 
-{% if useLibxsmm %}
-#include "{{pathToOptKernel}}/gemmsCPP.h"
-{% endif %}
+{{ m.matmulInclude() }}{# include required headers for matmul #}
 
 #include "{{solverHeader}}"
 
 //Fortran (Limiter.f90): GetSubcellData
 void {{codeNamespace}}::projectOnFVLimiterSpace(const double* const luh, double* const lim) {
+  
+  {{ m.setupMatmul('dg2fv_x')| indent(2) }}{##}
+  {{ m.setupMatmul('dg2fv_y')| indent(2) }}{##}
+{% if nDim == 3 %}
+  {{ m.setupMatmul('dg2fv_z')| indent(2) }}{##}
+{% endif %}
   
   //compact projection without ghostlayer
   // x
@@ -73,6 +77,12 @@ void {{codeNamespace}}::projectOnFVLimiterSpace(const double* const luh, double*
 
 //Fortran (Limiter.f90): PutSubcellData
 void {{codeNamespace}}::projectOnDGSpace(const double* const lim, double* const luh) {
+  
+  {{ m.setupMatmul('fv2dg_x')| indent(2) }}{##}
+  {{ m.setupMatmul('fv2dg_y')| indent(2) }}{##}
+{% if nDim == 3 %}
+  {{ m.setupMatmul('fv2dg_z')| indent(2) }}{##}
+{% endif %}
   
   // x
   // ignore and remove ghostlayers
@@ -238,6 +248,14 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtGaussLobattoNodes(
     double* max
 ) {
 
+  {{ m.setupMatmul('uh2lob_x')| indent(2) }}{##}
+{% if nDim == 2 %}
+  {{ m.setupMatmul('uh2lob_y_slice')| indent(2) }}{##}
+{% else %}
+  {{ m.setupMatmul('uh2lob_y')| indent(2) }}{##}
+  {{ m.setupMatmul('uh2lob_z_slice')| indent(2) }}{##}
+{% endif %}
+
   // x
   {{m.allocateArray('tmpX', nDof3D*nDof*nDof*nDataPad) | indent(2)}}{##}
   for (int zy = 0; zy < {{nDof3D*nDof}}; zy++) {
@@ -303,6 +321,14 @@ void {{codeNamespace}}::compareWithADERDGSolutionAtFVSubcellCenters(
     double* min, 
     double* max
 ) {
+  
+  {{ m.setupMatmul('dg2fv_x')| indent(2) }}{##}
+{% if nDim == 2 %}
+  {{ m.setupMatmul('dg2fv_y_slice')| indent(2) }}{##}
+{% else %}
+  {{ m.setupMatmul('dg2fv_y')| indent(2) }}{##}
+  {{ m.setupMatmul('dg2fv_z_slice')| indent(2) }}{##}
+{% endif %}
   
   // x
   {{m.allocateArray('tmpX', nDof3D*nDof*nDofLim*nDataPad) | indent(2)}}{##}

@@ -53,6 +53,27 @@ update_Peano() {
 }
 
 update_others() {
+	#eigen
+	if [ ! -d eigen ]; then
+		mkdir eigen
+	fi
+	if [ ! -f eigen/.git ]; then
+		echo "Initialize eigen submodule"
+		cd "$pathToTopLevel" # move to the top level (required for git version below 1.8.4)
+		git submodule update --init Submodules/eigen
+		cd "$scriptDir" #move back
+	else
+		echo "Update eigen submodule"
+		if [ "$toNewest" = true ]; then
+			cd eigen
+			git pull origin master
+			cd ..
+		else
+			cd "$pathToTopLevel" # move to the top level (required for git version below 1.8.4)
+			git submodule update Submodules/eigen
+			cd "$scriptDir" #move back
+		fi
+	fi
 	#Jinja2
 	if [ ! -d jinja ]; then
 		mkdir jinja
