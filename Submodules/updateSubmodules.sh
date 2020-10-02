@@ -282,6 +282,7 @@ else
 			git config submodule.Submodules/six.url         git://localhost:12345/benjaminp/six.git
 			git config submodule.Submodules/libxsmm.url     git://localhost:12345/hfp/libxsmm.git ;;
 		s)  git config submodule.Submodules/Peano.url       git@gitlab.lrz.de:hpcsoftware/Peano.git
+			git config submodule.Submodules/eigen.url       git@gitlab.com:libeigen/eigen.git
 			git config submodule.Submodules/jinja.url       git@github.com:pallets/jinja.git
 			git config submodule.Submodules/markupsafe.url  git@github.com:pallets/markupsafe.git
 			git config submodule.Submodules/attrs.url       git@github.com:python-attrs/attrs.git
@@ -290,6 +291,7 @@ else
 			git config submodule.Submodules/six.url         git@github.com:benjaminp/six.git
 			git config submodule.Submodules/libxsmm.url     git@github.com:hfp/libxsmm.git ;;
 		w)  git config submodule.Submodules/Peano.url       https://gitlab.lrz.de/hpcsoftware/Peano.git
+			git config submodule.Submodules/eigen.url       https://gitlab.com/libeigen/eigen.git
 			git config submodule.Submodules/jinja.url       https://github.com/pallets/jinja.git
 			git config submodule.Submodules/markupsafe.url  https://github.com/pallets/markupsafe.git
 			git config submodule.Submodules/attrs.url       https://github.com/python-attrs/attrs.git
