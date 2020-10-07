@@ -1341,7 +1341,6 @@ private:
 	  int dest,
 	  int tag,
 	  MPI_Comm comm,
-	  MPI_Request *requests,
 	  double *metadata =nullptr);
 
   /*
@@ -1367,7 +1366,7 @@ private:
       int srcRank,
 	  int tag,
 	  MPI_Comm comm,
-      MPI_Request *requests,
+    int rail,
 	  double *metadata =nullptr);
 
   /*
@@ -2912,12 +2911,14 @@ public:
   static void receiveMigratableJob(
       int tag,
       int src,
-      exahype::solvers::ADERDGSolver *solver);
+      exahype::solvers::ADERDGSolver *solver,
+      int rail=-1); //rail required for SmartMPI
 
   static void receiveBackMigratableJob(
       int tag,
       int src,
-      exahype::solvers::ADERDGSolver *solver);
+      exahype::solvers::ADERDGSolver *solver,
+      int rail=-1); //rail required for SmartMPI
 
   static void pollForOutstandingCommunicationRequests(
       exahype::solvers::ADERDGSolver *solver,

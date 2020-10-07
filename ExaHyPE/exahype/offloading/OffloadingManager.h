@@ -364,7 +364,7 @@ class exahype::offloading::OffloadingManager {
 #ifdef OffloadingUseProgressTask
     void resetHasNotifiedSendCompleted();
     void notifySendCompleted(int rank);
-    void receiveCompleted(int rank);
+    void receiveCompleted(int rank, int rail=-1);
     void notifyAllVictimsSendCompletedIfNotNotified();
 #endif
 
