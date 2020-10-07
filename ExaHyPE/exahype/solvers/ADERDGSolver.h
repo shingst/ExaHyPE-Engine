@@ -1050,20 +1050,28 @@ private:
    */
   class MigratablePredictionJobData {
     public:
-	  std::vector<double, AlignedAllocator> _luh; // ndata *ndof^DIM
-	  std::vector<double, AlignedAllocator>	_lduh; // nvar *ndof^DIM
-	  std::vector<double, AlignedAllocator> _lQhbnd;
-	  std::vector<double, AlignedAllocator> _lFhbnd;
+#ifdef ALIGNMENT
+      std::vector<double, AlignedAllocator> _luh; // ndata *ndof^DIM
+      std::vector<double, AlignedAllocator>	_lduh; // nvar *ndof^DIM
+      std::vector<double, AlignedAllocator> _lQhbnd;
+      std::vector<double, AlignedAllocator> _lFhbnd;
       std::vector<double, AlignedAllocator> _lGradQhbnd;
+#else
+      std::vector<double> _luh; // ndata *ndof^DIM
+      std::vector<double> _lduh; // nvar *ndof^DIM
+      std::vector<double> _lQhbnd;
+      std::vector<double> _lFhbnd;
+      std::vector<double> _lGradQhbnd;
+#endif
 
-	  // stores metadata for a stolen/offloaded task
-	  // 1. center
-	  // 2. dx
-	  // 3. predictorTimeStamp
-	  // 4. predictorTimeStepSize
-	  double  _metadata[2*DIMENSIONS+3];
+    // stores metadata for a stolen/offloaded task
+    // 1. center
+    // 2. dx
+    // 3. predictorTimeStamp
+    // 4. predictorTimeStepSize
+    double  _metadata[2*DIMENSIONS+3];
 
-	MigratablePredictionJobData(ADERDGSolver& solver);
+    MigratablePredictionJobData(ADERDGSolver& solver);
     ~MigratablePredictionJobData();
     //deleted copy constructor
     MigratablePredictionJobData(const MigratablePredictionJobData&) = delete;
@@ -1301,9 +1309,9 @@ private:
 
   /*
    *  Sends away data of a MigratablePredictionJob to a destination rank
-   *  using MPI offloading. 
+   *  using MPI offloading (SmartMPI).
    */
-  void sendMigratablePredictionJobOutcomeOffload(
+  void mpiSendMigratablePredictionJobOutcomeOffload(
       double *lduh,
       double *lQhbnd,
       double *lFhbnd,
@@ -1316,7 +1324,19 @@ private:
   /*
    * Sends away a MigratablePredictionJob to a destination rank.
    */
-  void isendMigratablePredictionJob(
+  void mpiIsendMigratablePredictionJob(
+	  double *luh,
+	  int dest,
+	  int tag,
+	  MPI_Comm comm,
+	  MPI_Request *requests,
+	  double *metadata =nullptr);
+
+  /*
+   * Sends away a MigratablePredictionJob to a destination rank
+   * using MPI offloading (SmartMPI).
+   */
+  void mpiSendMigratablePredictionJobOffload(
 	  double *luh,
 	  int dest,
 	  int tag,
@@ -1327,7 +1347,7 @@ private:
   /*
    * Sends away task outcome of a MigratablePredictionJob to a destination rank.
    */
-  void isendMigratablePredictionJobOutcome(
+  void mpiIsendMigratablePredictionJobOutcome(
 	  double *lduh,
 	  double *lQhbnd,
 	  double *lFhbnd,
@@ -1339,9 +1359,21 @@ private:
 	  double *metadata =nullptr);
 
   /*
+   * Receives a MigratablePredictionJob from a destination rank
+   * using MPI offloading (SmartMPI).
+   */
+  void mpiRecvMigratablePredictionJobOffload(
+	  double *luh,
+      int srcRank,
+	  int tag,
+	  MPI_Comm comm,
+      MPI_Request *requests,
+	  double *metadata =nullptr);
+
+  /*
    * Receives a MigratablePredictionJob from a destination rank.
    */
-  void irecvMigratablePredictionJob(
+  void mpiIrecvMigratablePredictionJob(
 	  double *luh,
       int srcRank,
 	  int tag,
@@ -1352,7 +1384,7 @@ private:
   /*
    * Receives task outcome of a MigratablePredictionJob from a destination rank.
    */
-  void irecvMigratablePredictionJobOutcome(
+  void mpiIrecvMigratablePredictionJobOutcome(
 	  double *lduh,
 	  double *lQhbnd,
 	  double *lFhbnd,
@@ -1366,7 +1398,7 @@ private:
   /*
    * Receives task outcome of a MigratablePredictionJob from a destination rank.
    */
-  void recvMigratablePredictionJobOutcome(
+  void mpiRecvMigratablePredictionJobOutcome(
       double *lduh,
       double *lQhbnd,
       double *lFhbnd,
@@ -1376,7 +1408,11 @@ private:
       MPI_Comm comm,
       double *metadata =nullptr);
 
-  void recvMigratablePredictionJobOutcomeOffload(
+  /*
+   * Receives task outcome of a MigratablePredictionJob from a destination rank using
+   * MPI offloading (SmartMPI).
+   */
+  void mpiRecvMigratablePredictionJobOutcomeOffload(
       double *lduh,
       double *lQhbnd,
       double *lFhbnd,
@@ -1384,6 +1420,7 @@ private:
       int srcRank,
       int tag,
       MPI_Comm comm,
+      int rail,
       double *metadata =nullptr);
 
   /* If a MigratablePredictionJob has been spawned by the master thread,
@@ -2869,7 +2906,8 @@ public:
   static void receiveTaskOutcome(
       int tag,
       int src,
-      exahype::solvers::ADERDGSolver *solver);
+      exahype::solvers::ADERDGSolver *solver,
+      int rail = -1);
 
   static void receiveMigratableJob(
       int tag,

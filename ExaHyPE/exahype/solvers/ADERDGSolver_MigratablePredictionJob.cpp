@@ -194,7 +194,9 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     std::memcpy(lduh, &data->_lduh[0], data->_lduh.size() * sizeof(double));
     std::memcpy(lQhbnd, &data->_lQhbnd[0], data->_lQhbnd.size() * sizeof(double));
     std::memcpy(lFhbnd, &data->_lFhbnd[0], data->_lFhbnd.size() * sizeof(double));
+#if OffloadingGradQhbnd
     std::memcpy(lGradQhbnd, &data->_lGradQhbnd[0], data->_lGradQhbnd.size() * sizeof(double));
+#endif
     exahype::offloading::JobTableStatistics::getInstance().notifySavedTask();
 
     _solver._jobDatabase.erase(a_jobToData);
@@ -235,7 +237,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     iterations = _solver.fusedSpaceTimePredictorVolumeIntegral(lduh,
        	lQhbnd,
         lGradQhbnd,
-	lFhbnd,
+	    lFhbnd,
         luh,
         cellDescription.getOffset() + 0.5 * cellDescription.getSize(),
         cellDescription.getSize(),
@@ -449,7 +451,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
 #endif
       <<" time stamp = "<<_predictorTimeStamp);
     //logInfo("handleLocalExecution()", "postSendBack");
-    _solver.isendMigratablePredictionJobOutcome(
+    _solver.mpiIsendMigratablePredictionJobOutcome(
            _lduh,
            _lQhbnd,
            _lFhbnd,
