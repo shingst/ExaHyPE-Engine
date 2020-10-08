@@ -3388,8 +3388,13 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
        //logInfo("progressOffloading()","active sender "<<terminatedSender<<" has sent termination signal ");
        exahype::offloading::OffloadingManager::getInstance().receiveCompleted(terminatedSender);
        ActiveSenders.erase(terminatedSender);
-       ierr = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
+#if defined(UseSmartMPI)
+       int ierr = MPI_Iprobe_offload(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
        assertion(ierr==MPI_SUCCESS);
+#else
+       int ierr = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
+       assertion(ierr==MPI_SUCCESS);
+#endif
     }
 #endif
 
@@ -3713,7 +3718,7 @@ exahype::solvers::ADERDGSolver::ReceiveJob::ReceiveJob(ADERDGSolver& solver)
 
 bool exahype::solvers::ADERDGSolver::ReceiveJob::run( bool isCalledOnMaster ) {
 #if defined(UseSmartMPI)
-  MPI_Status_offload stat;
+  MPI_Status_Offload stat;
 #else
   MPI_Status stat;
 #endif
@@ -3779,7 +3784,11 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::run( bool isCalledOnMaster ) {
       ActiveSenders.insert(stat.MPI_SOURCE);
       exahype::offloading::OffloadingManager::getInstance().triggerVictimFlag();
       int msgLen = -1;
+#if defined(UseSmartMPI)
+      MPI_Get_count_offload(&stat, MPI_DOUBLE, &msgLen);
+#else
       MPI_Get_count(&stat, MPI_DOUBLE, &msgLen);
+#endif
       // is this message metadata? -> if true, we are about to receive a new STP task
       if(msgLen==2*DIMENSIONS+3 && !(lastRecvTag==stat.MPI_TAG && lastRecvSrc==stat.MPI_SOURCE)) {
         lastRecvTag=stat.MPI_TAG;
@@ -3792,13 +3801,14 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::run( bool isCalledOnMaster ) {
         MigratablePredictionJobData *data = new MigratablePredictionJobData(_solver);
         _solver._mapTagRankToStolenData.insert(std::make_pair(std::make_pair(stat.MPI_SOURCE, stat.MPI_TAG), data));
 #if defined(UseSmartMPI)
-        _solver.mpiRecvMigratablePredictionJob(
+        _solver.mpiRecvMigratablePredictionJobOffload(
                   data->_luh.data(),
                   stat.MPI_SOURCE,
                   stat.MPI_TAG,
                   exahype::offloading::OffloadingManager::getInstance().getMPICommunicator(),
                   stat.rail,
                   &(data->_metadata[0]));
+      }
 #else
         _solver.mpiIrecvMigratablePredictionJob(
                  data->_luh.data(),

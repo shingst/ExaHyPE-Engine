@@ -802,7 +802,8 @@ void exahype::offloading::OffloadingManager::notifySendCompleted(int rank) {
 void exahype::offloading::OffloadingManager::receiveCompleted(int rank, int rail) {
   char receive = 0;
 #if defined (UseSmartMPI)
-  MPI_Recv_offload(&receive, 1, MPI_CHAR, rank, 0, getMPICommunicator(), MPI_STATUS_IGNORE, rail);
+  MPI_Status_Offload stat;
+  MPI_Recv_offload(&receive, 1, MPI_CHAR, rank, 0, getMPICommunicator(), &stat, rail);
 #else
   MPI_Recv(&receive, 1, MPI_CHAR, rank, 0, getMPICommunicator(), MPI_STATUS_IGNORE);
 #endif
