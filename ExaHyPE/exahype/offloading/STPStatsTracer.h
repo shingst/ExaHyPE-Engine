@@ -11,37 +11,53 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#ifndef EXAHYPE_EXAHYPE_OFFLOADING_STPSTATSTRACER_H_
-#define EXAHYPE_EXAHYPE_OFFLOADING_STPSTATSTRACER_H_
+#ifndef EXAHYPE_OFFLOADING_STPSTATSTRACER_H_
+#define EXAHYPE_OFFLOADING_STPSTATSTRACER_H_
 
 #include <string>
+#include <vector>
 #include "tarch/logging/Log.h"
 
 namespace exahype {
 namespace offloading {
 
-enum class STPType {ADERDGPrediction, ADERDGOwnMigratable, ADERDGRemoteMigratable, LimitingFusedTimeStep};
+enum STPTraceKey {ADERDGPrediction = 0, ADERDGOwnMigratable  = 1, ADERDGRemoteMigratable = 2, LimitingFusedTimeStep = 3};
 
 
 class STPStatsTracer {
 
 private:
 	std::string _outputDir;
-    static tarch::logging::Log     _log;
+  static tarch::logging::Log  _log;
+
+  std::vector<unsigned long long>  _iterations[4];
+  std::vector<unsigned long long>  _elapsed[4];
+
+  int _dumpInterval;
+  int _dumpCnt;
+
+  bool isActive(int timestep);
 
 public:
 	STPStatsTracer();
 	virtual ~STPStatsTracer();
 
-    void writeTracingEventIteration(unsigned int iterations, STPType type);
-    void writeTracingEventRun(unsigned int elapsed, STPType type);
-    void writeTracingEventRunIterations(unsigned int elapsed, unsigned int iterations, STPType type);
+	void dumpAndResetTraceIfActive();
 
-    void setOutputDir(std::string directory);
-    static STPStatsTracer& getInstance();
+  void writeTracingEventIteration(unsigned int iterations, STPTraceKey type);
+  void writeTracingEventRun(unsigned int elapsed, STPTraceKey type);
+  void writeTracingEventRunIterations(unsigned int elapsed, unsigned int iterations, STPTraceKey type);
+
+  void writeTracingEventIterationDetailed(unsigned int iterations, STPTraceKey type);
+  void writeTracingEventRunDetailed(unsigned int elapsed, STPTraceKey type);
+  void writeTracingEventRunIterationsDetailed(unsigned int elapsed, unsigned int iterations, STPTraceKey type);
+
+  void setDumpInterval(int interval);
+  void setOutputDir(std::string directory);
+  static STPStatsTracer& getInstance();
 };
 
 } /* namespace offloading */
 } /* namespace exahype */
 
-#endif /* EXAHYPE_EXAHYPE_OFFLOADING_STPSTATSTRACER_H_ */
+#endif /* EXAHYPE_OFFLOADING_STPSTATSTRACER_H_ */

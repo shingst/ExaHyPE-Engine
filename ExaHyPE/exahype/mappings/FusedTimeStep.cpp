@@ -38,6 +38,7 @@
 #endif
 
 #include "exahype/offloading/NoiseGenerator.h"
+#include "exahype/offloading/STPStatsTracer.h"
 
 #ifdef USE_ITAC
 #include "VT.h"
@@ -213,7 +214,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
   logTraceInWith1Argument("endIteration(State)", state);
 
 #if defined(GenerateNoise)
-  if(issuePredictionJobsInThisIteration()) {
+  if( issuePredictionJobsInThisIteration() ) {
 #ifdef USE_ITAC
     VT_begin(noiseHandle);
 #endif
@@ -221,6 +222,12 @@ void exahype::mappings::FusedTimeStep::endIteration(
 #ifdef USE_ITAC
     VT_end(noiseHandle);
 #endif
+  }
+#endif
+
+#if defined(FileTrace)
+  if ( sendOutRiemannDataInThisIteration() ) {
+    exahype::offloading::STPStatsTracer::getInstance().dumpAndResetTraceIfActive();
   }
 #endif
 
@@ -248,7 +255,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
 #if defined(Parallel) && defined(DistributedOffloading)
 #if defined(OffloadingStrategyAggressive) || defined(OffloadingStrategyAggressiveHybrid) || defined(OffloadingStrategyAggressiveDiffusive) || defined(OffloadingStrategyStaticHardcoded)
 #ifdef OffloadingUseProgressTask
-  if(issuePredictionJobsInThisIteration() ) { 
+  if( issuePredictionJobsInThisIteration() ) {
     exahype::offloading::OffloadingManager::getInstance().notifyAllVictimsSendCompletedIfNotNotified();
     exahype::offloading::OffloadingManager::getInstance().resetHasNotifiedSendCompleted();
   }

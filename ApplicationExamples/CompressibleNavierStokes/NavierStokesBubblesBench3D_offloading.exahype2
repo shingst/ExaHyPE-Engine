@@ -44,6 +44,9 @@
     "timeout": 60000,
     "buffer_size": 64
   },
+  "_stp_stats_tracing" : {
+    "stp_tracing_output_dir" : ""
+  },
   "optimisation": {
     "fuse_algorithmic_steps": "all",
     "fuse_algorithmic_steps_diffusion_factor": 0.99,

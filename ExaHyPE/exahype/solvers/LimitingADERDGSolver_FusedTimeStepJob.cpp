@@ -64,7 +64,7 @@ bool exahype::solvers::LimitingADERDGSolver::FusedTimeStepJob::run(bool runOnMas
   #if defined FileTrace
   auto stop = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-  exahype::offloading::STPStatsTracer::getInstance().writeTracingEventRun(duration.count(), exahype::offloading::STPType::LimitingFusedTimeStep);
+  exahype::offloading::STPStatsTracer::getInstance().writeTracingEventRun(duration.count(), exahype::offloading::STPTraceKey::LimitingFusedTimeStep);
   
   /*
   std::stringstream stream;
