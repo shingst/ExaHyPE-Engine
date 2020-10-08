@@ -28,6 +28,9 @@
       "manual_pinning": false,
       "thread_stack_size" : 12582912
   },
+  "stp_stats_tracing" : {
+     "stp_tracing_output_dir" : "{{stp_tracing_output_dir}}"
+  },
   "distributed_memory": {
     "offloading": "{{offloading}}",
     "offloading_input_file" : "",

@@ -8,7 +8,7 @@ chart_name="Euler Scenario Time Spent in STPs per Rank"
 x_label="Ranks"
 y_label="Elapsed time in seconds"
 
-basename1 = "exahype_solvers_ADERDGSolver_PredictionJob__run_iterations_rank_"
+basename1 = "exahype_solvers_ADERDGSolver_PredictionJob_run_iterations_rank_"
 basename2 = "exahype__solvers_ADERDGSolver_OwnMigratableJob__run_iterations_rank_"
 basename3 = "exahype__solvers_ADERDGSolver_AlienMigratableJob__run_iterations_rank_"
 

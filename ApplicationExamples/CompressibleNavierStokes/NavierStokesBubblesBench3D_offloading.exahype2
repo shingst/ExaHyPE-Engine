@@ -45,7 +45,8 @@
     "buffer_size": 64
   },
   "_stp_stats_tracing" : {
-    "stp_tracing_output_dir" : ""
+    "stp_tracing_output_dir" : "test_trace",
+    "stp_tracing_frequency" : 10
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",

@@ -198,6 +198,12 @@
           "type" : "string", 
           "title" : "The directory to store STP statistics into.", 
           "default" : ""
+        },
+        "stp_tracing_frequency" : {
+          "type" : "integer",
+          "title" : "Sets number of time steps after which the cumulative STP statistics are dumped",
+          "scope"  : "run-time",
+          "default" : 1
         }
       }
     },

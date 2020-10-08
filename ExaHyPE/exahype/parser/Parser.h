@@ -723,6 +723,8 @@ class exahype::parser::Parser {
   std::string getOffloadingInputFile() const;
 
   std::string getSTPTracingOutputDirName() const;
+  
+  int getSTPTracingDumpInterval() const;
 };
 
 #endif

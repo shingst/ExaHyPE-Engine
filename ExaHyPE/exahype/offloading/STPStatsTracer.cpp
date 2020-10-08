@@ -50,42 +50,49 @@ void STPStatsTracer::setDumpInterval(int interval) {
 void STPStatsTracer::dumpAndResetTraceIfActive() {
   _dumpCnt++;
 
-  int timestep = _dumpCnt/exahype::solvers::Solver::PredictionSweeps;
+  int timestep = _dumpCnt;
 
   if (isActive(timestep)) {
     int rank = tarch::parallel::Node::getInstance().getRank();
-#if defined (SharedTBB)
-    int threadId = tarch::multicore::Core::getInstance().getThreadNum();
-#endif
 
     for(int type = STPTraceKey::ADERDGPrediction; type<STPTraceKey::LimitingFusedTimeStep; type++) {
-      std::stringstream stream;
-      stream<<_outputDir<<"/exahype_";
+    #if defined (SharedTBB)
+      //int threadId = tarch::multicore::Core::getInstance().getThreadNum();
+      for(int threadId = 0; threadId<_elapsed[type].size(); threadId++) {
+    #endif
+        std::stringstream stream;
+        stream<<_outputDir<<"/exahype_";
 
-      switch(type) {
-        case STPTraceKey::ADERDGPrediction:
-          stream<<"solvers_ADERDGSolver_PredictionJob_"; break;
-        case STPTraceKey::ADERDGOwnMigratable:
-          stream<<"_solvers_ADERDGSolver_OwnMigratableJob_"; break;
-        case STPTraceKey::ADERDGRemoteMigratable:
-          stream<<"_solvers_ADERDGSolver_AlienMigratableJob_"; break;
-        case STPTraceKey::LimitingFusedTimeStep:
-          stream<<"_solvers_LimitingADERDGSolver_FusedTimeStepJob_"; break;
-      }
+        switch(type) {
+          case STPTraceKey::ADERDGPrediction:
+            stream<<"solvers_ADERDGSolver_PredictionJob_"; break;
+          case STPTraceKey::ADERDGOwnMigratable:
+            stream<<"solvers_ADERDGSolver_OwnMigratableJob_"; break;
+          case STPTraceKey::ADERDGRemoteMigratable:
+            stream<<"solvers_ADERDGSolver_AlienMigratableJob_"; break;
+          case STPTraceKey::LimitingFusedTimeStep:
+            stream<<"solvers_LimitingADERDGSolver_FusedTimeStepJob_"; break;
+        }
 
-      stream<<"_run_rank_"<<rank;
+        stream<<"run_rank_"<<rank;
 #if defined (SharedTBB)
-      stream<<"_"<<threadId;
+        stream<<"_"<<threadId;
 #endif
-      stream<<"_step_"<<timestep;
-      stream<<".txt";
-      std::string path=stream.str();
+        stream<<"_step_"<<timestep;
+        stream<<".txt";
+        std::string path=stream.str();
 
-      std::ofstream file;
-      file.open(path,std::fstream::app);
-      file << _elapsed[type][threadId]<< ":" << _iterations[type][threadId]+1 << std::endl;
-      file.close();
+        std::ofstream file;
+        file.open(path,std::fstream::app);
+        file << _elapsed[type][threadId]<< ":" << _iterations[type][threadId]+1 << std::endl;
+        file.close();
+        
+        _elapsed[type][threadId] = 0;
+        _iterations[type][threadId] = 0;
 
+#if defined (SharedTBB)
+      }
+#endif
     }
   }
 }
@@ -102,7 +109,7 @@ void STPStatsTracer::writeTracingEventIteration(unsigned int iterations, STPTrac
 #endif
 
   if(threadId>_iterations[type].size()) {
-    _iterations[type].resize(threadId);
+    _iterations[type].resize(threadId+1);
   }
 
   _iterations[type][threadId]+= iterations;
@@ -115,7 +122,7 @@ void STPStatsTracer::writeTracingEventRun(unsigned int elapsed, STPTraceKey type
 #endif
 
   if(threadId>_elapsed[type].size()) {
-    _elapsed[type].resize(threadId);
+    _elapsed[type].resize(threadId+1);
   }
 
   _elapsed[type][threadId]+= elapsed;
@@ -127,11 +134,11 @@ void STPStatsTracer::writeTracingEventRunIterations(unsigned int iterations, uns
 #endif
 
   if(threadId>_elapsed[type].size()) {
-    _elapsed[type].resize(threadId);
+    _elapsed[type].resize(threadId+1);
   }
 
   if(threadId>_iterations[type].size()) {
-    _iterations[type].resize(threadId);
+    _iterations[type].resize(threadId+1);
   }
 
   _elapsed[type][threadId]+= elapsed;

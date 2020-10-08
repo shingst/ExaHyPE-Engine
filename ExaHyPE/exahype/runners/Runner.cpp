@@ -926,6 +926,7 @@ void exahype::runners::Runner::initHPCEnvironment() {
 
   #if defined(FileTrace)
   exahype::offloading::STPStatsTracer::getInstance().setOutputDir(_parser.getSTPTracingOutputDirName());
+  exahype::offloading::STPStatsTracer::getInstance().setDumpInterval(_parser.getSTPTracingDumpInterval());
   #endif
   //
   // Configure ITAC profiling

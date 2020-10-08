@@ -1367,3 +1367,7 @@ std::string exahype::parser::Parser::getSTPTracingOutputDirName() const {
   return result;
 }
 
+int exahype::parser::Parser::getSTPTracingDumpInterval() const {
+  int result = getIntFromPath("/stp_stats_tracing/stp_tracing_frequency", 1 , isOptional);
+  return result;
+}
