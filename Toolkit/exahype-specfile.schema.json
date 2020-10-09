@@ -191,6 +191,7 @@
          }
       }
     },
+    "_stp_stats_tracing" : {},
     "stp_stats_tracing" : {
       "type" : "object",
       "properties" : {
