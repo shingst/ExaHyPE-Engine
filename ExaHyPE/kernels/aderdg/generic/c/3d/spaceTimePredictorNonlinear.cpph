@@ -444,7 +444,7 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
   // Cleanup iff we use gradient flux
   // In other cases, the pointer gradQCur is owned by the caller.
   if (useViscousFlux) {
-    delete gradQCur;
+    delete[] gradQCur;
   }
   #ifdef ScoreP
 	for(int i=0;i<iter;i++){
