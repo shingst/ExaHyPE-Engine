@@ -4,13 +4,13 @@ import parse_stp_trace as pt
 import sys
 import matplotlib.pyplot as plt
 
-chart_name="Cloud Scenario Time Spent in STPs per Rank"
+chart_name="Euler Scenario Time Spent in STPs per Rank"
 x_label="Ranks"
 y_label="Elapsed time in seconds"
 
-basename1 = "exahype_solvers_ADERDGSolver_PredictionJob_run_rank_"
-basename2 = "exahype_solvers_ADERDGSolver_OwnMigratableJob_run_rank_"
-basename3 = "exahype_solvers_ADERDGSolver_AlienMigratableJob_run_rank_"
+basename1 = "exahype_solvers_ADERDGSolver_PredictionJob_run_iterations_rank_"
+basename2 = "exahype__solvers_ADERDGSolver_OwnMigratableJob__run_iterations_rank_"
+basename3 = "exahype__solvers_ADERDGSolver_AlienMigratableJob__run_iterations_rank_"
 
 
 def plot_stp_trace_single(ax,x, iterations, time, x_label, y_label, color, bottom):
@@ -25,22 +25,20 @@ def plot_stp_trace_single(ax,x, iterations, time, x_label, y_label, color, botto
 if __name__=="__main__":
   dirname = sys.argv[1]
   ranks = int(sys.argv[2])
-  threads = int(sys.argv[3])
-  timestep = int(sys.argv[4])
+  threads = int(sys.argv[3])  
  
   f, ax1 = plt.subplots(1)
 
-  (x, iterations_pred, time_pred) = pt.parseDir(dirname, ranks, threads, timestep, basename1) 
+  (x, iterations_pred, time_pred) = pt.parseDir(dirname, ranks, threads, basename1) 
   plot_stp_trace_single(ax1, x, iterations_pred, time_pred, x_label, y_label, 'b',0)
    
-  (x, iterations_own, time_own) = pt.parseDir(dirname, ranks, threads, timestep, basename2) 
+  (x, iterations_own, time_own) = pt.parseDir(dirname, ranks, threads, basename2) 
   plot_stp_trace_single(ax1, x, iterations_own, time_own, x_label, y_label, 'g',time_pred)
 
-  (x, iterations_remote, time_remote) = pt.parseDir(dirname, ranks, threads, timestep, basename3) 
+  (x, iterations_remote, time_remote) = pt.parseDir(dirname, ranks, threads, basename3) 
   plot_stp_trace_single(ax1, x, iterations_remote, time_remote, x_label, y_label, 'r',  [time_pred[i]+time_own[i] for i in range(0,ranks-1)])
   
-  legend = ax1.legend(loc='upper left')
-  plt.savefig("stp_its_"+str(timestep)+".pdf")
-  #plt.show()
+  plt.show()
   
+  legend = ax.legend(loc='upper left')
 

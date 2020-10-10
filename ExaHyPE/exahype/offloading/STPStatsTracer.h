@@ -17,6 +17,8 @@
 #include <string>
 #include <vector>
 #include "tarch/logging/Log.h"
+#include "tarch/multicore/Lock.h"
+#include "tarch/multicore/BooleanSemaphore.h"
 
 namespace exahype {
 namespace offloading {
@@ -32,6 +34,10 @@ private:
 
   std::vector<unsigned long long>  _iterations[4];
   std::vector<unsigned long long>  _elapsed[4];
+
+  tarch::multicore::BooleanSemaphore* _semaphores[4];
+  std::vector<tarch::multicore::Lock> _locks[4];
+
 
   int _dumpInterval;
   int _dumpCnt;

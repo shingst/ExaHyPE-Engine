@@ -22,7 +22,7 @@ def readFile(filename):
 
   return (accIterations, accTime)
 
-def parseDir(dirname, ranks, threads, timestep, basename):
+def parseDir(dirname, ranks, threads,basename):
   totaliterations = []
   totaltime = []
 
@@ -33,8 +33,7 @@ def parseDir(dirname, ranks, threads, timestep, basename):
     accTimeRank = 0
 
     for j in range(0, threads):
-      filename =  dirname+"/"+basename+str(i)+"_"+str(j)+"_step_"+str(timestep)+".txt"
-      print ("processing", filename)
+      filename =  dirname+"/"+basename+str(i)+"_"+str(j)+".txt"
       (its, run) = readFile(filename)
       accIterationsRank += its
       accTimeRank += run
@@ -48,7 +47,6 @@ if __name__=="__main__":
   dirname = sys.argv[1]
   ranks = int(sys.argv[2])
   threads = int(sys.argv[3])
-
 
   (x, totaliterations, totaltime) = parseDir(directory, ranks, threads)
 

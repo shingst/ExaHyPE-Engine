@@ -26,13 +26,24 @@ namespace offloading {
 
 tarch::logging::Log  exahype::offloading::STPStatsTracer::_log( "exahype::offloading::STPStatsTracer" );
 
-STPStatsTracer::STPStatsTracer() : _outputDir("."), _dumpInterval(1), _dumpCnt(0) {
+STPStatsTracer::STPStatsTracer() : _outputDir("."), _dumpInterval(1), _dumpCnt(0){
 	// TODO Auto-generated constructor stub
+  for(int type = STPTraceKey::ADERDGPrediction; type<=STPTraceKey::LimitingFusedTimeStep; type++) {
+    _iterations[type].resize(tarch::multicore::Core::getInstance().getNumberOfThreads());
+    _elapsed[type].resize(tarch::multicore::Core::getInstance().getNumberOfThreads());
+    _semaphores[type] = new tarch::multicore::BooleanSemaphore[tarch::multicore::Core::getInstance().getNumberOfThreads()];
 
+    for(int i=0 ; i<tarch::multicore::Core::getInstance().getNumberOfThreads(); i++) {
+      //_semaphores[type].push_back(std::move(tarch::multicore::BooleanSemaphore()));
+      _locks[type].push_back(tarch::multicore::Lock(_semaphores[type][i], false));
+    }
+  }
 }
 
 STPStatsTracer::~STPStatsTracer() {
 	// TODO Auto-generated destructor stub
+	for(int type = STPTraceKey::ADERDGPrediction; type<=STPTraceKey::LimitingFusedTimeStep; type++)
+	  delete[] _semaphores[type];
 }
 
 void STPStatsTracer::setOutputDir(std::string outputDir) {
@@ -55,7 +66,7 @@ void STPStatsTracer::dumpAndResetTraceIfActive() {
   if (isActive(timestep)) {
     int rank = tarch::parallel::Node::getInstance().getRank();
 
-    for(int type = STPTraceKey::ADERDGPrediction; type<STPTraceKey::LimitingFusedTimeStep; type++) {
+    for(int type = STPTraceKey::ADERDGPrediction; type<=STPTraceKey::LimitingFusedTimeStep; type++) {
     #if defined (SharedTBB)
       //int threadId = tarch::multicore::Core::getInstance().getThreadNum();
       for(int threadId = 0; threadId<_elapsed[type].size(); threadId++) {
@@ -84,11 +95,13 @@ void STPStatsTracer::dumpAndResetTraceIfActive() {
 
         std::ofstream file;
         file.open(path,std::fstream::app);
+        _locks[type][threadId].lock();
         file << _elapsed[type][threadId]<< ":" << _iterations[type][threadId]+1 << std::endl;
         file.close();
         
         _elapsed[type][threadId] = 0;
         _iterations[type][threadId] = 0;
+        _locks[type][threadId].free();
 
 #if defined (SharedTBB)
       }
@@ -108,11 +121,12 @@ void STPStatsTracer::writeTracingEventIteration(unsigned int iterations, STPTrac
   unsigned int threadId = tarch::multicore::Core::getInstance().getThreadNum();
 #endif
 
-  if(threadId>_iterations[type].size()) {
-    _iterations[type].resize(threadId+1);
-  }
-
+  //if(threadId>_iterations[type].size()) {
+  //  _iterations[type].resize(threadId+1);
+ // }
+  _locks[type][threadId].lock();
   _iterations[type][threadId]+= iterations;
+  _locks[type][threadId].free();
 }
 
 void STPStatsTracer::writeTracingEventRun(unsigned int elapsed, STPTraceKey type) {
@@ -121,28 +135,30 @@ void STPStatsTracer::writeTracingEventRun(unsigned int elapsed, STPTraceKey type
   unsigned int threadId = tarch::multicore::Core::getInstance().getThreadNum();
 #endif
 
-  if(threadId>_elapsed[type].size()) {
-    _elapsed[type].resize(threadId+1);
-  }
-
+//  if(threadId>_elapsed[type].size()) {
+//    _elapsed[type].resize(threadId+1);
+//  }
+  _locks[type][threadId].lock();
   _elapsed[type][threadId]+= elapsed;
+  _locks[type][threadId].free();
 }
 
-void STPStatsTracer::writeTracingEventRunIterations(unsigned int iterations, unsigned int elapsed, STPTraceKey type) {
+void STPStatsTracer::writeTracingEventRunIterations(unsigned int elapsed, unsigned int iterations, STPTraceKey type) {
 #if defined(SharedTBB)
   unsigned int threadId = tarch::multicore::Core::getInstance().getThreadNum();
 #endif
 
-  if(threadId>_elapsed[type].size()) {
-    _elapsed[type].resize(threadId+1);
-  }
+//  if(threadId>_elapsed[type].size()) {
+//    _elapsed[type].resize(threadId+1);
+//  }
 
-  if(threadId>_iterations[type].size()) {
-    _iterations[type].resize(threadId+1);
-  }
-
+//  if(threadId>_iterations[type].size()) {
+//    _iterations[type].resize(threadId+1);
+//  }
+  _locks[type][threadId].lock();
   _elapsed[type][threadId]+= elapsed;
   _iterations[type][threadId]+= iterations;
+  _locks[type][threadId].free();
 }
 
 
