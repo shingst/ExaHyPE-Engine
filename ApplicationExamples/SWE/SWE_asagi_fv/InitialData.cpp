@@ -27,11 +27,7 @@ InitialData::InitialData()
                 asagiReader = new AsagiReader("");
                 parser = new easi::YAMLParser(3, asagiReader);
                 model  = parser->parse("data.yaml");
-                //Easi binding point for topography
-                adapter = new easi::ArraysAdapter();
-                adapter->addBindingPoint("b",bathymetry  );
-                adapter->addBindingPoint("d",displacement);
-                lock.free();
+               lock.free();
 #endif
         }
 
@@ -44,10 +40,7 @@ InitialData::InitialData(int a_scenario)
                 parser = new easi::YAMLParser(3, asagiReader);
                 model  = parser->parse("data.yaml");
                 //Easi binding point for topography
-                adapter = new easi::ArraysAdapter();
-                adapter->addBindingPoint("b",bathymetry);
-                adapter->addBindingPoint("d",displacement);
-                lock.free();
+               lock.free();
 #endif
         }
 
@@ -325,12 +318,18 @@ void InitialData::SolitaryWaveOnSimpleBeach(const double*const x, double* Q){
 }
 #if defined(USE_ASAGI)
 void InitialData::readAsagiData(const double* const x,double* Q){
+   double bathymetry[1], displacement[1];
+   bathymetry[0] = 0.0; displacement[0] = 0.0;
+
+   easi::ArraysAdapter adapter;
+   adapter.addBindingPoint("b",bathymetry);
+   adapter.addBindingPoint("d",displacement);
 
   easi::Query query(1,3);
   query.x(0,0)=x[0];
   query.x(0,1)=x[1];
   query.x(0,2)=0;
-  model->evaluate(query,*adapter);
+  model->evaluate(query,adapter);
 
   Q[0]=max(0.0,-bathymetry[0]); //h = H-b
   if(std::isnan(Q[0]))
