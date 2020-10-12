@@ -34,19 +34,8 @@ void {{project}}::{{solver}}::adjustSolution(double* const luh, const tarch::la:
   // Tip: See header file "peano/utils/Loop.h" for dimension-agnostic for loops.
   
   // @todo Please implement/augment if required
-  if (tarch::la::equals(t,0.0)) {
-    //initialise luh
-    constexpr int sizeOfQ = NumberOfVariables+NumberOfParameters;
-    dfor(i,Order+1) {
-      const int iLinearised = dLinearised(i,Order+1);
-      double* const Q = luh + iLinearised * sizeOfQ;  // pointwise state variables (plus parameters)
-      
-      {% for i in range_0_nVarParam %}
-      Q[{{i}}] = 0.0;
-      {% endfor %} 
-    }
-  }
 }
+
 {% else %}
 void {{project}}::{{solver}}::adjustPointSolution(const double* const x,const double t,const double dt,double* const Q) {
   // Tip: You find documentation for this method in header file "{{project}}::{{solver}}.h".
@@ -176,14 +165,17 @@ void {{project}}::{{solver}}::algebraicSource(const tarch::la::Vector<DIMENSIONS
 {% endif %}
 
 {% if useNCP %}
-void  {{project}}::{{solver}}::nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) {
+
+void  {{project}}::{{solver}}::nonConservativeProduct(const double* const Q,const double* const * const gradQ,double** const BgradQ) {
   // Tip: You find documentation for this method in header file "{{project}}::{{solver}}.h".
   // Tip: See header file "{{project}}::{{abstractSolver}}.h" for toolkit generated compile-time 
   //      constants such as Order, NumberOfVariables, and NumberOfParameters.
   
   // @todo Please implement/augment if required
+  {% for d in range_0_nDim %}
   {% for i in range_0_nVar %}
-  BgradQ[{{i}}] = 0.0;
+  BgradQ[{{d}}][{{i}}] = 0.0;
+  {% endfor %}
   {% endfor %}
 }
 {% endif %}
@@ -218,7 +210,7 @@ void  {{project}}::{{solver}}::pointSource(const double* const Q,const double* c
     /**
      * @TODO LR : document
      */
-void {{project}}::{{solver}}::multiplyMaterialParameterMatrix(const double* const Q, double* const rhs) {
+void {{project}}::{{solver}}::multiplyMaterialParameterMatrix(const double* const Q, double** const rhs) {
   // Tip: You find documentation for this method in header file "{{project}}::{{solver}}.h".
   // Tip: See header file "{{project}}::{{abstractSolver}}.h" for toolkit generated compile-time 
   //      constants such as Order, NumberOfVariables, and NumberOfParameters.
