@@ -2916,6 +2916,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
               exahype::offloading::OffloadingManager::getInstance().getMPICommunicator(),
               sendRequests,
               metadata);
+     MigratablePredictionJob::sendHandler(this, tag, destRank);
 #else
      mpiIsendMigratablePredictionJob(
               luh,
@@ -2943,6 +2944,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
          tag,
          exahype::offloading::OffloadingManager::getInstance().getMPICommunicator(),
          metadata);
+     MigratablePredictionJob::sendHandler(this, tag, destRank);
 #else
      mpiIsendMigratablePredictionJob(
          luh,
@@ -3027,6 +3029,7 @@ void exahype::solvers::ADERDGSolver::receiveMigratableJob(int tag, int src, exah
        exahype::offloading::OffloadingManager::getInstance().getMPICommunicator(),
        rail,
        &(data->_metadata[0]));
+  MigratablePredictionJob::receiveHandler(solver, tag, src);
 #else
   solver->mpiIrecvMigratablePredictionJob(
        data->_luh.data(),
@@ -3110,6 +3113,7 @@ void exahype::solvers::ADERDGSolver::receiveBackMigratableJob(int tag, int src, 
       tag,
       commMapped,
       rail);
+  MigratablePredictionJob::receiveBackHandler(solver, tag, src);
 #else
   MPI_Request recvRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME];
   solver->mpiIrecvMigratablePredictionJobOutcome(
@@ -3186,8 +3190,9 @@ void exahype::solvers::ADERDGSolver::receiveBackMigratableJob(int tag, int src, 
     lGradQhbnd,
     src,
     tag,
-    rail,
-    commMapped);
+    commMapped,
+    rail);
+  MigratablePredictionJob::receiveBackHandler(solver, tag, src);
 #else
   MPI_Request recvRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME];
   solver->mpiIrecvMigratablePredictionJobOutcome(
@@ -3808,6 +3813,7 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::run( bool isCalledOnMaster ) {
                   exahype::offloading::OffloadingManager::getInstance().getMPICommunicator(),
                   stat.rail,
                   &(data->_metadata[0]));
+        MigratablePredictionJob::receiveHandler(solver, stat.MPI_TAG, stats.MPI_SOURCE);
       }
 #else
         _solver.mpiIrecvMigratablePredictionJob(
