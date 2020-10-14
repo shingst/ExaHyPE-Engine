@@ -284,8 +284,8 @@ else ifeq ($(call tolower,$(COMPILER)),gnu)
 		COMPILER_CFLAGS  += -p -pg -g3 -O3
 		COMPILER_LFLAGS  += -p -pg
 	else
-		COMPILER_CFLAGS  += -O3
-		FCOMPILER_CFLAGS += -O3
+		COMPILER_CFLAGS  += -O3 
+		FCOMPILER_CFLAGS += -O3 
 	endif
 
 	ifeq ($(call tolower,$(SHAREDMEM)),tbb)

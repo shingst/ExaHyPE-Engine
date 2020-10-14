@@ -11,12 +11,7 @@
  * For the full license text, see LICENSE.txt
  **/
 
-/* This is a hack to enable PingPongTests also when built in Release mode:
- * Enable Assertions for this compile context (=this cpp file) only.
- */
-#ifndef Asserts
-#define Asserts
-#endif
+#ifdef Asserts
 
 #include "tarch/logging/Log.h"
 #include "tarch/tests/TestCaseRegistry.h"
@@ -181,3 +176,4 @@ int exahype::pingPongTest() {
   #endif
   return correct ? EXIT_SUCCESS : -1;
 }
+#endif
