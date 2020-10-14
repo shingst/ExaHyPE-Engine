@@ -137,7 +137,7 @@ void spaceTimePredictorLinear(SolverType& solver,
 
     
     for (int i = 2; i < basisSize; i++) {
-      std::fill_n(tmp_PSderivatives,basisSize3*basisSize*numberOfVariables, 0.0); //zero out tmp array
+      std::fill_n(tmp_PSderivatives,basisSize2*basisSize*numberOfVariables, 0.0); //zero out tmp array
       // compute (t+1)-th derivative in time of point source
       for(int t = 0; t < basisSize; t ++ ){
         for (int j = 0; j < basisSize; j++) {
@@ -151,7 +151,7 @@ void spaceTimePredictorLinear(SolverType& solver,
         } //j
       } //t
 
-      // project derivative on to t_n
+      //project derivative on to t_n
       for (int j = 0; j < basisSize; j++) {
         for (int k = 0; k < basisSize; k++) {
           for (int n = 0; n < numberOfVariables; n++) { //skip parameters
@@ -165,7 +165,7 @@ void spaceTimePredictorLinear(SolverType& solver,
       // store (t+1)-th derivative in PSderivatives
       std::copy_n(tmp_PSderivatives, basisSize2 * basisSize * numberOfVariables, PSderivatives); 
       
-    } // i
+    } //i
     std::fill_n(lFi,basisSize3*(DIMENSIONS+1)*numberOfVariables, 0.); // zero out sources;
   } //usePointSource
   

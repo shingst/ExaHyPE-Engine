@@ -116,9 +116,12 @@ int exahype::main(int argc, char** argv) {
     return sharedMemorySetup;
   }
 
+//Can only run in Asserts mode as otherwise two versions of exahype::records::Vertex would need to be compiled which results in undefined behaviour/errors in valgrind
+#ifdef Asserts
   if (runPingPong) {
     return pingPongTest();
   }
+#endif
 
   if (runTests) {
     //

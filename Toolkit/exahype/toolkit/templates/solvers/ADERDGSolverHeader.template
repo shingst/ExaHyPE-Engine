@@ -236,7 +236,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      * @param[inout] BgradQ the nonconservative product (extends nVar), 
      *                      already allocated. 
      */
-    void nonConservativeProduct(const double* const Q,const double* const gradQ,double* const BgradQ) final override;
+    void nonConservativeProduct(const double* const Q,const double* const * const gradQ,double** const BgradQ) final override;
 {% else %}
 /* nonConservativeProduct() function is not included, as requested in the specification file */
 {% endif %}
@@ -285,7 +285,7 @@ class {{project}}::{{solver}} : public {{project}}::{{abstractSolver}} {
      * @param[inout] rhs the right-hand side associated with Q; 
      *                   range: [0,nVar-1], already allocated.
      */
-    void multiplyMaterialParameterMatrix(const double* const Q, double* const rhs) final override;
+    void multiplyMaterialParameterMatrix(const double* const Q, double** const rhs) final override;
 {% else %}
 /* multiplyMaterialParameterMatrix() not included, as requested in the specification file */
 {% endif %}

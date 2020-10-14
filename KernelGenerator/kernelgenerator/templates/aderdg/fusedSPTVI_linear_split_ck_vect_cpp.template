@@ -29,9 +29,8 @@
 #include "{{pathToOptKernel}}/Kernels.h"
 #include "{{pathToOptKernel}}/DGMatrices.h"
 #include "{{pathToOptKernel}}/Quadrature.h"
-{% if useLibxsmm %}
-#include "{{pathToOptKernel}}/gemmsCPP.h"
-{% endif %}
+
+{{ m.matmulInclude() }}{# include required headers for matmul #}
 
 #include "{{solverHeader}}"
 
@@ -84,6 +83,14 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   __assume_aligned(weights3, ALIGNMENT);
   __assume_aligned(iweights3,ALIGNMENT);
 #endif
+
+  {{ m.setupMatmul('flux_x_sck_vect') | indent(2) }}{##}
+  {{ m.setupMatmul('flux_y_or_z_sck_vect') | indent(2) }}{##}
+  {{ m.setupMatmul('flux_y_sck_vect') | indent(2) }}{##}
+  {{ m.setupMatmul('flux_z_sck_vect') | indent(2) }}{##}
+  {{ m.setupMatmul('gradQ_x_sck_vect')| indent(2) }}{##}
+  {{ m.setupMatmul('gradQ_y_sck_vect')| indent(2) }}{##}
+  {{ m.setupMatmul('gradQ_z_sck_vect')| indent(2) }}{##}
 
 
   const double invDt = 1. / dt;
@@ -492,7 +499,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   {{ m.matmul('gradQ_x_sck_vect', 'dudx_by_dx', 'lQhi', 'gradQ', '0', '0', '0') | indent(4) }}{##}
   for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
     solver.{{solverName}}::nonConservativeProduct_x_vect(lQhi+{{idx(0,yz,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(0,yz,0,0)}}{% else %}nullptr{%endif%}, gradQ+{{idx(0,yz,0,0)}}, tmpArray);
-    #pragma omp simd aligned(lQi_next,tmpArray:ALIGNMENT)
+    #pragma omp simd aligned(lFhi,tmpArray:ALIGNMENT)
     for (int nx = 0; nx < {{nVar*nDofPad}}; nx++) {
       lFhi[{{idx(0,yz,0,nx)}}] += tmpArray[nx]; 
     }
@@ -550,7 +557,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   //call ncp in y
   for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
     solver.{{solverName}}::nonConservativeProduct_y_vect(lQhi+{{idx(0,yz,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(0,yz,0,0)}}{% else %}nullptr{%endif%}, gradQ+{{idx(0,yz,0,0)}}, tmpArray);
-    #pragma omp simd aligned(lQi_next,tmpArray:ALIGNMENT)
+    #pragma omp simd aligned(lFhi,tmpArray:ALIGNMENT)
     for (int nx = 0; nx < {{nVar*nDofPad}}; nx++) {
       lFhi[{{idx(0,yz,0,nx)}}] += tmpArray[nx]; 
     }
@@ -608,7 +615,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   //call ncp in z
   for (int yz = 0; yz < {{nDof*nDof3D}}; yz++) {
     solver.{{solverName}}::nonConservativeProduct_z_vect(lQhi+{{idx(0,yz,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(0,yz,0,0)}}{% else %}nullptr{%endif%}, gradQ+{{idx(0,yz,0,0)}}, tmpArray);
-    #pragma omp simd aligned(lQi_next,tmpArray:ALIGNMENT)
+    #pragma omp simd aligned(lFhi,tmpArray:ALIGNMENT)
     for (int nx = 0; nx < {{nVar*nDofPad}}; nx++) {
       lFhi[{{idx(0,yz,0,nx)}}] += tmpArray[nx]; 
     }

@@ -53,6 +53,27 @@ update_Peano() {
 }
 
 update_others() {
+	#eigen
+	if [ ! -d eigen ]; then
+		mkdir eigen
+	fi
+	if [ ! -f eigen/.git ]; then
+		echo "Initialize eigen submodule"
+		cd "$pathToTopLevel" # move to the top level (required for git version below 1.8.4)
+		git submodule update --init Submodules/eigen
+		cd "$scriptDir" #move back
+	else
+		echo "Update eigen submodule"
+		if [ "$toNewest" = true ]; then
+			cd eigen
+			git pull origin master
+			cd ..
+		else
+			cd "$pathToTopLevel" # move to the top level (required for git version below 1.8.4)
+			git submodule update Submodules/eigen
+			cd "$scriptDir" #move back
+		fi
+	fi
 	#Jinja2
 	if [ ! -d jinja ]; then
 		mkdir jinja
@@ -261,6 +282,7 @@ else
 			git config submodule.Submodules/six.url         git://localhost:12345/benjaminp/six.git
 			git config submodule.Submodules/libxsmm.url     git://localhost:12345/hfp/libxsmm.git ;;
 		s)  git config submodule.Submodules/Peano.url       git@gitlab.lrz.de:hpcsoftware/Peano.git
+			git config submodule.Submodules/eigen.url       git@gitlab.com:libeigen/eigen.git
 			git config submodule.Submodules/jinja.url       git@github.com:pallets/jinja.git
 			git config submodule.Submodules/markupsafe.url  git@github.com:pallets/markupsafe.git
 			git config submodule.Submodules/attrs.url       git@github.com:python-attrs/attrs.git
@@ -269,6 +291,7 @@ else
 			git config submodule.Submodules/six.url         git@github.com:benjaminp/six.git
 			git config submodule.Submodules/libxsmm.url     git@github.com:hfp/libxsmm.git ;;
 		w)  git config submodule.Submodules/Peano.url       https://gitlab.lrz.de/hpcsoftware/Peano.git
+			git config submodule.Submodules/eigen.url       https://gitlab.com/libeigen/eigen.git
 			git config submodule.Submodules/jinja.url       https://github.com/pallets/jinja.git
 			git config submodule.Submodules/markupsafe.url  https://github.com/pallets/markupsafe.git
 			git config submodule.Submodules/attrs.url       https://github.com/python-attrs/attrs.git

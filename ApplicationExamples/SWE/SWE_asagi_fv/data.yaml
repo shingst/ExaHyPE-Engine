@@ -10,6 +10,7 @@ components:
   [b]: 
     !ASAGI
     file: tohoku_2011/tohoku_gebco_ucsb3_2000m_hawaii_bath.nc
+    interpolation: linear
     parameters: [b]
     var: z
     components:
@@ -23,11 +24,12 @@ components:
     components:
       - !AxisAlignedCuboidalDomainFilter
         limits:
-          x: [-249750.0, 249750.0]
-          y: [-399750.0, 399750.0]
+          x: [-249000.0, 249000.0]
+          y: [-399000.0, 399000.0]
         components:
           !ASAGI
           file: tohoku_2011/tohoku_gebco_ucsb3_2000m_hawaii_displ.nc
+          interpolation: linear
           parameters: [d]
           var: z
           components:

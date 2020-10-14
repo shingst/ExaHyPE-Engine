@@ -22,9 +22,6 @@ class InitialData {
   easi::YAMLParser* parser;
   easi::Component* model;
   AsagiReader* asagiReader;
-  easi::ArraysAdapter* adapter;
-  double bathymetry  [1];
-  double displacement[1];
 #endif
 
   void ShockShockProblem(const double* const x,double* Q);

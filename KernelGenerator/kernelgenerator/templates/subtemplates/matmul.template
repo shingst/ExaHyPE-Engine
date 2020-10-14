@@ -13,7 +13,6 @@
   String C_shift   : shift to the zero of C
   
   optional
-  bool overrideUseLibxsmm : force locally useLibxsmm to take this value if set
   String trueB            : true array B, B must b a true matrix, not a tensor slice
   String trueAlpha        : true value of the coefficent alpha (note: it will be multiplicated by the configuration alpha, /!\ sign error)
   bool forceCoeffMatrix   : only when using trueB, trueAlpha, force the no libxsmm case to also generate the coeff matrix
@@ -37,11 +36,16 @@
 {% if forceCoeffMatrix is not defined %}
   {% set forceCoeffMatrix = False %}
 {% endif %}
-{# set arrays' name for pragma by removing eventual index #}
+{# set arrays' name for pragma and eigen map by removing eventual index #}
 {% set Ap = (A.split("["))[0] %}
 {% set Bp = (B.split("["))[0] %}
 {% set Cp = (C.split("["))[0] %}
 {% set trueBp = (trueB.split("["))[0] %}
+{% if conf.precision == "DP" %}
+{% set fpFormat = "double" %}
+{% else %}
+{% set fpFormat = "float" %}
+{% endif %}
 {# /********************
    **** Subtemplate ****
    *********************/ #}
@@ -51,30 +55,51 @@
 //-------------
 
 #}
-{% if overrideUseLibxsmm %}
+{% if useLibxsmm %}
 {% if useTrueB %}{# will set B[it] to be trueAlpha*trueB[it] #}
-double {{B}}[{{conf.LDB*conf.K}}] __attribute__((aligned(ALIGNMENT)));
+{{fpFormat}} {{B}}[{{conf.LDB*conf.K}}] __attribute__((aligned(ALIGNMENT)));
 #pragma omp simd aligned({{Bp}},{{trueBp}}:ALIGNMENT)
 for (int it = 0; it < {{conf.LDB*conf.K}}; it++) {
   {{B}}[it] = {{trueAlpha}} * {{trueB}}[it];
 }
 #if defined(USE_IPO) && !defined(UNSAFE_IPO)
-volatile double doNotOptimizeAway_{{B}} = {{B}}[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
+volatile {{fpFormat}} doNotOptimizeAway_{{B}} = {{B}}[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
 #endif
 {% endif %}{# useTrueB #}
 #ifdef USE_IPO
 #pragma forceinline
 #endif
 {{conf.baseroutinename}}({{A}}{% if A_shift != '0' %}+{{A_shift}}{% endif %}, {{B}}{% if B_shift != '0' %}+{{B_shift}}{% endif %}, {{C}}{% if C_shift != '0' %}+{{C_shift}}{% endif %});
-{% else %}{# overrideUseLibxsmm #}
 {# 
 
-// No LIBXSMM case
-//----------------
+// Eigen case
+//-----------
 
 #}
+{% elif useEigen %}
+{# old direct mapper #}
+{#{
+  Eigen::Map<Eigen::Matrix<{{fpFormat}},{{conf.M}},{{conf.K}}>, Eigen::{{"Aligned"if conf.alignment_A == 1 else "Unaligned"}}, Eigen::OuterStride<{{conf.LDA}}> > {{Ap}}_m({{A}}{% if A_shift != '0' %}+{{A_shift}}{% endif %}); //A = {{A}}
+  Eigen::Map<Eigen::Matrix<{{fpFormat}},{{conf.K}},{{conf.N}}>, Eigen::Aligned, Eigen::OuterStride<{{conf.LDB}}> > {{Bp}}_m({{trueB}}{% if B_shift != '0' %}+{{B_shift}}{% endif %}); //B = {{B}}, assume it is aligned
+  Eigen::Map<Eigen::Matrix<{{fpFormat}},{{conf.M}},{{conf.N}}>, Eigen::{{"Aligned"if conf.alignment_C == 1 else "Unaligned"}}, Eigen::OuterStride<{{conf.LDC}}> > {{Cp}}_m({{C}}{% if C_shift != '0' %}+{{C_shift}}{% endif %}); //C = {{C}}
+  {{Cp}}_m.noalias() {{ '+' if conf.beta == 1 }}= {{ '-' if conf.alpha == -1 }}{{Ap}}_m * {{Bp}}_m {% if (useTrueB and not forceCoeffMatrix) %}* {{trueAlpha}}{% endif %};
+}#}
+#pragma forceinline recursive
+{
+  new (&{{conf.baseroutinename}}_A_map) Eigen::Map<Eigen::Matrix<{{fpFormat}},{{conf.M}},{{conf.K}}>, Eigen::{{"Aligned"if conf.alignment_A == 1 else "Unaligned"}}, Eigen::OuterStride<{{conf.LDA}}> >({{A}}{% if A_shift != '0' %}+{{A_shift}}{% endif %}); //{{conf.baseroutinename}}_A_map = {{A}}
+  new (&{{conf.baseroutinename}}_B_map) Eigen::Map<Eigen::Matrix<{{fpFormat}},{{conf.K}},{{conf.N}}>, Eigen::Aligned, Eigen::OuterStride<{{conf.LDB}}> >({{trueB}}{% if B_shift != '0' %}+{{B_shift}}{% endif %}); //{{conf.baseroutinename}}_B_map = {{trueB}}, assume it is aligned
+  new (&{{conf.baseroutinename}}_C_map) Eigen::Map<Eigen::Matrix<{{fpFormat}},{{conf.M}},{{conf.N}}>, Eigen::{{"Aligned"if conf.alignment_C == 1 else "Unaligned"}}, Eigen::OuterStride<{{conf.LDC}}> >({{C}}{% if C_shift != '0' %}+{{C_shift}}{% endif %}); //{{conf.baseroutinename}}_C_map = {{C}}
+  {{conf.baseroutinename}}_C_map.noalias() {{ '+' if conf.beta == 1 }}= {{ '-1. * ' if conf.alpha == -1 }}{{conf.baseroutinename}}_A_map * {{conf.baseroutinename}}_B_map{% if (useTrueB and not forceCoeffMatrix) %} * {{trueAlpha}}{% endif %};
+}
+{# 
+
+// No BLAS case
+//-------------
+
+#}
+{% else %}{# no BLAS library #}
 {% if forceCoeffMatrix %}
-double {{B}}[{{conf.LDB*conf.K}}] __attribute__((aligned(ALIGNMENT)));
+{{fpFormat}} {{B}}[{{conf.LDB*conf.K}}] __attribute__((aligned(ALIGNMENT)));
 #pragma omp simd aligned({{Bp}},{{trueBp}}:ALIGNMENT)
 for (int it = 0; it < {{conf.LDB*conf.K}}; it++) {
   {{B}}[it] = {{trueAlpha}} * {{trueB}}[it];
@@ -98,5 +123,5 @@ for (int it_1 = 0; it_1 < {{conf.N}}; it_1++) {
     }
   }
 }
-{% endif %}
+{% endif %}{# end choice of BLAS lib #}
 {% endwith %}

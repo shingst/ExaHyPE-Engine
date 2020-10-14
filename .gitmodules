@@ -26,6 +26,6 @@
 [submodule "Submodules/six"]
 	path = Submodules/six
 	url = https://github.com/benjaminp/six.git
-[submodule "six"]
-	path = six
-	url = git@github.com:benjaminp/six.git
+[submodule "Submodules/eigen"]
+	path = Submodules/eigen
+	url = https://gitlab.com/libeigen/eigen.git
