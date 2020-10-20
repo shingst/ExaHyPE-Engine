@@ -451,6 +451,18 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
 #endif
       <<" time stamp = "<<_predictorTimeStamp);
     //logInfo("handleLocalExecution()", "postSendBack");
+#if defined(UseSmartMPI)
+    _solver.mpiSendMigratablePredictionJobOutcomeOffload(
+      _lduh,
+      _lQhbnd,
+      _lFhbnd,
+      _lGradQhbnd,
+      _originRank,
+      _tag,
+      exahype::offloading::OffloadingManager::getInstance().getMPICommunicatorMapped()
+    );
+    MigratablePredictionJob::sendBackHandler(&_solver, _tag, _originRank);
+#else
     _solver.mpiIsendMigratablePredictionJobOutcome(
            _lduh,
            _lQhbnd,
@@ -462,12 +474,13 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
           sendBackRequests);
     exahype::offloading::OffloadingManager::getInstance().submitRequests(
       sendBackRequests,
-	  NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME,
+      NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME,
       _tag,
       _originRank,
       sendBackHandler,
       exahype::offloading::RequestType::sendBack,
       &_solver);
+#endif
   }
   return result;
 }
