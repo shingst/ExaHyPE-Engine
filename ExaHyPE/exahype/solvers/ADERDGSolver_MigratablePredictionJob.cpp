@@ -237,7 +237,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     iterations = _solver.fusedSpaceTimePredictorVolumeIntegral(lduh,
        	lQhbnd,
         lGradQhbnd,
-	    lFhbnd,
+	      lFhbnd,
         luh,
         cellDescription.getOffset() + 0.5 * cellDescription.getSize(),
         cellDescription.getSize(),
@@ -462,7 +462,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
           sendBackRequests);
     exahype::offloading::OffloadingManager::getInstance().submitRequests(
       sendBackRequests,
-	  NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME,
+	    NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME,
       _tag,
       _originRank,
       sendBackHandler,

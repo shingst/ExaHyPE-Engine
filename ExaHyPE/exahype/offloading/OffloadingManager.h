@@ -28,6 +28,8 @@
 #include <vector>
 #include <unordered_map>
 
+#define MAX_THREADS 48
+
 namespace exahype {
   namespace offloading {
     class OffloadingManager;
@@ -282,9 +284,21 @@ class exahype::offloading::OffloadingManager {
       return _nextGroupId++;
     }
 
-  public:
-    int getNumberOfOutstandingRequests(RequestType type);
+    static OffloadingManager* _static_managers[MAX_THREADS];
 
+    static MPI_Comm  _offloadingComms[MAX_THREADS];
+    static MPI_Comm  _offloadingCommsMapped[MAX_THREADS];
+
+#if defined TaskSharing
+    static MPI_Comm  _interTeamComms[MAX_THREADS];
+    static MPI_Comm  _interTeamCommsKey[MAX_THREADS];
+    static MPI_Comm  _interTeamCommsAck[MAX_THREADS];
+#endif
+
+  public:
+    void initialize();
+
+    int getNumberOfOutstandingRequests(RequestType type);
 
     void printPostedRequests();
     void resetPostedRequests();
@@ -333,6 +347,10 @@ class exahype::offloading::OffloadingManager {
      * Creates offloading MPI communicators.
      */
     void createMPICommunicator();
+
+#if defined(MPI_THREAD_SPLIT)
+    static void createMPICommunicators(MPI_Comm interTeamComm, MPI_Comm interTeamCommData, MPI_Comm interTeamCommAck);
+#endif
 
     /**
      * Destroys offloading MPI communicators.
