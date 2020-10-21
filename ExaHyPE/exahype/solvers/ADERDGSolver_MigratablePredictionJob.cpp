@@ -237,7 +237,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     iterations = _solver.fusedSpaceTimePredictorVolumeIntegral(lduh,
        	lQhbnd,
         lGradQhbnd,
-	    lFhbnd,
+	      lFhbnd,
         luh,
         cellDescription.getOffset() + 0.5 * cellDescription.getSize(),
         cellDescription.getSize(),

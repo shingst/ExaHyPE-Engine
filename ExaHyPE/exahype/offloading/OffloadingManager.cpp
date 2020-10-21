@@ -47,6 +47,10 @@ static int event_progress_sendBack;
 static int event_progress_receiveBack;
 #endif
 
+#if defined(TMPI) || defined(TaskSharing)
+#include "teaMPI.h"
+#endif
+
 //#undef assertion
 //#define assertion assert
 
@@ -98,6 +102,45 @@ exahype::offloading::OffloadingManager::~OffloadingManager() {
   delete[] _localBlacklist;
 }
 
+void exahype::offloading::OffloadingManager::initialize() {
+  exahype::offloading::OffloadingManager::getInstance().createMPICommunicator();
+
+#if defined(TaskSharing)
+  int nteams = TMPI_GetInterTeamCommSize();
+   //MPI_Comm interTeamComm = TMPI_GetInterTeamComm();
+  MPI_Comm interTeamComm;
+
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  int worldRank = TMPI_GetWorldRank();
+  MPI_Comm_split(MPI_COMM_WORLD, rank, worldRank, &interTeamComm);
+
+  int rankInterComm;
+  MPI_Comm_rank(interTeamComm, &rankInterComm);
+  int team = TMPI_GetTeamNumber();
+
+  OffloadingManager::getInstance().setTMPITeamSize(nteams);
+  OffloadingManager::getInstance().setTMPIInterTeamRank(rankInterComm);
+
+  MPI_Comm interTeamCommDupKey;
+  MPI_Comm_dup(interTeamComm, &interTeamCommDupKey);
+
+  MPI_Comm interTeamCommDupAck;
+  MPI_Comm_dup(interTeamComm, &interTeamCommDupAck);
+
+  exahype::offloading::OffloadingManager::getInstance().setTMPIInterTeamCommunicators(interTeamComm, interTeamCommDupKey, interTeamCommDupAck);
+
+  logInfo("initDistributedMemoryConfiguration()", " teams: "<<exahype::offloading::OffloadingManager::getInstance().get<<", rank in team "
+                                                <<team<<" : "<<rank<<", team rank in intercomm: "<<rankInterComm);
+
+#endif
+
+}
+
+void exahype::offloading::OffloadingManager::destroy() {
+  exahype::offloading::OffloadingManager::destroyMPICommunicator();
+}
 
 void exahype::offloading::OffloadingManager::setTMPIInterTeamCommunicators(MPI_Comm comm, MPI_Comm commKey, MPI_Comm commAck) {
   _interTeamComm = comm;
@@ -139,6 +182,41 @@ void exahype::offloading::OffloadingManager::createMPICommunicator() {
   ierr = MPI_Comm_dup(MPI_COMM_WORLD, &_offloadingCommMapped);
   assertion(ierr==MPI_SUCCESS);
 }
+
+#if defined(MPI_THREAD_SPLIT)
+static void exahype::offloading::OffloadingManager::createCommunicators(MPI_Comm interTeamComm) {
+
+  for(int i=0; i<MAX_THREADS;i++) {
+
+    int ierr= MPI_Comm_dup(MPI_COMM_WORLD, &_offloadingComms[i]);
+    assertion(ierr==MPI_SUCCESS);
+    ierr = MPI_Comm_dup(MPI_COMM_WORLD, &_offloadingCommsMapped[i]);
+    assertion(ierr==MPI_SUCCESS);
+
+#if defined TaskSharing
+    ierr = MPI_Comm_dup(interTeamComm, &_interTeamComms[i]); assertion(ierr==MPI_SUCCESS);
+    ierr = MPI_Comm_dup(interTeamComm, &_interTeamCommsKey[i]); assertion(ierr==MPI_SUCCESS);
+    ierr = MPI_Comm_dup(interTeamComm, &_interTeamCommsAck[i]); assertion(ierr==MPI_SUCCESS);
+#endif
+  }
+}
+
+static void exahype::offloading::OffloadingManager::destroyCommunicators() {
+  for(int i=0; i<MAX_THREADS;i++) {
+    int ierr = MPI_Comm_free(&_offloadingComms[i]); assertion(ierr==MPI_SUCCESS);
+    ierr = MPI_Comm_free(&_offloadingCommsMapped[i]); assertion(ierr==MPI_SUCCESS);
+
+#if defined TaskSharing
+    ierr = MPI_Comm_free(&_interTeamComms[i]); assertion(ierr==MPI_SUCCESS);
+    ierr = MPI_Comm_free(&_interTeamCommsKey[i]); assertion(ierr==MPI_SUCCESS);
+    ierr = MPI_Comm_free(&_interTeamCommsAck[i]); assertion(ierr==MPI_SUCCESS);
+#endif
+
+  }
+}
+#endif
+
+#endif
 
 void exahype::offloading::OffloadingManager::destroyMPICommunicator() {
   int ierr = MPI_Comm_free( &_offloadingComm);
@@ -187,8 +265,13 @@ MPI_Comm exahype::offloading::OffloadingManager::getMPICommunicatorMapped() {
 }
 
 exahype::offloading::OffloadingManager& exahype::offloading::OffloadingManager::getInstance() {
-  static OffloadingManager offloadingManager;
-  return offloadingManager;
+  //static OffloadingManager offloadingManager;
+  int threadID =  tarch::multicore::Core::getThreadNumber();
+
+  if(_static_managers[threadID]==nullptr) {
+    _static_managers[threadID] = new OffloadingManager();
+  }
+  return _static_managers[threadID];
 }
 
 int exahype::offloading::OffloadingManager::requestTypeToMsgQueueIdx( RequestType requestType ) {
