@@ -268,7 +268,7 @@ MPI_Comm exahype::offloading::OffloadingManager::getMPICommunicatorMapped() {
 
 exahype::offloading::OffloadingManager& exahype::offloading::OffloadingManager::getInstance() {
   //static OffloadingManager offloadingManager;
-  int threadID =  tarch::multicore::Core::getInstance().getThreadNum();
+  int threadID = 0; // tarch::multicore::Core::getInstance().getThreadNum();
 
   if(threadID>=MAX_THREADS) {
 	  logError("getInstance()","The application is using too many threads (>48), we need to exit...");
