@@ -14,8 +14,8 @@ def readFile(filename):
     f = open(filename, "r")
     for line in f:
       splitted = (line[:-1].split(":"))
-      iterations = int(splitted[0])
-      run = int(splitted[1])
+      run = int(splitted[0])
+      iterations = int(splitted[1])
       accIterations += iterations+1
       accTime += run
     f.close()

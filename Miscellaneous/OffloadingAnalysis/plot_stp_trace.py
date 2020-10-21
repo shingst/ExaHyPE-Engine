@@ -13,11 +13,11 @@ basename2 = "exahype_solvers_ADERDGSolver_OwnMigratableJob_run_rank_"
 basename3 = "exahype_solvers_ADERDGSolver_AlienMigratableJob_run_rank_"
 
 
-def plot_stp_trace_single(ax,x, iterations, time, x_label, y_label, color, bottom):
+def plot_stp_trace_single(ax,x, iterations, time, x_label, y_label, color, label_add, bottom):
   ax.set_xlabel(x_label)
   ax.set_ylabel(y_label)
   #ax.title(chart_name)
-  ax.bar(x,time,0.8,label="Picard Iterations",bottom=bottom, color=color)
+  ax.bar(x,time,0.8,label="Picard Iterations "+label_add, bottom=bottom, color=color)
   #plt.bar(ranks,values_fts,0.8,Color="Red",bottom=values_stp,label="FTS")
   #plt.get_xaxis().set_ticks([0,2,4,6,8,10,12,14,16,18,20,22,24,26])
   #ax.set_ylim(0,600)
@@ -31,13 +31,13 @@ if __name__=="__main__":
   f, ax1 = plt.subplots(1)
 
   (x, iterations_pred, time_pred) = pt.parseDir(dirname, ranks, threads, timestep, basename1) 
-  plot_stp_trace_single(ax1, x, iterations_pred, time_pred, x_label, y_label, 'b',0)
+  plot_stp_trace_single(ax1, x, iterations_pred, time_pred, x_label, y_label, 'b', 'Skeleton Job', 0)
    
   (x, iterations_own, time_own) = pt.parseDir(dirname, ranks, threads, timestep, basename2) 
-  plot_stp_trace_single(ax1, x, iterations_own, time_own, x_label, y_label, 'g',time_pred)
+  plot_stp_trace_single(ax1, x, iterations_own, time_own, x_label, y_label, 'g', 'Migratable Job (local)', time_pred)
 
   (x, iterations_remote, time_remote) = pt.parseDir(dirname, ranks, threads, timestep, basename3) 
-  plot_stp_trace_single(ax1, x, iterations_remote, time_remote, x_label, y_label, 'r',  [time_pred[i]+time_own[i] for i in range(0,ranks-1)])
+  plot_stp_trace_single(ax1, x, iterations_remote, time_remote, x_label, y_label, 'r', 'Migratable Job (remote)', [time_pred[i]+time_own[i] for i in range(0,ranks-1)])
   
   legend = ax1.legend(loc='upper left')
   plt.savefig("stp_its_"+str(timestep)+".pdf")

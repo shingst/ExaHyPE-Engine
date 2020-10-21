@@ -9,7 +9,7 @@
   },
   "computational_domain": {
     "dimension": 2,
-    "end_time": 60,
+    "time_steps": 20,
     "offset": [
       0.0,
       0.0
@@ -21,7 +21,7 @@
     "max_mesh_setup_iterations": 400
   },
   "shared_memory": {
-    "cores": 3,
+    "cores": 2,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
     "background_job_processing": "job_system",

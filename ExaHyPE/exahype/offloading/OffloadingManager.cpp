@@ -21,6 +21,7 @@
 #include <algorithm>
 
 #include "tarch/multicore/Lock.h"
+#include "tarch/multicore/Core.h"
 #include "tarch/parallel/Node.h"
 
 #include "exahype/offloading/OffloadingProfiler.h"
@@ -55,6 +56,8 @@ static int event_progress_receiveBack;
 //#define assertion assert
 
 tarch::logging::Log exahype::offloading::OffloadingManager::_log( "exahype::offloading::OffloadingManager" );
+
+exahype::offloading::OffloadingManager* exahype::offloading::OffloadingManager::_static_managers[MAX_THREADS];
 
 exahype::offloading::OffloadingManager::OffloadingManager() :
     _nextRequestId(0),
@@ -131,7 +134,7 @@ void exahype::offloading::OffloadingManager::initialize() {
 
   exahype::offloading::OffloadingManager::getInstance().setTMPIInterTeamCommunicators(interTeamComm, interTeamCommDupKey, interTeamCommDupAck);
 
-  logInfo("initDistributedMemoryConfiguration()", " teams: "<<exahype::offloading::OffloadingManager::getInstance().get<<", rank in team "
+  logInfo("initDistributedMemoryConfiguration()", " teams: "<<nteams<<", rank in team "
                                                 <<team<<" : "<<rank<<", team rank in intercomm: "<<rankInterComm);
 
 #endif
@@ -216,7 +219,6 @@ static void exahype::offloading::OffloadingManager::destroyCommunicators() {
 }
 #endif
 
-#endif
 
 void exahype::offloading::OffloadingManager::destroyMPICommunicator() {
   int ierr = MPI_Comm_free( &_offloadingComm);
@@ -266,12 +268,17 @@ MPI_Comm exahype::offloading::OffloadingManager::getMPICommunicatorMapped() {
 
 exahype::offloading::OffloadingManager& exahype::offloading::OffloadingManager::getInstance() {
   //static OffloadingManager offloadingManager;
-  int threadID =  tarch::multicore::Core::getThreadNumber();
+  int threadID =  tarch::multicore::Core::getInstance().getThreadNum();
+
+  if(threadID>=MAX_THREADS) {
+	  logError("getInstance()","The application is using too many threads (>48), we need to exit...");
+	  MPI_Abort(MPI_COMM_WORLD, -1);
+  }
 
   if(_static_managers[threadID]==nullptr) {
     _static_managers[threadID] = new OffloadingManager();
   }
-  return _static_managers[threadID];
+  return *_static_managers[threadID];
 }
 
 int exahype::offloading::OffloadingManager::requestTypeToMsgQueueIdx( RequestType requestType ) {

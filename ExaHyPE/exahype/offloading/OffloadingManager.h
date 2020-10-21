@@ -296,7 +296,10 @@ class exahype::offloading::OffloadingManager {
 #endif
 
   public:
+    //Todo: with these two function, we can clean up the interface and make some more functions private
     void initialize();
+
+    void destroy();
 
     int getNumberOfOutstandingRequests(RequestType type);
 
