@@ -19,7 +19,7 @@
       1000.0
     ]
   },
-  "architecture": "skx",
+  "architecture": "hsw",
   "shared_memory": {
     "cores": 2,
     "background_job_consumers": 1,
@@ -29,7 +29,7 @@
  "distributed_memory": {
     "offloading": "aggressiveHybrid",
     "offloading_input_file" : "",
-    "offloading_progress" : "progress_task",
+    "offloading_progress" : "none",
     "offloading_CCP_temperature" : 0,
     "offloading_diffusion_temperature" : 1,
     "offloading_CCP_frequency" : 0,

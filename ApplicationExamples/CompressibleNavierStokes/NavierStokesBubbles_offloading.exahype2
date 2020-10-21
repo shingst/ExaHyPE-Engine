@@ -34,7 +34,7 @@
   "distributed_memory": {
     "offloading": "aggressiveHybrid",
     "offloading_input_file" : "",
-    "offloading_progress" : "progress_thread",
+    "offloading_progress" : "none",
     "offloading_CCP_temperature" : 0,
     "offloading_diffusion_temperature" : 1,
     "offloading_CCP_frequency" : 0,
@@ -70,7 +70,7 @@
     {
       "type": "ADER-DG",
       "name": "NavierStokesSolver_ADERDG",
-      "order":  6,
+      "order":  5,
       "maximum_mesh_size": 113.0,
       "maximum_mesh_depth": 0,
       "time_stepping": "global",
@@ -88,7 +88,7 @@
         },
         "optimised_terms": [],
         "optimised_kernel_debugging": [],
-        "implementation": "optimised",
+        "implementation": "generic",
         "adjust_solution": "pointwise",
         "allocate_temporary_arrays": "stack",
         "basis": "Legendre"
