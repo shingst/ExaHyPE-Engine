@@ -1,4 +1,4 @@
-#1/usr/bin/env python
+#!/usr/bin/env python
 
 import parse_stp_trace as pt
 import sys
