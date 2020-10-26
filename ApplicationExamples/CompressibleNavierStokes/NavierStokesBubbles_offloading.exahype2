@@ -88,7 +88,7 @@
         },
         "optimised_terms": [],
         "optimised_kernel_debugging": [],
-        "implementation": "optimised",
+        "implementation": "generic",
         "adjust_solution": "pointwise",
         "allocate_temporary_arrays": "stack",
         "basis": "Legendre"

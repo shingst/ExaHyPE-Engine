@@ -20,6 +20,8 @@
 #include "tarch/parallel/Node.h"
 #include <chrono>
 
+#if defined(Parallel)
+
 exahype::offloading::NoiseGenerator::NoiseGenerator() {
   _strategy = new NoiseGenerationStrategyRoundRobin();
 }
@@ -48,3 +50,5 @@ void exahype::offloading::NoiseGenerator::setStrategy(NoiseGenerationStrategy *s
   delete _strategy;
   _strategy = strategy;
 }
+
+#endif
