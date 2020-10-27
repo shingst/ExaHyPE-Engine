@@ -21,7 +21,7 @@
     "max_mesh_setup_iterations": 400
   },
   "shared_memory": {
-    "cores": 3,
+    "cores": 2,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
     "background_job_processing": "job_system",
@@ -34,14 +34,14 @@
   "distributed_memory": {
     "offloading": "aggressiveHybrid",
     "offloading_input_file" : "",
-    "offloading_progress" : "progress_thread",
+    "offloading_progress" : "none",
     "offloading_CCP_temperature" : 0,
     "offloading_diffusion_temperature" : 1,
     "offloading_CCP_frequency" : 0,
     "offloading_CCP_steps" : 0,
     "offloading_update_temperature" : true,
     "offloading_increase_temp_threshold" : 1.0,
-    "task_sharing" : true,
+    "task_sharing" : false,
     "timeout": 12000,
     "load_balancing_type": "static",
     "buffer_size"            : 1600,    
@@ -148,7 +148,7 @@
       ]
     }
   ],
-  "architecture": "hsw",
+  "architecture": "noarch",
   "compiler_flags": "-DOffloadingGradQhbnd",
   "linker_flags": ""
 }

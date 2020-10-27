@@ -167,6 +167,7 @@
         "measure_cell_processing_times_iter" : ["measure_cell_processing_times"]
       }
     },
+    "_noise_generator" : {},
     "noise_generator" : {
       "type" : "object",
       "properties" : {
@@ -208,6 +209,7 @@
         }
       }
     },
+    "_memory_monitoring" : {},
     "memory_monitoring" : {
       "type" : "object",
       "properties" : {
