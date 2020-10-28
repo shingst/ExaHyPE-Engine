@@ -307,6 +307,8 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
 
   #ifdef Parallel
 #if defined(DistributedOffloading)
+  MigratablePredictionJobMetaData::initDatatype();
+  //todo: may need to add support for multiple solvers
   exahype::offloading::OffloadingProgressService::getInstance().setSolver(this);
 #endif
 
@@ -2719,7 +2721,7 @@ void exahype::solvers::ADERDGSolver::sendKeyOfTaskOutcomeToOtherTeams(Migratable
                                                         << data->_metadata.to_string()
                                                         <<" time stamp = "<<job->_predictorTimeStamp
                                                         <<" to team "<<i);
-         MPI_Isend(&data->_metadata, sizeof(MigratablePredictionJobMetaData), MPI_BYTE, i, tag, teamInterCommKey, &sendRequests[j]);
+         MPI_Isend(&data->_metadata, 1, MigratablePredictionJobMetaData::getMPIDatatype(), i, tag, teamInterCommKey, &sendRequests[j]);
          j++;
       }
     }
@@ -4220,7 +4222,7 @@ void exahype::solvers::ADERDGSolver::mpiIsendMigratablePredictionJob(
   //MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
 
   if(metadata != nullptr) {
-    ierr = MPI_Isend(metadata, sizeof(MigratablePredictionJobMetaData), MPI_BYTE, dest, tag, comm, &requests[i++]);
+    ierr = MPI_Isend(metadata, 1, MigratablePredictionJobMetaData::getMPIDatatype(), dest, tag, comm, &requests[i++]);
     assertion(ierr==MPI_SUCCESS);
     assertion(requests[i-1]!=MPI_REQUEST_NULL);
   }
@@ -4260,7 +4262,7 @@ void exahype::solvers::ADERDGSolver::mpiIsendMigratablePredictionJobOutcome(
   //MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
 
   if(metadata != nullptr) {
-    ierr = MPI_Isend(metadata, sizeof(MigratablePredictionJobMetaData), MPI_BYTE, dest, tag, comm, &requests[i++]);
+    ierr = MPI_Isend(metadata, 1, MigratablePredictionJobMetaData::getMPIDatatype(), dest, tag, comm, &requests[i++]);
     assertion(ierr==MPI_SUCCESS);
     assertion(requests[i-1]!=MPI_REQUEST_NULL);
   }
@@ -4311,7 +4313,7 @@ void exahype::solvers::ADERDGSolver::mpiIrecvMigratablePredictionJob(
   //logInfo("mpiIrecvMigratablePredictionJob", "receiving job "<<tag<<" from srcRank "<<srcRank);
 
   if(metadata != nullptr) {
-    ierr = MPI_Irecv(metadata, sizeof(MigratablePredictionJobMetaData), MPI_BYTE, srcRank, tag, comm, &requests[i++]);
+    ierr = MPI_Irecv(metadata, 1, MigratablePredictionJobMetaData::getMPIDatatype(), srcRank, tag, comm, &requests[i++]);
     assertion(ierr==MPI_SUCCESS);
     assertion(requests[i-1]!=MPI_REQUEST_NULL);
   }
@@ -4348,7 +4350,7 @@ void exahype::solvers::ADERDGSolver::mpiIrecvMigratablePredictionJobOutcome(
   //logInfo("mpiIrecvMigratablePredictionJob", "receiving job "<<tag<<" from srcRank "<<srcRank);
 
   if(metadata != nullptr) {
-    ierr = MPI_Irecv(metadata, sizeof(MigratablePredictionJobMetaData), MPI_BYTE, srcRank, tag, comm, &requests[i++]);
+    ierr = MPI_Irecv(metadata, 1, MigratablePredictionJobMetaData::getMPIDatatype(), srcRank, tag, comm, &requests[i++]);
     assertion(ierr==MPI_SUCCESS);
     assertion(requests[i-1]!=MPI_REQUEST_NULL);
   }
@@ -4398,7 +4400,7 @@ void exahype::solvers::ADERDGSolver::mpiRecvMigratablePredictionJobOutcome(
 #endif
 
   if(metadata != nullptr) {
-    ierr = MPI_Recv(metadata, sizeof(MigratablePredictionJobMetaData), MPI_BYTE, srcRank, tag, comm, MPI_STATUS_IGNORE);
+    ierr = MPI_Recv(metadata, 1, MigratablePredictionJobMetaData::getMPIDatatype(), srcRank, tag, comm, MPI_STATUS_IGNORE);
     assertion(ierr==MPI_SUCCESS);
   }
 
@@ -4445,8 +4447,9 @@ void exahype::solvers::ADERDGSolver::mpiRecvMigratablePredictionJobOffload(
   double timing = - MPI_Wtime();
 #endif
 
+  //todo: won't work as SmartMPI doesn't support derived datatypes
   if(metadata != nullptr) {
-    ierr = MPI_Recv_offload(metadata, sizeof(MigratablePredictionJobMetaData), MPI_BYTE, srcRank, tag, comm, &stat, rail);
+    ierr = MPI_Recv_offload(metadata, 1, MigratablePredictionJobMetaData::getMPIDatatype(), srcRank, tag, comm, &stat, rail);
     assertion(ierr==MPI_SUCCESS);
   }
 
@@ -4481,7 +4484,7 @@ void exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOffload(
 
   if(metadata != nullptr) {
     //ierr = MPI_Send_offload(metadata, 2*DIMENSIONS+3, MPI_DOUBLE, dest, tag, comm, tid);
-    ierr = MPI_Send_offload(metadata, sizeof(MigratablePredictionJobMetaData), MPI_BYTE, dest, tag, comm, rail);
+    ierr = MPI_Send_offload(metadata, 1, MigratablePredictionJobMetaData::getMPIDatatype(), dest, tag, comm, rail);
     assertion(ierr==MPI_SUCCESS);
   }
 
@@ -4518,7 +4521,7 @@ void exahype::solvers::ADERDGSolver::mpiRecvMigratablePredictionJobOutcomeOffloa
 #endif
 
   if(metadata != nullptr) {
-    ierr = MPI_Recv_offload(metadata, sizeof(MigratablePredictionJobMetaData), MPI_BYTE, srcRank, tag, comm, &stat, rail);
+    ierr = MPI_Recv_offload(metadata, 1, MigratablePredictionJobMetaData::getMPIDatatype(), srcRank, tag, comm, &stat, rail);
     assertion(ierr==MPI_SUCCESS);
   }
 
@@ -4570,7 +4573,7 @@ void exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOutcomeOffloa
 
   if(metadata != nullptr) {
     //ierr = MPI_Send_offload(metadata, 2*DIMENSIONS+3, MPI_DOUBLE, dest, tag, comm, tid);
-    ierr = MPI_Send_offload(metadata, sizeof(MigratablePredictionJobMetaData), MPI_BYTE, dest, tag, comm, rail);
+    ierr = MPI_Send_offload(metadata, 1, MigratablePredictionJobMetaData::getMPIDatatype(), dest, tag, comm, rail);
     assertion(ierr==MPI_SUCCESS);
   }
 

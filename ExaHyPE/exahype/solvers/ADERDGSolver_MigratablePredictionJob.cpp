@@ -21,6 +21,8 @@
 //#undef assertion
 //#define assertion assert
 
+MPI_Datatype exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::_datatype;
+
 exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob(
     ADERDGSolver& solver, const int cellDescriptionsIndex, const int element,
     const double predictorTimeStamp, const double predictorTimeStepSize) :
@@ -892,6 +894,37 @@ std::string exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::to_
   result += " element = " + std::to_string(_element);
 
   return result;
+}
+
+void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::initDatatype() {
+  int entries = 2+3;
+  MigratablePredictionJobMetaData dummy;
+
+  int blocklengths[] = {DIMENSIONS, DIMENSIONS, 1, 1, 1};
+  MPI_Datatype subtypes[] = {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INTEGER};
+  MPI_Aint displs[] = {0, 0, 0, 0, 0};
+
+  MPI_Aint base, tmp;
+  MPI_Get_address(&dummy, &base);
+
+  MPI_Get_address(&(dummy._center), &(displs[0]));
+  MPI_Get_address(&(dummy._dx), &(displs[1]));
+  MPI_Get_address(&(dummy._predictorTimeStamp), &(displs[2]));
+  MPI_Get_address(&(dummy._predictorTimeStepSize), &(displs[3]));
+  MPI_Get_address(&(dummy._element), &(displs[4]));
+
+  for(int i=0; i<entries; i++)
+    displs[i] = displs[i]-base;
+
+  int ierr = MPI_Type_create_struct(entries, blocklengths, displs, subtypes, &_datatype); assertion(ierr==MPI_SUCCESS);
+  ierr = MPI_Type_commit(&_datatype);  assertion(ierr==MPI_SUCCESS);
+}
+
+void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::shutdownDatatype() {
+}
+
+MPI_Datatype exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getMPIDatatype() {
+  return _datatype;
 }
 
 const double * exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getCenter() const {

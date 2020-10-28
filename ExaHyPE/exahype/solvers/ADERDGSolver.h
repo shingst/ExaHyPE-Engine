@@ -35,6 +35,7 @@
 #include "exahype/records/ADERDGCellDescription.h"
 
 #if defined(DistributedOffloading)
+#include <mpi.h>
 
 #define OFFLOADING_SLOW_OPERATION_THRESHOLD 0.001
 
@@ -1062,6 +1063,14 @@ private:
       double getPredictorTimeStamp() const;
       double getPredictorTimeStepSize() const;
       int getElement() const;
+
+      static MPI_Datatype  getMPIDatatype();
+      static void initDatatype();
+      static void shutdownDatatype();
+
+    private:
+      static MPI_Datatype _datatype;
+
   };
  
   /**
