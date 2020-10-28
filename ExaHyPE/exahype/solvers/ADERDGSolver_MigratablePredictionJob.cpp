@@ -47,6 +47,20 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
   NumberOfEnclaveJobs++;
   exahype::offloading::JobTableStatistics::getInstance().notifySpawnedTask();
   exahype::offloading::PerformanceMonitor::getInstance().incCurrentTasks();
+
+  auto& cellDescription = getCellDescription(cellDescriptionsIndex, element);
+
+  tarch::la::Vector<DIMENSIONS, double> center = cellDescription.getOffset()+0.5*cellDescription.getSize();
+  tarch::la::Vector<DIMENSIONS, double> dx = cellDescription.getSize();
+
+  double *center_src, *dx_src;
+  center_src = center.data();
+  dx_src = dx.data();
+
+  for (int i = 0; i < DIMENSIONS; i++) {
+    _center[i] = center[i];
+    _dx[i] = dx[i];
+  }
 }
 
 exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob(
@@ -913,11 +927,13 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::initDataty
   MPI_Get_address(&(dummy._predictorTimeStepSize), &(displs[3]));
   MPI_Get_address(&(dummy._element), &(displs[4]));
 
-  for(int i=0; i<entries; i++)
+  for(int i=0; i<entries; i++) {
     displs[i] = displs[i]-base;
+    logDebug("initDatatype" , " displ["<<i<<"]="<<displs[i]);
+  }
 
-  int ierr = MPI_Type_create_struct(entries, blocklengths, displs, subtypes, &_datatype); assertion(ierr==MPI_SUCCESS);
-  ierr = MPI_Type_commit(&_datatype);  assertion(ierr==MPI_SUCCESS);
+  int ierr = MPI_Type_create_struct(entries, blocklengths, displs, subtypes, &_datatype); assert(ierr==MPI_SUCCESS);
+  ierr = MPI_Type_commit(&_datatype);  assert(ierr==MPI_SUCCESS);
 }
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::shutdownDatatype() {

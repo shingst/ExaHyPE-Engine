@@ -2932,7 +2932,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
      _mapTagToCellDesc.insert(std::make_pair(tag, &cellDescription));
      _mapCellDescToTagRank.insert(std::make_pair(&cellDescription, std::make_pair(tag, destRank)));
      _mapTagToOffloadTime.insert(std::make_pair(tag, -MPI_Wtime()));
-     logInfo("submitOrSendMigratablePredictionJob()","send away with tag "<<tag);
+     logInfo("submitOrSendMigratablePredictionJob()","send away with tag "<<tag<<" job "<<metadata->to_string());
      // send away
 #if defined(UseSmartMPI)
      mpiSendMigratablePredictionJobOffload(
