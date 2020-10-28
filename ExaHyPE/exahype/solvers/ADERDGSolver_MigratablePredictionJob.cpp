@@ -17,6 +17,7 @@
 #include "exahype/offloading/MemoryMonitor.h"
 #include "exahype/offloading/NoiseGenerator.h"
 
+#define MAX_PROGRESS_ITS 10000
 //#undef assertion
 //#define assertion assert
 
@@ -101,8 +102,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run(
   int curr = std::atomic_fetch_add(&JobCounter, 1);
 
 #if defined(TaskSharing) && !defined(OffloadingUseProgressThread)
- // exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(&_solver, false, 10000);
-  exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, 10000);
+ // exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(&_solver, false, MAX_PROGRESS_ITS);
+  exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, MAX_PROGRESS_ITS);
 #endif
 
   if (curr % 1000 == 0) {
@@ -157,39 +158,45 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   key.timestamp = _predictorTimeStamp;
   key.element = _element;
 
+#if DIMENSION==3
   logInfo("handleLocalExecution()",
       "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
       <<" looking for job center[0] = "
       << center[0]
       <<" center[1] = "
       << center[1]
-#if DIMENSION==3
       <<" center[2] = "
       << center[2]
-#endif
       <<" time stamp = "
       <<_predictorTimeStamp
       <<" enclave jobs "<<NumberOfEnclaveJobs <<" remote jobs "<<NumberOfRemoteJobs
       <<" hash = "<<(size_t) key);
+#else
+  logInfo("handleLocalExecution()",
+        "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
+        <<" looking for job center[0] = "
+        << center[0]
+        <<" center[1] = "
+        << center[1]
+        <<" time stamp = "
+        <<_predictorTimeStamp
+        <<" enclave jobs "<<NumberOfEnclaveJobs <<" remote jobs "<<NumberOfRemoteJobs
+        <<" hash = "<<(size_t) key);
+#endif
 
-//  exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(&_solver,10000);
-//  exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false,10000);
+//  exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(&_solver,MAX_PROGRESS_ITS);
+//  exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false,MAX_PROGRESS_ITS);
 
   tbb::concurrent_hash_map<JobTableKey, JobTableEntry>::accessor a_jobToData;
   bool found = _solver._jobDatabase.find(a_jobToData, key);
   if (found && a_jobToData->second.status == JobOutcomeStatus::received) {
     MigratablePredictionJobData *data = a_jobToData->second.data;
-    assert(data->_metadata[2 * DIMENSIONS] == _predictorTimeStamp);
+    assertion(data->_metadata._predictorTimeStamp == _predictorTimeStamp);
+
     logInfo("handleLocalExecution()",
         "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
         <<" found STP in received jobs:"
-        <<" center[0] = "<<data->_metadata[0]
-        <<" center[1] = "<<data->_metadata[1]
-#if DIMENSIONS==3
-	<<" center[2] = "<<data->_metadata[2]
-#endif
-        <<" time stamp = "<<data->_metadata[2*DIMENSIONS]
-        <<" element = "<<(int) data->_metadata[2*DIMENSIONS+2]);
+        <<data->_metadata.to_string());
 
     std::memcpy(lduh, &data->_lduh[0], data->_lduh.size() * sizeof(double));
     std::memcpy(lQhbnd, &data->_lQhbnd[0], data->_lQhbnd.size() * sizeof(double));
@@ -237,7 +244,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     iterations = _solver.fusedSpaceTimePredictorVolumeIntegral(lduh,
        	lQhbnd,
         lGradQhbnd,
-	    lFhbnd,
+	      lFhbnd,
         luh,
         cellDescription.getOffset() + 0.5 * cellDescription.getSize(),
         cellDescription.getSize(),
@@ -376,14 +383,20 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
    assertion(_lFhbnd!=nullptr);
    assertion(_luh!=nullptr);
     
+#if DIMENSIONS==3
    logInfo("handleExecution",
         " processJob: center[0] = "<<_center[0]
       <<" center[1] = "<<_center[1]
-#if DIMENSIONS==3
       <<" center[2] = "<<_center[2]
-#endif
       <<" time stamp = "<<_predictorTimeStamp
       <<" origin rank = "<<_originRank);
+#else
+   logInfo("handleExecution",
+        " processJob: center[0] = "<<_center[0]
+      <<" center[1] = "<<_center[1]
+      <<" time stamp = "<<_predictorTimeStamp
+      <<" origin rank = "<<_originRank);
+#endif
 
     int iterations=_solver.fusedSpaceTimePredictorVolumeIntegral(
       _lduh,
@@ -396,15 +409,21 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
       _predictorTimeStamp,
       _predictorTimeStepSize,
       true);
-   
+
+#if DIMENSIONS==3
    logInfo("handleExecution",
         " finished job: center[0] = "<<_center[0]
       <<" center[1] = "<<_center[1]
-#if DIMENSIONS==3
       <<" center[2] = "<<_center[2]
-#endif
       <<" time stamp = "<<_predictorTimeStamp
       <<" origin rank = "<<_originRank);
+#else
+   logInfo("handleExecution",
+        " finished job: center[0] = "<<_center[0]
+      <<" center[1] = "<<_center[1]
+      <<" time stamp = "<<_predictorTimeStamp
+      <<" origin rank = "<<_originRank);
+#endif
    
    hasComputed = true;
 #if defined(USE_ITAC)
@@ -504,13 +523,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandler(
   peano::datatraversal::TaskSet spawnedSet(job);
 
   logInfo("receiveHandler",
-      " received task : center[0] = "<<data->_metadata[0]
-      <<" center[1] = "<<data->_metadata[1]
-#if DIMENSIONS==3
-      <<" center[2] = "<<data->_metadata[2]
-#endif
-      <<" time stamp = "<<data->_metadata[2*DIMENSIONS]
-      <<" element = "<<(int) data->_metadata[2*DIMENSIONS+2]);
+      " received task : "<< data->_metadata.to_string());
 
   exahype::offloading::OffloadingProfiler::getInstance().notifyReceivedTask(
       remoteRank);
@@ -558,19 +571,15 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
 
   logDebug("receiveHandlerReplica", "team "
       <<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
-      <<" received replica job: center[0] = "<<data->_metadata[0]
-      <<" center[1] = "<<data->_metadata[1]
-#if DIMENSIONS==3
-      <<" center[2] = "<<data->_metadata[2]
-#endif
-      <<" time stamp = "<<data->_metadata[2*DIMENSIONS]
-      <<" element = "<<(int) data->_metadata[2*DIMENSIONS+2]);
+      <<" received replica job: "
+      <<data->_metadata.to_string());
 
   JobTableKey key; //{&data->_metadata[0], data->_metadata[2*DIMENSIONS], (int) data->_metadata[2*DIMENSIONS+2] };
+  const double * center = data->_metadata.getCenter();
   for (int i = 0; i < DIMENSIONS; i++)
-    key.center[i] = data->_metadata[i];
-  key.timestamp = data->_metadata[2 * DIMENSIONS];
-  key.element = data->_metadata[2 * DIMENSIONS + 2];
+    key.center[i] = center[i];
+  key.timestamp = data->_metadata.getPredictorTimeStamp();
+  key.element = data->_metadata.getElement();
 
   //bool criticalMemoryConsumption =  exahype::offloading::MemoryMonitor::getInstance().getFreeMemMB()<1000;
 
@@ -838,6 +847,24 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendHandler(
 #endif
 }
 
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::packMetaData(MigratablePredictionJobMetaData *metadata) {
+  metadata->_center[0] = _center[0];
+  metadata->_center[1] = _center[1];
+#if DIMENSIONS==3
+  metadata->_center[2] = _center[2];
+#endif
+
+  metadata->_dx[0] = _dx[0];
+  metadata->_dx[1] = _dx[1];
+#if DIMENSIONS==3
+  metadata->_dx[2] = _dx[2];
+#endif
+
+  metadata->_predictorTimeStamp = _predictorTimeStamp;
+  metadata->_predictorTimeStepSize = _predictorTimeStepSize;
+  metadata->_element = _element;
+}
+
 exahype::solvers::ADERDGSolver::MigratablePredictionJobData::MigratablePredictionJobData(
     ADERDGSolver& solver) :
       _luh(solver.getDataPerCell()),
@@ -850,6 +877,41 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJobData::MigratablePredictio
 
 exahype::solvers::ADERDGSolver::MigratablePredictionJobData::~MigratablePredictionJobData() {
   AllocatedSTPs--;
+}
+
+std::string exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::to_string() const {
+  std::string result;
+
+  result = "center[0]  = " + std::to_string(_center[0]);
+  result += " center[1] = " + std::to_string(_center[1]);
+  #if DIMENSIONS==3
+  result += " center[1] = " + std::to_string(_center[2]);
+  #endif
+
+  result += " time stamp = " + std::to_string(_predictorTimeStamp);
+  result += " element = " + std::to_string(_element);
+
+  return result;
+}
+
+const double * exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getCenter() const {
+  return _center;
+}
+
+const double * exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getDx() const {
+  return _dx;
+}
+
+double exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getPredictorTimeStamp() const {
+  return _predictorTimeStamp;
+}
+
+double exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getPredictorTimeStepSize() const {
+  return _predictorTimeStepSize;
+}
+
+int exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getElement() const {
+  return _element;
 }
 
 #endif
