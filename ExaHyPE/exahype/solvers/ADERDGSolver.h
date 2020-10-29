@@ -1065,6 +1065,7 @@ private:
       int getElement() const;
 
       static MPI_Datatype  getMPIDatatype();
+      static size_t getMessageLen();
       static void initDatatype();
       static void shutdownDatatype();
 

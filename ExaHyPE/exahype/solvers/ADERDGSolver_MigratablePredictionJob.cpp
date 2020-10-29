@@ -478,13 +478,18 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
   //send back
   if (_originRank != myRank) {
     MPI_Request sendBackRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME];
+#if DIMENSIONS==3
     logInfo("handleExecution",
         " send job outcome: center[0] = "<<_center[0]
       <<" center[1] = "<<_center[1]
-#if DIMENSIONS==3
       <<" center[2] = "<<_center[2]
-#endif
       <<" time stamp = "<<_predictorTimeStamp);
+#else
+    logInfo("handleExecution",
+        " send job outcome: center[0] = "<<_center[0]
+      <<" center[1] = "<<_center[1]
+      <<" time stamp = "<<_predictorTimeStamp);
+#endif
     //logInfo("handleLocalExecution()", "postSendBack");
 #if defined(UseSmartMPI)
     _solver.mpiSendMigratablePredictionJobOutcomeOffload(
@@ -499,14 +504,14 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
     MigratablePredictionJob::sendBackHandler(&_solver, _tag, _originRank);
 #else
     _solver.mpiIsendMigratablePredictionJobOutcome(
-           _lduh,
-           _lQhbnd,
-           _lFhbnd,
-           _lGradQhbnd,
-           _originRank,
-           _tag,
-          exahype::offloading::OffloadingManager::getInstance().getMPICommunicatorMapped(),
-          sendBackRequests);
+       _lduh,
+       _lQhbnd,
+       _lFhbnd,
+       _lGradQhbnd,
+       _originRank,
+       _tag,
+       exahype::offloading::OffloadingManager::getInstance().getMPICommunicatorMapped(),
+       sendBackRequests);
     exahype::offloading::OffloadingManager::getInstance().submitRequests(
       sendBackRequests,
       NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME,
@@ -911,6 +916,9 @@ std::string exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::to_
 }
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::initDatatype() {
+#if defined(UseSmartMPI)
+  _datatype = MPI_DOUBLE;
+#else
   int entries = 2+3;
   MigratablePredictionJobMetaData dummy;
 
@@ -934,13 +942,25 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::initDataty
 
   int ierr = MPI_Type_create_struct(entries, blocklengths, displs, subtypes, &_datatype); assert(ierr==MPI_SUCCESS);
   ierr = MPI_Type_commit(&_datatype);  assert(ierr==MPI_SUCCESS);
+#endif
 }
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::shutdownDatatype() {
+#if !defined(UseSmartMPI)
+  MPI_Type_free(&_datatype);
+#endif
 }
 
 MPI_Datatype exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getMPIDatatype() {
   return _datatype;
+}
+
+size_t exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getMessageLen() {
+#if defined(UseSmartMPI)
+  return 2*DIMENSIONS+3;
+#else
+  return 1;
+#endif
 }
 
 const double * exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getCenter() const {
