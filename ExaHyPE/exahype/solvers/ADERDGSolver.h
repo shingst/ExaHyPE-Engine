@@ -1056,6 +1056,7 @@ private:
       double _predictorTimeStamp;
       double _predictorTimeStepSize;
       int    _element;
+      unsigned char   _isPotSoftErrorTriggered;
 
       std::string to_string() const;
       const double * getCenter() const;
@@ -1063,6 +1064,7 @@ private:
       double getPredictorTimeStamp() const;
       double getPredictorTimeStepSize() const;
       int getElement() const;
+      bool getIsPotSoftErrorTriggered() const;
 
       static MPI_Datatype  getMPIDatatype();
       static size_t getMessageLen();
@@ -1166,6 +1168,7 @@ private:
       double                      _center[DIMENSIONS];
       double                      _dx[DIMENSIONS];
       bool 							          _isLocalReplica;
+      bool                        _isPotSoftErrorTriggered;
 
       static std::atomic<int> JobCounter;
 
@@ -1175,6 +1178,8 @@ private:
 
       void packMetaData(MigratablePredictionJobMetaData *buffer);
       //static size_t getSizeOfMetaData();
+
+      void checkAdmissibilityAndSetTrigger();
 
     public:
       // constructor for local jobs that can be stolen
