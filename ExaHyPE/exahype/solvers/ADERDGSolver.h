@@ -1057,6 +1057,10 @@ private:
       double _predictorTimeStepSize;
       int    _element;
       unsigned char   _isPotSoftErrorTriggered;
+      char *_contiguousBuffer;
+
+      MigratablePredictionJobMetaData();
+      ~MigratablePredictionJobMetaData();
 
       std::string to_string() const;
       const double * getCenter() const;
@@ -1065,6 +1069,8 @@ private:
       double getPredictorTimeStepSize() const;
       int getElement() const;
       bool getIsPotSoftErrorTriggered() const;
+      char* getContiguousBuffer() const;
+      void unpackContiguousBuffer();
 
       static MPI_Datatype  getMPIDatatype();
       static size_t getMessageLen();

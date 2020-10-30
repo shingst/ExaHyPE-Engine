@@ -533,7 +533,6 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
 
   //send back
   if (_originRank != myRank) {
-    MPI_Request sendBackRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME];
 #if DIMENSIONS==3
     logInfo("handleExecution",
         " send job outcome: center[0] = "<<_center[0]
@@ -559,6 +558,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
     );
     MigratablePredictionJob::sendBackHandler(&_solver, _tag, _originRank);
 #else
+    MPI_Request sendBackRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME];
     _solver.mpiIsendMigratablePredictionJobOutcome(
        _lduh,
        _lQhbnd,
@@ -931,6 +931,15 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendHandler(
 }
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::packMetaData(MigratablePredictionJobMetaData *metadata) {
+#if defined(UseSmartMPI)
+  char *tmp = metadata->_contiguousBuffer;
+  std::memcpy(tmp, _center, DIMENSIONS*sizeof(double)); tmp+= DIMENSIONS*sizeof(double);
+  std::memcpy(tmp, _dx, DIMENSIONS*sizeof(double)); tmp+= DIMENSIONS*sizeof(double);
+  std::memcpy(tmp, &_predictorTimeStamp, sizeof(double)); tmp+= sizeof(double);
+  std::memcpy(tmp, &_predictorTimeStepSize, sizeof(double)); tmp+= sizeof(double);
+  std::memcpy(tmp, &_element, sizeof(int)); tmp+= sizeof(int);
+  std::memcpy(tmp, &_isPotSoftErrorTriggered, sizeof(char)); tmp+= sizeof(char);
+#else
   metadata->_center[0] = _center[0];
   metadata->_center[1] = _center[1];
 #if DIMENSIONS==3
@@ -947,6 +956,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::packMetaData(Migra
   metadata->_predictorTimeStepSize = _predictorTimeStepSize;
   metadata->_element = _element;
   metadata->_isPotSoftErrorTriggered = _isPotSoftErrorTriggered;
+#endif
 }
 
 exahype::solvers::ADERDGSolver::MigratablePredictionJobData::MigratablePredictionJobData(
@@ -961,6 +971,33 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJobData::MigratablePredictio
 
 exahype::solvers::ADERDGSolver::MigratablePredictionJobData::~MigratablePredictionJobData() {
   AllocatedSTPs--;
+}
+
+exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::MigratablePredictionJobMetaData()
+: _predictorTimeStamp(0),
+  _predictorTimeStepSize(0),
+  _element(0),
+  _isPotSoftErrorTriggered(false),
+  _contiguousBuffer(nullptr) {
+#if defined(UseSmartMPI)
+  _contiguousBuffer = new char[getMessageLen()];
+#endif
+}
+
+exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::~MigratablePredictionJobMetaData() {
+#if defined(UseSmartMPI)
+  delete[] _contiguousBuffer;
+#endif
+}
+
+void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::unpackContiguousBuffer() {
+  char *tmp = _contiguousBuffer;
+  std::memcpy(_center, tmp, DIMENSIONS*sizeof(double)); tmp+= DIMENSIONS*sizeof(double);
+  std::memcpy(_dx, tmp, DIMENSIONS*sizeof(double)); tmp+= DIMENSIONS*sizeof(double);
+  std::memcpy(&_predictorTimeStamp, tmp, sizeof(double)); tmp+= sizeof(double);
+  std::memcpy(&_predictorTimeStepSize, tmp,  sizeof(double)); tmp+= sizeof(double);
+  std::memcpy(&_element, tmp, sizeof(int)); tmp+= sizeof(int);
+  std::memcpy(&_isPotSoftErrorTriggered, tmp, sizeof(char)); tmp+= sizeof(char);
 }
 
 std::string exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::to_string() const {
@@ -981,7 +1018,7 @@ std::string exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::to_
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::initDatatype() {
 #if defined(UseSmartMPI)
-  _datatype = MPI_DOUBLE;
+  _datatype = MPI_BYTE;
 #else
   int entries = 2+4;
   MigratablePredictionJobMetaData dummy;
@@ -1016,13 +1053,17 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::shutdownDa
 #endif
 }
 
+char* exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getContiguousBuffer() const {
+  return _contiguousBuffer;
+}
+
 MPI_Datatype exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getMPIDatatype() {
   return _datatype;
 }
 
 size_t exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getMessageLen() {
 #if defined(UseSmartMPI)
-  return 2*DIMENSIONS+4;
+  return (2*DIMENSIONS+2)*sizeof(double)+sizeof(int)+1;
 #else
   return 1;
 #endif
