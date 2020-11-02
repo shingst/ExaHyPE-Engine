@@ -2787,7 +2787,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
     exahype::offloading::JobTableStatistics::getInstance().notifySentTask();
 
 
-    delete [] metadata;
+    delete metadata;
 #else
     //create copy
     MigratablePredictionJobData *data = new MigratablePredictionJobData(*this);
@@ -3234,12 +3234,16 @@ void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahyp
          rail, 
          &(data->_metadata));
 
+  data->_metadata.unpackContiguousBuffer();
+
   //todo: need to fix this
   JobTableKey key; //{&data->_metadata[0], data->_metadata[2*DIMENSIONS], (int) data->_metadata[2*DIMENSIONS+2] };
   for(int i=0; i<DIMENSIONS; i++)
     key.center[i] = data->_metadata.getCenter()[i];
   key.timestamp = data->_metadata.getPredictorTimeStamp();
   key.element = data->_metadata.getElement();
+
+  logInfo("receiveTaskOutcome", "receive task outcome "<< data->_metadata.to_string());
 
   if(key.timestamp<solver->getMinTimeStamp()) {
     exahype::offloading::JobTableStatistics::getInstance().notifyLateTask();
@@ -3343,6 +3347,7 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
 #if defined(UseSmartMPI)
   MPI_Status_Offload statRepDataOffload;
   MPI_Iprobe_offload(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamComm, &receivedReplicaTask, &statRepDataOffload);
+  logDebug("progressOffloading", "Iprobe for replica task "<<receivedReplicaTask<<" statRepDataOffload.MPI_TAG="<<statRepDataOffload.MPI_TAG<<" statRepDataOffload.size = "<<statRepDataOffload.size);
 #else
   MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamComm, &receivedReplicaTask, &statRepData);
 #endif
@@ -3452,9 +3457,9 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
 #if defined UseSmartMPI
       MPI_Get_count_offload(&statRepDataOffload, MigratablePredictionJobMetaData::getMPIDatatype(), &msgLenDouble);
       if(msgLenDouble==MigratablePredictionJobMetaData::getMessageLen()) {
-        assertion(solver->_lastReceiveReplicaTag[statRepDataOffload.MPI_SOURCE]!=statRepDataOffload.MPI_TAG);
-        solver->_lastReceiveReplicaTag[statRepDataOffload.MPI_SOURCE] = statRepDataOffload.MPI_TAG;
         logDebug("progressOffloading","received replica task from "<<statRepDataOffload.MPI_SOURCE<<" , tag "<<statRepDataOffload.MPI_TAG);
+        assert(solver->_lastReceiveReplicaTag[statRepDataOffload.MPI_SOURCE]!=statRepDataOffload.MPI_TAG);
+        solver->_lastReceiveReplicaTag[statRepDataOffload.MPI_SOURCE] = statRepDataOffload.MPI_TAG;
         receiveTaskOutcome(statRepDataOffload.MPI_TAG, statRepDataOffload.MPI_SOURCE, solver, statRepDataOffload.rail);
       }
 #else
@@ -3470,8 +3475,8 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
     }
 #endif /*UseSmartMPI */
 #if defined(UseSmartMPI)
-    MPI_Status_Offload statRepDataOffload;
     ierr = MPI_Iprobe_offload(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamComm, &receivedReplicaTask, &statRepDataOffload);
+    logDebug("progressOffloading", "Iprobe for replica task "<<receivedReplicaTask<<" statRepDataOffload.MPI_TAG="<<statRepDataOffload.MPI_TAG<<" statRepDataOffload.size = "<<statRepDataOffload.size);
 #else
     ierr = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamComm, &receivedReplicaTask, &statRepData);
 #endif

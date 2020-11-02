@@ -641,7 +641,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveKeyHandlerT
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTaskSharing(
     exahype::solvers::Solver* solver, int tag, int remoteRank) {
-  logDebug("receiveHandlerReplica","successful receive request");
+  logDebug("receiveHandlerTaskSharing","successful receive request");
 
   tbb::concurrent_hash_map<std::pair<int, int>, MigratablePredictionJobData*>::accessor a_tagRankToData;
   MigratablePredictionJobData *data;
@@ -652,7 +652,11 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
       a_tagRankToData);
   a_tagRankToData.release();
 
-  logDebug("receiveHandlerReplica", "team "
+#if defined(UseSmartMPI)
+  data->_metadata.unpackContiguousBuffer();
+#endif
+
+  logInfo("receiveHandlerTaskSharing", "team "
       <<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
       <<" received replica job: "
       <<data->_metadata.to_string());
@@ -977,7 +981,7 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::MigratablePredi
 : _predictorTimeStamp(0),
   _predictorTimeStepSize(0),
   _element(0),
-  _isPotSoftErrorTriggered(false),
+  _isPotSoftErrorTriggered(0),
   _contiguousBuffer(nullptr) {
 #if defined(UseSmartMPI)
   _contiguousBuffer = new char[getMessageLen()];
