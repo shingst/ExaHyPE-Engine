@@ -91,6 +91,8 @@ int exahype::main(int argc, char** argv) {
     return EXIT_SUCCESS;
   }
 
+  SCOREP_USER_REGION( (std::string("exahype::main")).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
+
   //
   //   Setup environment
   //   =================

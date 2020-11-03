@@ -395,6 +395,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
 
 
 void exahype::runners::Runner::shutdownDistributedMemoryConfiguration() {
+  SCOREP_USER_REGION( (std::string("exahype::runners::Runner::shutdownDistributedMemoryConfiguration")).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
 #ifdef Parallel
   tarch::parallel::NodePool::getInstance().terminate();
 
@@ -632,6 +633,7 @@ void exahype::runners::Runner::initDataCompression() {
 
 
 void exahype::runners::Runner::shutdownSharedMemoryConfiguration() {
+  SCOREP_USER_REGION( (std::string("exahype::runners::Runner::shutdownSharedMemoryConfiguration")).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
   #ifdef SharedMemoryParallelisation
 
 #ifdef DistributedOffloading
@@ -866,6 +868,7 @@ void exahype::runners::Runner::initHeaps() {
 }
 
 void exahype::runners::Runner::shutdownHeaps() {
+  SCOREP_USER_REGION( (std::string("exahype::runners::Runner::shutdownHeaps")).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
   if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     logInfo("shutdownHeaps()","shutdown all heaps");
   }
@@ -1017,6 +1020,7 @@ void exahype::runners::Runner::initOptimisations() const {
 }
 
 int exahype::runners::Runner::run() {
+  SCOREP_USER_REGION( (std::string("exahype::runners::Runner::run")).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
   int result = 0;
   if ( _parser.isValid() ) {
     initOptimisations();
@@ -1203,6 +1207,7 @@ void exahype::runners::Runner::printMeshSetupInfo(
 }
 
 bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& repository) {
+  SCOREP_USER_REGION( (std::string("exahype::runners::Runner::createMesh")).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
   bool meshUpdate = false;
 
   const int MaxIterations = _parser.getMaxMeshSetupIterations();
@@ -1274,6 +1279,7 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
 
 
 int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& repository) {
+  SCOREP_USER_REGION( (std::string("exahype::runners::Runner::runAsMaster")).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
   peano::utils::UserInterface::writeHeader();
 
   if (!exahype::solvers::RegisteredSolvers.empty()) {
@@ -1695,6 +1701,7 @@ void exahype::runners::Runner::validateInitialSolverTimeStepData(const bool fuse
 }
 
 void exahype::runners::Runner::initialiseMesh(exahype::repositories::Repository& repository) {
+  SCOREP_USER_REGION( (std::string("exahype::runners::Runner::initialiseMesh")).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
   // We refine here using the previous solution (which is valid)
   logInfo("initialiseMesh(...)","create initial grid");
   createMesh(repository);
@@ -1891,6 +1898,7 @@ void exahype::runners::Runner::printTimeStepInfo(int numberOfStepsRanSinceLastCa
 
 void exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps(
     exahype::repositories::Repository& repository, int numberOfStepsToRun) {
+  SCOREP_USER_REGION( (std::string("exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps")).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
 
   if (numberOfStepsToRun==0) {
     logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","plot");
