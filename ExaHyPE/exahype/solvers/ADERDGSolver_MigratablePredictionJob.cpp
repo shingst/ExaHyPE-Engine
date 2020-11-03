@@ -42,7 +42,8 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
       _lQhbnd(nullptr),
       _lFhbnd(nullptr),
       _lGradQhbnd(nullptr),
-      _isLocalReplica(false) {
+      _isLocalReplica(false),
+      _isPotSoftErrorTriggered(0){
   LocalStealableSTPCounter++;
   NumberOfEnclaveJobs++;
   exahype::offloading::JobTableStatistics::getInstance().notifySpawnedTask();
@@ -80,7 +81,7 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
       _lFhbnd(lFhbnd),
       _lGradQhbnd(lGradQhbnd),
       _isLocalReplica(false),
-      _isPotSoftErrorTriggered(false) {
+      _isPotSoftErrorTriggered(0) {
 
   for (int i = 0; i < DIMENSIONS; i++) {
     _center[i] = center[i];
@@ -1001,13 +1002,13 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::unpackCont
   std::memcpy(&_predictorTimeStamp, tmp, sizeof(double)); tmp+= sizeof(double);
   std::memcpy(&_predictorTimeStepSize, tmp,  sizeof(double)); tmp+= sizeof(double);
   std::memcpy(&_element, tmp, sizeof(int)); tmp+= sizeof(int);
-  std::memcpy(&_isPotSoftErrorTriggered, tmp, sizeof(char)); tmp+= sizeof(char);
+  std::memcpy(&_isPotSoftErrorTriggered, tmp, sizeof(char)); tmp+= sizeof(unsigned char);
 }
 
 std::string exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::to_string() const {
   std::string result;
 
-  result = "center[0]  = " + std::to_string(_center[0]);
+  result = " center[0]  = " + std::to_string(_center[0]);
   result += " center[1] = " + std::to_string(_center[1]);
   #if DIMENSIONS==3
   result += " center[1] = " + std::to_string(_center[2]);
@@ -1028,7 +1029,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::initDataty
   MigratablePredictionJobMetaData dummy;
 
   int blocklengths[] = {DIMENSIONS, DIMENSIONS, 1, 1, 1, 1};
-  MPI_Datatype subtypes[] = {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INTEGER, MPI_CHAR};
+  MPI_Datatype subtypes[] = {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INTEGER, MPI_CHAR};
   MPI_Aint displs[] = {0, 0, 0, 0, 0, 0};
 
   MPI_Aint base;
@@ -1067,7 +1068,7 @@ MPI_Datatype exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::ge
 
 size_t exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getMessageLen() {
 #if defined(UseSmartMPI)
-  return (2*DIMENSIONS+2)*sizeof(double)+sizeof(int)+1;
+  return (2*DIMENSIONS+2)*sizeof(double)+sizeof(int)+sizeof(unsigned char);
 #else
   return 1;
 #endif
