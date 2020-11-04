@@ -3777,7 +3777,7 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::run( bool isCalledOnMaster ) {
     if(receivedTask && stat.MPI_TAG==0) {
       int terminatedSender = stat.MPI_SOURCE;
       logInfo("run()","active sender "<<terminatedSender<<" has sent termination signal ");
-      exahype::offloading::OffloadingManager::getInstance().receiveCompleted(terminatedSender, stat.rail); //todo: won't work with SmartMPI
+      exahype::offloading::OffloadingManager::getInstance().receiveCompleted(terminatedSender); // stat.rail); //todo: won't work with SmartMPI
       ActiveSenders.erase(terminatedSender);
 #if defined(UseSmartMPI)
       ierr = MPI_Iprobe_offload(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
@@ -3825,7 +3825,7 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::run( bool isCalledOnMaster ) {
                  stat.MPI_TAG,
                  exahype::offloading::OffloadingManager::getInstance().getMPICommunicator(),
                  &receiveRequests[0],
-                 &(data->_metadata[0]));
+                 &(data->_metadata));
        
         if(tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()<=1) {
              //logInfo("progressOffloading()","running out of tasks and could not receive stolen task so we just block!");

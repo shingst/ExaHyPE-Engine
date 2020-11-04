@@ -8,7 +8,7 @@
   "architecture": "{{architecture}}",
   "computational_domain": {
     "dimension": {{dimension}},
-    "end_time" : {{simulationTime}},
+    "time_steps" : {{timeSteps}},
     "offset": [
       0.0,
       0.0,
