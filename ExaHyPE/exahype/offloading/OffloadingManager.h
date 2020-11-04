@@ -353,10 +353,8 @@ class exahype::offloading::OffloadingManager {
      */
     //void createMPICommunicator();
 
-#if defined(UseMPIThreadSplit)
     static void createMPICommunicators();
     static void destroyMPICommunicators();
-#endif
 
     /**
      * Destroys offloading MPI communicators.

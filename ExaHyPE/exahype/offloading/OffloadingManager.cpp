@@ -300,10 +300,10 @@ exahype::offloading::OffloadingManager& exahype::offloading::OffloadingManager::
 #if defined(UseMPIThreadSplit)
   threadID = tarch::multicore::Core::getInstance().getThreadNum();
 #else
-  threadId = 0;
+  threadID = 0;
 #endif
 
-  logInfo("getInstance()", "getting offloading manager for thread id "<<threadID);
+  //logInfo("getInstance()", "getting offloading manager for thread id "<<threadID);
 
   if(threadID>=MAX_THREADS) {
 	  logError("getInstance()","The application is using too many threads (>48), we need to exit...");
@@ -996,8 +996,8 @@ bool exahype::offloading::OffloadingManager::ProgressJob::run( bool calledFromMa
   {
     //getInstance().progressAnyRequests();
     getInstance().progressRequestsOfType(RequestType::send);
-    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, OffloadingManager::getInstance()._offloadingComm, &flag, MPI_STATUS_IGNORE);
-    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, OffloadingManager::getInstance()._offloadingCommMapped, &flag, MPI_STATUS_IGNORE);
+    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, OffloadingManager::getInstance().getMPICommunicator(), &flag, MPI_STATUS_IGNORE);
+    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, OffloadingManager::getInstance().getMPICommunicatorMapped(), &flag, MPI_STATUS_IGNORE);
   }
   //logInfo("submitRequests()", "terminated progress job (high priority)");
 
