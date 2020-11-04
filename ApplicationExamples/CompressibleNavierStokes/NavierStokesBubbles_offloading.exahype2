@@ -25,16 +25,16 @@
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
     "background_job_processing": "job_system",
-    "background_job_consumers": 1,
+    "background_job_consumers": 2,
     "min_background_jobs_in_one_rush": 1,
     "max_background_jobs_in_one_rush": 2147483647,
     "invasion_strategy": "no_invade",
     "manual_pinning": false
   },
   "distributed_memory": {
-    "offloading": "aggressiveHybrid",
+    "offloading": "none",
     "offloading_input_file" : "",
-    "offloading_progress" : "progress_thread",
+    "offloading_progress" : "none",
     "offloading_CCP_temperature" : 0,
     "offloading_diffusion_temperature" : 1,
     "offloading_CCP_frequency" : 0,
@@ -148,7 +148,7 @@
       ]
     }
   ],
-  "architecture": "hsw",
+  "architecture": "noarch",
   "compiler_flags": "-DOffloadingGradQhbnd",
   "linker_flags": ""
 }

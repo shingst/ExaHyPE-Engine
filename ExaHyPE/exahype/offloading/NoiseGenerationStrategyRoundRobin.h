@@ -14,6 +14,8 @@
 #ifndef EXAHYPE_EXAHYPE_OFFLOADING_NOISEGENERATIONSTRATEGYROUNDROBIN_H_
 #define EXAHYPE_EXAHYPE_OFFLOADING_NOISEGENERATIONSTRATEGYROUNDROBIN_H_
 
+#if defined(Parallel)
+
 #include "NoiseGenerationStrategy.h"
 #include "tarch/logging/Log.h"
 
@@ -43,5 +45,7 @@ private:
 
 } /* namespace offloading */
 } /* namespace exahype */
+
+#endif
 
 #endif /* EXAHYPE_EXAHYPE_OFFLOADING_NOISEGENERATIONSTRATEGYROUNDROBIN_H_ */

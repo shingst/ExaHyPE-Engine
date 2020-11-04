@@ -59,7 +59,9 @@ int exahype::main(int argc, char** argv) {
   bool showHelp    = firstarg == "-h" || firstarg == "--help";
   bool showVersion = firstarg == "-v" || firstarg == "--version";
   bool runTests    = firstarg == "-t" || firstarg == "--tests";
+#if defined(Asserts)
   bool runPingPong = firstarg == "-p" || firstarg == "--pingpong";
+#endif
   bool showCompiledSpecfile = firstarg == "--show-specfile";
   bool runCompiledSpecfile  = firstarg == "--built-in-specfile";
 
@@ -117,7 +119,7 @@ int exahype::main(int argc, char** argv) {
   }
 
 //Can only run in Asserts mode as otherwise two versions of exahype::records::Vertex would need to be compiled which results in undefined behaviour/errors in valgrind
-#ifdef Asserts
+#if defined(Asserts)
   if (runPingPong) {
     return pingPongTest();
   }

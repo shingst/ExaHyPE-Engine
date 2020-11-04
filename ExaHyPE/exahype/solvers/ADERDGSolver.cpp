@@ -291,12 +291,13 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
         ,_lastReceiveTag(tarch::parallel::Node::getInstance().getNumberOfNodes()),
          _lastReceiveBackTag(tarch::parallel::Node::getInstance().getNumberOfNodes()),
         _offloadingManagerJob(nullptr),
+        _offloadingManagerJobTerminated(false),
         _offloadingManagerJobStarted(false),
-        _offloadingManagerJobTerminated(false)
+        _offloadingManagerJobTriggerTerminate(false)
 #if defined(TaskSharing)
         ,_lastReceiveReplicaTag(tarch::parallel::Node::getInstance().getNumberOfNodes()*TMPI_GetInterTeamCommSize()),
-        _allocatedJobs(),
-         _jobDatabase()
+        _jobDatabase(),
+        _allocatedJobs()
 #endif
 #endif
 {
@@ -307,6 +308,8 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
 
   #ifdef Parallel
 #if defined(DistributedOffloading)
+  MigratablePredictionJobMetaData::initDatatype();
+  //todo: may need to add support for multiple solvers
   exahype::offloading::OffloadingProgressService::getInstance().setSolver(this);
 #endif
 
@@ -2547,11 +2550,7 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
 
       MigratablePredictionJobData * data = a_jobToData->second.data;
       _jobDatabase.erase(a_jobToData);
-      logInfo("cleanUpStaleTaskOutcomes()",    " center[0] = "<<data->_metadata[0]
-                                             <<" center[1] = "<<data->_metadata[1]
-                                             <<" center[2] = "<<data->_metadata[2]
-                                             <<" time stamp = "<<data->_metadata[2*DIMENSIONS]
-                                             <<" element = "<<(int) data->_metadata[2*DIMENSIONS+2]);
+      logInfo("cleanUpStaleTaskOutcomes()",   data->_metadata.to_string());
       assertion(data!=nullptr);
       delete data;
       AllocatedSTPsReceive--;
@@ -2608,8 +2607,6 @@ void exahype::solvers::ADERDGSolver::finishOutstandingInterTeamCommunication () 
 
 
 void exahype::solvers::ADERDGSolver::sendRequestForJobAndReceive(int jobTag, int rank, double *key) {
-  int teams = exahype::offloading::OffloadingManager::getInstance().getTMPITeamSize();
-  int interCommRank = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank();
   MPI_Comm teamInterComm = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamCommunicatorData();
   MPI_Comm teamInterCommAck = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamCommunicatorAck();
 
@@ -2641,7 +2638,12 @@ void exahype::solvers::ADERDGSolver::sendRequestForJobAndReceive(int jobTag, int
                                                                          MigratablePredictionJob::sendAckHandlerTaskSharing,
                                                                          exahype::offloading::RequestType::sendReplica,
                                                                           this, false);
-    std::memcpy(data->_metadata, key, sizeof(double)*(2*DIMENSIONS+3));
+    for(int i=0; i<DIMENSIONS; i++)
+      data->_metadata._center[i] = key[i];
+    data->_metadata._predictorTimeStamp = key[2*DIMENSIONS];
+    data->_metadata._element = key[2*DIMENSIONS+2];
+
+    //std::memcpy(data->_metadata, key, sizeof(double)*(2*DIMENSIONS+3)); //todo: likely no longer going to work
     MPI_Request receiveReplicaRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME];
     mpiIrecvMigratablePredictionJobOutcome(
                    data->_lduh.data(),
@@ -2673,11 +2675,11 @@ void exahype::solvers::ADERDGSolver::sendKeyOfTaskOutcomeToOtherTeams(Migratable
     int interCommRank = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank();
     MPI_Comm teamInterCommKey = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamCommunicatorKey();
 
-    OffloadEntry entry = {-1,
+    /*OffloadEntry entry = {-1,
                          job->_cellDescriptionsIndex,
                          job->_element,
                          job->_predictorTimeStamp,      
-                         job->_predictorTimeStepSize};
+                         job->_predictorTimeStepSize};*/
 
     auto& cellDescription = getCellDescription(job->_cellDescriptionsIndex, job->_element);
 
@@ -2700,7 +2702,8 @@ void exahype::solvers::ADERDGSolver::sendKeyOfTaskOutcomeToOtherTeams(Migratable
     logDebug("sendKeyOfReplicatedSTPToOtherTeams","allocated STPs send "<<AllocatedSTPsSend );
 
     //double *metadata = new double[2*DIMENSIONS+3];
-    packMetadataToBuffer(entry, data->_metadata);
+    //packMetadataToBuffer(entry, data->_metadata);
+    job->packMetaData(&data->_metadata);
 
     MPI_Request *sendRequests = new MPI_Request[teams-1];
 
@@ -2713,12 +2716,11 @@ void exahype::solvers::ADERDGSolver::sendKeyOfTaskOutcomeToOtherTeams(Migratable
     for(int i=0; i<teams; i++) {
       if(i!=interCommRank) {
           logDebug("sendKeyOfReplicatedSTPToOtherTeams"," team "<< interCommRank
-                                                        <<" send replica job: center[0] = "<<data->_metadata[0]
-                                                        <<" center[1] = "<<data->_metadata[1]
-                                                        <<" center[2] = "<<data->_metadata[2]
+                                                        <<" send replica job: "
+                                                        << data->_metadata.to_string()
                                                         <<" time stamp = "<<job->_predictorTimeStamp
                                                         <<" to team "<<i);
-         MPI_Isend(data->_metadata, 2*DIMENSIONS+3, MPI_DOUBLE, i, tag, teamInterCommKey, &sendRequests[j]);
+         MPI_Isend(&data->_metadata, 1, MigratablePredictionJobMetaData::getMPIDatatype(), i, tag, teamInterCommKey, &sendRequests[j]);
          j++;
       }
     }
@@ -2739,11 +2741,11 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
     int interCommRank = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank();
     MPI_Comm teamInterComm = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamCommunicatorData();
 
-    OffloadEntry entry = {-1,
+/*    OffloadEntry entry = {-1,
                           job->_cellDescriptionsIndex,
                           job->_element,
                           job->_predictorTimeStamp,
-                          job->_predictorTimeStepSize};
+                          job->_predictorTimeStepSize};*/
 
     auto& cellDescription = getCellDescription(job->_cellDescriptionsIndex, job->_element);
 
@@ -2755,8 +2757,8 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
 #if defined(UseSmartMPI)
     logDebug("sendFullReplicatedSTPToOtherTeams","allocated STPs send "<<AllocatedSTPsSend );
 
-    double *metadata = new double[2*DIMENSIONS+3];
-    packMetadataToBuffer(entry, metadata);
+    MigratablePredictionJobMetaData *metadata = new MigratablePredictionJobMetaData();
+    job->packMetaData(metadata);
     
     int tag = exahype::offloading::OffloadingManager::getInstance().getOffloadingTag();
     //_mapTagToReplicationSendData.insert(std::make_pair(tag, data));
@@ -2765,11 +2767,8 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
     for(int i=0; i<teams; i++) {
       if(i!=interCommRank) {
         logDebug("sendReplicatedSTPToOtherTeams"," team "<< interCommRank
-                                                         <<" send replica job: center[0] = "<<metadata[0]
-                                                         <<" center[1] = "<<metadata[1]
-#if DIMENSIONS==3
-                                                         <<" center[2] = "<<metadata[2]
-#endif
+                                                         <<" send replica job: "
+                                                         <<_metadata->to_string()
                                                          <<" time stamp = "<<job->_predictorTimeStamp
                                                          <<" to team "<<i);
         mpiSendMigratablePredictionJobOutcomeOffload(&lduh[0],
@@ -2788,7 +2787,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
     exahype::offloading::JobTableStatistics::getInstance().notifySentTask();
 
 
-    delete [] metadata;
+    delete metadata;
 #else
     //create copy
     MigratablePredictionJobData *data = new MigratablePredictionJobData(*this);
@@ -2805,7 +2804,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
     std::memcpy(&data->_lGradQhbnd[0], lGradQhbnd, data->_lGradQhbnd.size()*sizeof(double));
 #endif
     //double *metadata = new double[2*DIMENSIONS+2];
-    packMetadataToBuffer(entry, data->_metadata);
+    job->packMetaData(&data->_metadata);
 
     MPI_Request *sendRequests = new MPI_Request[(NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME+1)*(teams-1)];
 
@@ -2817,11 +2816,8 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
     for(int i=0; i<teams; i++) {
       if(i!=interCommRank) {
           logDebug("sendReplicatedSTPToOtherTeams"," team "<< interCommRank
-                                                   <<" send replica job: center[0] = "<<data->_metadata[0]
-                                                   <<" center[1] = "<<data->_metadata[1]
-#if DIMENSIONS==3
-                                                   <<" center[2] = "<<data->_metadata[2]
-#endif
+                                                   <<" send replica job: "
+                                                   << data->_metadata.to_string()
                                                    <<" time stamp = "<<job->_predictorTimeStamp
                                                    <<" to team "<<i);
           mpiIsendMigratablePredictionJobOutcome(&(data->_lduh[0]),
@@ -2832,7 +2828,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
                                       tag,
                                       teamInterComm,
                                       &sendRequests[(NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME+1)*j],
-                                      &(data->_metadata[0]));
+                                      &(data->_metadata));
                                       j++;
        }
      }
@@ -2853,7 +2849,6 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
 void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(MigratablePredictionJob* job) {
 
    int myRank = tarch::parallel::Node::getInstance().getRank();
-   int nRanks = tarch::parallel::Node::getInstance().getNumberOfNodes();
    int destRank = myRank;
 
    bool lastSend = false;
@@ -2864,13 +2859,14 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
 
    if(myRank!=destRank) {
     // logInfo("submitOrSendMigratablePredictionJob","element "<<job->_element<<" predictor time stamp"<<job->_predictorTimeStamp<<" predictor time step size "<<job->_predictorTimeStepSize);
-     OffloadEntry entry = {destRank, job->_cellDescriptionsIndex, job->_element, job->_predictorTimeStamp, job->_predictorTimeStepSize};
+     //OffloadEntry entry = {destRank, job->_cellDescriptionsIndex, job->_element, job->_predictorTimeStamp, job->_predictorTimeStepSize};
      //_outstandingOffloads.push( entry );
      auto& cellDescription = getCellDescription(job->_cellDescriptionsIndex, job->_element);
 
      double *luh    = static_cast<double*>(cellDescription.getSolution());
-
+#if !defined(UseSmartMPI)
      MPI_Request sendRequests[NUM_REQUESTS_MIGRATABLE_COMM+1];
+#endif
      int tag = exahype::offloading::OffloadingManager::getInstance().getOffloadingTag();
       //need to create a copy
 #if defined(OffloadingLocalRecompute)
@@ -2883,8 +2879,8 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
      //std::memcpy(&data->_lduh[0], lduh, data->_lduh.size()*sizeof(double));
      //std::memcpy(&data->_lQhbnd[0], lQhbnd, data->_lQhbnd.size()*sizeof(double));
      //std::memcpy(&data->_lFhbnd[0], lFhbnd, data->_lFhbnd.size()*sizeof(double));
-     double *metadata = new double[2*DIMENSIONS+3];
-     packMetadataToBuffer(entry, metadata);
+     MigratablePredictionJobMetaData *metadata = new MigratablePredictionJobMetaData();
+     job->packMetaData(metadata);
 
      //_mapTagToSTPData.insert(std::make_pair(tag, data));
      _mapTagToCellDesc.insert(std::make_pair(tag, &cellDescription));
@@ -2928,14 +2924,14 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
 #endif
 
 #else
-     double *metadata = new double[2*DIMENSIONS+3];
-     packMetadataToBuffer(entry, metadata);
+     MigratablePredictionJobMetaData *metadata = new MigratablePredictionJobMetaData();
+     job->packMetaData(metadata);
      // we need this info when the task comes back...
      _mapTagToMetaData.insert(std::make_pair(tag, metadata));
      _mapTagToCellDesc.insert(std::make_pair(tag, &cellDescription));
      _mapCellDescToTagRank.insert(std::make_pair(&cellDescription, std::make_pair(tag, destRank)));
      _mapTagToOffloadTime.insert(std::make_pair(tag, -MPI_Wtime()));
-     logInfo("submitOrSendMigratablePredictionJob()","send away with tag "<<tag);
+     logInfo("submitOrSendMigratablePredictionJob()","send away with tag "<<tag<<" job "<<metadata->to_string());
      // send away
 #if defined(UseSmartMPI)
      mpiSendMigratablePredictionJobOffload(
@@ -3018,7 +3014,9 @@ void exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressOffloading(i
 }
 
 void exahype::solvers::ADERDGSolver::receiveMigratableJob(int tag, int src, exahype::solvers::ADERDGSolver *solver, int rail) {
+#if !defined(UseSmartMPI)
   MPI_Request receiveRequests[NUM_REQUESTS_MIGRATABLE_COMM+1];
+#endif
   MigratablePredictionJobData *data = new MigratablePredictionJobData(*solver);
   solver->_mapTagRankToStolenData.insert(std::make_pair(std::make_pair(src, tag), data));
 #if defined(UseSmartMPI)
@@ -3028,7 +3026,7 @@ void exahype::solvers::ADERDGSolver::receiveMigratableJob(int tag, int src, exah
        tag,
        exahype::offloading::OffloadingManager::getInstance().getMPICommunicator(),
        rail,
-       &(data->_metadata[0]));
+       &(data->_metadata));
   MigratablePredictionJob::receiveHandler(solver, tag, src);
 #else
   solver->mpiIrecvMigratablePredictionJob(
@@ -3037,7 +3035,7 @@ void exahype::solvers::ADERDGSolver::receiveMigratableJob(int tag, int src, exah
        tag,
        exahype::offloading::OffloadingManager::getInstance().getMPICommunicator(),
        &receiveRequests[0],
-       &(data->_metadata[0]));
+       &(data->_metadata));
    //double wtime = -MPI_Wtime();
   int canComplete = 0;
   int ierr = MPI_Testall(NUM_REQUESTS_MIGRATABLE_COMM+1, &receiveRequests[0], &canComplete, MPI_STATUSES_IGNORE);
@@ -3234,13 +3232,18 @@ void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahyp
          tag,
          interTeamComm,
          rail, 
-         &(data->_metadata[0]));
+         &(data->_metadata));
 
+  data->_metadata.unpackContiguousBuffer();
+
+  //todo: need to fix this
   JobTableKey key; //{&data->_metadata[0], data->_metadata[2*DIMENSIONS], (int) data->_metadata[2*DIMENSIONS+2] };
   for(int i=0; i<DIMENSIONS; i++)
-    key.center[i] = data->_metadata[i];
-  key.timestamp = data->_metadata[2*DIMENSIONS];
-  key.element = data->_metadata[2*DIMENSIONS+2];
+    key.center[i] = data->_metadata.getCenter()[i];
+  key.timestamp = data->_metadata.getPredictorTimeStamp();
+  key.element = data->_metadata.getElement();
+
+  logInfo("receiveTaskOutcome", "receive task outcome "<< data->_metadata.to_string());
 
   if(key.timestamp<solver->getMinTimeStamp()) {
     exahype::offloading::JobTableStatistics::getInstance().notifyLateTask();
@@ -3273,7 +3276,7 @@ void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahyp
          tag,
          interTeamComm,
          &receiveReplicaRequests[0],
-         &(data->_metadata[0]));
+         &(data->_metadata));
   solver->_mapTagRankToReplicaData.insert(std::make_pair(std::make_pair(src, tag), data));
   exahype::offloading::OffloadingManager::getInstance().submitRequests(
          receiveReplicaRequests,
@@ -3344,6 +3347,7 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
 #if defined(UseSmartMPI)
   MPI_Status_Offload statRepDataOffload;
   MPI_Iprobe_offload(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamComm, &receivedReplicaTask, &statRepDataOffload);
+  logDebug("progressOffloading", "Iprobe for replica task "<<receivedReplicaTask<<" statRepDataOffload.MPI_TAG="<<statRepDataOffload.MPI_TAG<<" statRepDataOffload.size = "<<statRepDataOffload.size);
 #else
   MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamComm, &receivedReplicaTask, &statRepData);
 #endif
@@ -3421,12 +3425,12 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
       exahype::offloading::OffloadingManager::getInstance().triggerVictimFlag();
       int msgLen = -1;
 #if defined(UseSmartMPI)
-      MPI_Get_count_offload(&stat, MPI_DOUBLE, &msgLen);
+      MPI_Get_count_offload(&stat, MigratablePredictionJobMetaData::getMPIDatatype(), &msgLen);
 #else
-      MPI_Get_count(&stat, MPI_DOUBLE, &msgLen);
+      MPI_Get_count(&stat, MigratablePredictionJobMetaData::getMPIDatatype(), &msgLen);
 #endif
       // is this message metadata? -> if true, we are about to receive a new STP task
-      if(msgLen==2*DIMENSIONS+3 && !(lastRecvTag==stat.MPI_TAG && lastRecvSrc==stat.MPI_SOURCE)) {
+      if(msgLen==MigratablePredictionJobMetaData::getMessageLen() && !(lastRecvTag==stat.MPI_TAG && lastRecvSrc==stat.MPI_SOURCE)) {
         lastRecvTag = stat.MPI_TAG;
         lastRecvSrc = stat.MPI_SOURCE;
       
@@ -3451,17 +3455,17 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
     if(receivedReplicaTask) {
       int msgLenDouble = -1;
 #if defined UseSmartMPI
-      MPI_Get_count_offload(&statRepDataOffload, MPI_DOUBLE, &msgLenDouble);
-      if(msgLenDouble==2*DIMENSIONS+3) {
-        assertion(solver->_lastReceiveReplicaTag[statRepDataOffload.MPI_SOURCE]!=statRepDataOffload.MPI_TAG);
-        solver->_lastReceiveReplicaTag[statRepDataOffload.MPI_SOURCE] = statRepDataOffload.MPI_TAG;
+      MPI_Get_count_offload(&statRepDataOffload, MigratablePredictionJobMetaData::getMPIDatatype(), &msgLenDouble);
+      if(msgLenDouble==MigratablePredictionJobMetaData::getMessageLen()) {
         logDebug("progressOffloading","received replica task from "<<statRepDataOffload.MPI_SOURCE<<" , tag "<<statRepDataOffload.MPI_TAG);
+        assert(solver->_lastReceiveReplicaTag[statRepDataOffload.MPI_SOURCE]!=statRepDataOffload.MPI_TAG);
+        solver->_lastReceiveReplicaTag[statRepDataOffload.MPI_SOURCE] = statRepDataOffload.MPI_TAG;
         receiveTaskOutcome(statRepDataOffload.MPI_TAG, statRepDataOffload.MPI_SOURCE, solver, statRepDataOffload.rail);
       }
 #else
-      MPI_Get_count(&statRepData, MPI_DOUBLE, &msgLenDouble);
+      MPI_Get_count(&statRepData, MigratablePredictionJobMetaData::getMPIDatatype(), &msgLenDouble);
       // is this message metadata? -> if true, we are about to receive a new STP task
-      if(msgLenDouble==2*DIMENSIONS+3) {
+      if(msgLenDouble== MigratablePredictionJobMetaData::getMessageLen()) {
         assertion(solver->_lastReceiveReplicaTag[statRepData.MPI_SOURCE]!=statRepData.MPI_TAG);
         solver->_lastReceiveReplicaTag[statRepData.MPI_SOURCE] = statRepData.MPI_TAG;
         logDebug("progressOffloading","received replica task from "<<statRepData.MPI_SOURCE<<" , tag "<<statRepData.MPI_TAG);
@@ -3471,8 +3475,8 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
     }
 #endif /*UseSmartMPI */
 #if defined(UseSmartMPI)
-    MPI_Status_Offload statRepDataOffload;
     ierr = MPI_Iprobe_offload(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamComm, &receivedReplicaTask, &statRepDataOffload);
+    logDebug("progressOffloading", "Iprobe for replica task "<<receivedReplicaTask<<" statRepDataOffload.MPI_TAG="<<statRepDataOffload.MPI_TAG<<" statRepDataOffload.size = "<<statRepDataOffload.size);
 #else
     ierr = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamComm, &receivedReplicaTask, &statRepData);
 #endif
@@ -3686,7 +3690,6 @@ bool exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(exahype::solvers::ADER
       double *lFhbnd = static_cast<double*>(cellDescription->getFluctuation());
       double *lGradQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictorGradient());
 
-  
       assertion(statMapped.MPI_TAG!=solver->_lastReceiveBackTag[statMapped.MPI_SOURCE]);
       solver->_lastReceiveBackTag[statMapped.MPI_SOURCE] = statMapped.MPI_TAG;
 
@@ -3790,12 +3793,12 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::run( bool isCalledOnMaster ) {
       exahype::offloading::OffloadingManager::getInstance().triggerVictimFlag();
       int msgLen = -1;
 #if defined(UseSmartMPI)
-      MPI_Get_count_offload(&stat, MPI_DOUBLE, &msgLen);
+      MPI_Get_count_offload(&stat, MigratablePredictionJobMetaData::getMPIDatatype(), &msgLen);
 #else
-      MPI_Get_count(&stat, MPI_DOUBLE, &msgLen);
+      MPI_Get_count(&stat, MigratablePredictionJobMetaData::getMPIDatatype(), &msgLen);
 #endif
       // is this message metadata? -> if true, we are about to receive a new STP task
-      if(msgLen==2*DIMENSIONS+3 && !(lastRecvTag==stat.MPI_TAG && lastRecvSrc==stat.MPI_SOURCE)) {
+      if(msgLen==MigratablePredictionJobMetaData::getMessageLen() && !(lastRecvTag==stat.MPI_TAG && lastRecvSrc==stat.MPI_SOURCE)) {
         lastRecvTag=stat.MPI_TAG;
         lastRecvSrc=stat.MPI_SOURCE;
 
@@ -4153,7 +4156,7 @@ void exahype::solvers::ADERDGSolver::getResponsibleRankTagForCellDescription(con
 //
 //exahype::solvers::ADERDGSolver::MigratablePredictionJobData::~MigratablePredictionJobData() {};
 
-void exahype::solvers::ADERDGSolver::packMetadataToBuffer(
+/*void exahype::solvers::ADERDGSolver::packMetadataToBuffer(
   OffloadEntry& entry,
   double *buf) const {
 
@@ -4180,9 +4183,9 @@ void exahype::solvers::ADERDGSolver::packMetadataToBuffer(
   double element  = entry.element; //store as double for compatibility reasons
   memcpy(buf+offset, &element, sizeof(double));
   offset+=1;
-
+*/
   //logInfo("packMetadata","center "<<center_src[0]<<" dx "<<dx_src[0]<<" predictorTmeStamp "<< entry.predictorTimeStamp << " predictorTimeStepSize "<< entry.predictorTimeStepSize);
-}
+//}
 
 exahype::solvers::ADERDGSolver::MigratablePredictionJob* exahype::solvers::ADERDGSolver::createFromData(
   MigratablePredictionJobData *data,
@@ -4191,15 +4194,15 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob* exahype::solvers::ADERD
   return new MigratablePredictionJob(*this,
       -1,
       -1,
-      data->_metadata[2*DIMENSIONS],
-      data->_metadata[2*DIMENSIONS+1],
+      data->_metadata._predictorTimeStamp,
+      data->_metadata._predictorTimeStepSize,
       data->_luh.data(),
       data->_lduh.data(),
       data->_lQhbnd.data(),
       data->_lFhbnd.data(),
       data->_lGradQhbnd.data(),
-      &(data->_metadata[DIMENSIONS]),
-      &(data->_metadata[0]),
+      &(data->_metadata._dx[0]),
+      &(data->_metadata._center[0]),
       origin,
       tag);
 }
@@ -4214,7 +4217,7 @@ void exahype::solvers::ADERDGSolver::mpiIsendMigratablePredictionJob(
   int tag,
   MPI_Comm comm,
   MPI_Request *requests,
-  double *metadata) {
+  MigratablePredictionJobMetaData *metadata) {
 
 #if defined(OffloadingCheckForSlowOperations)
   double timing = - MPI_Wtime();
@@ -4225,7 +4228,7 @@ void exahype::solvers::ADERDGSolver::mpiIsendMigratablePredictionJob(
   //MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
 
   if(metadata != nullptr) {
-    ierr = MPI_Isend(metadata, 2*DIMENSIONS+3, MPI_DOUBLE, dest, tag, comm, &requests[i++]);
+    ierr = MPI_Isend(metadata, MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), dest, tag, comm, &requests[i++]);
     assertion(ierr==MPI_SUCCESS);
     assertion(requests[i-1]!=MPI_REQUEST_NULL);
   }
@@ -4242,7 +4245,7 @@ void exahype::solvers::ADERDGSolver::mpiIsendMigratablePredictionJob(
     logError("mpiIsendMigratablePredictionJobOutcome()", " took "<<timing<<"s");
 #endif
 
-};
+}
 
 
 void exahype::solvers::ADERDGSolver::mpiIsendMigratablePredictionJobOutcome(
@@ -4254,7 +4257,7 @@ void exahype::solvers::ADERDGSolver::mpiIsendMigratablePredictionJobOutcome(
   int tag,
   MPI_Comm comm,
   MPI_Request *requests,
-  double *metadata) {
+  MigratablePredictionJobMetaData *metadata) {
 
 #if defined(OffloadingCheckForSlowOperations)
   double timing = - MPI_Wtime();
@@ -4265,7 +4268,7 @@ void exahype::solvers::ADERDGSolver::mpiIsendMigratablePredictionJobOutcome(
   //MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
 
   if(metadata != nullptr) {
-    ierr = MPI_Isend(metadata, 2*DIMENSIONS+3, MPI_DOUBLE, dest, tag, comm, &requests[i++]);
+    ierr = MPI_Isend(metadata, MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), dest, tag, comm, &requests[i++]);
     assertion(ierr==MPI_SUCCESS);
     assertion(requests[i-1]!=MPI_REQUEST_NULL);
   }
@@ -4287,7 +4290,7 @@ void exahype::solvers::ADERDGSolver::mpiIsendMigratablePredictionJobOutcome(
 
 #if defined(OffloadingGradQhbnd)
   assertion(lGradQhbnd!=NULL);
-  ierr = MPI_Isend(lGradQhbnd, getBndGradQSize(), MPI_DOUBLE, dest, tag, comm, &requests[i++]);
+  ierr = MPI_Isend(lGradQhbnd, getBndGradQTotalSize(), MPI_DOUBLE, dest, tag, comm, &requests[i++]);
   assertion(ierr==MPI_SUCCESS);
   assertion(requests[i-1]!=MPI_REQUEST_NULL);
 #endif
@@ -4297,7 +4300,7 @@ void exahype::solvers::ADERDGSolver::mpiIsendMigratablePredictionJobOutcome(
   if(timing > OFFLOADING_SLOW_OPERATION_THRESHOLD)
     logError("mpiIsendMigratablePredictionJobOutcome()", " took "<<timing<<"s");
 #endif
-};
+}
 
 void exahype::solvers::ADERDGSolver::mpiIrecvMigratablePredictionJob(
     double *luh,
@@ -4305,7 +4308,7 @@ void exahype::solvers::ADERDGSolver::mpiIrecvMigratablePredictionJob(
     int tag,
     MPI_Comm comm,
     MPI_Request *requests,
-    double *metadata ) {
+    MigratablePredictionJobMetaData *metadata ) {
   int ierr;
   //MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
   int i = 0;
@@ -4316,7 +4319,7 @@ void exahype::solvers::ADERDGSolver::mpiIrecvMigratablePredictionJob(
   //logInfo("mpiIrecvMigratablePredictionJob", "receiving job "<<tag<<" from srcRank "<<srcRank);
 
   if(metadata != nullptr) {
-    ierr = MPI_Irecv(metadata, 2*DIMENSIONS+3, MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
+    ierr = MPI_Irecv(metadata, MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), srcRank, tag, comm, &requests[i++]);
     assertion(ierr==MPI_SUCCESS);
     assertion(requests[i-1]!=MPI_REQUEST_NULL);
   }
@@ -4331,18 +4334,18 @@ void exahype::solvers::ADERDGSolver::mpiIrecvMigratablePredictionJob(
   if(timing > OFFLOADING_SLOW_OPERATION_THRESHOLD)
     logError("mpiIrecvMigratablePredictionJob()", " took "<<timing<<"s");
 #endif
-};
+}
 
 void exahype::solvers::ADERDGSolver::mpiIrecvMigratablePredictionJobOutcome(
     double *lduh,
     double *lQhbnd,
     double *lFhbnd,
-	double *lGradQhbnd,
+	  double *lGradQhbnd,
     int srcRank,
     int tag,
     MPI_Comm comm,
     MPI_Request *requests,
-    double *metadata ) {
+    MigratablePredictionJobMetaData *metadata ) {
   int ierr;
   //MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
   int i = 0;
@@ -4353,7 +4356,7 @@ void exahype::solvers::ADERDGSolver::mpiIrecvMigratablePredictionJobOutcome(
   //logInfo("mpiIrecvMigratablePredictionJob", "receiving job "<<tag<<" from srcRank "<<srcRank);
 
   if(metadata != nullptr) {
-    ierr = MPI_Irecv(metadata, 2*DIMENSIONS+3, MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
+    ierr = MPI_Irecv(metadata, MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), srcRank, tag, comm, &requests[i++]);
     assertion(ierr==MPI_SUCCESS);
     assertion(requests[i-1]!=MPI_REQUEST_NULL);
   }
@@ -4375,7 +4378,7 @@ void exahype::solvers::ADERDGSolver::mpiIrecvMigratablePredictionJobOutcome(
 
 #if defined(OffloadingGradQhbnd)
   assertion(lGradQhbnd!=NULL);
-  ierr = MPI_Irecv(lGradQhbnd, getBndGradQSize(), MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
+  ierr = MPI_Irecv(lGradQhbnd, getBndGradQTotalSize(), MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
   assertion(ierr==MPI_SUCCESS);
   assertion(requests[i-1]!=MPI_REQUEST_NULL);
 #endif
@@ -4385,7 +4388,7 @@ void exahype::solvers::ADERDGSolver::mpiIrecvMigratablePredictionJobOutcome(
   if(timing > OFFLOADING_SLOW_OPERATION_THRESHOLD)
     logError("mpiIrecvMigratablePredictionJobOutcome()", " took "<<timing<<"s");
 #endif
-};
+}
 
 void exahype::solvers::ADERDGSolver::mpiRecvMigratablePredictionJobOutcome(
   double *lduh,
@@ -4395,7 +4398,7 @@ void exahype::solvers::ADERDGSolver::mpiRecvMigratablePredictionJobOutcome(
   int srcRank,
   int tag,
   MPI_Comm comm,
-  double *metadata ) {
+  MigratablePredictionJobMetaData *metadata ) {
   int ierr;
   //MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
 #if defined(OffloadingCheckForSlowOperations)
@@ -4403,7 +4406,7 @@ void exahype::solvers::ADERDGSolver::mpiRecvMigratablePredictionJobOutcome(
 #endif
 
   if(metadata != nullptr) {
-    ierr = MPI_Recv(metadata, 2*DIMENSIONS+3, MPI_DOUBLE, srcRank, tag, comm, MPI_STATUS_IGNORE);
+    ierr = MPI_Recv(metadata->getContiguousBuffer(),  MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), srcRank, tag, comm, MPI_STATUS_IGNORE);
     assertion(ierr==MPI_SUCCESS);
   }
 
@@ -4421,7 +4424,7 @@ void exahype::solvers::ADERDGSolver::mpiRecvMigratablePredictionJobOutcome(
 
 #if defined(OffloadingGradQhbnd)
   assertion(lGradQhbnd!=NULL);
-  ierr = MPI_Recv(lGradQhbnd, getBndGradQSize(), MPI_DOUBLE, srcRank, tag, comm, MPI_STATUS_IGNORE);
+  ierr = MPI_Recv(lGradQhbnd, getBndGradQTotalSize(), MPI_DOUBLE, srcRank, tag, comm, MPI_STATUS_IGNORE);
   assertion(ierr==MPI_SUCCESS);
 #endif
 
@@ -4431,7 +4434,7 @@ void exahype::solvers::ADERDGSolver::mpiRecvMigratablePredictionJobOutcome(
     logError("mpiRecvMigratablePredictionJobOutcome()", " took "<<timing<<"s");
 #endif
 
-};
+}
 
 #if defined(UseSmartMPI)
 void exahype::solvers::ADERDGSolver::mpiRecvMigratablePredictionJobOffload(
@@ -4440,18 +4443,17 @@ void exahype::solvers::ADERDGSolver::mpiRecvMigratablePredictionJobOffload(
     int tag,
     MPI_Comm comm,
     int rail,
-    double *metadata ) {
+    MigratablePredictionJobMetaData *metadata ) {
   int ierr;
-  //MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
-  int i = 0;
   MPI_Status_Offload stat;
 
 #if defined(OffloadingCheckForSlowOperations)
   double timing = - MPI_Wtime();
 #endif
 
+  //todo: won't work as SmartMPI doesn't support derived datatypes
   if(metadata != nullptr) {
-    ierr = MPI_Recv_offload(metadata, 2*DIMENSIONS+3, MPI_DOUBLE, srcRank, tag, comm, &stat, rail);
+    ierr = MPI_Recv_offload(metadata->getContiguousBuffer(), MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), srcRank, tag, comm, &stat, rail);
     assertion(ierr==MPI_SUCCESS);
   }
 
@@ -4464,16 +4466,15 @@ void exahype::solvers::ADERDGSolver::mpiRecvMigratablePredictionJobOffload(
   if(timing > OFFLOADING_SLOW_OPERATION_THRESHOLD)
     logError("mpiRecvMigratablePredictionJobOutcomeOffload()", " took "<<timing<<"s");
 #endif
-};
+}
 
 void exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOffload(
   double *luh,
   int dest,
   int tag,
   MPI_Comm comm,
-  double *metadata) {
+  MigratablePredictionJobMetaData *metadata) {
 
-  int i = 0;
   int ierr;
   //MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
   //int tid = tarch::multicore::Core::getInstance().getThreadNum();
@@ -4486,7 +4487,7 @@ void exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOffload(
 
   if(metadata != nullptr) {
     //ierr = MPI_Send_offload(metadata, 2*DIMENSIONS+3, MPI_DOUBLE, dest, tag, comm, tid);
-    ierr = MPI_Send_offload(metadata, 2*DIMENSIONS+3, MPI_DOUBLE, dest, tag, comm, rail);
+    ierr = MPI_Send_offload(metadata->getContiguousBuffer(), MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), dest, tag, comm, rail);
     assertion(ierr==MPI_SUCCESS);
   }
 
@@ -4500,7 +4501,7 @@ void exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOffload(
   if(timing > OFFLOADING_SLOW_OPERATION_THRESHOLD)
     logError("mpiSendMigratablePredictionJobOutcomeOffload()", " took "<<timing<<"s");
 #endif
-};
+}
 
 
 void exahype::solvers::ADERDGSolver::mpiRecvMigratablePredictionJobOutcomeOffload(
@@ -4512,10 +4513,9 @@ void exahype::solvers::ADERDGSolver::mpiRecvMigratablePredictionJobOutcomeOffloa
     int tag,
     MPI_Comm comm,
     int rail,
-    double *metadata ) {
+    MigratablePredictionJobMetaData *metadata ) {
   int ierr;
   //MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
-  int i = 0;
   MPI_Status_Offload stat;
 
 #if defined(OffloadingCheckForSlowOperations)
@@ -4523,7 +4523,7 @@ void exahype::solvers::ADERDGSolver::mpiRecvMigratablePredictionJobOutcomeOffloa
 #endif
 
   if(metadata != nullptr) {
-    ierr = MPI_Recv_offload(metadata, 2*DIMENSIONS+3, MPI_DOUBLE, srcRank, tag, comm, &stat, rail);
+    ierr = MPI_Recv_offload(metadata->getContiguousBuffer(),  MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), srcRank, tag, comm, &stat, rail);
     assertion(ierr==MPI_SUCCESS);
   }
 
@@ -4541,7 +4541,7 @@ void exahype::solvers::ADERDGSolver::mpiRecvMigratablePredictionJobOutcomeOffloa
 
 #if defined(OffloadingGradQhbnd)
   assertion(lGradQhbnd!=NULL);
-  ierr = MPI_Recv_offload(lGradQhbnd, getBndGradQSize(), MPI_DOUBLE, srcRank, tag, comm, &stat, rail);
+  ierr = MPI_Recv_offload(lGradQhbnd, getBndGradQTotalSize(), MPI_DOUBLE, srcRank, tag, comm, &stat, rail);
   assertion(ierr==MPI_SUCCESS);
 #endif
   
@@ -4550,7 +4550,7 @@ void exahype::solvers::ADERDGSolver::mpiRecvMigratablePredictionJobOutcomeOffloa
   if(timing > OFFLOADING_SLOW_OPERATION_THRESHOLD)
     logError("mpiRecvMigratablePredictionJobOutcomeOffload()", " took "<<timing<<"s");
 #endif
-};
+}
 
 void exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOutcomeOffload(
   double *lduh,
@@ -4560,9 +4560,8 @@ void exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOutcomeOffloa
   int dest,
   int tag,
   MPI_Comm comm,
-  double *metadata) {
+  MigratablePredictionJobMetaData *metadata) {
 
-  int i = 0;
   int ierr;
   //MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
   //int tid = tarch::multicore::Core::getInstance().getThreadNum();
@@ -4575,7 +4574,7 @@ void exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOutcomeOffloa
 
   if(metadata != nullptr) {
     //ierr = MPI_Send_offload(metadata, 2*DIMENSIONS+3, MPI_DOUBLE, dest, tag, comm, tid);
-    ierr = MPI_Send_offload(metadata, 2*DIMENSIONS+3, MPI_DOUBLE, dest, tag, comm, rail);
+    ierr = MPI_Send_offload(metadata->getContiguousBuffer(), MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), dest, tag, comm, rail);
     assertion(ierr==MPI_SUCCESS);
   }
 
@@ -4596,7 +4595,7 @@ void exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOutcomeOffloa
 
 #if defined(OffloadingGradQhbnd)
   assertion(lGradQhbnd!=NULL);
-  ierr = MPI_Send_offload(lGradQhbnd, getBndGradQSize(), MPI_DOUBLE, dest, tag, comm, rail);
+  ierr = MPI_Send_offload(lGradQhbnd, getBndGradQTotalSize(), MPI_DOUBLE, dest, tag, comm, rail);
   assertion(ierr==MPI_SUCCESS);
 #endif
 
@@ -4605,7 +4604,7 @@ void exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOutcomeOffloa
   if(timing > OFFLOADING_SLOW_OPERATION_THRESHOLD)
     logError("mpiSendMigratablePredictionJobOutcomeOffload()", " took "<<timing<<"s");
 #endif
-};
+}
 #endif
 
 #endif

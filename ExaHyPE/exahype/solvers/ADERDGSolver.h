@@ -35,6 +35,7 @@
 #include "exahype/records/ADERDGCellDescription.h"
 
 #if defined(DistributedOffloading)
+#include <mpi.h>
 
 #define OFFLOADING_SLOW_OPERATION_THRESHOLD 0.001
 
@@ -964,14 +965,14 @@ private:
 
     int prio = getTaskPriority(false)+(LocalStealableSTPCounter+team)%teamSize;
 
-    logDebug("getTaskPriorityLocalStealableJob()", "team = "<<team
+/*    logDebug("getTaskPriorityLocalStealableJob()", "team = "<<team
                                                  <<" center[0] = "<< center[0]
                                                  <<" center[1] = "<< center[1]
-#if DIMENSIONS==3
+#if DIMENSIONS==3 
                                                  <<" center[2] = "<< center[2]
 #endif
 						 <<" time stamp = "<<timeStamp
-                                                 <<" prio = "<<prio);
+                                                 <<" prio = "<<prio);*/
 
     return prio;
 #else
@@ -1043,6 +1044,43 @@ private:
     private:
         ADERDGSolver& _solver;
   };
+
+
+  /**
+   * stores metadata for an offloaded task or a task outcome
+   */
+  class MigratablePredictionJobMetaData {
+    public: //todo: should be private but there are some issues with MigratableJob not being able to access private data as a friend
+      double _center[DIMENSIONS];
+      double _dx[DIMENSIONS];
+      double _predictorTimeStamp;
+      double _predictorTimeStepSize;
+      int    _element;
+      unsigned char   _isPotSoftErrorTriggered;
+      char *_contiguousBuffer;
+
+      MigratablePredictionJobMetaData();
+      ~MigratablePredictionJobMetaData();
+
+      std::string to_string() const;
+      const double * getCenter() const;
+      const double * getDx() const;
+      double getPredictorTimeStamp() const;
+      double getPredictorTimeStepSize() const;
+      int getElement() const;
+      bool getIsPotSoftErrorTriggered() const;
+      char* getContiguousBuffer() const;
+      void unpackContiguousBuffer();
+
+      static MPI_Datatype  getMPIDatatype();
+      static size_t getMessageLen();
+      static void initDatatype();
+      static void shutdownDatatype();
+
+    private:
+      static MPI_Datatype _datatype;
+
+  };
  
   /**
    * This class encapsulates all the data that a victim rank
@@ -1064,12 +1102,7 @@ private:
       std::vector<double> _lGradQhbnd;
 #endif
 
-    // stores metadata for a stolen/offloaded task
-    // 1. center
-    // 2. dx
-    // 3. predictorTimeStamp
-    // 4. predictorTimeStepSize
-    double  _metadata[2*DIMENSIONS+3];
+    MigratablePredictionJobMetaData  _metadata;
 
     MigratablePredictionJobData(ADERDGSolver& solver);
     ~MigratablePredictionJobData();
@@ -1092,7 +1125,7 @@ private:
   tbb::concurrent_hash_map<int, CellDescription*> _mapTagToCellDesc;
   tbb::concurrent_hash_map<const CellDescription*, std::pair<int,int>> _mapCellDescToTagRank;
   tbb::concurrent_hash_map<const CellDescription*, tarch::multicore::jobs::Job*> _mapCellDescToRecompJob;
-  tbb::concurrent_hash_map<int, double*> _mapTagToMetaData;
+  tbb::concurrent_hash_map<int, MigratablePredictionJobMetaData*> _mapTagToMetaData;
   tbb::concurrent_hash_map<int, MigratablePredictionJobData*> _mapTagToSTPData;
   // Used in order to time offloaded tasks.
   tbb::concurrent_hash_map<int, double> _mapTagToOffloadTime;
@@ -1102,14 +1135,21 @@ private:
    * receives that may be induced by MPI_Iprobe.
    */
   std::vector<int> _lastReceiveTag;
-#if defined(TaskSharing)
-  std::vector<int> _lastReceiveReplicaTag;
-#endif
 
   /**
    * See doc on _lastReceiveTag
    */
   std::vector<int> _lastReceiveBackTag;
+
+  // offloading manager job associated to the solver
+  OffloadingManagerJob *_offloadingManagerJob;
+  std::atomic<bool> _offloadingManagerJobTerminated;
+  std::atomic<bool> _offloadingManagerJobStarted;
+  std::atomic<bool> _offloadingManagerJobTriggerTerminate;
+
+  // limit the maximum number of iprobes in progressOffloading()
+  // Todo(Philipp): probably outdated
+  static std::atomic<int> MaxIprobesInOffloadingProgress;
 
   /**
    * A MigratablePredictionJob represents a PredictionJob that can be
@@ -1119,9 +1159,9 @@ private:
   class MigratablePredictionJob : public tarch::multicore::jobs::Job {
     friend class exahype::solvers::ADERDGSolver;
     private:
-      ADERDGSolver&    				     _solver;
-	  const int                     _cellDescriptionsIndex;
-	  const int                     _element;
+      ADERDGSolver&    			      _solver;
+	    const int                   _cellDescriptionsIndex;
+	    const int                   _element;
       const double                _predictorTimeStamp;
       const double                _predictorTimeStepSize;
       const int                   _originRank;
@@ -1134,12 +1174,18 @@ private:
       double                      _center[DIMENSIONS];
       double                      _dx[DIMENSIONS];
       bool 							          _isLocalReplica;
+      unsigned char                _isPotSoftErrorTriggered;
 
       static std::atomic<int> JobCounter;
 
       // actual execution of a STP job
       bool handleExecution(bool isCalledOnMaster, bool& hasComputed);
       bool handleLocalExecution(bool isCalledOnMaster, bool& hasComputed);
+
+      void packMetaData(MigratablePredictionJobMetaData *buffer);
+      //static size_t getSizeOfMetaData();
+
+      void checkAdmissibilityAndSetTrigger();
 
     public:
       // constructor for local jobs that can be stolen
@@ -1159,9 +1205,9 @@ private:
 		    const double predictorTimeStepSize,
 		    double *luh, double *lduh,
 		    double *lQhbnd, double *lFhbnd,
-			double *lGradQhbnd,
+			  double *lGradQhbnd,
 		    double *dx, double *center,
-            const int originRank,
+        const int originRank,
 		    const int tag
       );
   
@@ -1275,6 +1321,9 @@ private:
 	  MigratablePredictionJobData *data;
 	  JobOutcomeStatus status;
   };
+
+  std::vector<int> _lastReceiveReplicaTag;
+
   tbb::concurrent_hash_map<JobTableKey, JobTableEntry> _jobDatabase;
   tbb::concurrent_queue<JobTableKey> _allocatedJobs;
 #endif
@@ -1285,20 +1334,22 @@ private:
    * the tasks in the concurrent TBB queue.
    * Todo (Philipp): outdated, no longer necessary
    */
-  struct OffloadEntry {
+ /* struct OffloadEntry {
     int destRank;
-	int cellDescriptionsIndex;
-	int element;
+  	int cellDescriptionsIndex;
+	  int element;
     double predictorTimeStamp;
-	double predictorTimeStepSize;
-  };
+	  double predictorTimeStepSize;
+  };*/
 
   /*
    * Packs metadata into a contiguous buffer.
    */
-  void packMetadataToBuffer(
-      OffloadEntry& entry,
-	  double *buf) const;
+  //void packMetadataToBuffer(
+  //    OffloadEntry& entry,
+	//  double *buf) const;
+
+
   /*
    * Creates a MigratablePredictionJob from MigratablePredictionJobData.
    */
@@ -1319,7 +1370,7 @@ private:
       int dest,
       int tag,
       MPI_Comm comm,
-      double *metadata =nullptr);
+      MigratablePredictionJobMetaData *metadata =nullptr);
 
   /*
    * Sends away a MigratablePredictionJob to a destination rank.
@@ -1330,7 +1381,7 @@ private:
 	  int tag,
 	  MPI_Comm comm,
 	  MPI_Request *requests,
-	  double *metadata =nullptr);
+	  MigratablePredictionJobMetaData *metadata =nullptr);
 
   /*
    * Sends away a MigratablePredictionJob to a destination rank
@@ -1341,7 +1392,7 @@ private:
 	  int dest,
 	  int tag,
 	  MPI_Comm comm,
-	  double *metadata =nullptr);
+	  MigratablePredictionJobMetaData *metadata =nullptr);
 
   /*
    * Sends away task outcome of a MigratablePredictionJob to a destination rank.
@@ -1355,7 +1406,7 @@ private:
 	  int tag,
 	  MPI_Comm comm,
 	  MPI_Request *requests,
-	  double *metadata =nullptr);
+	  MigratablePredictionJobMetaData *metadata =nullptr);
 
   /*
    * Receives a MigratablePredictionJob from a destination rank
@@ -1367,7 +1418,7 @@ private:
 	  int tag,
 	  MPI_Comm comm,
     int rail,
-	  double *metadata =nullptr);
+    MigratablePredictionJobMetaData *metadata =nullptr);
 
   /*
    * Receives a MigratablePredictionJob from a destination rank.
@@ -1377,8 +1428,8 @@ private:
       int srcRank,
 	  int tag,
 	  MPI_Comm comm,
-      MPI_Request *requests,
-	  double *metadata =nullptr);
+    MPI_Request *requests,
+    MigratablePredictionJobMetaData *metadata =nullptr);
 
   /*
    * Receives task outcome of a MigratablePredictionJob from a destination rank.
@@ -1391,8 +1442,8 @@ private:
       int srcRank,
 	  int tag,
 	  MPI_Comm comm,
-      MPI_Request *requests,
-	  double *metadata =nullptr);
+    MPI_Request *requests,
+    MigratablePredictionJobMetaData *metadata =nullptr);
 
   /*
    * Receives task outcome of a MigratablePredictionJob from a destination rank.
@@ -1405,7 +1456,7 @@ private:
       int srcRank,
       int tag,
       MPI_Comm comm,
-      double *metadata =nullptr);
+      MigratablePredictionJobMetaData *metadata =nullptr);
 
   /*
    * Receives task outcome of a MigratablePredictionJob from a destination rank using
@@ -1420,7 +1471,7 @@ private:
       int tag,
       MPI_Comm comm,
       int rail,
-      double *metadata =nullptr);
+      MigratablePredictionJobMetaData *metadata =nullptr);
 
   /* If a MigratablePredictionJob has been spawned by the master thread,
    * it can either be submitted to Peano's job system or sent away
@@ -1428,15 +1479,6 @@ private:
    */
   void submitOrSendMigratablePredictionJob(MigratablePredictionJob *job);
 
-  // offloading manager job associated to the solver
-  OffloadingManagerJob *_offloadingManagerJob;
-  std::atomic<bool> _offloadingManagerJobTerminated;
-  std::atomic<bool> _offloadingManagerJobStarted;
-  std::atomic<bool> _offloadingManagerJobTriggerTerminate;
-
-  // limit the maximum number of iprobes in progressOffloading()
-  // Todo(Philipp): probably outdated
-  static std::atomic<int> MaxIprobesInOffloadingProgress;
 #endif
 
 #endif
@@ -3388,7 +3430,9 @@ public:
    const CellDescription& cellDescription = *((const CellDescription*) cellDescripPtr);
    //bool hasProcessed = false;
    bool hasTriggeredEmergency = false;
+#if defined(OffloadingLocalRecompute)
    bool hasRecomputed = false;
+#endif
 
  #if !defined(OffloadingUseProgressThread)
      //pauseOffloadingManager();
@@ -3398,8 +3442,6 @@ public:
    int myRank = tarch::parallel::Node::getInstance().getRank();
    int responsibleRank = myRank;
    responsibleRank = getResponsibleRankForCellDescription((const void*) &cellDescription);
-   bool progress = false;
-   double startTime = MPI_Wtime();
 
    if ( !cellDescription.getHasCompletedLastStep() ) {
       peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
@@ -3416,8 +3458,6 @@ public:
         tryToReceiveTaskBack(this);
         //solver->spawnReceiveBackJob();
       }
- #elif defined(OffloadingUseProgressThread)
-      progress = false;
  #endif
       #ifdef Parallel
       {
@@ -3484,7 +3524,6 @@ public:
  #if !defined(OffloadingUseProgressThread)
         if( !cellDescription.getHasCompletedLastStep()
           && !hasTriggeredEmergency
-          && !progress
           && myRank!=responsibleRank
           && ( exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs
               -exahype::solvers::ADERDGSolver::NumberOfRemoteJobs)==0

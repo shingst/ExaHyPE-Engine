@@ -1169,7 +1169,6 @@ public:
 
   #if defined(DistributedOffloading)
     if ( this->getType() == solvers::Solver::Type::ADERDG ) {
-      assert(&cellDescription!=nullptr);
       waitUntilCompletedLastStepOffloading((const void*) &cellDescription, waitForHighPriorityJob, receiveDanglingMessages);
     }
     else

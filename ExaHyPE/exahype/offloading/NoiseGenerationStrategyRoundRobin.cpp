@@ -19,6 +19,7 @@
 #include <cstdlib>
 #include <string>
 
+#if defined(Parallel)
 namespace exahype {
 namespace offloading {
 
@@ -64,3 +65,5 @@ void NoiseGenerationStrategyRoundRobin::generateNoiseSTP(int rank, std::chrono::
 } /* namespace offloading */
 
 } /* namespace exahype */
+
+#endif
