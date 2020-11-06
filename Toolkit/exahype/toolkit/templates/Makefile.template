@@ -71,6 +71,7 @@ ifeq ($(DISTRIBUTEDMEM),)
     DISTRIBUTEDMEM=None
 {% endif %}
 endif
+
 {% if offloading=="static" %}
 PROJECT_CFLAGS += -DDistributedOffloading -DOffloadingStrategyStatic
 {% elif offloading=="dynamic" %}
@@ -91,7 +92,7 @@ PROJECT_CFLAGS += -DDistributedOffloading -DOffloadingStrategyStaticHardcoded
 PROJECT_CFLAGS += -DAnalyseWaitingTimes
 {% endif %}
 
-{% if useReplicationSaving %}
+{% if useTaskSharing %}
 PROJECT_CFLAGS += -DUSE_TMPI -DDistributedOffloading -DTaskSharing 
 {% endif %}
 
@@ -111,8 +112,16 @@ PROJECT_CFLAGS += -DFileTrace -DPicard
 PROJECT_CFLAGS += -DOffloadingUseProgressThread
 {% elif offloadingProgress=="progress_task" %}
 PROJECT_CFLAGS += -DOffloadingUseProgressTask -DnoMPIWaitsProcessJobs
+{% elif offloadingProgress=="mpithreadsplit" %}
+PROJECT_CFLAGS +=  -DUseMPIThreadSplit
+{% elif offloadingProgress=="smartmpi" %}
+PROJECT_CFLAGS +=  -DUseSmartMPI
 {% elif offloadingProgress=="none" %}
 PROJECT_CFLAGS += 
+{% endif %}
+
+{% if useViscousFlux and (offloading!="none" or useTaskSharing) %}
+PROJECT_CFLAGS += -DOffloadingGradQhbnd
 {% endif %}
 
 # If using TBB only, link pthread (comment this if you want to link a specific pthread)

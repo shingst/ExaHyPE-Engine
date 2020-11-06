@@ -6,7 +6,7 @@
     "output_directory": "./ApplicationExamples/CompressibleNavierStokes"
   },
   "computational_domain": {
-    "dimension": 3,
+    "dimension": 2,
     "end_time": 1.0,
     "offset": [
       0.0,
@@ -61,7 +61,7 @@
         },
         {
           "name": "j",
-          "multiplicity": 3
+          "multiplicity": 2
         },
         {
           "name": "E",

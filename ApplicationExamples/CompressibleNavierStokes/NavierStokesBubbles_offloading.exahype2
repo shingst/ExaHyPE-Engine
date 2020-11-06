@@ -9,7 +9,7 @@
   },
   "computational_domain": {
     "dimension": 2,
-    "end_time": 60,
+    "time_steps": 200,
     "offset": [
       0.0,
       0.0
@@ -21,20 +21,20 @@
     "max_mesh_setup_iterations": 400
   },
   "shared_memory": {
-    "cores": 2,
+    "cores": 5,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
     "background_job_processing": "job_system",
-    "background_job_consumers": 1,
+    "background_job_consumers": 3,
     "min_background_jobs_in_one_rush": 1,
     "max_background_jobs_in_one_rush": 2147483647,
     "invasion_strategy": "no_invade",
     "manual_pinning": false
   },
   "distributed_memory": {
-    "offloading": "none",
+    "offloading_lb_strategy": "none",
     "offloading_input_file" : "",
-    "offloading_progress" : "none",
+    "offloading_progress" : "mpithreadsplit",   
     "offloading_CCP_temperature" : 0,
     "offloading_diffusion_temperature" : 1,
     "offloading_CCP_frequency" : 0,
@@ -149,6 +149,6 @@
     }
   ],
   "architecture": "noarch",
-  "compiler_flags": "-DOffloadingGradQhbnd",
+  "compiler_flags": "",
   "linker_flags": ""
 }

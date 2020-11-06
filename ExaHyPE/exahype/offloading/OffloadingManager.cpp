@@ -21,6 +21,7 @@
 #include <algorithm>
 
 #include "tarch/multicore/Lock.h"
+#include "tarch/multicore/Core.h"
 #include "tarch/parallel/Node.h"
 
 #include "exahype/offloading/OffloadingProfiler.h"
@@ -47,18 +48,32 @@ static int event_progress_sendBack;
 static int event_progress_receiveBack;
 #endif
 
+#if defined(TMPI) || defined(TaskSharing)
+#include "teaMPI.h"
+#endif
+
 //#undef assertion
 //#define assertion assert
 
 tarch::logging::Log exahype::offloading::OffloadingManager::_log( "exahype::offloading::OffloadingManager" );
 
-exahype::offloading::OffloadingManager::OffloadingManager() :
+int exahype::offloading::OffloadingManager::_team(-1);
+int exahype::offloading::OffloadingManager::_interTeamRank(-1);
+
+exahype::offloading::OffloadingManager* exahype::offloading::OffloadingManager::_static_managers[MAX_THREADS];
+MPI_Comm exahype::offloading::OffloadingManager::_offloadingComms[MAX_THREADS];
+MPI_Comm exahype::offloading::OffloadingManager::_offloadingCommsMapped[MAX_THREADS];
+MPI_Comm exahype::offloading::OffloadingManager::_interTeamComms[MAX_THREADS];
+MPI_Comm exahype::offloading::OffloadingManager::_interTeamCommsKey[MAX_THREADS];
+MPI_Comm exahype::offloading::OffloadingManager::_interTeamCommsAck[MAX_THREADS];
+
+
+exahype::offloading::OffloadingManager::OffloadingManager(int threadId) :
+    _threadId(threadId),
     _nextRequestId(0),
     _nextGroupId(0),
-    _offloadingComm(MPI_COMM_NULL),
-    _offloadingCommMapped(MPI_COMM_NULL),
-    _emergencyTriggered(false),
     _numProgressJobs(0),
+    _emergencyTriggered(false),
     _hasNotifiedSendCompleted(false) {
 
 #ifdef USE_ITAC
@@ -98,23 +113,39 @@ exahype::offloading::OffloadingManager::~OffloadingManager() {
   delete[] _localBlacklist;
 }
 
+void exahype::offloading::OffloadingManager::initialize() {
+  //exahype::offloading::OffloadingManager::getInstance().createMPICommunicator();
 
-void exahype::offloading::OffloadingManager::setTMPIInterTeamCommunicators(MPI_Comm comm, MPI_Comm commKey, MPI_Comm commAck) {
+
+//#if defined(UseMPIThreadSplit)
+  createMPICommunicators();
+//#endif
+}
+
+void exahype::offloading::OffloadingManager::destroy() {
+ // exahype::offloading::OffloadingManager::destroyMPICommunicator();
+
+//#if defined(UseMPIThreadSplit)
+  destroyMPICommunicators();
+//#endif
+}
+
+/*void exahype::offloading::OffloadingManager::setTMPIInterTeamCommunicators(MPI_Comm comm, MPI_Comm commKey, MPI_Comm commAck) {
   _interTeamComm = comm;
   _interTeamCommKey = commKey;
   _interTeamCommAck = commAck;
-}
+}*/
 
 MPI_Comm exahype::offloading::OffloadingManager::getTMPIInterTeamCommunicatorData() {
-  return _interTeamComm;
+  return _interTeamComms[_threadId];
 }
 
 MPI_Comm exahype::offloading::OffloadingManager::getTMPIInterTeamCommunicatorKey() {
-  return _interTeamCommKey;
+  return _interTeamCommsKey[_threadId];
 }
 
 MPI_Comm exahype::offloading::OffloadingManager::getTMPIInterTeamCommunicatorAck() {
-  return _interTeamCommAck;
+  return _interTeamCommsAck[_threadId];
 }
 
 void exahype::offloading::OffloadingManager::setTMPITeamSize(int team) {
@@ -133,19 +164,96 @@ int exahype::offloading::OffloadingManager::getTMPIInterTeamRank(){
   return _interTeamRank;
 }
 
-void exahype::offloading::OffloadingManager::createMPICommunicator() {
+/*void exahype::offloading::OffloadingManager::createMPICommunicator() {
   int ierr = MPI_Comm_dup(MPI_COMM_WORLD, &_offloadingComm);
   assertion(ierr==MPI_SUCCESS);
   ierr = MPI_Comm_dup(MPI_COMM_WORLD, &_offloadingCommMapped);
   assertion(ierr==MPI_SUCCESS);
+}*/
+
+//#if defined(UseMPIThreadSplit)
+void exahype::offloading::OffloadingManager::createMPICommunicators() {
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+#if defined(TaskSharing)
+  MPI_Comm interTeamComm;
+  int worldRank = TMPI_GetWorldRank();
+  MPI_Comm_split(MPI_COMM_WORLD, rank, worldRank, &interTeamComm);
+
+  int nteams = TMPI_GetInterTeamCommSize();
+   //MPI_Comm interTeamComm = TMPI_GetInterTeamComm();
+
+  int rankInterComm;
+  MPI_Comm_rank(interTeamComm, &rankInterComm);
+  int team = TMPI_GetTeamNumber();
+
+  _team  = nteams;
+  _interTeamRank = rankInterComm;
+
+  //exahype::offloading::OffloadingManager::getInstance().setTMPIInterTeamCommunicators(interTeamComm, interTeamCommDupKey, interTeamCommDupAck);
+
+  logInfo("initialize()", " teams: "<<nteams<<", rank in team "
+                                                <<team<<" : "<<rank<<", team rank in intercomm: "<<rankInterComm);
+
+#endif
+
+  for(int i=0; i<MAX_THREADS;i++) {
+    MPI_Info info;
+    MPI_Info_create(&info);
+    MPI_Info_set(info, "thread_id", std::to_string(i).c_str());
+
+    int ierr= MPI_Comm_dup(MPI_COMM_WORLD, &_offloadingComms[i]);
+    assertion(ierr==MPI_SUCCESS);
+    MPI_Comm_set_info(_offloadingComms[i], info);
+    assertion(ierr==MPI_SUCCESS);
+
+    ierr = MPI_Comm_dup(MPI_COMM_WORLD, &_offloadingCommsMapped[i]);
+    assertion(ierr==MPI_SUCCESS);
+    MPI_Comm_set_info(_offloadingCommsMapped[i], info);
+    assertion(ierr==MPI_SUCCESS);
+
+#if defined TaskSharing
+    ierr = MPI_Comm_dup(interTeamComm, &_interTeamComms[i]); assertion(ierr==MPI_SUCCESS);
+    MPI_Comm_set_info(_interTeamComms[i], info);
+    assertion(ierr==MPI_SUCCESS);
+
+    ierr = MPI_Comm_dup(interTeamComm, &_interTeamCommsKey[i]); assertion(ierr==MPI_SUCCESS);
+    MPI_Comm_set_info(_interTeamCommsKey[i], info);
+    assertion(ierr==MPI_SUCCESS);
+
+    ierr = MPI_Comm_dup(interTeamComm, &_interTeamCommsAck[i]); assertion(ierr==MPI_SUCCESS);
+    MPI_Comm_set_info(_interTeamCommsAck[i], info);
+    assertion(ierr==MPI_SUCCESS);
+#endif
+    MPI_Info_free(&info);
+  }
+
+  MPI_Comm_free(&interTeamComm);
 }
 
-void exahype::offloading::OffloadingManager::destroyMPICommunicator() {
+void exahype::offloading::OffloadingManager::destroyMPICommunicators() {
+  for(int i=0; i<MAX_THREADS;i++) {
+    int ierr = MPI_Comm_free(&_offloadingComms[i]); assertion(ierr==MPI_SUCCESS);
+    ierr = MPI_Comm_free(&_offloadingCommsMapped[i]); assertion(ierr==MPI_SUCCESS);
+
+#if defined TaskSharing
+    ierr = MPI_Comm_free(&_interTeamComms[i]); assertion(ierr==MPI_SUCCESS);
+    ierr = MPI_Comm_free(&_interTeamCommsKey[i]); assertion(ierr==MPI_SUCCESS);
+    ierr = MPI_Comm_free(&_interTeamCommsAck[i]); assertion(ierr==MPI_SUCCESS);
+#endif
+
+  }
+}
+//#endif
+
+
+/*void exahype::offloading::OffloadingManager::destroyMPICommunicator() {
   int ierr = MPI_Comm_free( &_offloadingComm);
   assertion(ierr==MPI_SUCCESS);
   ierr =MPI_Comm_free(&_offloadingCommMapped);
   assertion(ierr==MPI_SUCCESS);
-}
+}*/
 
 void exahype::offloading::OffloadingManager::resetPostedRequests() {
   logDebug("resetPostedRequests","resetting posted requests statistics");
@@ -179,16 +287,34 @@ int exahype::offloading::OffloadingManager::getNumberOfOutstandingRequests( Requ
 }
 
 MPI_Comm exahype::offloading::OffloadingManager::getMPICommunicator() {
-  return _offloadingComm;
+  return _offloadingComms[_threadId];
 }
 
 MPI_Comm exahype::offloading::OffloadingManager::getMPICommunicatorMapped() {
-  return _offloadingCommMapped;
+  return _offloadingCommsMapped[_threadId];
 }
 
 exahype::offloading::OffloadingManager& exahype::offloading::OffloadingManager::getInstance() {
-  static OffloadingManager offloadingManager;
-  return offloadingManager;
+  //static OffloadingManager offloadingManager;
+  int threadID; // tarch::multicore::Core::getInstance().getThreadNum();
+#if defined(UseMPIThreadSplit)
+  threadID = tarch::multicore::Core::getInstance().getThreadNum();
+#else
+  threadID = 0;
+#endif
+
+  //logInfo("getInstance()", "getting offloading manager for thread id "<<threadID);
+
+  if(threadID>=MAX_THREADS) {
+	  logError("getInstance()","The application is using too many threads (>48), we need to exit...");
+	  assertion(false);
+	  MPI_Abort(MPI_COMM_WORLD, -1);
+  }
+
+  if(_static_managers[threadID]==nullptr) {
+    _static_managers[threadID] = new OffloadingManager(threadID);
+  }
+  return *_static_managers[threadID];
 }
 
 int exahype::offloading::OffloadingManager::requestTypeToMsgQueueIdx( RequestType requestType ) {
@@ -870,8 +996,8 @@ bool exahype::offloading::OffloadingManager::ProgressJob::run( bool calledFromMa
   {
     //getInstance().progressAnyRequests();
     getInstance().progressRequestsOfType(RequestType::send);
-    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, OffloadingManager::getInstance()._offloadingComm, &flag, MPI_STATUS_IGNORE);
-    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, OffloadingManager::getInstance()._offloadingCommMapped, &flag, MPI_STATUS_IGNORE);
+    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, OffloadingManager::getInstance().getMPICommunicator(), &flag, MPI_STATUS_IGNORE);
+    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, OffloadingManager::getInstance().getMPICommunicatorMapped(), &flag, MPI_STATUS_IGNORE);
   }
   //logInfo("submitRequests()", "terminated progress job (high priority)");
 

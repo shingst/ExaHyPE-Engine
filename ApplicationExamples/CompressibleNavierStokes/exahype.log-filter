@@ -33,6 +33,7 @@ info  exahype::offloading::OffloadingAnalyser::endIteration -1 black
 
 info  exahype::offloading::OffloadingManager::triggerEmergencyForRank -1 black
 info  exahype::offloading::OffloadingManager::run -1 black
+#info  exahype::offloading::OffloadingManager::getInstance -1 black
 info  exahype::offloading::OffloadingManager::printBlacklist -1 black
 info  exahype::solvers::ADERDGSolver::run   -1 black
 info  exahype::offloading::AggressiveHybridDistributor::selectVictimRank -1 black
