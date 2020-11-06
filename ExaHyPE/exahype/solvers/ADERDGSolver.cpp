@@ -3574,6 +3574,7 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
   double timing = -MPI_Wtime();
 #endif
 
+#if !defined(UseMPIThreadSplit) //skip spin lock when MPI thread split model is used
   bool canRun;
   tarch::multicore::Lock lock(OffloadingSemaphore, false);
 #if defined(OffloadingUseProgressThread)
@@ -3591,9 +3592,12 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
   if(!canRun) {
     return;
   }
+#endif
+
 #ifdef USE_ITAC
   //VT_begin(event_progress);
 #endif
+
 
   /*tarch::timing::Watch watch("ADERDGSolver","progress", false, false);
   if(tarch::multicore::Core::getInstance().getThreadNum()==0) {
@@ -3613,7 +3617,10 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
   // 4. detect whether local rank should receive anything
   //if(!runOnMaster)
   pollForOutstandingCommunicationRequests(solver, runOnMaster, maxIts);
+
+#if !defined(UseMPIThreadSplit)
   lock.free();
+#endif
   
   /*if(tarch::multicore::Core::getInstance().getThreadNum()==0) {
     watch.stopTimer();
