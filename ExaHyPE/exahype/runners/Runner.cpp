@@ -299,48 +299,49 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     //always use offloading analyser
     peano::performanceanalysis::Analysis::getInstance().setDevice(&exahype::offloading::OffloadingAnalyser::getInstance());
 #if defined(DistributedOffloading)
-    // Create a new MPI communicator for offloading related MPI communication
-    exahype::offloading::OffloadingManager::getInstance().createMPICommunicator(); 
+    // Create new MPI communicators + progress engine for offloading related MPI communication
+    exahype::offloading::OffloadingManager::getInstance().initialize();
+
     exahype::offloading::OffloadingProgressService::getInstance().enable();
 
-#if defined(TaskSharing)
-    int nteams = TMPI_GetInterTeamCommSize();
-    //MPI_Comm interTeamComm = TMPI_GetInterTeamComm();
-    MPI_Comm interTeamComm;
+//#if defined(TaskSharing)
+//    int nteams = TMPI_GetInterTeamCommSize();
+//    //MPI_Comm interTeamComm = TMPI_GetInterTeamComm();
+//    MPI_Comm interTeamComm;
+//
+//    int rank;
+//    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+//
+//    int worldRank = TMPI_GetWorldRank();
+//    MPI_Comm_split(MPI_COMM_WORLD, rank, worldRank, &interTeamComm);
+//
+//    int rankInterComm;
+//    MPI_Comm_rank(interTeamComm, &rankInterComm);
+//    int team = TMPI_GetTeamNumber();
+//
+//    exahype::offloading::OffloadingManager::getInstance().setTMPITeamSize(nteams);
+//    exahype::offloading::OffloadingManager::getInstance().setTMPIInterTeamRank(rankInterComm);
+//
+//    MPI_Comm interTeamCommDupKey;
+//    MPI_Comm_dup(interTeamComm, &interTeamCommDupKey);
+//
+//    MPI_Comm interTeamCommDupAck;
+//    MPI_Comm_dup(interTeamComm, &interTeamCommDupAck);
+//
+//    exahype::offloading::OffloadingManager::getInstance().setTMPIInterTeamCommunicators(interTeamComm, interTeamCommDupKey, interTeamCommDupAck);
 
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+ //   logInfo("initDistributedMemoryConfiguration()", " teams: "<<exahype::offloading::OffloadingManager::getInstance().get<<", rank in team "
+ //   		                                         <<team<<" : "<<rank<<", team rank in intercomm: "<<rankInterComm);
 
-    int worldRank = TMPI_GetWorldRank();
-    MPI_Comm_split(MPI_COMM_WORLD, rank, worldRank, &interTeamComm);
-
-    int rankInterComm;
-    MPI_Comm_rank(interTeamComm, &rankInterComm);
-    int team = TMPI_GetTeamNumber();
-
-    exahype::offloading::OffloadingManager::getInstance().setTMPITeamSize(nteams);
-    exahype::offloading::OffloadingManager::getInstance().setTMPIInterTeamRank(rankInterComm);
-
-    MPI_Comm interTeamCommDupKey;
-    MPI_Comm_dup(interTeamComm, &interTeamCommDupKey);
-
-    MPI_Comm interTeamCommDupAck;
-    MPI_Comm_dup(interTeamComm, &interTeamCommDupAck);
-
-    exahype::offloading::OffloadingManager::getInstance().setTMPIInterTeamCommunicators(interTeamComm, interTeamCommDupKey, interTeamCommDupAck);
-
-    logInfo("initDistributedMemoryConfiguration()", " teams: "<<nteams<<", rank in team "
-    		                                         <<team<<" : "<<rank<<", team rank in intercomm: "<<rankInterComm);
-
-  #if !( defined(OffloadingStrategyStaticHardcoded) \
-      || defined(OffloadingStrategyStatic) \
-	  || defined(OffloadingStrategyDynamic) \
-	  || defined(OffloadingStrategyAggressiveHybrid) \
-	  || defined(OffloadingStrategyAggressive) \
-	  || defined(OffloadingStrategyAggressiveCCP))
-    exahype::offloading::PerformanceMonitor::getInstance().disable();
-  #endif
-#endif
+//  #if !( defined(OffloadingStrategyStaticHardcoded) \
+//      || defined(OffloadingStrategyStatic) \
+//	  || defined(OffloadingStrategyDynamic) \
+//	  || defined(OffloadingStrategyAggressiveHybrid) \
+//	  || defined(OffloadingStrategyAggressive) \
+//	  || defined(OffloadingStrategyAggressiveCCP))
+//    exahype::offloading::PerformanceMonitor::getInstance().disable();
+//  #endif
+//#endif
 
 #if defined(OffloadingStrategyStaticHardcoded)
     exahype::offloading::StaticDistributor::getInstance().loadDistributionFromFile(_parser.getOffloadingInputFile());
@@ -395,6 +396,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
 
 
 void exahype::runners::Runner::shutdownDistributedMemoryConfiguration() {
+  SCOREP_USER_REGION( (std::string("exahype::runners::Runner::shutdownDistributedMemoryConfiguration")).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
 #ifdef Parallel
   tarch::parallel::NodePool::getInstance().terminate();
 
@@ -632,6 +634,7 @@ void exahype::runners::Runner::initDataCompression() {
 
 
 void exahype::runners::Runner::shutdownSharedMemoryConfiguration() {
+  SCOREP_USER_REGION( (std::string("exahype::runners::Runner::shutdownSharedMemoryConfiguration")).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
   #ifdef SharedMemoryParallelisation
 
 #ifdef DistributedOffloading
@@ -866,6 +869,7 @@ void exahype::runners::Runner::initHeaps() {
 }
 
 void exahype::runners::Runner::shutdownHeaps() {
+  SCOREP_USER_REGION( (std::string("exahype::runners::Runner::shutdownHeaps")).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
   if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     logInfo("shutdownHeaps()","shutdown all heaps");
   }
@@ -1017,6 +1021,7 @@ void exahype::runners::Runner::initOptimisations() const {
 }
 
 int exahype::runners::Runner::run() {
+  SCOREP_USER_REGION( (std::string("exahype::runners::Runner::run")).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
   int result = 0;
   if ( _parser.isValid() ) {
     initOptimisations();
@@ -1089,8 +1094,8 @@ int exahype::runners::Runner::run() {
   }
 
   logInfo("shutdownDistributedMemoryConfiguration()","stopped offloading manager");
-  exahype::offloading::OffloadingManager::getInstance().destroyMPICommunicator(); 
-  logInfo("shutdownDistributedMemoryConfiguration()","destroyed MPI communicators");
+  exahype::offloading::OffloadingManager::getInstance().destroy();
+  logInfo("shutdownDistributedMemoryConfiguration()","destroyed MPI communicators + progress engine");
 #if defined(TaskSharing) || defined(OffloadingLocalRecompute)
   exahype::offloading::JobTableStatistics::getInstance().printStatistics();
 #endif
@@ -1203,6 +1208,7 @@ void exahype::runners::Runner::printMeshSetupInfo(
 }
 
 bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& repository) {
+  SCOREP_USER_REGION( (std::string("exahype::runners::Runner::createMesh")).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
   bool meshUpdate = false;
 
   const int MaxIterations = _parser.getMaxMeshSetupIterations();
@@ -1274,6 +1280,7 @@ bool exahype::runners::Runner::createMesh(exahype::repositories::Repository& rep
 
 
 int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& repository) {
+  SCOREP_USER_REGION( (std::string("exahype::runners::Runner::runAsMaster")).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
   peano::utils::UserInterface::writeHeader();
 
   if (!exahype::solvers::RegisteredSolvers.empty()) {
@@ -1695,6 +1702,7 @@ void exahype::runners::Runner::validateInitialSolverTimeStepData(const bool fuse
 }
 
 void exahype::runners::Runner::initialiseMesh(exahype::repositories::Repository& repository) {
+  SCOREP_USER_REGION( (std::string("exahype::runners::Runner::initialiseMesh")).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
   // We refine here using the previous solution (which is valid)
   logInfo("initialiseMesh(...)","create initial grid");
   createMesh(repository);
@@ -1891,6 +1899,7 @@ void exahype::runners::Runner::printTimeStepInfo(int numberOfStepsRanSinceLastCa
 
 void exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps(
     exahype::repositories::Repository& repository, int numberOfStepsToRun) {
+  SCOREP_USER_REGION( (std::string("exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps")).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
 
   if (numberOfStepsToRun==0) {
     logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","plot");

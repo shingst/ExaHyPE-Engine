@@ -16,6 +16,7 @@
 #include "tarch/la/Vector.h"
 #include "tarch/multicore/Loop.h"
 #include "peano/datatraversal/autotuning/Oracle.h"
+#include "peano/performanceanalysis/ScorePMacros.h"
 
 #include "kernels/GaussLegendreBasis.h"
 #include "kernels/KernelUtils.h"
@@ -63,6 +64,7 @@ int aderPicardLoopNonlinear(SolverType& solver, const double* luh,
                             const tarch::la::Vector<DIMENSIONS, double>& invDx,
                             double* lQi, double* rhs, double* lFi,
                             double* gradQ) {
+  SCOREP_USER_REGION( (std::string("kernels::aderdg::generic::c::aderPicardLoopNonlinear")).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
   constexpr int numberOfVariables = SolverType::NumberOfVariables;
   constexpr int numberOfParameters = SolverType::NumberOfParameters;
   constexpr int numberOfData = numberOfVariables + numberOfParameters;
@@ -486,6 +488,7 @@ template <typename SolverType,bool useSource, bool useFlux, bool useNCP, int num
 void aderPredictorNonlinear(const double* lQi, const double* lFi, double* lQhi,
                             double* lFhi_x, double* lFhi_y, double* lFhi_z,
                             double* lShi) {
+  SCOREP_USER_REGION( (std::string("kernels::aderdg::generic::c::aderPredictorNonlinear")).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
   // Immediately compute the time - averaged space - time polynomials
 
   constexpr int basisSize2 = basisSize * basisSize;
@@ -563,6 +566,7 @@ void aderExtrapolatorNonlinear(const double* lQhi, const double* lGradQi,
                                const double* lFhi_x, const double* lFhi_y,
                                const double* lFhi_z, double* lQhbnd,
                                double* lGradQhbnd, double* lFhbnd) {
+  SCOREP_USER_REGION( (std::string("kernels::aderdg::generic::c::aderExtrapolatorNonlinear")).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
   // Compute the boundary-extrapolated values for Q and F*n
   constexpr int basisSize2 = basisSize * basisSize;
   constexpr int order = basisSize - 1;
@@ -734,6 +738,7 @@ template <typename SolverType,bool useFlux, int numberOfVariables, int numberOfP
 void aderTimeAveragingExtrapolatorNonlinear(const double* lQi,
 					    const double* lFi, double* lQhbnd,
 					    double* lFhbnd) {
+  SCOREP_USER_REGION( (std::string("kernels::aderdg::generic::c::aderTimeAveragingExtrapolatorNonlinear")).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
   // Compute the boundary-extrapolated values for Q and F*n
 
   const int order = basisSize - 1;
@@ -864,6 +869,7 @@ int spaceTimePredictorNonlinear(
     double* lFhi, const double* const luh,
     const tarch::la::Vector<DIMENSIONS, double>& cellCenter,
     const tarch::la::Vector<DIMENSIONS, double>& invDx, double t, double dt) {
+  SCOREP_USER_REGION( (std::string("kernels::aderdg::generic::c::spaceTimePredictorNonlinear")).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
   constexpr int numberOfVariables = SolverType::NumberOfVariables;
   constexpr int numberOfParameters = SolverType::NumberOfParameters;
   constexpr int basisSize = SolverType::Order + 1;

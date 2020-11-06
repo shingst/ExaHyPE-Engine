@@ -42,6 +42,7 @@
 
 int exahype::runners::Runner::runAsWorker(
     exahype::repositories::Repository& repository) {
+  SCOREP_USER_REGION( (std::string("exahype::runners::Runner::runAsWorker")).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
   int newMasterNode = tarch::parallel::NodePool::getInstance().waitForJob();
   while (newMasterNode !=
          tarch::parallel::NodePool::JobRequestMessageAnswerValues::Terminate) {

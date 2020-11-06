@@ -28,6 +28,8 @@
 #include <vector>
 #include <unordered_map>
 
+#define MAX_THREADS 48
+
 namespace exahype {
   namespace offloading {
     class OffloadingManager;
@@ -67,6 +69,8 @@ class exahype::offloading::OffloadingManager {
      * The logging device.
      */
     static tarch::logging::Log _log;
+
+    int _threadId;
 
     /**
      * Semaphore to ensure that only one thread at a time
@@ -182,7 +186,7 @@ class exahype::offloading::OffloadingManager {
      */
     bool _hasNotifiedSendCompleted;
 
-    OffloadingManager();
+    OffloadingManager(int threadId);
 
     /**
      * This method makes progress on all current requests of the given request type.
@@ -207,19 +211,19 @@ class exahype::offloading::OffloadingManager {
     /**
      * Communicator for sending/receiving offloaded tasks.
      */
-    MPI_Comm _offloadingComm;
+    //MPI_Comm _offloadingComm;
 
     /**
      * Communicator for sending/receiving results of offloaded tasks.
      */
-    MPI_Comm _offloadingCommMapped;
+    //MPI_Comm _offloadingCommMapped;
 
     /**
      * Communicator for communication between replicating ranks.
      */
-    MPI_Comm _interTeamComm, _interTeamCommKey, _interTeamCommAck; 
-    int _team;
-    int _interTeamRank;
+    //MPI_Comm _interTeamComm, _interTeamCommKey, _interTeamCommAck;
+    static int _team;
+    static int _interTeamRank;
 
     /**
      * The request handler job aims to distribute the work that is to be done
@@ -282,9 +286,24 @@ class exahype::offloading::OffloadingManager {
       return _nextGroupId++;
     }
 
-  public:
-    int getNumberOfOutstandingRequests(RequestType type);
+    static OffloadingManager* _static_managers[MAX_THREADS];
 
+    static MPI_Comm  _offloadingComms[MAX_THREADS];
+    static MPI_Comm  _offloadingCommsMapped[MAX_THREADS];
+
+#if defined TaskSharing
+    static MPI_Comm  _interTeamComms[MAX_THREADS];
+    static MPI_Comm  _interTeamCommsKey[MAX_THREADS];
+    static MPI_Comm  _interTeamCommsAck[MAX_THREADS];
+#endif
+
+  public:
+    //Todo: with these two function, we can clean up the interface and make some more functions private
+    void initialize();
+
+    void destroy();
+
+    int getNumberOfOutstandingRequests(RequestType type);
 
     void printPostedRequests();
     void resetPostedRequests();
@@ -332,12 +351,15 @@ class exahype::offloading::OffloadingManager {
     /**
      * Creates offloading MPI communicators.
      */
-    void createMPICommunicator();
+    //void createMPICommunicator();
+
+    static void createMPICommunicators();
+    static void destroyMPICommunicators();
 
     /**
      * Destroys offloading MPI communicators.
      */
-    void destroyMPICommunicator();
+    //void destroyMPICommunicator();
 
     /**
      * Returns MPI communicator used for
