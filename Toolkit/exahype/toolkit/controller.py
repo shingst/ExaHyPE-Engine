@@ -255,6 +255,18 @@ class Controller:
             self.log.exception(e)
             sys.exit(-4)
 
+        #check if offloading is used together with multiple solvers -> abort as currently not supported
+        useOffloading = spec["distributed_memory"]["offloading_lb_strategy"]!="none" or spec["distributed_memory"]["task_sharing"]
+        
+        numADERDGSolvers = 0
+        for solver in spec["solvers"]: 
+            if(solver["type"]=="ADER-DG"):
+                numADERDGSolvers += 1
+  
+        if (useOffloading and numADERDGSolvers>1):
+           self.log.error("Specification file uses offloading for more than one ADERDGSolver which is currently not supported! Aborting...")
+           sys.exit(-4)
+       
         if validate_only:
             print(json.dumps(spec, sort_keys=True, indent=4))
             sys.exit(0)
@@ -307,16 +319,20 @@ class Controller:
         context["useLikwid"] = False # TODO
         context["likwidInc"] = ""    # TODO
         if context["useDistributedMem"]:
-            context["offloading"]  = self.spec["distributed_memory"]["offloading"]
+            context["offloading"]  = self.spec["distributed_memory"]["offloading_lb_strategy"]
             context["offloadingProgress"] = self.spec["distributed_memory"]["offloading_progress"]
-            context["useReplicationSaving"] = self.spec["distributed_memory"]["task_sharing"]
+            context["useTaskSharing"] = self.spec["distributed_memory"]["task_sharing"]
             context["useLocalRecompute"] = self.spec["distributed_memory"]["offloading_local_recompute"]
         else:
             context["offloading"] = "none"
             context["offloadingProgress"] = "none"
             context["useReplicationSaving"] = False
             context["useLocalRecompute"] = False
- 
+      
+        for solver in self.spec["solvers"]: 
+            if(solver["type"]=="ADER-DG" and "viscous_flux" in solver["aderdg_kernel"]["terms"]):
+                context["useViscousFlux"] = True
+        #todo: multiple solvers are not supported with offloading
            
         # kernels
         useOptKernel = False
