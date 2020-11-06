@@ -63,10 +63,10 @@ int exahype::offloading::OffloadingManager::_interTeamRank(-1);
 exahype::offloading::OffloadingManager* exahype::offloading::OffloadingManager::_static_managers[MAX_THREADS];
 MPI_Comm exahype::offloading::OffloadingManager::_offloadingComms[MAX_THREADS];
 MPI_Comm exahype::offloading::OffloadingManager::_offloadingCommsMapped[MAX_THREADS];
+
 MPI_Comm exahype::offloading::OffloadingManager::_interTeamComms[MAX_THREADS];
 MPI_Comm exahype::offloading::OffloadingManager::_interTeamCommsKey[MAX_THREADS];
 MPI_Comm exahype::offloading::OffloadingManager::_interTeamCommsAck[MAX_THREADS];
-
 
 exahype::offloading::OffloadingManager::OffloadingManager(int threadId) :
     _threadId(threadId),
