@@ -98,6 +98,7 @@ class Controller:
                 "useCERKGuess"          : args["useCERKGuess"],
                 "useSplitCK"            : args["useSplitCK"],
                 "useVectPDE"            : args["useVectPDE"],
+                "useAoSoA2"             : args["useAoSoA2"],
                 "predictorRecompute"    : args["predictorRecompute"],
                 "initialGuess"          : "mixedPicard" #TODO JMG put as proper toolkit arg
                 #"initialGuess"          : "default" #TODO JMG put as proper toolkit arg
