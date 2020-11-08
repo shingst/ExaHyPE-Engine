@@ -56,6 +56,16 @@ class exahype::records::ADERDGCellDescription {
       void setHasCompletedLastStep(bool state) {
         _hasCompletedLastStep.store(state);
       }
+
+      bool _isTroubledInLastStep{false};
+
+      void setIsTroubledInLastStep(bool isTroubled) {
+        _isTroubledInLastStep = true;
+      }
+
+      bool getIsTroubledInLastStep() {
+        return _isTroubledInLastStep;
+      }
       // MANUALLY ADDED
 
 

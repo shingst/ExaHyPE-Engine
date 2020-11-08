@@ -255,8 +255,10 @@ class Controller:
             self.log.exception(e)
             sys.exit(-4)
 
+        useOffloading = False
         #check if offloading is used together with multiple solvers -> abort as currently not supported
-        useOffloading = spec["distributed_memory"]["offloading_lb_strategy"]!="none" or spec["distributed_memory"]["task_sharing"]
+        if "distributed_memory" in spec:
+           useOffloading = spec["distributed_memory"]["offloading_lb_strategy"]!="none" or spec["distributed_memory"]["task_sharing"]
         
         numADERDGSolvers = 0
         for solver in spec["solvers"]: 
@@ -326,9 +328,10 @@ class Controller:
         else:
             context["offloading"] = "none"
             context["offloadingProgress"] = "none"
-            context["useReplicationSaving"] = False
+            context["useTaskSharing"] = False
             context["useLocalRecompute"] = False
       
+        context["useViscousFlux"] = False
         for solver in self.spec["solvers"]: 
             if(solver["type"]=="ADER-DG" and "viscous_flux" in solver["aderdg_kernel"]["terms"]):
                 context["useViscousFlux"] = True

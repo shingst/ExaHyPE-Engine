@@ -39,6 +39,7 @@ private:
   std::atomic<int> _declinedTasks;
   std::atomic<int> _lateTasks;
   std::atomic<int> _recomputedTasks;
+  std::atomic<int> _doubleCheckedTasks;
 
   JobTableStatistics();
   virtual ~JobTableStatistics();
@@ -58,6 +59,7 @@ public:
   void notifySpawnedTask();
   void notifyExecutedTask();
   void notifyRecomputedTask();
+  void notifyDoubleCheckedTask();
 };
 
 } /* namespace offloading */

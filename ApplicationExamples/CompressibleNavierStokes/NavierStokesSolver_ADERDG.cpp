@@ -232,7 +232,8 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
       const tarch::la::Vector<DIMENSIONS,double>& center,
       const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t) const {
-  return true;
+  //return true;
+  //return false;
     // We now need to do a pointwise check for the primitive variables
     // pressure and Z.
     // TODO(Lukas) At least refactor this. And 3D!

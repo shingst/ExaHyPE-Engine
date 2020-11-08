@@ -99,10 +99,12 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
 exahype::solvers::ADERDGSolver::MigratablePredictionJob::~MigratablePredictionJob() {
 }
 
-void exahype::solvers::ADERDGSolver::MigratablePredictionJob::checkAdmissibilityAndSetTrigger() {
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::setTriggerIfTroubledPreviously() {
   //todo: need to implement some criterion
   //set to true for now, won't benefit from task sharing then, though
-  _isPotSoftErrorTriggered = true;
+  CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
+      _element);
+  _isPotSoftErrorTriggered = cellDescription.getIsTroubledInLastStep();
 }
 
 //Caution: Compression is not supported yet!
@@ -286,7 +288,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     hasComputed = true;
 
 #if defined(ResilienceChecks)
-    checkAdmissibilityAndSetTrigger();
+    setTriggerIfTroubledPreviously();
 
     if(needToCheck) {
       assertion(found);
@@ -323,6 +325,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
       }
 
       logInfo("handleLocalExecution", "checked duplicate executions for soft errors, result = "<<equal);
+      exahype::offloading::JobTableStatistics::getInstance().notifyDoubleCheckedTask();
     }
 #endif
 
