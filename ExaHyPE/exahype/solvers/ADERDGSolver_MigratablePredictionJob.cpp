@@ -324,6 +324,9 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
         logInfo("handleLocalExecution", "lduh is not equal");
       }
 
+      logError("handleLocalExecution", "soft error detected: "<<data->_metadata.to_string());
+      MPI_Abort(MPI_COMM_WORLD, -1);
+
       logInfo("handleLocalExecution", "checked duplicate executions for soft errors, result = "<<equal);
       exahype::offloading::JobTableStatistics::getInstance().notifyDoubleCheckedTask();
     }
