@@ -539,12 +539,14 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
         " send job outcome: center[0] = "<<_center[0]
       <<" center[1] = "<<_center[1]
       <<" center[2] = "<<_center[2]
-      <<" time stamp = "<<_predictorTimeStamp);
+      <<" time stamp = "<<_predictorTimeStamp
+      <<" to = "<<_originRank);
 #else
     logInfo("handleExecution",
         " send job outcome: center[0] = "<<_center[0]
       <<" center[1] = "<<_center[1]
-      <<" time stamp = "<<_predictorTimeStamp);
+      <<" time stamp = "<<_predictorTimeStamp
+      <<" to = "<<_originRank);
 #endif
     //logInfo("handleLocalExecution()", "postSendBack");
 #if defined(UseSmartMPI)
@@ -600,8 +602,8 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandler(
           remoteRank, tag);
   peano::datatraversal::TaskSet spawnedSet(job);
 
-  logInfo("receiveHandler",
-      " received task : "<< data->_metadata.to_string());
+  //logInfo("receiveHandler",
+  //    " received task : "<< data->_metadata.to_string()<<" from "<<remoteRank);
 
   exahype::offloading::OffloadingProfiler::getInstance().notifyReceivedTask(
       remoteRank);

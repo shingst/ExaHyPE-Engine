@@ -228,8 +228,9 @@ void exahype::offloading::OffloadingManager::createMPICommunicators() {
 #endif
     MPI_Info_free(&info);
   }
-
+#if defined(TaskSharing)
   MPI_Comm_free(&interTeamComm);
+#endif
 }
 
 void exahype::offloading::OffloadingManager::destroyMPICommunicators() {
@@ -237,7 +238,7 @@ void exahype::offloading::OffloadingManager::destroyMPICommunicators() {
     int ierr = MPI_Comm_free(&_offloadingComms[i]); assertion(ierr==MPI_SUCCESS);
     ierr = MPI_Comm_free(&_offloadingCommsMapped[i]); assertion(ierr==MPI_SUCCESS);
 
-#if defined TaskSharing
+#if defined (TaskSharing)
     ierr = MPI_Comm_free(&_interTeamComms[i]); assertion(ierr==MPI_SUCCESS);
     ierr = MPI_Comm_free(&_interTeamCommsKey[i]); assertion(ierr==MPI_SUCCESS);
     ierr = MPI_Comm_free(&_interTeamCommsAck[i]); assertion(ierr==MPI_SUCCESS);
