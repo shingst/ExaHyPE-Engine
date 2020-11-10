@@ -935,7 +935,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendHandler(
   cnt++;
 #endif
   //logInfo("sendHandler","successful send request");
-#if !defined(OffloadNoEarlyReceiveBacks) || defined(OffloadingLocalRecompute)
+#if !defined(OffloadingNoEarlyReceiveBacks) || defined(OffloadingLocalRecompute)
   ADERDGSolver::receiveBackMigratableJob(tag, remoteRank,
       static_cast<exahype::solvers::ADERDGSolver*>(solver));
 #endif

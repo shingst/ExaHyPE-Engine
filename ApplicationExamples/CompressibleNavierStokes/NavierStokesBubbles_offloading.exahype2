@@ -9,7 +9,7 @@
   },
   "computational_domain": {
     "dimension": 2,
-    "time_steps": 200,
+    "time_steps": 200000,
     "offset": [
       0.0,
       0.0
@@ -34,7 +34,7 @@
   "distributed_memory": {
     "offloading_lb_strategy": "aggressiveHybrid",
     "offloading_input_file" : "",
-    "offloading_progress" : "none",   
+    "offloading_progress" : "smartmpi",   
     "offloading_CCP_temperature" : 0,
     "offloading_diffusion_temperature" : 1,
     "offloading_CCP_frequency" : 0,
