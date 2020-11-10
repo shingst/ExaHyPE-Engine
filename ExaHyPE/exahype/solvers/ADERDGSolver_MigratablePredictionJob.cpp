@@ -945,6 +945,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::packMetaData(Migra
   std::memcpy(tmp, &_predictorTimeStamp, sizeof(double)); tmp+= sizeof(double);
   std::memcpy(tmp, &_predictorTimeStepSize, sizeof(double)); tmp+= sizeof(double);
   std::memcpy(tmp, &_element, sizeof(int)); tmp+= sizeof(int);
+  std::memcpy(tmp, &_originRank, sizeof(int)); tmp+= sizeof(int);
   std::memcpy(tmp, &_isPotSoftErrorTriggered, sizeof(char)); tmp+= sizeof(char);
 #else
   metadata->_center[0] = _center[0];
@@ -962,6 +963,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::packMetaData(Migra
   metadata->_predictorTimeStamp = _predictorTimeStamp;
   metadata->_predictorTimeStepSize = _predictorTimeStepSize;
   metadata->_element = _element;
+  metadata->_originRank = _originRank;
   metadata->_isPotSoftErrorTriggered = _isPotSoftErrorTriggered;
 #endif
 }
@@ -984,6 +986,7 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::MigratablePredi
 : _predictorTimeStamp(0),
   _predictorTimeStepSize(0),
   _element(0),
+  _originRank(-1),
   _isPotSoftErrorTriggered(0),
   _contiguousBuffer(nullptr) {
 #if defined(UseSmartMPI)
@@ -1004,6 +1007,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::unpackCont
   std::memcpy(&_predictorTimeStamp, tmp, sizeof(double)); tmp+= sizeof(double);
   std::memcpy(&_predictorTimeStepSize, tmp,  sizeof(double)); tmp+= sizeof(double);
   std::memcpy(&_element, tmp, sizeof(int)); tmp+= sizeof(int);
+  std::memcpy(&_originRank, tmp, sizeof(int)); tmp+= sizeof(int);
   std::memcpy(&_isPotSoftErrorTriggered, tmp, sizeof(char)); tmp+= sizeof(unsigned char);
 }
 
@@ -1018,6 +1022,7 @@ std::string exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::to_
 
   result += " time stamp = " + std::to_string(_predictorTimeStamp);
   result += " element = " + std::to_string(_element);
+  result += " origin = " + std::to_string(_originRank);
   result += " isPotSoftErrorTriggered = " + std::to_string(_isPotSoftErrorTriggered);
 
   return result;
@@ -1027,12 +1032,12 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::initDataty
 #if defined(UseSmartMPI)
   _datatype = MPI_BYTE;
 #else
-  int entries = 2+4;
+  int entries = 2+5;
   MigratablePredictionJobMetaData dummy;
 
-  int blocklengths[] = {DIMENSIONS, DIMENSIONS, 1, 1, 1, 1};
-  MPI_Datatype subtypes[] = {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INTEGER, MPI_CHAR};
-  MPI_Aint displs[] = {0, 0, 0, 0, 0, 0};
+  int blocklengths[] = {DIMENSIONS, DIMENSIONS, 1, 1, 1, 1, 1};
+  MPI_Datatype subtypes[] = {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INTEGER, MPI_INTEGER, MPI_CHAR};
+  MPI_Aint displs[] = {0, 0, 0, 0, 0, 0, 0};
 
   MPI_Aint base;
   MPI_Get_address(&dummy, &base);
@@ -1042,7 +1047,8 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::initDataty
   MPI_Get_address(&(dummy._predictorTimeStamp), &(displs[2]));
   MPI_Get_address(&(dummy._predictorTimeStepSize), &(displs[3]));
   MPI_Get_address(&(dummy._element), &(displs[4]));
-  MPI_Get_address(&(dummy._isPotSoftErrorTriggered), &(displs[5]));
+  MPI_Get_address(&(dummy._originRank), &(displs[5]));
+  MPI_Get_address(&(dummy._isPotSoftErrorTriggered), &(displs[6]));
 
   for(int i=0; i<entries; i++) {
     displs[i] = displs[i]-base;
@@ -1070,7 +1076,7 @@ MPI_Datatype exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::ge
 
 size_t exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getMessageLen() {
 #if defined(UseSmartMPI)
-  return (2*DIMENSIONS+2)*sizeof(double)+sizeof(int)+sizeof(unsigned char);
+  return (2*DIMENSIONS+2)*sizeof(double)+2*sizeof(int)+sizeof(unsigned char);
 #else
   return 1;
 #endif
@@ -1094,6 +1100,10 @@ double exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getPredi
 
 int exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getElement() const {
   return _element;
+}
+
+int exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getOrigin() const {
+  return _originRank;
 }
 
 #endif

@@ -1056,6 +1056,7 @@ private:
       double _predictorTimeStamp;
       double _predictorTimeStepSize;
       int    _element;
+      int    _originRank;
       unsigned char   _isPotSoftErrorTriggered;
       char *_contiguousBuffer;
 
@@ -1068,6 +1069,7 @@ private:
       double getPredictorTimeStamp() const;
       double getPredictorTimeStepSize() const;
       int getElement() const;
+      int getOrigin() const;
       bool getIsPotSoftErrorTriggered() const;
       char* getContiguousBuffer() const;
       void unpackContiguousBuffer();
