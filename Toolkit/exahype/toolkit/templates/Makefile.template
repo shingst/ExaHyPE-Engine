@@ -115,7 +115,7 @@ PROJECT_CFLAGS += -DOffloadingUseProgressTask -DnoMPIWaitsProcessJobs
 {% elif offloadingProgress=="mpithreadsplit" %}
 PROJECT_CFLAGS +=  -DUseMPIThreadSplit
 {% elif offloadingProgress=="smartmpi" %}
-PROJECT_CFLAGS +=  -DUseSmartMPI
+PROJECT_CFLAGS +=  -DUseSmartMPI -DOffloadingNoEarlyReceiveBacks
 {% elif offloadingProgress=="none" %}
 PROJECT_CFLAGS += 
 {% endif %}

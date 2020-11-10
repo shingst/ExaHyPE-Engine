@@ -596,10 +596,14 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandler(
   data = a_tagRankToData->second;
   a_tagRankToData.release();
 
+#if defined(UseSmartMPI)
+  data->_metadata.unpackContiguousBuffer();
+#endif
+
   exahype::offloading::OffloadingAnalyser::getInstance().notifyReceivedSTPJob();
   MigratablePredictionJob *job =
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->createFromData(data,
-          remoteRank, tag);
+          data->_metadata.getOrigin(), tag);
   peano::datatraversal::TaskSet spawnedSet(job);
 
   //logInfo("receiveHandler",
