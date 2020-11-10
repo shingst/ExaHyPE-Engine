@@ -84,6 +84,8 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   __assume_aligned(weights1, ALIGNMENT);
   __assume_aligned(weights3, ALIGNMENT);
   __assume_aligned(iweights3,ALIGNMENT);
+  __assume_aligned(FLCoeff,  ALIGNMENT);
+  __assume_aligned(FRCoeff,  ALIGNMENT);
 #endif
 
 // TODO JMG set matmul
@@ -550,13 +552,13 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     solver.{{solverName}}::nonConservativeProduct_x_vect(lQi+{{idx(z,0,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,0,0,0)}}{% else %}nullptr{%endif%}, gradQ+{{idx(z,0,0,0)}}, lQi_next);
     #pragma omp simd aligned(lFhi,lQi_next:ALIGNMENT)
     for (int nyx = 0; nyx < {{nVar*nDof2Pad}}; nyx++) {
-      lFhi[{{idx(z,0,0,nyx)}}] += lQi_next[nyx]; 
+      lFhi[{{idx(z,0,0,nyx)}}] += lQi_next[nyx];
     }
   }
   
+  std::memset(lduh, 0, {{(nDof**nDim)*nVarPad}}*sizeof(double)); // reset lduh
   
   // x boundary and volume
-  std::memset(lduh, 0, {{(nDof**nDim)*nVarPad}}*sizeof(double)); // reset lduh
   std::memset(lFhbnd, 0, {{2*nDof*nDof3D*nVarPad}}*sizeof(double));
   /*
   // default
