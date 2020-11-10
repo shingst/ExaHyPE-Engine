@@ -27,14 +27,15 @@ namespace {{namespaceName}} {
                                              
   constexpr int getBasisSize()               {return {{nDof}};}
   constexpr int getBasisSizePadded()         {return {{nDofPad}};}
+  constexpr int getBasisSquaredSizePadded()  {return {{nDof2Pad}};}
                                              
   constexpr int getDimension()               {return {{nDim}};}
                                              
   constexpr bool isLinear()                  {return {{isLinearCText}};}
 
   // Vect methods configuration
-  constexpr int getVectStride()              {return {{nDofPad}};}
-  constexpr int getVectLength()              {return {{nDof}};}
+  constexpr int getVectStride()              {return {{nDof2Pad  if useAoSoA2 else nDofPad}};}
+  constexpr int getVectLength()              {return {{nDof*nDof if useAoSoA2 else nDof}};}
 
   // Array sizes
   constexpr int getlQiSize()     {return {{lQiSize}};}
