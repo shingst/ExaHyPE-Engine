@@ -304,45 +304,6 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
 
     exahype::offloading::OffloadingProgressService::getInstance().enable();
 
-//#if defined(TaskSharing)
-//    int nteams = TMPI_GetInterTeamCommSize();
-//    //MPI_Comm interTeamComm = TMPI_GetInterTeamComm();
-//    MPI_Comm interTeamComm;
-//
-//    int rank;
-//    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-//
-//    int worldRank = TMPI_GetWorldRank();
-//    MPI_Comm_split(MPI_COMM_WORLD, rank, worldRank, &interTeamComm);
-//
-//    int rankInterComm;
-//    MPI_Comm_rank(interTeamComm, &rankInterComm);
-//    int team = TMPI_GetTeamNumber();
-//
-//    exahype::offloading::OffloadingManager::getInstance().setTMPITeamSize(nteams);
-//    exahype::offloading::OffloadingManager::getInstance().setTMPIInterTeamRank(rankInterComm);
-//
-//    MPI_Comm interTeamCommDupKey;
-//    MPI_Comm_dup(interTeamComm, &interTeamCommDupKey);
-//
-//    MPI_Comm interTeamCommDupAck;
-//    MPI_Comm_dup(interTeamComm, &interTeamCommDupAck);
-//
-//    exahype::offloading::OffloadingManager::getInstance().setTMPIInterTeamCommunicators(interTeamComm, interTeamCommDupKey, interTeamCommDupAck);
-
- //   logInfo("initDistributedMemoryConfiguration()", " teams: "<<exahype::offloading::OffloadingManager::getInstance().get<<", rank in team "
- //   		                                         <<team<<" : "<<rank<<", team rank in intercomm: "<<rankInterComm);
-
-//  #if !( defined(OffloadingStrategyStaticHardcoded) \
-//      || defined(OffloadingStrategyStatic) \
-//	  || defined(OffloadingStrategyDynamic) \
-//	  || defined(OffloadingStrategyAggressiveHybrid) \
-//	  || defined(OffloadingStrategyAggressive) \
-//	  || defined(OffloadingStrategyAggressiveCCP))
-//    exahype::offloading::PerformanceMonitor::getInstance().disable();
-//  #endif
-//#endif
-
 #if defined(OffloadingStrategyStaticHardcoded)
     exahype::offloading::StaticDistributor::getInstance().loadDistributionFromFile(_parser.getOffloadingInputFile());
 #elif defined(OffloadingStrategyAggressiveHybrid)

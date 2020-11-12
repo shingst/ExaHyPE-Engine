@@ -92,8 +92,10 @@ PROJECT_CFLAGS += -DDistributedOffloading -DOffloadingStrategyStaticHardcoded
 PROJECT_CFLAGS += -DAnalyseWaitingTimes
 {% endif %}
 
-{% if useTaskSharing %}
+{% if tasksharingMode=="task_sharing" %}
 PROJECT_CFLAGS += -DUSE_TMPI -DDistributedOffloading -DTaskSharing 
+{% elif tasksharingMode=="task_sharing_resilience_checks" %}
+PROJECT_CFLAGS += -DUSE_TMPI -DDistributedOffloading -DTaskSharing -DResilienceChecks 
 {% endif %}
 
 {% if useLocalRecompute %}
@@ -120,7 +122,7 @@ PROJECT_CFLAGS +=  -DUseSmartMPI
 PROJECT_CFLAGS += 
 {% endif %}
 
-{% if useViscousFlux and (offloading!="none" or useTaskSharing) %}
+{% if useViscousFlux and (offloading!="none" or tasksharingMode!="no") %}
 PROJECT_CFLAGS += -DOffloadingGradQhbnd
 {% endif %}
 

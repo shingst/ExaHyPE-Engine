@@ -16,6 +16,7 @@
 #include "exahype/offloading/JobTableStatistics.h"
 #include "exahype/offloading/MemoryMonitor.h"
 #include "exahype/offloading/NoiseGenerator.h"
+#include "exahype/offloading/SoftErrorInjector.h"
 
 #define MAX_PROGRESS_ITS 10000
 //#undef assertion
@@ -142,7 +143,6 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run(
   }
   else
     result = handleExecution(isCalledOnMaster, hasComputed);
-
 
 #if defined(GenerateNoise)
     exahype::offloading::NoiseGenerator::getInstance().generateNoiseSTP();
@@ -286,6 +286,11 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
         _predictorTimeStepSize,
         true);
     hasComputed = true;
+
+#if defined(GenerateSoftErrors)
+   exahype::offloading::SoftErrorInjector::getInstance().generateBitflipErrorInDoubleIfActive(lduh, _solver.getUpdateSize());
+#endif
+
 
 #if defined(ResilienceChecks)
     setTriggerIfTroubledPreviously();
@@ -477,7 +482,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
       <<" origin rank = "<<_originRank);
 #endif
 
-    int iterations=_solver.fusedSpaceTimePredictorVolumeIntegral(
+   int iterations=_solver.fusedSpaceTimePredictorVolumeIntegral(
       _lduh,
       _lQhbnd,
       _lGradQhbnd,
@@ -488,6 +493,11 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
       _predictorTimeStamp,
       _predictorTimeStepSize,
       true);
+
+#if defined(GenerateSoftErrors)
+   exahype::offloading::SoftErrorInjector::getInstance().generateBitflipErrorInDoubleIfActive(_lduh, _solver.getUpdateSize());
+#endif
+
 
 #if DIMENSIONS==3
    logInfo("handleExecution",

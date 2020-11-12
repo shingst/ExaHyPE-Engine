@@ -31,7 +31,7 @@
       "offloading_CCP_steps" : 0,
       "offloading_update_temperature" : true,
       "offloading_increase_temp_threshold" : 1.0,
-      "task_sharing" : true,
+      "task_sharing" : "task_sharing_resilience_checks",
       "timeout": 12000,
       "load_balancing_type": "static",
       "buffer_size"            : 1600,    
