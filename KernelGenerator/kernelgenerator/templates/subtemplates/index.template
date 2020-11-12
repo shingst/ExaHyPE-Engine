@@ -133,6 +133,8 @@ Size 3 index fixed size
 {% macro index_fixed_3(x1, x2, x3, L2, L3) %}
 {% if x1 == 0 or x1 == "0" %}
 {{index_fixed_2(x2,x3,L3)}}{##}
+{% elif (x2 == 0 or x2 == "0") and (x3 == 0 or x3 == "0") %}{# remove trailling 0 #}
+{{x1}}*{{L2}}{##}
 {% else %}
 {{x1~"*"~L2~"+"~index_fixed_2(x2,x3,L3)}}{##}
 {% endif %}
@@ -145,6 +147,8 @@ Size 4 index fixed size
 {% macro index_fixed_4(x1, x2, x3, x4, L2, L3, L4) %}
 {% if x1 == 0 or x1 == "0" %}
 {{index_fixed_3(x2,x3,x4,L3,L4)}}{##}
+{% elif (x2 == 0 or x2 == "0") and (x3 == 0 or x3 == "0") and (x4 == 0 or x4 == "0") %}{# remove trailling 0 #}
+{{x1}}*{{L2}}{##}
 {% else %}
 {{x1~"*"~L2~"+"~index_fixed_3(x2,x3,x4,L3,L4)}}{##}
 {% endif %}
@@ -157,6 +161,8 @@ Size 5 index fixed size
 {% macro index_fixed_5(x1, x2, x3, x4, x5, L2, L3, L4, L5) %}
 {% if x1 == 0 or x1 == "0" %}
 {{index_fixed_4(x2,x3,x4,x5,L3,L4,L5)}}{##}
+{% elif (x2 == 0 or x2 == "0") and (x3 == 0 or x3 == "0") and (x4 == 0 or x4 == "0") and (x5 == 0 or x5 == "0") %}{# remove trailling 0 #}
+{{x1}}*{{L2}}{##}
 {% else %}
 {{x1~"*"~L2~"+"~index_fixed_4(x2,x3,x4,x5,L3,L4,L5)}}{##}
 {% endif %}
@@ -169,6 +175,8 @@ Size 6 index fixed size
 {% macro index_fixed_6(x1, x2, x3, x4, x5, x6, L2, L3, L4, L5, L6) %}
 {% if x1 == 0 or x1 == "0" %}
 {{index_fixed_5(x2,x3,x4,x5,x6,L3,L4,L5,L6)}}{##}
+{% elif (x2 == 0 or x2 == "0") and (x3 == 0 or x3 == "0") and (x4 == 0 or x4 == "0") and (x5 == 0 or x5 == "0") and (x6 == 0 or x6 == "0") %}{# remove trailling 0 #}
+{{x1}}*{{L2}}{##}
 {% else %}
 {{x1~"*"~L2~"+"~index_fixed_5(x2,x3,x4,x5,x6,L3,L4,L5,L6)}}{##}
 {% endif %}
@@ -181,6 +189,8 @@ Size 7 index fixed size
 {% macro index_fixed_7(x1, x2, x3, x4, x5, x6, x7, L2, L3, L4, L5, L6, L7) %}
 {% if x1 == 0 or x1 == "0" %}
 {{index_fixed_6(x2,x3,x4,x5,x6,x7,L3,L4,L5,L6,L7)}}{##}
+{% elif (x2 == 0 or x2 == "0") and (x3 == 0 or x3 == "0") and (x4 == 0 or x4 == "0") and (x5 == 0 or x5 == "0") and (x6 == 0 or x6 == "0") and (x7 == 0 or x7 == "0") %}{# remove trailling 0 #}
+{{x1}}*{{L2}}{##}
 {% else %}
 {{x1~"*"~L2~"+"~index_fixed_6(x2,x3,x4,x5,x6,x7,L3,L4,L5,L6,L7)}}{##}
 {% endif %}
