@@ -78,6 +78,7 @@ class ArgumentParser:
         ("useGaussLobatto",     ArgType.OptionalBool,    "use Gauss Lobatto Quadrature instead of Gauss Legendre"),
         ("predictorRecompute",  ArgType.OptionalBool,    "predictor step will recompute the PDE instead of relying on stored values from the picard loop (nonlinear only)"),
         ("useVectPDE",          ArgType.OptionalBool,    "use vectorized PDE terms (applies when present to: Flux, NCP, Source, FusedSource and MaterialParam)"),
+        ("useAoSoA2",           ArgType.OptionalBool,    "use AoSoA[2] data layout in SpaceTimePredictor kernel (WiP: linear only), requires useVectPDE"), #TODO JMG: WiP
         ("tempVarsOnStack",     ArgType.OptionalBool,    "put the big scratch arrays on the stack instead of the heap (you can use ulimit -s to increase the stack size)")
     ]
     
