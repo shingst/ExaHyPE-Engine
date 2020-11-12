@@ -606,9 +606,9 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   
   //recompute lFhi in y
 {% if usePointSources %}
-  std::copy_n(PSi, {{nDof3D*nDof*nVar*nDofPad}}, lFhi); //start with the pointsource values
+  std::copy_n(PSi, {{nDof3D*nVar*nDof2Pad}}, lFhi); //start with the pointsource values
 {%else%}
-  std::memset(lFhi, 0, {{nDof3D*nDof*nVar*nDofPad}}*sizeof(double));
+  std::memset(lFhi, 0, {{nDof3D*nVar*nDof2Pad}}*sizeof(double));
 {% endif %}
 {% if useFlux %}
   //call flux in y
