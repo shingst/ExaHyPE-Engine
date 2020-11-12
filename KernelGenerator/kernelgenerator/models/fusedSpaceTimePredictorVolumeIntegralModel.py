@@ -118,7 +118,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                                 self.context["matmulConfigs"]["flux_z_sck_aosoa2"] =       MatmulConfig(nDof2Pad*nVar, nDof, nDof, nDof2Pad*nVar , nDofPad, nDof2Pad*nVar , 1, 1, 1, 1, "flux_z_sck_aosoa2", "nopf", "gemm")
                         self.context["matmulConfigs"]["gradQ_x_sck_aosoa2"] =     MatmulConfig(nDof, nDof, nDof, nDofPad , nDof, nDof               , 1, 0, 1, 1, "gradQ_x_sck_aosoa2", "nopf", "gemm") # beta, 0 => overwrite C
                         self.context["matmulConfigs"]["gradQ_y_sck_aosoa2"] =     MatmulConfig(nDof, nDof, nDof, nDof , nDofPad, nDof               , 1, 0, 1, 1, "gradQ_y_sck_aosoa2", "nopf", "gemm") # beta, 0 => overwrite C
-                        self.context["matmulConfigs"]["gradQ_z_sck_aosoa2"] =     MatmulConfig(nDof2Pad*nVar, nDof, nDof, nDof2Pad*nVar, nDofPad, nDof2Pad*nVar, 1, 0, 1, 1, "gradQ_z_sck_vect", "nopf", "gemm") # beta, 0 => overwrite C
+                        self.context["matmulConfigs"]["gradQ_z_sck_aosoa2"] =     MatmulConfig(nDof2Pad*nVar, nDof, nDof, nDof2Pad*nVar, nDofPad, nDof2Pad*nVar, 1, 0, 1, 1, "gradQ_z_sck_aosoa2", "nopf", "gemm") # beta, 0 => overwrite C
                     else:# split_ck vect
                         if self.context["useFlux"]:
                             if self.context["useMaterialParam"]:
