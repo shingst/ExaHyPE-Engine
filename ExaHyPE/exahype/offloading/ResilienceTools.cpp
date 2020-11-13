@@ -104,7 +104,7 @@ bool exahype::offloading::ResilienceTools::isAdmissibleNumericalError(double *a1
             &&  (l1norm<_l1NormTol)
             &&  (l2norm<_l2NormTol);
 
-  if(!admissible) {
+  if(!admissible || infnorm!=0 || l1norm!=0 || l2norm!=0) {
     logInfo("isAdmissibleNumericalError","We'll likely have a soft error: "
                                          << " inf norm = "<<infnorm
                                          << " l1 norm = "<<l1norm
