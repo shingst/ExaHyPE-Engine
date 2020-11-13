@@ -302,15 +302,15 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 
       bool equal = true;
       bool tmp;
-      tmp = std::equal(std::begin(data->_lQhbnd), std::end(data->_lQhbnd), lQhbnd); equal&=tmp;
+      tmp = exahype::offloading::ResilienceTools::getInstance().isAdmissibleNumericalError(data->_lQhbnd.data(), lQhbnd, data->_lQhbnd.size()); equal&=tmp;
       if(!tmp) {
-        logInfo("handleLocalExecution", "lQhbnd is not equal");
+        logInfo("handleLocalExecution", "lQhbnd is not (numerically) equal");
       }
 
 #if defined(OffloadingGradQhbnd)
       tmp = std::equal(std::begin(data->_lGradQhbnd), std::end(data->_lGradQhbnd), lGradQhbnd); equal&=tmp;
       if(!tmp) {
-        logInfo("handleLocalExecution", "lGradQhbnd is not equal");
+        logInfo("handleLocalExecution", "lGradQhbnd is not (numerically) equal");
       }
       /*for(int i=0; i<data->_lGradQhbnd.size();i++) {
         //if(data->_lGradQhbnd[i]!=_lGradQhbnd[i]) {
@@ -321,11 +321,11 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 #endif
       tmp = std::equal(std::begin(data->_lFhbnd), std::end(data->_lFhbnd), lFhbnd); equal&=tmp;
       if(!tmp) {
-        logInfo("handleLocalExecution", "lFhbnd is not equal");
+        logInfo("handleLocalExecution", "lFhbnd is not  (numerically) equal");
       }
       tmp = std::equal(std::begin(data->_lduh), std::end(data->_lduh), lduh); equal&=tmp;
       if(!tmp) {
-        logInfo("handleLocalExecution", "lduh is not equal");
+        logInfo("handleLocalExecution", "lduh is not  (numerically) equal");
       }
 
       if(!equal) {

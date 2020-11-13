@@ -39,6 +39,10 @@ class exahype::offloading::ResilienceTools {
   int _injectionInterval;
   std::atomic<int> _cnt;
 
+  double _infNormTol;
+  double _l1NormTol;
+  double _l2NormTol;
+
   public:
 
   static bool GenerateErrors;
@@ -50,6 +54,13 @@ class exahype::offloading::ResilienceTools {
   static ResilienceTools& getInstance();
 
   bool generateBitflipErrorInDoubleIfActive(double *array, size_t length);
+
+  static double computeInfNormError(double *a1, double *a2, size_t length);
+  static double computeL1NormError(double *a1, double *a2, size_t length);
+  static double computeL2NormError(double *a1, double *a2, size_t length);
+
+  bool isAdmissibleNumericalError(double *a1, double *a2, size_t length);
+
   virtual ~ResilienceTools();
 
 };

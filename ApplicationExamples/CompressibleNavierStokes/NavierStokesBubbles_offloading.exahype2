@@ -21,7 +21,7 @@
     "max_mesh_setup_iterations": 400
   },
   "shared_memory": {
-    "cores": 2,
+    "cores": 3,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
     "background_job_processing": "job_system",
@@ -48,6 +48,10 @@
     "load_balancing_strategy": "hotspot",
     "node_pool_strategy": "fair",
     "ranks_per_node"         : 1   
+  },
+  "resilience" : {
+    "generate_errors" : "no",
+    "trigger_mechanism" : "trigger_all"
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",

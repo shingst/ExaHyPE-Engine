@@ -30,7 +30,7 @@ bool exahype::offloading::ResilienceTools::TriggerLimitedCellsOnly;
 bool exahype::offloading::ResilienceTools::TriggerFlipped;
 
 exahype::offloading::ResilienceTools::ResilienceTools()
- : _injectionInterval(10000), _cnt(1)
+ : _injectionInterval(10000), _cnt(1), _infNormTol(0.0000001), _l1NormTol(0.0000001), _l2NormTol(0.0000001)
 {}
 
 exahype::offloading::ResilienceTools::~ResilienceTools() {}
@@ -69,6 +69,49 @@ bool exahype::offloading::ResilienceTools::generateBitflipErrorInDoubleIfActive(
     return true;
   }
   return false;
+}
+
+double exahype::offloading::ResilienceTools::computeInfNormError(double *a1, double *a2, size_t length) {
+  double result = 0.0;
+  for(int i = 0; i<length; i++) {
+    result = std::max(result, std::abs(a1[i]-a2[i]));
+  }
+  return result;
+}
+
+double exahype::offloading::ResilienceTools::computeL1NormError(double *a1, double *a2, size_t length){
+  double result = 0.0;
+  for(int i = 0; i<length; i++) {
+    result += std::abs(a1[i]-a2[i]);
+  }
+  return result;
+}
+
+double exahype::offloading::ResilienceTools::computeL2NormError(double *a1, double *a2, size_t length){
+  double result = 0.0;
+  for(int i = 0; i<length; i++) {
+    result += std::pow((a1[i]-a2[i]),2);
+  }
+  return std::sqrt(result);
+}
+
+bool exahype::offloading::ResilienceTools::isAdmissibleNumericalError(double *a1, double *a2, size_t length) {
+  double infnorm = computeInfNormError(a1, a2, length);
+  double l1norm = computeL1NormError(a1, a2, length);
+  double l2norm = computeL2NormError(a1, a2, length);
+
+  bool admissible = (infnorm<_infNormTol)
+            &&  (l1norm<_l1NormTol)
+            &&  (l2norm<_l2NormTol);
+
+  if(!admissible) {
+    logInfo("isAdmissibleNumericalError","We'll likely have a soft error: "
+                                         << " inf norm = "<<infnorm
+                                         << " l1 norm = "<<l1norm
+                                         << " l2 norm = "<<l2norm);
+  }
+
+  return admissible;
 }
 
 #endif
