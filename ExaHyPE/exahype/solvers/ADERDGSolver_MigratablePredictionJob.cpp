@@ -106,10 +106,6 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::setTrigger(bool fl
   CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
       _element);
 
-  if(exahype::offloading::ResilienceTools::TriggerFlipped && flipped)
-
-  if(exahype::offloading::ResilienceTools::TriggerAllMigratableSTPs || cellDescription.getIsTroubledInLastStep())
-
   _isPotSoftErrorTriggered =  (exahype::offloading::ResilienceTools::TriggerFlipped && flipped)
                            || (exahype::offloading::ResilienceTools::TriggerLimitedCellsOnly && cellDescription.getIsTroubledInLastStep())
                            ||  exahype::offloading::ResilienceTools::TriggerAllMigratableSTPs;
@@ -292,13 +288,12 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
         _predictorTimeStamp,
         _predictorTimeStepSize,
         true);
-    hasComputed = true;
+   hasComputed = true;
 
    bool hasFlipped = exahype::offloading::ResilienceTools::getInstance().generateBitflipErrorInDoubleIfActive(lduh, _solver.getUpdateSize());
+   setTrigger(hasFlipped);
 
 #if defined(ResilienceChecks)
-    setTrigger(hasFlipped);
-
     if(needToCheck) {
       assertion(found);
       assertion(data!=nullptr);
@@ -333,8 +328,10 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
         logInfo("handleLocalExecution", "lduh is not equal");
       }
 
-      logError("handleLocalExecution", "soft error detected: "<<data->_metadata.to_string());
-      MPI_Abort(MPI_COMM_WORLD, -1);
+      if(!equal) {
+        logError("handleLocalExecution", "soft error detected: "<<data->_metadata.to_string());
+        MPI_Abort(MPI_COMM_WORLD, -1);
+      }
 
       logInfo("handleLocalExecution", "checked duplicate executions for soft errors, result = "<<equal);
       exahype::offloading::JobTableStatistics::getInstance().notifyDoubleCheckedTask();
