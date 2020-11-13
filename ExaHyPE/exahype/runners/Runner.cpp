@@ -109,7 +109,7 @@
 #endif
 
 #include "exahype/offloading/OffloadingProfiler.h"
-
+#include "exahype/offloading/ResilienceTools.h"
 #endif
 
 #if defined(TMPI_Heartbeats)
@@ -317,6 +317,11 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     );
 #endif
 
+
+    exahype::offloading::ResilienceTools::GenerateErrors = _parser.getGenerateSoftErrorsInMigratableSTPs();
+    exahype::offloading::ResilienceTools::TriggerAllMigratableSTPs = _parser.getTriggerAllMigratableSTPs();
+    exahype::offloading::ResilienceTools::TriggerLimitedCellsOnly= _parser.getTriggerLimitedCellsOnly();
+    exahype::offloading::ResilienceTools::TriggerFlipped = _parser.getTriggerFlipped();
 #endif
     tarch::parallel::NodePool::getInstance().restart();
 

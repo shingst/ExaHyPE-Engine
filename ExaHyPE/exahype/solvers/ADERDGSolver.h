@@ -1185,7 +1185,7 @@ private:
       void packMetaData(MigratablePredictionJobMetaData *buffer);
       //static size_t getSizeOfMetaData();
 
-      void setTriggerIfTroubledPreviously();
+      void setTrigger(bool flipped);
 
     public:
       // constructor for local jobs that can be stolen

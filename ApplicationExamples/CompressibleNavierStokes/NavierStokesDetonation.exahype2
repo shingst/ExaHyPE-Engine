@@ -17,11 +17,7 @@
     "width": [
       2.0,
       2.0
-    ],
-    "max_mesh_setup_iterations": 400,
-    "outside_cells": 2,
-    "outside_cells_left": 1,
-    "one_third_of_cells_outside": false
+    ]
   },
   "shared_memory": {
     "cores": 8,
@@ -68,8 +64,7 @@
           "source"
         ],
         "space_time_predictor": {
-          "fix_picard_iterations": false,
-          "split_ck": "disabled"
+          "fix_picard_iterations": false
         },
         "optimised_terms": [],
         "optimised_kernel_debugging": [],
@@ -135,7 +130,7 @@
       },
       "plotters": [
         {
-          "type": "vtu::Cartesian::vertices::limited::ascii",
+          "type": "vtu::Cartesian::cells::limited::ascii",
           "name": "Plotter_Limiting",
           "time": 0.0,
           "repeat": 0.05,

@@ -13,7 +13,7 @@
 
 #if defined(SharedTBB)  && defined(Parallel)
 
-#include "exahype/offloading/SoftErrorInjector.h"
+#include "ResilienceTools.h"
 
 //#include "exahype/parser/Parser.h"
 
@@ -22,22 +22,28 @@
 #endif
 
 
-tarch::logging::Log exahype::offloading::SoftErrorInjector::_log("exahype::offloading::SoftErrorInjector");
+tarch::logging::Log exahype::offloading::ResilienceTools::_log("exahype::offloading::ResilienceTools");
 
+bool exahype::offloading::ResilienceTools::GenerateErrors;
+bool exahype::offloading::ResilienceTools::TriggerAllMigratableSTPs;
+bool exahype::offloading::ResilienceTools::TriggerLimitedCellsOnly;
+bool exahype::offloading::ResilienceTools::TriggerFlipped;
 
-exahype::offloading::SoftErrorInjector::SoftErrorInjector()
+exahype::offloading::ResilienceTools::ResilienceTools()
  : _injectionInterval(10000), _cnt(1)
 {}
 
-exahype::offloading::SoftErrorInjector::~SoftErrorInjector() {}
+exahype::offloading::ResilienceTools::~ResilienceTools() {}
 
 
-exahype::offloading::SoftErrorInjector& exahype::offloading::SoftErrorInjector::getInstance() {
-  static SoftErrorInjector singleton;
+exahype::offloading::ResilienceTools& exahype::offloading::ResilienceTools::getInstance() {
+  static ResilienceTools singleton;
   return singleton;
 }
 
-void exahype::offloading::SoftErrorInjector::generateBitflipErrorInDoubleIfActive(double *array, size_t size) {
+bool exahype::offloading::ResilienceTools::generateBitflipErrorInDoubleIfActive(double *array, size_t size) {
+  if(!GenerateErrors) return false;
+
   _cnt++;
 
   if(_cnt.load()%_injectionInterval==0) {
@@ -60,7 +66,9 @@ void exahype::offloading::SoftErrorInjector::generateBitflipErrorInDoubleIfActiv
     array[idx_array] = new_val;
 
     logInfo("generateBitflipErrorInDoubleIfActive()","generating bitflip: pos = "<<idx_array<<" byte = "<<idx_byte<<" bit = "<<idx_bit<< " old ="<<old_val<<" new = "<<new_val);
+    return true;
   }
+  return false;
 }
 
 #endif

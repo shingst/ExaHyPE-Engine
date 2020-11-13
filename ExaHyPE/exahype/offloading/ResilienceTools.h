@@ -23,11 +23,11 @@
 
 namespace exahype {
   namespace offloading {
-    class SoftErrorInjector;
+    class ResilienceTools;
   }
 }
 
-class exahype::offloading::SoftErrorInjector {
+class exahype::offloading::ResilienceTools {
 
   private:
 
@@ -40,11 +40,17 @@ class exahype::offloading::SoftErrorInjector {
   std::atomic<int> _cnt;
 
   public:
-  SoftErrorInjector();
-  static SoftErrorInjector& getInstance();
 
-  void generateBitflipErrorInDoubleIfActive(double *array, size_t length);
-  virtual ~SoftErrorInjector();
+  static bool GenerateErrors;
+  static bool TriggerAllMigratableSTPs;
+  static bool TriggerLimitedCellsOnly;
+  static bool TriggerFlipped;
+
+  ResilienceTools();
+  static ResilienceTools& getInstance();
+
+  bool generateBitflipErrorInDoubleIfActive(double *array, size_t length);
+  virtual ~ResilienceTools();
 
 };
 

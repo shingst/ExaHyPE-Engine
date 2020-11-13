@@ -16,7 +16,7 @@
 #include "exahype/offloading/JobTableStatistics.h"
 #include "exahype/offloading/MemoryMonitor.h"
 #include "exahype/offloading/NoiseGenerator.h"
-#include "exahype/offloading/SoftErrorInjector.h"
+#include "../offloading/ResilienceTools.h"
 
 #define MAX_PROGRESS_ITS 10000
 //#undef assertion
@@ -100,12 +100,19 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
 exahype::solvers::ADERDGSolver::MigratablePredictionJob::~MigratablePredictionJob() {
 }
 
-void exahype::solvers::ADERDGSolver::MigratablePredictionJob::setTriggerIfTroubledPreviously() {
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::setTrigger(bool flipped) {
   //todo: need to implement some criterion
   //set to true for now, won't benefit from task sharing then, though
   CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
       _element);
-  _isPotSoftErrorTriggered = cellDescription.getIsTroubledInLastStep();
+
+  if(exahype::offloading::ResilienceTools::TriggerFlipped && flipped)
+
+  if(exahype::offloading::ResilienceTools::TriggerAllMigratableSTPs || cellDescription.getIsTroubledInLastStep())
+
+  _isPotSoftErrorTriggered =  (exahype::offloading::ResilienceTools::TriggerFlipped && flipped)
+                           || (exahype::offloading::ResilienceTools::TriggerLimitedCellsOnly && cellDescription.getIsTroubledInLastStep())
+                           ||  exahype::offloading::ResilienceTools::TriggerAllMigratableSTPs;
 }
 
 //Caution: Compression is not supported yet!
@@ -287,13 +294,10 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
         true);
     hasComputed = true;
 
-#if defined(GenerateSoftErrors)
-   exahype::offloading::SoftErrorInjector::getInstance().generateBitflipErrorInDoubleIfActive(lduh, _solver.getUpdateSize());
-#endif
-
+   bool hasFlipped = exahype::offloading::ResilienceTools::getInstance().generateBitflipErrorInDoubleIfActive(lduh, _solver.getUpdateSize());
 
 #if defined(ResilienceChecks)
-    setTriggerIfTroubledPreviously();
+    setTrigger(hasFlipped);
 
     if(needToCheck) {
       assertion(found);
