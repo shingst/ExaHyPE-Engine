@@ -70,6 +70,8 @@ void STPStatsTracer::dumpAndResetTraceIfActive() {
     #if defined (SharedTBB)
       //int threadId = tarch::multicore::Core::getInstance().getThreadNum();
       for(int threadId = 0; threadId<_elapsed[type].size(); threadId++) {
+    #else
+      int threadId = 0;
     #endif
         std::stringstream stream;
         stream<<_outputDir<<"/exahype_";
@@ -119,6 +121,8 @@ void STPStatsTracer::writeTracingEventIteration(unsigned int iterations, STPTrac
 
 #if defined(SharedTBB)
   unsigned int threadId = tarch::multicore::Core::getInstance().getThreadNum();
+#else
+  unsigned int threadId = 0;
 #endif
 
   //if(threadId>_iterations[type].size()) {
@@ -133,6 +137,8 @@ void STPStatsTracer::writeTracingEventRun(unsigned int elapsed, STPTraceKey type
 
 #if defined(SharedTBB)
   unsigned int threadId = tarch::multicore::Core::getInstance().getThreadNum();
+#else
+  unsigned int threadId = 0;
 #endif
 
 //  if(threadId>_elapsed[type].size()) {
@@ -146,6 +152,8 @@ void STPStatsTracer::writeTracingEventRun(unsigned int elapsed, STPTraceKey type
 void STPStatsTracer::writeTracingEventRunIterations(unsigned int elapsed, unsigned int iterations, STPTraceKey type) {
 #if defined(SharedTBB)
   unsigned int threadId = tarch::multicore::Core::getInstance().getThreadNum();
+#else
+  unsigned int threadId = 0;
 #endif
 
 //  if(threadId>_elapsed[type].size()) {

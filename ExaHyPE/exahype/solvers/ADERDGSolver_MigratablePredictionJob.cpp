@@ -1,4 +1,5 @@
-#if defined(DistributedOffloading) && defined(Parallel) && defined(SharedTBB)
+//#if defined(DistributedOffloading) && defined(Parallel) && defined(SharedTBB)
+#if defined(DistributedOffloading) && defined(Parallel) 
 
 #if defined(ScoreP)
 #include "scorep/SCOREP_User.h"
@@ -281,7 +282,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     iterations = _solver.fusedSpaceTimePredictorVolumeIntegral(lduh,
        	lQhbnd,
         lGradQhbnd,
-	      lFhbnd,
+        lFhbnd,
         luh,
         cellDescription.getOffset() + 0.5 * cellDescription.getSize(),
         cellDescription.getSize(),
@@ -330,7 +331,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 
       if(!equal) {
         logError("handleLocalExecution", "soft error detected: "<<data->_metadata.to_string());
-        MPI_Abort(MPI_COMM_WORLD, -1);
+        //MPI_Abort(MPI_COMM_WORLD, -1);
       }
 
       logInfo("handleLocalExecution", "checked duplicate executions for soft errors, result = "<<equal);

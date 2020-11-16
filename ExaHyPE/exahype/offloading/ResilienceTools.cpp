@@ -11,7 +11,8 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if defined(SharedTBB)  && defined(Parallel)
+//#if defined(SharedTBB)  && defined(Parallel)
+#if  defined(Parallel)
 
 #include "ResilienceTools.h"
 
@@ -109,6 +110,9 @@ bool exahype::offloading::ResilienceTools::isAdmissibleNumericalError(double *a1
                                          << " inf norm = "<<infnorm
                                          << " l1 norm = "<<l1norm
                                          << " l2 norm = "<<l2norm);
+    for(int i=0; i<length; i++) {
+      logInfo("isAdmissibleNumericalError", "i = "<<i<<" a = "<<a1[i]<<" , b = "<<a2[i]);
+    }
   }
 
   return admissible;

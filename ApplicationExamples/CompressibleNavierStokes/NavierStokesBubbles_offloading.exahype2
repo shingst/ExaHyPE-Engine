@@ -21,11 +21,11 @@
     "max_mesh_setup_iterations": 400
   },
   "shared_memory": {
-    "cores": 3,
+    "cores": 5,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
     "background_job_processing": "job_system",
-    "background_job_consumers": 1,
+    "background_job_consumers": 3,
     "min_background_jobs_in_one_rush": 1,
     "max_background_jobs_in_one_rush": 2147483647,
     "invasion_strategy": "no_invade",
@@ -145,7 +145,7 @@
           "type": "vtu::Cartesian::vertices::ascii",
           "name": "Plotter",
           "time": 1e-06,
-          "repeat": 0.5,
+          "repeat": 0.1,
           "output": "./results/solution",
           "variables": 5
         }
