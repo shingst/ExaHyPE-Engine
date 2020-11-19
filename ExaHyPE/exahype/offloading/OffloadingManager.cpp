@@ -203,6 +203,8 @@ void exahype::offloading::OffloadingManager::createMPICommunicators() {
     MPI_Info_create(&info);
     MPI_Info_set(info, "thread_id", std::to_string(i).c_str());
 
+    std::cout<<"i "<<i<<std::endl;
+
     int ierr= MPI_Comm_dup(MPI_COMM_WORLD, &_offloadingComms[i]);
     assertion(ierr==MPI_SUCCESS);
     MPI_Comm_set_info(_offloadingComms[i], info);

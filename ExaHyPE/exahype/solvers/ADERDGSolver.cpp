@@ -4279,6 +4279,7 @@ void exahype::solvers::ADERDGSolver::mpiIsendMigratablePredictionJobOutcome(
 
   if(metadata != nullptr) {
     ierr = MPI_Isend(metadata, MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), dest, tag, comm, &requests[i++]);
+    
     assertion(ierr==MPI_SUCCESS);
     assertion(requests[i-1]!=MPI_REQUEST_NULL);
   }

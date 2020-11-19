@@ -3449,7 +3449,12 @@ public:
       peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
  #if !defined(OffloadingUseProgressThread)
       if ( responsibleRank != myRank) {
-        logInfo("waitUntil", "cell missing from responsible rank: "<<responsibleRank);
+        //tarch::la::Vector<DIMENSIONS, double> center;
+        //center = cellDescription.getOffset()+0.5*cellDescription.getSize();
+      
+        //logInfo("waitUntil", "cell missing from responsible rank: "<<responsibleRank<<" center[0] = "<< center[0] 
+        //                              <<" center[1] = "<< center[1]
+        //                              <<" center[2] = "<< center[2]);
         tryToReceiveTaskBack(this) ;
       }
  #endif

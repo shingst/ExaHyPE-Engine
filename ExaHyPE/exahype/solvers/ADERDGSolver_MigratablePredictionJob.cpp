@@ -540,13 +540,15 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
       <<" center[1] = "<<_center[1]
       <<" center[2] = "<<_center[2]
       <<" time stamp = "<<_predictorTimeStamp
-      <<" to = "<<_originRank);
+      <<" to = "<<_originRank
+      <<" tag = "<<_tag);
 #else
     logInfo("handleExecution",
         " send job outcome: center[0] = "<<_center[0]
       <<" center[1] = "<<_center[1]
       <<" time stamp = "<<_predictorTimeStamp
-      <<" to = "<<_originRank);
+      <<" to = "<<_originRank
+      <<" tag = "<<_tag);
 #endif
     //logInfo("handleLocalExecution()", "postSendBack");
 #if defined(UseSmartMPI)
@@ -594,10 +596,17 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandler(
       a_tagRankToData, std::make_pair(remoteRank, tag));
   assertion(found);
   data = a_tagRankToData->second;
-  a_tagRankToData.release();
-
 #if defined(UseSmartMPI)
+  // hack: when sending back a job outcome, remoteRank is different (it is then the actual client rank and not a SmartMPI server rank)
+  // therefore, we adapt the rank here
   data->_metadata.unpackContiguousBuffer();
+  static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagRankToStolenData.erase(a_tagRankToData);
+  a_tagRankToData.release();
+  static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagRankToStolenData.insert(std::make_pair(
+                                                                                       std::make_pair(data->_metadata.getOrigin(), tag),
+                                                                                       data));
+#else
+  a_tagRankToData.release();
 #endif
 
   exahype::offloading::OffloadingAnalyser::getInstance().notifyReceivedSTPJob();
@@ -606,8 +615,8 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandler(
           data->_metadata.getOrigin(), tag);
   peano::datatraversal::TaskSet spawnedSet(job);
 
-  //logInfo("receiveHandler",
-  //    " received task : "<< data->_metadata.to_string()<<" from "<<remoteRank);
+  logInfo("receiveHandler",
+      " received task : "<< data->_metadata.to_string()<<" from "<<remoteRank<<" tag = "<<tag);
 
   exahype::offloading::OffloadingProfiler::getInstance().notifyReceivedTask(
       remoteRank);
@@ -718,6 +727,14 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
   static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagToCellDesc.erase(
       a_tagToCellDesc);
   a_tagToCellDesc.release();
+  
+  //tarch::la::Vector<DIMENSIONS, double> center;
+  //center = cellDescription->getOffset()+0.5*cellDescription->getSize();
+      
+  //logInfo("receiveBackHandler", "received task outcome: "<<" center[0] = "<< center[0] 
+  //                                    <<" center[1] = "<< center[1]
+  //                                    <<" center[2] = "<< center[2]
+  //                                    <<" found = "<<found);
 
 #ifndef OffloadingLocalRecompute
   tbb::concurrent_hash_map<const CellDescription*, std::pair<int,int>>::accessor a_cellDescToTagRank;
@@ -868,6 +885,8 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackHandler(
     exahype::solvers::Solver* solver, int tag, int remoteRank) {
   //logInfo("sendBackHandler","successful sendBack request");
   tbb::concurrent_hash_map<std::pair<int, int>, MigratablePredictionJobData*>::accessor a_tagRankToData;
+
+  logInfo("sendBackHandler", "looking for tag = "<<tag<<" remoteRank = "<<remoteRank);
 
   MigratablePredictionJobData *data;
   bool found =
