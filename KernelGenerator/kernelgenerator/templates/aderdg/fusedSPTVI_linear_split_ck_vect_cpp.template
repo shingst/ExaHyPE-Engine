@@ -234,6 +234,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
       // store M*rhs in gradQ [n][x]
       {{ m.matmul('flux_x_sck_vect', 'negativeDudx_by_dx', 'lFhi', 'gradQ', '0', '0', '0') | indent(6) }}{##}
       solver.{{solverName}}::multiplyMaterialParameterMatrix_vect(lPi+{{idxLPi(0,yz,0,0)}}, gradQ);
+      #pragma omp simd aligned(lQi_next,gradQ:ALIGNMENT)
       for (int nx = 0; nx < {{nVar*nDofPad}} ; nx++){
         lQi_next[{{idx(0,yz,0,nx)}}] += gradQ[{{idx(0,0,0,nx)}}];
       }
@@ -268,6 +269,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
       {{ m.matmul('flux_y_or_z_sck_vect', 'lFhi', 'negativeDudxT_by_dx', 'gradQ', '0', '0', '0') | indent(6) }}{##}
       for (int y = 0; y < {{nDof}} ; y++){
         solver.{{solverName}}::multiplyMaterialParameterMatrix_vect(lPi+{{idxLPi(z,y,0,0)}}, gradQ+y*{{nDofPad*nVar}});
+        #pragma omp simd aligned(lQi_next,gradQ:ALIGNMENT)
         for (int nx = 0; nx < {{nVar*nDofPad}} ; nx++){
           lQi_next[{{idx(z,y,0,nx)}}] += gradQ[{{idx(0,y,0,nx)}}];
         }
@@ -306,6 +308,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
       {{ m.matmul('flux_y_or_z_sck_vect', 'lFhi', 'negativeDudxT_by_dx', 'gradQ', '0', '0', '0') | indent(6) }}{##}
       for (int z = 0; z < {{nDof}} ; z++){
         solver.{{solverName}}::multiplyMaterialParameterMatrix_vect(lPi+{{idxLPi(z,y,0,0)}}, gradQ+z*{{nDofPad*nVar}});
+        #pragma omp simd aligned(lQi_next,gradQ:ALIGNMENT)
         for (int nx = 0; nx < {{nVar*nDofPad}} ; nx++){
           lQi_next[{{idx(z,y,0,nx)}}] += gradQ[{{idx(0,z,0,nx)}}];
         }
@@ -528,6 +531,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     // store M*rhs in gradQ [n][x]
     {{ m.matmul('flux_x_sck_vect', 'dudx_by_dx', 'lQi_next', 'gradQ', '0', '0', '0') | indent(4) }}{##}
     solver.{{solverName}}::multiplyMaterialParameterMatrix_vect(lPi+{{idxLPi(0,yz,0,0)}}, gradQ);
+    #pragma omp simd aligned(lFhi,gradQ:ALIGNMENT)
     for (int nx = 0; nx < {{nVar*nDofPad}} ; nx++){
       lFhi[{{idx(0,yz,0,nx)}}] += gradQ[{{idx(0,0,0,nx)}}];
     }
@@ -608,6 +612,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     {{ m.matmul('flux_y_or_z_sck_vect', 'lQi_next', 'dudxT_by_dx', 'gradQ', '0', '0', '0') | indent(4) }}{##}
     for (int y = 0; y < {{nDof}} ; y++){
       solver.{{solverName}}::multiplyMaterialParameterMatrix_vect(lPi+{{idxLPi(z,y,0,0)}}, gradQ+y*{{nDofPad*nVar}});
+      #pragma omp simd aligned(lFhi,gradQ:ALIGNMENT)
       for (int nx = 0; nx < {{nVar*nDofPad}} ; nx++){
         lFhi[{{idx(z,y,0,nx)}}] += gradQ[{{idx(0,y,0,nx)}}];
       }
@@ -668,6 +673,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     {{ m.matmul('flux_y_or_z_sck_vect', 'lQi_next', 'dudxT_by_dx', 'gradQ', '0', '0', '0') | indent(4) }}{##}
     for (int z = 0; z < {{nDof}} ; z++){
       solver.{{solverName}}::multiplyMaterialParameterMatrix_vect(lPi+{{idxLPi(z,y,0,0)}}, gradQ+z*{{nDofPad*nVar}});
+      #pragma omp simd aligned(lFhi,gradQ:ALIGNMENT)
       for (int nx = 0; nx < {{nVar*nDofPad}} ; nx++){
         lFhi[{{idx(z,y,0,nx)}}] += gradQ[{{idx(0,z,0,nx)}}];
       }
