@@ -96,22 +96,56 @@ double exahype::offloading::ResilienceTools::computeL2NormError(double *a1, doub
   return std::sqrt(result);
 }
 
+double exahype::offloading::ResilienceTools::computeInfNormErrorRel(double *a1, double *a2, size_t length) {
+  double result = 0.0;
+  for(int i = 0; i<length; i++) {
+	if(a1[i]+a2[i]!=0)
+      result = std::max(result, std::abs(a1[i]-a2[i])/(0.5*(a1[i]+a2[i])));
+  }
+  return result;
+}
+
+double exahype::offloading::ResilienceTools::computeL1NormErrorRel(double *a1, double *a2, size_t length){
+  double result = 0.0;
+  for(int i = 0; i<length; i++) {
+    if(a1[i]+a2[i]!=0)
+	 result += std::abs(a1[i]-a2[i])/(0.5*(a1[i]+a2[i]));
+  }
+  return result;
+}
+
+double exahype::offloading::ResilienceTools::computeL2NormErrorRel(double *a1, double *a2, size_t length){
+  double result = 0.0;
+  for(int i = 0; i<length; i++) {
+    if(a1[i]+a2[i]!=0)
+     result += std::pow((a1[i]-a2[i])/(0.5*(a1[i]+a2[i])),2);
+  }
+  return std::sqrt(result);
+}
+
 bool exahype::offloading::ResilienceTools::isAdmissibleNumericalError(double *a1, double *a2, size_t length) {
+  //double infnorm = computeInfNormErrorRel(a1, a2, length);
+  //double l1norm = computeL1NormErrorRel(a1, a2, length);
+  //double l2norm = computeL2NormErrorRel(a1, a2, length);
+
   double infnorm = computeInfNormError(a1, a2, length);
   double l1norm = computeL1NormError(a1, a2, length);
   double l2norm = computeL2NormError(a1, a2, length);
 
-  bool admissible = (infnorm<_infNormTol)
-            &&  (l1norm<_l1NormTol)
-            &&  (l2norm<_l2NormTol);
+  //bool admissible = (infnorm<_infNormTol)
+   //         &&  (l1norm<_l1NormTol)
+   //         &&  (l2norm<_l2NormTol);
+  bool admissible = (infnorm==0)
+            &&  (l1norm==0)
+            &&  (l2norm==0);
 
   if(!admissible || infnorm!=0 || l1norm!=0 || l2norm!=0) {
-    logInfo("isAdmissibleNumericalError","We'll likely have a soft error: "
+    logError("isAdmissibleNumericalError","We'll likely have a soft error: "
                                          << " inf norm = "<<infnorm
                                          << " l1 norm = "<<l1norm
                                          << " l2 norm = "<<l2norm);
     for(int i=0; i<length; i++) {
-      logInfo("isAdmissibleNumericalError", "i = "<<i<<" a = "<<a1[i]<<" , b = "<<a2[i]);
+      logError("isAdmissibleNumericalError", "i = "<<i<<" a = "<<a1[i]<<" , b = "<<a2[i]);
     }
   }
 

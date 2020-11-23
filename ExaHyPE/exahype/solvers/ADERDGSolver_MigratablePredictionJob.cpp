@@ -305,13 +305,13 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
       bool tmp;
       tmp = exahype::offloading::ResilienceTools::getInstance().isAdmissibleNumericalError(data->_lQhbnd.data(), lQhbnd, data->_lQhbnd.size()); equal&=tmp;
       if(!tmp) {
-        logInfo("handleLocalExecution", "lQhbnd is not (numerically) equal");
+        logError("handleLocalExecution", "lQhbnd is not (numerically) equal for cell "<<"center[0]="<<_center[0]<<" center[1]="<<_center[1]<<" timestamp "<<_predictorTimeStamp);
       }
 
 #if defined(OffloadingGradQhbnd)
       tmp = exahype::offloading::ResilienceTools::getInstance().isAdmissibleNumericalError(data->_lGradQhbnd.data(), lGradQhbnd, data->_lGradQhbnd.size()); equal&=tmp;
       if(!tmp) {
-        logInfo("handleLocalExecution", "lGradQhbnd is not (numerically) equal");
+        logError("handleLocalExecution", "lGradQhbnd is not (numerically) equal for cell "<<"center[0]="<<_center[0]<<" center[1]="<<_center[1]<<" timestamp "<<_predictorTimeStamp);
       }
       /*for(int i=0; i<data->_lGradQhbnd.size();i++) {
         //if(data->_lGradQhbnd[i]!=_lGradQhbnd[i]) {
@@ -322,11 +322,11 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 #endif
       tmp = exahype::offloading::ResilienceTools::getInstance().isAdmissibleNumericalError(data->_lFhbnd.data(), lFhbnd, data->_lFhbnd.size()); equal&=tmp;
       if(!tmp) {
-        logInfo("handleLocalExecution", "lFhbnd is not  (numerically) equal");
+        logError("handleLocalExecution", "lFhbnd is not  (numerically) equal for cell "<<"center[0]="<<_center[0]<<" center[1]="<<_center[1]<<" timestamp "<<_predictorTimeStamp);
       }
       tmp = exahype::offloading::ResilienceTools::getInstance().isAdmissibleNumericalError(data->_lduh.data(), lduh, data->_lduh.size()); equal&=tmp;
       if(!tmp) {
-        logInfo("handleLocalExecution", "lduh is not  (numerically) equal");
+        logError("handleLocalExecution", "lduh is not  (numerically) equal for cell "<<"center[0]="<<_center[0]<<" center[1]="<<_center[1]<<" timestamp "<<_predictorTimeStamp);
       }
 
       if(!equal) {
@@ -348,7 +348,6 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     //exahype::offloading::STPStatsTracer::getInstance().writeTracingEventIteration(iterations, exahype::offloading::STPTraceKey::ADERDGOwnMigratable);
 #endif
 
-    cellDescription.setHasCompletedLastStep(true);
 #if defined(USE_ITAC)
     if(_isLocalReplica)
     VT_end(event_stp_local_replica);
@@ -424,6 +423,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   //   exahype::solvers::ADERDGSolver::progressOffloading(&_solver, isRunOnMaster);
 #endif
 #endif
+  if(hasComputed)
+    cellDescription.setHasCompletedLastStep(true); 
 
   if (!result) {
     exahype::offloading::PerformanceMonitor::getInstance().decRemainingTasks();

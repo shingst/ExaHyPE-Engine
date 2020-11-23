@@ -59,6 +59,10 @@ class exahype::offloading::ResilienceTools {
   static double computeL1NormError(double *a1, double *a2, size_t length);
   static double computeL2NormError(double *a1, double *a2, size_t length);
 
+  static double computeInfNormErrorRel(double *a1, double *a2, size_t length);
+  static double computeL1NormErrorRel(double *a1, double *a2, size_t length);
+  static double computeL2NormErrorRel(double *a1, double *a2, size_t length);
+
   bool isAdmissibleNumericalError(double *a1, double *a2, size_t length);
 
   virtual ~ResilienceTools();

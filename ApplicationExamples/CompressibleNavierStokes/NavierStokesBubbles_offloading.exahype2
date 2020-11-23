@@ -50,8 +50,8 @@
     "ranks_per_node"         : 1   
   },
   "resilience" : {
-    "generate_errors" : "no",
-    "trigger_mechanism" : "trigger_all"
+    "generate_soft_errors" : "migratable_stp_tasks",
+    "trigger_mechanism" : "trigger_flipped"
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",
@@ -66,7 +66,7 @@
     "spawn_double_compression_as_background_thread": false,
     "limiting": "dynamic",
     "mesh_refinement": "dynamic",
-    "spawn_update_as_background_thread": false,
+    "spawn_update_as_background_thread": true,
     "spawn_prolongation_as_background_thread": false,
     "spawn_neighbour_merge_as_thread": false
   },
