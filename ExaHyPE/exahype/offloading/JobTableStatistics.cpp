@@ -91,6 +91,10 @@ void JobTableStatistics::notifyDoubleCheckedTask() {
   _doubleCheckedTasks++;
 }
 
+void JobTableStatistics::notifyDetectedError() {
+  _softErrorsDetected++;
+}
+
 void JobTableStatistics::printStatistics() {
 #if defined(TaskSharing) || defined(OffloadingLocalRecompute) 
      int team = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank();
@@ -98,6 +102,7 @@ void JobTableStatistics::printStatistics() {
            <<" spawned tasks = "<<_spawnedTasks
            <<" executed tasks = "<<_executedTasks
            <<" double checked tasks = "<<_doubleCheckedTasks
+           <<" detected soft errors = "<<_softErrorsDetected
            <<" saved tasks =  "<<_savedTasks
            <<" sent tasks = "<<_sentTasks
            <<" received tasks = "<<_receivedTasks

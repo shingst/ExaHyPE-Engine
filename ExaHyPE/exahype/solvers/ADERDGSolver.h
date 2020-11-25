@@ -1182,6 +1182,7 @@ private:
       bool handleExecution(bool isCalledOnMaster, bool& hasComputed);
       bool handleLocalExecution(bool isCalledOnMaster, bool& hasComputed);
 
+      void checkAgainstOutcome(MigratablePredictionJobData *data);
       void packMetaData(MigratablePredictionJobMetaData *buffer);
       //static size_t getSizeOfMetaData();
 

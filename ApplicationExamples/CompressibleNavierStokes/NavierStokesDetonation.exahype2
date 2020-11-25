@@ -20,20 +20,20 @@
     ]
   },
   "shared_memory": {
-    "cores": 8,
+    "cores": 4,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
     "background_job_processing": "job_system",
-    "background_job_consumers": 1,
+    "background_job_consumers": 3,
     "min_background_jobs_in_one_rush": 1,
     "max_background_jobs_in_one_rush": 2147483647,
     "invasion_strategy": "no_invade",
     "manual_pinning": false
   },
   "optimisation": {
-    "fuse_algorithmic_steps": "most",
+    "fuse_algorithmic_steps": "all",
     "fuse_algorithmic_steps_rerun_factor": 0.99,
-    "spawn_predictor_as_background_thread": true,
+    "spawn_predictor_as_background_thread": false,
     "spawn_amr_background_threads": true,
     "disable_vertex_exchange_in_time_steps": false,
     "time_step_batch_factor": 0.0,
@@ -122,8 +122,8 @@
         "viscosity": 0.0,
         "scenario": "detonation",
         "use-amr": false,
-        "use-tv-amr": true,
-        "use-tv-volume-correction": true,
+        "use-tv-amr": false,
+        "use-tv-volume-correction": false,
         "amr-indicator": "Z",
         "amr-factor-refine": 2.0,
         "amr-factor-erase": -0.5

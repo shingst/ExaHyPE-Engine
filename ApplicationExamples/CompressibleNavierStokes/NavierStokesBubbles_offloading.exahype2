@@ -21,11 +21,11 @@
     "max_mesh_setup_iterations": 400
   },
   "shared_memory": {
-    "cores": 5,
+    "cores": 2,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
     "background_job_processing": "job_system",
-    "background_job_consumers": 3,
+    "background_job_consumers": 1,
     "min_background_jobs_in_one_rush": 1,
     "max_background_jobs_in_one_rush": 2147483647,
     "invasion_strategy": "no_invade",
@@ -50,8 +50,8 @@
     "ranks_per_node"         : 1   
   },
   "resilience" : {
-    "generate_soft_errors" : "migratable_stp_tasks",
-    "trigger_mechanism" : "trigger_flipped"
+    "generate_soft_errors" : "no",
+    "trigger_mechanism" : "trigger_all"
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",

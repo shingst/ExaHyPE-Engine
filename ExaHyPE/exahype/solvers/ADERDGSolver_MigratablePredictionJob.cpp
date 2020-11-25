@@ -289,53 +289,28 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
         _predictorTimeStamp,
         _predictorTimeStepSize,
         true);
-   hasComputed = true;
+    hasComputed = true;
 
-   bool hasFlipped = exahype::offloading::ResilienceTools::getInstance().generateBitflipErrorInDoubleIfActive(lduh, _solver.getUpdateSize());
-   setTrigger(hasFlipped);
+    bool hasFlipped = exahype::offloading::ResilienceTools::getInstance().generateBitflipErrorInDoubleIfActive(lduh, _solver.getUpdateSize());
+    setTrigger(hasFlipped);
+#if defined(TaskSharing) && defined(ResilienceChecks)
+    //needToCheck = needToCheck ||(_isPotSoftErrorTriggered==1) ? true : false;
 
-#if defined(ResilienceChecks)
     if(needToCheck) {
+      while(!found) {
+        found = _solver._jobDatabase.find(a_jobToData, key);
+        if(found) {
+          data = a_jobToData->second.data;
+          assertion(data->_metadata._predictorTimeStamp == _predictorTimeStamp);
+        }
+        a_jobToData.release();
+        exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, MAX_PROGRESS_ITS);
+      }
+
       assertion(found);
       assertion(data!=nullptr);
 
-      logInfo("handleLocalExecution", "comparing center[0]="<<_center[0]<<" center[1]="<<_center[1]<<" timestamp "<<_predictorTimeStamp<<" with received task outcome "<<data->_metadata.to_string());
-
-      bool equal = true;
-      bool tmp;
-      tmp = exahype::offloading::ResilienceTools::getInstance().isAdmissibleNumericalError(data->_lQhbnd.data(), lQhbnd, data->_lQhbnd.size()); equal&=tmp;
-      if(!tmp) {
-        logError("handleLocalExecution", "lQhbnd is not (numerically) equal for cell "<<"center[0]="<<_center[0]<<" center[1]="<<_center[1]<<" timestamp "<<_predictorTimeStamp);
-      }
-
-#if defined(OffloadingGradQhbnd)
-      tmp = exahype::offloading::ResilienceTools::getInstance().isAdmissibleNumericalError(data->_lGradQhbnd.data(), lGradQhbnd, data->_lGradQhbnd.size()); equal&=tmp;
-      if(!tmp) {
-        logError("handleLocalExecution", "lGradQhbnd is not (numerically) equal for cell "<<"center[0]="<<_center[0]<<" center[1]="<<_center[1]<<" timestamp "<<_predictorTimeStamp);
-      }
-      /*for(int i=0; i<data->_lGradQhbnd.size();i++) {
-        //if(data->_lGradQhbnd[i]!=_lGradQhbnd[i]) {
-         logInfo("handleLocalExecution", "i="<<i<<" data->_lGradQhbnd[i]="<<data->_lGradQhbnd[i]<<", lGradQhbnd[i]"<<lGradQhbnd[i]);
-        //}
-        //logInfo("handleLocalExecution", "i="<<i<<" lGradQhbnd[i]="<<lGradQhbnd[i]);
-      }*/
-#endif
-      tmp = exahype::offloading::ResilienceTools::getInstance().isAdmissibleNumericalError(data->_lFhbnd.data(), lFhbnd, data->_lFhbnd.size()); equal&=tmp;
-      if(!tmp) {
-        logError("handleLocalExecution", "lFhbnd is not  (numerically) equal for cell "<<"center[0]="<<_center[0]<<" center[1]="<<_center[1]<<" timestamp "<<_predictorTimeStamp);
-      }
-      tmp = exahype::offloading::ResilienceTools::getInstance().isAdmissibleNumericalError(data->_lduh.data(), lduh, data->_lduh.size()); equal&=tmp;
-      if(!tmp) {
-        logError("handleLocalExecution", "lduh is not  (numerically) equal for cell "<<"center[0]="<<_center[0]<<" center[1]="<<_center[1]<<" timestamp "<<_predictorTimeStamp);
-      }
-
-      if(!equal) {
-        logError("handleLocalExecution", "soft error detected: "<<data->_metadata.to_string());
-        //MPI_Abort(MPI_COMM_WORLD, -1);
-      }
-
-      logInfo("handleLocalExecution", "checked duplicate executions for soft errors, result = "<<equal);
-      exahype::offloading::JobTableStatistics::getInstance().notifyDoubleCheckedTask();
+      checkAgainstOutcome(data);
     }
 #endif
 
@@ -368,26 +343,6 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   if (hasComputed)
     exahype::offloading::JobTableStatistics::getInstance().notifyExecutedTask();
 #endif
-
-  //#if defined(FileTrace)
-//    std::stringstream stream;
-//    stream.str(std::string());
-//    stream<<"./TraceOutput/exahype_solvers_ADERDGSolver_OwnMigratableJob_iterations_rank_";
-//    int rank=tarch::parallel::Node::getInstance().getRank();
-//    stream<<rank<<"_";
-//#if defined(SharedTBB)
-//    int threadId=tarch::multicore::Core::getInstance().getThreadNum();
-//    stream<<threadId;
-//#endif
-//    stream<<".txt";
-//    std::string path=stream.str();
-//
-//    std::ofstream file;
-//    file.open(path,std::fstream::app);
-//    file << (iterations+1) << std::endl;
-//    file.close();
-//#endif
-
 
 #if defined (TaskSharing)
   //check one more time
@@ -528,23 +483,6 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
    // exahype::offloading::STPStatsTracer::getInstance().writeTracingEventIteration(iterations, exahype::offloading::STPTraceKey::ADERDGRemoteMigratable);
     exahype::offloading::STPStatsTracer::getInstance().writeTracingEventRunIterations(duration.count(), iterations, exahype::offloading::STPTraceKey::ADERDGRemoteMigratable);
 #endif
-//    std::stringstream stream;
-//    stream.str(std::string());
-//    stream<<"./TraceOutput/exahype_solvers_ADERDGSolver_AlienMigratableJob_iterations_rank_";
-//    int rank=tarch::parallel::Node::getInstance().getRank();
-//    stream<<rank<<"_";
-//#if defined(SharedTBB)
-//    int threadId=tarch::multicore::Core::getInstance().getThreadNum();
-//    stream<<threadId;
-//#endif
-//    stream<<".txt";
-//    std::string path=stream.str();
-//
-//    std::ofstream file;
-//    file.open(path,std::fstream::app);
-//    file << (iterations+1) << std::endl;
-//    file.close();
-//#endif
   }
 #if defined(OffloadingUseProfiler)
   time += MPI_Wtime();
@@ -599,6 +537,41 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
 #endif
   }
   return result;
+}
+
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::checkAgainstOutcome(MigratablePredictionJobData *data) {
+  logInfo("handleLocalExecution", "comparing center[0]="<<_center[0]<<" center[1]="<<_center[1]<<" timestamp "<<_predictorTimeStamp<<" with received task outcome "<<data->_metadata.to_string());
+
+  bool equal = true;
+  bool tmp;
+  tmp = exahype::offloading::ResilienceTools::getInstance().isAdmissibleNumericalError(data->_lQhbnd.data(), lQhbnd, data->_lQhbnd.size()); equal&=tmp;
+  if(!tmp) {
+    logError("handleLocalExecution", "lQhbnd is not (numerically) equal for cell "<<"center[0]="<<_center[0]<<" center[1]="<<_center[1]<<" timestamp "<<_predictorTimeStamp);
+  }
+
+#if defined(OffloadingGradQhbnd)
+  tmp = exahype::offloading::ResilienceTools::getInstance().isAdmissibleNumericalError(data->_lGradQhbnd.data(), lGradQhbnd, data->_lGradQhbnd.size()); equal&=tmp;
+  if(!tmp) {
+    logError("handleLocalExecution", "lGradQhbnd is not (numerically) equal for cell "<<"center[0]="<<_center[0]<<" center[1]="<<_center[1]<<" timestamp "<<_predictorTimeStamp);
+  }
+#endif
+  tmp = exahype::offloading::ResilienceTools::getInstance().isAdmissibleNumericalError(data->_lFhbnd.data(), lFhbnd, data->_lFhbnd.size()); equal&=tmp;
+  if(!tmp) {
+    logError("handleLocalExecution", "lFhbnd is not  (numerically) equal for cell "<<"center[0]="<<_center[0]<<" center[1]="<<_center[1]<<" timestamp "<<_predictorTimeStamp);
+  }
+  tmp = exahype::offloading::ResilienceTools::getInstance().isAdmissibleNumericalError(data->_lduh.data(), lduh, data->_lduh.size()); equal&=tmp;
+  if(!tmp) {
+    logError("handleLocalExecution", "lduh is not  (numerically) equal for cell "<<"center[0]="<<_center[0]<<" center[1]="<<_center[1]<<" timestamp "<<_predictorTimeStamp);
+  }
+
+  if(!equal) {
+    logError("handleLocalExecution", "soft error detected: "<<data->_metadata.to_string());
+    exahype::offloading::JobTableStatistics::getInstance().notifyDetectedError();
+     //MPI_Abort(MPI_COMM_WORLD, -1);
+  }
+
+  logInfo("handleLocalExecution", "checked duplicate executions for soft errors, result = "<<equal);
+  exahype::offloading::JobTableStatistics::getInstance().notifyDoubleCheckedTask();
 }
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandler(
