@@ -2530,7 +2530,7 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
     gotOne = _allocatedJobs.try_pop(key);
 
     if(!gotOne) break;
-    logInfo("cleanUpStaleTaskOutcomes()", " time stamp of key ="<<key.timestamp);
+    logDebug("cleanUpStaleTaskOutcomes()", " time stamp of key ="<<key.timestamp);
     i++;
   
     assertion(key.center!=nullptr);
@@ -2550,7 +2550,7 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
 
       MigratablePredictionJobData * data = a_jobToData->second.data;
       _jobDatabase.erase(a_jobToData);
-      logInfo("cleanUpStaleTaskOutcomes()",   data->_metadata.to_string());
+      logDebug("cleanUpStaleTaskOutcomes()",   data->_metadata.to_string());
       assertion(data!=nullptr);
       delete data;
       AllocatedSTPsReceive--;
@@ -2855,7 +2855,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
    exahype::offloading::OffloadingManager::getInstance().selectVictimRank(destRank, lastSend);
    assertion(destRank>=0);
 
-   logInfo("submitOrSendMigratablePredictionJob", "there are "<<NumberOfEnclaveJobs<<" Enclave Jobs and "<<NumberOfRemoteJobs<< " Remote Jobs");
+   logDebug("submitOrSendMigratablePredictionJob", "there are "<<NumberOfEnclaveJobs<<" Enclave Jobs and "<<NumberOfRemoteJobs<< " Remote Jobs");
 
    if(myRank!=destRank) {
     // logInfo("submitOrSendMigratablePredictionJob","element "<<job->_element<<" predictor time stamp"<<job->_predictorTimeStamp<<" predictor time step size "<<job->_predictorTimeStepSize);
@@ -2933,7 +2933,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
      //logInfo("submitOrSendMigratablePredictionJob", "inserting tag"<<tag);
      _mapCellDescToTagRank.insert(std::make_pair(&cellDescription, std::make_pair(tag, destRank)));
      _mapTagToOffloadTime.insert(std::make_pair(tag, -MPI_Wtime()));
-     logInfo("submitOrSendMigratablePredictionJob()","send away with tag "<<tag<<" job "<<metadata->to_string());
+     logDebug("submitOrSendMigratablePredictionJob()","send away with tag "<<tag<<" job "<<metadata->to_string());
      // send away
 #if defined(UseSmartMPI)
      mpiSendMigratablePredictionJobOffload(
@@ -3246,7 +3246,7 @@ void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahyp
   key.timestamp = data->_metadata.getPredictorTimeStamp();
   key.element = data->_metadata.getElement();
 
-  logInfo("receiveTaskOutcome", "receive task outcome "<< data->_metadata.to_string());
+  logDebug("receiveTaskOutcome", "receive task outcome "<< data->_metadata.to_string());
 
   if(key.timestamp<solver->getMinTimeStamp()) {
     exahype::offloading::JobTableStatistics::getInstance().notifyLateTask();
@@ -3567,7 +3567,7 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
 #if defined(OffloadingCheckForSlowOperations)
   timing += MPI_Wtime();
   if(timing > OFFLOADING_SLOW_OPERATION_THRESHOLD)
-    logError("pollForOutstandingCommunicationRequests()", " took "<<timing<<"s");
+    logError("pollForOutstandingCommunicationRequests()", " took "<<timing<<"s with iprobes = "<<iprobesCounter);
 #endif
 }
 
@@ -3652,7 +3652,7 @@ bool exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(exahype::solvers::ADER
 #if defined(PerformanceAnalysisOffloadingDetailed)
     watch.stopTimer();
     if(watch.getCalendarTime() >= 0.0) {
-      logInfo(
+      logDebug(
           "progressOffloading() ",
           "couldn't run "<<
           "time=" << std::fixed <<
@@ -3786,7 +3786,7 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::run( bool isCalledOnMaster ) {
     // tag 0 is reserved for termination message
     if(receivedTask && stat.MPI_TAG==0) {
       int terminatedSender = stat.MPI_SOURCE;
-      logInfo("run()","active sender "<<terminatedSender<<" has sent termination signal ");
+      logDebug("run()","active sender "<<terminatedSender<<" has sent termination signal ");
       exahype::offloading::OffloadingManager::getInstance().receiveCompleted(terminatedSender); //, stat.rail); //todo: won't work with SmartMPI
       ActiveSenders.erase(terminatedSender);
 #if defined(UseSmartMPI)
@@ -4007,7 +4007,7 @@ bool exahype::solvers::ADERDGSolver::OffloadingManagerJob::run( bool isCalledOnM
     case State::Terminate:
     {
       exahype::offloading::PerformanceMonitor::getInstance().stop();
-      logInfo("offloadingManager", " terminated ");
+      logDebug("offloadingManager", " terminated ");
       _solver._offloadingManagerJobTerminated = true;
       result = false;
       break;
@@ -4036,7 +4036,7 @@ void exahype::solvers::ADERDGSolver::OffloadingManagerJob::resume() {
 #endif
 
 void exahype::solvers::ADERDGSolver::startOffloadingManager(bool spawn) {
-  logInfo("startOffloadingManager", " starting ");
+  logDebug("startOffloadingManager", " starting ");
   _offloadingManagerJobTerminated = false;
   _offloadingManagerJobTriggerTerminate = false;
 #ifdef OffloadingUseProgressThread
@@ -4058,7 +4058,7 @@ void exahype::solvers::ADERDGSolver::startOffloadingManager(bool spawn) {
 #ifndef OffloadingUseProgressThread
 void exahype::solvers::ADERDGSolver::pauseOffloadingManager() {
   //tarch::multicore::Lock lock(OffloadingSemaphore, true);
-  logInfo("pauseOffloadingManager", "pausing ");
+  logDebug("pauseOffloadingManager", "pausing ");
   if(_offloadingManagerJob!=nullptr){
     _offloadingManagerJob->pause();
     _offloadingManagerJob = nullptr;
@@ -4067,7 +4067,7 @@ void exahype::solvers::ADERDGSolver::pauseOffloadingManager() {
 }
 
 void exahype::solvers::ADERDGSolver::resumeOffloadingManager() {
-  logInfo("resumeOffloadingManager", "resuming ");
+  logDebug("resumeOffloadingManager", "resuming ");
   //old job will be deleted so we create a new one here
   //assertion(_offloadingManagerJob==nullptr);
   if(_offloadingManagerJob==nullptr) {
@@ -4080,7 +4080,7 @@ void exahype::solvers::ADERDGSolver::resumeOffloadingManager() {
 #endif
 
 void exahype::solvers::ADERDGSolver::stopOffloadingManager() {
-  logInfo("stopOffloadingManager", " stopping ");
+  logDebug("stopOffloadingManager", " stopping ");
   //assertion(_offloadingManagerJob != nullptr);
   _offloadingManagerJobTriggerTerminate = true;
 
@@ -4238,7 +4238,7 @@ void exahype::solvers::ADERDGSolver::mpiIsendMigratablePredictionJob(
   //MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
 
   if(metadata != nullptr) {
-    ierr = MPI_Isend(metadata, MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), dest, tag, comm, &requests[i++]);
+    ierr = MPI_Isend(metadata->getMPIBuffer(), MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), dest, tag, comm, &requests[i++]);
     assertion(ierr==MPI_SUCCESS);
     assertion(requests[i-1]!=MPI_REQUEST_NULL);
   }
@@ -4278,7 +4278,8 @@ void exahype::solvers::ADERDGSolver::mpiIsendMigratablePredictionJobOutcome(
   //MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
 
   if(metadata != nullptr) {
-    ierr = MPI_Isend(metadata, MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), dest, tag, comm, &requests[i++]);
+    logDebug("mpiIsendDebug", metadata->to_string()<<" , len = "<<MigratablePredictionJobMetaData::getMessageLen()<<" dest "<<dest<<" tag "<<tag);
+    ierr = MPI_Isend(metadata->getMPIBuffer(), MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), dest, tag, comm, &requests[i++]);
     
     assertion(ierr==MPI_SUCCESS);
     assertion(requests[i-1]!=MPI_REQUEST_NULL);
@@ -4330,7 +4331,7 @@ void exahype::solvers::ADERDGSolver::mpiIrecvMigratablePredictionJob(
   //logInfo("mpiIrecvMigratablePredictionJob", "receiving job "<<tag<<" from srcRank "<<srcRank);
 
   if(metadata != nullptr) {
-    ierr = MPI_Irecv(metadata, MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), srcRank, tag, comm, &requests[i++]);
+    ierr = MPI_Irecv(metadata->getMPIBuffer(), MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), srcRank, tag, comm, &requests[i++]);
     assertion(ierr==MPI_SUCCESS);
     assertion(requests[i-1]!=MPI_REQUEST_NULL);
   }
@@ -4367,7 +4368,7 @@ void exahype::solvers::ADERDGSolver::mpiIrecvMigratablePredictionJobOutcome(
   //logInfo("mpiIrecvMigratablePredictionJob", "receiving job "<<tag<<" from srcRank "<<srcRank);
 
   if(metadata != nullptr) {
-    ierr = MPI_Irecv(metadata, MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), srcRank, tag, comm, &requests[i++]);
+    ierr = MPI_Irecv(metadata->getMPIBuffer(), MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), srcRank, tag, comm, &requests[i++]);
     assertion(ierr==MPI_SUCCESS);
     assertion(requests[i-1]!=MPI_REQUEST_NULL);
   }
@@ -4417,7 +4418,7 @@ void exahype::solvers::ADERDGSolver::mpiRecvMigratablePredictionJobOutcome(
 #endif
 
   if(metadata != nullptr) {
-    ierr = MPI_Recv(metadata->getContiguousBuffer(),  MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), srcRank, tag, comm, MPI_STATUS_IGNORE);
+    ierr = MPI_Recv(metadata->getMPIBuffer(),  MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), srcRank, tag, comm, MPI_STATUS_IGNORE);
     assertion(ierr==MPI_SUCCESS);
   }
 

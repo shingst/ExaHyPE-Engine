@@ -1073,6 +1073,7 @@ private:
       bool getIsPotSoftErrorTriggered() const;
       char* getContiguousBuffer() const;
       void unpackContiguousBuffer();
+      void* getMPIBuffer() const;
 
       static MPI_Datatype  getMPIDatatype();
       static size_t getMessageLen();
