@@ -2707,7 +2707,7 @@ void exahype::solvers::ADERDGSolver::sendKeyOfTaskOutcomeToOtherTeams(Migratable
 
     MPI_Request *sendRequests = new MPI_Request[teams-1];
 
-    int tag = exahype::offloading::OffloadingManager::getInstance().getOffloadingTag();
+    int tag = job->_cellDescriptionsIndex; //exahype::offloading::OffloadingManager::getInstance().getOffloadingTag();
 
     //_mapTagToReplicationSendKey.insert(std::make_pair(tag, metadata));
     _mapTagToSTPData.insert(std::make_pair(tag, data));
@@ -2760,7 +2760,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
     MigratablePredictionJobMetaData *metadata = new MigratablePredictionJobMetaData();
     job->packMetaData(metadata);
     
-    int tag = exahype::offloading::OffloadingManager::getInstance().getOffloadingTag();
+    int tag = job->_cellDescriptionsIndex; //exahype::offloading::OffloadingManager::getInstance().getOffloadingTag();
     //_mapTagToReplicationSendData.insert(std::make_pair(tag, data));
 
     int j = 0;
@@ -2808,7 +2808,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
 
     MPI_Request *sendRequests = new MPI_Request[(NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME+1)*(teams-1)];
 
-    int tag = exahype::offloading::OffloadingManager::getInstance().getOffloadingTag();
+    int tag = job->_cellDescriptionsIndex; // exahype::offloading::OffloadingManager::getInstance().getOffloadingTag();
 
     _mapTagToSTPData.insert(std::make_pair(tag, data));
 
@@ -2867,7 +2867,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
 #if !defined(UseSmartMPI)
      MPI_Request sendRequests[NUM_REQUESTS_MIGRATABLE_COMM+1];
 #endif
-     int tag = exahype::offloading::OffloadingManager::getInstance().getOffloadingTag();
+     int tag = job->_cellDescriptionsIndex; //exahype::offloading::OffloadingManager::getInstance().getOffloadingTag();
       //need to create a copy
 #if defined(OffloadingLocalRecompute)
      //Todo: we probably don't need this anymore as we don't need a copy
