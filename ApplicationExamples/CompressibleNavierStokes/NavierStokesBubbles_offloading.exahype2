@@ -9,7 +9,7 @@
   },
   "computational_domain": {
     "dimension": 2,
-    "time_steps": 200000,
+    "time_steps": 200,
     "offset": [
       0.0,
       0.0
@@ -32,16 +32,16 @@
     "manual_pinning": false
   },
   "distributed_memory": {
-    "offloading_lb_strategy": "aggressiveHybrid",
+    "offloading_lb_strategy": "none",
     "offloading_input_file" : "",
-    "offloading_progress" : "smartmpi",   
+    "offloading_progress" : "progress_task",   
     "offloading_CCP_temperature" : 0,
     "offloading_diffusion_temperature" : 1,
     "offloading_CCP_frequency" : 0,
     "offloading_CCP_steps" : 0,
     "offloading_update_temperature" : true,
     "offloading_increase_temp_threshold" : 1.0,
-    "task_sharing" : false,
+    "task_sharing" : true,
     "timeout": 12000,
     "load_balancing_type": "static",
     "buffer_size"            : 1600,    
