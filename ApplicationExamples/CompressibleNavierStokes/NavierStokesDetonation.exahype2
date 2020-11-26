@@ -20,32 +20,15 @@
     ]
   },
   "shared_memory": {
-    "cores": 4,
+    "cores": 8,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
     "background_job_processing": "job_system",
-    "background_job_consumers": 3,
+    "background_job_consumers": 7,
     "min_background_jobs_in_one_rush": 1,
     "max_background_jobs_in_one_rush": 2147483647,
     "invasion_strategy": "no_invade",
     "manual_pinning": false
-  },
-  "optimisation": {
-    "fuse_algorithmic_steps": "all",
-    "fuse_algorithmic_steps_rerun_factor": 0.99,
-    "spawn_predictor_as_background_thread": false,
-    "spawn_amr_background_threads": true,
-    "disable_vertex_exchange_in_time_steps": false,
-    "time_step_batch_factor": 0.0,
-    "disable_metadata_exchange_in_batched_time_steps": false,
-    "double_compression": 0.0,
-    "spawn_double_compression_as_background_thread": false,
-    "limiting": "dynamic",
-    "mesh_refinement": "dynamic",
-    "fuse_algorithmic_steps_diffusion_factor": 0.99,
-    "spawn_update_as_background_thread": false,
-    "spawn_prolongation_as_background_thread": false,
-    "spawn_neighbour_merge_as_thread": false
   },
   "solvers": [
     {

@@ -542,6 +542,15 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::checkAgainstOutcome(MigratablePredictionJobData *data) {
   logInfo("handleLocalExecution", "comparing center[0]="<<_center[0]<<" center[1]="<<_center[1]<<" timestamp "<<_predictorTimeStamp<<" with received task outcome "<<data->_metadata.to_string());
 
+  CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
+      _element);
+
+  double *luh = static_cast<double*>(cellDescription.getSolution());
+  double *lduh = static_cast<double*>(cellDescription.getUpdate());
+  double *lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
+  double *lGradQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictorGradient());
+  double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
+
   bool equal = true;
   bool tmp;
   tmp = exahype::offloading::ResilienceTools::getInstance().isAdmissibleNumericalError(data->_lQhbnd.data(), lQhbnd, data->_lQhbnd.size()); equal&=tmp;

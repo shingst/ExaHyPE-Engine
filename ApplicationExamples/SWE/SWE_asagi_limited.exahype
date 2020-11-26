@@ -77,12 +77,12 @@ exahype-project  SWE
     dmp-observables const = 0
     dmp-relaxation-parameter = 100000000.0
     dmp-difference-scaling = 100000000.0
-    constants = grav:9.81, epsilon:1e+1, scenario:14
+    constants = grav:9.81, epsilon:1e+1, scenario:11
     plot vtu::Cartesian::cells::limited::ascii ConservedWriter
       variables const = 6
       time            = 0.0
       repeat          = 0.1
-      output          = ./tohoku_output_aderdg/conserved
+      output        =  results/conserved
     end plot
     plot probe::ascii ProbeWriter
       variables const = 6

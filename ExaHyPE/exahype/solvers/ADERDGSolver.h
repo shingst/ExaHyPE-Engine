@@ -1174,7 +1174,7 @@ private:
       double                      _center[DIMENSIONS];
       double                      _dx[DIMENSIONS];
       bool 							          _isLocalReplica;
-      unsigned char                _isPotSoftErrorTriggered;
+      unsigned char               _isPotSoftErrorTriggered;
 
       static std::atomic<int> JobCounter;
 

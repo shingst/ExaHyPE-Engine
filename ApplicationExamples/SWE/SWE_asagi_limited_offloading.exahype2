@@ -1,0 +1,150 @@
+{
+  "project_name": "SWE",
+  "paths": {
+    "peano_kernel_path": "./Peano",
+    "exahype_path": "./ExaHyPE",
+    "output_directory": "./ApplicationExamples/SWE/SWE_asagi_limited"
+  },
+  "architecture": "noarch",
+  "computational_domain": {
+    "dimension": 2,
+    "time_steps": 100,
+    "offset": [
+      -500.0,
+      -750.0
+    ],
+    "width": [
+      1500.0,
+      1500.0
+    ]
+  },
+  "shared_memory": {
+    "cores": 4,
+    "properties_file": "sharedmemory.properties",
+    "autotuning_strategy": "dummy",
+    "background_job_processing": "job_system",
+    "background_job_consumers": 3,
+    "min_background_jobs_in_one_rush": 4,
+    "max_background_jobs_in_one_rush": 2147483647,
+    "invasion_strategy": "no_invade",
+    "manual_pinning": false
+  },
+  "distributed_memory": {
+    "offloading_lb_strategy": "none",
+    "offloading_input_file" : "",
+    "offloading_progress" : "progress_task", 
+    "offloading_CCP_temperature" : 0,
+    "offloading_diffusion_temperature" : 1,
+    "offloading_CCP_frequency" : 0,
+    "offloading_CCP_steps" : 0,
+    "offloading_update_temperature" : true,
+    "offloading_increase_temp_threshold" : 1.0,
+    "task_sharing" : "task_sharing_resilience_checks",
+    "timeout": 12000,
+    "load_balancing_type": "static",
+    "buffer_size"            : 1600,    
+    "load_balancing_strategy": "hotspot",
+    "node_pool_strategy": "fair",
+    "ranks_per_node"         : 1   
+  },
+  "resilience" : {
+    "generate_soft_errors" : "no",
+    "trigger_mechanism" : "trigger_limited"
+  },
+  "optimisation": {
+    "fuse_algorithmic_steps": "all",
+    "fuse_algorithmic_steps_rerun_factor": 0.99,
+    "fuse_algorithmic_steps_diffusion_factor": 0.99,
+    "spawn_predictor_as_background_thread": true,
+    "spawn_amr_background_threads": false,
+    "disable_vertex_exchange_in_time_steps": true,
+    "time_step_batch_factor": 1.0,
+    "disable_metadata_exchange_in_batched_time_steps": true,
+    "double_compression": 0.0,
+    "spawn_double_compression_as_background_thread": false
+  },
+  "solvers": [
+    {
+      "type": "Limiting-ADER-DG",
+      "name": "MySWESolver",
+      "order": 3,
+      "maximum_mesh_size": 30.0,
+      "maximum_mesh_depth": 0,
+      "time_stepping": "global",
+      "aderdg_kernel": {
+        "language": "C",
+        "nonlinear": true,
+        "terms": [
+          "flux",
+          "ncp"
+        ],
+        "space_time_predictor": {},
+        "optimised_terms": [],
+        "optimised_kernel_debugging": [],
+        "implementation": "generic"
+      },
+      "point_sources": 0,
+      "limiter": {
+        "dmp_observables": 0,
+        "dmp_relaxation_parameter": 100000000.0,
+        "dmp_difference_scaling": 100000000.0,
+        "implementation": "generic"
+      },
+      "fv_kernel": {
+        "language": "C",
+        "terms": [
+          "flux",
+          "ncp"
+        ],
+        "scheme": "godunov",
+        "implementation": "generic",
+        "allocate_temporary_arrays": "stack"
+      },
+      "variables": [
+        {
+          "name": "h",
+          "multiplicity": 1
+        },
+        {
+          "name": "hu",
+          "multiplicity": 1
+        },
+        {
+          "name": "hv",
+          "multiplicity": 1
+        },
+        {
+          "name": "b",
+          "multiplicity": 1
+        }
+      ],
+      "parameters": {
+        "grav": 9.81,
+        "epsilon": 0.0001,
+        "scenario": 13
+      },
+      "plotters": [
+        {
+          "type": "vtu::Cartesian::cells::limited::ascii",
+          "name": "ConservedWriter",
+          "time": 0.0,
+          "repeat": 100,
+          "output": "results/conserved",
+          "variables": 6
+        },
+        {
+          "type": "probe::ascii",
+          "name": "ProbeWriter",
+          "time": 0.0,
+          "repeat": 10.0,
+          "output": "./buoy",
+          "variables": 6,
+          "select": {
+            "x": 545.735266126,
+            "y": 62.7164740303
+          }
+        }
+      ]
+    }
+  ]
+}
