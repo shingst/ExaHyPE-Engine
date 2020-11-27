@@ -130,7 +130,7 @@
           "time": 0.0,
           "repeat": 100,
           "output": "results/conserved",
-          "variables": 6
+          "variables": 5
         },
         {
           "type": "probe::ascii",
@@ -138,7 +138,7 @@
           "time": 0.0,
           "repeat": 10.0,
           "output": "./buoy",
-          "variables": 6,
+          "variables": 5,
           "select": {
             "x": 545.735266126,
             "y": 62.7164740303
