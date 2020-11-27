@@ -291,6 +291,22 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
         true);
     hasComputed = true;
 
+    size_t hash_sum = 0;
+    std::hash<double> hash_fn_db;
+    for(int z=0;z<_solver.getBndTotalSize();z++) {
+      hash_sum ^= hash_fn_db(lQhbnd[z]);
+    }
+    logInfo("handleLocalExecution()",
+          "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
+          <<" center[0] = "
+          << center[0]
+          <<" center[1] = "
+          << center[1]
+          <<" time stamp = "
+          <<_predictorTimeStamp
+          <<" computed hash = "
+          <<hash_sum);
+
     bool hasFlipped = exahype::offloading::ResilienceTools::getInstance().generateBitflipErrorInDoubleIfActive(lduh, _solver.getUpdateSize());
     setTrigger(hasFlipped);
 #if defined(TaskSharing) && defined(ResilienceChecks)
@@ -576,7 +592,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::checkAgainstOutcom
   if(!equal) {
     logError("handleLocalExecution", "soft error detected: "<<data->_metadata.to_string());
     exahype::offloading::JobTableStatistics::getInstance().notifyDetectedError();
-     //MPI_Abort(MPI_COMM_WORLD, -1);
+    MPI_Abort(MPI_COMM_WORLD, -1);
   }
 
   logInfo("handleLocalExecution", "checked duplicate executions for soft errors, result = "<<equal);
