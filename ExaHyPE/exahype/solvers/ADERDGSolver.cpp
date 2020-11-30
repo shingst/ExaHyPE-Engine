@@ -2627,6 +2627,7 @@ void exahype::solvers::ADERDGSolver::sendRequestForJobAndReceive(int jobTag, int
     for(int i=0; i<DIMENSIONS; i++)
       key_struct.center[i] = key[i];
     key_struct.timestamp = key[2*DIMENSIONS];
+    key_struct.timestepSize= key[2*DIMENSIONS+1];
     key_struct.element = key[2*DIMENSIONS+2];
 
     _jobDatabase.insert(std::make_pair(key_struct,entry));
@@ -3241,6 +3242,7 @@ void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahyp
   for(int i=0; i<DIMENSIONS; i++)
     key.center[i] = data->_metadata.getCenter()[i];
   key.timestamp = data->_metadata.getPredictorTimeStamp();
+  key.timestepSize = data->_metadata.getPredictorTimeStepSize();
   key.element = data->_metadata.getElement();
 
   logInfo("receiveTaskOutcome", "receive task outcome "<< data->_metadata.to_string());

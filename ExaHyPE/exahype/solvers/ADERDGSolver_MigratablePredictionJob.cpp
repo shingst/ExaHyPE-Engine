@@ -184,6 +184,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   for (int i=0; i < DIMENSIONS; i++)
     key.center[i] = center[i];
   key.timestamp = _predictorTimeStamp;
+  key.timestepSize = _predictorTimeStepSize;
   key.element = _element;
 
 #if DIMENSION==3
@@ -197,6 +198,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
       << center[2]
       <<" time stamp = "
       <<_predictorTimeStamp
+      <<" time step = "
+      <<_predictorTimeStepSize
       <<" enclave jobs "<<NumberOfEnclaveJobs <<" remote jobs "<<NumberOfRemoteJobs
       <<" hash = "<<(size_t) key);
 #else
@@ -208,6 +211,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
         << center[1]
         <<" time stamp = "
         <<_predictorTimeStamp
+        <<" time step = "
+        <<_predictorTimeStepSize
         <<" enclave jobs "<<NumberOfEnclaveJobs <<" remote jobs "<<NumberOfRemoteJobs
         <<" hash = "<<(size_t) key);
 #endif
@@ -221,6 +226,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   if (found && a_jobToData->second.status == JobOutcomeStatus::received) {
     data = a_jobToData->second.data;
     assertion(data->_metadata._predictorTimeStamp == _predictorTimeStamp);
+    assertion(data->_metadata._predictorTimeStepSize == _predictorTimeStepSize);
 
     logInfo("handleLocalExecution()",
         "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
@@ -296,14 +302,17 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     for(int z=0;z<_solver.getBndTotalSize();z++) {
       hash_sum ^= hash_fn_db(lQhbnd[z]);
     }
-    logInfo("handleLocalExecution()",
+    logDebug("handleLocalExecution()",
           "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
+          <<" cellDescription = "<<_cellDescriptionsIndex
           <<" center[0] = "
           << center[0]
           <<" center[1] = "
           << center[1]
           <<" time stamp = "
           <<_predictorTimeStamp
+          <<" time step = "
+          <<_predictorTimeStepSize
           <<" computed hash = "
           <<hash_sum);
 
@@ -684,6 +693,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
   for (int i = 0; i < DIMENSIONS; i++)
     key.center[i] = center[i];
   key.timestamp = data->_metadata.getPredictorTimeStamp();
+  key.timestepSize = data->_metadata.getPredictorTimeStepSize();
   key.element = data->_metadata.getElement();
 
   //bool criticalMemoryConsumption =  exahype::offloading::MemoryMonitor::getInstance().getFreeMemMB()<1000;

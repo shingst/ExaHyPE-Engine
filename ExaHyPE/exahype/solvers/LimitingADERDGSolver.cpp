@@ -641,6 +641,7 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
   ) {
     const int element = cellInfo.indexOfADERDGCellDescription(solverPatch.getSolverNumber());
 #ifdef DistributedOffloading
+    logDebug("fusedTimeStepBody", "spawning for "<< cellInfo._cellDescriptionsIndex<< " predictionTimeStamp "<<predictionTimeStamp<<" predictionTimeStepSize "<<predictionTimeStepSize);
     //skeleton cells are not considered for offloading
     if (isSkeletonCell) {
       peano::datatraversal::TaskSet(

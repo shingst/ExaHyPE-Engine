@@ -1281,6 +1281,7 @@ private:
   struct JobTableKey {
 	  double center[DIMENSIONS];
 	  double timestamp;
+	  double timestepSize; //need this for optimistic time stepping with rollbacks!
 	  int element;
 
 	  bool operator==(const JobTableKey &other) const {
@@ -1288,6 +1289,7 @@ private:
 		  for(int i=0; i<DIMENSIONS; i++)
 		   result &= center[i]==other.center[i];
 		  result &= timestamp == other.timestamp;
+		  result &= timestepSize == other.timestepSize;
 		  result &= element == other.element;
 		  return result;
 	  }
@@ -1305,6 +1307,7 @@ private:
 			result ^= hash_fn_db(center[i]);
 		  }
 		  result ^= hash_fn_db(timestamp);
+                  result ^= hash_fn_db(timestepSize);
 		  result ^= hash_fn_int(element);
 		  //logInfo("hash()", " center[0] = "<< center[0]
 		  //					<<" center[1] = "<< center[1]
