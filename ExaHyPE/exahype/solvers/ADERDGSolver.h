@@ -1158,10 +1158,13 @@ private:
    */
   class MigratablePredictionJob : public tarch::multicore::jobs::Job {
     friend class exahype::solvers::ADERDGSolver;
+
+    enum class State { INITIAL, CHECK_REQUIRED};
+
     private:
-      ADERDGSolver&    			      _solver;
-	    const int                   _cellDescriptionsIndex;
-	    const int                   _element;
+      ADERDGSolver&    			  _solver;
+	  const int                   _cellDescriptionsIndex;
+	  const int                   _element;
       const double                _predictorTimeStamp;
       const double                _predictorTimeStepSize;
       const int                   _originRank;
@@ -1173,15 +1176,18 @@ private:
       double*                     _lGradQhbnd;
       double                      _center[DIMENSIONS];
       double                      _dx[DIMENSIONS];
-      bool 							          _isLocalReplica;
+      bool 					      _isLocalReplica;
       unsigned char               _isPotSoftErrorTriggered;
+      State                       _currentState;
 
       static std::atomic<int> JobCounter;
 
       // actual execution of a STP job
       bool handleExecution(bool isCalledOnMaster, bool& hasComputed);
       bool handleLocalExecution(bool isCalledOnMaster, bool& hasComputed);
+      bool handleRemoteExecution(bool& hasComputed);
 
+      void sendBackOutcomeToOrigin();
       void checkAgainstOutcome(MigratablePredictionJobData *data);
       void packMetaData(MigratablePredictionJobMetaData *buffer);
       //static size_t getSizeOfMetaData();

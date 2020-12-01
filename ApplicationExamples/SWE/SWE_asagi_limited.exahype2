@@ -19,10 +19,10 @@
     ]
   },
   "shared_memory": {
-    "cores": 28,
+    "cores": 5,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
-    "background_job_consumers": 28
+    "background_job_consumers": 4
   },
   "distributed_memory": {
     "timeout": 6000,

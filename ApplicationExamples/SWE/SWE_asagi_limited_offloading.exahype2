@@ -19,11 +19,11 @@
     ]
   },
   "shared_memory": {
-    "cores": 2,
+    "cores": 5,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
     "background_job_processing": "job_system",
-    "background_job_consumers": 1,
+    "background_job_consumers": 4,
     "min_background_jobs_in_one_rush": 4,
     "max_background_jobs_in_one_rush": 2147483647,
     "invasion_strategy": "no_invade",

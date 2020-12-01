@@ -19,7 +19,7 @@
 #include "exahype/offloading/NoiseGenerator.h"
 #include "../offloading/ResilienceTools.h"
 
-#define MAX_PROGRESS_ITS 10000
+#define MAX_PROGRESS_ITS 100
 //#undef assertion
 //#define assertion assert
 
@@ -45,7 +45,9 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
       _lFhbnd(nullptr),
       _lGradQhbnd(nullptr),
       _isLocalReplica(false),
-      _isPotSoftErrorTriggered(0){
+      _isPotSoftErrorTriggered(0),
+	  _currentState(State::INITIAL)
+{
   LocalStealableSTPCounter++;
   NumberOfEnclaveJobs++;
   exahype::offloading::JobTableStatistics::getInstance().notifySpawnedTask();
@@ -83,7 +85,9 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
       _lFhbnd(lFhbnd),
       _lGradQhbnd(lGradQhbnd),
       _isLocalReplica(false),
-      _isPotSoftErrorTriggered(0) {
+      _isPotSoftErrorTriggered(0),
+	  _currentState(State::INITIAL)
+{
 
   for (int i = 0; i < DIMENSIONS; i++) {
     _center[i] = center[i];
@@ -128,11 +132,6 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run(
   bool hasComputed = false;
   int curr = std::atomic_fetch_add(&JobCounter, 1);
 
-#if defined(TaskSharing) && !defined(OffloadingUseProgressThread)
- // exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(&_solver, false, MAX_PROGRESS_ITS);
-  exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, MAX_PROGRESS_ITS);
-#endif
-
   if (curr % 1000 == 0) {
     tarch::timing::Watch watch("exahype::MigratablePredictionJob::", "-", false, false);
     watch.startTimer();
@@ -148,10 +147,14 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run(
   else
     result = handleExecution(isCalledOnMaster, hasComputed);
 
+#if defined(TaskSharing) && !defined(OffloadingUseProgressThread)
+ // exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(&_solver, false, MAX_PROGRESS_ITS);
+  exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, MAX_PROGRESS_ITS);
+#endif
+
 #if defined(GenerateNoise)
     exahype::offloading::NoiseGenerator::getInstance().generateNoiseSTP();
 #endif
-
 
 #ifdef USE_ITAC
   VT_end(event_stp);
@@ -414,51 +417,30 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   return result;
 }
 
-bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
-    bool isRunOnMaster, bool& hasComputed) {
-  int myRank = tarch::parallel::Node::getInstance().getRank();
+bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleRemoteExecution( bool& hasComputed) {
+#if defined(USE_ITAC)
+  VT_begin(event_stp_remote);
+#endif
+#if defined FileTrace
+  auto start = std::chrono::high_resolution_clock::now();
+#endif
   bool result = false;
 
-#if defined(OffloadingUseProfiler)
-  exahype::offloading::OffloadingProfiler::getInstance().beginComputation();
-  double time = -MPI_Wtime();
-#endif
-  //local treatment if this job belongs to the local rank
-  if (_originRank == myRank) {
-    result = handleLocalExecution(isRunOnMaster, hasComputed);
-    if (!_isLocalReplica) NumberOfEnclaveJobs--;
-    assertion( NumberOfEnclaveJobs>=0 );
-#ifndef OffloadingUseProgressThread
-    if (!isRunOnMaster)
-      exahype::solvers::ADERDGSolver::progressOffloading(&_solver,
-          isRunOnMaster, std::numeric_limits<int>::max());
-#endif
-  }
-  //remote task, need to execute and send it back
-  else {
-#if defined(USE_ITAC)
-    VT_begin(event_stp_remote);
-#endif
-    #if defined FileTrace
-    auto start = std::chrono::high_resolution_clock::now();
-    #endif
-    result = false;
-
-   assertion(_lduh!=nullptr);
-   assertion(_lQhbnd!=nullptr);
-   assertion(_lGradQhbnd!=nullptr);
-   assertion(_lFhbnd!=nullptr);
-   assertion(_luh!=nullptr);
+  assertion(_lduh!=nullptr);
+  assertion(_lQhbnd!=nullptr);
+  assertion(_lGradQhbnd!=nullptr);
+  assertion(_lFhbnd!=nullptr);
+  assertion(_luh!=nullptr);
     
 #if DIMENSIONS==3
-   logInfo("handleExecution",
+  logInfo("handleExecution",
         " processJob: center[0] = "<<_center[0]
       <<" center[1] = "<<_center[1]
       <<" center[2] = "<<_center[2]
       <<" time stamp = "<<_predictorTimeStamp
       <<" origin rank = "<<_originRank);
 #else
-   logInfo("handleExecution",
+  logInfo("handleExecution",
         " processJob: center[0] = "<<_center[0]
       <<" center[1] = "<<_center[1]
       <<" time stamp = "<<_predictorTimeStamp
@@ -480,7 +462,6 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
 #if defined(GenerateSoftErrors)
    exahype::offloading::SoftErrorInjector::getInstance().generateBitflipErrorInDoubleIfActive(_lduh, _solver.getUpdateSize());
 #endif
-
 
 #if DIMENSIONS==3
    logInfo("handleExecution",
@@ -508,29 +489,25 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
    // exahype::offloading::STPStatsTracer::getInstance().writeTracingEventIteration(iterations, exahype::offloading::STPTraceKey::ADERDGRemoteMigratable);
     exahype::offloading::STPStatsTracer::getInstance().writeTracingEventRunIterations(duration.count(), iterations, exahype::offloading::STPTraceKey::ADERDGRemoteMigratable);
 #endif
-  }
-#if defined(OffloadingUseProfiler)
-  time += MPI_Wtime();
-  exahype::offloading::OffloadingProfiler::getInstance().endComputation(time);
-#endif
+  return result;
+}
 
-  //send back
-  if (_originRank != myRank) {
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackOutcomeToOrigin() {
 #if DIMENSIONS==3
-    logInfo("handleExecution",
+  logInfo("handleExecution",
         " send job outcome: center[0] = "<<_center[0]
       <<" center[1] = "<<_center[1]
       <<" center[2] = "<<_center[2]
       <<" time stamp = "<<_predictorTimeStamp);
 #else
-    logInfo("handleExecution",
+  logInfo("handleExecution",
         " send job outcome: center[0] = "<<_center[0]
       <<" center[1] = "<<_center[1]
       <<" time stamp = "<<_predictorTimeStamp);
 #endif
     //logInfo("handleLocalExecution()", "postSendBack");
 #if defined(UseSmartMPI)
-    _solver.mpiSendMigratablePredictionJobOutcomeOffload(
+  _solver.mpiSendMigratablePredictionJobOutcomeOffload(
       _lduh,
       _lQhbnd,
       _lFhbnd,
@@ -538,11 +515,11 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
       _originRank,
       _tag,
       exahype::offloading::OffloadingManager::getInstance().getMPICommunicatorMapped()
-    );
-    MigratablePredictionJob::sendBackHandler(&_solver, _tag, _originRank);
+  );
+  MigratablePredictionJob::sendBackHandler(&_solver, _tag, _originRank);
 #else
-    MPI_Request sendBackRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME];
-    _solver.mpiIsendMigratablePredictionJobOutcome(
+  MPI_Request sendBackRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME];
+  _solver.mpiIsendMigratablePredictionJobOutcome(
        _lduh,
        _lQhbnd,
        _lFhbnd,
@@ -551,7 +528,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
        _tag,
        exahype::offloading::OffloadingManager::getInstance().getMPICommunicatorMapped(),
        sendBackRequests);
-    exahype::offloading::OffloadingManager::getInstance().submitRequests(
+  exahype::offloading::OffloadingManager::getInstance().submitRequests(
        sendBackRequests,
        NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME,
        _tag,
@@ -560,6 +537,40 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
        exahype::offloading::RequestType::sendBack,
        &_solver);
 #endif
+}
+
+bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
+    bool isRunOnMaster, bool& hasComputed) {
+  int myRank = tarch::parallel::Node::getInstance().getRank();
+  bool result = false;
+
+#if defined(OffloadingUseProfiler)
+  exahype::offloading::OffloadingProfiler::getInstance().beginComputation();
+  double time = -MPI_Wtime();
+#endif
+  //local treatment if this job belongs to the local rank
+  if (_originRank == myRank) {
+    result = handleLocalExecution(isRunOnMaster, hasComputed);
+    if (!_isLocalReplica) NumberOfEnclaveJobs--;
+    assertion( NumberOfEnclaveJobs>=0 );
+#ifndef OffloadingUseProgressThread
+    if (!isRunOnMaster)
+      exahype::solvers::ADERDGSolver::progressOffloading(&_solver,
+          isRunOnMaster, std::numeric_limits<int>::max());
+#endif
+  }
+  //remote task, need to execute and send it back
+  else {
+    result = handleRemoteExecution(hasComputed);
+  }
+#if defined(OffloadingUseProfiler)
+  time += MPI_Wtime();
+  exahype::offloading::OffloadingProfiler::getInstance().endComputation(time);
+#endif
+
+  //send back
+  if (_originRank != myRank) {
+    sendBackOutcomeToOrigin();
   }
   return result;
 }
