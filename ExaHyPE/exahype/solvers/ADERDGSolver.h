@@ -1151,6 +1151,8 @@ private:
   // Todo(Philipp): probably outdated
   static std::atomic<int> MaxIprobesInOffloadingProgress;
 
+  enum class JobOutcomeStatus;
+
   /**
    * A MigratablePredictionJob represents a PredictionJob that can be
    * executed remotely on a different rank than the one where it
@@ -1183,12 +1185,17 @@ private:
       static std::atomic<int> JobCounter;
 
       // actual execution of a STP job
+      bool runExecution(bool isCalledOnMaster);
+      bool tryFindOutcomeAndCheck();
       bool handleExecution(bool isCalledOnMaster, bool& hasComputed);
       bool handleLocalExecution(bool isCalledOnMaster, bool& hasComputed);
+      bool handleLocalExecutionOld(bool isCalledOnMaster, bool& hasComputed);
       bool handleRemoteExecution(bool& hasComputed);
-
+#if defined(TaskSharing)
+      bool tryToFindAndExtractEquivalentSharedOutcome(ADERDGSolver::JobOutcomeStatus &status, MigratablePredictionJobData **outcome);
       void sendBackOutcomeToOrigin();
-      void checkAgainstOutcome(MigratablePredictionJobData *data);
+      bool matchesOtherOutcome(MigratablePredictionJobData *data);
+#endif
       void packMetaData(MigratablePredictionJobMetaData *buffer);
       //static size_t getSizeOfMetaData();
 

@@ -19,11 +19,11 @@
     ]
   },
   "shared_memory": {
-    "cores": 5,
+    "cores": 2,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
     "background_job_processing": "job_system",
-    "background_job_consumers": 4,
+    "background_job_consumers": 1,
     "min_background_jobs_in_one_rush": 4,
     "max_background_jobs_in_one_rush": 2147483647,
     "invasion_strategy": "no_invade",
@@ -39,7 +39,7 @@
     "offloading_CCP_steps" : 0,
     "offloading_update_temperature" : true,
     "offloading_increase_temp_threshold" : 1.0,
-    "task_sharing" : "task_sharing_resilience_checks",
+    "task_sharing" : "task_sharing",
     "timeout": 12000,
     "load_balancing_type": "static",
     "buffer_size"            : 1600,    
@@ -49,7 +49,7 @@
   },
   "resilience" : {
     "generate_soft_errors" : "no",
-    "trigger_mechanism" : "trigger_limited"
+    "trigger_mechanism" : "none"
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",
