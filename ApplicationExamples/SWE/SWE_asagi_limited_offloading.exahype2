@@ -48,8 +48,8 @@
     "ranks_per_node"         : 1   
   },
   "resilience" : {
-    "generate_soft_errors" : "no",
-    "trigger_mechanism" : "none"
+    "generate_soft_errors" : "migratable_stp_tasks",
+    "trigger_mechanism" : "trigger_limited"
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",
@@ -128,7 +128,7 @@
           "type": "vtu::Cartesian::cells::limited::ascii",
           "name": "ConservedWriter",
           "time": 0.0,
-          "repeat":1000000,
+          "repeat":100,
           "output": "results/conserved",
           "variables": 5
         },

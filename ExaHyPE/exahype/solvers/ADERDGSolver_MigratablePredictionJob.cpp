@@ -106,10 +106,11 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::~MigratablePredictionJo
 }
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::setTrigger(bool flipped) {
-  //todo: need to implement some criterion
-  //set to true for now, won't benefit from task sharing then, though
+
   CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
       _element);
+
+  logInfo("setTrigger", " celldesc ="<<_cellDescriptionsIndex<<" isTroubled "<<cellDescription.getIsTroubledInLastStep());
 
   _isPotSoftErrorTriggered =  (exahype::offloading::ResilienceTools::TriggerFlipped && flipped)
                            || (exahype::offloading::ResilienceTools::TriggerLimitedCellsOnly && cellDescription.getIsTroubledInLastStep())
@@ -297,6 +298,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 
     bool hasFlipped = exahype::offloading::ResilienceTools::getInstance().generateBitflipErrorInDoubleIfActive(lduh, _solver.getUpdateSize());
     setTrigger(hasFlipped);
+    logInfo("handleLocalExecution", "celldesc ="<<_cellDescriptionsIndex<<" _isPotSoftErrorTriggered ="<<(int) _isPotSoftErrorTriggered);
 
 #if defined(TaskSharing)
     needToCheck = needToCheck || _isPotSoftErrorTriggered;

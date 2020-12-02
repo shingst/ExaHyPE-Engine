@@ -60,7 +60,7 @@ class exahype::records::ADERDGCellDescription {
       bool _isTroubledInLastStep{false};
 
       void setIsTroubledInLastStep(bool isTroubled) {
-        _isTroubledInLastStep = true;
+        _isTroubledInLastStep = isTroubled;
       }
 
       bool getIsTroubledInLastStep() {
