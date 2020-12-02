@@ -403,7 +403,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryToFindAndExtrac
   return found;
 }
 
-/*bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecutionOld(
+//Todo (Philipp): not used anymore, just left as a reference
+bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecutionOld(
     bool isRunOnMaster, bool& hasComputed) {
 
   bool result = false;
@@ -656,7 +657,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryToFindAndExtrac
   }
 
   return result;
-}*/
+}
 
 bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleRemoteExecution( bool& hasComputed) {
 #if defined(USE_ITAC)
@@ -971,7 +972,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->_jobDatabase.insert(
           std::make_pair(key, entry));
     }
-    static_cast<exahype::solvers::ADERDGSolver*>(solver)->_allocatedJobs.push(
+    static_cast<exahype::solvers::ADERDGSolver*>(solver)->_allocatedJobs.push_back(
         key);
   }
   exahype::offloading::JobTableStatistics::getInstance().notifyReceivedTask();

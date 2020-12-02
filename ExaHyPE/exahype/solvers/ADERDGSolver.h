@@ -22,6 +22,7 @@
 #include <atomic>
 #include <tuple>
 #include <functional>
+#include <mutex>
 
 #include "exahype/solvers/Solver.h"
 
@@ -1342,7 +1343,46 @@ private:
   std::vector<int> _lastReceiveReplicaTag;
 
   tbb::concurrent_hash_map<JobTableKey, JobTableEntry> _jobDatabase;
-  tbb::concurrent_queue<JobTableKey> _allocatedJobs;
+
+  class ConcurrentJobKeysList {
+     private:
+	  std::list<JobTableKey> _keys;
+	  std::mutex _mtx;
+
+     public:
+	  ConcurrentJobKeysList() : _keys(), _mtx() {};
+
+      bool try_pop_front(JobTableKey *result) {
+    	bool found = false;
+        _mtx.lock();
+        if(!_keys.empty()) {
+          *result = _keys.front();
+          _keys.pop_front();
+          found = true;
+        }
+        _mtx.unlock();
+        return found;
+      }
+
+      void push_front(JobTableKey key) {
+        _mtx.lock();
+        _keys.push_front(key);
+        _mtx.unlock();
+      }
+
+      void push_back(JobTableKey key) {
+        _mtx.lock();
+       _keys.push_back(key);
+       _mtx.unlock();
+      }
+
+      size_t unsafe_size() {
+    	return _keys.size();
+      }
+  };
+
+  ConcurrentJobKeysList _allocatedJobs;
+  //tbb::concurrent_queue<JobTableKey> _allocatedJobs;
 #endif
 
   /**

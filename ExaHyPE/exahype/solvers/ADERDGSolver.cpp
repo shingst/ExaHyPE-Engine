@@ -2524,13 +2524,15 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
                                                                      <<" outstanding requests "<<exahype::offloading::OffloadingManager::getInstance().getNumberOfOutstandingRequests(exahype::offloading::RequestType::sendReplica)
                                                                                             +exahype::offloading::OffloadingManager::getInstance().getNumberOfOutstandingRequests(exahype::offloading::RequestType::receiveReplica)
                                                                                                       );
+
+
   //Todo: improve performance as this sometimes takes too long/wastes resources on master thread
   while( (i< unsafe_size || isFinal) && gotOne) {
     JobTableKey key;
-    gotOne = _allocatedJobs.try_pop(key);
+    gotOne = _allocatedJobs.try_pop_front(&key);
 
     if(!gotOne) break;
-    logInfo("cleanUpStaleTaskOutcomes()", " time stamp of key ="<<key.timestamp);
+    logDebug("cleanUpStaleTaskOutcomes()", " time stamp of key ="<<key.timestamp);
     i++;
   
     assertion(key.center!=nullptr);
@@ -2539,6 +2541,12 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
     //                                       <<" center[1] = "<<key.center[1]
     //                                       <<" center[2] = "<<key.center[2]
     //                                       <<" time stamp = "<<key.timestamp);
+
+    if(key.timestamp>_minTimeStamp) {
+      _allocatedJobs.push_front(key);
+      logDebug("cleanUpStaleTaskOutcomes()", " breaking out of loop: time stamp of key ="<<key.timestamp)
+      break;
+    }
 
     tbb::concurrent_hash_map<JobTableKey, JobTableEntry>::accessor a_jobToData;
 
@@ -2550,14 +2558,14 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
 
       MigratablePredictionJobData * data = a_jobToData->second.data;
       _jobDatabase.erase(a_jobToData);
-      logInfo("cleanUpStaleTaskOutcomes()",   data->_metadata.to_string());
+      logDebug("cleanUpStaleTaskOutcomes()",   data->_metadata.to_string());
       assertion(data!=nullptr);
       delete data;
       AllocatedSTPsReceive--;
       exahype::offloading::JobTableStatistics::getInstance().notifyLateTask();
     }
     else if (found) {
-      _allocatedJobs.push(key); // the job is in the map but it contains data that may be used later
+      _allocatedJobs.push_front(key); // the job is in the map but it contains data that may be used later
     }
     else {
         //do nothing -> job was already deallocated earlier
@@ -2571,7 +2579,7 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
   }
 
   logInfo("cleanUpStaleTaskOutcomes()", " there are "<<_allocatedJobs.unsafe_size()<<" allocated received jobs left, "<<_mapTagToSTPData.size()<<" jobs to send,"
-                                          <<" allocated jobs send "<<AllocatedSTPsSend<<" allocated jobs receive "<<AllocatedSTPsReceive);
+                                          <<" allocated jobs send "<<AllocatedSTPsSend<<" allocated jobs receive "<<AllocatedSTPsReceive<< " iterated through "<<i<<" keys");
 #if defined(OffloadingCheckForSlowOperations)
   timing += MPI_Wtime();
   if(timing > OFFLOADING_SLOW_OPERATION_THRESHOLD)
