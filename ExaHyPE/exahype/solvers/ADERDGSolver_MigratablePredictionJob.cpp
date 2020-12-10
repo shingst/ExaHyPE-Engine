@@ -1370,7 +1370,7 @@ void* exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getMPIBuf
 #if defined(UseSmartMPI) || defined(OffloadingMetadataPacked)
   return _contiguousBuffer;
 #else
-  reeturn this;
+  return (void*)this;
 #endif
 }
 

@@ -958,7 +958,7 @@ exahype::solvers::LimitingADERDGSolver::checkIfCellIsTroubledAndDetermineMinAndM
     determineLimiterMinAndMax(solverPatch,limiterPatch);
   }
 #if defined(ResilienceChecks)
-    logInfo("checkIfCellIsTroubledAndDetermineMinAndMax", "celldesc ="<<cellInfo._cellDescriptionsIndex<<" troubled = "<<isTroubled);
+    logDebug("checkIfCellIsTroubledAndDetermineMinAndMax", "celldesc ="<<cellInfo._cellDescriptionsIndex<<" troubled = "<<isTroubled);
     solverPatch.setIsTroubledInLastStep(isTroubled);
 #endif
 
