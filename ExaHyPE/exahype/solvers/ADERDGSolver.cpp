@@ -2707,7 +2707,8 @@ void exahype::solvers::ADERDGSolver::sendKeyOfTaskOutcomeToOtherTeams(Migratable
 
     MPI_Request *sendRequests = new MPI_Request[teams-1];
 
-    int tag = job->_cellDescriptionsIndex; //exahype::offloading::OffloadingManager::getInstance().getOffloadingTag();
+    //int tag = job->_cellDescriptionsIndex; //exahype::offloading::OffloadingManager::getInstance().getOffloadingTag();
+    int tag = exahype::offloading::OffloadingManager::getInstance().getOffloadingTag();
 
     //_mapTagToReplicationSendKey.insert(std::make_pair(tag, metadata));
     _mapTagToSTPData.insert(std::make_pair(tag, data));
@@ -2760,7 +2761,8 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
     MigratablePredictionJobMetaData *metadata = new MigratablePredictionJobMetaData();
     job->packMetaData(metadata);
     
-    int tag = job->_cellDescriptionsIndex; //exahype::offloading::OffloadingManager::getInstance().getOffloadingTag();
+    int tag = exahype::offloading::OffloadingManager::getInstance().getOffloadingTag();
+    //int tag = job->_cellDescriptionsIndex; //exahype::offloading::OffloadingManager::getInstance().getOffloadingTag();
     //_mapTagToReplicationSendData.insert(std::make_pair(tag, data));
 
     int j = 0;
@@ -2808,7 +2810,8 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
 
     MPI_Request *sendRequests = new MPI_Request[(NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME+1)*(teams-1)];
 
-    int tag = job->_cellDescriptionsIndex; // exahype::offloading::OffloadingManager::getInstance().getOffloadingTag();
+    //int tag = job->_cellDescriptionsIndex; // exahype::offloading::OffloadingManager::getInstance().getOffloadingTag();
+    int tag = exahype::offloading::OffloadingManager::getInstance().getOffloadingTag();
 
     _mapTagToSTPData.insert(std::make_pair(tag, data));
 
@@ -3460,7 +3463,7 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
 #if defined UseSmartMPI
       MPI_Get_count_offload(&statRepDataOffload, MigratablePredictionJobMetaData::getMPIDatatype(), &msgLenDouble);
       if(msgLenDouble==MigratablePredictionJobMetaData::getMessageLen()) {
-        logDebug("progressOffloading","received replica task from "<<statRepDataOffload.MPI_SOURCE<<" , tag "<<statRepDataOffload.MPI_TAG);
+        logInfo("progressOffloading","received replica task from "<<statRepDataOffload.MPI_SOURCE<<" , tag "<<statRepDataOffload.MPI_TAG);
         assert(solver->_lastReceiveReplicaTag[statRepDataOffload.MPI_SOURCE]!=statRepDataOffload.MPI_TAG);
         solver->_lastReceiveReplicaTag[statRepDataOffload.MPI_SOURCE] = statRepDataOffload.MPI_TAG;
         receiveTaskOutcome(statRepDataOffload.MPI_TAG, statRepDataOffload.MPI_SOURCE, solver, statRepDataOffload.rail);

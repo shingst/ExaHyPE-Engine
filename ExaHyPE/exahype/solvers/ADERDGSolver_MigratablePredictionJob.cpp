@@ -17,7 +17,8 @@
 #include "exahype/offloading/MemoryMonitor.h"
 #include "exahype/offloading/NoiseGenerator.h"
 
-#define MAX_PROGRESS_ITS 10000
+//#define MAX_PROGRESS_ITS 10000
+#define MAX_PROGRESS_ITS 100
 //#undef assertion
 //#define assertion assert
 
@@ -121,10 +122,11 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run(
   bool hasComputed = false;
   int curr = std::atomic_fetch_add(&JobCounter, 1);
 
-#if defined(TaskSharing) && !defined(OffloadingUseProgressThread)
+//former position
+//#if defined(TaskSharing) && !defined(OffloadingUseProgressThread)
  // exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(&_solver, false, MAX_PROGRESS_ITS);
-  exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, MAX_PROGRESS_ITS);
-#endif
+//  exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, MAX_PROGRESS_ITS);
+//#endif
 
   if (curr % 1000 == 0) {
     tarch::timing::Watch watch("exahype::MigratablePredictionJob::", "-", false, false);
@@ -144,6 +146,11 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run(
 
 #if defined(GenerateNoise)
     exahype::offloading::NoiseGenerator::getInstance().generateNoiseSTP();
+#endif
+
+#if defined(TaskSharing) && !defined(OffloadingUseProgressThread)
+ // exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(&_solver, false, MAX_PROGRESS_ITS);
+  exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, MAX_PROGRESS_ITS);
 #endif
 
 

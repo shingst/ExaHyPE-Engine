@@ -1395,7 +1395,9 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
     repository.iterate( 1, communicatePeanoVertices );
 
     printStatistics();
+#if defined(USE_TMPI)
     if(TMPI_IsLeadingRank())
+#endif
       repository.logIterationStatistics(false);
   }
 
