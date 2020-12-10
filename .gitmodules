@@ -1,7 +1,6 @@
 [submodule "Submodules/Peano"]
 	path = Submodules/Peano
 	url = https://gitlab.lrz.de/hpcsoftware/Peano.git
-    branch = jannis/scorep
 	ignore = untracked # .o from compilation
 [submodule "Submodules/jinja"]
 	path = Submodules/jinja

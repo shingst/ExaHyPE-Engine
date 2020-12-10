@@ -335,6 +335,7 @@ class Controller:
         for solver in self.spec["solvers"]: 
             if(solver["type"]=="ADER-DG" and "viscous_flux" in solver["aderdg_kernel"]["terms"]):
                 context["useViscousFlux"] = True
+        context["useViscousFlux"] = False
         #todo: multiple solvers are not supported with offloading
            
         # kernels

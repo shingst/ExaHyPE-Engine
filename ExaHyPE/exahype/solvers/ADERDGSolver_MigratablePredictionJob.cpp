@@ -46,7 +46,7 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
       _lGradQhbnd(nullptr),
       _isLocalReplica(false),
       _isPotSoftErrorTriggered(0),
-	  _currentState(State::INITIAL)
+      _currentState(State::INITIAL)
 {
   LocalStealableSTPCounter++;
   NumberOfEnclaveJobs++;
@@ -86,7 +86,7 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
       _lGradQhbnd(lGradQhbnd),
       _isLocalReplica(false),
       _isPotSoftErrorTriggered(0),
-	  _currentState(State::INITIAL)
+      _currentState(State::INITIAL)
 {
 
   for (int i = 0; i < DIMENSIONS; i++) {
@@ -874,16 +874,29 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandler(
       a_tagRankToData, std::make_pair(remoteRank, tag));
   assertion(found);
   data = a_tagRankToData->second;
+#if defined(UseSmartMPI) || defined(OffloadingMetadataPacked)
+  // hack: when sending back a job outcome, remoteRank is different (it is then the actual client rank and not a SmartMPI server rank)
+  // therefore, we adapt the rank here
+  data->_metadata.unpackContiguousBuffer();
+#endif
+#if defined(UseSmartMPI)
+  static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagRankToStolenData.erase(a_tagRankToData);
   a_tagRankToData.release();
+  static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagRankToStolenData.insert(std::make_pair(
+                                                                                       std::make_pair(data->_metadata.getOrigin(), tag),
+                                                                                       data));
+#else
+  a_tagRankToData.release();
+#endif
 
   exahype::offloading::OffloadingAnalyser::getInstance().notifyReceivedSTPJob();
   MigratablePredictionJob *job =
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->createFromData(data,
-          remoteRank, tag);
+          data->_metadata.getOrigin(), tag);
   peano::datatraversal::TaskSet spawnedSet(job);
 
   logDebug("receiveHandler",
-      " received task : "<< data->_metadata.to_string());
+      " received task : "<< data->_metadata.to_string()<<" from "<<remoteRank<<" tag = "<<tag);
 
   exahype::offloading::OffloadingProfiler::getInstance().notifyReceivedTask(
       remoteRank);
@@ -935,7 +948,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
       a_tagRankToData);
   a_tagRankToData.release();
 
-#if defined(UseSmartMPI)
+#if defined(UseSmartMPI) || defined(OffloadingMetadataPacked)
   data->_metadata.unpackContiguousBuffer();
 #endif
 
@@ -1146,6 +1159,8 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackHandler(
   //logInfo("sendBackHandler","successful sendBack request");
   tbb::concurrent_hash_map<std::pair<int, int>, MigratablePredictionJobData*>::accessor a_tagRankToData;
 
+  logDebug("sendBackHandler", "looking for tag = "<<tag<<" remoteRank = "<<remoteRank);
+
   MigratablePredictionJobData *data;
   bool found =
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagRankToStolenData.find(
@@ -1212,20 +1227,21 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendHandler(
   cnt++;
 #endif
   //logInfo("sendHandler","successful send request");
-#if !defined(OffloadNoEarlyReceiveBacks) || defined(OffloadingLocalRecompute)
+#if !defined(OffloadingNoEarlyReceiveBacks) || defined(OffloadingLocalRecompute)
   ADERDGSolver::receiveBackMigratableJob(tag, remoteRank,
       static_cast<exahype::solvers::ADERDGSolver*>(solver));
 #endif
 }
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::packMetaData(MigratablePredictionJobMetaData *metadata) {
-#if defined(UseSmartMPI)
+#if defined(UseSmartMPI) || defined(OffloadingMetadataPacked)
   char *tmp = metadata->_contiguousBuffer;
   std::memcpy(tmp, _center, DIMENSIONS*sizeof(double)); tmp+= DIMENSIONS*sizeof(double);
   std::memcpy(tmp, _dx, DIMENSIONS*sizeof(double)); tmp+= DIMENSIONS*sizeof(double);
   std::memcpy(tmp, &_predictorTimeStamp, sizeof(double)); tmp+= sizeof(double);
   std::memcpy(tmp, &_predictorTimeStepSize, sizeof(double)); tmp+= sizeof(double);
   std::memcpy(tmp, &_element, sizeof(int)); tmp+= sizeof(int);
+  std::memcpy(tmp, &_originRank, sizeof(int)); tmp+= sizeof(int);
   std::memcpy(tmp, &_isPotSoftErrorTriggered, sizeof(char)); tmp+= sizeof(char);
 #else
   metadata->_center[0] = _center[0];
@@ -1243,6 +1259,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::packMetaData(Migra
   metadata->_predictorTimeStamp = _predictorTimeStamp;
   metadata->_predictorTimeStepSize = _predictorTimeStepSize;
   metadata->_element = _element;
+  metadata->_originRank = _originRank;
   metadata->_isPotSoftErrorTriggered = _isPotSoftErrorTriggered;
 #endif
 }
@@ -1265,15 +1282,16 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::MigratablePredi
 : _predictorTimeStamp(0),
   _predictorTimeStepSize(0),
   _element(0),
+  _originRank(-1),
   _isPotSoftErrorTriggered(0),
   _contiguousBuffer(nullptr) {
-#if defined(UseSmartMPI)
+#if defined(UseSmartMPI) || defined(OffloadingMetadataPacked)
   _contiguousBuffer = new char[getMessageLen()];
 #endif
 }
 
 exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::~MigratablePredictionJobMetaData() {
-#if defined(UseSmartMPI)
+#if defined(UseSmartMPI) || defined(OffloadingMetadataPacked)
   delete[] _contiguousBuffer;
 #endif
 }
@@ -1285,6 +1303,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::unpackCont
   std::memcpy(&_predictorTimeStamp, tmp, sizeof(double)); tmp+= sizeof(double);
   std::memcpy(&_predictorTimeStepSize, tmp,  sizeof(double)); tmp+= sizeof(double);
   std::memcpy(&_element, tmp, sizeof(int)); tmp+= sizeof(int);
+  std::memcpy(&_originRank, tmp, sizeof(int)); tmp+= sizeof(int);
   std::memcpy(&_isPotSoftErrorTriggered, tmp, sizeof(char)); tmp+= sizeof(unsigned char);
 }
 
@@ -1299,21 +1318,22 @@ std::string exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::to_
 
   result += " time stamp = " + std::to_string(_predictorTimeStamp);
   result += " element = " + std::to_string(_element);
+  result += " origin = " + std::to_string(_originRank);
   result += " isPotSoftErrorTriggered = " + std::to_string(_isPotSoftErrorTriggered);
 
   return result;
 }
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::initDatatype() {
-#if defined(UseSmartMPI)
+#if defined(UseSmartMPI) || defined(OffloadingMetadataPacked)
   _datatype = MPI_BYTE;
 #else
-  int entries = 2+4;
+  int entries = 2+5;
   MigratablePredictionJobMetaData dummy;
 
-  int blocklengths[] = {DIMENSIONS, DIMENSIONS, 1, 1, 1, 1};
-  MPI_Datatype subtypes[] = {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INTEGER, MPI_CHAR};
-  MPI_Aint displs[] = {0, 0, 0, 0, 0, 0};
+  int blocklengths[] = {DIMENSIONS, DIMENSIONS, 1, 1, 1, 1, 1};
+  MPI_Datatype subtypes[] = {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INTEGER, MPI_INTEGER, MPI_CHAR};
+  MPI_Aint displs[] = {0, 0, 0, 0, 0, 0, 0};
 
   MPI_Aint base;
   MPI_Get_address(&dummy, &base);
@@ -1323,7 +1343,8 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::initDataty
   MPI_Get_address(&(dummy._predictorTimeStamp), &(displs[2]));
   MPI_Get_address(&(dummy._predictorTimeStepSize), &(displs[3]));
   MPI_Get_address(&(dummy._element), &(displs[4]));
-  MPI_Get_address(&(dummy._isPotSoftErrorTriggered), &(displs[5]));
+  MPI_Get_address(&(dummy._originRank), &(displs[5]));
+  MPI_Get_address(&(dummy._isPotSoftErrorTriggered), &(displs[6]));
 
   for(int i=0; i<entries; i++) {
     displs[i] = displs[i]-base;
@@ -1336,7 +1357,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::initDataty
 }
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::shutdownDatatype() {
-#if !defined(UseSmartMPI)
+#if !(defined(UseSmartMPI) || defined(OffloadingMetadataPacked))
   MPI_Type_free(&_datatype);
 #endif
 }
@@ -1345,13 +1366,21 @@ char* exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getContig
   return _contiguousBuffer;
 }
 
+void* exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getMPIBuffer() const {
+#if defined(UseSmartMPI) || defined(OffloadingMetadataPacked)
+  return _contiguousBuffer;
+#else
+  reeturn this;
+#endif
+}
+
 MPI_Datatype exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getMPIDatatype() {
   return _datatype;
 }
 
 size_t exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getMessageLen() {
-#if defined(UseSmartMPI)
-  return (2*DIMENSIONS+2)*sizeof(double)+sizeof(int)+sizeof(unsigned char);
+#if defined(UseSmartMPI) || defined(OffloadingMetadataPacked)
+  return (2*DIMENSIONS+2)*sizeof(double)+2*sizeof(int)+sizeof(unsigned char);
 #else
   return 1;
 #endif
@@ -1375,6 +1404,10 @@ double exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getPredi
 
 int exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getElement() const {
   return _element;
+}
+
+int exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getOrigin() const {
+  return _originRank;
 }
 
 #endif

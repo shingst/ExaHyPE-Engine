@@ -28,7 +28,11 @@
 #include <vector>
 #include <unordered_map>
 
+#if defined(UseMPIThreadSplit)
 #define MAX_THREADS 48
+#else
+#define MAX_THREADS 1
+#endif
 
 namespace exahype {
   namespace offloading {
@@ -291,11 +295,9 @@ class exahype::offloading::OffloadingManager {
     static MPI_Comm  _offloadingComms[MAX_THREADS];
     static MPI_Comm  _offloadingCommsMapped[MAX_THREADS];
 
-#if defined TaskSharing
     static MPI_Comm  _interTeamComms[MAX_THREADS];
     static MPI_Comm  _interTeamCommsKey[MAX_THREADS];
     static MPI_Comm  _interTeamCommsAck[MAX_THREADS];
-#endif
 
   public:
     //Todo: with these two function, we can clean up the interface and make some more functions private

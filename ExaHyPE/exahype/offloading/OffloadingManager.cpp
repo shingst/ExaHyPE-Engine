@@ -64,10 +64,10 @@ int exahype::offloading::OffloadingManager::_interTeamRank(-1);
 exahype::offloading::OffloadingManager* exahype::offloading::OffloadingManager::_static_managers[MAX_THREADS];
 MPI_Comm exahype::offloading::OffloadingManager::_offloadingComms[MAX_THREADS];
 MPI_Comm exahype::offloading::OffloadingManager::_offloadingCommsMapped[MAX_THREADS];
+
 MPI_Comm exahype::offloading::OffloadingManager::_interTeamComms[MAX_THREADS];
 MPI_Comm exahype::offloading::OffloadingManager::_interTeamCommsKey[MAX_THREADS];
 MPI_Comm exahype::offloading::OffloadingManager::_interTeamCommsAck[MAX_THREADS];
-
 
 exahype::offloading::OffloadingManager::OffloadingManager(int threadId) :
     _threadId(threadId),
@@ -204,6 +204,8 @@ void exahype::offloading::OffloadingManager::createMPICommunicators() {
     MPI_Info_create(&info);
     MPI_Info_set(info, "thread_id", std::to_string(i).c_str());
 
+    std::cout<<"i "<<i<<std::endl;
+
     int ierr= MPI_Comm_dup(MPI_COMM_WORLD, &_offloadingComms[i]);
     assertion(ierr==MPI_SUCCESS);
     MPI_Comm_set_info(_offloadingComms[i], info);
@@ -229,8 +231,9 @@ void exahype::offloading::OffloadingManager::createMPICommunicators() {
 #endif
     MPI_Info_free(&info);
   }
-
+#if defined(TaskSharing)
   MPI_Comm_free(&interTeamComm);
+#endif
 }
 
 void exahype::offloading::OffloadingManager::destroyMPICommunicators() {
@@ -238,7 +241,7 @@ void exahype::offloading::OffloadingManager::destroyMPICommunicators() {
     int ierr = MPI_Comm_free(&_offloadingComms[i]); assertion(ierr==MPI_SUCCESS);
     ierr = MPI_Comm_free(&_offloadingCommsMapped[i]); assertion(ierr==MPI_SUCCESS);
 
-#if defined TaskSharing
+#if defined (TaskSharing)
     ierr = MPI_Comm_free(&_interTeamComms[i]); assertion(ierr==MPI_SUCCESS);
     ierr = MPI_Comm_free(&_interTeamCommsKey[i]); assertion(ierr==MPI_SUCCESS);
     ierr = MPI_Comm_free(&_interTeamCommsAck[i]); assertion(ierr==MPI_SUCCESS);

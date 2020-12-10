@@ -1032,51 +1032,50 @@ int exahype::runners::Runner::run() {
       #endif
     }
 
-    if ( _parser.isValid() )
-      shutdownDistributedMemoryConfiguration();
-
-
 #if defined(TMPI_Heartbeats)
     exahype::offloading::HeartbeatJob::stopHeartbeatJob();
 #endif
 
 #if defined(DistributedOffloading)
-  for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
+    for (auto* solver : exahype::solvers::RegisteredSolvers) {
+      if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
       //static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopOffloadingManager();
 #if !defined(DirtyCleanUp)
 #if defined(TaskSharing)
-      static_cast<exahype::solvers::ADERDGSolver*>(solver)->finishOutstandingInterTeamCommunication();
+        static_cast<exahype::solvers::ADERDGSolver*>(solver)->finishOutstandingInterTeamCommunication();
 #endif
 #if defined(TaskSharing)
-      static_cast<exahype::solvers::ADERDGSolver*>(solver)->cleanUpStaleTaskOutcomes(true);
+        static_cast<exahype::solvers::ADERDGSolver*>(solver)->cleanUpStaleTaskOutcomes(true);
 #endif
 #endif
-      static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopOffloadingManager();
+        static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopOffloadingManager();
+      }
+      if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->stopOffloadingManager();
+      }
     }
-    if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->stopOffloadingManager();
-    }
-  }
 
-  logInfo("shutdownDistributedMemoryConfiguration()","stopped offloading manager");
-  exahype::offloading::OffloadingManager::getInstance().destroy();
-  logInfo("shutdownDistributedMemoryConfiguration()","destroyed MPI communicators + progress engine");
+    logInfo("shutdownDistributedMemoryConfiguration()","stopped offloading manager");
+    exahype::offloading::OffloadingManager::getInstance().destroy();
+    logInfo("shutdownDistributedMemoryConfiguration()","destroyed MPI communicators + progress engine");
 #if defined(TaskSharing) || defined(OffloadingLocalRecompute)
-  exahype::offloading::JobTableStatistics::getInstance().printStatistics();
+    exahype::offloading::JobTableStatistics::getInstance().printStatistics();
 #endif
-
 #endif
 
 #if defined(MemoryMonitoring) && defined(MemoryMonitoringTrack)
-   exahype::offloading::MemoryMonitor::getInstance().dumpMemoryUsage();
+     exahype::offloading::MemoryMonitor::getInstance().dumpMemoryUsage();
 #endif
-
- logInfo("run()","shutdownDistributedMemoryConfiguration");
       
-  if ( _parser.isValid() )
-    shutdownSharedMemoryConfiguration();
+    if ( _parser.isValid() )
+      shutdownSharedMemoryConfiguration();
+
     logInfo("run()","shutdownSharedMemoryConfiguration");
+
+    if ( _parser.isValid() )
+      shutdownDistributedMemoryConfiguration();
+    logInfo("run()","shutdownDistributedMemoryConfiguration");
+
     shutdownHeaps();
 
     delete repository;
@@ -1362,7 +1361,10 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
     repository.iterate( 1, communicatePeanoVertices );
 
     printStatistics();
-    repository.logIterationStatistics(false);
+#if defined(USE_TMPI)
+    if(TMPI_IsLeadingRank())
+#endif
+      repository.logIterationStatistics(false);
   }
 
   repository.terminate();
