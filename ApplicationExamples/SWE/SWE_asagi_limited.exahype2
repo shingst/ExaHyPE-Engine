@@ -102,7 +102,7 @@
       "parameters": {
         "grav": 9.81,
         "epsilon": 0.001,
-        "scenario": 11
+        "scenario": 13
       },
       "plotters": [
         {

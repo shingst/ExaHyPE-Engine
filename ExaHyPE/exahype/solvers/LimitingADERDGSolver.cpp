@@ -634,7 +634,12 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
   reduce(solverPatch,cellInfo,result);
 
   if (
-      solverPatch.getRefinementStatus()<_solver->_minRefinementStatusForTroubledCell &&
+      (solverPatch.getRefinementStatus()<_solver->_minRefinementStatusForTroubledCell
+#if defined(ResilienceChecks) && defined(TaskSharing)
+	  || true
+#endif
+	  )
+	  &&
       SpawnPredictionAsBackgroundJob &&
       !mustBeDoneImmediately         &&
       isLastTimeStepOfBatch  // may only spawned in last iteration

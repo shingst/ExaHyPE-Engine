@@ -2864,7 +2864,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
    exahype::offloading::OffloadingManager::getInstance().selectVictimRank(destRank, lastSend);
    assertion(destRank>=0);
 
-   logInfo("submitOrSendMigratablePredictionJob", "there are "<<NumberOfEnclaveJobs<<" Enclave Jobs and "<<NumberOfRemoteJobs<< " Remote Jobs");
+   logDebug("submitOrSendMigratablePredictionJob", "there are "<<NumberOfEnclaveJobs<<" Enclave Jobs and "<<NumberOfRemoteJobs<< " Remote Jobs");
 
    if(myRank!=destRank) {
     // logInfo("submitOrSendMigratablePredictionJob","element "<<job->_element<<" predictor time stamp"<<job->_predictorTimeStamp<<" predictor time step size "<<job->_predictorTimeStepSize);
@@ -2940,7 +2940,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
      _mapTagToCellDesc.insert(std::make_pair(tag, &cellDescription));
      _mapCellDescToTagRank.insert(std::make_pair(&cellDescription, std::make_pair(tag, destRank)));
      _mapTagToOffloadTime.insert(std::make_pair(tag, -MPI_Wtime()));
-     logInfo("submitOrSendMigratablePredictionJob()","send away with tag "<<tag<<" job "<<metadata->to_string());
+     logDebug("submitOrSendMigratablePredictionJob()","send away with tag "<<tag<<" job "<<metadata->to_string());
      // send away
 #if defined(UseSmartMPI)
      mpiSendMigratablePredictionJobOffload(
@@ -3253,7 +3253,7 @@ void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahyp
   key.timestepSize = data->_metadata.getPredictorTimeStepSize();
   key.element = data->_metadata.getElement();
 
-  logInfo("receiveTaskOutcome", "receive task outcome "<< data->_metadata.to_string());
+  logDebug("receiveTaskOutcome", "receive task outcome "<< data->_metadata.to_string());
 
   if(key.timestamp<solver->getMinTimeStamp()) {
     exahype::offloading::JobTableStatistics::getInstance().notifyLateTask();
@@ -3793,7 +3793,7 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::run( bool isCalledOnMaster ) {
     // tag 0 is reserved for termination message
     if(receivedTask && stat.MPI_TAG==0) {
       int terminatedSender = stat.MPI_SOURCE;
-      logInfo("run()","active sender "<<terminatedSender<<" has sent termination signal ");
+      logDebug("run()","active sender "<<terminatedSender<<" has sent termination signal ");
       exahype::offloading::OffloadingManager::getInstance().receiveCompleted(terminatedSender); //, stat.rail); //todo: won't work with SmartMPI
       ActiveSenders.erase(terminatedSender);
 #if defined(UseSmartMPI)
@@ -3805,7 +3805,7 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::run( bool isCalledOnMaster ) {
     }
  
     if(receivedTask) {
-      logInfo("run()","adding active sender "<<stat.MPI_SOURCE<< " tag "<<stat.MPI_TAG);
+      logDebug("run()","adding active sender "<<stat.MPI_SOURCE<< " tag "<<stat.MPI_TAG);
       ActiveSenders.insert(stat.MPI_SOURCE);
       exahype::offloading::OffloadingManager::getInstance().triggerVictimFlag();
       int msgLen = -1;
@@ -3858,7 +3858,7 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::run( bool isCalledOnMaster ) {
                true);
              wtime+= MPI_Wtime();
              if(wtime>0.01)
-               logInfo("progressOffloading()","blocking for stolen task took too long:"<<wtime<<"s");
+               logDebug("progressOffloading()","blocking for stolen task took too long:"<<wtime<<"s");
            }
            else {
              exahype::offloading::OffloadingManager::getInstance().submitRequests(

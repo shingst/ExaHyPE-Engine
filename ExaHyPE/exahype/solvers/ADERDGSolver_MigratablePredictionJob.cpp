@@ -110,7 +110,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::setTrigger(bool fl
   CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
       _element);
 
-  logInfo("setTrigger", " celldesc ="<<_cellDescriptionsIndex<<" isTroubled "<<cellDescription.getIsTroubledInLastStep());
+  logDebug("setTrigger", " celldesc ="<<_cellDescriptionsIndex<<" isTroubled "<<cellDescription.getIsTroubledInLastStep());
 
   _isPotSoftErrorTriggered =  (exahype::offloading::ResilienceTools::TriggerFlipped && flipped)
                            || (exahype::offloading::ResilienceTools::TriggerLimitedCellsOnly && cellDescription.getIsTroubledInLastStep())
@@ -298,7 +298,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 
     bool hasFlipped = exahype::offloading::ResilienceTools::getInstance().generateBitflipErrorInDoubleIfActive(lduh, _solver.getUpdateSize());
     setTrigger(hasFlipped);
-    logInfo("handleLocalExecution", "celldesc ="<<_cellDescriptionsIndex<<" _isPotSoftErrorTriggered ="<<(int) _isPotSoftErrorTriggered);
+    logDebug("handleLocalExecution", "celldesc ="<<_cellDescriptionsIndex<<" _isPotSoftErrorTriggered ="<<(int) _isPotSoftErrorTriggered);
 
 #if defined(TaskSharing)
     needToCheck = needToCheck || _isPotSoftErrorTriggered;
@@ -388,7 +388,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryToFindAndExtrac
     status = a_jobToData->second.status;
     _solver._jobDatabase.erase(a_jobToData);
 
-    logInfo("tryToFindAndExtractEquivalentSharedOutcome()",
+    logDebug("tryToFindAndExtractEquivalentSharedOutcome()",
         "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
         <<" found STP in received jobs:"
         <<(*outcome)->_metadata.to_string());
@@ -435,7 +435,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   key.element = _element;
 
 #if DIMENSION==3
-  logInfo("handleLocalExecution()",
+  logDebug("handleLocalExecution()",
       "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
       <<" looking for job center[0] = "
       << center[0]
@@ -450,7 +450,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
       <<" enclave jobs "<<NumberOfEnclaveJobs <<" remote jobs "<<NumberOfRemoteJobs
       <<" hash = "<<(size_t) key);
 #else
-  logInfo("handleLocalExecution()",
+  logDebug("handleLocalExecution()",
         "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
         <<" looking for job center[0] = "
         << center[0]
@@ -475,7 +475,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     assertion(data->_metadata._predictorTimeStamp == _predictorTimeStamp);
     assertion(data->_metadata._predictorTimeStepSize == _predictorTimeStepSize);
 
-    logInfo("handleLocalExecution()",
+    logDebug("handleLocalExecution()",
         "team "<<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
         <<" found STP in received jobs:"
         <<data->_metadata.to_string());
@@ -677,14 +677,14 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleRemoteExecut
   assertion(_luh!=nullptr);
     
 #if DIMENSIONS==3
-  logInfo("handleRemoteExecution",
+  logDebug("handleRemoteExecution",
         " processJob: center[0] = "<<_center[0]
       <<" center[1] = "<<_center[1]
       <<" center[2] = "<<_center[2]
       <<" time stamp = "<<_predictorTimeStamp
       <<" origin rank = "<<_originRank);
 #else
-  logInfo("handleRemoteExecution",
+  logDebug("handleRemoteExecution",
         " processJob: center[0] = "<<_center[0]
       <<" center[1] = "<<_center[1]
       <<" time stamp = "<<_predictorTimeStamp
@@ -708,14 +708,14 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleRemoteExecut
 #endif
 
 #if DIMENSIONS==3
-   logInfo("handleRemoteExecution",
+   logDebug("handleRemoteExecution",
         " finished job: center[0] = "<<_center[0]
       <<" center[1] = "<<_center[1]
       <<" center[2] = "<<_center[2]
       <<" time stamp = "<<_predictorTimeStamp
       <<" origin rank = "<<_originRank);
 #else
-   logInfo("handleRemoteExecution",
+   logDebug("handleRemoteExecution",
         " finished job: center[0] = "<<_center[0]
       <<" center[1] = "<<_center[1]
       <<" time stamp = "<<_predictorTimeStamp
@@ -738,13 +738,13 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleRemoteExecut
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackOutcomeToOrigin() {
 #if DIMENSIONS==3
-  logInfo("sendBackOutcomeToOrigin",
+  logDebug("sendBackOutcomeToOrigin",
         " send job outcome: center[0] = "<<_center[0]
       <<" center[1] = "<<_center[1]
       <<" center[2] = "<<_center[2]
       <<" time stamp = "<<_predictorTimeStamp);
 #else
-  logInfo("sendBackOutcomeToOrigin",
+  logDebug("sendBackOutcomeToOrigin",
         " send job outcome: center[0] = "<<_center[0]
       <<" center[1] = "<<_center[1]
       <<" time stamp = "<<_predictorTimeStamp);
@@ -882,7 +882,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandler(
           remoteRank, tag);
   peano::datatraversal::TaskSet spawnedSet(job);
 
-  logInfo("receiveHandler",
+  logDebug("receiveHandler",
       " received task : "<< data->_metadata.to_string());
 
   exahype::offloading::OffloadingProfiler::getInstance().notifyReceivedTask(
@@ -939,7 +939,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
   data->_metadata.unpackContiguousBuffer();
 #endif
 
-  logInfo("receiveHandlerTaskSharing", "team "
+  logDebug("receiveHandlerTaskSharing", "team "
       <<exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank()
       <<" received replica job: "
       <<data->_metadata.to_string());
@@ -1020,7 +1020,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
 #ifndef OffloadingLocalRecompute
   cellDescription->setHasCompletedLastStep(true);
 #else
-  logInfo("receiveBackHandler", "received back STP job");
+  logDebug("receiveBackHandler", "received back STP job");
   MigratablePredictionJobData *data = nullptr;
   tbb::concurrent_hash_map<int, MigratablePredictionJobData*>::accessor a_tagToData;
   found = static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagToSTPData.find(
@@ -1041,7 +1041,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
       a_tagToMetaData);
   a_tagToMetaData.release();
 
-  logInfo("receiveBackHandler",
+  logDebug("receiveBackHandler",
       " received task outcome: center[0] = "<<metadata[0]
       <<" center[1] = "<<metadata[1]
 #if DIMENSIONS==3
@@ -1069,7 +1069,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
     if (recompJob != nullptr
         && static_cast<MigratablePredictionJob*>(recompJob)->_predictorTimeStamp
             > metadata[2 * DIMENSIONS]) {
-      logInfo("receiveBackHandler",
+      logDebug("receiveBackHandler",
           "job timestamp "<<static_cast<MigratablePredictionJob*>(recompJob)->_predictorTimeStamp
           <<" metadata[2*DIMENSIONS] "<< metadata[2*DIMENSIONS]);
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->addRecomputeJobForCellDescription(
@@ -1118,7 +1118,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
           a_cellDescToTagRank);
       a_cellDescToTagRank.release();
 
-      logInfo("receiveBackHandler", " applied task outcome");
+      logDebug("receiveBackHandler", " applied task outcome");
 
       cellDescription->setHasCompletedLastStep(true);
     }
