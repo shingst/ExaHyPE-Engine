@@ -49,7 +49,7 @@
   },
   "resilience" : {
     "generate_soft_errors" : "migratable_stp_tasks",
-    "trigger_mechanism" : "trigger_limited"
+    "trigger_mechanism" : "none"
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",

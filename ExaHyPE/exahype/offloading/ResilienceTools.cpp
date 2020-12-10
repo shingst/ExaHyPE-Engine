@@ -31,7 +31,7 @@ bool exahype::offloading::ResilienceTools::TriggerLimitedCellsOnly;
 bool exahype::offloading::ResilienceTools::TriggerFlipped;
 
 exahype::offloading::ResilienceTools::ResilienceTools()
- : _injectionInterval(10000), _cnt(1), _infNormTol(0.0000001), _l1NormTol(0.0000001), _l2NormTol(0.0000001)
+ : _injectionInterval(10000), _numFlips(1), _cnt(1), _numFlipped(0), _infNormTol(0.0000001), _l1NormTol(0.0000001), _l2NormTol(0.0000001)
 {}
 
 exahype::offloading::ResilienceTools::~ResilienceTools() {}
@@ -47,7 +47,7 @@ bool exahype::offloading::ResilienceTools::generateBitflipErrorInDoubleIfActive(
 
   _cnt++;
 
-  if(_cnt.load()%_injectionInterval==0) {
+  if(_cnt.load()%_injectionInterval==0 && _numFlipped<_numFlips) {
     std::random_device r;
     std::default_random_engine generator(r());
     std::uniform_int_distribution<int> un_arr(0, size-1);
@@ -67,6 +67,9 @@ bool exahype::offloading::ResilienceTools::generateBitflipErrorInDoubleIfActive(
     array[idx_array] = new_val;
 
     logInfo("generateBitflipErrorInDoubleIfActive()","generating bitflip: pos = "<<idx_array<<" byte = "<<idx_byte<<" bit = "<<idx_bit<< " old ="<<old_val<<" new = "<<new_val);
+    _cnt = 0;
+    _numFlipped++;
+
     return true;
   }
   return false;

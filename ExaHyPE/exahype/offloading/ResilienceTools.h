@@ -36,8 +36,22 @@ class exahype::offloading::ResilienceTools {
    */
   static tarch::logging::Log _log;
 
-  int _injectionInterval;
+  /**
+   * Specifies how many STPs is a soft-error generated.
+   */
+  const int _injectionInterval;
+
+  const int _numFlips;
+
+  /**
+   * Internal counter of executed STPs since last bitflip.
+   */
   std::atomic<int> _cnt;
+
+  /**
+   * Counts how many bits have already been flipped.
+   */
+  std::atomic<int> _numFlipped;
 
   double _infNormTol;
   double _l1NormTol;

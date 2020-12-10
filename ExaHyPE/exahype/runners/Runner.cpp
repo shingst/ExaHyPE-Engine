@@ -319,6 +319,11 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
 
 
     exahype::offloading::ResilienceTools::GenerateErrors = _parser.getGenerateSoftErrorsInMigratableSTPs();
+#if defined(USE_TMPI)
+    if(!TMPI_IsLeadingRank()) {
+       exahype::offloading::ResilienceTools::GenerateErrors = false;
+    }
+#endif
     exahype::offloading::ResilienceTools::TriggerAllMigratableSTPs = _parser.getTriggerAllMigratableSTPs();
     exahype::offloading::ResilienceTools::TriggerLimitedCellsOnly= _parser.getTriggerLimitedCellsOnly();
     exahype::offloading::ResilienceTools::TriggerFlipped = _parser.getTriggerFlipped();
