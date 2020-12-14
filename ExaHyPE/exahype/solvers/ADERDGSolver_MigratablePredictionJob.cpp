@@ -19,6 +19,10 @@
 #include "exahype/offloading/NoiseGenerator.h"
 #include "../offloading/ResilienceTools.h"
 
+#if defined(USE_TMPI)
+#include "teaMPI.h"
+#endif
+
 #define MAX_PROGRESS_ITS 100
 //#undef assertion
 //#define assertion assert
@@ -298,6 +302,18 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 
     bool hasFlipped = exahype::offloading::ResilienceTools::getInstance().generateBitflipErrorInDoubleIfActive(lduh, _solver.getUpdateSize());
     setTrigger(hasFlipped);
+ 
+    if(hasFlipped) {
+      tarch::la::Vector<DIMENSIONS, double> center;
+      center = cellDescription.getOffset() + 0.5 * cellDescription.getSize();
+      logInfo("handleLocalExecution","Inserted bitflip in cell "
+            << center[0]
+            <<" center[1] = "
+            << center[1]
+            <<" time stamp = "
+            <<_predictorTimeStamp);
+    }
+
     logDebug("handleLocalExecution", "celldesc ="<<_cellDescriptionsIndex<<" _isPotSoftErrorTriggered ="<<(int) _isPotSoftErrorTriggered);
 
 #if defined(TaskSharing)
@@ -820,7 +836,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
 }
 
 bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::matchesOtherOutcome(MigratablePredictionJobData *data) {
-  logDebug("matchesOtherOutcome", "comparing center[0]="<<_center[0]<<" center[1]="<<_center[1]<<" timestamp "<<_predictorTimeStamp<<" with received task outcome "<<data->_metadata.to_string());
+  logInfo("matchesOtherOutcome", "team "<<TMPI_GetTeamNumber()<<" comparing center[0]="<<_center[0]<<" center[1]="<<_center[1]<<" timestamp "<<_predictorTimeStamp<<" with received task outcome "<<data->_metadata.to_string());
 
   CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
       _element);
