@@ -98,6 +98,7 @@ class Controller:
                 "useCERKGuess"          : args["useCERKGuess"],
                 "useSplitCK"            : args["useSplitCK"],
                 "useVectPDE"            : args["useVectPDE"],
+                "useAoSoA2"             : args["useAoSoA2"],
                 "predictorRecompute"    : args["predictorRecompute"],
                 "initialGuess"          : "mixedPicard" #TODO JMG put as proper toolkit arg
                 #"initialGuess"          : "default" #TODO JMG put as proper toolkit arg
@@ -174,6 +175,7 @@ class Controller:
         context["nDataPad"] = self.getSizeWithPadding(context["nData"])
         context["nDofPad"]  = self.getSizeWithPadding(context["nDof"])
         context["nDof3D"]   = 1 if context["nDim"] == 2 else context["nDof"]
+        context["nDof2Pad"] = self.getSizeWithPadding(context["nDof"]*context["nDof"])
         context["solverHeader"]      = context["solverName"].split("::")[1] + ".h"
         context["codeNamespaceList"] = context["codeNamespace"].split("::")
         context["guardNamespace"]    = "_".join(context["codeNamespaceList"]).upper()

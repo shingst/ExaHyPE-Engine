@@ -105,8 +105,8 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   double negativeDudxT_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
 {% if useLibxsmm %}
 #if defined(USE_IPO) && ! defined(UNSAFE_IPO)
-  double doNotOptimizeAway1 = dudxT_by_dx[0]; // used to prevent the compiler from optimizing dudxT_by_dx away
-  double doNotOptimizeAway2 = negativeDudxT_by_dx[0]; // used to prevent the compiler from optimizing dudxT_by_dx away
+  volatile double doNotOptimizeAway1 = dudxT_by_dx[0]; // used to prevent the compiler from optimizing dudxT_by_dx away
+  volatile double doNotOptimizeAway2 = negativeDudxT_by_dx[0]; // used to prevent the compiler from optimizing dudxT_by_dx away
 #endif
 {% endif %}
 
@@ -218,6 +218,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
       {{ m.matmul('gradQ_x_sck', 'tmpArray', 'negativeDudxT_by_dx', 'gradQ', '0', '0', '0') | indent(6) }}{##}
       for (int x = 0; x < {{nDof}} ; x++){
         solver.{{solverName}}::multiplyMaterialParameterMatrix_scalar(lPi+{{idxLPi(0,yz,x,0)}}, gradQ+x*{{nVarPad}});
+        #pragma omp simd aligned(lQi_next,gradQ:ALIGNMENT)
         for (int n = 0; n < {{nVarPad}} ; n++){
           lQi_next[{{idx(0,yz,x,n)}}] += gradQ[{{idx(0,0,x,n)}}];
         }
@@ -255,6 +256,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
       {{ m.matmul('gradQ_x_sck', 'tmpArray', 'negativeDudxT_by_dx', 'gradQ', '0', '0', '0') | indent(6) }}{##}
       for (int y = 0; y < {{nDof}} ; y++){
         solver.{{solverName}}::multiplyMaterialParameterMatrix_scalar(lPi+{{idxLPi(z,y,x,0)}}, gradQ+y*{{nVarPad}});
+        #pragma omp simd aligned(lQi_next,gradQ:ALIGNMENT)
         for (int n = 0; n < {{nVarPad}} ; n++){
           lQi_next[{{idx(z,y,x,n)}}] += gradQ[{{idx(0,0,y,n)}}];
         }
@@ -295,6 +297,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
       {{ m.matmul('gradQ_x_sck', 'tmpArray', 'negativeDudxT_by_dx', 'gradQ', '0', '0', '0') | indent(6) }}{##}
       for (int z = 0; z < {{nDof}} ; z++){
         solver.{{solverName}}::multiplyMaterialParameterMatrix_scalar(lPi+{{idxLPi(z,0,xy,0)}}, gradQ+z*{{nVarPad}});
+        #pragma omp simd aligned(lQi_next,gradQ:ALIGNMENT)
         for (int n = 0; n < {{nVarPad}} ; n++){
           lQi_next[{{idx(z,0,xy,n)}}] += gradQ[{{idx(0,0,z,n)}}];
         }
@@ -480,6 +483,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
       {{ m.matmul('gradQ_x_sck', 'tmpArray', 'dudxT_by_dx', 'gradQ', '0', '0', '0') | indent(6) }}{##}
       for (int x = 0; x < {{nDof}} ; x++){
         solver.{{solverName}}::multiplyMaterialParameterMatrix_scalar(lPi+{{idxLPi(0,yz,x,0)}}, gradQ+x*{{nVarPad}});
+        #pragma omp simd aligned(lFhi,gradQ:ALIGNMENT)
         for (int n = 0; n < {{nVarPad}} ; n++){
           lFhi[{{idx(0,yz,x,n)}}] += gradQ[{{idx(0,0,x,n)}}];
         }
@@ -538,8 +542,9 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
       {{ m.matmul('gradQ_x_sck', 'tmpArray', 'dudxT_by_dx', 'gradQ', '0', '0', '0') | indent(6) }}{##}
       for (int y = 0; y < {{nDof}} ; y++){
         solver.{{solverName}}::multiplyMaterialParameterMatrix_scalar(lPi+{{idxLPi(z,y,x,0)}}, gradQ+y*{{nVarPad}});
+        #pragma omp simd aligned(lFhi,gradQ:ALIGNMENT)
         for (int n = 0; n < {{nVarPad}} ; n++){
-      lFhi[{{idx(z,y,x,n)}}] += gradQ[{{idx(0,0,y,n)}}];
+          lFhi[{{idx(z,y,x,n)}}] += gradQ[{{idx(0,0,y,n)}}];
         }
       }
 {% else %}
@@ -600,6 +605,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
       {{ m.matmul('gradQ_x_sck', 'tmpArray', 'dudxT_by_dx', 'gradQ', '0', '0', '0') | indent(6) }}{##}
       for (int z = 0; z < {{nDof}} ; z++){
         solver.{{solverName}}::multiplyMaterialParameterMatrix_scalar(lPi+{{idxLPi(z,0,xy,0)}}, gradQ+z*{{nVarPad}});
+        #pragma omp simd aligned(lFhi,gradQ:ALIGNMENT)
         for (int n = 0; n < {{nVarPad}} ; n++){
           lFhi[{{idx(z,0,xy,n)}}] += gradQ[{{idx(0,0,z,n)}}];
         }

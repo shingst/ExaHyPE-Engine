@@ -831,6 +831,12 @@
                     "available-for" : ["optimised"],
                     "title" : "WiP: Use vectorised user function formulations (SoA data layout) for PDE functions related to the terms' options: flux, source, ncp, viscous_flux and fusedsource. Only available for optimised kernels with either split_ck (linear) or predictor_recompute (nonlinear)",
                     "default" : false
+                  },
+                  "AoSoA2_layout" : {
+                    "type" : "boolean",
+                    "available-for" : ["optimised"],
+                    "title" : "WiP: use AoSoA[2] data layout, requires vectorise_terms true",
+                    "default" : false
                   }
                 }
               },

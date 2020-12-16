@@ -1,3 +1,5 @@
+#if HAVE_TECPLOT
+
 #ifndef __EXAHYPE_USER_TECINT__
 #define __EXAHYPE_USER_TECINT__
 
@@ -13,3 +15,4 @@ void initializetecplotplotter_(const double* time);
 }/* extern "C" */
 
 #endif /* __EXAHYPE_USER_PDE__ */
+#endif

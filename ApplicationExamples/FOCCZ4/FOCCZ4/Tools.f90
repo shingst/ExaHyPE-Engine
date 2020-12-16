@@ -1,5 +1,5 @@
 ! Tools.f90
-
+#if HAVE_TECPLOT
 RECURSIVE SUBROUTINE InitTECPLOT(N_in,M_in,SubLim_in,Ghostlayers_in)
 	USE TECPLOTPLOTTERmod
 	implicit none
@@ -16,7 +16,7 @@ END SUBROUTINE InitTECPLOT
 !	CALL SetMainParameters(N_in,SubLim_in,Ghostlayers_in)
 !END SUBROUTINE InitTECPLOT
 
-    
+#endif
 
 RECURSIVE SUBROUTINE getNumericalSolution(V,Q) 
   USE MainVariables, ONLY: nVar  

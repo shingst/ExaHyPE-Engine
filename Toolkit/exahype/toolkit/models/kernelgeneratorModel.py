@@ -65,6 +65,7 @@ class KernelgeneratorModel:
                 "useGaussLobatto"    : solverContext["basis"] == "lobatto",
                 "predictorRecompute" : solverContext["predictorRecompute"],
                 "useVectPDE"         : solverContext["useVectPDE"],
+                "useAoSoA2"          : solverContext["useAoSoA2"],
                 # Optional int parameters (may set redundant flags)
                 "usePointSources"    : solverContext["numberOfPointSources"] if solverContext["numberOfPointSources"] > 0 else -1,
                 "tempVarsOnStack"    : solverContext["tempVarsOnStack"]

@@ -82,7 +82,7 @@ exahype-project  SWE
       variables const = 5
       time            = 0.0
       repeat          = 0.1
-      output        =  results/conserved
+      output          = ./results/conserved
     end plot
     plot probe::ascii ProbeWriter
       variables const = 6
