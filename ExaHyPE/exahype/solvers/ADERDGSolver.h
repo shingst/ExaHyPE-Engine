@@ -1195,11 +1195,9 @@ private:
       bool handleLocalExecution(bool isCalledOnMaster, bool& hasComputed);
       bool handleLocalExecutionOld(bool isCalledOnMaster, bool& hasComputed);
       bool handleRemoteExecution(bool& hasComputed);
-#if defined(TaskSharing)
       bool tryToFindAndExtractEquivalentSharedOutcome(ADERDGSolver::JobOutcomeStatus &status, MigratablePredictionJobData **outcome);
       void sendBackOutcomeToOrigin();
       bool matchesOtherOutcome(MigratablePredictionJobData *data);
-#endif
       void packMetaData(MigratablePredictionJobMetaData *buffer);
       //static size_t getSizeOfMetaData();
 
@@ -1284,7 +1282,7 @@ private:
       bool run(bool calledFromMaster) override;
   };
 
-#if defined(TaskSharing) // || defined(OffloadingLocalRecompute) //Todo(Philipp): do we still need this for local recompute?
+//#if defined(TaskSharing) // || defined(OffloadingLocalRecompute) //Todo(Philipp): do we still need this for local recompute?
 
   static int REQUEST_JOB_CANCEL;
   static int REQUEST_JOB_ACK;
@@ -1386,7 +1384,7 @@ private:
 
   ConcurrentJobKeysList _allocatedJobs;
   //tbb::concurrent_queue<JobTableKey> _allocatedJobs;
-#endif
+//#endif
 
   /**
    * If a task decides to send itself away, an offload entry is generated and submitted into
