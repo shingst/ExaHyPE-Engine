@@ -1,0 +1,71 @@
+{
+  "project_name": "Advection",
+  "paths": {
+    "peano_kernel_path": "./Peano",
+    "exahype_path": "./ExaHyPE",
+    "output_directory": "./ApplicationExamples/Advection",
+    "log_file": "mylogfile.log"
+  },
+  "architecture": "noarch",
+  "computational_domain": {
+    "dimension": 2,
+    "end_time": 1.0,
+    "offset": [
+      -0.5,
+      -0.5
+    ],
+    "width": [
+      1.0,
+      1.0
+    ]
+  },
+  "optimisation": {
+    "fuse_algorithmic_steps": "all",
+    "fuse_algorithmic_steps_rerun_factor": 0.99,
+    "fuse_algorithmic_steps_diffusion_factor": 0.99,
+    "spawn_predictor_as_background_thread": false,
+    "spawn_amr_background_threads": false,
+    "disable_vertex_exchange_in_time_steps": true,
+    "time_step_batch_factor": 0.0,
+    "disable_metadata_exchange_in_batched_time_steps": false,
+    "double_compression": 0.0,
+    "spawn_double_compression_as_background_thread": false
+  },
+  "solvers": [
+    {
+      "type": "ADER-DG",
+      "name": "ADERSolver",
+      "order": 3,
+      "maximum_mesh_size": 0.05,
+      "time_stepping": "globalfixed",
+      "aderdg_kernel": {
+        "language": "C",
+        "nonlinear": false,
+        "terms": [
+          "flux"
+        ],
+        "space_time_predictor": {},
+        "optimised_terms": [],
+        "optimised_kernel_debugging": [],
+        "implementation": "generic"
+      },
+      "point_sources": 0,
+      "variables": [
+        {
+          "name": "v",
+          "multiplicity": 1
+        }
+      ],
+      "plotters": [
+        {
+          "type": "vtk::Cartesian::vertices::ascii",
+          "name": "VtkWriter",
+          "time": 0.0,
+          "repeat": 0.02,
+          "output": "advection",
+          "variables": 1
+        }
+      ]
+    }
+  ]
+}

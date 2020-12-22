@@ -298,6 +298,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
         _predictorTimeStepSize,
         true);
 
+    hasComputed = true;
+
     exahype::offloading::JobTableStatistics::getInstance().notifyExecutedTask();
 
     bool hasFlipped = exahype::offloading::ResilienceTools::getInstance().generateBitflipErrorInDoubleIfActive(lduh, _solver.getUpdateSize());
@@ -835,7 +837,9 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
 }
 
 bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::matchesOtherOutcome(MigratablePredictionJobData *data) {
+#if defined(USE_TMPI)
   logInfo("matchesOtherOutcome", "team "<<TMPI_GetTeamNumber()<<" comparing center[0]="<<_center[0]<<" center[1]="<<_center[1]<<" timestamp "<<_predictorTimeStamp<<" with received task outcome "<<data->_metadata.to_string());
+#endif
 
   CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
       _element);
