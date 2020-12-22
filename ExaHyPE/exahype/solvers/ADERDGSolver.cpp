@@ -2793,7 +2793,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
         j++;
       } 
     }
-
+    SentSTPs++;
     CompletedSentSTPs++;
     exahype::offloading::JobTableStatistics::getInstance().notifySentTask();
 
@@ -2842,9 +2842,9 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
                                       &sendRequests[(NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME+1)*j],
                                       &(data->_metadata));
                                       j++;
-       }
-     }
-
+      }
+    }
+    SentSTPs++;
     exahype::offloading::OffloadingManager::getInstance().submitRequests(sendRequests,
                                                                          (teams-1)*(NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME+1),
                                                                          tag,
@@ -2852,7 +2852,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
                                                                          MigratablePredictionJob::sendHandlerTaskSharing,
                                                                          exahype::offloading::RequestType::sendReplica,
                                                                          this, MPI_BLOCKING);
-  delete[] sendRequests;
+   delete[] sendRequests;
 #endif
 }
 
@@ -4588,7 +4588,6 @@ void exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOutcomeOffloa
   MigratablePredictionJobMetaData *metadata) {
 
   int ierr;
-  //MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
   //int tid = tarch::multicore::Core::getInstance().getThreadNum();
 
 #if defined(OffloadingCheckForSlowOperations)
@@ -4596,6 +4595,11 @@ void exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOutcomeOffloa
 #endif
 
   int rail = get_next_rail();
+
+  if(!is_allowed_to_send_to_destination(dest, rail)) {
+    logInfo("mpiSendMigratablePredictionJobOutcomeOffload", " Decided to not send a task outcome as BlueField advised against it!");
+    return;
+  }
 
   if(metadata != nullptr) {
     //ierr = MPI_Send_offload(metadata, 2*DIMENSIONS+3, MPI_DOUBLE, dest, tag, comm, tid);
