@@ -6,7 +6,7 @@
             "output_directory": "./ApplicationExamples/SWE/SWE_MC_ADERDG",
             "log_file": "mylogfile.log"
         },
-        "architecture": "skx",
+        "architecture": "hsw",
         "computational_domain": {
             "dimension": 2,
             "end_time": 0.1,
@@ -37,7 +37,7 @@
         {
             "type": "Limiting-ADER-DG",
             "name": "MySWESolver",
-            "order": 1,
+            "order": 3,
             "maximum_mesh_size": 0.2,
             "maximum_mesh_depth": 0,
             "time_stepping": "global",
@@ -51,7 +51,7 @@
                 "space_time_predictor": {},
                 "optimised_terms": [],
                 "optimised_kernel_debugging": [],
-                "implementation": "optimised",
+                "implementation": "generic",
                 "adjust_solution": "patchwise",
                 "allocate_temporary_arrays": "stack"
             },

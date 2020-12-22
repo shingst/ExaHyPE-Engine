@@ -35,12 +35,7 @@ info  exahype::offloading::OffloadingManager::triggerEmergencyForRank -1 black
 info  exahype::offloading::OffloadingManager::run -1 black
 #info  exahype::offloading::OffloadingManager::getInstance -1 black
 info  exahype::offloading::OffloadingManager::printBlacklist -1 black
-<<<<<<< HEAD
-info  exahype::solvers::ADERDGSolver   -1 black
-=======
-#info  exahype::solvers::ADERDGSolver::run   -1 black
-#info  exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob   -1 black
->>>>>>> philipp/replication_fix
+#info  exahype::solvers::ADERDGSolver   -1 black
 info  exahype::offloading::AggressiveHybridDistributor::selectVictimRank -1 black
 info  exahype::offloading::AggressiveHybridDistributor::selectVicimtRank -1 black
 info  exahype::mappings::LoadBalancing::endIteration -1 black

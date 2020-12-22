@@ -11,7 +11,8 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if  defined(SharedTBB)  && defined(Parallel) && defined(DistributedOffloading)
+//#if  defined(SharedTBB)  && defined(Parallel) && defined(DistributedOffloading)
+#if  defined(Parallel) && defined(DistributedOffloading)
 #include "exahype/offloading/PerformanceMonitor.h"
 
 #include <algorithm>

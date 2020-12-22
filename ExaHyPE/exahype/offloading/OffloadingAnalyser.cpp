@@ -11,7 +11,8 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if  defined(SharedTBB)  && defined(Parallel) && (defined(DistributedOffloading) || defined(AnalyseWaitingTimes))
+//#if  defined(SharedTBB)  && defined(Parallel) && (defined(DistributedOffloading) || defined(AnalyseWaitingTimes))
+#if  defined(Parallel) && (defined(DistributedOffloading) || defined(AnalyseWaitingTimes))
 #include "exahype/offloading/OffloadingAnalyser.h"
 
 #include "tarch/parallel/Node.h"

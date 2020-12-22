@@ -725,6 +725,12 @@ class exahype::parser::Parser {
   std::string getSTPTracingOutputDirName() const;
   
   int getSTPTracingDumpInterval() const;
+
+  bool getGenerateSoftErrorsInMigratableSTPs() const;
+
+  bool getTriggerAllMigratableSTPs() const;
+  bool getTriggerLimitedCellsOnly() const;
+  bool getTriggerFlipped() const;
 };
 
 #endif

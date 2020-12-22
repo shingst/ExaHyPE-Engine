@@ -37,6 +37,7 @@ class ConfigurationParametersModel(AbstractModelBaseClass):
         nDataPad = self.context["nDataPad"]
         nDof     = self.context["nDof"]
         nDofPad  = self.context["nDofPad"]
+        nDof2Pad = self.context["nDof2Pad"]
         nDof3D    = self.context["nDof3D"]
         nDim     = self.context["nDim"]
         
@@ -65,14 +66,24 @@ class ConfigurationParametersModel(AbstractModelBaseClass):
             if self.context["isLinear"]:
                 if(self.context["useSplitCK"]):
                     if self.context["useVectPDE"]:
-                        # Linear + split CK vect
-                        self.context["lQiSize"]   = nDof3D*nDof*nVar*nDofPad
-                        self.context["lQiNextSize"] = nDof3D*nDof*nVar*nDofPad
-                        self.context["lPiSize"]   = nDof3D*nDof*nPar*nDofPad
-                        self.context["lQhiSize"]  = nDof3D*nDof*nVar*nDofPad
-                        self.context["lFhiSize"]  = nDof3D*nDof*nVar*nDofPad
-                        self.context["gradQSize"] = nDof3D*nDof*nVar*nDofPad
-                        self.context["PSiSize"]   = nDof*nDof3D*nDof*nVar*nDofPad
+                        if self.context["useAoSoA2"]:
+                            # Linear + split CK vect AoSoA2
+                            self.context["lQiSize"]   = nDof3D*nVar*nDof2Pad
+                            self.context["lQiNextSize"] = nDof3D*nVar*nDof2Pad
+                            self.context["lPiSize"]   = nDof3D*nPar*nDof2Pad
+                            self.context["lQhiSize"]  = nDof3D*nVar*nDof2Pad
+                            self.context["lFhiSize"]  = nDof3D*nVar*nDof2Pad
+                            self.context["gradQSize"] = nDof3D*nVar*nDof2Pad
+                            self.context["PSiSize"]   = nDof*nDof3D*nVar*nDof2Pad
+                        else:
+                            # Linear + split CK vect (AoSoA)
+                            self.context["lQiSize"]   = nDof3D*nDof*nVar*nDofPad
+                            self.context["lQiNextSize"] = nDof3D*nDof*nVar*nDofPad
+                            self.context["lPiSize"]   = nDof3D*nDof*nPar*nDofPad
+                            self.context["lQhiSize"]  = nDof3D*nDof*nVar*nDofPad
+                            self.context["lFhiSize"]  = nDof3D*nDof*nVar*nDofPad
+                            self.context["gradQSize"] = nDof3D*nDof*nVar*nDofPad
+                            self.context["PSiSize"]   = nDof*nDof3D*nDof*nVar*nDofPad
                     else:
                         # Linear + split CK scalar
                         self.context["lQiSize"]   = nVarPad*(nDof**nDim)

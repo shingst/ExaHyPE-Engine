@@ -7,7 +7,9 @@
 // ========================
 #include "TecplotWriter.h"
 
+#if HAVE_TECPLOT
 #include "TECPLOTinterface.h"
+#endif
 #include "tarch/parallel/Node.h"
 #include "tarch/parallel/NodePool.h"
 #include <stdio.h>
@@ -34,8 +36,10 @@ void FOCCZ4::TecplotWriter::plotADERDGPatch(
     const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* const u,
     double timeStamp) {
   // @TODO Please insert your code here.
+#if HAVE_TECPLOT
   plotForADERSolver = 0;
   elementcalltecplotplotter_(u,&offsetOfPatch[0],&sizeOfPatch[0],&plotForADERSolver);
+#endif
 }
 
 void FOCCZ4::TecplotWriter::plotFiniteVolumesPatch(
@@ -43,19 +47,25 @@ void FOCCZ4::TecplotWriter::plotFiniteVolumesPatch(
     const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch, double* const u,
     double timeStamp) {
   // @TODO Please insert your code here.
+#if HAVE_TECPLOT
   plotForADERSolver = 1;
   elementcalltecplotfvplotter_(u, &offsetOfPatch[0], &sizeOfPatch[0], &plotForADERSolver);
+#endif
 }
 
 
 void FOCCZ4::TecplotWriter::startPlotting( double time) {
   // @TODO Please insert your code here.
+#if HAVE_TECPLOT
     mpirank = tarch::parallel::Node::getInstance().getRank();
   initializetecplotplotter_(&time);
+#endif
 }
 
 
 void FOCCZ4::TecplotWriter::finishPlotting() {
   // @TODO Please insert your code here.
+#if HAVE_TECPLOT
     finishtecplotplotter_(&mpirank);
+#endif
 }

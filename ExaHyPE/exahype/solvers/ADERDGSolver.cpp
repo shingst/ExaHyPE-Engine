@@ -2524,10 +2524,12 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
                                                                      <<" outstanding requests "<<exahype::offloading::OffloadingManager::getInstance().getNumberOfOutstandingRequests(exahype::offloading::RequestType::sendReplica)
                                                                                             +exahype::offloading::OffloadingManager::getInstance().getNumberOfOutstandingRequests(exahype::offloading::RequestType::receiveReplica)
                                                                                                       );
+
+
   //Todo: improve performance as this sometimes takes too long/wastes resources on master thread
   while( (i< unsafe_size || isFinal) && gotOne) {
     JobTableKey key;
-    gotOne = _allocatedJobs.try_pop(key);
+    gotOne = _allocatedJobs.try_pop_front(&key);
 
     if(!gotOne) break;
     logDebug("cleanUpStaleTaskOutcomes()", " time stamp of key ="<<key.timestamp);
@@ -2539,6 +2541,12 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
     //                                       <<" center[1] = "<<key.center[1]
     //                                       <<" center[2] = "<<key.center[2]
     //                                       <<" time stamp = "<<key.timestamp);
+
+    if(key.timestamp>_minTimeStamp) {
+      _allocatedJobs.push_front(key);
+      logDebug("cleanUpStaleTaskOutcomes()", " breaking out of loop: time stamp of key ="<<key.timestamp)
+      break;
+    }
 
     tbb::concurrent_hash_map<JobTableKey, JobTableEntry>::accessor a_jobToData;
 
@@ -2557,7 +2565,7 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
       exahype::offloading::JobTableStatistics::getInstance().notifyLateTask();
     }
     else if (found) {
-      _allocatedJobs.push(key); // the job is in the map but it contains data that may be used later
+      _allocatedJobs.push_front(key); // the job is in the map but it contains data that may be used later
     }
     else {
         //do nothing -> job was already deallocated earlier
@@ -2571,7 +2579,7 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
   }
 
   logInfo("cleanUpStaleTaskOutcomes()", " there are "<<_allocatedJobs.unsafe_size()<<" allocated received jobs left, "<<_mapTagToSTPData.size()<<" jobs to send,"
-                                          <<" allocated jobs send "<<AllocatedSTPsSend<<" allocated jobs receive "<<AllocatedSTPsReceive);
+                                          <<" allocated jobs send "<<AllocatedSTPsSend<<" allocated jobs receive "<<AllocatedSTPsReceive<< " iterated through "<<i<<" keys");
 #if defined(OffloadingCheckForSlowOperations)
   timing += MPI_Wtime();
   if(timing > OFFLOADING_SLOW_OPERATION_THRESHOLD)
@@ -2627,6 +2635,7 @@ void exahype::solvers::ADERDGSolver::sendRequestForJobAndReceive(int jobTag, int
     for(int i=0; i<DIMENSIONS; i++)
       key_struct.center[i] = key[i];
     key_struct.timestamp = key[2*DIMENSIONS];
+    key_struct.timestepSize= key[2*DIMENSIONS+1];
     key_struct.element = key[2*DIMENSIONS+2];
 
     _jobDatabase.insert(std::make_pair(key_struct,entry));
@@ -2784,7 +2793,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
         j++;
       } 
     }
-
+    SentSTPs++;
     CompletedSentSTPs++;
     exahype::offloading::JobTableStatistics::getInstance().notifySentTask();
 
@@ -2833,9 +2842,9 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
                                       &sendRequests[(NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME+1)*j],
                                       &(data->_metadata));
                                       j++;
-       }
-     }
-
+      }
+    }
+    SentSTPs++;
     exahype::offloading::OffloadingManager::getInstance().submitRequests(sendRequests,
                                                                          (teams-1)*(NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME+1),
                                                                          tag,
@@ -2843,7 +2852,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
                                                                          MigratablePredictionJob::sendHandlerTaskSharing,
                                                                          exahype::offloading::RequestType::sendReplica,
                                                                          this, MPI_BLOCKING);
-  delete[] sendRequests;
+   delete[] sendRequests;
 #endif
 }
 
@@ -3247,6 +3256,7 @@ void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahyp
   for(int i=0; i<DIMENSIONS; i++)
     key.center[i] = data->_metadata.getCenter()[i];
   key.timestamp = data->_metadata.getPredictorTimeStamp();
+  key.timestepSize = data->_metadata.getPredictorTimeStepSize();
   key.element = data->_metadata.getElement();
 
   logDebug("receiveTaskOutcome", "receive task outcome "<< data->_metadata.to_string());
@@ -3801,7 +3811,7 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::run( bool isCalledOnMaster ) {
     }
  
     if(receivedTask) {
-      logInfo("run()","adding active sender "<<stat.MPI_SOURCE<< " tag "<<stat.MPI_TAG);
+      logDebug("run()","adding active sender "<<stat.MPI_SOURCE<< " tag "<<stat.MPI_TAG);
       ActiveSenders.insert(stat.MPI_SOURCE);
       exahype::offloading::OffloadingManager::getInstance().triggerVictimFlag();
       int msgLen = -1;
@@ -3854,7 +3864,7 @@ bool exahype::solvers::ADERDGSolver::ReceiveJob::run( bool isCalledOnMaster ) {
                true);
              wtime+= MPI_Wtime();
              if(wtime>0.01)
-               logInfo("progressOffloading()","blocking for stolen task took too long:"<<wtime<<"s");
+               logDebug("progressOffloading()","blocking for stolen task took too long:"<<wtime<<"s");
            }
            else {
              exahype::offloading::OffloadingManager::getInstance().submitRequests(
@@ -4578,7 +4588,6 @@ void exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOutcomeOffloa
   MigratablePredictionJobMetaData *metadata) {
 
   int ierr;
-  //MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
   //int tid = tarch::multicore::Core::getInstance().getThreadNum();
 
 #if defined(OffloadingCheckForSlowOperations)
@@ -4586,6 +4595,11 @@ void exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOutcomeOffloa
 #endif
 
   int rail = get_next_rail();
+
+  if(!is_allowed_to_send_to_destination(dest, rail)) {
+    logInfo("mpiSendMigratablePredictionJobOutcomeOffload", " Decided to not send a task outcome as BlueField advised against it!");
+    return;
+  }
 
   if(metadata != nullptr) {
     //ierr = MPI_Send_offload(metadata, 2*DIMENSIONS+3, MPI_DOUBLE, dest, tag, comm, tid);

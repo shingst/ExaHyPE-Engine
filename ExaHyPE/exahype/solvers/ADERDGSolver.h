@@ -22,6 +22,7 @@
 #include <atomic>
 #include <tuple>
 #include <functional>
+#include <mutex>
 
 #include "exahype/solvers/Solver.h"
 
@@ -1154,6 +1155,8 @@ private:
   // Todo(Philipp): probably outdated
   static std::atomic<int> MaxIprobesInOffloadingProgress;
 
+  enum class JobOutcomeStatus;
+
   /**
    * A MigratablePredictionJob represents a PredictionJob that can be
    * executed remotely on a different rank than the one where it
@@ -1161,10 +1164,13 @@ private:
    */
   class MigratablePredictionJob : public tarch::multicore::jobs::Job {
     friend class exahype::solvers::ADERDGSolver;
+
+    enum class State { INITIAL, CHECK_REQUIRED};
+
     private:
-      ADERDGSolver&    			      _solver;
-	    const int                   _cellDescriptionsIndex;
-	    const int                   _element;
+      ADERDGSolver&    			  _solver;
+	  const int                   _cellDescriptionsIndex;
+	  const int                   _element;
       const double                _predictorTimeStamp;
       const double                _predictorTimeStepSize;
       const int                   _originRank;
@@ -1176,19 +1182,26 @@ private:
       double*                     _lGradQhbnd;
       double                      _center[DIMENSIONS];
       double                      _dx[DIMENSIONS];
-      bool 							          _isLocalReplica;
-      unsigned char                _isPotSoftErrorTriggered;
+      bool 					      _isLocalReplica;
+      unsigned char               _isPotSoftErrorTriggered;
+      State                       _currentState;
 
       static std::atomic<int> JobCounter;
 
       // actual execution of a STP job
+      bool runExecution(bool isCalledOnMaster);
+      bool tryFindOutcomeAndCheck();
       bool handleExecution(bool isCalledOnMaster, bool& hasComputed);
       bool handleLocalExecution(bool isCalledOnMaster, bool& hasComputed);
-
+      bool handleLocalExecutionOld(bool isCalledOnMaster, bool& hasComputed);
+      bool handleRemoteExecution(bool& hasComputed);
+      bool tryToFindAndExtractEquivalentSharedOutcome(ADERDGSolver::JobOutcomeStatus &status, MigratablePredictionJobData **outcome);
+      void sendBackOutcomeToOrigin();
+      bool matchesOtherOutcome(MigratablePredictionJobData *data);
       void packMetaData(MigratablePredictionJobMetaData *buffer);
       //static size_t getSizeOfMetaData();
 
-      void checkAdmissibilityAndSetTrigger();
+      void setTrigger(bool flipped);
 
     public:
       // constructor for local jobs that can be stolen
@@ -1269,7 +1282,7 @@ private:
       bool run(bool calledFromMaster) override;
   };
 
-#if defined(TaskSharing) // || defined(OffloadingLocalRecompute) //Todo(Philipp): do we still need this for local recompute?
+//#if defined(TaskSharing) // || defined(OffloadingLocalRecompute) //Todo(Philipp): do we still need this for local recompute?
 
   static int REQUEST_JOB_CANCEL;
   static int REQUEST_JOB_ACK;
@@ -1283,6 +1296,7 @@ private:
   struct JobTableKey {
 	  double center[DIMENSIONS];
 	  double timestamp;
+	  double timestepSize; //need this for optimistic time stepping with rollbacks!
 	  int element;
 
 	  bool operator==(const JobTableKey &other) const {
@@ -1290,6 +1304,7 @@ private:
 		  for(int i=0; i<DIMENSIONS; i++)
 		   result &= center[i]==other.center[i];
 		  result &= timestamp == other.timestamp;
+		  result &= timestepSize == other.timestepSize;
 		  result &= element == other.element;
 		  return result;
 	  }
@@ -1307,6 +1322,7 @@ private:
 			result ^= hash_fn_db(center[i]);
 		  }
 		  result ^= hash_fn_db(timestamp);
+                  result ^= hash_fn_db(timestepSize);
 		  result ^= hash_fn_int(element);
 		  //logInfo("hash()", " center[0] = "<< center[0]
 		  //					<<" center[1] = "<< center[1]
@@ -1328,8 +1344,47 @@ private:
   std::vector<int> _lastReceiveReplicaTag;
 
   tbb::concurrent_hash_map<JobTableKey, JobTableEntry> _jobDatabase;
-  tbb::concurrent_queue<JobTableKey> _allocatedJobs;
-#endif
+
+  class ConcurrentJobKeysList {
+     private:
+	  std::list<JobTableKey> _keys;
+	  std::mutex _mtx;
+
+     public:
+	  ConcurrentJobKeysList() : _keys(), _mtx() {};
+
+      bool try_pop_front(JobTableKey *result) {
+    	bool found = false;
+        _mtx.lock();
+        if(!_keys.empty()) {
+          *result = _keys.front();
+          _keys.pop_front();
+          found = true;
+        }
+        _mtx.unlock();
+        return found;
+      }
+
+      void push_front(JobTableKey key) {
+        _mtx.lock();
+        _keys.push_front(key);
+        _mtx.unlock();
+      }
+
+      void push_back(JobTableKey key) {
+        _mtx.lock();
+       _keys.push_back(key);
+       _mtx.unlock();
+      }
+
+      size_t unsafe_size() {
+    	return _keys.size();
+      }
+  };
+
+  ConcurrentJobKeysList _allocatedJobs;
+  //tbb::concurrent_queue<JobTableKey> _allocatedJobs;
+//#endif
 
   /**
    * If a task decides to send itself away, an offload entry is generated and submitted into

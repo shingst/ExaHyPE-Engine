@@ -354,7 +354,7 @@ void InitialData::getInitialData(const double* const x,double* Q) {
       ShockShockProblem(x, Q);
           break;
     case 1:
-      RareRareProblem(x, Q);
+      //RareRareProblem(x, Q);
           break;
     case 2:
       GaussFunctionProblem(x, Q);

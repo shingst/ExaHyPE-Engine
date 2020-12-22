@@ -17,39 +17,18 @@
     "width": [
       2.0,
       2.0
-    ],
-    "max_mesh_setup_iterations": 400,
-    "outside_cells": 2,
-    "outside_cells_left": 1,
-    "one_third_of_cells_outside": false
+    ]
   },
   "shared_memory": {
     "cores": 8,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
     "background_job_processing": "job_system",
-    "background_job_consumers": 1,
+    "background_job_consumers": 7,
     "min_background_jobs_in_one_rush": 1,
     "max_background_jobs_in_one_rush": 2147483647,
     "invasion_strategy": "no_invade",
     "manual_pinning": false
-  },
-  "optimisation": {
-    "fuse_algorithmic_steps": "most",
-    "fuse_algorithmic_steps_rerun_factor": 0.99,
-    "spawn_predictor_as_background_thread": true,
-    "spawn_amr_background_threads": true,
-    "disable_vertex_exchange_in_time_steps": false,
-    "time_step_batch_factor": 0.0,
-    "disable_metadata_exchange_in_batched_time_steps": false,
-    "double_compression": 0.0,
-    "spawn_double_compression_as_background_thread": false,
-    "limiting": "dynamic",
-    "mesh_refinement": "dynamic",
-    "fuse_algorithmic_steps_diffusion_factor": 0.99,
-    "spawn_update_as_background_thread": false,
-    "spawn_prolongation_as_background_thread": false,
-    "spawn_neighbour_merge_as_thread": false
   },
   "solvers": [
     {
@@ -68,8 +47,7 @@
           "source"
         ],
         "space_time_predictor": {
-          "fix_picard_iterations": false,
-          "split_ck": "disabled"
+          "fix_picard_iterations": false
         },
         "optimised_terms": [],
         "optimised_kernel_debugging": [],
@@ -127,15 +105,15 @@
         "viscosity": 0.0,
         "scenario": "detonation",
         "use-amr": false,
-        "use-tv-amr": true,
-        "use-tv-volume-correction": true,
+        "use-tv-amr": false,
+        "use-tv-volume-correction": false,
         "amr-indicator": "Z",
         "amr-factor-refine": 2.0,
         "amr-factor-erase": -0.5
       },
       "plotters": [
         {
-          "type": "vtu::Cartesian::vertices::limited::ascii",
+          "type": "vtu::Cartesian::cells::limited::ascii",
           "name": "Plotter_Limiting",
           "time": 0.0,
           "repeat": 0.05,
