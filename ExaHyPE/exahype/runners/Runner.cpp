@@ -639,7 +639,7 @@ void exahype::runners::Runner::shutdownSharedMemoryConfiguration() {
 
 #ifdef DistributedOffloading
  // while(!exahype::offloading::PerformanceMonitor::getInstance().isGloballyTerminated()) {
- //   tarch::multicore::jobs::finishToProcessBackgroundJobs();
+    tarch::multicore::jobs::finishToProcessBackgroundJobs();
  // }
 #endif
 
@@ -1090,9 +1090,7 @@ int exahype::runners::Runner::run() {
     }
 
     logInfo("shutdownDistributedMemoryConfiguration()","stopped offloading manager");
-    exahype::offloading::OffloadingManager::getInstance().destroy();
-    logInfo("shutdownDistributedMemoryConfiguration()","destroyed MPI communicators + progress engine");
-#if defined(TaskSharing) || defined(OffloadingLocalRecompute)
+ #if defined(TaskSharing) || defined(OffloadingLocalRecompute)
     exahype::offloading::JobTableStatistics::getInstance().printStatistics();
 #endif
 #endif
@@ -1105,6 +1103,9 @@ int exahype::runners::Runner::run() {
       shutdownSharedMemoryConfiguration();
 
     logInfo("run()","shutdownSharedMemoryConfiguration");
+
+    exahype::offloading::OffloadingManager::getInstance().destroy();
+    logInfo("shutdownDistributedMemoryConfiguration()","destroyed MPI communicators + progress engine");
 
     if ( _parser.isValid() )
       shutdownDistributedMemoryConfiguration();
