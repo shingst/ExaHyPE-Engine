@@ -11,7 +11,8 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if !defined(_EXAHYPE_STEALINGPROGRESSSERVICE_H_) && defined(SharedTBB) && defined(Parallel) && defined(DistributedOffloading)
+//#if !defined(_EXAHYPE_STEALINGPROGRESSSERVICE_H_) && defined(SharedTBB) && defined(Parallel) && defined(DistributedOffloading)
+#if !defined(_EXAHYPE_STEALINGPROGRESSSERVICE_H_)  && defined(Parallel) && defined(DistributedOffloading)
 #define _EXAHYPE_STEALINGPROGRESSSERVICE_H_
 
 #include "tarch/logging/Log.h"

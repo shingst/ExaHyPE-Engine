@@ -26,6 +26,10 @@
 
 #include "kernels/finitevolumes/commons/c/commons.h" // TODO measurements
 
+#if defined(DistributedOffloading)
+#include "exahype/offloading/OffloadingProfiler.h"
+#endif
+
 namespace exahype {
 namespace solvers {
 
@@ -630,12 +634,47 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
   reduce(solverPatch,cellInfo,result);
 
   if (
-      solverPatch.getRefinementStatus()<_solver->_minRefinementStatusForTroubledCell &&
+      (solverPatch.getRefinementStatus()<_solver->_minRefinementStatusForTroubledCell
+#if defined(ResilienceChecks) && defined(TaskSharing)
+	  || true
+#endif
+	  )
+	  &&
       SpawnPredictionAsBackgroundJob &&
       !mustBeDoneImmediately         &&
       isLastTimeStepOfBatch  // may only spawned in last iteration
   ) {
     const int element = cellInfo.indexOfADERDGCellDescription(solverPatch.getSolverNumber());
+#ifdef DistributedOffloading
+    logDebug("fusedTimeStepBody", "spawning for "<< cellInfo._cellDescriptionsIndex<< " predictionTimeStamp "<<predictionTimeStamp<<" predictionTimeStepSize "<<predictionTimeStepSize);
+    //skeleton cells are not considered for offloading
+    if (isSkeletonCell) {
+      peano::datatraversal::TaskSet(
+          new ADERDGSolver::PredictionJob(
+              *_solver.get(),solverPatch/*the reductions are delegated to _solver anyway*/,
+              cellInfo._cellDescriptionsIndex,element,
+              predictionTimeStamp,
+              predictionTimeStepSize,
+              false/*is uncompressed*/,isSkeletonCell,isLastTimeStepOfBatch/*addVolumeIntegralResultToUpdate*/));
+      exahype::offloading::OffloadingProfiler::getInstance().notifySpawnedTask();
+    }
+    else {
+#ifdef USE_ITAC
+     // VT_begin(event_spawn);
+#endif
+      ADERDGSolver::MigratablePredictionJob *migratablePredictionJob = new ADERDGSolver::MigratablePredictionJob(*_solver.get(),
+          cellInfo._cellDescriptionsIndex, element,
+          predictionTimeStamp,
+          predictionTimeStepSize);
+      _solver.get()->submitOrSendMigratablePredictionJob(migratablePredictionJob);
+
+      //peano::datatraversal::TaskSet spawnedSet( stealablePredictionJob, peano::datatraversal::TaskSet::TaskType::Background );
+      exahype::offloading::OffloadingProfiler::getInstance().notifySpawnedTask();
+#ifdef USE_ITAC
+      //VT_end(event_spawn);
+#endif
+    }
+#else
     peano::datatraversal::TaskSet(
         new ADERDGSolver::PredictionJob(
             *_solver.get(),solverPatch/*the reductions are delegated to _solver anyway*/,
@@ -643,6 +682,7 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
             predictionTimeStamp,
             predictionTimeStepSize,
             false/*is uncompressed*/,isSkeletonCell,isLastTimeStepOfBatch/*addVolumeIntegralResultToUpdate*/));
+#endif
   }
   else if ( solverPatch.getRefinementStatus()<_solver->_minRefinementStatusForTroubledCell ){
     _solver->predictionAndVolumeIntegralBody(
@@ -895,11 +935,17 @@ bool
 exahype::solvers::LimitingADERDGSolver::checkIfCellIsTroubledAndDetermineMinAndMax(
     SolverPatch& solverPatch,
     CellInfo&    cellInfo) {
+  bool isTroubled;
+
   if ( OnlyStaticLimiting ) {
-    return solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell;
+    isTroubled =  solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell;
+#if defined(ResilienceChecks)
+    solverPatch.setIsTroubledInLastStep(isTroubled);
+#endif
+    return isTroubled;
   }
 
-  bool isTroubled =
+  isTroubled =
       !evaluateDiscreteMaximumPrincipleAndDetermineMinAndMax(solverPatch) ||
       !evaluatePhysicalAdmissibilityCriterion(solverPatch,
                                               solverPatch.getTimeStamp()+solverPatch.getTimeStepSize()); // after min and max was found
@@ -911,6 +957,10 @@ exahype::solvers::LimitingADERDGSolver::checkIfCellIsTroubledAndDetermineMinAndM
     LimiterPatch& limiterPatch = getLimiterPatch(solverPatch,cellInfo);
     determineLimiterMinAndMax(solverPatch,limiterPatch);
   }
+#if defined(ResilienceChecks)
+    logDebug("checkIfCellIsTroubledAndDetermineMinAndMax", "celldesc ="<<cellInfo._cellDescriptionsIndex<<" troubled = "<<isTroubled);
+    solverPatch.setIsTroubledInLastStep(isTroubled);
+#endif
 
   return isTroubled;
 }

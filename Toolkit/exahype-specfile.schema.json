@@ -424,6 +424,26 @@
         }
       }
     }, 
+    "_resilience" : { },
+    "resilience" : { 
+      "type" : "object",
+      "used-by" : "toolkit",
+      "scope" : "run-time",
+      "properties" : { 
+        "generate_soft_errors" : { 
+          "type" : "string",
+          "title" : "Specifies whether and where soft-errors should be artifically generated.",
+          "enum" : ["no","migratable_stp_tasks"],
+          "default" : "no"
+         },
+         "trigger_mechanism" : { 
+          "type" : "string",
+          "title" : "Specifies whether and how potential soft-errors should be triggered (checking requires teaMPI+ tasksharing with resilience checks).",
+          "enum" : ["none", "trigger_limited", "trigger_all", "trigger_flipped"],
+          "default" : "none"
+         }
+      }
+    },
     "_distributed_memory" : {},
     "distributed_memory" : {
       "type" : "object", 
@@ -494,9 +514,10 @@
           "old_format" : { "token_after" : "timeout" }
         },
         "task_sharing": {
-          "type" : "boolean",
-          "title" : "If active, tasks are migrated between MPI ranks to save on computation redundancy. This requires to link against teaMPI.",
-          "default" : false
+          "type" : "string",
+          "title" : "Task sharing mode between teams (requires teaMPI): task outcomes can be merely shared or shared + checked for soft resilience.",
+          "enum" : ["no","task_sharing","task_sharing_resilience_checks"],
+          "default" : "no"
         }, 
         "offloading_lb_strategy" : {
           "type" : "string", 
@@ -540,6 +561,11 @@
               "type" : "integer",
               "title" : "Number of CCP steps conducted per CCP phase (load balancing).",
               "default" : 5
+        },
+        "offloading_local_starvation_threshold" : {
+              "type" : "integer",
+              "title" : "Number of tasks that must be available locally before a task is offloaded (avoids local consumer starvation). A value of -1 means not set.",
+              "default" : -1
         },
         "offloading_update_temperature": {
               "type" : "boolean",
@@ -809,6 +835,12 @@
                     "type" : "boolean",
                     "available-for" : ["optimised"],
                     "title" : "WiP: Use vectorised user function formulations (SoA data layout) for PDE functions related to the terms' options: flux, source, ncp, viscous_flux and fusedsource. Only available for optimised kernels with either split_ck (linear) or predictor_recompute (nonlinear)",
+                    "default" : false
+                  },
+                  "AoSoA2_layout" : {
+                    "type" : "boolean",
+                    "available-for" : ["optimised"],
+                    "title" : "WiP: use AoSoA[2] data layout, requires vectorise_terms true",
                     "default" : false
                   }
                 }

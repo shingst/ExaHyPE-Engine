@@ -34,20 +34,24 @@
   "distributed_memory": {
     "offloading_lb_strategy": "aggressiveHybrid",
     "offloading_input_file" : "",
-    "offloading_progress" : "progress_task",   
+    "offloading_progress" : "none",   
     "offloading_CCP_temperature" : 0,
     "offloading_diffusion_temperature" : 1,
     "offloading_CCP_frequency" : 0,
     "offloading_CCP_steps" : 0,
     "offloading_update_temperature" : true,
     "offloading_increase_temp_threshold" : 1.0,
-    "task_sharing" : false,
+    "task_sharing" : "no",
     "timeout": 12000,
     "load_balancing_type": "static",
     "buffer_size"            : 1600,    
     "load_balancing_strategy": "hotspot",
     "node_pool_strategy": "fair",
     "ranks_per_node"         : 1   
+  },
+  "resilience" : {
+    "generate_soft_errors" : "no",
+    "trigger_mechanism" : "trigger_all"
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",

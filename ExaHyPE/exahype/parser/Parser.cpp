@@ -1371,3 +1371,20 @@ int exahype::parser::Parser::getSTPTracingDumpInterval() const {
   int result = getIntFromPath("/stp_stats_tracing/stp_tracing_frequency", 1 , isOptional);
   return result;
 }
+
+bool exahype::parser::Parser::getGenerateSoftErrorsInMigratableSTPs() const  {
+  return getStringFromPath("/resilience/generate_soft_errors", "none", isOptional).compare("migratable_stp_tasks")==0;
+}
+
+bool exahype::parser::Parser::getTriggerAllMigratableSTPs() const {
+  return getStringFromPath("/resilience/trigger_mechanism", "none", isOptional).compare("trigger_all")==0;
+}
+
+bool exahype::parser::Parser::getTriggerLimitedCellsOnly() const {
+  return getStringFromPath("/resilience/trigger_mechanism", "none", isOptional).compare("trigger_limited")==0;
+}
+
+bool exahype::parser::Parser::getTriggerFlipped() const {
+  return getStringFromPath("/resilience/trigger_mechanism", "none", isOptional).compare("trigger_flipped")==0;
+}
+

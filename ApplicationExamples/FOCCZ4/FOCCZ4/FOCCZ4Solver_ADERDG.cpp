@@ -10,6 +10,7 @@
 #include "FOCCZ4Solver_FV.h"
 
 #include <algorithm>
+#include <cstring>
 
 #include "FOCCZ4Solver_ADERDG_Variables.h"
 #include "kernels/GaussLegendreBasis.h"
@@ -41,11 +42,13 @@ void FOCCZ4::FOCCZ4Solver_ADERDG::init(const std::vector<std::string>& cmdlinear
     std::string reference = constants.getValueAsString("reference");
 	const int length=reference.length();
 	logInfo("init(...)","Reference setup:"<<reference);
+#if HAVE_TECPLOT
   	printf("\n******************************************************************");
 	printf("\n**************<<<  INIT TECPLOT    >>>****************************");
 	printf("\n******************************************************************");
     inittecplot_(&order,&order,&basisSize,&Ghostlayers);
 	//inittecplot_(&order,&order);
+#endif
 	printf("\n******************************************************************");
 	printf("\n**************<<<  INIT PDE SETUP  >>>****************************");
 	printf("\n******************************************************************\n");

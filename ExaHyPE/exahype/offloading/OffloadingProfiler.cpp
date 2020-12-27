@@ -11,7 +11,8 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if defined(SharedTBB) && defined(Parallel)
+//#if defined(SharedTBB) && defined(Parallel)
+#if defined(Parallel)
 
 #include "exahype/offloading/OffloadingProfiler.h"
 

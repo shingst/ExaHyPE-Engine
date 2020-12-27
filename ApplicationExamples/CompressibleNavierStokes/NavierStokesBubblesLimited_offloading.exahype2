@@ -21,6 +21,24 @@
 	"properties_file": "sharedmemory.properties",
 	"autotuning_strategy": "dummy"
     },
+    "distributed_memory": {
+      "offloading_lb_strategy": "none",
+      "offloading_input_file" : "",
+      "offloading_progress" : "none",   
+      "offloading_CCP_temperature" : 0,
+      "offloading_diffusion_temperature" : 1,
+      "offloading_CCP_frequency" : 0,
+      "offloading_CCP_steps" : 0,
+      "offloading_update_temperature" : true,
+      "offloading_increase_temp_threshold" : 1.0,
+      "task_sharing" : "task_sharing_resilience_checks",
+      "timeout": 12000,
+      "load_balancing_type": "static",
+      "buffer_size"            : 1600,    
+      "load_balancing_strategy": "hotspot",
+      "node_pool_strategy": "fair",
+      "ranks_per_node"         : 1   
+    },
     "optimisation": {
 	"fuse_algorithmic_steps": "all",
 	"fuse_algorithmic_steps_rerun_factor": 0.99,
@@ -103,8 +121,8 @@
 		"amr-factor-refine": 3.5,
 		"amr-factor-erase": -0.5
 	    },
-	   "plotters": [
-               {
+            "plotters": [
+                {
                     "type": "vtu::Cartesian::vertices::ascii",
                     "name": "Plotter_Limiter",
                     "time": 1e-06,

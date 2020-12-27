@@ -11,7 +11,7 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if !defined(_EXAHYPE_STEALING_STEALINGMANAGER_H_) && defined(SharedTBB)  && defined(Parallel)
+#if !defined(_EXAHYPE_STEALING_STEALINGMANAGER_H_)  && defined(Parallel)
 #define _EXAHYPE_STEALING_STEALINGMANAGER_H_
 
 #include "tarch/logging/Log.h"
@@ -93,6 +93,8 @@ class exahype::offloading::OffloadingManager {
      *  requests.
      */
     std::atomic<int> _nextGroupId;
+
+    int _maxTag;
 
     /**
      * Counts number of running progress jobs.

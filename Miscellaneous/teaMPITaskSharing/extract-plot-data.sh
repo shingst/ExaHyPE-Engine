@@ -3,6 +3,8 @@ outputFiles=("./plots/data_2_r_2_nodes_base"  "./plots/data_2_r_2_nodes_progress
 
 #inputFiles=("./Output_baseline_ucx_patched_lto/results/Elastic-timestep-times.csv" "./Output_tasksharing_progression_ucx_patched/results/Elastic-timestep-times.csv" "./Output_sharing_server_bf_patched_ucx_direct/results/Elastic-timestep-times.csv" "./Output_sharing_server_bf_patched_ucx_handshake/results/Elastic-timestep-times.csv"  "./Output_tasksharing_no_progression_ucx_patched/results/Elastic-timestep-times.csv")
 #outputFiles=("./plots/data_2_r_2_nodes_base"  "./plots/data_2_r_2_nodes_progression" "./plots/data_2_r_2_nodes_bluefield_direct" "./plots/data_2_r_2_nodes_bluefield_handshake"  "./plots/data_2_r_2_nodes_no_progression" ) 
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
 
 orders=( 7 8 9 )
 
@@ -15,7 +17,7 @@ do
     if [ -e $table ]; then
       for o in "${orders[@]}"
       do 
-        (./teaMPITaskSharing/tableslicer.py $table \
+        (${DIR}/tableslicer.py $table \
           --cols order cores consumerTasks ranks nodes replication normalised_realtime_min\
           --filter ranks=2 order=$o\
           --output "${outputFiles[i]}_$o.csv")
