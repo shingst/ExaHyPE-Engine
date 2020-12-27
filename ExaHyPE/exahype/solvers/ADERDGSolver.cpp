@@ -3272,12 +3272,12 @@ void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahyp
     bool found = solver->_jobDatabase.find(a_jobToData, key);
     if (found) {
       a_jobToData->second.status = JobOutcomeStatus::received;
-    a_jobToData.release();
-  }
-  else{
-    solver->_jobDatabase.insert(std::make_pair(key,entry));
-  }
-    solver->_allocatedJobs.push(key);
+      a_jobToData.release();
+    }
+    else{
+      solver->_jobDatabase.insert(std::make_pair(key,entry));
+    }
+    solver->_allocatedJobs.push_back(key);
   }
   exahype::offloading::JobTableStatistics::getInstance().notifyReceivedTask();
 #else
@@ -3473,7 +3473,7 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
 #if defined UseSmartMPI
       MPI_Get_count_offload(&statRepDataOffload, MigratablePredictionJobMetaData::getMPIDatatype(), &msgLenDouble);
       if(msgLenDouble==MigratablePredictionJobMetaData::getMessageLen()) {
-        logInfo("progressOffloading","received replica task from "<<statRepDataOffload.MPI_SOURCE<<" , tag "<<statRepDataOffload.MPI_TAG);
+        logDebug("progressOffloading","received replica task from "<<statRepDataOffload.MPI_SOURCE<<" , tag "<<statRepDataOffload.MPI_TAG);
         assert(solver->_lastReceiveReplicaTag[statRepDataOffload.MPI_SOURCE]!=statRepDataOffload.MPI_TAG);
         solver->_lastReceiveReplicaTag[statRepDataOffload.MPI_SOURCE] = statRepDataOffload.MPI_TAG;
         receiveTaskOutcome(statRepDataOffload.MPI_TAG, statRepDataOffload.MPI_SOURCE, solver, statRepDataOffload.rail);

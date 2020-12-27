@@ -537,7 +537,7 @@ void exahype::offloading::OffloadingManager::progressRequests() {
   if(lastOutputTimeStamp==0 || (MPI_Wtime()-lastOutputTimeStamp)>10) {
     lastOutputTimeStamp = MPI_Wtime();
     printPostedRequests();
-    logInfo("progressRequests()", "there are "<<getNumberOfOutstandingRequests(RequestType::send)<< " send requests remaining "
+    logDebug("progressRequests()", "there are "<<getNumberOfOutstandingRequests(RequestType::send)<< " send requests remaining "
         <<","<<getNumberOfOutstandingRequests(RequestType::receive)<<" receive requests remaining"
         <<","<<getNumberOfOutstandingRequests(RequestType::sendBack)<<" sendBack requests remaining"
         <<","<<getNumberOfOutstandingRequests(RequestType::receiveBack)<<" receiveBack requests remaining"
@@ -706,7 +706,7 @@ bool exahype::offloading::OffloadingManager::progressRequestsOfType( RequestType
     for(int i=0;i<nRequests;i++) {
       int ierrstatus = stats[i].MPI_ERROR;
       if(ierrstatus!=MPI_SUCCESS) {
-        logInfo("offloadingManager", "error "<<ierrstatus<<" for request "<<_internalIdsOfActiveRequests[mapId][i]<< " source "<<stats[i].MPI_SOURCE<<" tag "<<stats[i].MPI_TAG);
+        logError("offloadingManager", "error "<<ierrstatus<<" for request "<<_internalIdsOfActiveRequests[mapId][i]<< " source "<<stats[i].MPI_SOURCE<<" tag "<<stats[i].MPI_TAG);
       }
       char err_buffer[MPI_MAX_ERROR_STRING];
       int resultlen = 0;
