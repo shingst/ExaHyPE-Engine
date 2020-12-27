@@ -103,6 +103,12 @@ exahype::offloading::OffloadingManager::OffloadingManager(int threadId) :
   std::fill(&_postedSendBacksPerRank[0], &_postedSendBacksPerRank[nnodes], 0);
   _postedReceiveBacksPerRank = new std::atomic<int>[nnodes];
   std::fill(&_postedReceiveBacksPerRank[0], &_postedReceiveBacksPerRank[nnodes], 0);
+
+  int flag = 0;
+  int ierr = MPI_Comm_get_attr(MPI_COMM_WORLD, MPI_TAG_UB, &_maxTag, &flag); assertion(ierr==MPI_SUCCESS);
+  if(!flag) {
+    logWarning("OffloadingManager()"," maximum allowed MPI tag could not be determined. Offloading may leave the space of allowed tags for longer runs...");
+  }
 }
 
 exahype::offloading::OffloadingManager::~OffloadingManager() {
@@ -203,8 +209,6 @@ void exahype::offloading::OffloadingManager::createMPICommunicators() {
     MPI_Info info;
     MPI_Info_create(&info);
     MPI_Info_set(info, "thread_id", std::to_string(i).c_str());
-
-    std::cout<<"i "<<i<<std::endl;
 
     int ierr= MPI_Comm_dup(MPI_COMM_WORLD, &_offloadingComms[i]);
     assertion(ierr==MPI_SUCCESS);
@@ -327,7 +331,12 @@ int exahype::offloading::OffloadingManager::requestTypeToMsgQueueIdx( RequestTyp
 
 int exahype::offloading::OffloadingManager::getOffloadingTag() {
   static std::atomic<int> counter(1); //0 is reserved for status
-  return counter.fetch_add(1);
+  int val =  counter.fetch_add(1);
+  if(val==_maxTag-1) {
+    counter = 1;
+    val = 1;
+  }
+  return val;
 }
 
 void exahype::offloading::OffloadingManager::submitRequests(

@@ -148,8 +148,11 @@ class exahype::offloading::AggressiveHybridDistributor {
      */
     bool _isEnabled;
 
+    // Todo: docu
     int _currentOptimalVictim;
     int _currentCriticalRank;
+
+    int _localStarvationThreshold;
 
     /**
      * Conducts a CCP step.
@@ -189,7 +192,8 @@ class exahype::offloading::AggressiveHybridDistributor {
     void configure(double startTempCCP, double startTempDiffusion,
                    int CCPFrequency, int CCPStepsPerPhase,
                    bool adaptTemperature,
-                   double thresholdTempAdaptation);
+                   double thresholdTempAdaptation,
+		   int localStarvationThreshold);
 
     /**
      *  This operation computes a new unique load distribution (and accordingly, distribution rules)

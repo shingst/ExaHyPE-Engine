@@ -313,7 +313,8 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
        _parser.getIntFromPath("/distributed_memory/offloading_CCP_frequency"),
        _parser.getIntFromPath("/distributed_memory/offloading_CCP_steps"),
        _parser.getBoolFromPath("/distributed_memory/offloading_update_temperature"),
-       _parser.getDoubleFromPath("/distributed_memory/offloading_increase_temp_threshold")
+       _parser.getDoubleFromPath("/distributed_memory/offloading_increase_temp_threshold"),
+       _parser.getIntFromPath("/distributed_memory/offloading_local_starvation_threshold")
     );
 #endif
 
