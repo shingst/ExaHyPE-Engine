@@ -362,6 +362,7 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
 
 def renderJobScript(jobScriptTemplate,jobScriptBody,jobs,
                     jobName,jobScriptFilePath,outputFileName,errorFileName,
+                    resultsSpecificFolder,
                     ranks,nodes,ranksPerNode,cores,serversPerRank): # cores still necessary?
     """
     Render a job script.
@@ -375,6 +376,7 @@ def renderJobScript(jobScriptTemplate,jobScriptBody,jobs,
     context["output_file"] = outputFileName
     context["error_file"]  = errorFileName
     context["job_name"]    = jobName 
+    context["results_specific_folder"] = resultsSpecificFolder
  
     context["body"] = jobScriptBody   
     
@@ -573,6 +575,8 @@ def generateScripts():
                                 outputFileName = projectName + "-" + environmentDictHash + "-" + parameterDictHash + \
                                                  "-n" + ranks + "-N" + nodes + "-t"+ranksPerNode+"-c"+cores+"-b"+consumers+"-r"+myRun+".out"
                                 outputFilePath = resultsFolderPath + "/" + outputFileName 
+                                resultsSpecificFolder = resultsFolderPath + "/" + projectName + "-" + environmentDictHash + "-" + parameterDictHash + \
+                                                 "-n" + ranks + "-N" + nodes + "-t"+ranksPerNode+"-c"+cores+"-b"+consumers+"-r"+myRun
 
                                 if "preamble" in jobs:
                                     renderedPreamble = jobs["preamble"].strip("\"")
@@ -641,7 +645,8 @@ def generateScripts():
                     # write job file
                     renderedJobScript = renderJobScript(\
                                             jobScriptTemplate,jobScriptBody,jobs,
-                                            jobInfo.jobName,jobInfo.jobScriptFilePath,jobInfo.jobOutputFilePath,jobInfo.jobErrorFilePath,
+                                            jobInfo.jobName,jobInfo.jobScriptFilePath,jobInfo.jobOutputFilePath,jobInfo.jobErrorFilePath, 
+                                            resultsSpecificFolder,
                                             ranks,nodes,ranksPerNode,cores, serversPerRank)
                     with open(jobInfo.jobScriptFilePath, "w") as jobScriptFile:
                         jobScriptFile.write(renderedJobScript)
