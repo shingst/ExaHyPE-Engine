@@ -2879,7 +2879,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
 #if !defined(UseSmartMPI)
      MPI_Request sendRequests[NUM_REQUESTS_MIGRATABLE_COMM+1];
 #endif
-     int tag = job->_cellDescriptionsIndex; //exahype::offloading::OffloadingManager::getInstance().getOffloadingTag();
+     int tag = exahype::offloading::OffloadingManager::getInstance().getOffloadingTag(); //cellDescriptionsIndex is not a good idea here, as map entries with key tag may be overwritten if previous sends have not been marked as finished
       //need to create a copy
 #if defined(OffloadingLocalRecompute)
      //Todo: we probably don't need this anymore as we don't need a copy
@@ -2939,13 +2939,19 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
 #else
      MigratablePredictionJobMetaData *metadata = new MigratablePredictionJobMetaData();
      job->packMetaData(metadata);
+#ifdef(Asserts)
+     tbb::concurrent_hash_map<int, MigratablePredictionJobMetaData*>::accessor a_TagToMetadata;
+     bool found = _mapTagToMetaData.find(a_TagToMetadata, tag);
+     assert(!found);
+#endif
+
      // we need this info when the task comes back...
      _mapTagToMetaData.insert(std::make_pair(tag, metadata));
      _mapTagToCellDesc.insert(std::make_pair(tag, &cellDescription));
      //logInfo("submitOrSendMigratablePredictionJob", "inserting tag"<<tag);
      _mapCellDescToTagRank.insert(std::make_pair(&cellDescription, std::make_pair(tag, destRank)));
      _mapTagToOffloadTime.insert(std::make_pair(tag, -MPI_Wtime()));
-     logDebug("submitOrSendMigratablePredictionJob()","send away with tag "<<tag<<" job "<<metadata->to_string());
+     logDebug("submitOrSendMigratablePredictionJob()","send away with tag "<<tag<<" to rank "<<destRank<<" job "<<metadata->to_string());
      // send away
 #if defined(UseSmartMPI)
      mpiSendMigratablePredictionJobOffload(
@@ -3450,7 +3456,7 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
         lastRecvTag = stat.MPI_TAG;
         lastRecvSrc = stat.MPI_SOURCE;
       
-        assertion(solver->_lastReceiveTag[lastRecvSrc]!=lastRecvTag);
+        assertion(solver->_lastReceiveTag[lastRecvSrc]!=lastRecvTag); //Todo: still necessary?
         solver->_lastReceiveTag[lastRecvSrc] = lastRecvTag;
 
 #if defined(UseSmartMPI)
