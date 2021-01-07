@@ -14,13 +14,12 @@
 
 #include "AbstractNavierStokesSolver_FV.h"
 #include "exahype/parser/ParserView.h"
-#include "Scenarios/Scenario.h"
 
 /**
  * We use Peano's logging
  */
 #include "tarch/logging/Log.h"
-#include "AMR/AMRSettings.h"
+
 
 namespace NavierStokes{
   class NavierStokesSolver_FV;
@@ -33,11 +32,6 @@ class NavierStokes::NavierStokesSolver_FV : public NavierStokes::AbstractNavierS
      */
     static tarch::logging::Log _log;
   public:
-    std::unique_ptr<Scenario> scenario;
-    std::string scenarioName;
-    PDE ns;
-    AMRSettings amrSettings;
-
     NavierStokesSolver_FV(
       const double maximumMeshSize,
       const exahype::solvers::Solver::TimeStepping timeStepping
@@ -52,78 +46,92 @@ class NavierStokes::NavierStokesSolver_FV : public NavierStokes::AbstractNavierS
     void init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) final override ;
 
     /**
-     * @see FiniteVolumesSolver
+     * Adjust the conserved variables and parameters (together: Q) at a given time t at the (quadrature) point x.
+     *
+     * @note Please overwrite function adjustSolution(...) if you want to
+     * adjust the solution degrees of freedom in a cellwise manner.
+     *
+     * @param[in]    x   physical coordinate on the face.
+     * @param[in]    t   start of the time interval.
+     * @param[in]    dt  width of the time interval.
+     * @param[in]    Q   vector of state variables (plus parameters); 
+     *                   range: [0,nVar+nPar-1], already allocated.
      */    
-    void adjustSolution(const double* const x,const double t,const double dt, double* Q) override; 
+    void adjustSolution(const double* const x,const double t,const double dt, double* const Q) override; 
     
     /**
-     * Compute the eigenvalues of the flux tensor per coordinate direction \p d.
+     * Compute the eigenvalues of the flux tensor per coordinate  @p direction.
      *
-     * \param[in] Q  the conserved variables associated with a quadrature node
-     *               as C array (already allocated).
-     * \param[in] d  the column of the flux vector (d=0,1,...,DIMENSIONS).
-     * \param[inout] lambda the eigenvalues as C array (already allocated).
+     * @param[in]    Q          vector of state variables (plus parameters); 
+     *                          range: [0,nVar+nPar-1], already allocated.
+     * @param[in]    direction  normal direction of the face / column of the flux vector (range: [0,nDims-1]).
+     * @param[inout] lambda     eigenvalues as C array;
+     *                          range: [0,nVar-1], already allocated.
      */
-    void eigenvalues(const double* const Q,const int d,double* lambda) override;
+    void eigenvalues(const double* const Q,const int direction,double* const lambda) override;
         
     /**
      * Impose boundary conditions at a point on a boundary face
      * within the time interval [t,t+dt].
      *
-     * \param[in]    x         the physical coordinate on the face.
-     * \param[in]    t         the start of the time interval.
-     * \param[in]    dt        the width of the time interval.
+     * \param[in]    x         physical coordinate on the boundary; range: [0,nDims-1].
+     * \param[in]    t         start of the time interval.
+     * \param[in]    dt        width of the time interval.
      * \param[in]    faceIndex indexing of the face (0 -- {x[0]=xmin}, 1 -- {x[1]=xmax}, 2 -- {x[1]=ymin}, 3 -- {x[2]=ymax}, and so on,
      *                         where xmin,xmax,ymin,ymax are the bounds of the cell containing point x.
-     * \param[in]    d         the coordinate direction the face normal is pointing to.
-     * \param[in]    QIn       the conserved variables at point x from inside of the domain
-     *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
-     * \param[inout] QOut      the conserved variables at point x from outside of the domain
-     *                         and time-averaged (over [t,t+dt]) as C array (already allocated).
+     * \param[in]    direction coordinate direction the face normal is pointing to.
+     * @param[in]    QIn       vector of state variables (plus parameters) from inside of the domain
+     *                         range: [0,nVar+nPar-1], already allocated.
+     * @param[inout] QOut      vector of state variables (plus parameters) from outside of the domain.
+     *                         range: [0,nVar+nPar-1], already allocated.
+     *                         
+     * @note The argument QOut is initially set as QIn mirrored at the boundary face. This
+     * makes it easier to implement certain boundary conditions where a velocity, e.g., 
+     * needs to change its sign compared to the inside state.
      */
-    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const stateIn,double* stateOut) override;
+    void boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int direction,const double* const QIn,double* const QOut) override;
     
     /* flux() function not included, as requested in the specification file */
 
     
     /**
-     * Compute the flux tensor with diffusive term.
+     * Compute the flux tensor with diffusive components.
      *
-     * \param[in]    Q the conserved variables (and parameters) associated with a quadrature point
-     *                 as C array (already allocated).
-     *               gradQ the gradient of the conserved variables (and parameters) associated with a quadrature point
-     *                     as C array (already allocated).
-     * \param[inout] F the fluxes at that point as C array (already allocated).
+     * @param[in]    Q     vector of state variables (plus parameters); 
+     *                     range: [0,nVar+nPar-1], already allocated.
+     *
+     * @param[in]    gradQ gradient of the conserved variables 
+     *                     (plus parameters);
+     *                     range: [0,nDim*(nVar+nPar)-1], already allocated.
+     *
+     * @param[inout] F     viscous flux at that point; 
+     *                     range[outer->inner]: [0,nDim-1]x[0,nVar-1], 
+     *                     already allocated.
      */
-    void viscousFlux(const double* const Q,const double* const gradQ, double** F) override;
-    void viscousEigenvalues(const double* const Q,const int d,double* lambda) override;
+    void viscousFlux(const double* const Q,const double* const gradQ, double** const F) override;
+    void viscousEigenvalues(const double* const Q,const int direction,double* const lambda) override;
 
 
     /**
-     * Compute the algebraic source (right hand side).
-     *
-     * \param[in]   Q      the conserved variables associated with a quadrature node as C array (already allocated).
-     * \param[out]  S      the source term vector (already allocated, same shape as Q).
-     **/
+    * Compute the Algebraic Sourceterms.
+    * 
+    * You may want to overwrite this with your PDE Source (algebraic RHS contributions).
+    * However, in all schemes we have so far, the source-type contributions are
+    * collected with non-conservative contributions into a fusedSource, see the
+    * fusedSource method. From the kernels given with ExaHyPE, only the fusedSource
+    * is called and there is a default implementation for the fusedSource calling
+    * again seperately the nonConservativeProduct function and the algebraicSource
+    * function.
+    *
+    * @param[in]    Q vector of state variables (plus material 
+    *                 parameters); range: [0,nVar+nPar-1], already allocated.
+    * @param[inout] S source term; range: [0,nVar-1], already allocated.
+    */
     void algebraicSource(const tarch::la::Vector<DIMENSIONS, double>& x, double t, const double *const Q, double *S) override;
 
     /* nonConservativeProduct() function is not included, as requested in the specification file */
     
     /* pointSource() function not included, as requested in the specification file */
-
-    void resetGlobalObservables(GlobalObservables& globalObservables) const final override;
-    
-    void mapGlobalObservables(
-        GlobalObservables&                          globalObservables,
-        const double* const                         luh,
-        const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
-        const tarch::la::Vector<DIMENSIONS,double>& cellSize,
-        const double t,
-        const double dt) const final override;
-
-    void mergeGlobalObservables(
-        GlobalObservables&         globalObservables,
-        ReadOnlyGlobalObservables& otherObservables) const final override;
 };
 
 

@@ -2939,7 +2939,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
 #else
      MigratablePredictionJobMetaData *metadata = new MigratablePredictionJobMetaData();
      job->packMetaData(metadata);
-#ifdef(Asserts)
+#if defined(Asserts)
      tbb::concurrent_hash_map<int, MigratablePredictionJobMetaData*>::accessor a_TagToMetadata;
      bool found = _mapTagToMetaData.find(a_TagToMetadata, tag);
      assert(!found);
