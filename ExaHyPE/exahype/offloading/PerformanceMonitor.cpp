@@ -35,11 +35,12 @@ tarch::logging::Log exahype::offloading::PerformanceMonitor::_log( "exahype::off
 exahype::offloading::PerformanceMonitor::PerformanceMonitor() :
     _isRankActive(true),
 	  _isDisabled(false),
-    _fusedGatherRequest(MPI_REQUEST_NULL),
+    _terminatedGlobally(false),
     _currentTasksLocal(0),
     _remainingTasks(0),
     _tasksPerTimestep(0),
-    _terminatedGlobally(false) {
+    _fusedGatherRequest(MPI_REQUEST_NULL)
+ {
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
@@ -96,7 +97,7 @@ void exahype::offloading::PerformanceMonitor::submitBlacklistValueForRank(double
 }
 
 const double *exahype::offloading::PerformanceMonitor::getBlacklistSnapshot() {
-  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
+  //int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
   //for(int j=0; j<nnodes; j++) 
   //  logInfo("getBlacklistSnapshot()"," val "<<_currentBlacklistSnapshot[j]<< " for "<< j);
@@ -133,9 +134,7 @@ void exahype::offloading::PerformanceMonitor::stop() {
 
 void exahype::offloading::PerformanceMonitor::setCurrentTasks(int num) {
   //logInfo("performance monitor", "setting current load to "<<num);
-  int myRank = tarch::parallel::Node::getInstance().getRank();
   tarch::multicore::Lock lock(_semaphore);
-  //_currentTasks[myRank] = num;
   _currentTasksLocal = num;
   lock.free();
 }
@@ -170,7 +169,6 @@ void exahype::offloading::PerformanceMonitor::run() {
 }
 
 void exahype::offloading::PerformanceMonitor::progressGather() {
-  int myRank    = tarch::parallel::Node::getInstance().getRank();
   int nnodes    = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
   int completed_fused = 0;

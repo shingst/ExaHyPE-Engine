@@ -68,8 +68,15 @@ std::size_t exahype::offloading::MemoryMonitor::getFreeMemMB() {
   char *line_buf = work;
   size_t size = 256;
   //size_t line_size = 0;
-  (void) getline(&line_buf, &size, f);
-  (void) getline(&line_buf, &size, f);
+  size_t read1, read2;
+  read1 = getline(&line_buf, &size, f);
+  read2 = getline(&line_buf, &size, f);
+
+  if(read1<=0 || read2<=0) {
+    logError("getFreeMemMB", "Error reading memory consumption info, exiting...")
+    fclose(f);
+    exit(-1);
+  }
 
   fclose(f);
 
