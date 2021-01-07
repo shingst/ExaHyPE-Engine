@@ -85,7 +85,7 @@ void exahype::offloading::AggressiveDistributor::computeIdealLoadDistribution(in
   int *newLoadDist = new int[nnodes];
 
   int totalCells   = enclaveCells + skeletonCells;
-  MPI_Allgather(&totalCells, 1, MPI_INTEGER, _initialLoadPerRank, 1, MPI_INTEGER, MPI_COMM_WORLD);
+  MPI_Allgather(&totalCells, 1, MPI_INT, _initialLoadPerRank, 1, MPI_INT, MPI_COMM_WORLD);
 
   int input_r=0, input_l=0;
   int output_r=0, output_l=0;

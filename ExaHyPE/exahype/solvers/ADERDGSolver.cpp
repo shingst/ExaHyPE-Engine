@@ -2621,7 +2621,7 @@ void exahype::solvers::ADERDGSolver::sendRequestForJobAndReceive(int jobTag, int
   MPI_Request sendRequest;
 
   if(key[2*DIMENSIONS]<_minTimeStamp) {
-    MPI_Isend(&REQUEST_JOB_CANCEL, 1, MPI_INTEGER, rank, jobTag, teamInterCommAck, &sendRequest);
+    MPI_Isend(&REQUEST_JOB_CANCEL, 1, MPI_INT, rank, jobTag, teamInterCommAck, &sendRequest);
     exahype::offloading::OffloadingManager::getInstance().submitRequests(&sendRequest, 1, jobTag, rank,
                                                                MigratablePredictionJob::sendAckHandlerTaskSharing,
                                                                exahype::offloading::RequestType::sendReplica,
@@ -2642,7 +2642,7 @@ void exahype::solvers::ADERDGSolver::sendRequestForJobAndReceive(int jobTag, int
 
     AllocatedSTPsReceive++;
     logDebug("sendRequestForJobAndReceive()", " allocated STPs receive "<<AllocatedSTPsReceive<<" allocated STPs send "<<AllocatedSTPsSend);
-    MPI_Isend(&REQUEST_JOB_ACK, 1, MPI_INTEGER, rank, jobTag, teamInterCommAck, &sendRequest);
+    MPI_Isend(&REQUEST_JOB_ACK, 1, MPI_INT, rank, jobTag, teamInterCommAck, &sendRequest);
     exahype::offloading::OffloadingManager::getInstance().submitRequests(&sendRequest, 1, jobTag, rank,
                                                                          MigratablePredictionJob::sendAckHandlerTaskSharing,
                                                                          exahype::offloading::RequestType::sendReplica,
@@ -3525,7 +3525,7 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
     assertion( ierr==MPI_SUCCESS );
     if(receivedReplicaAck) {
        int buffer = -1;
-       MPI_Recv(&buffer, 1, MPI_INTEGER, statRepAck.MPI_SOURCE, statRepAck.MPI_TAG, interTeamCommAck, MPI_STATUS_IGNORE );
+       MPI_Recv(&buffer, 1, MPI_INT, statRepAck.MPI_SOURCE, statRepAck.MPI_TAG, interTeamCommAck, MPI_STATUS_IGNORE );
 
        tbb::concurrent_hash_map<int, MigratablePredictionJobData*>::accessor a_tagToData;
        bool found = solver->_mapTagToSTPData.find(a_tagToData, statRepAck.MPI_TAG);

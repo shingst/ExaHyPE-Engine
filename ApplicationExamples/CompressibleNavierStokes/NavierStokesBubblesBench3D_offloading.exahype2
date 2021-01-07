@@ -30,7 +30,7 @@
     "offloading_lb_strategy": "aggressiveHybrid",
     "offloading_input_file" : "",
     "offloading_progress" : "none",
-    "offloading_CCP_temperature" : 0,
+    "offloading_CCP_temperature" : 1,
     "offloading_diffusion_temperature" : 0,
     "offloading_CCP_frequency" : 1,
     "offloading_CCP_steps" : 1,

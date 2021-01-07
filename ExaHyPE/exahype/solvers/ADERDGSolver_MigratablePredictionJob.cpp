@@ -1356,7 +1356,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::initDataty
   MigratablePredictionJobMetaData dummy;
 
   int blocklengths[] = {DIMENSIONS, DIMENSIONS, 1, 1, 1, 1, 1};
-  MPI_Datatype subtypes[] = {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INTEGER, MPI_INTEGER, MPI_CHAR};
+  MPI_Datatype subtypes[] = {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INT, MPI_INT, MPI_CHAR};
   MPI_Aint displs[] = {0, 0, 0, 0, 0, 0, 0};
 
   MPI_Aint base;

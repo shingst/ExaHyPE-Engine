@@ -102,7 +102,7 @@ void exahype::offloading::AggressiveHybridDistributor::computeIdealLoadDistribut
   std::fill(&newLoadDist[0], &newLoadDist[nnodes], 0);
 
   int totalCells   = enclaveCells + skeletonCells;
-  MPI_Allgather(&totalCells, 1, MPI_INTEGER, _initialLoad, 1, MPI_INTEGER, MPI_COMM_WORLD);
+  MPI_Allgather(&totalCells, 1, MPI_INT, _initialLoad, 1, MPI_INT, MPI_COMM_WORLD);
 
 #if defined(OffloadingUseMaster)
   int input_r=0, input_l=0;
@@ -445,7 +445,7 @@ void exahype::offloading::AggressiveHybridDistributor::updateLoadDistributionCCP
     if(_idealTasksToOffloadCCP[i]>0) {
       //we have a potential victim rank
 //     if(!exahype::offloading::OffloadingManager::getInstance().isBlacklisted(i)) {
-      logDebug("updateLoadDistributionCCP", "offloading to "<<i<<" tasks "<<_temperatureCCP*_idealTasksToOffloadCCP[i]);
+      logInfo("updateLoadDistributionCCP", "offloading to "<<i<<" tasks "<<_temperatureCCP*_idealTasksToOffloadCCP[i]);
       _optimalTasks[i] = _idealTasksToOffloadCCP[i];
       _tasksToOffload[i] = std::ceil(std::max((1.0-_temperatureCCP), 0.0)*_tasksToOffload[i] + _temperatureCCP*_idealTasksToOffloadCCP[i]);
 #ifdef DistributedOffloadingDisable
