@@ -51,7 +51,11 @@ void STPStatsTracer::setOutputDir(std::string outputDir) {
   std::stringstream stream;
   stream.str(std::string());
   stream<<"mkdir -p "<<outputDir;
-  (void) system(stream.str().c_str());
+  int err = system(stream.str().c_str());
+  if(err==-1) {
+    logError("setOutputDir", "Could not create output directory for STP statistics, exiting...");
+    exit(-1);
+  }
 }
 
 void STPStatsTracer::setDumpInterval(int interval) {
@@ -69,9 +73,9 @@ void STPStatsTracer::dumpAndResetTraceIfActive() {
     for(int type = STPTraceKey::ADERDGPrediction; type<=STPTraceKey::LimitingFusedTimeStep; type++) {
     #if defined (SharedTBB)
       //int threadId = tarch::multicore::Core::getInstance().getThreadNum();
-      for(int threadId = 0; threadId<_elapsed[type].size(); threadId++) {
+      for(size_t threadId = 0; threadId<_elapsed[type].size(); threadId++) {
     #else
-      int threadId = 0;
+      unsigned int threadId = 0;
     #endif
         std::stringstream stream;
         stream<<_outputDir<<"/exahype_";

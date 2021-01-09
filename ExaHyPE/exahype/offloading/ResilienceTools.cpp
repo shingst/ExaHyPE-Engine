@@ -77,7 +77,7 @@ bool exahype::offloading::ResilienceTools::generateBitflipErrorInDoubleIfActive(
 
 double exahype::offloading::ResilienceTools::computeInfNormError(double *a1, double *a2, size_t length) {
   double result = 0.0;
-  for(int i = 0; i<length; i++) {
+  for(size_t i = 0; i<length; i++) {
     result = std::max(result, std::abs(a1[i]-a2[i]));
   }
   return result;
@@ -85,7 +85,7 @@ double exahype::offloading::ResilienceTools::computeInfNormError(double *a1, dou
 
 double exahype::offloading::ResilienceTools::computeL1NormError(double *a1, double *a2, size_t length){
   double result = 0.0;
-  for(int i = 0; i<length; i++) {
+  for(size_t i = 0; i<length; i++) {
     result += std::abs(a1[i]-a2[i]);
   }
   return result;
@@ -93,7 +93,7 @@ double exahype::offloading::ResilienceTools::computeL1NormError(double *a1, doub
 
 double exahype::offloading::ResilienceTools::computeL2NormError(double *a1, double *a2, size_t length){
   double result = 0.0;
-  for(int i = 0; i<length; i++) {
+  for(size_t i = 0; i<length; i++) {
     result += std::pow((a1[i]-a2[i]),2);
   }
   return std::sqrt(result);
@@ -101,7 +101,7 @@ double exahype::offloading::ResilienceTools::computeL2NormError(double *a1, doub
 
 double exahype::offloading::ResilienceTools::computeInfNormErrorRel(double *a1, double *a2, size_t length) {
   double result = 0.0;
-  for(int i = 0; i<length; i++) {
+  for(size_t i = 0; i<length; i++) {
 	if(a1[i]+a2[i]!=0)
       result = std::max(result, std::abs(a1[i]-a2[i])/(0.5*(a1[i]+a2[i])));
   }
@@ -110,7 +110,7 @@ double exahype::offloading::ResilienceTools::computeInfNormErrorRel(double *a1, 
 
 double exahype::offloading::ResilienceTools::computeL1NormErrorRel(double *a1, double *a2, size_t length){
   double result = 0.0;
-  for(int i = 0; i<length; i++) {
+  for(size_t i = 0; i<length; i++) {
     if(a1[i]+a2[i]!=0)
 	 result += std::abs(a1[i]-a2[i])/(0.5*(a1[i]+a2[i]));
   }
@@ -119,7 +119,7 @@ double exahype::offloading::ResilienceTools::computeL1NormErrorRel(double *a1, d
 
 double exahype::offloading::ResilienceTools::computeL2NormErrorRel(double *a1, double *a2, size_t length){
   double result = 0.0;
-  for(int i = 0; i<length; i++) {
+  for(size_t i = 0; i<length; i++) {
     if(a1[i]+a2[i]!=0)
      result += std::pow((a1[i]-a2[i])/(0.5*(a1[i]+a2[i])),2);
   }
@@ -147,7 +147,7 @@ bool exahype::offloading::ResilienceTools::isAdmissibleNumericalError(double *a1
                                          << " inf norm = "<<infnorm
                                          << " l1 norm = "<<l1norm
                                          << " l2 norm = "<<l2norm);
-    for(int i=0; i<length; i++) {
+    for(size_t i=0; i<length; i++) {
       logError("isAdmissibleNumericalError", "i = "<<i<<" a = "<<a1[i]<<" , b = "<<a2[i]);
     }
   }
