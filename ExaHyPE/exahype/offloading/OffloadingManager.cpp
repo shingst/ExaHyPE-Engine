@@ -46,6 +46,7 @@
 #else
 #define MPI_CHECK(func, x) do { \
   ierr = (x); \
+  } while (0)
 #endif
 #endif
 #endif
@@ -1089,7 +1090,6 @@ bool exahype::offloading::OffloadingManager::ProgressReceiveBackJob::operator()(
 }
 #endif
 
-#endif
 
 //#undef assertion
 //#define assertion(expr) 

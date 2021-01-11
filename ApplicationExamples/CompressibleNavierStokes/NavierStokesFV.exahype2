@@ -61,7 +61,7 @@
         },
         {
           "name": "j",
-          "multiplicity": 2
+          "multiplicity": 3
         },
         {
           "name": "E",
