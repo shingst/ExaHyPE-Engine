@@ -125,7 +125,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::setTrigger(bool fl
 bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run(
     bool isCalledOnMaster) {
 
-  bool reschedule;
+  bool reschedule = false;
 
   switch(_currentState)
   {
@@ -135,6 +135,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run(
     case State::CHECK_REQUIRED:
       reschedule = tryFindOutcomeAndCheck();
       break;
+    default:
+      logError("run","inconsistent state");
   }
   return reschedule;
 }
@@ -219,9 +221,11 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 
   bool reschedule = false;
   bool needToCompute = true;
+#if defined(TaskSharing)
   bool needToCheck = false;
   bool copyResult = false;
   bool hasResult = false;
+#endif
 
   CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
 	   _element);
@@ -844,10 +848,11 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::matchesOtherOutcom
   CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
       _element);
 
-  double *luh = static_cast<double*>(cellDescription.getSolution());
   double *lduh = static_cast<double*>(cellDescription.getUpdate());
   double *lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
+#if defined(OffloadingGradQhbnd)
   double *lGradQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictorGradient());
+#endif
   double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
 
   bool equal = true;
@@ -891,6 +896,8 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandler(
   MigratablePredictionJobData *data;
   bool found = static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagRankToStolenData.find(
       a_tagRankToData, std::make_pair(remoteRank, tag));
+  if(!found)
+    logError("receiveHandler","Didn't find migrated data, maps are inconsistent!");
   assertion(found);
   data = a_tagRankToData->second;
 #if defined(UseSmartMPI) || defined(OffloadingMetadataPacked)
@@ -1022,6 +1029,8 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
   bool found =
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagToCellDesc.find(
           a_tagToCellDesc, tag);
+  if(!found)
+    logError("receiveBackHandler", "Received back task but couldn't find cell, inconsistent maps!");
   assertion(found);
   auto cellDescription = a_tagToCellDesc->second;
   static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagToCellDesc.erase(
@@ -1037,7 +1046,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
   a_cellDescToTagRank.release();
 #endif
 
-  tbb::concurrent_hash_map<int, double>::accessor a_tagToOffloadTime;
+  /*tbb::concurrent_hash_map<int, double>::accessor a_tagToOffloadTime;
   found =
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagToOffloadTime.find(
           a_tagToOffloadTime, tag);
@@ -1045,7 +1054,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
   assertion(found);
   static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagToOffloadTime.erase(
       a_tagToOffloadTime);
-  a_tagToOffloadTime.release();
+  a_tagToOffloadTime.release();*/
 
   NumberOfRemoteJobs--;
   NumberOfEnclaveJobs--;
@@ -1184,6 +1193,8 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackHandler(
   bool found =
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagRankToStolenData.find(
           a_tagRankToData, std::make_pair(remoteRank, tag));
+  if(!found)
+    logError("sendBackHandler","Couldn't find sent back task data. Inconsistent maps!");
   assertion(found);
   data = a_tagRankToData->second;
   a_tagRankToData.release();

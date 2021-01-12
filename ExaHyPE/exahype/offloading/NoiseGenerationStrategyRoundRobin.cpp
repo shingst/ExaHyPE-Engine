@@ -12,12 +12,14 @@
  **/
 
 #include "NoiseGenerationStrategyRoundRobin.h"
-#include "OffloadingAnalyser.h"
-#include "tarch/parallel/Node.h"
 
 #include <unistd.h>
+#include <chrono>
 #include <cstdlib>
 #include <string>
+
+#include "../../../Peano/tarch/parallel/Node.h"
+#include "OffloadingAnalyser.h"
 
 #if defined(Parallel)
 namespace exahype {
@@ -49,8 +51,13 @@ void NoiseGenerationStrategyRoundRobin::generateNoise(int rank, std::chrono::sys
 
     std::string call = " kill -STOP "+std::to_string(pid)+" ; sleep "+std::to_string(timeToWait)+"; kill -CONT "+std::to_string(pid);
 
-    logInfo("generateNoise()", "running cmd "<<call<<std::endl);
-    (void) std::system( call.c_str() );
+    logDebug("generateNoise()", "running cmd "<<call<<std::endl);
+    int ret = std::system( call.c_str() );
+
+    if(ret==-1) {
+      logError("generateNoise", "Sleep command could not be called, exiting...");
+      exit(-1);
+    }
   }
   cnt = cnt + 1;
   if(cnt==_frequency) {

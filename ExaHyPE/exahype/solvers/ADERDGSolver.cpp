@@ -54,6 +54,21 @@
 #include "teaMPI.h"
 #endif
 
+#ifndef MPI_CHECK
+#ifndef Asserts
+#define MPI_CHECK(func, x) do { \
+  ierr = (x); \
+  if (ierr != MPI_SUCCESS) { \
+    logError(#func, "Runtime error:"<<#x<<" returned "<<ierr<<" at " << __FILE__<< ":"<< __LINE__); \
+  } \
+} while (0)
+#else
+#define MPI_CHECK(func, x) do { \
+  ierr = (x); \
+  } while (0)
+#endif
+#endif
+
 #ifndef MPI_BLOCKING
 #define MPI_BLOCKING false
 #endif
@@ -2907,7 +2922,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
      assertion(!found);
      a_cellDescToTagRank.release();
      _mapCellDescToTagRank.insert(std::make_pair(&cellDescription, std::make_pair(tag, destRank)));
-     _mapTagToOffloadTime.insert(std::make_pair(tag, -MPI_Wtime()));
+     //_mapTagToOffloadTime.insert(std::make_pair(tag, -MPI_Wtime()));
     
      /*mpiIsendMigratablePredictionJobOutcome(
          &data->_luh[0],
@@ -2946,7 +2961,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
      _mapTagToCellDesc.insert(std::make_pair(tag, &cellDescription));
      //logInfo("submitOrSendMigratablePredictionJob", "inserting tag"<<tag);
      _mapCellDescToTagRank.insert(std::make_pair(&cellDescription, std::make_pair(tag, destRank)));
-     _mapTagToOffloadTime.insert(std::make_pair(tag, -MPI_Wtime()));
+     //_mapTagToOffloadTime.insert(std::make_pair(tag, -MPI_Wtime()));
      logDebug("submitOrSendMigratablePredictionJob()","send away with tag "<<tag<<" job "<<metadata->to_string());
      // send away
 #if defined(UseSmartMPI)
@@ -3033,6 +3048,7 @@ void exahype::solvers::ADERDGSolver::receiveMigratableJob(int tag, int src, exah
 #if !defined(UseSmartMPI)
   MPI_Request receiveRequests[NUM_REQUESTS_MIGRATABLE_COMM+1];
 #endif
+  int ierr;
   MigratablePredictionJobData *data = new MigratablePredictionJobData(*solver);
   solver->_mapTagRankToStolenData.insert(std::make_pair(std::make_pair(src, tag), data));
 #if defined(UseSmartMPI)
@@ -3054,7 +3070,7 @@ void exahype::solvers::ADERDGSolver::receiveMigratableJob(int tag, int src, exah
        &(data->_metadata));
    //double wtime = -MPI_Wtime();
   int canComplete = 0;
-  int ierr = MPI_Testall(NUM_REQUESTS_MIGRATABLE_COMM+1, &receiveRequests[0], &canComplete, MPI_STATUSES_IGNORE);
+  MPI_CHECK("receiveMigratableJob",MPI_Testall(NUM_REQUESTS_MIGRATABLE_COMM+1, &receiveRequests[0], &canComplete, MPI_STATUSES_IGNORE));
   assertion(ierr==MPI_SUCCESS);
   if(canComplete)
     MigratablePredictionJob::receiveHandler(solver, tag, src);
@@ -3189,6 +3205,8 @@ void exahype::solvers::ADERDGSolver::receiveBackMigratableJob(int tag, int src, 
   tbb::concurrent_hash_map<int, CellDescription*>::accessor a_tagToCellDesc;
   //logInfo("receiveBackMigratableJob", "looking for tag"<<tag);
   bool found = solver->_mapTagToCellDesc.find(a_tagToCellDesc, tag);
+  if(!found)
+    logError("receiveBackMigratableJob","Inconsistent maps, couldn't find cell descriptions\n");
   assertion(found);
   auto cellDescription = a_tagToCellDesc->second;
   a_tagToCellDesc.release();
@@ -3318,7 +3336,10 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
 #if defined(UseSmartMPI)
   MPI_Status_Offload stat, statMapped;
 #else
-  MPI_Status stat, statMapped;
+  MPI_Status stat;
+#if defined(OffloadingNoEarlyReceiveBacks)
+  MPI_Status statMapped;
+#endif
 #endif
   int receivedTask = 0;
   int receivedTaskBack = 0;
@@ -4253,13 +4274,13 @@ void exahype::solvers::ADERDGSolver::mpiIsendMigratablePredictionJob(
   //MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
 
   if(metadata != nullptr) {
-    ierr = MPI_Isend(metadata->getMPIBuffer(), MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), dest, tag, comm, &requests[i++]);
+    MPI_CHECK("mpiIsendMigratablePredictionJob", MPI_Isend(metadata->getMPIBuffer(), MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), dest, tag, comm, &requests[i++]));
     assertion(ierr==MPI_SUCCESS);
     assertion(requests[i-1]!=MPI_REQUEST_NULL);
   }
 
   assertion(luh!=NULL);
-  ierr = MPI_Isend(luh, getDataPerCell(), MPI_DOUBLE, dest, tag, comm, &requests[i++]);
+  MPI_CHECK("mpiIsendMigratablePredictionJob", MPI_Isend(luh, getDataPerCell(), MPI_DOUBLE, dest, tag, comm, &requests[i++]));
   assertion(ierr==MPI_SUCCESS);
   assertion(requests[i-1]!=MPI_REQUEST_NULL);
 
@@ -4294,30 +4315,30 @@ void exahype::solvers::ADERDGSolver::mpiIsendMigratablePredictionJobOutcome(
 
   if(metadata != nullptr) {
     logDebug("mpiIsendDebug", metadata->to_string()<<" , len = "<<MigratablePredictionJobMetaData::getMessageLen()<<" dest "<<dest<<" tag "<<tag);
-    ierr = MPI_Isend(metadata->getMPIBuffer(), MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), dest, tag, comm, &requests[i++]);
+    MPI_CHECK("mpiIsendMigratablePredictionJobOutcome", MPI_Isend(metadata->getMPIBuffer(), MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), dest, tag, comm, &requests[i++]));
     
     assertion(ierr==MPI_SUCCESS);
     assertion(requests[i-1]!=MPI_REQUEST_NULL);
   }
 
   assertion(lduh!=NULL);
-  ierr = MPI_Isend(lduh, getUpdateSize(), MPI_DOUBLE, dest, tag, comm, &requests[i++]);
+  MPI_CHECK("mpiIsendMigratablePredictionJobOutcome", MPI_Isend(lduh, getUpdateSize(), MPI_DOUBLE, dest, tag, comm, &requests[i++]));
   assertion(ierr==MPI_SUCCESS);
   assertion(requests[i-1]!=MPI_REQUEST_NULL);
 
   assertion(lQhbnd!=NULL);
-  ierr = MPI_Isend(lQhbnd, getBndTotalSize(), MPI_DOUBLE, dest, tag, comm, &requests[i++]);
+  MPI_CHECK("mpiIsendMigratablePredictionJobOutcome", MPI_Isend(lQhbnd, getBndTotalSize(), MPI_DOUBLE, dest, tag, comm, &requests[i++]));
   assertion(ierr==MPI_SUCCESS);
   assertion(requests[i-1]!=MPI_REQUEST_NULL);
 
   assertion(lFhbnd!=NULL);
-  ierr = MPI_Isend(lFhbnd, getBndFluxTotalSize(), MPI_DOUBLE, dest, tag, comm, &requests[i++]);
+  MPI_CHECK("mpiIsendMigratablePredictionJobOutcome", MPI_Isend(lFhbnd, getBndFluxTotalSize(), MPI_DOUBLE, dest, tag, comm, &requests[i++]));
   assertion(ierr==MPI_SUCCESS);
   assertion(requests[i-1]!=MPI_REQUEST_NULL);
 
 #if defined(OffloadingGradQhbnd)
   assertion(lGradQhbnd!=NULL);
-  ierr = MPI_Isend(lGradQhbnd, getBndGradQTotalSize(), MPI_DOUBLE, dest, tag, comm, &requests[i++]);
+  MPI_CHECK("mpiIsendMigratablePredictionJobOutcome", MPI_Isend(lGradQhbnd, getBndGradQTotalSize(), MPI_DOUBLE, dest, tag, comm, &requests[i++]));
   assertion(ierr==MPI_SUCCESS);
   assertion(requests[i-1]!=MPI_REQUEST_NULL);
 #endif
@@ -4346,13 +4367,13 @@ void exahype::solvers::ADERDGSolver::mpiIrecvMigratablePredictionJob(
   //logInfo("mpiIrecvMigratablePredictionJob", "receiving job "<<tag<<" from srcRank "<<srcRank);
 
   if(metadata != nullptr) {
-    ierr = MPI_Irecv(metadata->getMPIBuffer(), MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), srcRank, tag, comm, &requests[i++]);
+    MPI_CHECK("mpiIrecvMigratablePredictionJob", MPI_Irecv(metadata->getMPIBuffer(), MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), srcRank, tag, comm, &requests[i++]));
     assertion(ierr==MPI_SUCCESS);
     assertion(requests[i-1]!=MPI_REQUEST_NULL);
   }
 
   assertion(luh!=NULL);
-  ierr = MPI_Irecv(luh, getDataPerCell(), MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
+  MPI_CHECK("mpiIrecvMigratablePredictionJob", MPI_Irecv(luh, getDataPerCell(), MPI_DOUBLE, srcRank, tag, comm, &requests[i++]));
   assertion(ierr==MPI_SUCCESS);
   assertion(requests[i-1]!=MPI_REQUEST_NULL);
 
@@ -4383,29 +4404,29 @@ void exahype::solvers::ADERDGSolver::mpiIrecvMigratablePredictionJobOutcome(
   //logInfo("mpiIrecvMigratablePredictionJob", "receiving job "<<tag<<" from srcRank "<<srcRank);
 
   if(metadata != nullptr) {
-    ierr = MPI_Irecv(metadata->getMPIBuffer(), MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), srcRank, tag, comm, &requests[i++]);
+    MPI_CHECK("mpiIrecvMigratablePredictionJobOutcome",  MPI_Irecv(metadata->getMPIBuffer(), MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), srcRank, tag, comm, &requests[i++]));
     assertion(ierr==MPI_SUCCESS);
     assertion(requests[i-1]!=MPI_REQUEST_NULL);
   }
 
   assertion(lduh!=NULL);
-  ierr = MPI_Irecv(lduh, getUpdateSize(), MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
+  MPI_CHECK("mpiIrecvMigratablePredictionJobOutcome", MPI_Irecv(lduh, getUpdateSize(), MPI_DOUBLE, srcRank, tag, comm, &requests[i++]));
   assertion(ierr==MPI_SUCCESS);
   assertion(requests[i-1]!=MPI_REQUEST_NULL);
 
   assertion(lQhbnd!=NULL);
-  ierr = MPI_Irecv(lQhbnd, getBndTotalSize(), MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
+  MPI_CHECK("mpiIrecvMigratablePredictionJobOutcome", MPI_Irecv(lQhbnd, getBndTotalSize(), MPI_DOUBLE, srcRank, tag, comm, &requests[i++]));
   assertion(ierr==MPI_SUCCESS);
   assertion(requests[i-1]!=MPI_REQUEST_NULL);
 
   assertion(lFhbnd!=NULL);
-  ierr = MPI_Irecv(lFhbnd, getBndFluxTotalSize(), MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
+  MPI_CHECK("mpiIrecvMigratablePredictionJobOutcome", MPI_Irecv(lFhbnd, getBndFluxTotalSize(), MPI_DOUBLE, srcRank, tag, comm, &requests[i++]));
   assertion(ierr==MPI_SUCCESS);
   assertion(requests[i-1]!=MPI_REQUEST_NULL);
 
 #if defined(OffloadingGradQhbnd)
   assertion(lGradQhbnd!=NULL);
-  ierr = MPI_Irecv(lGradQhbnd, getBndGradQTotalSize(), MPI_DOUBLE, srcRank, tag, comm, &requests[i++]);
+  MPI_CHECK("mpiIrecvMigratablePredictionJobOutcome", MPI_Irecv(lGradQhbnd, getBndGradQTotalSize(), MPI_DOUBLE, srcRank, tag, comm, &requests[i++]));
   assertion(ierr==MPI_SUCCESS);
   assertion(requests[i-1]!=MPI_REQUEST_NULL);
 #endif
@@ -4433,25 +4454,25 @@ void exahype::solvers::ADERDGSolver::mpiRecvMigratablePredictionJobOutcome(
 #endif
 
   if(metadata != nullptr) {
-    ierr = MPI_Recv(metadata->getMPIBuffer(),  MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), srcRank, tag, comm, MPI_STATUS_IGNORE);
+    MPI_CHECK("mpiRecvMigratablePredictionJobOutcome", MPI_Recv(metadata->getMPIBuffer(),  MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), srcRank, tag, comm, MPI_STATUS_IGNORE));
     assertion(ierr==MPI_SUCCESS);
   }
 
   assertion(lduh!=NULL);
-  ierr = MPI_Recv(lduh, getUpdateSize(), MPI_DOUBLE, srcRank, tag, comm, MPI_STATUS_IGNORE);
+  MPI_CHECK("mpiRecvMigratablePredictionJobOutcome", MPI_Recv(lduh, getUpdateSize(), MPI_DOUBLE, srcRank, tag, comm, MPI_STATUS_IGNORE));
   assertion(ierr==MPI_SUCCESS);
 
   assertion(lQhbnd!=NULL);
-  ierr = MPI_Recv(lQhbnd, getBndTotalSize(), MPI_DOUBLE, srcRank, tag, comm, MPI_STATUS_IGNORE);
+  MPI_CHECK("mpiRecvMigratablePredictionJobOutcome", MPI_Recv(lQhbnd, getBndTotalSize(), MPI_DOUBLE, srcRank, tag, comm, MPI_STATUS_IGNORE));
   assertion(ierr==MPI_SUCCESS);
 
   assertion(lFhbnd!=NULL);
-  ierr = MPI_Recv(lFhbnd, getBndFluxTotalSize(), MPI_DOUBLE, srcRank, tag, comm, MPI_STATUS_IGNORE);
+  MPI_CHECK("mpiRecvMigratablePredictionJobOutcome", MPI_Recv(lFhbnd, getBndFluxTotalSize(), MPI_DOUBLE, srcRank, tag, comm, MPI_STATUS_IGNORE));
   assertion(ierr==MPI_SUCCESS);
 
 #if defined(OffloadingGradQhbnd)
   assertion(lGradQhbnd!=NULL);
-  ierr = MPI_Recv(lGradQhbnd, getBndGradQTotalSize(), MPI_DOUBLE, srcRank, tag, comm, MPI_STATUS_IGNORE);
+  MPI_CHECK("mpiRecvMigratablePredictionJobOutcome", MPI_Recv(lGradQhbnd, getBndGradQTotalSize(), MPI_DOUBLE, srcRank, tag, comm, MPI_STATUS_IGNORE));
   assertion(ierr==MPI_SUCCESS);
 #endif
 
@@ -4480,12 +4501,12 @@ void exahype::solvers::ADERDGSolver::mpiRecvMigratablePredictionJobOffload(
 
   //todo: won't work as SmartMPI doesn't support derived datatypes
   if(metadata != nullptr) {
-    ierr = MPI_Recv_offload(metadata->getContiguousBuffer(), MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), srcRank, tag, comm, &stat, rail);
+    MPI_CHECK("mpiRecvMigratablePredictionJobOffload", MPI_Recv_offload(metadata->getContiguousBuffer(), MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), srcRank, tag, comm, &stat, rail));
     assertion(ierr==MPI_SUCCESS);
   }
 
   assertion(lduh!=NULL);
-  ierr = MPI_Recv_offload(luh, getDataPerCell(), MPI_DOUBLE, srcRank, tag, comm, &stat, rail);
+  MPI_CHECK("mpiRecvMigratablePredictionJobOffload", MPI_Recv_offload(luh, getDataPerCell(), MPI_DOUBLE, srcRank, tag, comm, &stat, rail));
   assertion(ierr==MPI_SUCCESS);
 
 #if defined(OffloadingCheckForSlowOperations)
@@ -4514,13 +4535,13 @@ void exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOffload(
 
   if(metadata != nullptr) {
     //ierr = MPI_Send_offload(metadata, 2*DIMENSIONS+3, MPI_DOUBLE, dest, tag, comm, tid);
-    ierr = MPI_Send_offload(metadata->getContiguousBuffer(), MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), dest, tag, comm, rail);
+    MPI_CHECK("mpiSendMigratablePredictionJobOffload", MPI_Send_offload(metadata->getContiguousBuffer(), MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), dest, tag, comm, rail));
     assertion(ierr==MPI_SUCCESS);
   }
 
   assertion(lduh!=NULL);
   //ierr = MPI_Send_offload(lduh, getUpdateSize(), MPI_DOUBLE, dest, tag, comm, tid);
-  ierr = MPI_Send_offload(luh, getDataPerCell(), MPI_DOUBLE, dest, tag, comm, rail);
+  MPI_CHECK("mpiSendMigratablePredictionJobOffload", MPI_Send_offload(luh, getDataPerCell(), MPI_DOUBLE, dest, tag, comm, rail));
   assertion(ierr==MPI_SUCCESS);
 
 #if defined(OffloadingCheckForSlowOperations)
@@ -4550,25 +4571,25 @@ void exahype::solvers::ADERDGSolver::mpiRecvMigratablePredictionJobOutcomeOffloa
 #endif
 
   if(metadata != nullptr) {
-    ierr = MPI_Recv_offload(metadata->getContiguousBuffer(),  MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), srcRank, tag, comm, &stat, rail);
+    MPI_CHECK("mpiRecvMigratablePredictionJobOutcomeOffload", MPI_Recv_offload(metadata->getContiguousBuffer(),  MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), srcRank, tag, comm, &stat, rail));
     assertion(ierr==MPI_SUCCESS);
   }
 
   assertion(lduh!=NULL);
-  ierr = MPI_Recv_offload(lduh, getUpdateSize(), MPI_DOUBLE, srcRank, tag, comm, &stat, rail);
+  MPI_CHECK("mpiRecvMigratablePredictionJobOutcomeOffload", MPI_Recv_offload(lduh, getUpdateSize(), MPI_DOUBLE, srcRank, tag, comm, &stat, rail));
   assertion(ierr==MPI_SUCCESS);
 
   assertion(lQhbnd!=NULL);
-  ierr = MPI_Recv_offload(lQhbnd, getBndTotalSize(), MPI_DOUBLE, srcRank, tag, comm, &stat, rail);
+  MPI_CHECK("mpiRecvMigratablePredictionJobOutcomeOffload", MPI_Recv_offload(lQhbnd, getBndTotalSize(), MPI_DOUBLE, srcRank, tag, comm, &stat, rail));
   assertion(ierr==MPI_SUCCESS);
 
   assertion(lFhbnd!=NULL);
-  ierr = MPI_Recv_offload(lFhbnd, getBndFluxTotalSize(), MPI_DOUBLE, srcRank, tag, comm, &stat, rail);
+  MPI_CHECK("mpiRecvMigratablePredictionJobOutcomeOffload", MPI_Recv_offload(lFhbnd, getBndFluxTotalSize(), MPI_DOUBLE, srcRank, tag, comm, &stat, rail));
   assertion(ierr==MPI_SUCCESS);
 
 #if defined(OffloadingGradQhbnd)
   assertion(lGradQhbnd!=NULL);
-  ierr = MPI_Recv_offload(lGradQhbnd, getBndGradQTotalSize(), MPI_DOUBLE, srcRank, tag, comm, &stat, rail);
+  MPI_CHECK("mpiRecvMigratablePredictionJobOutcomeOffload", MPI_Recv_offload(lGradQhbnd, getBndGradQTotalSize(), MPI_DOUBLE, srcRank, tag, comm, &stat, rail));
   assertion(ierr==MPI_SUCCESS);
 #endif
   
@@ -4612,22 +4633,22 @@ bool exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOutcomeOffloa
 
   assertion(lduh!=NULL);
   //ierr = MPI_Send_offload(lduh, getUpdateSize(), MPI_DOUBLE, dest, tag, comm, tid);
-  ierr = MPI_Send_offload(lduh, getUpdateSize(), MPI_DOUBLE, dest, tag, comm, rail);
+  MPI_CHECK("mpiSendMigratablePredictionJobOutcomeOffload", MPI_Send_offload(lduh, getUpdateSize(), MPI_DOUBLE, dest, tag, comm, rail));
   assertion(ierr==MPI_SUCCESS);
 
   assertion(lQhbnd!=NULL);
   //ierr = MPI_Send_offload(lQhbnd, getBndTotalSize(), MPI_DOUBLE, dest, tag, comm, tid);
-  ierr = MPI_Send_offload(lQhbnd, getBndTotalSize(), MPI_DOUBLE, dest, tag, comm, rail);
+  MPI_CHECK("mpiSendMigratablePredictionJobOutcomeOffload", MPI_Send_offload(lQhbnd, getBndTotalSize(), MPI_DOUBLE, dest, tag, comm, rail));
   assertion(ierr==MPI_SUCCESS);
 
   assertion(lFhbnd!=NULL);
   //ierr = MPI_Send_offload(lFhbnd, getBndFluxTotalSize(), MPI_DOUBLE, dest, tag, comm, tid);
-  ierr = MPI_Send_offload(lFhbnd, getBndFluxTotalSize(), MPI_DOUBLE, dest, tag, comm, rail);
+  MPI_CHECK("mpiSendMigratablePredictionJobOutcomeOffload", MPI_Send_offload(lFhbnd, getBndFluxTotalSize(), MPI_DOUBLE, dest, tag, comm, rail));
   assertion(ierr==MPI_SUCCESS);
 
 #if defined(OffloadingGradQhbnd)
   assertion(lGradQhbnd!=NULL);
-  ierr = MPI_Send_offload(lGradQhbnd, getBndGradQTotalSize(), MPI_DOUBLE, dest, tag, comm, rail);
+  MPI_CHECK("mpiSendMigratablePredictionJobOutcomeOffload", MPI_Send_offload(lGradQhbnd, getBndGradQTotalSize(), MPI_DOUBLE, dest, tag, comm, rail));
   assertion(ierr==MPI_SUCCESS);
 #endif
 
