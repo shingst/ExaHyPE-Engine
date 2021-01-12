@@ -1420,7 +1420,7 @@ private:
    *  Sends away data of a MigratablePredictionJob to a destination rank
    *  using MPI offloading (SmartMPI).
    */
-  void mpiSendMigratablePredictionJobOutcomeOffload(
+  bool mpiSendMigratablePredictionJobOutcomeOffload(
       double *lduh,
       double *lQhbnd,
       double *lFhbnd,

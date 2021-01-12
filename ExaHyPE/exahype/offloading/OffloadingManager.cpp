@@ -35,6 +35,22 @@
 #include "exahype/offloading/PerformanceMonitor.h"
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
+#ifndef MPI_CHECK
+#ifndef Asserts
+#define MPI_CHECK(func, x) do { \
+  ierr = (x); \
+  if (ierr != MPI_SUCCESS) { \
+    logError(#func, "Runtime error:"<<#x<<" returned "<<ierr<<" at " << __FILE__<< ":"<< __LINE__); \
+  } \
+} while (0)
+#else
+#define MPI_CHECK(func, x) do { \
+  ierr = (x); \
+  } while (0)
+#endif
+#endif
+#endif
+
 #if defined(UseSmartMPI)
 #include "mpi_offloading.h"
 #endif
@@ -105,7 +121,10 @@ exahype::offloading::OffloadingManager::OffloadingManager(int threadId) :
   std::fill(&_postedReceiveBacksPerRank[0], &_postedReceiveBacksPerRank[nnodes], 0);
 
   int flag = 0;
-  int ierr = MPI_Comm_get_attr(MPI_COMM_WORLD, MPI_TAG_UB, &_maxTag, &flag); assertion(ierr==MPI_SUCCESS);
+  int ierr;
+  MPI_CHECK("OffloadingManager()" , MPI_Comm_get_attr(MPI_COMM_WORLD, MPI_TAG_UB, &_maxTag, &flag));
+  assertion(ierr==MPI_SUCCESS);
+
   if(!flag) {
     logWarning("OffloadingManager()"," maximum allowed MPI tag could not be determined. Offloading may leave the space of allowed tags for longer runs...");
   }
@@ -181,12 +200,13 @@ int exahype::offloading::OffloadingManager::getTMPIInterTeamRank(){
 //#if defined(UseMPIThreadSplit)
 void exahype::offloading::OffloadingManager::createMPICommunicators() {
   int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  int ierr;
+  MPI_CHECK("createMPICommunicators", MPI_Comm_rank(MPI_COMM_WORLD, &rank));
 
 #if defined(TaskSharing)
   MPI_Comm interTeamComm;
   int worldRank = TMPI_GetWorldRank();
-  MPI_Comm_split(MPI_COMM_WORLD, rank, worldRank, &interTeamComm);
+  MPI_CHECK("createMPICommunicators", MPI_Comm_split(MPI_COMM_WORLD, rank, worldRank, &interTeamComm));
 
   int nteams = TMPI_GetInterTeamCommSize();
    //MPI_Comm interTeamComm = TMPI_GetInterTeamComm();
@@ -200,7 +220,7 @@ void exahype::offloading::OffloadingManager::createMPICommunicators() {
 
   //exahype::offloading::OffloadingManager::getInstance().setTMPIInterTeamCommunicators(interTeamComm, interTeamCommDupKey, interTeamCommDupAck);
 
-  logInfo("initialize()", " teams: "<<nteams<<", rank in team "
+  logInfo("createMPICommunicators()", " teams: "<<nteams<<", rank in team "
                                                 <<team<<" : "<<rank<<", team rank in intercomm: "<<rankInterComm);
 
 #endif
@@ -210,45 +230,46 @@ void exahype::offloading::OffloadingManager::createMPICommunicators() {
     MPI_Info_create(&info);
     MPI_Info_set(info, "thread_id", std::to_string(i).c_str());
 
-    int ierr= MPI_Comm_dup(MPI_COMM_WORLD, &_offloadingComms[i]);
+    MPI_CHECK("createMPICommunicators", MPI_Comm_dup(MPI_COMM_WORLD, &_offloadingComms[i]));
     assertion(ierr==MPI_SUCCESS);
-    MPI_Comm_set_info(_offloadingComms[i], info);
+    MPI_CHECK("createMPICommunicators", MPI_Comm_set_info(_offloadingComms[i], info));
     assertion(ierr==MPI_SUCCESS);
 
-    ierr = MPI_Comm_dup(MPI_COMM_WORLD, &_offloadingCommsMapped[i]);
+    MPI_CHECK("createMPICommunicators", MPI_Comm_dup(MPI_COMM_WORLD, &_offloadingCommsMapped[i]));
     assertion(ierr==MPI_SUCCESS);
-    MPI_Comm_set_info(_offloadingCommsMapped[i], info);
+    MPI_CHECK("createMPICommunicators", MPI_Comm_set_info(_offloadingCommsMapped[i], info));
     assertion(ierr==MPI_SUCCESS);
 
 #if defined TaskSharing
-    ierr = MPI_Comm_dup(interTeamComm, &_interTeamComms[i]); assertion(ierr==MPI_SUCCESS);
-    MPI_Comm_set_info(_interTeamComms[i], info);
+    MPI_CHECK("createMPICommunicators", MPI_Comm_dup(interTeamComm, &_interTeamComms[i])); assertion(ierr==MPI_SUCCESS);
+    MPI_CHECK("createMPICommunicators", MPI_Comm_set_info(_interTeamComms[i], info));
     assertion(ierr==MPI_SUCCESS);
 
-    ierr = MPI_Comm_dup(interTeamComm, &_interTeamCommsKey[i]); assertion(ierr==MPI_SUCCESS);
-    MPI_Comm_set_info(_interTeamCommsKey[i], info);
+    MPI_CHECK("createMPICommunicators", MPI_Comm_dup(interTeamComm, &_interTeamCommsKey[i])); assertion(ierr==MPI_SUCCESS);
+    MPI_CHECK("createMPICommunicators", MPI_Comm_set_info(_interTeamCommsKey[i], info));
     assertion(ierr==MPI_SUCCESS);
 
-    ierr = MPI_Comm_dup(interTeamComm, &_interTeamCommsAck[i]); assertion(ierr==MPI_SUCCESS);
-    MPI_Comm_set_info(_interTeamCommsAck[i], info);
+    MPI_CHECK("createMPICommunicators", MPI_Comm_dup(interTeamComm, &_interTeamCommsAck[i])); assertion(ierr==MPI_SUCCESS);
+    MPI_CHECK("createMPICommunicators", MPI_Comm_set_info(_interTeamCommsAck[i], info));
     assertion(ierr==MPI_SUCCESS);
 #endif
     MPI_Info_free(&info);
   }
 #if defined(TaskSharing)
-  MPI_Comm_free(&interTeamComm);
+  MPI_CHECK("createMPICommunicators", MPI_Comm_free(&interTeamComm));
 #endif
 }
 
 void exahype::offloading::OffloadingManager::destroyMPICommunicators() {
+  int ierr;
   for(int i=0; i<MAX_THREADS;i++) {
-    int ierr = MPI_Comm_free(&_offloadingComms[i]); assertion(ierr==MPI_SUCCESS);
-    ierr = MPI_Comm_free(&_offloadingCommsMapped[i]); assertion(ierr==MPI_SUCCESS);
+    MPI_CHECK("destroyMPICommunicators", MPI_Comm_free(&_offloadingComms[i])); assertion(ierr==MPI_SUCCESS);
+    MPI_CHECK("destroyMPICommunicators", MPI_Comm_free(&_offloadingCommsMapped[i])); assertion(ierr==MPI_SUCCESS);
 
 #if defined (TaskSharing)
-    ierr = MPI_Comm_free(&_interTeamComms[i]); assertion(ierr==MPI_SUCCESS);
-    ierr = MPI_Comm_free(&_interTeamCommsKey[i]); assertion(ierr==MPI_SUCCESS);
-    ierr = MPI_Comm_free(&_interTeamCommsAck[i]); assertion(ierr==MPI_SUCCESS);
+    MPI_CHECK("destroyMPICommunicators", MPI_Comm_free(&_interTeamComms[i])); assertion(ierr==MPI_SUCCESS);
+    MPI_CHECK("destroyMPICommunicators", MPI_Comm_free(&_interTeamCommsKey[i])); assertion(ierr==MPI_SUCCESS);
+    MPI_CHECK("destroyMPICommunicators", MPI_Comm_free(&_interTeamCommsAck[i])); assertion(ierr==MPI_SUCCESS);
 #endif
 
   }
@@ -349,6 +370,7 @@ void exahype::offloading::OffloadingManager::submitRequests(
     exahype::solvers::Solver *solver,
     bool block ) {
   
+  int ierr;
   //bug only appears when using scorep
   #ifdef ScoreP
   for(int i=0; i<nRequests; i++) {
@@ -366,6 +388,7 @@ void exahype::offloading::OffloadingManager::submitRequests(
     _postedSendBacksPerRank[remoteRank]++; break;
     case RequestType::receiveBack:
     _postedReceiveBacksPerRank[remoteRank]++; break;
+    //todo: track replicas here too for task sharing
   } 
 
   int finished = -1;
@@ -385,7 +408,7 @@ void exahype::offloading::OffloadingManager::submitRequests(
     finished = -1;
   } */ 
 
-  int ierr = MPI_Testall(nRequests, requests, &finished, MPI_STATUSES_IGNORE);
+  MPI_CHECK("submitRequests", MPI_Testall(nRequests, requests, &finished, MPI_STATUSES_IGNORE));
 
   assertion(ierr==MPI_SUCCESS);
   if(finished) {
@@ -400,7 +423,7 @@ void exahype::offloading::OffloadingManager::submitRequests(
   #endif
 
   if(block) {
-    int ierr = MPI_Waitall(nRequests, requests, MPI_STATUSES_IGNORE);
+    MPI_CHECK("submitRequests", MPI_Waitall(nRequests, requests, MPI_STATUSES_IGNORE));
     assertion(ierr==MPI_SUCCESS);
     handler(solver, tag, remoteRank);
     return;
@@ -480,6 +503,8 @@ void exahype::offloading::OffloadingManager::createRequestArray(
     if(gotOne) {
       tbb::concurrent_hash_map<int, MPI_Request>::accessor a_requests;
       bool found = _reqIdToReqHandle[mapId].find(a_requests, req_id);
+      if(!found)
+        logError("createRequestArray", "didn't find MPI request.");
       assertion(found);
       MPI_Request request = a_requests->second;
       a_requests.release();
@@ -663,7 +688,7 @@ bool exahype::offloading::OffloadingManager::progressRequestsOfType( RequestType
     watch.stopTimer();
     if(watch.getCalendarTime() >= 0.0) {
       logDebug(
-          "progressOffloading() ",
+          "progressRequestsOfType",
           "couldn't run "<<
           "time=" << std::fixed <<
           watch.getCalendarTime() <<
@@ -715,13 +740,13 @@ bool exahype::offloading::OffloadingManager::progressRequestsOfType( RequestType
     for(int i=0;i<nRequests;i++) {
       int ierrstatus = stats[i].MPI_ERROR;
       if(ierrstatus!=MPI_SUCCESS) {
-        logError("offloadingManager", "error "<<ierrstatus<<" for request "<<_internalIdsOfActiveRequests[mapId][i]<< " source "<<stats[i].MPI_SOURCE<<" tag "<<stats[i].MPI_TAG);
+        logError("progressRequestsOfType()", "error "<<ierrstatus<<" for request "<<_internalIdsOfActiveRequests[mapId][i]<< " source "<<stats[i].MPI_SOURCE<<" tag "<<stats[i].MPI_TAG);
       }
       char err_buffer[MPI_MAX_ERROR_STRING];
       int resultlen = 0;
       if(ierrstatus!=MPI_SUCCESS) {
-        MPI_Error_string(ierrstatus,err_buffer,&resultlen);
-        fprintf(stderr,err_buffer);
+        MPI_Error_string(ierrstatus, err_buffer, &resultlen);
+        fprintf(stderr, "%s\n", err_buffer);
       }
     }
     MPI_Abort(MPI_COMM_WORLD, ierr); /* abort*/
@@ -748,6 +773,8 @@ bool exahype::offloading::OffloadingManager::progressRequestsOfType( RequestType
     _reqIdToReqHandle[mapId].erase(reqId);
     int groupId;
     found = _reqIdToGroup[mapId].find(a_groupId, reqId);
+    if(!found)
+      logError("progressRequestsOfType()", "Didn't find MPI request...");
 
     assertion(found);
     groupId = a_groupId->second;
@@ -1063,7 +1090,6 @@ bool exahype::offloading::OffloadingManager::ProgressReceiveBackJob::operator()(
 }
 #endif
 
-#endif
 
 //#undef assertion
 //#define assertion(expr) 

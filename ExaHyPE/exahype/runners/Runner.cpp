@@ -1023,7 +1023,7 @@ int exahype::runners::Runner::run() {
     if ( _parser.isValid() ) {
       // Tracing and performance analysis
       #ifdef Parallel
-      MPI_Pcontrol(0);
+      //MPI_Pcontrol(0); //disabled as it seems to cause trouble when VTune is used with TBB threads + MPI
       #endif
       #if defined(USE_ITAC) and !defined(USE_ITAC_ALL)
       VT_traceoff(); // turn ITAC tracing off during mesh refinement; is switched on again in mapping Prediction
@@ -1077,8 +1077,10 @@ int exahype::runners::Runner::run() {
 
     logInfo("run()","shutdownSharedMemoryConfiguration");
 
+#if defined(DistributedOffloading)
     exahype::offloading::OffloadingManager::getInstance().destroy();
     logInfo("shutdownDistributedMemoryConfiguration()","destroyed MPI communicators + progress engine");
+#endif
 
     if ( _parser.isValid() )
       shutdownDistributedMemoryConfiguration();

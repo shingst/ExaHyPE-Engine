@@ -176,9 +176,6 @@ void exahype::mappings::FusedTimeStep::beginIteration(
 
 #ifdef Parallel
 #ifdef DistributedOffloading
-    static bool isFirst = true;
-    isFirst = false;
-    
   if (
       !tarch::parallel::Node::getInstance().isGlobalMaster())
   {

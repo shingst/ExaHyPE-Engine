@@ -19,13 +19,13 @@
 #include "tarch/multicore/Jobs.h"
 
 //#ifndef TaskSharing
-registerService(exahype::offloading::OffloadingProgressService);
+registerService(exahype::offloading::OffloadingProgressService)
 //#endif
 
 tarch::logging::Log exahype::offloading::OffloadingProgressService::_log("exahype::offloading::OffloadingProgressService");
 
 exahype::offloading::OffloadingProgressService::OffloadingProgressService()
-: _isSet(false), _isEnabled(false), _solver(nullptr) {}
+: _solver(nullptr),  _isSet(false), _isEnabled(false){}
 
 exahype::offloading::OffloadingProgressService::~OffloadingProgressService() {}
 
