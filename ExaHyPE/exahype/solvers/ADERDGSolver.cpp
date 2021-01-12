@@ -2774,6 +2774,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
     //int tag = job->_cellDescriptionsIndex; //exahype::offloading::OffloadingManager::getInstance().getOffloadingTag();
     //_mapTagToReplicationSendData.insert(std::make_pair(tag, data));
 
+    bool hasSent = false; //indicates whether at least one send was successful
     int j = 0;
     for(int i=0; i<teams; i++) {
       if(i!=interCommRank) {
@@ -2782,7 +2783,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
                                                          <<_metadata->to_string()
                                                          <<" time stamp = "<<job->_predictorTimeStamp
                                                          <<" to team "<<i);
-        mpiSendMigratablePredictionJobOutcomeOffload(&lduh[0],
+        hasSent |= mpiSendMigratablePredictionJobOutcomeOffload(&lduh[0],
                                            &lQhbnd[0],
                                            &lFhbnd[0],
                                            &lGradQhbnd[0],
@@ -2793,10 +2794,11 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
         j++;
       } 
     }
-    SentSTPs++;
-    CompletedSentSTPs++;
-    exahype::offloading::JobTableStatistics::getInstance().notifySentTask();
-
+    if(hasSent) {
+      SentSTPs++;
+      CompletedSentSTPs++;
+      exahype::offloading::JobTableStatistics::getInstance().notifySentTask();
+    }
 
     delete metadata;
 #else
@@ -4577,7 +4579,7 @@ void exahype::solvers::ADERDGSolver::mpiRecvMigratablePredictionJobOutcomeOffloa
 #endif
 }
 
-void exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOutcomeOffload(
+bool exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOutcomeOffload(
   double *lduh,
   double *lQhbnd,
   double *lFhbnd,
@@ -4588,17 +4590,18 @@ void exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOutcomeOffloa
   MigratablePredictionJobMetaData *metadata) {
 
   int ierr;
-  //int tid = tarch::multicore::Core::getInstance().getThreadNum();
+  int tid = tarch::multicore::Core::getInstance().getThreadNum();
 
 #if defined(OffloadingCheckForSlowOperations)
   double timing = - MPI_Wtime();
 #endif
 
   int rail = get_next_rail();
+  //int rail = tid;
 
   if(!is_allowed_to_send_to_destination(dest, rail)) {
     logInfo("mpiSendMigratablePredictionJobOutcomeOffload", " Decided to not send a task outcome as BlueField advised against it!");
-    return;
+    return false;
   }
 
   if(metadata != nullptr) {
@@ -4633,6 +4636,7 @@ void exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOutcomeOffloa
   if(timing > OFFLOADING_SLOW_OPERATION_THRESHOLD)
     logError("mpiSendMigratablePredictionJobOutcomeOffload()", " took "<<timing<<"s");
 #endif
+  return true;
 }
 #endif
 
