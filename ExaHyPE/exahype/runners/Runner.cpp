@@ -611,9 +611,9 @@ void exahype::runners::Runner::shutdownSharedMemoryConfiguration() {
 
 #ifdef DistributedOffloading
  // while(!exahype::offloading::PerformanceMonitor::getInstance().isGloballyTerminated()) {
-    tarch::multicore::jobs::finishToProcessBackgroundJobs();
+   while(  tarch::multicore::jobs::finishToProcessBackgroundJobs() ) {};
  // }
-   sleep(1); //despite finish there sometimes seems to still be an stp in the queue causing a race condition with destroying MPI communicators
+   //sleep(1); //despite finish there sometimes seems to still be an stp in the queue causing a race condition with destroying MPI communicators
 #endif
 
   tarch::multicore::jobs::plotStatistics();

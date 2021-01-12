@@ -4619,6 +4619,7 @@ bool exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOutcomeOffloa
 
   int rail = get_next_rail();
   //int rail = tid;
+  //int rail = 0;
 
   if(!is_allowed_to_send_to_destination(dest, rail)) {
     logInfo("mpiSendMigratablePredictionJobOutcomeOffload", " Decided to not send a task outcome as BlueField advised against it!");
