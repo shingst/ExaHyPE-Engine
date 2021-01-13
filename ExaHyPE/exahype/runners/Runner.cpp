@@ -1044,6 +1044,7 @@ int exahype::runners::Runner::run() {
 #endif
 
 #if defined(DistributedOffloading)
+    exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
       if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
       //static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopOffloadingManager();
