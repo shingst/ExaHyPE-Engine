@@ -720,7 +720,16 @@ class exahype::parser::Parser {
 
   TBBInvadeStrategy getTBBInvadeStrategy() const;
 
+  //Todo: docu!
   std::string getOffloadingInputFile() const;
+
+  double getCCPTemperatureOffloading() const;
+  double getDiffusionTemperatureOffloading() const;
+  int   getCCPFrequencyOffloading() const;
+  int   getCCPStepsOffloading() const;
+  bool getUpdateTemperatureActivatedOffloading() const;
+  double getTempIncreaseThreshold() const;
+  int getLocalStarvationThreshold() const;
 
   std::string getSTPTracingOutputDirName() const;
   
