@@ -764,12 +764,16 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackOutcomeToO
         " send job outcome: center[0] = "<<_center[0]
       <<" center[1] = "<<_center[1]
       <<" center[2] = "<<_center[2]
-      <<" time stamp = "<<_predictorTimeStamp);
+      <<" time stamp = "<<_predictorTimeStamp
+      <<" tag = "<<_tag
+      <<" origin = "<<_originRank);
 #else
   logDebug("sendBackOutcomeToOrigin",
         " send job outcome: center[0] = "<<_center[0]
       <<" center[1] = "<<_center[1]
-      <<" time stamp = "<<_predictorTimeStamp);
+      <<" time stamp = "<<_predictorTimeStamp      
+      <<" tag = "<<_tag
+      <<" origin = "<<_originRank);
 #endif
     //logInfo("handleLocalExecution()", "postSendBack");
 #if defined(UseSmartMPI)
@@ -1257,7 +1261,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendHandler(
   static std::atomic<int> cnt=0;
   cnt++;
 #endif
-  //logInfo("sendHandler","successful send request");
+  //logInfo("sendHandler","successful send request tag = "<<tag<<" remoteRank = "<<remoteRank);
 #if !defined(OffloadingNoEarlyReceiveBacks) || defined(OffloadingLocalRecompute)
   ADERDGSolver::receiveBackMigratableJob(tag, remoteRank,
       static_cast<exahype::solvers::ADERDGSolver*>(solver));
@@ -1363,7 +1367,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::initDataty
   MigratablePredictionJobMetaData dummy;
 
   int blocklengths[] = {DIMENSIONS, DIMENSIONS, 1, 1, 1, 1, 1};
-  MPI_Datatype subtypes[] = {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INTEGER, MPI_INTEGER, MPI_CHAR};
+  MPI_Datatype subtypes[] = {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INT, MPI_INT, MPI_CHAR};
   MPI_Aint displs[] = {0, 0, 0, 0, 0, 0, 0};
 
   MPI_Aint base;
