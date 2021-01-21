@@ -564,7 +564,7 @@
         },
         "offloading_local_starvation_threshold" : {
               "type" : "integer",
-              "title" : "Number of tasks that must be available locally before a task is offloaded (avoids local consumer starvation). A value of -1 means not set.",
+              "title" : "Number of tasks that must be available locally before a task is offloaded (avoids local consumer starvation). A value of -1 means not set and uses a default policy based on the number of jobs in the queue.",
               "default" : -1
         },
         "offloading_update_temperature": {

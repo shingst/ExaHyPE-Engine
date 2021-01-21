@@ -203,7 +203,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::runExecution(bool 
 
 #if defined(TaskSharing) && !defined(OffloadingUseProgressThread)
  // exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(&_solver, false, MAX_PROGRESS_ITS);
-  exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, MAX_PROGRESS_ITS);
+  // removed recently as computed in handleExecution
+  //exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, MAX_PROGRESS_ITS);
 #endif
 
 #if defined(GenerateNoise)
@@ -816,13 +817,13 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
   //local treatment if this job belongs to the local rank
   if (_originRank == myRank) {
     result = handleLocalExecution(isRunOnMaster, hasComputed);
-    if (!_isLocalReplica) NumberOfEnclaveJobs--;
-    assertion( NumberOfEnclaveJobs>=0 );
-#ifndef OffloadingUseProgressThread
+#if !defined(OffloadingUseProgressThread) // && defined(TaskSharing)
     if (!isRunOnMaster)
       exahype::solvers::ADERDGSolver::progressOffloading(&_solver,
           isRunOnMaster, std::numeric_limits<int>::max());
 #endif
+    if (!_isLocalReplica) NumberOfEnclaveJobs--;
+    assertion( NumberOfEnclaveJobs>=0 );
   }
   //remote task, need to execute and send it back
   else {

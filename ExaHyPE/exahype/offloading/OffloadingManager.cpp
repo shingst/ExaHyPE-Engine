@@ -49,7 +49,6 @@
   } while (0)
 #endif
 #endif
-#endif
 
 #if defined(UseSmartMPI)
 #include "mpi_offloading.h"
@@ -1089,7 +1088,7 @@ bool exahype::offloading::OffloadingManager::ProgressReceiveBackJob::operator()(
   return false;
 }
 #endif
-
+#endif
 
 //#undef assertion
 //#define assertion(expr) 

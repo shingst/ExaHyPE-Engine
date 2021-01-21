@@ -4505,7 +4505,7 @@ void exahype::solvers::ADERDGSolver::mpiRecvMigratablePredictionJobOffload(
     assertion(ierr==MPI_SUCCESS);
   }
 
-  assertion(lduh!=NULL);
+  assertion(luh!=NULL);
   MPI_CHECK("mpiRecvMigratablePredictionJobOffload", MPI_Recv_offload(luh, getDataPerCell(), MPI_DOUBLE, srcRank, tag, comm, &stat, rail));
   assertion(ierr==MPI_SUCCESS);
 
@@ -4539,7 +4539,7 @@ void exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOffload(
     assertion(ierr==MPI_SUCCESS);
   }
 
-  assertion(lduh!=NULL);
+  assertion(luh!=NULL);
   //ierr = MPI_Send_offload(lduh, getUpdateSize(), MPI_DOUBLE, dest, tag, comm, tid);
   MPI_CHECK("mpiSendMigratablePredictionJobOffload", MPI_Send_offload(luh, getDataPerCell(), MPI_DOUBLE, dest, tag, comm, rail));
   assertion(ierr==MPI_SUCCESS);
