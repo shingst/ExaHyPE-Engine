@@ -821,7 +821,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
   //local treatment if this job belongs to the local rank
   if (_originRank == myRank) {
     result = handleLocalExecution(isRunOnMaster, hasComputed);
-#if !defined(OffloadingUseProgressThread) // && defined(TaskSharing)
+#if !defined(OffloadingUseProgressThread)  && defined(TaskSharing)
     if (!isRunOnMaster)
       exahype::solvers::ADERDGSolver::progressOffloading(&_solver,
           isRunOnMaster, std::numeric_limits<int>::max());
@@ -1030,6 +1030,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
     exahype::solvers::Solver* solver, int tag, int remoteRank) {
 
   // logInfo("receiveBackHandler","successful receiveBack request");
+  logDebug("receiveBackHandler", "received back STP job tag="<<tag<<" rank="<<remoteRank);
   tbb::concurrent_hash_map<int, CellDescription*>::accessor a_tagToCellDesc;
   bool found =
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagToCellDesc.find(
@@ -1066,7 +1067,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
 #ifndef OffloadingLocalRecompute
   cellDescription->setHasCompletedLastStep(true);
 #else
-  logDebug("receiveBackHandler", "received back STP job");
+  logDebug("receiveBackHandler", "received back STP job tag="<<tag<<" rank="<<remoteRank);
   MigratablePredictionJobData *data = nullptr;
   tbb::concurrent_hash_map<int, MigratablePredictionJobData*>::accessor a_tagToData;
   found = static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagToSTPData.find(
@@ -1261,7 +1262,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendHandler(
   static std::atomic<int> cnt=0;
   cnt++;
 #endif
-  //logInfo("sendHandler","successful send request tag = "<<tag<<" remoteRank = "<<remoteRank);
+  logDebug("sendHandler","successful send request tag = "<<tag<<" remoteRank = "<<remoteRank);
 #if !defined(OffloadingNoEarlyReceiveBacks) || defined(OffloadingLocalRecompute)
   ADERDGSolver::receiveBackMigratableJob(tag, remoteRank,
       static_cast<exahype::solvers::ADERDGSolver*>(solver));

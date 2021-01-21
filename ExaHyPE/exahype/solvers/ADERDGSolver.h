@@ -3584,18 +3584,18 @@ public:
 #endif
 
 #if !defined(OffloadingLocalRecompute)
- #if !defined(OffloadingUseProgressThread)
+// #if !defined(OffloadingUseProgressThread)
         if( !cellDescription.getHasCompletedLastStep()
           && !hasTriggeredEmergency
           && myRank!=responsibleRank
           && ( exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs
               -exahype::solvers::ADERDGSolver::NumberOfRemoteJobs)==0
         )
- #else
-        if( !cellDescription.getHasCompletedLastStep()
-          && !hasTriggeredEmergency
-          && myRank!=responsibleRank)
- #endif
+// #else
+//        if( !cellDescription.getHasCompletedLastStep()
+//          && !hasTriggeredEmergency
+//          && myRank!=responsibleRank)
+// #endif
         {
  #ifdef USE_ITAC
    // VT_begin(event_emergency);
