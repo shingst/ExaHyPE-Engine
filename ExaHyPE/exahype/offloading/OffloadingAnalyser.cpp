@@ -207,8 +207,8 @@ void exahype::offloading::OffloadingAnalyser::endIteration(double numberOfInnerL
 #if !defined(AnalyseWaitingTimes)
   _currentAccumulatedWorkerTime = 0;
  
-  for(int i=0; i<_waitForOtherRank.size(); i++) {
-    if(i != tarch::parallel::Node::getInstance().getRank()) {
+  for(size_t i=0; i<_waitForOtherRank.size(); i++) {
+    if(static_cast<int> (i) != tarch::parallel::Node::getInstance().getRank()) {
       logDebug("endIteration()", "wait for rank "<<i<<_waitForOtherRank[i].toString());
       if(_waitForOtherRank[i].isAccurateValue())
        exahype::offloading::PerformanceMonitor::getInstance().submitWaitingTimeForRank(_waitForOtherRank[i].getValue(), i);
@@ -291,7 +291,7 @@ void exahype::offloading::OffloadingAnalyser::endToReceiveDataFromWorker( int fr
     else {
       _waitForOtherRank[fromRank].setValue(elapsedTime);
     }
-
+#if defined(Debug)
     double currentAvg = _waitForOtherRank[fromRank].getValue();
     
     if (tarch::la::greater(elapsedTime,0.0)) {
@@ -301,6 +301,7 @@ void exahype::offloading::OffloadingAnalyser::endToReceiveDataFromWorker( int fr
         " currentAvg "<< currentAvg << "s"
       );
     }
+#endif
 //#ifdef USE_ITAC
 //        VT_begin(event_waitForWorker);
 //#endif
@@ -427,20 +428,22 @@ void exahype::offloading::OffloadingAnalyser::endToReceiveDataFromGlobalMaster()
                                             -estimatedTimeForLateSTPs);
     _estimatedWtimeForPendingJobs = 0;
     _lateSTPJobs = 0;
-    int myMaster = 0;
     
     _waitForOtherRank[0].setValue(elapsedTime); //0 is global master
 
+#if defined(Debug)
     double currentAvg = _waitForOtherRank[0].getValue();
 
     if (tarch::la::greater(elapsedTime,0.0)) {
       logDebug(
         "endToReceiveDataFromGlobalMaster()",
-        "rank had to wait for master " << myMaster << " for "<< elapsedTime <<
+        "rank had to wait for global master "  << " for "<< elapsedTime <<
         " currentAvg "<< currentAvg << "s"
       );
     }
+#endif
   }
+
 }
 
 void exahype::offloading::OffloadingAnalyser::dataWasNotReceivedInBackground( int fromRank, int tag, int cardinality, int pageSize ) {

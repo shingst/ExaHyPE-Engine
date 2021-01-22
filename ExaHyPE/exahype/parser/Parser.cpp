@@ -1355,6 +1355,41 @@ exahype::parser::Parser::TBBInvadeStrategy exahype::parser::Parser::getTBBInvade
   return TBBInvadeStrategy::Undef;
 }
 
+double exahype::parser::Parser::getCCPTemperatureOffloading() const {
+  double result = getDoubleFromPath("/distributed_memory/offloading_CCP_temperature", 0, isOptional); 
+  return result;
+}
+
+double exahype::parser::Parser::getDiffusionTemperatureOffloading() const{
+  double result = getDoubleFromPath("/distributed_memory/offloading_diffusion_temperature", 1, isOptional);
+  return result;
+}
+
+int exahype::parser::Parser::getCCPFrequencyOffloading() const{
+  int result = getIntFromPath("/distributed_memory/offloading_CCP_frequency", 0, isOptional);
+  return result;
+}
+
+int exahype::parser::Parser::getCCPStepsOffloading() const{
+  int result = getIntFromPath("/distributed_memory/offloading_CCP_steps", 0, isOptional);
+  return result;
+}
+
+bool exahype::parser::Parser::getUpdateTemperatureActivatedOffloading() const{
+  bool result = getBoolFromPath("/distributed_memory/offloading_update_temperature", true, isOptional);
+  return result;
+}
+
+double exahype::parser::Parser::getTempIncreaseThreshold() const{
+  double result = getDoubleFromPath("/distributed_memory/offloading_increase_temp_threshold", 1, isOptional);
+  return result;
+}
+
+int exahype::parser::Parser::getLocalStarvationThreshold() const{
+  int result = getIntFromPath("/distributed_memory/offloading_local_starvation_threshold", -1, isOptional);
+  return result;
+}
+
 
 std::string exahype::parser::Parser::getOffloadingInputFile() const {
   std::string result = getStringFromPath("/distributed_memory/offloading_input_file","",isOptional);

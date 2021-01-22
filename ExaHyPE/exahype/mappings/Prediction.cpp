@@ -109,7 +109,7 @@ void exahype::mappings::Prediction::beginIteration(
   #endif
 
   #ifdef Parallel
-  MPI_Pcontrol(1); 
+//  MPI_Pcontrol(1); 
   #endif
 
   if (

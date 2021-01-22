@@ -94,6 +94,8 @@ class exahype::offloading::OffloadingManager {
      */
     std::atomic<int> _nextGroupId;
 
+    int _maxTag;
+
     /**
      * Counts number of running progress jobs.
      */

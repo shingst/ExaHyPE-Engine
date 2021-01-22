@@ -31,14 +31,13 @@
 tarch::logging::Log exahype::offloading::AggressiveCCPDistributor::_log( "exahype::offloading::AggressiveCCPDistributor" );
 
 exahype::offloading::AggressiveCCPDistributor::AggressiveCCPDistributor() :
-  _isEnabled(false),
   _temperature(0.5),
   _totalTasksOffloaded(0),
-  _oldTotalTasksOffloaded(0)
+  _oldTotalTasksOffloaded(0),
+  _isEnabled(false)
 {
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
-  int myRank = tarch::parallel::Node::getInstance().getRank();
 
   _initialLoadPerRank      = new int[nnodes];
   _newLoadDistribution     = new int[nnodes];

@@ -308,12 +308,13 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     exahype::offloading::StaticDistributor::getInstance().loadDistributionFromFile(_parser.getOffloadingInputFile());
 #elif defined(OffloadingStrategyAggressiveHybrid)
     exahype::offloading::AggressiveHybridDistributor::getInstance().configure(
-       _parser.getDoubleFromPath("/distributed_memory/offloading_CCP_temperature"),
-       _parser.getDoubleFromPath("/distributed_memory/offloading_diffusion_temperature"),
-       _parser.getIntFromPath("/distributed_memory/offloading_CCP_frequency"),
-       _parser.getIntFromPath("/distributed_memory/offloading_CCP_steps"),
-       _parser.getBoolFromPath("/distributed_memory/offloading_update_temperature"),
-       _parser.getDoubleFromPath("/distributed_memory/offloading_increase_temp_threshold")
+       _parser.getCCPTemperatureOffloading(),
+       _parser.getDiffusionTemperatureOffloading(),
+       _parser.getCCPFrequencyOffloading(),
+       _parser.getCCPStepsOffloading(),
+       _parser.getUpdateTemperatureActivatedOffloading(),
+       _parser.getTempIncreaseThreshold(),
+       _parser.getLocalStarvationThreshold()
     );
 #endif
 
@@ -610,8 +611,9 @@ void exahype::runners::Runner::shutdownSharedMemoryConfiguration() {
 
 #ifdef DistributedOffloading
  // while(!exahype::offloading::PerformanceMonitor::getInstance().isGloballyTerminated()) {
- //   tarch::multicore::jobs::finishToProcessBackgroundJobs();
+   while(  tarch::multicore::jobs::finishToProcessBackgroundJobs() ) {};
  // }
+   //sleep(1); //despite finish there sometimes seems to still be an stp in the queue causing a race condition with destroying MPI communicators
 #endif
 
   tarch::multicore::jobs::plotStatistics();
@@ -1021,7 +1023,7 @@ int exahype::runners::Runner::run() {
     if ( _parser.isValid() ) {
       // Tracing and performance analysis
       #ifdef Parallel
-      MPI_Pcontrol(0);
+      //MPI_Pcontrol(0); //disabled as it seems to cause trouble when VTune is used with TBB threads + MPI
       #endif
       #if defined(USE_ITAC) and !defined(USE_ITAC_ALL)
       VT_traceoff(); // turn ITAC tracing off during mesh refinement; is switched on again in mapping Prediction
@@ -1042,6 +1044,7 @@ int exahype::runners::Runner::run() {
 #endif
 
 #if defined(DistributedOffloading)
+    exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
       if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
       //static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopOffloadingManager();
@@ -1061,9 +1064,7 @@ int exahype::runners::Runner::run() {
     }
 
     logInfo("shutdownDistributedMemoryConfiguration()","stopped offloading manager");
-    exahype::offloading::OffloadingManager::getInstance().destroy();
-    logInfo("shutdownDistributedMemoryConfiguration()","destroyed MPI communicators + progress engine");
-#if defined(TaskSharing) || defined(OffloadingLocalRecompute)
+ #if defined(TaskSharing) || defined(OffloadingLocalRecompute)
     exahype::offloading::JobTableStatistics::getInstance().printStatistics();
 #endif
 #endif
@@ -1076,6 +1077,11 @@ int exahype::runners::Runner::run() {
       shutdownSharedMemoryConfiguration();
 
     logInfo("run()","shutdownSharedMemoryConfiguration");
+
+#if defined(DistributedOffloading)
+    exahype::offloading::OffloadingManager::getInstance().destroy();
+    logInfo("shutdownDistributedMemoryConfiguration()","destroyed MPI communicators + progress engine");
+#endif
 
     if ( _parser.isValid() )
       shutdownDistributedMemoryConfiguration();

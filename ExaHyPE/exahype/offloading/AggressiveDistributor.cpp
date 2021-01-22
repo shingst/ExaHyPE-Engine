@@ -33,7 +33,6 @@ exahype::offloading::AggressiveDistributor::AggressiveDistributor() :
   _isEnabled(false) {
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
-  int myRank = tarch::parallel::Node::getInstance().getRank();
 
   _initialLoadPerRank      = new int[nnodes];
   _newLoadDistribution     = new int[nnodes];

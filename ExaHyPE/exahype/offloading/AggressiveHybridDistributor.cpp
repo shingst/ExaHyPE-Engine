@@ -33,23 +33,23 @@
 tarch::logging::Log exahype::offloading::AggressiveHybridDistributor::_log( "exahype::offloading::AggressiveHybridDistributor" );
 
 exahype::offloading::AggressiveHybridDistributor::AggressiveHybridDistributor() :
-  _isEnabled(false),
-  _temperatureCCP(1),
   _temperatureDiffusion(0.5),
+  _temperatureCCP(1),
+  _thresholdTempAdaptation(1),
+  _adaptTemperature(false),
+  _CCPFrequency(0),
+  _CCPStepsPerPhase(0),
   _totalTasksOffloaded(0),
   _oldTotalTasksOffloaded(0),
   _incrementCurrent(0),
   _incrementPrevious(0),
-  _adaptTemperature(false),
-  _CCPFrequency(0),
-  _CCPStepsPerPhase(0),
-  _thresholdTempAdaptation(1),
+  _isEnabled(false),
   _currentOptimalVictim(-1),
-  _currentCriticalRank(-1)
+  _currentCriticalRank(-1),
+  _localStarvationThreshold(-1)
 {
 
   int nnodes                = tarch::parallel::Node::getInstance().getNumberOfNodes();
-  int myRank                = tarch::parallel::Node::getInstance().getRank();
 
   _initialLoad              = new int[nnodes];
   _idealTasksToOffloadCCP   = new int[nnodes];
@@ -298,7 +298,8 @@ void exahype::offloading::AggressiveHybridDistributor::configure(
     int CCPFrequency,
     int CCPStepsPerPhase,
     bool adaptTemperature,
-    double thresholdTempAdaptation) {
+    double thresholdTempAdaptation,
+    int localStarvationThreshold) {
 
   logDebug("configure", "start temp CCP: "<<startTempCCP<<
                        " start temp diffusion: "<<startTempDiffusion<<
@@ -313,6 +314,7 @@ void exahype::offloading::AggressiveHybridDistributor::configure(
   _CCPFrequency = CCPFrequency;
   _CCPStepsPerPhase = CCPStepsPerPhase;
   _thresholdTempAdaptation = thresholdTempAdaptation;
+  _localStarvationThreshold = localStarvationThreshold;
 }
 
 void exahype::offloading::AggressiveHybridDistributor::printOffloadingStatistics() {
@@ -350,9 +352,7 @@ void exahype::offloading::AggressiveHybridDistributor::resetRemainingTasksToOffl
 }
 
 void exahype::offloading::AggressiveHybridDistributor::resetTasksToOffload() {
-  
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
-  int myRank = tarch::parallel::Node::getInstance().getRank();
 
   for(int i=0; i<nnodes; i++) {
     _tasksToOffload[i] = 0;
@@ -432,7 +432,6 @@ void exahype::offloading::AggressiveHybridDistributor::updateLoadDistribution() 
 
 void exahype::offloading::AggressiveHybridDistributor::updateLoadDistributionCCP() {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
-  int myRank = tarch::parallel::Node::getInstance().getRank();
 
   if(_incrementPrevious>0 && _incrementCurrent>0 && _adaptTemperature) {
     if((_incrementCurrent*1.0f/_incrementPrevious)>_thresholdTempAdaptation)
@@ -485,7 +484,7 @@ void exahype::offloading::AggressiveHybridDistributor::updateLoadDistributionDif
       for(int i=0; i<nnodes; i++) {
         currentTasksCritical -= _tasksToOffload[i];
       }
-      int currentTasksOptimal = _initialLoad[currentOptimalVictim]+_tasksToOffload[currentOptimalVictim];
+      //int currentTasksOptimal = _initialLoad[currentOptimalVictim]+_tasksToOffload[currentOptimalVictim];
 
       int optimalTasksToOffload = (tarch::multicore::Core::getInstance().getNumberOfThreads()-1) *
                                   currentLongestWaitTimeVictim/
@@ -556,9 +555,10 @@ bool exahype::offloading::AggressiveHybridDistributor::selectVictimRank(int& vic
     //exahype::offloading::OffloadingManager::getInstance().notifyAllVictimsSendCompletedIfNotNotified();
 #endif
 
-  int threshold = 1
+  int threshold = (_localStarvationThreshold==-1) ? 1
 		         + std::max(1, tarch::multicore::Core::getInstance().getNumberOfThreads()-1)
-                 * tarch::multicore::jobs::internal::_minimalNumberOfJobsPerConsumerRun;
+                 * tarch::multicore::jobs::internal::_minimalNumberOfJobsPerConsumerRun
+		 : _localStarvationThreshold;
             
   threshold = std::max(threshold, 20);
 
