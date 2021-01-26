@@ -3709,6 +3709,7 @@ bool exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(exahype::solvers::ADER
   //Todo (Philipp): fix when no early receive backs are active
   return exahype::offloading::OffloadingManager::getInstance().progressReceiveBackRequests();
 
+//todo(Philipp): this code won't be executed anymore
 #if defined(OffloadingNoEarlyReceiveBacks)
   int tag, srcRank, myRank;
   myRank = tarch::parallel::Node::getInstance().getRank();
@@ -3725,9 +3726,12 @@ bool exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(exahype::solvers::ADER
     //logInfo("tryToReceiveTaskBack()","probing for tag "<<tag<<" from rank "<<srcRank);
   }
   
-  int receivedTaskBack = 0;
-  MPI_Status statMapped;
   MPI_Comm commMapped = exahype::offloading::OffloadingManager::getInstance().getMPICommunicatorMapped();
+  int receivedTaskBack = 0;
+#if defined(UseSmartMPI)
+  //todo: implement
+#else
+  MPI_Status statMapped;
   int ierr = MPI_Iprobe(srcRank, tag, commMapped, &receivedTaskBack, &statMapped);
   assertion(ierr==MPI_SUCCESS);
   if(receivedTaskBack) {
@@ -3760,6 +3764,7 @@ bool exahype::solvers::ADERDGSolver::tryToReceiveTaskBack(exahype::solvers::ADER
       lock.free();
       return true;
   }
+#endif
   // now, a different thread can progress the offloading
   lock.free();
   return false;
@@ -4533,6 +4538,10 @@ void exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOffload(
   //MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
   //int tid = tarch::multicore::Core::getInstance().getThreadNum();
 
+#if defined(OffloadingUseProfiler)
+  double time = -MPI_Wtime();
+  exahype::offloading::OffloadingProfiler::getInstance().beginCommunication();
+#endif
 #if defined(OffloadingCheckForSlowOperations)
   double timing = - MPI_Wtime();
 #endif
@@ -4550,6 +4559,10 @@ void exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOffload(
   MPI_CHECK("mpiSendMigratablePredictionJobOffload", MPI_Send_offload(luh, getDataPerCell(), MPI_DOUBLE, dest, tag, comm, rail));
   assertion(ierr==MPI_SUCCESS);
 
+#if defined(OffloadingUseProfiler)
+  time += MPI_Wtime();
+  exahype::offloading::OffloadingProfiler::getInstance().endCommunication(true, time);
+#endif
 #if defined(OffloadingCheckForSlowOperations)
   timing += MPI_Wtime();
   if(timing > OFFLOADING_SLOW_OPERATION_THRESHOLD)
@@ -4576,6 +4589,11 @@ void exahype::solvers::ADERDGSolver::mpiRecvMigratablePredictionJobOutcomeOffloa
   double timing = - MPI_Wtime();
 #endif
 
+#if defined(OffloadingUseProfiler)
+  double time = -MPI_Wtime();
+  exahype::offloading::OffloadingProfiler::getInstance().beginCommunication();
+#endif
+
   if(metadata != nullptr) {
     MPI_CHECK("mpiRecvMigratablePredictionJobOutcomeOffload", MPI_Recv_offload(metadata->getContiguousBuffer(),  MigratablePredictionJobMetaData::getMessageLen(), MigratablePredictionJobMetaData::getMPIDatatype(), srcRank, tag, comm, &stat, rail));
     assertion(ierr==MPI_SUCCESS);
@@ -4597,6 +4615,11 @@ void exahype::solvers::ADERDGSolver::mpiRecvMigratablePredictionJobOutcomeOffloa
   assertion(lGradQhbnd!=NULL);
   MPI_CHECK("mpiRecvMigratablePredictionJobOutcomeOffload", MPI_Recv_offload(lGradQhbnd, getBndGradQTotalSize(), MPI_DOUBLE, srcRank, tag, comm, &stat, rail));
   assertion(ierr==MPI_SUCCESS);
+#endif
+
+#if defined(OffloadingUseProfiler)
+  time += MPI_Wtime();
+  exahype::offloading::OffloadingProfiler::getInstance().endCommunication(true, time);
 #endif
   
 #if defined(OffloadingCheckForSlowOperations)
@@ -4621,6 +4644,11 @@ bool exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOutcomeOffloa
 
 #if defined(OffloadingCheckForSlowOperations)
   double timing = - MPI_Wtime();
+#endif
+
+#if defined(OffloadingUseProfiler)
+  double time = -MPI_Wtime();
+  exahype::offloading::OffloadingProfiler::getInstance().beginCommunication();
 #endif
 
   int rail = get_next_rail();
@@ -4659,13 +4687,18 @@ bool exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOutcomeOffloa
   assertion(ierr==MPI_SUCCESS);
 #endif
 
+#if defined(OffloadingUseProfiler)
+  time += MPI_Wtime();
+  exahype::offloading::OffloadingProfiler::getInstance().endCommunication(true, time);
+#endif
+  
 #if defined(OffloadingCheckForSlowOperations)
   timing += MPI_Wtime();
   if(timing > OFFLOADING_SLOW_OPERATION_THRESHOLD)
-    logError("mpiSendMigratablePredictionJobOutcomeOffload()", " took "<<timing<<"s");
+    logError("mpiRecvMigratablePredictionJobOutcomeOffload()", " took "<<timing<<"s");
 #endif
-  return true;
 }
+
 #endif
 
 #endif
