@@ -25,7 +25,7 @@
 
 tarch::logging::Log exahype::offloading::ResilienceTools::_log("exahype::offloading::ResilienceTools");
 
-bool exahype::offloading::ResilienceTools::GenerateErrors;
+exahype::offloading::ResilienceTools::SoftErrorGenerationStrategy exahype::offloading::ResilienceTools::GenerationStrategy;
 bool exahype::offloading::ResilienceTools::TriggerAllMigratableSTPs;
 bool exahype::offloading::ResilienceTools::TriggerLimitedCellsOnly;
 bool exahype::offloading::ResilienceTools::TriggerFlipped;
@@ -43,8 +43,6 @@ exahype::offloading::ResilienceTools& exahype::offloading::ResilienceTools::getI
 }
 
 bool exahype::offloading::ResilienceTools::generateBitflipErrorInDoubleIfActive(double *array, size_t size) {
-  if(!GenerateErrors) return false;
-
   _cnt++;
 
   if(_cnt.load()%_injectionInterval==0 && _numFlipped<_numFlips) {
@@ -73,6 +71,48 @@ bool exahype::offloading::ResilienceTools::generateBitflipErrorInDoubleIfActive(
     return true;
   }
   return false;
+}
+
+bool exahype::offloading::ResilienceTools::overwriteDoubleIfActive(double *array, size_t size) {
+  _cnt++;
+
+  if(_cnt.load()%_injectionInterval==0 && _numFlipped<_numFlips) {
+    std::random_device r;
+    std::default_random_engine generator(r());
+    std::uniform_int_distribution<int> un_arr(0, size-1);
+
+    int idx_array = un_arr(generator);
+
+    double old_val = array[idx_array];
+    array[idx_array] = std::numeric_limits<double>::max();
+
+    logInfo("overwriteDoubleIfActive()", "overwrite double value, pos = "<<idx_array<<" old ="<<old_val<<" new = "<<array[idx_array]);
+    return true;
+  }
+  return false;
+}
+
+bool exahype::offloading::ResilienceTools::corruptDataIfActive(double *array, size_t size) {
+  bool result = false;
+  switch(GenerationStrategy) {
+  case SoftErrorGenerationStrategy::None:
+    result = false;
+    break;
+  case SoftErrorGenerationStrategy::Bitflips:
+    result = generateBitflipErrorInDoubleIfActive(array, size);
+    break;
+  case SoftErrorGenerationStrategy::Overwrite:
+    result = overwriteDoubleIfActive(array, size);
+    break;
+  default:
+    result = false;
+  }
+  if(result) std::cout<<"returning true"<<std::endl;
+  return result;
+}
+
+void exahype::offloading::ResilienceTools::setSoftErrorGenerationStrategy(SoftErrorGenerationStrategy strat) {
+  GenerationStrategy = strat;
 }
 
 double exahype::offloading::ResilienceTools::computeInfNormError(double *a1, double *a2, size_t length) {

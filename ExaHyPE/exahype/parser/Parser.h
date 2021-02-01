@@ -735,7 +735,7 @@ class exahype::parser::Parser {
   
   int getSTPTracingDumpInterval() const;
 
-  bool getGenerateSoftErrorsInMigratableSTPs() const;
+  bool compareSoftErrorGenerationStrategy(const std::string& strategy) const;
 
   bool getTriggerAllMigratableSTPs() const;
   bool getTriggerLimitedCellsOnly() const;

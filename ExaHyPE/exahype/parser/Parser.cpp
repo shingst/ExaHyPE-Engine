@@ -1407,8 +1407,8 @@ int exahype::parser::Parser::getSTPTracingDumpInterval() const {
   return result;
 }
 
-bool exahype::parser::Parser::getGenerateSoftErrorsInMigratableSTPs() const  {
-  return getStringFromPath("/resilience/generate_soft_errors", "none", isOptional).compare("migratable_stp_tasks")==0;
+bool exahype::parser::Parser::compareSoftErrorGenerationStrategy(const std::string& strategy) const  {
+  return getStringFromPath("/resilience/generate_soft_errors", "none", isOptional).compare(strategy)==0;
 }
 
 bool exahype::parser::Parser::getTriggerAllMigratableSTPs() const {

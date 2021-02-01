@@ -307,13 +307,15 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 
     exahype::offloading::JobTableStatistics::getInstance().notifyExecutedTask();
 
-    bool hasFlipped = exahype::offloading::ResilienceTools::getInstance().generateBitflipErrorInDoubleIfActive(lduh, _solver.getUpdateSize());
+    bool hasFlipped = exahype::offloading::ResilienceTools::getInstance().corruptDataIfActive(lduh, _solver.getUpdateSize());
     setTrigger(hasFlipped);
  
     if(hasFlipped) {
       tarch::la::Vector<DIMENSIONS, double> center;
       center = cellDescription.getOffset() + 0.5 * cellDescription.getSize();
-      logInfo("handleLocalExecution","Inserted bitflip in cell "
+      logInfo("handleLocalExecution","Inserted bitflip in cell index "
+            <<_cellDescriptionsIndex
+            <<" center[0] = "
             << center[0]
             <<" center[1] = "
             << center[1]
@@ -585,7 +587,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
           <<" computed hash = "
           <<hash_sum);*/
 
-    bool hasFlipped = exahype::offloading::ResilienceTools::getInstance().generateBitflipErrorInDoubleIfActive(lduh, _solver.getUpdateSize());
+    bool hasFlipped = exahype::offloading::ResilienceTools::getInstance().corruptDataIfActive(lduh, _solver.getUpdateSize());
     setTrigger(hasFlipped);
 #if defined(TaskSharing) && defined(ResilienceChecks)
     //needToCheck = needToCheck ||(_isPotSoftErrorTriggered==1) ? true : false;
