@@ -2790,7 +2790,8 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
 #if defined(UseSmartMPI)
     logDebug("sendFullReplicatedSTPToOtherTeams","allocated STPs send "<<AllocatedSTPsSend );
 
-    MigratablePredictionJobMetaData *metadata = new MigratablePredictionJobMetaData();
+    MigratablePredictionJobMetaData *metadata = (MigratablePredictionJobMetaData*) allocate_smartmpi(sizeof(MigratablePredictionJobMetaData), 1);
+    std::cout<<"allocated "<<metadata<<std::endl;
     job->packMetaData(metadata);
     
     int tag = exahype::offloading::OffloadingManager::getInstance().getOffloadingTag();
@@ -2823,7 +2824,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
       exahype::offloading::JobTableStatistics::getInstance().notifySentTask();
     }
 
-    delete metadata;
+    free_smartmpi(metadata);
 #else
     //create copy
     MigratablePredictionJobData *data = new MigratablePredictionJobData(*this);
