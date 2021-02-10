@@ -10,6 +10,7 @@ info tarch -1 black
 info peano -1 black
 info peano::utils::UserInterface -1 white
 info exahype -1 white
+debug exahype -1 black
 
 # on first node
 info mpibalancing -1 black

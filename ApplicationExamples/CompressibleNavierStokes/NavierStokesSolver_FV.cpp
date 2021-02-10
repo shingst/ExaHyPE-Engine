@@ -1,149 +1,113 @@
 #include "NavierStokesSolver_FV.h"
 
 #include "NavierStokesSolver_FV_Variables.h"
-#include "NavierStokesSolver_ADERDG_Variables.h"
 
-#include "PDE.h"
-#include "AMR/Criterion.h"
-
-#include "Scenarios/Atmosphere.h"
-#include "SetupHelper.h"
 
 tarch::logging::Log NavierStokes::NavierStokesSolver_FV::_log( "NavierStokes::NavierStokesSolver_FV" );
 
 void NavierStokes::NavierStokesSolver_FV::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
-  auto parsedConfig = parseConfig(cmdlineargs, constants, NumberOfVariables, NumberOfParameters, NumberOfGlobalObservables);
-  ns = std::move(parsedConfig.ns);
-  scenarioName = std::move(parsedConfig.scenarioName);
-  scenario = std::move(parsedConfig.scenario);
-  amrSettings = std::move(parsedConfig.amrSettings);
+  // Tip: You find documentation for this method in header file "NavierStokes::NavierStokesSolver_FV.h".
+  
+  // @todo Please implement/augment if required
 }
 
-void NavierStokes::NavierStokesSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* Q) {
-  if (tarch::la::equals(t, 0.0)) {
-    ns.setHeight(Q, x[DIMENSIONS-1]);
-    ns.setBackgroundState(Q, 0.0, 0.0);
-
-    AbstractNavierStokesSolver_ADERDG::Variables vars(Q);
-    scenario->initialValues(x, ns, vars);
-    for (int i = 0; i < vars.variables(); ++i) {
-      assertion2(std::isfinite(Q[i]), i, Q[i]);
-    }
-  }
-
-  const auto vars = ReadOnlyVariables{Q};
-  const auto pressure = ns.evaluatePressure(vars.E(), vars.rho(), vars.j(), ns.getZ(Q));
-  assertion5(pressure >= 0, pressure, vars.E(), vars.rho(), vars.j(), ns.getZ(Q));
+void NavierStokes::NavierStokesSolver_FV::adjustSolution(const double* const x,const double t,const double dt, double* const Q) {
+  // Tip: You find documentation for this method in header file "NavierStokes::NavierStokesSolver_FV.h".
+  // Tip: See header file "NavierStokes::AbstractNavierStokesSolver_FV.h" for toolkit generated compile-time 
+  //      constants such as PatchSize, NumberOfVariables, and NumberOfParameters.
+  
+  // @todo Please implement/augment if required
+  Q[0] = 0.0;
+  Q[1] = 0.0;
+  Q[2] = 0.0;
+  Q[3] = 0.0;
 }
 
-void NavierStokes::NavierStokesSolver_FV::eigenvalues(const double* const Q, const int dIndex, double* lambda) {
-  ns.evaluateEigenvalues(Q, dIndex, lambda);
+void NavierStokes::NavierStokesSolver_FV::eigenvalues(const double* const Q, const int dIndex, double* const lambda) {
+  // Tip: You find documentation for this method in header file "NavierStokes::NavierStokesSolver_FV.h".
+  // Tip: See header file "NavierStokes::AbstractNavierStokesSolver_FV.h" for toolkit generated compile-time 
+  //      constants such as PatchSize, NumberOfVariables, and NumberOfParameters.
+  
+  // @todo Please implement/augment if required
+  lambda[0] = 1.0;
+  lambda[1] = 1.0;
+  lambda[2] = 1.0;
+  lambda[3] = 1.0;
 }
 
 void NavierStokes::NavierStokesSolver_FV::boundaryValues(
     const double* const x,
     const double t,const double dt,
     const int faceIndex,
-    const int normalNonZero,
-    const double* const stateIn,
-    double* stateOut) {
-  // No slip, 2D
-  ReadOnlyVariables varsIn(stateIn);
-  Variables varsOut(stateOut);
+    const int direction,
+    const double* const stateInside,
+    double* const stateOutside) {
+  // Tip: You find documentation for this method in header file "NavierStokes::NavierStokesSolver_FV.h".
+  // Tip: See header file "NavierStokes::AbstractNavierStokesSolver_FV.h" for toolkit generated compile-time 
+  //      constants such as PatchSize, NumberOfVariables, and NumberOfParameters.
 
-  // Not supported!
-  assertion(scenario->getBoundaryType(faceIndex) != BoundaryType::analytical);
-
-  // All bcs here are walls!
-  assertion(scenario->getBoundaryType(faceIndex) == BoundaryType::wall ||
-                 scenario->getBoundaryType(faceIndex) == BoundaryType::hydrostaticWall ||
-                 scenario->getBoundaryType(faceIndex) == BoundaryType::movingWall ||
-                 scenario->getBoundaryType(faceIndex) == BoundaryType::freeSlipWall);
-
-  ns.setHeight(stateOut, x[DIMENSIONS-1]);
-  ns.setBackgroundState(stateOut, 0.0, 0.0);
-  // Need to reconstruct the background state in this case.
-  // Extrapolating does not work!
-  assert(!ns.useBackgroundState || scenario->getBoundaryType(faceIndex) ==
-      BoundaryType::hydrostaticWall);
-
-  // Rho/E extrapolated, velocity mirrored.
-  std::copy_n(stateIn, NumberOfVariables, stateOut);
-
-  if (scenario->getBoundaryType(faceIndex) == BoundaryType::hydrostaticWall ||
-      scenario->getBoundaryType(faceIndex) == BoundaryType::freeSlipWall) {
-    // Normal velocity zero after Riemann.
-    varsOut.j(normalNonZero) = -varsIn.j(normalNonZero);
-  } else {
-    // No-slip
-    // All velocities zero after Riemann.
-    varsOut.j(0) = -varsIn.j(0);
-    varsOut.j(1) = -varsIn.j(1);
-#if DIMENSIONS == 3
-    varsOut.j(2) = -varsIn.j(2);
-#endif
-  }
-
-  if (scenario->getBoundaryType(faceIndex) == BoundaryType::movingWall) {
-    const auto wallSpeed = 1.0;
-    varsOut.j(0) = 2 * wallSpeed - varsIn.j(0);
-  }
-
-  if (scenario->getBoundaryType(faceIndex) == BoundaryType::hydrostaticWall) {
-    // Note: This boundary condition is incorrect for the viscous case, as we do not
-    // reconstruct the temperature diffusion coming from the wall!
-    const auto posZ = x[DIMENSIONS-1];
-
-    // We also need to reconstruct the temperature at the border.
-    // This corresponds to a heated wall.
-    const auto pressure = computeHydrostaticPressure(ns, scenario->getGravity(),
-                                                     posZ, scenario->getBackgroundPotentialTemperature());
-    const auto T = potentialTToT(ns, pressure, scenario->getBackgroundPotentialTemperature());
-    const auto rho = pressure / (ns.gasConstant * T);
-    varsOut.rho() = rho;
-
-    // TODO(Lukas) Is background state necessary here?
-    ns.setBackgroundState(stateOut, varsOut.rho(), pressure);
-    auto E = -1;
-    if (ns.useGravity) {
-      E = ns.evaluateEnergy(rho, pressure, varsOut.j(), ns.getZ(stateIn), x[DIMENSIONS - 1]);
-    } else {
-      E = ns.evaluateEnergy(rho, pressure, varsOut.j(), ns.getZ(stateIn));
-    }
-    varsOut.E() = E;
-  }
+  // @todo Please implement/augment if required
+  stateOutside[0] = stateInside[0];
+  stateOutside[1] = stateInside[1];
+  stateOutside[2] = stateInside[2];
+  stateOutside[3] = stateInside[3];
 }
 
-void NavierStokes::NavierStokesSolver_FV::viscousFlux(const double* const Q,const double* const gradQ, double** F) {
-  ns.evaluateFlux(Q, gradQ, F, true, false, -1, true);
+//***********************************************************
+//*********************** PDE *******************************
+//***********************************************************
+
+//to add new PDEs specify them in the specification file, delete this file and its header and rerun the toolkit
+
+
+
+
+void NavierStokes::NavierStokesSolver_FV::viscousFlux(const double* const Q,const double* const gradQ, double** const F) {
+  // Tip: You find documentation for this method in header file "NavierStokes::NavierStokesSolver_FV.h".
+  // Tip: See header file "NavierStokes::AbstractNavierStokesSolver_FV.h" for toolkit generated compile-time 
+  //      constants such as PatchSize, NumberOfVariables, and NumberOfParameters.
+
+  // @todo Please implement/augment if required
+  F[0][0] = 0.0;
+  F[0][1] = 0.0;
+  F[0][2] = 0.0;
+  F[0][3] = 0.0;
+
+  F[1][0] = 0.0;
+  F[1][1] = 0.0;
+  F[1][2] = 0.0;
+  F[1][3] = 0.0;
+
+  F[2][0] = 0.0;
+  F[2][1] = 0.0;
+  F[2][2] = 0.0;
+  F[2][3] = 0.0;
+
 }
 
-void NavierStokes::NavierStokesSolver_FV::viscousEigenvalues(const double* const Q, const int dIndex, double* lambda) {
-  ns.evaluateDiffusiveEigenvalues(Q, dIndex, lambda);
+void NavierStokes::NavierStokesSolver_FV::viscousEigenvalues(const double* const Q, const int dIndex, double* const lambda) {
+  // Tip: You find documentation for this method in header file "NavierStokes::NavierStokesSolver_FV.h".
+  // Tip: See header file "NavierStokes::AbstractNavierStokesSolver_FV.h" for toolkit generated compile-time 
+  //      constants such as PatchSize, NumberOfVariables, and NumberOfParameters.
+
+  // @todo Please implement/augment if required
+  lambda[0] = 1.0;
+  lambda[1] = 1.0;
+  lambda[2] = 1.0;
+  lambda[3] = 1.0;
 }
+
 
 //You can either implement this method or modify fusedSource
 void NavierStokes::NavierStokesSolver_FV::algebraicSource(const tarch::la::Vector<DIMENSIONS, double>& x, double t, const double *const Q, double *S) {
-  // TODO: Actually use coordinates!
-  scenario->source(x, t, ns, Q, S);
+  // Tip: You find documentation for this method in header file "NavierStokes::NavierStokesSolver_FV.h".
+  // Tip: See header file "NavierStokes::AbstractNavierStokesSolver_FV.h" for toolkit generated compile-time 
+  //      constants such as PatchSize, NumberOfVariables, and NumberOfParameters.
+  // @todo Please implement/augment if required
+  S[0] = 0.0;
+  S[1] = 0.0;
+  S[2] = 0.0;
+  S[3] = 0.0;
 }
 
-void NavierStokes::NavierStokesSolver_FV::resetGlobalObservables(GlobalObservables& globalObservables) const {
-  NavierStokes::resetGlobalObservables(globalObservables);
-}
-    
-void NavierStokes::NavierStokesSolver_FV::mapGlobalObservables(
-			  GlobalObservables&                          globalObservables,
-			  const double* const                         luh,
-			  const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
-			  const tarch::la::Vector<DIMENSIONS,double>& cellSize,
-			  const double t,
-			  const double dt) const {
-  NavierStokes::mapGlobalObservablesFV(this, globalObservables, luh, cellSize);
-}
 
-void NavierStokes::NavierStokesSolver_FV::mergeGlobalObservables(
-    GlobalObservables&         globalObservables,
-    ReadOnlyGlobalObservables& otherObservables) const  {
-  NavierStokes::mergeGlobalObservables(globalObservables,otherObservables);
-}

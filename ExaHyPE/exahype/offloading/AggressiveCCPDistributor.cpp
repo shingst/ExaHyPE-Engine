@@ -90,7 +90,7 @@ void exahype::offloading::AggressiveCCPDistributor::computeIdealLoadDistribution
   std::fill(&newLoadDist[0], &newLoadDist[nnodes], 0);
 
   int totalCells   = enclaveCells + skeletonCells;
-  MPI_Allgather(&totalCells, 1, MPI_INTEGER, _initialLoadPerRank, 1, MPI_INTEGER, MPI_COMM_WORLD);
+  MPI_Allgather(&totalCells, 1, MPI_INT, _initialLoadPerRank, 1, MPI_INT, MPI_COMM_WORLD);
 
 #if defined(STEALING_USE_MASTER)
   int input_r=0, input_l=0;

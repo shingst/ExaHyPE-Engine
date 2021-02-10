@@ -433,13 +433,13 @@
         "generate_soft_errors" : { 
           "type" : "string",
           "title" : "Specifies whether and where soft-errors should be artifically generated.",
-          "enum" : ["no","migratable_stp_tasks"],
+          "enum" : ["no","migratable_stp_tasks_bitflip", "migratable_stp_tasks_overwrite"],
           "default" : "no"
          },
          "trigger_mechanism" : { 
           "type" : "string",
           "title" : "Specifies whether and how potential soft-errors should be triggered (checking requires teaMPI+ tasksharing with resilience checks).",
-          "enum" : ["none", "trigger_limited", "trigger_all", "trigger_flipped"],
+          "enum" : ["none", "trigger_limited", "trigger_all", "trigger_corrupted"],
           "default" : "none"
          }
       }

@@ -307,13 +307,15 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 
     exahype::offloading::JobTableStatistics::getInstance().notifyExecutedTask();
 
-    bool hasFlipped = exahype::offloading::ResilienceTools::getInstance().generateBitflipErrorInDoubleIfActive(lduh, _solver.getUpdateSize());
+    bool hasFlipped = exahype::offloading::ResilienceTools::getInstance().corruptDataIfActive(lduh, _solver.getUpdateSize());
     setTrigger(hasFlipped);
  
     if(hasFlipped) {
       tarch::la::Vector<DIMENSIONS, double> center;
       center = cellDescription.getOffset() + 0.5 * cellDescription.getSize();
-      logInfo("handleLocalExecution","Inserted bitflip in cell "
+      logInfo("handleLocalExecution","Inserted bitflip in cell index "
+            <<_cellDescriptionsIndex
+            <<" center[0] = "
             << center[0]
             <<" center[1] = "
             << center[1]
@@ -585,7 +587,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
           <<" computed hash = "
           <<hash_sum);*/
 
-    bool hasFlipped = exahype::offloading::ResilienceTools::getInstance().generateBitflipErrorInDoubleIfActive(lduh, _solver.getUpdateSize());
+    bool hasFlipped = exahype::offloading::ResilienceTools::getInstance().corruptDataIfActive(lduh, _solver.getUpdateSize());
     setTrigger(hasFlipped);
 #if defined(TaskSharing) && defined(ResilienceChecks)
     //needToCheck = needToCheck ||(_isPotSoftErrorTriggered==1) ? true : false;
@@ -764,12 +766,16 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackOutcomeToO
         " send job outcome: center[0] = "<<_center[0]
       <<" center[1] = "<<_center[1]
       <<" center[2] = "<<_center[2]
-      <<" time stamp = "<<_predictorTimeStamp);
+      <<" time stamp = "<<_predictorTimeStamp
+      <<" tag = "<<_tag
+      <<" origin = "<<_originRank);
 #else
   logDebug("sendBackOutcomeToOrigin",
         " send job outcome: center[0] = "<<_center[0]
       <<" center[1] = "<<_center[1]
-      <<" time stamp = "<<_predictorTimeStamp);
+      <<" time stamp = "<<_predictorTimeStamp      
+      <<" tag = "<<_tag
+      <<" origin = "<<_originRank);
 #endif
     //logInfo("handleLocalExecution()", "postSendBack");
 #if defined(UseSmartMPI)
@@ -817,7 +823,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
   //local treatment if this job belongs to the local rank
   if (_originRank == myRank) {
     result = handleLocalExecution(isRunOnMaster, hasComputed);
-#if !defined(OffloadingUseProgressThread) // && defined(TaskSharing)
+#if !defined(OffloadingUseProgressThread)  && defined(TaskSharing)
     if (!isRunOnMaster)
       exahype::solvers::ADERDGSolver::progressOffloading(&_solver,
           isRunOnMaster, std::numeric_limits<int>::max());
@@ -1026,6 +1032,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
     exahype::solvers::Solver* solver, int tag, int remoteRank) {
 
   // logInfo("receiveBackHandler","successful receiveBack request");
+  logDebug("receiveBackHandler", "received back STP job tag="<<tag<<" rank="<<remoteRank);
   tbb::concurrent_hash_map<int, CellDescription*>::accessor a_tagToCellDesc;
   bool found =
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagToCellDesc.find(
@@ -1062,7 +1069,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
 #ifndef OffloadingLocalRecompute
   cellDescription->setHasCompletedLastStep(true);
 #else
-  logDebug("receiveBackHandler", "received back STP job");
+  logDebug("receiveBackHandler", "received back STP job tag="<<tag<<" rank="<<remoteRank);
   MigratablePredictionJobData *data = nullptr;
   tbb::concurrent_hash_map<int, MigratablePredictionJobData*>::accessor a_tagToData;
   found = static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagToSTPData.find(
@@ -1257,7 +1264,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendHandler(
   static std::atomic<int> cnt=0;
   cnt++;
 #endif
-  //logInfo("sendHandler","successful send request");
+  logDebug("sendHandler","successful send request tag = "<<tag<<" remoteRank = "<<remoteRank);
 #if !defined(OffloadingNoEarlyReceiveBacks) || defined(OffloadingLocalRecompute)
   ADERDGSolver::receiveBackMigratableJob(tag, remoteRank,
       static_cast<exahype::solvers::ADERDGSolver*>(solver));
@@ -1363,7 +1370,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::initDataty
   MigratablePredictionJobMetaData dummy;
 
   int blocklengths[] = {DIMENSIONS, DIMENSIONS, 1, 1, 1, 1, 1};
-  MPI_Datatype subtypes[] = {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INTEGER, MPI_INTEGER, MPI_CHAR};
+  MPI_Datatype subtypes[] = {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INT, MPI_INT, MPI_CHAR};
   MPI_Aint displs[] = {0, 0, 0, 0, 0, 0, 0};
 
   MPI_Aint base;

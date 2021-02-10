@@ -261,57 +261,57 @@ void exahype::offloading::OffloadingProfiler::printStatistics() {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
   std::string str="Offloading statistics for rank "+std::to_string(rank)+":\n";
-  logInfo("exahype::offloading::OffloadingProfiler", str);
+  logInfo("printStatistics", str);
   str="  spawned tasks: "+std::to_string(_spawnedTasks)+"\n";
-  logInfo("exahype::offloading::OffloadingProfiler", str);
+  logInfo("printStatistics", str);
   //str+="  executed tasks: "+std::to_string(_executedTasks)+"\n";
   str="  performance updates: "+std::to_string(_performanceUpdates)+"\n";
-  logInfo("exahype::offloading::OffloadingProfiler", str);
+  logInfo("printStatistics", str);
   //str+="  late performance updates: "+std::to_string(_latePerformanceUpdates)+"\n";
   str="  offloading decisions: "+std::to_string(_offloadingDecisions)+"\n";
-  logInfo("exahype::offloading::OffloadingProfiler", str);
+  logInfo("printStatistics", str);
   str="  target offloaded tasks:\n";
-  logInfo("exahype::offloading::OffloadingProfiler", str);
+  logInfo("printStatistics", str);
   int totalTargetOffloaded=0;
   for(int i=0;i<nnodes;i++) {
     str="    to rank: "+std::to_string(i)+" : "+std::to_string(_targetOffloadedTasksPerRank[i])+"\n";
-    logInfo("exahype::offloading::OffloadingProfiler", str);
+    logInfo("printStatistics", str);
     totalTargetOffloaded+=_targetOffloadedTasksPerRank[i];
   }
   str="  total target offloaded tasks: "+std::to_string(totalTargetOffloaded)+"\n";
-  logInfo("exahype::offloading::OffloadingProfiler", str);
+  logInfo("printStatistics", str);
   str="  offloaded tasks:\n";
-  logInfo("exahype::offloading::OffloadingProfiler", str);
+  logInfo("printStatistics", str);
   int totalOffloaded=0;
   for(int i=0;i<nnodes;i++) {
     str="    to rank: "+std::to_string(i)+" : "+std::to_string(_offloadedTasksPerRank[i])+"\n";
-    logInfo("exahype::offloading::OffloadingProfiler", str);
+    logInfo("printStatistics", str);
     totalOffloaded+=_offloadedTasksPerRank[i];
   }
   str="  total offloaded tasks: "+std::to_string(totalOffloaded)+"\n";
-  logInfo("exahype::offloading::OffloadingProfiler", str);
+  logInfo("printStatistics", str);
   str="  offloadable tasks that failed threshold requirement: "+std::to_string(_thresholdFails)+"\n";
-  logInfo("exahype::offloading::OffloadingProfiler", str);
+  logInfo("printStatistics", str);
   str="  received tasks:\n";
-  logInfo("exahype::offloading::OffloadingProfiler", str);
+  logInfo("printStatistics", str);
   int totalReceived=0;
   for(int i=0;i<nnodes;i++) {
     str="    from rank: "+std::to_string(i)+" : "+std::to_string(_receivedTasksPerRank[i])+"\n";
-    logInfo("exahype::offloading::OffloadingProfiler", str);
+    logInfo("printStatistics", str);
     totalReceived+=_receivedTasksPerRank[i];
   }
   str="  total received tasks: "+std::to_string(totalReceived)+"\n";
-  logInfo("exahype::offloading::OffloadingProfiler", str);
+  logInfo("printStatistics", str);
   str="  total computation time: "+std::to_string(static_cast<double>(_accComputationTime/1E06))+"\n";
-  logInfo("exahype::offloading::OffloadingProfiler", str);
+  logInfo("printStatistics", str);
   str="  total handling time: "+std::to_string(static_cast<double>(_accHandlingTime/1E06))+"\n";
-  logInfo("exahype::offloading::OffloadingProfiler", str);
+  logInfo("printStatistics", str);
   str="  total useful communication time: "+std::to_string(static_cast<double>(_accUsefulCommunicationTime/1E06))+"\n";
-  logInfo("exahype::offloading::OffloadingProfiler", str);
+  logInfo("printStatistics", str);
   str="  total idle communication time: "+std::to_string(static_cast<double>(_accIdleCommunicationTime/1E06))+"\n";
-  logInfo("exahype::offloading::OffloadingProfiler", str);
+  logInfo("printStatistics", str);
   str="  total wait time for tasks: "+std::to_string(static_cast<double>(_accWaitTasksTime/1E06))+"\n";
-  logInfo("exahype::offloading::OffloadingProfiler", str);
+  logInfo("printStatistics", str);
 
 #endif
 }

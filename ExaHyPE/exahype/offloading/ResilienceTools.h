@@ -28,7 +28,8 @@ namespace exahype {
 }
 
 class exahype::offloading::ResilienceTools {
-
+  public:
+  enum class SoftErrorGenerationStrategy { None, Bitflips, Overwrite };
   private:
 
   /**
@@ -59,7 +60,7 @@ class exahype::offloading::ResilienceTools {
 
   public:
 
-  static bool GenerateErrors;
+  static SoftErrorGenerationStrategy GenerationStrategy;
   static bool TriggerAllMigratableSTPs;
   static bool TriggerLimitedCellsOnly;
   static bool TriggerFlipped;
@@ -67,7 +68,9 @@ class exahype::offloading::ResilienceTools {
   ResilienceTools();
   static ResilienceTools& getInstance();
 
-  bool generateBitflipErrorInDoubleIfActive(double *array, size_t length);
+  bool corruptDataIfActive(double *array, size_t length);
+
+  static void setSoftErrorGenerationStrategy(SoftErrorGenerationStrategy strat);
 
   static double computeInfNormError(double *a1, double *a2, size_t length);
   static double computeL1NormError(double *a1, double *a2, size_t length);
@@ -78,6 +81,10 @@ class exahype::offloading::ResilienceTools {
   static double computeL2NormErrorRel(double *a1, double *a2, size_t length);
 
   bool isAdmissibleNumericalError(double *a1, double *a2, size_t length);
+
+  private:
+  bool generateBitflipErrorInDoubleIfActive(double *array, size_t length);
+  bool overwriteDoubleIfActive(double *array, size_t size);
 
   virtual ~ResilienceTools();
 

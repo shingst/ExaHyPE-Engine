@@ -19,7 +19,9 @@
 #include "tarch/multicore/Jobs.h"
 
 //#ifndef TaskSharing
+#ifndef OffloadingUseProgressThread
 registerService(exahype::offloading::OffloadingProgressService)
+#endif
 //#endif
 
 tarch::logging::Log exahype::offloading::OffloadingProgressService::_log("exahype::offloading::OffloadingProgressService");

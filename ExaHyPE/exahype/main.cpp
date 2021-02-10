@@ -252,7 +252,7 @@ int exahype::main(int argc, char** argv) {
     logInfo("main()", "quit with error code " << programExitCode);
   }
   peano::shutdownSharedMemoryEnvironment();
-#if !defined(DistributedOffloading) &&  defined(OffloadingUseProfiler)
+#if  defined(OffloadingUseProfiler)
   exahype::offloading::OffloadingProfiler::getInstance().endPhase();
   exahype::offloading::OffloadingProfiler::getInstance().printStatistics();
 #endif
