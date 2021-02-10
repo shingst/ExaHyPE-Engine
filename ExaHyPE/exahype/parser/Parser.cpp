@@ -1408,7 +1408,7 @@ int exahype::parser::Parser::getSTPTracingDumpInterval() const {
 }
 
 bool exahype::parser::Parser::compareSoftErrorGenerationStrategy(const std::string& strategy) const  {
-  return getStringFromPath("/resilience/generate_soft_errors", "none", isOptional).compare(strategy)==0;
+  return getStringFromPath("/resilience/generate_soft_errors", "no", isOptional).compare(strategy)==0;
 }
 
 bool exahype::parser::Parser::getTriggerAllMigratableSTPs() const {
