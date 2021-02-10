@@ -1419,7 +1419,7 @@ bool exahype::parser::Parser::getTriggerLimitedCellsOnly() const {
   return getStringFromPath("/resilience/trigger_mechanism", "none", isOptional).compare("trigger_limited")==0;
 }
 
-bool exahype::parser::Parser::getTriggerFlipped() const {
-  return getStringFromPath("/resilience/trigger_mechanism", "none", isOptional).compare("trigger_flipped")==0;
+bool exahype::parser::Parser::getTriggerCorrupted() const {
+  return getStringFromPath("/resilience/trigger_mechanism", "none", isOptional).compare("trigger_corrupted")==0;
 }
 

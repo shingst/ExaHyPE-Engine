@@ -739,7 +739,7 @@ class exahype::parser::Parser {
 
   bool getTriggerAllMigratableSTPs() const;
   bool getTriggerLimitedCellsOnly() const;
-  bool getTriggerFlipped() const;
+  bool getTriggerCorrupted() const;
 };
 
 #endif

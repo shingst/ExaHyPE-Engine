@@ -338,7 +338,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
 #endif
     exahype::offloading::ResilienceTools::TriggerAllMigratableSTPs = _parser.getTriggerAllMigratableSTPs();
     exahype::offloading::ResilienceTools::TriggerLimitedCellsOnly= _parser.getTriggerLimitedCellsOnly();
-    exahype::offloading::ResilienceTools::TriggerFlipped = _parser.getTriggerFlipped();
+    exahype::offloading::ResilienceTools::TriggerFlipped = _parser.getTriggerCorrupted();
 #endif
     tarch::parallel::NodePool::getInstance().restart();
 

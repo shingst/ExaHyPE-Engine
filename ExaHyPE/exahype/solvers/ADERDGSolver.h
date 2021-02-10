@@ -1092,19 +1092,19 @@ private:
    */
   class MigratablePredictionJobData {
     public:
-#ifdef ALIGNMENT
+//#ifdef ALIGNMENT
       std::vector<double, AlignedAllocator> _luh; // ndata *ndof^DIM
       std::vector<double, AlignedAllocator>	_lduh; // nvar *ndof^DIM
       std::vector<double, AlignedAllocator> _lQhbnd;
       std::vector<double, AlignedAllocator> _lFhbnd;
       std::vector<double, AlignedAllocator> _lGradQhbnd;
-#else
-      std::vector<double> _luh; // ndata *ndof^DIM
-      std::vector<double> _lduh; // nvar *ndof^DIM
-      std::vector<double> _lQhbnd;
-      std::vector<double> _lFhbnd;
-      std::vector<double> _lGradQhbnd;
-#endif
+//#else
+//      std::vector<double> _luh; // ndata *ndof^DIM
+//      std::vector<double> _lduh; // nvar *ndof^DIM
+//      std::vector<double> _lQhbnd;
+//      std::vector<double> _lFhbnd;
+//      std::vector<double> _lGradQhbnd;
+//#endif
 
     MigratablePredictionJobMetaData  _metadata;
 

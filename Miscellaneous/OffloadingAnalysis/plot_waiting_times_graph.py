@@ -28,14 +28,17 @@ plot_ccp_temp = 1
 plot_diffusion_temp = 1
 plot_bval = 1
 
+step_min = -1
+step_max = 1000000000
+
 try: 
-  opts, args = getopt.getopt(sys.argv[1:],"hf:r:a",["nowaittimes","notasks","noccptemp","nodifftemp","nobval"])
+  opts, args = getopt.getopt(sys.argv[1:],"hf:r:a",["nowaittimes","notasks","noccptemp","nodifftemp","nobval","stepmin=", "stepmax="])
 except getopt.GetoptError:
-  print ('plot_waiting_times_graph.py -f input -r nranks [-a]')
+  print ('plot_waiting_times_graph.py -f input -r nranks [-a] [optional args]')
   sys.exit(2)
 for opt, arg in opts:
   if opt == '-h':
-    print ('plot_waiting_times_graph.py -f input -r nranks [-a]')
+    print ('plot_waiting_times_graph.py -f input -r nranks [-a] [optional args]')
     sys.exit(2)
   elif opt in ("-f"):
     print (arg)
@@ -54,6 +57,10 @@ for opt, arg in opts:
     plot_diffusion_temp = 0
   elif opt in ("--nobval"):
     plot_bval = 0
+  elif opt in ("--step_min"):
+    step_min = int(arg)
+  elif opt in ("--step_max"):
+    step_max = int(arg)
 
 file = open(filename, 'r')
 #animate = sys.argv[3].lower() in ("yes", "true", "t", "1")
@@ -85,9 +92,10 @@ for line in file:
     last_timestamp = float(m.group(1))
     duration_arr.append(duration)
   
-    print ("step: ", current_step)
-    output_file = "test_graph%03d.pdf" % current_step
-    dot.draw(output_file, prog="dot")    
+    if(current_step>=step_min and current_step<=step_max):
+      print ("step: ", current_step)
+      output_file = "test_graph%03d.pdf" % current_step
+      dot.draw(output_file, prog="dot")    
 
     if animate:
       im = plt.imshow(mpimg.imread(output_file))
