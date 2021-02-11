@@ -267,7 +267,7 @@ class Controller:
         model.generateCode()
         if self.config["runtimeDebug"]:
             t = time.perf_counter() - start
-            print(name+": "+str(value))
+            print(name+": "+str(t))
 
     def generateGemms(self, outputFileName, matmulConfigList):
         """Generate the gemms with the given config list using LIBXSMM"""

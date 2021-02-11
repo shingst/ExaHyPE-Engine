@@ -47,6 +47,9 @@ class Configuration:
 
     # path to markupsafe
     pathToMarkupsafe           = os.path.abspath(os.path.join(pathToExaHyPERoot, "Submodules", "markupsafe", "src"))
+    
+    # internal path to templates
+    pathToTemplate             = os.path.abspath(os.path.join(os.path.dirname(__file__), "templates"))
 
     # simd size of the accepted architectures
     simdWidth = { "noarch" : 1,

@@ -50,11 +50,10 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                 self.render(("aderdg", template), "fusedSpaceTimePredictorVolumeIntegral.cpp")
                 
                 if self.context["usePointSources"]:
-                    localContext = copy.copy(self.context)
-                    localContext["usePointSources"] = False
-                    localContext["nameSuffix"] = "_WithoutPS"
+                    self.context["usePointSources"] = False
+                    self.context["nameSuffix"] = "_WithoutPS"
                     
-                    self.render(("aderdg", template), "fusedSpaceTimePredictorVolumeIntegral_WithoutPS.cpp", localContext)
+                    self.render(("aderdg", template), "fusedSpaceTimePredictorVolumeIntegral_WithoutPS.cpp")
             
             else:
                 # size of the tmpArray
@@ -64,11 +63,10 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                 self.render(("aderdg", "fusedSPTVI_linear_cpp.template"), "fusedSpaceTimePredictorVolumeIntegral.cpp")
                 
                 if self.context["usePointSources"]:
-                    localContext = copy.copy(self.context)
-                    localContext["usePointSources"] = False
-                    localContext["nameSuffix"] = "_WithoutPS"
+                    self.context["usePointSources"] = False
+                    self.context["nameSuffix"] = "_WithoutPS"
                     
-                    self.render(("aderdg", "fusedSPTVI_linear_cpp.template"), "fusedSpaceTimePredictorVolumeIntegral_WithoutPS.cpp", localContext)
+                    self.render(("aderdg", "fusedSPTVI_linear_cpp.template"), "fusedSpaceTimePredictorVolumeIntegral_WithoutPS.cpp")
                 
         else: #nonlinear
             self.context["nDof_seq"] = range(0,self.context["nDof"])

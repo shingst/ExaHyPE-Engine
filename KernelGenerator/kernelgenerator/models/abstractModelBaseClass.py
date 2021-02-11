@@ -71,18 +71,15 @@ class AbstractModelBaseClass():
         sys.exit("Abstract method") # needs to be overriden
     
     
-    # render a template to outputFilename using the given context (default = local context)
+    # render a template to outputFilename using the local context
     # templateName can either be a string if the template is at the root of the template folder
     # or a tuple/list with the path from here (e.g. ["a", "b.tmp"] for a/b.tmp)
-    def render(self, templateName, outputFilename, context=None):
-        # set default context to local context if none given
-        if context == None:
-            context = self.context
-        loader = jinja2.FileSystemLoader(os.path.realpath(os.path.join(os.path.dirname(__file__),"..","templates")))
+    def render(self, templateName, outputFilename):
+        loader = jinja2.FileSystemLoader(Configuration.pathToTemplate)
         env = jinja2.Environment(loader=loader, trim_blocks=True, lstrip_blocks=True)
         if isinstance(templateName, str):
             template = env.get_template(templateName)
         else:
             template = env.get_template(os.path.join(*templateName))
-        with open(os.path.join(context["pathToOutputDirectory"],outputFilename), "w") as output:
-            output.write(template.render(context))
+        with open(os.path.join(self.context["pathToOutputDirectory"],outputFilename), "w") as output:
+            output.write(template.render(self.context))
