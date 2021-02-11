@@ -5,17 +5,17 @@
     "exahype_path": "./ExaHyPE",
     "output_directory": "./ApplicationExamples/SWE/SWE_asagi_limited"
   },
-  "architecture": "skx",
+  "architecture": "hsw",
   "computational_domain": {
     "dimension": 2,
-    "time_steps": 100,
+    "time_steps": 1000,
     "offset": [
-      -500.0,
-      -750.0
+      0.0,
+      0.0
     ],
     "width": [
-      1500.0,
-      1500.0
+      10.0,
+      10.0
     ]
   },
   "shared_memory": {
@@ -48,8 +48,8 @@
     "ranks_per_node"         : 1   
   },
   "resilience" : {
-    "generate_soft_errors" : "no",
-    "trigger_mechanism" : "none"
+    "generate_soft_errors" : "migratable_stp_tasks_overwrite",
+    "trigger_mechanism" : "trigger_limited"
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",
@@ -58,7 +58,7 @@
     "spawn_predictor_as_background_thread": true,
     "spawn_amr_background_threads": false,
     "disable_vertex_exchange_in_time_steps": true,
-    "time_step_batch_factor": 1.0,
+    "time_step_batch_factor": 0.0,
     "disable_metadata_exchange_in_batched_time_steps": true,
     "double_compression": 0.0,
     "spawn_double_compression_as_background_thread": false
@@ -68,7 +68,7 @@
       "type": "Limiting-ADER-DG",
       "name": "MySWESolver",
       "order": 3,
-      "maximum_mesh_size": 30.0,
+      "maximum_mesh_size": 0.5,
       "maximum_mesh_depth": 0,
       "time_stepping": "global",
       "aderdg_kernel": {
@@ -85,7 +85,7 @@
       },
       "point_sources": 0,
       "limiter": {
-        "dmp_observables": 0,
+        "dmp_observables": 4,
         "dmp_relaxation_parameter": 100000000.0,
         "dmp_difference_scaling": 100000000.0,
         "implementation": "generic"
@@ -121,14 +121,14 @@
       "parameters": {
         "grav": 9.81,
         "epsilon": 0.0001,
-        "scenario": 13
+        "scenario": 2
       },
-      "_plotters": [
+      "plotters": [
         {
           "type": "vtu::Cartesian::cells::limited::ascii",
           "name": "ConservedWriter",
           "time": 0.0,
-          "repeat":100,
+          "repeat":10,
           "output": "results/conserved",
           "variables": 5
         },

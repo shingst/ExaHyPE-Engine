@@ -96,6 +96,7 @@
 #endif
 
 #include "exahype/offloading/OffloadingAnalyser.h"
+#include "exahype/offloading/ResilienceTools.h"
 
 #if defined(DistributedOffloading)
 #include "exahype/offloading/JobTableStatistics.h"
@@ -109,7 +110,6 @@
 #endif
 
 #include "exahype/offloading/OffloadingProfiler.h"
-#include "exahype/offloading/ResilienceTools.h"
 #endif
 
 #if defined(TMPI_Heartbeats)
@@ -298,6 +298,19 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
   if ( _parser.isValid() ) {
     //always use offloading analyser
     peano::performanceanalysis::Analysis::getInstance().setDevice(&exahype::offloading::OffloadingAnalyser::getInstance());
+    if(_parser.compareSoftErrorGenerationStrategy("no")){
+      exahype::offloading::ResilienceTools::setSoftErrorGenerationStrategy(exahype::offloading::ResilienceTools::SoftErrorGenerationStrategy::None);
+    }
+    else if (_parser.compareSoftErrorGenerationStrategy("migratable_stp_tasks_bitflip")){
+      exahype::offloading::ResilienceTools::setSoftErrorGenerationStrategy(exahype::offloading::ResilienceTools::SoftErrorGenerationStrategy::Bitflips);
+    }
+    else if (_parser.compareSoftErrorGenerationStrategy("migratable_stp_tasks_overwrite")) {
+      exahype::offloading::ResilienceTools::setSoftErrorGenerationStrategy(exahype::offloading::ResilienceTools::SoftErrorGenerationStrategy::Overwrite);
+    }
+    else{
+      logError("initDistributedMemoryConfiguration()", "no valid soft error generation strategy specified");
+      _parser.invalidate();
+    }
 #if defined(DistributedOffloading)
     // Create new MPI communicators + progress engine for offloading related MPI communication
     exahype::offloading::OffloadingManager::getInstance().initialize();
@@ -318,16 +331,14 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     );
 #endif
 
-
-    exahype::offloading::ResilienceTools::GenerateErrors = _parser.getGenerateSoftErrorsInMigratableSTPs();
 #if defined(USE_TMPI)
     if(!TMPI_IsLeadingRank()) {
-       exahype::offloading::ResilienceTools::GenerateErrors = false;
+      exahype::offloading::ResilienceTools::setSoftErrorGenerationStrategy(exahype::offloading::ResilienceTools::SoftErrorGenerationStrategy::None);
     }
 #endif
     exahype::offloading::ResilienceTools::TriggerAllMigratableSTPs = _parser.getTriggerAllMigratableSTPs();
     exahype::offloading::ResilienceTools::TriggerLimitedCellsOnly= _parser.getTriggerLimitedCellsOnly();
-    exahype::offloading::ResilienceTools::TriggerFlipped = _parser.getTriggerFlipped();
+    exahype::offloading::ResilienceTools::TriggerFlipped = _parser.getTriggerCorrupted();
 #endif
     tarch::parallel::NodePool::getInstance().restart();
 

@@ -1407,8 +1407,8 @@ int exahype::parser::Parser::getSTPTracingDumpInterval() const {
   return result;
 }
 
-bool exahype::parser::Parser::getGenerateSoftErrorsInMigratableSTPs() const  {
-  return getStringFromPath("/resilience/generate_soft_errors", "none", isOptional).compare("migratable_stp_tasks")==0;
+bool exahype::parser::Parser::compareSoftErrorGenerationStrategy(const std::string& strategy) const  {
+  return getStringFromPath("/resilience/generate_soft_errors", "no", isOptional).compare(strategy)==0;
 }
 
 bool exahype::parser::Parser::getTriggerAllMigratableSTPs() const {
@@ -1419,7 +1419,7 @@ bool exahype::parser::Parser::getTriggerLimitedCellsOnly() const {
   return getStringFromPath("/resilience/trigger_mechanism", "none", isOptional).compare("trigger_limited")==0;
 }
 
-bool exahype::parser::Parser::getTriggerFlipped() const {
-  return getStringFromPath("/resilience/trigger_mechanism", "none", isOptional).compare("trigger_flipped")==0;
+bool exahype::parser::Parser::getTriggerCorrupted() const {
+  return getStringFromPath("/resilience/trigger_mechanism", "none", isOptional).compare("trigger_corrupted")==0;
 }
 

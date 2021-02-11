@@ -44,6 +44,10 @@
 #include "tarch/multicore/Core.h"
 #include "tarch/la/Vector.h"
 
+
+//need this for soft error generation
+#include "exahype/offloading/ResilienceTools.h"
+
 #if defined(SharedTBB) && !defined(noTBBPrefetchesJobData)
 #include <immintrin.h>
 #endif
@@ -1087,6 +1091,10 @@ int exahype::solvers::ADERDGSolver::predictionAndVolumeIntegralBody(
       predictorTimeStamp,
       predictorTimeStepSize,
       addVolumeIntegralResultToUpdate); // TODO(Dominic): fix 'false' case
+
+#if !(defined(TaskSharing) || defined(DistributedOffloading))
+  bool hasFlipped = exahype::offloading::ResilienceTools::getInstance().corruptDataIfActive(lduh, getUpdateSize());
+#endif
 
   compress(cellDescription,isSkeletonCell);
 
