@@ -118,6 +118,8 @@ PROJECT_CFLAGS += -DOffloadingUseProgressTask -DnoMPIWaitsProcessJobs
 PROJECT_CFLAGS +=  -DUseMPIThreadSplit
 {% elif offloadingProgress=="smartmpi" %}
 PROJECT_CFLAGS +=  -DUseSmartMPI -DOffloadingNoEarlyReceiveBacks
+{% elif offloadingProgress=="smartmpi_nb" %}
+PROJECT_CFLAGS +=  -DUseSmartMPI -DSmartMPINB -DOffloadingNoEarlyReceiveBacks
 {% elif offloadingProgress=="none" %}
 PROJECT_CFLAGS += 
 {% endif %}

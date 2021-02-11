@@ -777,6 +777,26 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackOutcomeToO
 #endif
     //logInfo("handleLocalExecution()", "postSendBack");
 #if defined(UseSmartMPI)
+#if defined(SmartMPINB)
+  MPI_Request sendBackRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME];
+  _solver.mpiIsendMigratablePredictionJobOutcomeOffload(
+       _lduh,
+       _lQhbnd,
+       _lFhbnd,
+       _lGradQhbnd,
+       _originRank,
+       _tag,
+       exahype::offloading::OffloadingManager::getInstance().getMPICommunicatorMapped(),
+       sendBackRequests);
+  exahype::offloading::OffloadingManager::getInstance().submitRequests(
+       sendBackRequests,
+       NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME,
+       _tag,
+       _originRank,
+       sendBackHandler,
+       exahype::offloading::RequestType::sendBack,
+       &_solver);
+#else
   _solver.mpiSendMigratablePredictionJobOutcomeOffload(
       _lduh,
       _lQhbnd,
@@ -787,6 +807,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackOutcomeToO
       exahype::offloading::OffloadingManager::getInstance().getMPICommunicatorMapped()
   );
   MigratablePredictionJob::sendBackHandler(&_solver, _tag, _originRank);
+#endif
 #else
   MPI_Request sendBackRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME];
   _solver.mpiIsendMigratablePredictionJobOutcome(
@@ -927,10 +948,10 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandler(
   peano::datatraversal::TaskSet spawnedSet(job);
 
   logDebug("receiveHandler",
-      " received task : "<< data->_metadata.to_string()<<" from "<<remoteRank<<" tag = "<<tag);
+      " received task : "<< data->_metadata.to_string()<<" from "<<data->_metadata.getOrigin()<<" tag = "<<tag);
 
-  exahype::offloading::OffloadingProfiler::getInstance().notifyReceivedTask(
-      remoteRank);
+  exahype::offloading::OffloadingProfiler::getInstance().notifyReceivedTask(data->_metadata.getOrigin()
+      );
 }
 
 #if defined(TaskSharing)
