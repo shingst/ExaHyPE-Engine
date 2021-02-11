@@ -1324,13 +1324,13 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::MigratablePredi
   _isPotSoftErrorTriggered(0),
   _contiguousBuffer(nullptr) {
 #if defined(UseSmartMPI) || defined(OffloadingMetadataPacked)
-  _contiguousBuffer = new char[getMessageLen()];
+  _contiguousBuffer = (char*) allocate_smartmpi(getMessageLen(),0); //todo: does Alignment help here?
 #endif
 }
 
 exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::~MigratablePredictionJobMetaData() {
 #if defined(UseSmartMPI) || defined(OffloadingMetadataPacked)
-  delete[] _contiguousBuffer;
+  free_smartmpi(_contiguousBuffer);
 #endif
 }
 
