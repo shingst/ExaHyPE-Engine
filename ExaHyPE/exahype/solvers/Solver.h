@@ -117,8 +117,13 @@ namespace exahype {
    *
    * All solvers must store the face data they send to neighbours at persistent addresses.
    */
-  #ifdef ALIGNMENT
-  #if defined(CompilerICC) && defined(SharedTBB)
+  #if defined(ALIGNMENT) || defined(UseSmartMPI)
+
+  #ifndef ALIGNMENT
+  #define ALIGNMENT 1
+  #endif
+
+  #if defined(CompilerICC) && defined(SharedTBB) && !defined(UseSmartMPI) //always go through SmartMPI with HeapAllocator
   typedef tbb::cache_aligned_allocator<double> AlignedAllocator;
   typedef tbb::cache_aligned_allocator<char> AlignedCharAllocator;
   #else
