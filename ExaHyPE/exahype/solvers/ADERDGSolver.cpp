@@ -4648,7 +4648,7 @@ bool exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOutcomeOffloa
   MigratablePredictionJobMetaData *metadata) {
 
   int ierr;
-  int tid = tarch::multicore::Core::getInstance().getThreadNum();
+  //int tid = tarch::multicore::Core::getInstance().getThreadNum();
 
 #if defined(OffloadingCheckForSlowOperations)
   double timing = - MPI_Wtime();

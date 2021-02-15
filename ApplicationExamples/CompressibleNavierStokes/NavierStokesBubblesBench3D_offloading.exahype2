@@ -21,13 +21,13 @@
   },
   "architecture": "hsw",
   "shared_memory": {
-    "cores": 2,
-    "background_job_consumers": 1,
+    "cores": 3,
+    "background_job_consumers": 2,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy"
   },
  "distributed_memory": {
-    "offloading_lb_strategy": "aggressiveHybrid",
+    "offloading_lb_strategy": "none",
     "offloading_input_file" : "",
     "offloading_progress" : "smartmpi",
     "offloading_CCP_temperature" : 0,
