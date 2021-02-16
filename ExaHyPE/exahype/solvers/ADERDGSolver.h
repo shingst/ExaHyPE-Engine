@@ -1092,7 +1092,7 @@ private:
    */
   class MigratablePredictionJobData {
     public:
-#ifdef ALIGNMENT || defined(UseSmartMPI)
+#if defined(ALIGNMENT) || defined(UseSmartMPI)
       std::vector<double, AlignedAllocator> _luh; // ndata *ndof^DIM
       std::vector<double, AlignedAllocator>	_lduh; // nvar *ndof^DIM
       std::vector<double, AlignedAllocator> _lQhbnd;
