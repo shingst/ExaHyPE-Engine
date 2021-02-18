@@ -2803,7 +2803,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
       if(i!=interCommRank) {
         logDebug("sendReplicatedSTPToOtherTeams"," team "<< interCommRank
                                                          <<" send replica job: "
-                                                         <<_metadata->to_string()
+                                                         <<metadata->to_string()
                                                          <<" time stamp = "<<job->_predictorTimeStamp
                                                          <<" to team "<<i);
         hasSent |= mpiSendMigratablePredictionJobOutcomeOffload(&lduh[0],
@@ -4919,7 +4919,7 @@ bool exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOutcomeOffloa
   MigratablePredictionJobMetaData *metadata) {
 
   int ierr;
-  int tid = tarch::multicore::Core::getInstance().getThreadNum();
+  //int tid = tarch::multicore::Core::getInstance().getThreadNum();
 
 #if defined(OffloadingCheckForSlowOperations)
   double timing = - MPI_Wtime();
@@ -4976,6 +4976,8 @@ bool exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOutcomeOffloa
   if(timing > OFFLOADING_SLOW_OPERATION_THRESHOLD)
     logError("mpiSendMigratablePredictionJobOutcomeOffload()", " took "<<timing<<"s");
 #endif
+
+  return true;
 }
 
 #endif
