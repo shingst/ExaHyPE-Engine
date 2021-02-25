@@ -11,6 +11,10 @@
  * For the full license text, see LICENSE.txt
  **/ #}
 
+{% for namespaceName in codeNamespaceList %}
+namespace {{namespaceName}} {
+{% endfor %}
+
 template<int nVar, int leadingDimSize>
 inline void AoS2SoA(const double* const restrict AoS, double* restrict SoA) {
   for(int n=0; n<nVar; n++) {
@@ -53,3 +57,7 @@ inline void SoA2AoS_rest(const double* const restrict SoA, double* restrict AoS)
     }
   }
 }
+
+{% for namespaceName in codeNamespaceList %}
+}
+{% endfor %}
