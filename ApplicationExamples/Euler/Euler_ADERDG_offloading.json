@@ -21,21 +21,31 @@
     ]
   },
   "shared_memory": {
-    "cores" : 2
     "cores": 2,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy"
   },
   "distributed_memory": {
-    "offloading_lb_strategy" : "none",
+    "offloading_lb_strategy": "none",
+    "offloading_input_file" : "",
+    "offloading_progress" : "progress_thread",
+    "offloading_CCP_temperature" : 0,
+    "offloading_diffusion_temperature" : 1,
+    "offloading_CCP_frequency" : 0,
+    "offloading_CCP_steps" : 0,
+    "offloading_update_temperature" : true,
+    "offloading_increase_temp_threshold" : 1.0,
     "task_sharing" : "task_sharing_resilience_checks",
-    
-    "timeout": 60,
+    "timeout": 12000,
     "load_balancing_type": "static",
-    "buffer_size": 64,
+    "buffer_size"            : 1600,
     "load_balancing_strategy": "hotspot",
     "node_pool_strategy": "fair",
-    "ranks_per_node": 1
+    "ranks_per_node"         : 1
+  },
+  "resilience" : {
+    "generate_soft_errors" : "migratable_stp_tasks_overwrite",
+    "trigger_mechanism" : "trigger_limited"
   },
   "stp_stats_tracing" : {
     "stp_tracing_output_dir" : "./test"
@@ -88,7 +98,7 @@
       "parameters": {
         "reference": "entropywave"
       },
-      "_plotters": [
+      "plotters": [
         {
           "type": "vtk::Cartesian::vertices::ascii",
           "name": "ErrorPlotter",
@@ -100,7 +110,7 @@
             "resolution": 1
           }
         }
-]
+      ]
     }
   ]
 }
