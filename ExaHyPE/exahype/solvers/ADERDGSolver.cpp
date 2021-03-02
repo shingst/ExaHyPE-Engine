@@ -2719,7 +2719,9 @@ void exahype::solvers::ADERDGSolver::sendKeyOfTaskOutcomeToOtherTeams(Migratable
     double *lduh   = static_cast<double*>(cellDescription.getUpdate());
     double *lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
     double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
+#if defined(OffloadingGradQhbnd)
     double *lGradQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictorGradient());
+#endif
 
     //create copy
     MigratablePredictionJobData *data = new MigratablePredictionJobData(*this);
@@ -2785,7 +2787,9 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
     double *lduh   = static_cast<double*>(cellDescription.getUpdate());
     double *lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
     double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
+#if defined(OffloadingGradQhbnd)
     double *lGradQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictorGradient());
+#endif
 
 #if defined(UseSmartMPI)
     logDebug("sendFullReplicatedSTPToOtherTeams","allocated STPs send "<<AllocatedSTPsSend );
@@ -3447,6 +3451,7 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
   MPI_Comm comm = exahype::offloading::OffloadingManager::getInstance().getMPICommunicator();
   MPI_Comm commMapped = exahype::offloading::OffloadingManager::getInstance().getMPICommunicatorMapped();
   int iprobesCounter = 0;
+  int ierr;
 
 #if defined(TaskSharing)
   MPI_Comm interTeamComm = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamCommunicatorData();
@@ -3459,19 +3464,19 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
 #endif
 
 #if defined(UseSmartMPI)
-  int ierr = MPI_Iprobe_offload(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
+  MPI_CHECK("pollForOutstandingCommunicationRequests", MPI_Iprobe_offload(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat));
   assertion(ierr==MPI_SUCCESS);
 #else
-  int ierr = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
+  MPI_CHECK("pollForOutstandingCommunicationRequests", MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat));
   assertion(ierr==MPI_SUCCESS);
 #endif
 
 #if defined(OffloadingNoEarlyReceiveBacks)
 #if defined(UseSmartMPI)
-  ierr = MPI_Iprobe_offload(MPI_ANY_SOURCE, MPI_ANY_TAG, commMapped, &receivedTaskBack, &statMapped);
+  MPI_CHECK("pollForOutstandingCommunicationRequests", MPI_Iprobe_offload(MPI_ANY_SOURCE, MPI_ANY_TAG, commMapped, &receivedTaskBack, &statMapped));
   assertion(ierr==MPI_SUCCESS);
 #else
-  ierr = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, commMapped, &receivedTaskBack, &statMapped);
+  MPI_CHECK("pollForOutstandingCommunicationRequests", MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, commMapped, &receivedTaskBack, &statMapped));
   assertion(ierr==MPI_SUCCESS);
 #endif
 #endif
@@ -3479,14 +3484,14 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
 #if !defined(TaskSharingUseHandshake)
 #if defined(UseSmartMPI)
   MPI_Status_Offload statRepDataOffload;
-  MPI_Iprobe_offload(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamComm, &receivedReplicaTask, &statRepDataOffload);
+  MPI_CHECK("pollForOutstandingCommunicationRequests", MPI_Iprobe_offload(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamComm, &receivedReplicaTask, &statRepDataOffload));
   logDebug("progressOffloading", "Iprobe for replica task "<<receivedReplicaTask<<" statRepDataOffload.MPI_TAG="<<statRepDataOffload.MPI_TAG<<" statRepDataOffload.size = "<<statRepDataOffload.size);
 #else
-  MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamComm, &receivedReplicaTask, &statRepData);
+  MPI_CHECK("pollForOutstandingCommunicationRequests", MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamComm, &receivedReplicaTask, &statRepData));
 #endif
 #endif
-  MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamCommAck, &receivedReplicaAck, &statRepAck);
-  MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamCommKey, &receivedReplicaKey, &statRepKey);
+  MPI_CHECK("pollForOutstandingCommunicationRequests", MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamCommAck, &receivedReplicaAck, &statRepAck));
+  MPI_CHECK("pollForOutstandingCommunicationRequests", MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamCommKey, &receivedReplicaKey, &statRepKey));
 #endif
 
   bool terminateImmediately = false;
@@ -3517,9 +3522,9 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
 #endif
     }
 #if defined(UseSmartMPI)
-    ierr = MPI_Iprobe_offload(MPI_ANY_SOURCE, MPI_ANY_TAG, commMapped, &receivedTaskBack, &statMapped);
+    MPI_CHECK("pollForOutstandingCommunicationRequests", MPI_Iprobe_offload(MPI_ANY_SOURCE, MPI_ANY_TAG, commMapped, &receivedTaskBack, &statMapped));
 #else
-    ierr = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, commMapped, &receivedTaskBack, &statMapped);
+    MPI_CHECK("pollForOutstandingCommunicationRequests", MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, commMapped, &receivedTaskBack, &statMapped));
 #endif
     assertion(ierr==MPI_SUCCESS);
 #endif
@@ -3531,10 +3536,10 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
        exahype::offloading::OffloadingManager::getInstance().receiveCompleted(terminatedSender);
        ActiveSenders.erase(terminatedSender);
 #if defined(UseSmartMPI)
-       int ierr = MPI_Iprobe_offload(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
+       MPI_CHECK("pollForOutstandingCommunicationRequests", MPI_Iprobe_offload(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat));
        assertion(ierr==MPI_SUCCESS);
 #else
-       int ierr = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
+       MPI_CHECK("pollForOutstandingCommunicationRequests", MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat));
        assertion(ierr==MPI_SUCCESS);
 #endif
     }
@@ -3556,14 +3561,14 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
 #endif
 
       exahype::offloading::OffloadingManager::getInstance().triggerVictimFlag();
-      int msgLen = -1;
+      msgLen = -1;
 #if defined(UseSmartMPI)
       MPI_Get_count_offload(&stat, MigratablePredictionJobMetaData::getMPIDatatype(), &msgLen);
 #else
       MPI_Get_count(&stat, MigratablePredictionJobMetaData::getMPIDatatype(), &msgLen);
 #endif
       // is this message metadata? -> if true, we are about to receive a new STP task
-      if(msgLen==MigratablePredictionJobMetaData::getMessageLen() && !(lastRecvTag==stat.MPI_TAG && lastRecvSrc==stat.MPI_SOURCE)) {
+      if((size_t) msgLen==MigratablePredictionJobMetaData::getMessageLen() && !(lastRecvTag==stat.MPI_TAG && lastRecvSrc==stat.MPI_SOURCE)) {
         lastRecvTag = stat.MPI_TAG;
         lastRecvSrc = stat.MPI_SOURCE;
       
@@ -3578,9 +3583,9 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
       }
     }
 #if defined(UseSmartMPI)
-    ierr = MPI_Iprobe_offload(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
+    MPI_CHECK("pollForOutstandingCommunicationRequests", MPI_Iprobe_offload(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat));
 #else
-    ierr = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat);
+    MPI_CHECK("pollForOutstandingCommunicationRequests", MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat));
 #endif
     assertion(ierr==MPI_SUCCESS);
 #if defined(TaskSharing)
@@ -3598,7 +3603,7 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
 #else
       MPI_Get_count(&statRepData, MigratablePredictionJobMetaData::getMPIDatatype(), &msgLenDouble);
       // is this message metadata? -> if true, we are about to receive a new STP task
-      if(msgLenDouble== MigratablePredictionJobMetaData::getMessageLen()) {
+      if((size_t) msgLenDouble==MigratablePredictionJobMetaData::getMessageLen()) {
         assertion(solver->_lastReceiveReplicaTag[statRepData.MPI_SOURCE]!=statRepData.MPI_TAG);
         solver->_lastReceiveReplicaTag[statRepData.MPI_SOURCE] = statRepData.MPI_TAG;
         logDebug("progressOffloading","received replica task from "<<statRepData.MPI_SOURCE<<" , tag "<<statRepData.MPI_TAG);
@@ -3608,10 +3613,10 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
     }
 #endif /*UseSmartMPI */
 #if defined(UseSmartMPI)
-    ierr = MPI_Iprobe_offload(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamComm, &receivedReplicaTask, &statRepDataOffload);
+    MPI_CHECK("pollForOutstandingCommunicationRequests", MPI_Iprobe_offload(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamComm, &receivedReplicaTask, &statRepDataOffload));
     logDebug("progressOffloading", "Iprobe for replica task "<<receivedReplicaTask<<" statRepDataOffload.MPI_TAG="<<statRepDataOffload.MPI_TAG<<" statRepDataOffload.size = "<<statRepDataOffload.size);
 #else
-    ierr = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamComm, &receivedReplicaTask, &statRepData);
+    MPI_CHECK("pollForOutstandingCommunicationRequests", MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamComm, &receivedReplicaTask, &statRepData));
 #endif
     assertion(ierr==MPI_SUCCESS);
 
@@ -3679,7 +3684,7 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
          AllocatedSTPsSend--;
        }
      }
-     ierr = MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamCommAck, &receivedReplicaAck, &statRepAck );
+     MPI_CHECK("pollForOutstandingCommunicationRequests", MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamCommAck, &receivedReplicaAck, &statRepAck ));
      assertion( ierr==MPI_SUCCESS );
 
 #ifndef OffloadingUseProgressThread
@@ -4147,6 +4152,9 @@ bool exahype::solvers::ADERDGSolver::OffloadingManagerJob::run( bool isCalledOnM
       result = false;
       break;
     }
+    default:
+      result = false;
+      break;
   }
 #ifdef USE_ITAC
 //  VT_end(event_offloadingManager);
