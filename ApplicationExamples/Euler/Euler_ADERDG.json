@@ -5,7 +5,7 @@
     "exahype_path": "./ExaHyPE",
     "output_directory": "./ApplicationExamples/Euler/Euler_ADERDG"
   },
-  "architecture": "skx",
+  "architecture": "hsw",
   "computational_domain": {
     "dimension": 3,
     "time_steps": 200,
@@ -21,24 +21,17 @@
     ]
   },
   "shared_memory": {
-    "cores" : 2
     "cores": 2,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy"
   },
   "distributed_memory": {
-    "offloading_lb_strategy" : "none",
-    "task_sharing" : "task_sharing_resilience_checks",
-    
     "timeout": 60,
     "load_balancing_type": "static",
     "buffer_size": 64,
     "load_balancing_strategy": "hotspot",
     "node_pool_strategy": "fair",
     "ranks_per_node": 1
-  },
-  "stp_stats_tracing" : {
-    "stp_tracing_output_dir" : "./test"
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",
@@ -57,7 +50,7 @@
       "type": "ADER-DG",
       "name": "EulerSolver_ADERDG",
       "order": 5,
-      "maximum_mesh_size": 0.05,
+      "maximum_mesh_size": 0.50,
       "time_stepping": "global",
       "aderdg_kernel": {
         "language": "C",
@@ -88,12 +81,12 @@
       "parameters": {
         "reference": "entropywave"
       },
-      "_plotters": [
+      "plotters": [
         {
           "type": "vtk::Cartesian::vertices::ascii",
           "name": "ErrorPlotter",
           "time": 0.0,
-          "repeat": 0.01,
+          "repeat": 0.1,
           "output": "./errors",
           "variables": 15,
           "parameters": {

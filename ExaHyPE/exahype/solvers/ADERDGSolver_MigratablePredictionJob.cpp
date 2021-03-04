@@ -153,21 +153,25 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryFindOutcomeAndC
   bool reschedule;
 
   if(found && status==JobOutcomeStatus::received) {
-	if(matchesOtherOutcome(outcome)) {
-
-	  CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
+	  if(matchesOtherOutcome(outcome)) {
+	    CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
 			      _element);
-	  cellDescription.setHasCompletedLastStep(true);
-	  reschedule = false;
-	}
-	else {
-          //soft error detected
-          reschedule = false;
-          MPI_Abort(MPI_COMM_WORLD, -1);
-	}
+	    cellDescription.setHasCompletedLastStep(true);
+	    reschedule = false;
+  	}
+	  else {
+      //soft error detected
+#if defined(ResilienceHealing)
+      logError("handleLocalExecution", "could switch on healing mode now!");
+      MPI_Abort(MPI_COMM_WORLD, -1);
+#else
+      reschedule = false;
+      MPI_Abort(MPI_COMM_WORLD, -1);
+#endif
+	  }
   }
   else {
-      reschedule = true;
+    reschedule = true;
   }
 
   return reschedule;
@@ -363,11 +367,19 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   if(needToCheck) {
     if(hasResult) {
 #if defined(ResilienceChecks)
-      matchesOtherOutcome(outcome);
+      bool hasNoError = matchesOtherOutcome(outcome);
+      if(!hasNoError) {
+#if defined(ResilienceHealing)
+        logInfo("handleLocalExecution", "could switch on healing mode now!");
+        //MPI_Abort(MPI_COMM_WORLD, -1);
+#else
+        MPI_Abort(MPI_COMM_WORLD, -1); //for now, abort immediately
+#endif
+      }
 #endif
     }
     else {
-      _currentState = State::CHECK_REQUIRED;
+      _currentState = State::CHECK_REQUIRED; //check later
       reschedule = true;
     }
   }
@@ -382,7 +394,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 #endif
 
   if (!reschedule) {
-	cellDescription.setHasCompletedLastStep(true);
+    cellDescription.setHasCompletedLastStep(true);
     exahype::offloading::PerformanceMonitor::getInstance().decRemainingTasks();
     exahype::offloading::PerformanceMonitor::getInstance().decCurrentTasks();
   }
@@ -418,11 +430,11 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryToFindAndExtrac
         <<(*outcome)->_metadata.to_string());
   }
   else if(found && a_jobToData->second.status == JobOutcomeStatus::transit) {
-	*outcome = nullptr;
-	status = a_jobToData->second.status;
+    *outcome = nullptr;
+    status = a_jobToData->second.status;
   }
   else {
-	*outcome = nullptr;
+    *outcome = nullptr;
   }
   a_jobToData.release();
 

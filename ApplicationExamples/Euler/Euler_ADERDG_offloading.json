@@ -5,7 +5,7 @@
     "exahype_path": "./ExaHyPE",
     "output_directory": "./ApplicationExamples/Euler/Euler_ADERDG"
   },
-  "architecture": "skx",
+  "architecture": "hsw",
   "computational_domain": {
     "dimension": 3,
     "time_steps": 200,
@@ -21,14 +21,14 @@
     ]
   },
   "shared_memory": {
-    "cores": 2,
+    "cores": 3,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy"
   },
   "distributed_memory": {
     "offloading_lb_strategy": "none",
     "offloading_input_file" : "",
-    "offloading_progress" : "progress_thread",
+    "offloading_progress" : "none",
     "offloading_CCP_temperature" : 0,
     "offloading_diffusion_temperature" : 1,
     "offloading_CCP_frequency" : 0,
@@ -44,8 +44,8 @@
     "ranks_per_node"         : 1
   },
   "resilience" : {
-    "generate_soft_errors" : "migratable_stp_tasks_overwrite",
-    "trigger_mechanism" : "trigger_limited"
+    "generate_soft_errors" : "migratable_stp_tasks_bitflip",
+    "trigger_mechanism" : "trigger_corrupted"
   },
   "stp_stats_tracing" : {
     "stp_tracing_output_dir" : "./test"
@@ -67,7 +67,7 @@
       "type": "ADER-DG",
       "name": "EulerSolver_ADERDG",
       "order": 5,
-      "maximum_mesh_size": 0.05,
+      "maximum_mesh_size": 0.5,
       "time_stepping": "global",
       "aderdg_kernel": {
         "language": "C",
@@ -100,15 +100,12 @@
       },
       "plotters": [
         {
-          "type": "vtk::Cartesian::vertices::ascii",
-          "name": "ErrorPlotter",
+          "type": "user::defined",
+          "name": "ErrorWriter",
           "time": 0.0,
-          "repeat": 0.01,
-          "output": "./errors",
-          "variables": 15,
-          "parameters": {
-            "resolution": 1
-          }
+          "repeat": 0.1,
+          "output": "not-available",
+          "variables": 5
         }
       ]
     }
