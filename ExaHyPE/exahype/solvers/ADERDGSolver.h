@@ -43,9 +43,17 @@
 #define NUM_REQUESTS_MIGRATABLE_COMM 1
 
 #if defined(OffloadingGradQhbnd)
+#if defined(ResilienceHealing)
+#define NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME 5
+#else
+#define NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME 4
+#endif
+#else
+#if defined(ResilienceHealing)
 #define NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME 4
 #else
 #define NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME 3
+#endif
 #endif
 
 #include "exahype/offloading/OffloadingManager.h"
@@ -1494,12 +1502,27 @@ private:
 	  MigratablePredictionJobMetaData *metadata =nullptr);
 
   /*
+   * Sends away task outcome+solution of a MigratablePredictionJob to a destination rank.
+   */
+  void mpiIsendMigratablePredictionJobOutcomeSolution(
+    double *luh,
+    double *lduh,
+    double *lQhbnd,
+    double *lFhbnd,
+    double *lGradQhbnd,
+    int dest,
+    int tag,
+    MPI_Comm comm,
+    MPI_Request *requests,
+    MigratablePredictionJobMetaData *metadata =nullptr);
+
+  /*
    * Receives a MigratablePredictionJob from a destination rank
    * using MPI offloading (SmartMPI).
    */
   void mpiRecvMigratablePredictionJobOffload(
 	  double *luh,
-      int srcRank,
+          int srcRank,
 	  int tag,
 	  MPI_Comm comm,
     int rail,
@@ -1511,7 +1534,7 @@ private:
   void mpiIrecvMigratablePredictionJob(
 	  double *luh,
           int srcRank,
-   	  int tag,
+          int tag,
 	  MPI_Comm comm,
           MPI_Request *requests,
           MigratablePredictionJobMetaData *metadata =nullptr);
@@ -1529,6 +1552,21 @@ private:
    * Receives task outcome of a MigratablePredictionJob from a destination rank.
    */
   void mpiIrecvMigratablePredictionJobOutcome(
+    double *lduh,
+    double *lQhbnd,
+    double *lFhbnd,
+    double *lGradQhbnd,
+    int srcRank,
+    int tag,
+    MPI_Comm comm,
+    MPI_Request *requests,
+    MigratablePredictionJobMetaData *metadata =nullptr);
+
+  /*
+   * Receives task outcome+solution of a MigratablePredictionJob from a destination rank.
+   */
+  void mpiIrecvMigratablePredictionJobOutcomeSolution(
+    double *luh,
     double *lduh,
     double *lQhbnd,
     double *lFhbnd,
