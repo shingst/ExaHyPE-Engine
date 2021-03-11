@@ -95,6 +95,11 @@ void JobTableStatistics::notifyDetectedError() {
   _softErrorsDetected++;
 }
 
+void JobTableStatistics::notifyHealedTask() {
+  _healedTasks++;
+}
+
+
 void JobTableStatistics::printStatistics() {
 #if defined(TaskSharing) || defined(OffloadingLocalRecompute) 
      int team = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank();
@@ -103,6 +108,7 @@ void JobTableStatistics::printStatistics() {
            <<" executed tasks = "<<_executedTasks
            <<" double checked tasks = "<<_doubleCheckedTasks
            <<" detected soft errors = "<<_softErrorsDetected
+           <<" healed tasks = "<<_healedTasks
            <<" saved tasks =  "<<_savedTasks
            <<" sent tasks = "<<_sentTasks
            <<" received tasks = "<<_receivedTasks
@@ -110,7 +116,7 @@ void JobTableStatistics::printStatistics() {
            <<" sent keys= "<<_sentKeys
            <<" declined tasks = "<<_declinedTasks
            <<" late tasks = "<<_lateTasks
-		   <<" recomputed tasks = "<<_recomputedTasks);
+           <<" recomputed tasks = "<<_recomputedTasks);
 #endif
 }
 

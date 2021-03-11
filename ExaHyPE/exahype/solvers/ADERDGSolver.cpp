@@ -316,7 +316,8 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
 #if defined(TaskSharing)
         ,_lastReceiveReplicaTag(tarch::parallel::Node::getInstance().getNumberOfNodes()*TMPI_GetInterTeamCommSize()),
         _jobDatabase(),
-        _allocatedJobs()
+        _allocatedJobs(),
+        _healingModeActive(false)
 #endif
 #endif
 {
@@ -2794,7 +2795,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
 #endif
 
 #if defined(UseSmartMPI)
-    logDebug("sendFullReplicatedSTPToOtherTeams","allocated STPs send "<<AllocatedSTPsSend );
+    logDebug("sendTaskOutcomeToOtherTeams","allocated STPs send "<<AllocatedSTPsSend );
 
     MigratablePredictionJobMetaData *metadata = new MigratablePredictionJobMetaData();
     job->packMetaData(metadata);
@@ -2807,7 +2808,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
     int j = 0;
     for(int i=0; i<teams; i++) {
       if(i!=interCommRank) {
-        logDebug("sendReplicatedSTPToOtherTeams"," team "<< interCommRank
+        logDebug("sendTaskOutcomeToOtherTeams"," team "<< interCommRank
                                                          <<" send replica job: "
                                                          <<metadata->to_string()
                                                          <<" time stamp = "<<job->_predictorTimeStamp
@@ -2839,7 +2840,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
     MigratablePredictionJobData *data = new MigratablePredictionJobData(*this);
     AllocatedSTPsSend++;
 
-    logDebug("sendFullReplicatedSTPToOtherTeams","allocated STPs send "<<AllocatedSTPsSend );
+    logDebug("sendTaskOutcomeToOtherTeams","allocated STPs send "<<AllocatedSTPsSend );
     //logInfo("sendFullReplicatedSTPToOtherTeams", "allocated "<<sizeof(MigratablePredictionJobData)
     //                                                         +sizeof(double)*(data->_luh.size()+data->_lduh.size()+data->_lQhbnd.size()+data->_lFhbnd.size())<<" bytes ");
 #if defined(ResilienceHealing)
@@ -2864,7 +2865,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
     int j = 0;
     for(int i=0; i<teams; i++) {
       if(i!=interCommRank) {
-          logDebug("sendReplicatedSTPToOtherTeams"," team "<< interCommRank
+          logInfo("sendTaskOutcomeToOtherTeams"," team "<< interCommRank
                                                    <<" send replica job: "
                                                    << data->_metadata.to_string()
                                                    <<" time stamp = "<<job->_predictorTimeStamp
@@ -2905,6 +2906,15 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
                                                                          this, MPI_BLOCKING);
    delete[] sendRequests;
 #endif
+}
+
+void exahype::solvers::ADERDGSolver::switchToHealingMode() {
+  _healingModeActive = true;
+  logError("switchToHealingMode", "switched on healing mode");
+}
+
+bool exahype::solvers::ADERDGSolver::healingActivated() {
+  return _healingModeActive;
 }
 
 #endif

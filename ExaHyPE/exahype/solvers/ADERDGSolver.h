@@ -1017,7 +1017,7 @@ private:
         Running,
         Resume,
         Paused,
-	    Terminate,
+        Terminate,
        	Terminated
       };
 	  OffloadingManagerJob(ADERDGSolver& solver);
@@ -1067,6 +1067,7 @@ private:
       int    _element;
       int    _originRank;
       unsigned char   _isPotSoftErrorTriggered;
+      unsigned char _isCorrupted;
       char *_contiguousBuffer;
 
       MigratablePredictionJobMetaData();
@@ -1192,6 +1193,7 @@ private:
       double                      _dx[DIMENSIONS];
       bool 		          _isLocalReplica;
       unsigned char               _isPotSoftErrorTriggered;
+      unsigned char               _isCorrupted;
       State                       _currentState;
 
       static std::atomic<int> JobCounter;
@@ -1204,11 +1206,13 @@ private:
       bool handleLocalExecutionOld(bool isCalledOnMaster, bool& hasComputed);
       bool handleRemoteExecution(bool& hasComputed);
       bool tryToFindAndExtractEquivalentSharedOutcome(ADERDGSolver::JobOutcomeStatus &status, MigratablePredictionJobData **outcome);
+      bool tryFindOutcomeAndHeal();
       void sendBackOutcomeToOrigin();
       bool matchesOtherOutcome(MigratablePredictionJobData *data);
       void packMetaData(MigratablePredictionJobMetaData *buffer);
+      void recoverWithOutcome(MigratablePredictionJobData *data);
       //static size_t getSizeOfMetaData();
-
+      void setState(State newState);
       void setTrigger(bool flipped);
 
     public:
@@ -1352,6 +1356,11 @@ private:
   std::vector<int> _lastReceiveReplicaTag;
 
   tbb::concurrent_hash_map<JobTableKey, JobTableEntry> _jobDatabase;
+
+  bool _healingModeActive;
+
+  void switchToHealingMode();
+  bool healingActivated();
 
   class ConcurrentJobKeysList {
      private:
@@ -1626,7 +1635,6 @@ private:
    * to another rank.
    */
   void submitOrSendMigratablePredictionJob(MigratablePredictionJob *job);
-
 #endif
 
 #endif

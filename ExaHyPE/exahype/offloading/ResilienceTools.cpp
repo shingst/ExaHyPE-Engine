@@ -18,7 +18,7 @@
 
 //#include "exahype/parser/Parser.h"
 
-#ifdef TMPI
+#ifdef USE_TMPI
 #include "teaMPI.h"
 #endif
 
@@ -85,6 +85,7 @@ bool exahype::offloading::ResilienceTools::overwriteDoubleIfActive(double *array
 
     double old_val = array[idx_array];
     array[idx_array] = std::numeric_limits<double>::max();
+    _numFlipped++;
 
     logInfo("overwriteDoubleIfActive()", "overwrite double value, pos = "<<idx_array<<" old ="<<old_val<<" new = "<<array[idx_array]);
     return true;
@@ -94,6 +95,9 @@ bool exahype::offloading::ResilienceTools::overwriteDoubleIfActive(double *array
 
 bool exahype::offloading::ResilienceTools::corruptDataIfActive(double *array, size_t size) {
   bool result = false;
+#ifdef USE_TMPI
+if(TMPI_IsLeadingRank()) {
+#endif
   switch(GenerationStrategy) {
   case SoftErrorGenerationStrategy::None:
     result = false;
@@ -107,7 +111,9 @@ bool exahype::offloading::ResilienceTools::corruptDataIfActive(double *array, si
   default:
     result = false;
   }
-  if(result) std::cout<<"returning true"<<std::endl;
+#ifdef USE_TMPI
+}
+#endif
   return result;
 }
 

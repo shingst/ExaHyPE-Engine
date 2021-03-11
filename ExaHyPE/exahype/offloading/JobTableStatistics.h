@@ -41,6 +41,7 @@ private:
   std::atomic<int> _recomputedTasks;
   std::atomic<int> _doubleCheckedTasks;
   std::atomic<int> _softErrorsDetected;
+  std::atomic<int> _healedTasks;
 
   JobTableStatistics();
   virtual ~JobTableStatistics();
@@ -62,6 +63,7 @@ public:
   void notifyRecomputedTask();
   void notifyDoubleCheckedTask();
   void notifyDetectedError();
+  void notifyHealedTask();
 };
 
 } /* namespace offloading */

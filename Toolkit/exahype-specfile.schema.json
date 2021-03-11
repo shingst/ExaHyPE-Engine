@@ -515,8 +515,8 @@
         },
         "task_sharing": {
           "type" : "string",
-          "title" : "Task sharing mode between teams (requires teaMPI): task outcomes can be merely shared or shared + checked for soft resilience.",
-          "enum" : ["no","task_sharing","task_sharing_resilience_checks"],
+          "title" : "Task sharing mode between teams (requires teaMPI): task outcomes can be merely shared or shared + checked for soft resilience (experimental) or ishared + heald from soft errors (experimental).",
+          "enum" : ["no","task_sharing","task_sharing_resilience_checks","task_sharing_resilience_correction"],
           "default" : "no"
         }, 
         "offloading_lb_strategy" : {

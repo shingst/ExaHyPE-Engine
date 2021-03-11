@@ -96,6 +96,8 @@ PROJECT_CFLAGS += -DAnalyseWaitingTimes
 PROJECT_CFLAGS += -DUSE_TMPI -DDistributedOffloading -DTaskSharing 
 {% elif tasksharingMode=="task_sharing_resilience_checks" %}
 PROJECT_CFLAGS += -DUSE_TMPI -DDistributedOffloading -DTaskSharing -DResilienceChecks 
+{% elif tasksharingMode=="task_sharing_resilience_correction" %}
+PROJECT_CFLAGS += -DUSE_TMPI -DDistributedOffloading -DTaskSharing -DResilienceChecks -DResilienceHealing 
 {% endif %}
 
 {% if useLocalRecompute %}

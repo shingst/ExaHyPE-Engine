@@ -91,7 +91,7 @@ void exahype::mappings::Plot::enterCell(
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
 
 #if defined(USE_TMPI)
-  if ( TMPI_IsLeadingRank() ) {
+ // if ( TMPI_IsLeadingRank() ) {
 #endif
     if ( fineGridCell.isInitialised() ) {
       solvers::Solver::CellInfo cellInfo = fineGridCell.createCellInfo();
@@ -100,7 +100,7 @@ void exahype::mappings::Plot::enterCell(
       }
     }
 #if defined (USE_TMPI)
-  }
+ // }
 #endif
 }
 
