@@ -274,8 +274,9 @@ class Controller:
         for matmul in matmulConfigList:
             # add the gemm name to the list of generated gemm
             self.gemmList.append((matmul.baseroutinename, matmul.precision))
-            # for plain assembly code (rather than inline assembly) choose dense_asm
-            commandLineArguments = " " + "dense"  + \
+            prefecthing = "nopf" # No native prefetching supported!
+            type = "dense" # for plain assembly code (rather than inline assembly) choose dense_asm
+            commandLineArguments = " " + type  + \
                 " " + os.path.join(self.config["pathToOutputDirectory"], outputFileName) + \
                 " " + self.config["codeNamespace"] + "::" + matmul.baseroutinename + \
                 " " + str(matmul.M) + \
@@ -289,8 +290,9 @@ class Controller:
                 " " + str(matmul.alignment_A) + \
                 " " + str(matmul.alignment_C) + \
                 " " + self.config["architecture"] + \
-                " " + matmul.prefetchStrategy + \
+                " " + prefecthing + \
                 " " + matmul.precision
+            
             bashCommand = self.config["pathToLibxsmmGemmGenerator"] + commandLineArguments
             subprocess.call(bashCommand.split())
             

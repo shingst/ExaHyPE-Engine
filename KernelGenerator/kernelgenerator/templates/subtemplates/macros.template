@@ -23,7 +23,7 @@
 std::memset({{name}}, 0, sizeof({{precision}})*{{size}});
 {% endif %}
 {% endif %}
-{% endmacro %} {##}
+{% endmacro %}{##}
 {#
 
 /**
@@ -34,7 +34,7 @@ std::memset({{name}}, 0, sizeof({{precision}})*{{size}});
 {% if not tempVarsOnStack %}
 _mm_free({{name}});
 {% endif %}
-{% endmacro %}
+{% endmacro %}{##}
 {#
 
 /**
@@ -44,7 +44,13 @@ _mm_free({{name}});
   The gemm config (fetched through matmulKey) contains M, N, K, LDA, LDB, LDC, alpha and beta
 */
 #}
-{% macro matmul(matmulKey, A, B, C, A_shift, B_shift, C_shift, trueAlpha="", trueB="", forceCoeffMatrix=False) %}
+{% macro matmul_legacy(matmulKey, A, B, C, A_shift, B_shift, C_shift, trueAlpha="", trueB="", forceCoeffMatrix=False) %}
+{% include "subtemplates/matmul_legacy.template" %}
+{% endmacro %}
+{% macro matmul(matmulKey, A, B, C, A_shift, B_shift, C_shift) %}
+{% include "subtemplates/matmul.template" %}
+{% endmacro %}
+{% macro matmul_prefetch(matmulKey, A, B, C, A_shift, B_shift, C_shift, A_next, B_next, C_next) %}
 {% include "subtemplates/matmul.template" %}
 {% endmacro %}
 {#

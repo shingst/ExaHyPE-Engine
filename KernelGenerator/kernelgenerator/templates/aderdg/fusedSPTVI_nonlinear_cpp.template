@@ -269,7 +269,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       for (int z = 0; z < {{nDof3D}}; z++) {
         for (int y = 0; y < {{nDof}}; y++) {
 {% if useFlux %}
-          {{ m.matmul('rhs_x', 'lFi', 'coeffRhsX', 'rhs', '((t*'~nDof3D~'+z)*'~nDof~'+y)*'~nVarPad*nDof, '0', '((t*'~nDof3D~'+z)*'~nDof~'+y)*'~nVarPad*nDof, trueB='Kxi', trueAlpha='- weights3[t*'~nDof*nDof3D~'+z*'~nDof~'+y] * dtBydx') | indent(10) }}{##}
+          {{ m.matmul_legacy('rhs_x', 'lFi', 'coeffRhsX', 'rhs', '((t*'~nDof3D~'+z)*'~nDof~'+y)*'~nVarPad*nDof, '0', '((t*'~nDof3D~'+z)*'~nDof~'+y)*'~nVarPad*nDof, trueB='Kxi', trueAlpha='- weights3[t*'~nDof*nDof3D~'+z*'~nDof~'+y] * dtBydx') | indent(10) }}{##}
 {% endif %}{# useFlux #}
         }
       }
@@ -278,7 +278,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       for (int z = 0; z < {{nDof3D}}; z++) {
         for (int x = 0; x < {{nDof}}; x++) {
 {% if useFlux %}
-          {{ m.matmul('rhs_y', 'lFi', 'coeffRhsY', 'rhs', '((t*'~nDof3D~'+z)*'~nDof*nDof~'+x)*'~nVarPad~'+'~1*(nDof**nDim)*nDof*nVarPad, '0', '((t*'~nDof3D~'+z)*'~nDof*nDof~'+x)*'~nVarPad, trueB='Kxi', trueAlpha='- weights3[t*'~nDof*nDof3D~'+z*'~nDof~'+x] * dtBydx') | indent(10) }}{##}
+          {{ m.matmul_legacy('rhs_y', 'lFi', 'coeffRhsY', 'rhs', '((t*'~nDof3D~'+z)*'~nDof*nDof~'+x)*'~nVarPad~'+'~1*(nDof**nDim)*nDof*nVarPad, '0', '((t*'~nDof3D~'+z)*'~nDof*nDof~'+x)*'~nVarPad, trueB='Kxi', trueAlpha='- weights3[t*'~nDof*nDof3D~'+z*'~nDof~'+x] * dtBydx') | indent(10) }}{##}
 {% endif %}{# useFlux #}
         }
       }
@@ -288,7 +288,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       for (int y = 0; y < {{nDof}}; y++) {
         for (int x = 0; x < {{nDof}}; x++) {
 {% if useFlux %}
-          {{ m.matmul('rhs_z', 'lFi','coeffRhsZ', 'rhs', '((t*'~nDof*nDof~'+y)*'~nDof~'+x)*'~nVarPad~'+'~2*(nDof**nDim)*nDof*nVarPad, '0', '((t*'~nDof*nDof~'+y)*'~nDof~'+x)*'~nVarPad, trueB='Kxi', trueAlpha='- weights3[t*'~nDof*nDof3D~'+y*'~nDof~'+x] * dtBydx') | indent(10) }}{##}
+          {{ m.matmul_legacy('rhs_z', 'lFi','coeffRhsZ', 'rhs', '((t*'~nDof*nDof~'+y)*'~nDof~'+x)*'~nVarPad~'+'~2*(nDof**nDim)*nDof*nVarPad, '0', '((t*'~nDof*nDof~'+y)*'~nDof~'+x)*'~nVarPad, trueB='Kxi', trueAlpha='- weights3[t*'~nDof*nDof3D~'+y*'~nDof~'+x] * dtBydx') | indent(10) }}{##}
 {% endif %}{# useFlux #}
         }
       }
@@ -309,7 +309,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
     // discrete Picard iteration
     double sq_res = 0.0;
     for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
-      {{ m.matmul('lqi', 'rhs', 's_m_QSlice', 'new_lQi_slice',nVarPad~'*xyz', '0', '0', trueB='iK1_T', trueAlpha='iweights3[xyz]') | indent(6) }}{##}
+      {{ m.matmul_legacy('lqi', 'rhs', 's_m_QSlice', 'new_lQi_slice',nVarPad~'*xyz', '0', '0', trueB='iK1_T', trueAlpha='iweights3[xyz]') | indent(6) }}{##}
       for(int t = 0; t < {{nDof}}; t++) {
         for(int n=0; n<{{nVar}}; n++) { //only copy and change the variables, skip parameters
           sq_res += (new_lQi_slice[n+{{nVarPad}}*t] - lQi[n+{{nDataPad}}*(xyz+{{nDof**nDim}}*t)]) * (new_lQi_slice[n+{{nVarPad}}*t] - lQi[n+{{nDataPad}}*(xyz+{{nDof**nDim}}*t)]);
@@ -595,14 +595,14 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
     for (int i=0; i<{{nDof}}; i++) {
       
       //x, also define coefficient matrix coeffVolume
-      {{ m.matmul('lduh_x', 'lFhi', 'coeffVolume', 'lduh', '(j*'~nDof~'+i)*'~(nVarPad*nDof)~'+'~(0*nVarPad*(nDof**nDim)), '0', '(j*'~nDof~'+i)*'~(nVarPad*nDof), trueB='Kxi_T', trueAlpha='weights2[i+j*'~nDof~'] * inverseDx', forceCoeffMatrix=True) | indent(6) }}{##}
+      {{ m.matmul_legacy('lduh_x', 'lFhi', 'coeffVolume', 'lduh', '(j*'~nDof~'+i)*'~(nVarPad*nDof)~'+'~(0*nVarPad*(nDof**nDim)), '0', '(j*'~nDof~'+i)*'~(nVarPad*nDof), trueB='Kxi_T', trueAlpha='weights2[i+j*'~nDof~'] * inverseDx', forceCoeffMatrix=True) | indent(6) }}{##}
 
       //y, reuse coeffVolume
-      {{ m.matmul('lduh_y', 'lFhi', 'coeffVolume', 'lduh', '(j*'~nDof~'+i)*'~(nVarPad*nDof)~'+'~(1*nVarPad*(nDof**nDim)), '0', '(j*'~(nDof*nDof)~'+i)*'~nVarPad) | indent(6) }}{##}
+      {{ m.matmul_legacy('lduh_y', 'lFhi', 'coeffVolume', 'lduh', '(j*'~nDof~'+i)*'~(nVarPad*nDof)~'+'~(1*nVarPad*(nDof**nDim)), '0', '(j*'~(nDof*nDof)~'+i)*'~nVarPad) | indent(6) }}{##}
 {% if nDim == 3 %}
 
       //z, reuse coeffVolume
-      {{ m.matmul('lduh_z', 'lFhi', 'coeffVolume', 'lduh', '(j*'~nDof~'+i)*'~(nVarPad*nDof)~'+'~(2*nVarPad*(nDof**nDim)), '0', '(j*'~nDof~'+i)*'~nVarPad) | indent(6) }}{##}
+      {{ m.matmul_legacy('lduh_z', 'lFhi', 'coeffVolume', 'lduh', '(j*'~nDof~'+i)*'~(nVarPad*nDof)~'+'~(2*nVarPad*(nDof**nDim)), '0', '(j*'~nDof~'+i)*'~nVarPad) | indent(6) }}{##}
 {% endif %}
 
     }
