@@ -461,7 +461,12 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   }
 
   if(needToShare) {
-    _solver.sendTaskOutcomeToOtherTeams(this);
+    if(exahype::offloading::ResilienceTools::TriggerLimitedCellsOnly) {
+      _solver.storePendingOutcomeToBeShared(this); //delay sharing until we can be sure that trigger hasn't been set
+    }
+    else {
+      _solver.sendTaskOutcomeToOtherTeams(this);
+    }
   }
 
   if(hasFlipped) {

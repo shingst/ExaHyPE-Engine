@@ -627,12 +627,18 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
                  isFirstTimeStepOfBatch/*addSurfaceIntegralContributionToUpdate*/);
   const bool isTroubled = checkIfCellIsTroubledAndDetermineMinAndMax(solverPatch,cellInfo);
 
+#if defined(TaskSharing)
+  //todo: set trigger for outcome
+  _solver.get()->releasePendingOutcomeAndShare(cellInfo._cellDescriptionsIndex, cellInfo.indexOfADERDGCellDescription(solverPatch.getSolverNumber()));
+#endif
+
   UpdateResult result;
   result._timeStepSize    = startNewTimeStep(solverPatch,cellInfo,isFirstTimeStepOfBatch);
   result._meshUpdateEvent = updateRefinementStatusAfterSolutionUpdate(solverPatch,cellInfo,isTroubled);
 
   reduce(solverPatch,cellInfo,result);
 
+  //todo(Philipp): do we still need this?
   if (
       (solverPatch.getRefinementStatus()<_solver->_minRefinementStatusForTroubledCell
 #if defined(ResilienceChecks) && defined(TaskSharing)

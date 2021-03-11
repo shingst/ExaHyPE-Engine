@@ -317,7 +317,8 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
         ,_lastReceiveReplicaTag(tarch::parallel::Node::getInstance().getNumberOfNodes()*TMPI_GetInterTeamCommSize()),
         _jobDatabase(),
         _allocatedJobs(),
-        _healingModeActive(false)
+        _healingModeActive(false),
+        _pendingOutcomesToBeShared()
 #endif
 #endif
 {
@@ -326,7 +327,7 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
     _profiler->registerTag(tag);
   }
 
-  #ifdef Parallel
+#ifdef Parallel
 #if defined(DistributedOffloading)
   MigratablePredictionJobMetaData::initDatatype();
   //todo: may need to add support for multiple solvers
@@ -2619,7 +2620,7 @@ size_t exahype::solvers::ADERDGSolver::getAdditionalCurrentMemoryUsageReplicatio
 }
 #endif
 
-#if defined(TaskSharing)
+//#if defined(TaskSharing)
 void exahype::solvers::ADERDGSolver::finishOutstandingInterTeamCommunication () {
   MPI_Comm interTeamComm = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamCommunicatorData();
 
@@ -2772,7 +2773,6 @@ void exahype::solvers::ADERDGSolver::sendKeyOfTaskOutcomeToOtherTeams(Migratable
 }
 
 void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredictionJob *job) {
-
     int teams = exahype::offloading::OffloadingManager::getInstance().getTMPITeamSize();
     int interCommRank = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank();
     MPI_Comm teamInterComm = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamCommunicatorData();
@@ -2917,7 +2917,102 @@ bool exahype::solvers::ADERDGSolver::healingActivated() {
   return _healingModeActive;
 }
 
+void exahype::solvers::ADERDGSolver::storePendingOutcomeToBeShared(MigratablePredictionJob *job) {
+  //create copy
+  MigratablePredictionJobData *data = new MigratablePredictionJobData(*this);
+  AllocatedSTPsSend++;
+
+  auto& cellDescription = getCellDescription(job->_cellDescriptionsIndex, job->_element);
+  double *luh   = static_cast<double*>(cellDescription.getSolution());
+  double *lduh   = static_cast<double*>(cellDescription.getUpdate());
+  double *lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
+  double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
+#if defined(OffloadingGradQhbnd)
+  double *lGradQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictorGradient());
 #endif
+
+  logDebug("sendTaskOutcomeToOtherTeams","allocated STPs send "<<AllocatedSTPsSend );
+  //logInfo("sendFullReplicatedSTPToOtherTeams", "allocated "<<sizeof(MigratablePredictionJobData)
+  //                                                         +sizeof(double)*(data->_luh.size()+data->_lduh.size()+data->_lQhbnd.size()+data->_lFhbnd.size())<<" bytes ");
+  std::memcpy(&data->_luh[0], luh, data->_luh.size()*sizeof(double));
+  std::memcpy(&data->_lduh[0], lduh, data->_lduh.size()*sizeof(double));
+  std::memcpy(&data->_lQhbnd[0], lQhbnd, data->_lQhbnd.size()*sizeof(double));
+  std::memcpy(&data->_lFhbnd[0], lFhbnd, data->_lFhbnd.size()*sizeof(double));
+#if OffloadingGradQhbnd
+  std::memcpy(&data->_lGradQhbnd[0], lGradQhbnd, data->_lGradQhbnd.size()*sizeof(double));
+#endif
+  //double *metadata = new double[2*DIMENSIONS+2];
+  job->packMetaData(&data->_metadata);
+
+  _pendingOutcomesToBeShared.insert(std::make_pair(std::make_pair(job->_cellDescriptionsIndex,job->_element), data));
+}
+
+void exahype::solvers::ADERDGSolver::releasePendingOutcomeAndShare(int cellDescriptionsIndex, int element) {
+  MigratablePredictionJobData *data = nullptr;
+  tbb::concurrent_hash_map<std::pair<int,int>, MigratablePredictionJobData*>::accessor accessor;
+  bool found = _pendingOutcomesToBeShared.find(accessor, std::make_pair(cellDescriptionsIndex, element));
+  if(found) {
+    data = accessor->second;
+    _pendingOutcomesToBeShared.erase(accessor);
+    accessor.release();
+    logInfo("releasePendingOutcomeAndShare","releasing a pending outcome");
+
+    //Share now
+    int teams = exahype::offloading::OffloadingManager::getInstance().getTMPITeamSize();
+    int interCommRank = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank();
+    MPI_Comm teamInterComm = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamCommunicatorData();
+    MPI_Request *sendRequests = new MPI_Request[(NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME+1)*(teams-1)];
+    //int tag = job->_cellDescriptionsIndex; // exahype::offloading::OffloadingManager::getInstance().getOffloadingTag();
+    int tag = exahype::offloading::OffloadingManager::getInstance().getOffloadingTag();
+    _mapTagToSTPData.insert(std::make_pair(tag, data));
+
+    int j = 0;
+    for(int i=0; i<teams; i++) {
+      if(i!=interCommRank) {
+          logInfo("releasePendingOutcomeAndShare"," team "<< interCommRank
+                                                   <<" send replica job: "
+                                                   << data->_metadata.to_string()
+                                                   <<" to team "<<i);
+#if defined(ResilienceHealing)
+          mpiIsendMigratablePredictionJobOutcomeSolution(
+                                      &(data->_luh[0]),
+                                      &(data->_lduh[0]),
+                                      &(data->_lQhbnd[0]),
+                                      &(data->_lFhbnd[0]),
+                                      &(data->_lGradQhbnd[0]),
+                                      i,
+                                      tag,
+                                      teamInterComm,
+                                      &sendRequests[(NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME+1)*j],
+                                      &(data->_metadata));
+
+#else
+          mpiIsendMigratablePredictionJobOutcome(&(data->_lduh[0]),
+                                      &(data->_lQhbnd[0]),
+                                      &(data->_lFhbnd[0]),
+                                      &(data->_lGradQhbnd[0]),
+                                      i,
+                                      tag,
+                                      teamInterComm,
+                                      &sendRequests[(NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME+1)*j],
+                                      &(data->_metadata));
+#endif
+          j++;
+      }
+    }
+    SentSTPs++;
+    exahype::offloading::OffloadingManager::getInstance().submitRequests(sendRequests,
+                                                                         (teams-1)*(NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME+1),
+                                                                         tag,
+                                                                         -1,
+                                                                         MigratablePredictionJob::sendHandlerTaskSharing,
+                                                                         exahype::offloading::RequestType::sendReplica,
+                                                                         this, MPI_BLOCKING);
+    delete[] sendRequests;
+  }
+}
+
+//#endif
 
 void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(MigratablePredictionJob* job) {
 

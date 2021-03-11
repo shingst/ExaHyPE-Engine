@@ -1295,7 +1295,7 @@ private:
   };
 
 //#if defined(TaskSharing) // || defined(OffloadingLocalRecompute) //Todo(Philipp): do we still need this for local recompute?
-
+#if defined(TaskSharing)
   static int REQUEST_JOB_CANCEL;
   static int REQUEST_JOB_ACK;
 
@@ -1362,13 +1362,18 @@ private:
   void switchToHealingMode();
   bool healingActivated();
 
-  class ConcurrentJobKeysList {
-     private:
-	  std::list<JobTableKey> _keys;
-	  std::mutex _mtx;
+  tbb::concurrent_hash_map<std::pair<int,int> , MigratablePredictionJobData*> _pendingOutcomesToBeShared;
 
-     public:
-	  ConcurrentJobKeysList() : _keys(), _mtx() {};
+  void storePendingOutcomeToBeShared(MigratablePredictionJob *job);
+  void releasePendingOutcomeAndShare(int cellDescriptionsIndex, int element);
+
+  class ConcurrentJobKeysList {
+    private:
+	    std::list<JobTableKey> _keys;
+	    std::mutex _mtx;
+
+    public:
+	    ConcurrentJobKeysList() : _keys(), _mtx() {};
 
       bool try_pop_front(JobTableKey *result) {
     	bool found = false;
@@ -1401,7 +1406,7 @@ private:
 
   ConcurrentJobKeysList _allocatedJobs;
   //tbb::concurrent_queue<JobTableKey> _allocatedJobs;
-//#endif
+#endif
 
   /**
    * If a task decides to send itself away, an offload entry is generated and submitted into
