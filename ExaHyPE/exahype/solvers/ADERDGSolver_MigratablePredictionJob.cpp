@@ -334,8 +334,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
         needToCheck = outcome->_metadata._isPotSoftErrorTriggered;
         needToShare = outcome->_metadata._isPotSoftErrorTriggered;
 #else
-    	needToShare = false;
-	needToCompute = false;
+      	needToShare = false;
+      	needToCompute = false;
         copyResult = true;
 #endif
         break;

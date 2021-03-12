@@ -78,8 +78,6 @@ class exahype::mappings::FinaliseMeshRefinement {
   std::vector<std::vector<double>> _reducedGlobalObservables;
 
   /**
-=======
->>>>>>> master
    * Indicates that the background tasks have terminated.
    * No further checks are required in this case.
    *

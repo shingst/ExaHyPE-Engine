@@ -56,7 +56,6 @@
 #endif
 #endif
 
-#include "exahype/offloading/OffloadingManager.h"
 #include <tbb/concurrent_hash_map.h>
 #include <tbb/concurrent_queue.h>
 #include <tbb/task.h>
@@ -64,7 +63,9 @@
 #include <unordered_set>
 #include "tarch/multicore/Jobs.h"
 #include "exahype/offloading/JobTableStatistics.h"
+#include "exahype/offloading/OffloadingManager.h"
 #endif
+
 
 namespace exahype {
   namespace parser {
@@ -962,32 +963,7 @@ private:
       CellDescription& cellDescription);
 
 #if defined(DistributedOffloading)
-  static int getTaskPriorityLocalStealableJob(int cellDescriptionsIndex, int element, double timeStamp) {
-#if defined(TaskSharing)
-    int team = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank();
-    int teamSize = exahype::offloading::OffloadingManager::getInstance().getTMPITeamSize();
-
-    CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex, element);
-
-    tarch::la::Vector<DIMENSIONS, double> center;
-    center = (cellDescription.getOffset()+0.5*cellDescription.getSize());
-
-    int prio = getTaskPriority(false)+(LocalStealableSTPCounter+team)%teamSize;
-
-/*    logDebug("getTaskPriorityLocalStealableJob()", "team = "<<team
-                                                 <<" center[0] = "<< center[0]
-                                                 <<" center[1] = "<< center[1]
-#if DIMENSIONS==3 
-                                                 <<" center[2] = "<< center[2]
-#endif
-						 <<" time stamp = "<<timeStamp
-                                                 <<" prio = "<<prio);*/
-
-    return prio;
-#else
-    return getTaskPriority(false);
-#endif
-  }
+  static int getTaskPriorityLocalStealableJob(int cellDescriptionsIndex, int element, double timeStamp);
 
 #ifdef OffloadingUseProgressTask
   /**

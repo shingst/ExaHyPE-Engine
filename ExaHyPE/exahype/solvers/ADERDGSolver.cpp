@@ -86,6 +86,7 @@
 #include "exahype/offloading/OffloadingProfiler.h"
 #include "exahype/offloading/JobTableStatistics.h"
 #include "peano/utils/UserInterface.h"
+#include "exahype/mappings/FinaliseMeshRefinement.h"
 #endif
 
 //#undef assertion
@@ -2522,6 +2523,40 @@ void exahype::solvers::ADERDGSolver::toString (std::ostream& out) const {
 // DISTRIBUTED OFFLOADING
 ///////////////////////////////////
 #if defined(DistributedOffloading)
+int exahype::solvers::ADERDGSolver::getTaskPriorityLocalStealableJob(int cellDescriptionsIndex, int element, double timeStamp)
+ {
+#if defined(TaskSharing)
+   int team = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank();
+   int teamSize = exahype::offloading::OffloadingManager::getInstance().getTMPITeamSize();
+
+   CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex, element);
+
+   tarch::la::Vector<DIMENSIONS, double> center;
+   center = (cellDescription.getOffset()+0.5*cellDescription.getSize());
+
+   int prio_shuffle = 0;
+#if defined(ResilienceChecks) || defined(ResilienceHealing)
+   int tasks_per_team = (exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells/teamSize);
+   prio_shuffle = (LocalStealableSTPCounter/tasks_per_team)%teamSize;
+#else
+   prio_shuffle = (LocalStealableSTPCounter+team)%teamSize;
+#endif
+   int prio = getTaskPriority(false)+ prio_shuffle;
+
+/*    logDebug("getTaskPriorityLocalStealableJob()", "team = "<<team
+                                                <<" center[0] = "<< center[0]
+                                                <<" center[1] = "<< center[1]
+#if DIMENSIONS==3
+                                                <<" center[2] = "<< center[2]
+#endif
+            <<" time stamp = "<<timeStamp
+                                                <<" prio = "<<prio);*/
+
+   return prio;
+#else
+   return getTaskPriority(false);
+#endif
+ }
 
 #if defined (TaskSharing) //|| defined(OffloadingLocalRecompute)
 void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
