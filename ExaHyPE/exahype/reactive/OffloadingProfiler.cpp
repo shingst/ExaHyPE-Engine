@@ -18,7 +18,7 @@
 #include "tarch/multicore/Core.h"
 #include "tarch/parallel/Node.h"
 
-tarch::logging::Log exahype::reactive::OffloadingProfiler::_log( "exahype::offloading::OffloadingProfiler" );
+tarch::logging::Log exahype::reactive::OffloadingProfiler::_log( "exahype::reactive::OffloadingProfiler" );
 
 exahype::reactive::OffloadingProfiler::OffloadingProfiler():
   _executedTasksPhase(0),
@@ -208,12 +208,12 @@ void exahype::reactive::OffloadingProfiler::endHandling(double elapsed) {
 #endif
 }
 
-//void exahype::offloading::OffloadingProfiler::beginWaitForBackgroundTasks(exahype::solvers::Solver::JobType type) {
+//void exahype::reactive::OffloadingProfiler::beginWaitForBackgroundTasks(exahype::solvers::Solver::JobType type) {
 //#if defined(OffloadingUseProfiler)
 //#endif
 //}
 
-//void exahype::offloading::OffloadingProfiler::endWaitForBackgroundTasks(exahype::solvers::Solver::JobType type, double elapsed) {
+//void exahype::reactive::OffloadingProfiler::endWaitForBackgroundTasks(exahype::solvers::Solver::JobType type, double elapsed) {
 //#if defined(OffloadingUseProfiler)
 //  unsigned long long elapsedTime;
 //  if(type==exahype::solvers::Solver::JobType::EnclaveJob) {

@@ -24,7 +24,7 @@
 namespace exahype {
 namespace reactive {
 
-tarch::logging::Log  exahype::reactive::NoiseGenerationStrategyChaseVictim::_log( "exahype::offloading::NoiseGenerationStrategyChaseVictim" );
+tarch::logging::Log  exahype::reactive::NoiseGenerationStrategyChaseVictim::_log( "exahype::reactive::NoiseGenerationStrategyChaseVictim" );
 
 
 NoiseGenerationStrategyChaseVictim::NoiseGenerationStrategyChaseVictim() : _factor(0.5), _baseNoise(1){
@@ -53,7 +53,7 @@ void NoiseGenerationStrategyChaseVictim::generateNoise(int rank, std::chrono::sy
   }
 
   if (OffloadingManager::getInstance().isVictim() && !triggeredVictim) {
-    //double timePerTimeStep = exahype::offloading::OffloadingAnalyser::getInstance().getTimePerTimeStep();
+    //double timePerTimeStep = exahype::reactive::OffloadingAnalyser::getInstance().getTimePerTimeStep();
     double timeToWait = _baseNoise*_factor;
     std::string call = " kill -STOP "+std::to_string(pid)+" ; sleep "+std::to_string(timeToWait)+"; kill -CONT "+std::to_string(pid);
 

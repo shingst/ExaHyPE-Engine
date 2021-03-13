@@ -23,7 +23,7 @@ registerService(exahype::reactive::OffloadingProgressService)
 #endif
 //#endif
 
-tarch::logging::Log exahype::reactive::OffloadingProgressService::_log("exahype::offloading::OffloadingProgressService");
+tarch::logging::Log exahype::reactive::OffloadingProgressService::_log("exahype::reactive::OffloadingProgressService");
 
 exahype::reactive::OffloadingProgressService::OffloadingProgressService()
 : _solver(nullptr),  _isSet(false), _isEnabled(false){}

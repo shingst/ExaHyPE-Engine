@@ -253,13 +253,13 @@ int exahype::main(int argc, char** argv) {
   }
   peano::shutdownSharedMemoryEnvironment();
 #if  defined(OffloadingUseProfiler)
-  exahype::offloading::OffloadingProfiler::getInstance().endPhase();
-  exahype::offloading::OffloadingProfiler::getInstance().printStatistics();
+  exahype::reactive::OffloadingProfiler::getInstance().endPhase();
+  exahype::reactive::OffloadingProfiler::getInstance().printStatistics();
 #endif
 
 //currently there is a race with the OffloadingManager as TBB threads are still active (which shouldn't be the case!)
 #if defined(DirtyCleanUp)
-  exahype::offloading::OffloadingManager::getInstance().cancelOutstandingRequests();
+  exahype::reactive::OffloadingManager::getInstance().cancelOutstandingRequests();
 #endif
   peano::shutdownParallelEnvironment();
 

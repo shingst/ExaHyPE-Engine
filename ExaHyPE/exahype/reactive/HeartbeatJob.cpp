@@ -24,7 +24,7 @@ namespace exahype {
 namespace reactive {
 
 HeartbeatJob* HeartbeatJob::_singleton;
-tarch::logging::Log HeartbeatJob::_log( "exahype::offloading::HeartbeatJob");
+tarch::logging::Log HeartbeatJob::_log( "exahype::reactive::HeartbeatJob");
 
 HeartbeatJob::HeartbeatJob() :
  tarch::multicore::jobs::Job( tarch::multicore::jobs::JobType::BackgroundTask, 0 , tarch::multicore::DefaultPriority),

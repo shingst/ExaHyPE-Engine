@@ -30,7 +30,7 @@
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/tbb/Jobs.h"
 
-tarch::logging::Log exahype::reactive::AggressiveHybridDistributor::_log( "exahype::offloading::AggressiveHybridDistributor" );
+tarch::logging::Log exahype::reactive::AggressiveHybridDistributor::_log( "exahype::reactive::AggressiveHybridDistributor" );
 
 exahype::reactive::AggressiveHybridDistributor::AggressiveHybridDistributor() :
   _temperatureDiffusion(0.5),
@@ -443,7 +443,7 @@ void exahype::reactive::AggressiveHybridDistributor::updateLoadDistributionCCP()
   for(int i=0; i<nnodes; i++) {
     if(_idealTasksToOffloadCCP[i]>0) {
       //we have a potential victim rank
-//     if(!exahype::offloading::OffloadingManager::getInstance().isBlacklisted(i)) {
+//     if(!exahype::reactive::OffloadingManager::getInstance().isBlacklisted(i)) {
       logInfo("updateLoadDistributionCCP", "offloading to "<<i<<" tasks "<<_temperatureCCP*_idealTasksToOffloadCCP[i]);
       _optimalTasks[i] = _idealTasksToOffloadCCP[i];
       _tasksToOffload[i] = std::ceil(std::max((1.0-_temperatureCCP), 0.0)*_tasksToOffload[i] + _temperatureCCP*_idealTasksToOffloadCCP[i]);
@@ -552,7 +552,7 @@ bool exahype::reactive::AggressiveHybridDistributor::selectVictimRank(int& victi
 #ifdef OffloadingUseProgressTask
   if(victim == myRank) 
     last = true;
-    //exahype::offloading::OffloadingManager::getInstance().notifyAllVictimsSendCompletedIfNotNotified();
+    //exahype::reactive::OffloadingManager::getInstance().notifyAllVictimsSendCompletedIfNotNotified();
 #endif
 
   int threshold = (_localStarvationThreshold==-1) ? 1

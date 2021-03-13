@@ -29,7 +29,7 @@
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/tbb/Jobs.h"
 
-tarch::logging::Log exahype::reactive::AggressiveCCPDistributor::_log( "exahype::offloading::AggressiveCCPDistributor" );
+tarch::logging::Log exahype::reactive::AggressiveCCPDistributor::_log( "exahype::reactive::AggressiveCCPDistributor" );
 
 exahype::reactive::AggressiveCCPDistributor::AggressiveCCPDistributor() :
   _temperature(0.5),
@@ -230,7 +230,7 @@ void exahype::reactive::AggressiveCCPDistributor::updateLoadDistribution() {
   int myRank = tarch::parallel::Node::getInstance().getRank();
 
   double *waitingTimesSnapshot = new double[nnodes*nnodes];
- // const int* currentWaitingTimesSnapshot = exahype::offloading::PerformanceMonitor::getInstance().getWaitingTimesSnapshot();
+ // const int* currentWaitingTimesSnapshot = exahype::reactive::PerformanceMonitor::getInstance().getWaitingTimesSnapshot();
   const double* currentWaitingTimesSnapshot = exahype::reactive::OffloadingAnalyser::getInstance().getFilteredWaitingTimesSnapshot();
   std::copy(&currentWaitingTimesSnapshot[0], &currentWaitingTimesSnapshot[nnodes*nnodes], waitingTimesSnapshot);
 

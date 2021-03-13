@@ -70,7 +70,7 @@ static int event_progress_receiveBack;
 //#undef assertion
 //#define assertion assert
 
-tarch::logging::Log exahype::reactive::OffloadingManager::_log( "exahype::offloading::OffloadingManager" );
+tarch::logging::Log exahype::reactive::OffloadingManager::_log( "exahype::reactive::OffloadingManager" );
 
 int exahype::reactive::OffloadingManager::_team(-1);
 int exahype::reactive::OffloadingManager::_interTeamRank(-1);
@@ -156,7 +156,7 @@ bool exahype::reactive::OffloadingManager::isEnabled() {
 }
 
 void exahype::reactive::OffloadingManager::initialize() {
-  //exahype::offloading::OffloadingManager::getInstance().createMPICommunicator();
+  //exahype::reactive::OffloadingManager::getInstance().createMPICommunicator();
 
 
 //#if defined(UseMPIThreadSplit)
@@ -165,14 +165,14 @@ void exahype::reactive::OffloadingManager::initialize() {
 }
 
 void exahype::reactive::OffloadingManager::destroy() {
- // exahype::offloading::OffloadingManager::destroyMPICommunicator();
+ // exahype::reactive::OffloadingManager::destroyMPICommunicator();
 
 //#if defined(UseMPIThreadSplit)
   destroyMPICommunicators();
 //#endif
 }
 
-/*void exahype::offloading::OffloadingManager::setTMPIInterTeamCommunicators(MPI_Comm comm, MPI_Comm commKey, MPI_Comm commAck) {
+/*void exahype::reactive::OffloadingManager::setTMPIInterTeamCommunicators(MPI_Comm comm, MPI_Comm commKey, MPI_Comm commAck) {
   _interTeamComm = comm;
   _interTeamCommKey = commKey;
   _interTeamCommAck = commAck;
@@ -206,7 +206,7 @@ int exahype::reactive::OffloadingManager::getTMPIInterTeamRank(){
   return _interTeamRank;
 }
 
-/*void exahype::offloading::OffloadingManager::createMPICommunicator() {
+/*void exahype::reactive::OffloadingManager::createMPICommunicator() {
   int ierr = MPI_Comm_dup(MPI_COMM_WORLD, &_offloadingComm);
   assertion(ierr==MPI_SUCCESS);
   ierr = MPI_Comm_dup(MPI_COMM_WORLD, &_offloadingCommMapped);
@@ -234,7 +234,7 @@ void exahype::reactive::OffloadingManager::createMPICommunicators() {
   _team  = nteams;
   _interTeamRank = rankInterComm;
 
-  //exahype::offloading::OffloadingManager::getInstance().setTMPIInterTeamCommunicators(interTeamComm, interTeamCommDupKey, interTeamCommDupAck);
+  //exahype::reactive::OffloadingManager::getInstance().setTMPIInterTeamCommunicators(interTeamComm, interTeamCommDupKey, interTeamCommDupAck);
 
   logInfo("createMPICommunicators()", " teams: "<<nteams<<", rank in team "
                                                 <<team<<" : "<<rank<<", team rank in intercomm: "<<rankInterComm);
@@ -293,7 +293,7 @@ void exahype::reactive::OffloadingManager::destroyMPICommunicators() {
 //#endif
 
 
-/*void exahype::offloading::OffloadingManager::destroyMPICommunicator() {
+/*void exahype::reactive::OffloadingManager::destroyMPICommunicator() {
   int ierr = MPI_Comm_free( &_offloadingComm);
   assertion(ierr==MPI_SUCCESS);
   ierr =MPI_Comm_free(&_offloadingCommMapped);
@@ -949,21 +949,21 @@ bool exahype::reactive::OffloadingManager::selectVictimRank(int& victim, bool& l
     return exahype::reactive::AggressiveHybridDistributor::getInstance().selectVictimRank(victim, last);
 
   return false;
-/*  double remainingLoadRatio = static_cast<double> (exahype::offloading::PerformanceMonitor::getInstance().getRemainingTasks())
+/*  double remainingLoadRatio = static_cast<double> (exahype::reactive::PerformanceMonitor::getInstance().getRemainingTasks())
   /
-  exahype::offloading::PerformanceMonitor::getInstance().getTasksPerTimestep();
+  exahype::reactive::PerformanceMonitor::getInstance().getTasksPerTimestep();
   // this is currently hardcoded: the goal is to refrain from giving tasks away if there is not enough work left
   // for overlap of communication and computation
   if(remainingLoadRatio>0.1) {
 #if defined(OffloadingStrategyStatic)
-    return exahype::offloading::StaticDistributor::getInstance().selectVictimRank(victim);
+    return exahype::reactive::StaticDistributor::getInstance().selectVictimRank(victim);
 #elif defined(OffloadingStrategyDynamic)
-    return exahype::offloading::DynamicDistributor::getInstance().selectVictimRank(victim);
+    return exahype::reactive::DynamicDistributor::getInstance().selectVictimRank(victim);
 #elif defined(OffloadingStrategyHybrid)
-    bool staticDistribution = exahype::offloading::StaticDistributor::getInstance().selectVictimRank(victim);
+    bool staticDistribution = exahype::reactive::StaticDistributor::getInstance().selectVictimRank(victim);
     if(staticDistribution) return true;
     else {
-      return exahype::offloading::DynamicDistributor::getInstance().selectVictimRank(victim);
+      return exahype::reactive::DynamicDistributor::getInstance().selectVictimRank(victim);
     }
     return false;
 #else

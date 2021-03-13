@@ -23,7 +23,7 @@
 #endif
 
 
-tarch::logging::Log exahype::reactive::ResilienceTools::_log("exahype::offloading::ResilienceTools");
+tarch::logging::Log exahype::reactive::ResilienceTools::_log("exahype::reactive::ResilienceTools");
 
 exahype::reactive::ResilienceTools::SoftErrorGenerationStrategy exahype::reactive::ResilienceTools::GenerationStrategy;
 bool exahype::reactive::ResilienceTools::TriggerAllMigratableSTPs;

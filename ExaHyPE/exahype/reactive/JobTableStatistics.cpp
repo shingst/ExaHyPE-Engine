@@ -19,7 +19,7 @@ namespace exahype {
 namespace reactive {
 
 
-tarch::logging::Log JobTableStatistics::_log( "exahype::offloading::JobTableStatistics" );
+tarch::logging::Log JobTableStatistics::_log( "exahype::reactive::JobTableStatistics" );
 
 
 JobTableStatistics::JobTableStatistics() :

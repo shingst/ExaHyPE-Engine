@@ -26,7 +26,7 @@
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/Jobs.h"
 
-tarch::logging::Log exahype::reactive::StaticDistributor::_log( "exahype::offloading::StaticDistributor" );
+tarch::logging::Log exahype::reactive::StaticDistributor::_log( "exahype::reactive::StaticDistributor" );
 
 exahype::reactive::StaticDistributor::StaticDistributor() {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();

@@ -24,7 +24,7 @@
 #include "../reactive/OffloadingProfiler.h"
 #include "tarch/multicore/Core.h"
 
-tarch::logging::Log exahype::reactive::DynamicDistributor::_log( "exahype::offloading::DynamicDistributor" );
+tarch::logging::Log exahype::reactive::DynamicDistributor::_log( "exahype::reactive::DynamicDistributor" );
 
 exahype::reactive::DynamicDistributor::DynamicDistributor() {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();

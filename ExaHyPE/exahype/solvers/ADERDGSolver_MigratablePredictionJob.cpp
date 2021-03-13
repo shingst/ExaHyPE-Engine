@@ -497,7 +497,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleRemoteExecut
     auto stop = std::chrono::high_resolution_clock::now(); 
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start); 
 
-   // exahype::offloading::STPStatsTracer::getInstance().writeTracingEventIteration(iterations, exahype::offloading::STPTraceKey::ADERDGRemoteMigratable);
+   // exahype::reactive::STPStatsTracer::getInstance().writeTracingEventIteration(iterations, exahype::reactive::STPTraceKey::ADERDGRemoteMigratable);
     exahype::reactive::STPStatsTracer::getInstance().writeTracingEventRunIterations(duration.count(), iterations, exahype::reactive::STPTraceKey::ADERDGRemoteMigratable);
 #endif
   return result;
@@ -762,7 +762,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
   key.timestepSize = data->_metadata.getPredictorTimeStepSize();
   key.element = data->_metadata.getElement();
 
-  //bool criticalMemoryConsumption =  exahype::offloading::MemoryMonitor::getInstance().getFreeMemMB()<1000;
+  //bool criticalMemoryConsumption =  exahype::reactive::MemoryMonitor::getInstance().getFreeMemMB()<1000;
 
   if (key.timestamp
       < static_cast<exahype::solvers::ADERDGSolver*>(solver)->getMinTimeStamp()) { // || criticalMemoryConsumption) {
@@ -990,7 +990,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendKeyHandlerTask
     exahype::solvers::Solver* solver, int tag, int remoteRank) {
 
   logDebug("sendKeyHandlerReplication","successfully completed send key to other teams");
-  //exahype::offloading::ReplicationStatistics::getInstance().notifySentTask();
+  //exahype::reactive::ReplicationStatistics::getInstance().notifySentTask();
   //tbb::concurrent_hash_map<int, double*>::accessor a_tagToData;
   //bool found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToReplicationSendKey.find(a_tagToData, tag);
   //assert(found);

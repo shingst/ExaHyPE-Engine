@@ -25,7 +25,7 @@
 namespace exahype {
 namespace reactive {
 
-tarch::logging::Log  exahype::reactive::NoiseGenerationStrategyRoundRobin::_log( "exahype::offloading::NoiseGenerationStrategyRoundRobin" );
+tarch::logging::Log  exahype::reactive::NoiseGenerationStrategyRoundRobin::_log( "exahype::reactive::NoiseGenerationStrategyRoundRobin" );
 
 
 NoiseGenerationStrategyRoundRobin::NoiseGenerationStrategyRoundRobin() : _frequency(1), _factor(0.5){

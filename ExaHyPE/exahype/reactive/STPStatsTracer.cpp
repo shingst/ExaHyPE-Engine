@@ -25,7 +25,7 @@
 namespace exahype {
 namespace reactive {
 
-tarch::logging::Log  exahype::reactive::STPStatsTracer::_log( "exahype::offloading::STPStatsTracer" );
+tarch::logging::Log  exahype::reactive::STPStatsTracer::_log( "exahype::reactive::STPStatsTracer" );
 
 STPStatsTracer::STPStatsTracer() : _outputDir("."), _dumpInterval(1), _dumpCnt(0){
 	// TODO Auto-generated constructor stub

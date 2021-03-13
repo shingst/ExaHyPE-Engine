@@ -29,7 +29,7 @@
 
 #define TERMINATE_SIGNAL -1.0
 
-tarch::logging::Log exahype::reactive::PerformanceMonitor::_log( "exahype::offloading::PerformanceMonitor" );
+tarch::logging::Log exahype::reactive::PerformanceMonitor::_log( "exahype::reactive::PerformanceMonitor" );
 
 exahype::reactive::PerformanceMonitor::PerformanceMonitor() :
     _isRankActive(true),

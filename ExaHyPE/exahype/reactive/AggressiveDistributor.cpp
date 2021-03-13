@@ -26,7 +26,7 @@
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/tbb/Jobs.h"
 
-tarch::logging::Log exahype::reactive::AggressiveDistributor::_log( "exahype::offloading::AggressiveDistributor" );
+tarch::logging::Log exahype::reactive::AggressiveDistributor::_log( "exahype::reactive::AggressiveDistributor" );
 
 exahype::reactive::AggressiveDistributor::AggressiveDistributor() :
   _zeroThreshold(2000*10),
@@ -276,7 +276,7 @@ void exahype::reactive::AggressiveDistributor::updateLoadDistribution() {
 //    }
 //    else if(emergencyTriggered){
 //      //TODO: maybe step back a bit
-//      //exahype::offloading::OffloadingManager::getInstance().resetEmergency();
+//      //exahype::reactive::OffloadingManager::getInstance().resetEmergency();
 //    }   
 //  }
 

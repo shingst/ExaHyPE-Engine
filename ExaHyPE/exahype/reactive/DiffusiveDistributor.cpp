@@ -26,7 +26,7 @@
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/Jobs.h"
 
-tarch::logging::Log exahype::reactive::DiffusiveDistributor::_log( "exahype::offloading::DiffusiveDistributor" );
+tarch::logging::Log exahype::reactive::DiffusiveDistributor::_log( "exahype::reactive::DiffusiveDistributor" );
 
 exahype::reactive::DiffusiveDistributor::DiffusiveDistributor() :
   _zeroThreshold(10*2000)
@@ -124,7 +124,7 @@ void exahype::reactive::DiffusiveDistributor::updateLoadDistribution() {
           logInfo("updateLoadDistribution()", "decrement, send "<<_tasksToOffload[i]<<" to rank "<<i );
         }
       }
-      //exahype::offloading::OffloadingManager::getInstance().resetEmergency();
+      //exahype::reactive::OffloadingManager::getInstance().resetEmergency();
     } */  
   }
   else if(_tasksToOffload[criticalRank]>0) {

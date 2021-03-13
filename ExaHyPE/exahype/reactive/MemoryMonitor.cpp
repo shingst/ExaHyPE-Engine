@@ -31,7 +31,7 @@
 registerService(exahype::reactive::MemoryMonitor);
 #endif
 
-tarch::logging::Log exahype::reactive::MemoryMonitor::_log("exahype::offloading::MemoryMonitor");
+tarch::logging::Log exahype::reactive::MemoryMonitor::_log("exahype::reactive::MemoryMonitor");
 
 exahype::reactive::MemoryMeasurement::MemoryMeasurement(unsigned long elapsed, std::size_t freeMem, std::size_t usedMem )
  : _elapsed(elapsed), _freeMem(freeMem), _usedMem(usedMem)

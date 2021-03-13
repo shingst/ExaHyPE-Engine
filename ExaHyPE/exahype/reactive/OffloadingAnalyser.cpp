@@ -32,7 +32,7 @@
 #include "../reactive/AggressiveHybridDistributor.h"
 #include "../reactive/OffloadingManager.h"
 
-tarch::logging::Log  exahype::reactive::OffloadingAnalyser::_log( "exahype::offloading::OffloadingAnalyser" );
+tarch::logging::Log  exahype::reactive::OffloadingAnalyser::_log( "exahype::reactive::OffloadingAnalyser" );
 
 #ifdef USE_ITAC
 #include "VT.h"
@@ -42,10 +42,10 @@ static const char *event_name_waitForWorker = "waitForWorker";
 
 exahype::reactive::OffloadingAnalyser::OffloadingAnalyser():
   _isSwitchedOn(true),
-  _waitForWorkerDataWatch("exahype::offloading::OffloadingAnalyser", "-", false,false),
-  _waitForMasterDataWatch("exahype::offloading::OffloadingAnalyser", "-", false,false),
-  _waitForGlobalMasterDataWatch("exahype::offloading::OffloadingAnalyser", "-", false,false),
-  _timeStepWatch("exahype::offloading::OffloadingAnalyser", "-", false,false),
+  _waitForWorkerDataWatch("exahype::reactive::OffloadingAnalyser", "-", false,false),
+  _waitForMasterDataWatch("exahype::reactive::OffloadingAnalyser", "-", false,false),
+  _waitForGlobalMasterDataWatch("exahype::reactive::OffloadingAnalyser", "-", false,false),
+  _timeStepWatch("exahype::reactive::OffloadingAnalyser", "-", false,false),
   _waitForOtherRank(0),
   _currentZeroThreshold(0.002),
   _iterationCounter(0),
@@ -233,7 +233,7 @@ void exahype::reactive::OffloadingAnalyser::endIteration(double numberOfInnerLea
       break;
   }
   exahype::reactive::OffloadingManager::getInstance().printBlacklist();
-  //exahype::offloading::OffloadingManager::getInstance().resetPostedRequests();
+  //exahype::reactive::OffloadingManager::getInstance().resetPostedRequests();
 
   _iterationCounter++;
 }
