@@ -38,7 +38,6 @@ NoiseGenerationStrategyChaseVictim::~NoiseGenerationStrategyChaseVictim() {
 }
 
 void NoiseGenerationStrategyChaseVictim::generateNoise(int rank, std::chrono::system_clock::time_point timestamp) {
-#if defined(DistributedOffloading)
   pid_t pid = getpid();
   static int cnt = 0;
 
@@ -73,29 +72,6 @@ void NoiseGenerationStrategyChaseVictim::generateNoise(int rank, std::chrono::sy
   }
 
   cnt++;
-#else
-  //todo
-#endif
-}
-
-void NoiseGenerationStrategyChaseVictim::generateNoiseSTP(int rank, std::chrono::system_clock::time_point timestamp) {
-
-/*  int nranks = tarch::parallel::Node::getInstance().getNumberOfNodes();
-#if defined(DistributedOffloading)
-  if( OffloadingManager::getInstance().isVictim()) {
-    double timePerSTP = exahype::offloading::OffloadingAnalyser::getInstance().getTimePerSTP();
-    double timeToWait = timePerSTP*_factor*1e06;
-
-    logInfo("generateNoiseSTP()", "sleeping "<<timeToWait<<std::endl);
-
-    while( std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now()-timestamp).count()<timeToWait) {
-    }
-
-    logInfo("generateNoiseSTP()", "slept "<<std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now()-timestamp).count()<<std::endl);
-  }
-#else
-  //todo
-#endif */
 }
 
 } /* namespace offloading */

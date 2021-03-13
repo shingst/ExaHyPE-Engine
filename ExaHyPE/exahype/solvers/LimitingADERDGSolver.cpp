@@ -26,9 +26,7 @@
 
 #include "kernels/finitevolumes/commons/c/commons.h" // TODO measurements
 
-#if defined(DistributedOffloading)
 #include "exahype/offloading/OffloadingProfiler.h"
-#endif
 
 namespace exahype {
 namespace solvers {
@@ -645,10 +643,9 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
       isLastTimeStepOfBatch  // may only spawned in last iteration
   ) {
     const int element = cellInfo.indexOfADERDGCellDescription(solverPatch.getSolverNumber());
-#ifdef DistributedOffloading
     logDebug("fusedTimeStepBody", "spawning for "<< cellInfo._cellDescriptionsIndex<< " predictionTimeStamp "<<predictionTimeStamp<<" predictionTimeStepSize "<<predictionTimeStepSize);
     //skeleton cells are not considered for offloading
-    if (isSkeletonCell) {
+    if (isSkeletonCell || !exahype::offloading::OffloadingManager::getInstance().isEnabled()) {
       peano::datatraversal::TaskSet(
           new ADERDGSolver::PredictionJob(
               *_solver.get(),solverPatch/*the reductions are delegated to _solver anyway*/,
@@ -674,15 +671,6 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
       //VT_end(event_spawn);
 #endif
     }
-#else
-    peano::datatraversal::TaskSet(
-        new ADERDGSolver::PredictionJob(
-            *_solver.get(),solverPatch/*the reductions are delegated to _solver anyway*/,
-            cellInfo._cellDescriptionsIndex,element,
-            predictionTimeStamp,
-            predictionTimeStepSize,
-            false/*is uncompressed*/,isSkeletonCell,isLastTimeStepOfBatch/*addVolumeIntegralResultToUpdate*/));
-#endif
   }
   else if ( solverPatch.getRefinementStatus()<_solver->_minRefinementStatusForTroubledCell ){
     _solver->predictionAndVolumeIntegralBody(
@@ -1991,7 +1979,6 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithMasterData(
   _solver->mergeWithMasterData(masterRank,x,level);
 }
 
-//#if defined(DistributedOffloading)
 void exahype::solvers::LimitingADERDGSolver::startOffloadingManager() {
   _solver->startOffloadingManager();
 }
@@ -1999,7 +1986,6 @@ void exahype::solvers::LimitingADERDGSolver::startOffloadingManager() {
 void exahype::solvers::LimitingADERDGSolver::stopOffloadingManager() {
   _solver->stopOffloadingManager();
 }
-//#endif
 
 #endif
 

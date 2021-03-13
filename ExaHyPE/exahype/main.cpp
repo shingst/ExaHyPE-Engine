@@ -258,8 +258,8 @@ int exahype::main(int argc, char** argv) {
 #endif
 
 //currently there is a race with the OffloadingManager as TBB threads are still active (which shouldn't be the case!)
-#if defined(DirtyCleanUp) && defined(DistributedOffloading)
-    exahype::offloading::OffloadingManager::getInstance().cancelOutstandingRequests();
+#if defined(DirtyCleanUp)
+  exahype::offloading::OffloadingManager::getInstance().cancelOutstandingRequests();
 #endif
   peano::shutdownParallelEnvironment();
 

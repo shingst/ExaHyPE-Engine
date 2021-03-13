@@ -20,15 +20,12 @@
 #include "exahype/solvers/Solver.h"
 #include "exahype/plotters/Plotter.h"
 
+#include "exahype/offloading/OffloadingAnalyser.h"
+#include "exahype/mappings/MeshRefinement.h"
+
 #include "tarch/parallel/NodePool.h"
 
 #include <limits>
-
-
-#if defined(DistributedOffloading) || defined(AnalyseWaitingTimes)
-#include "exahype/offloading/OffloadingAnalyser.h"
-#endif
-#include "exahype/mappings/MeshRefinement.h"
 
 tarch::logging::Log exahype::State::_log("exahype::State");
 
@@ -408,9 +405,7 @@ void exahype::State::reduceGlobalDataToMaster(
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
     solver->sendDataToMaster(master,cellCentre,level);
   }
-#if defined(DistributedOffloading) || defined(AnalyseWaitingTimes)
   exahype::offloading::OffloadingAnalyser::getInstance().endToSendDataToMaster();
-#endif
 }
 
 void exahype::State::mergeWithGlobalDataFromWorker(

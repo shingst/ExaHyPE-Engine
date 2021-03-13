@@ -28,17 +28,13 @@
 #include "tarch/multicore/Lock.h"
 
 #include "exahype/mappings/LevelwiseAdjacencyBookkeeping.h"
-
+#include "exahype/mappings/RefinementStatusSpreading.h"
 
 #include "exahype/VertexOperations.h"
 
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
-#include "exahype/mappings/RefinementStatusSpreading.h"
-
-#if defined(DistributedOffloading)
 #include "exahype/offloading/AggressiveHybridDistributor.h"
-#endif
 
 #include <sstream>
 
@@ -152,12 +148,9 @@ void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverSt
       exit(-1);
   }
   
-  #if defined(DistributedOffloading)
-  #if defined(OffloadingStrategyAggressiveHybrid)
+  if(exahype::offloading::OffloadingManager::getInstance().getOffloadingStrategy()
+     == exahype::offloading::OffloadingManager::OffloadingStrategy::AggressiveHybrid)
     exahype::offloading::AggressiveHybridDistributor::getInstance().disable();  
-  #endif
-  #endif
-
   #endif
 }
 

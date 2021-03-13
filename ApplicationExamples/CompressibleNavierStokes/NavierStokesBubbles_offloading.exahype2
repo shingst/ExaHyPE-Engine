@@ -32,7 +32,7 @@
     "manual_pinning": false
   },
   "distributed_memory": {
-    "offloading_lb_strategy": "none",
+    "offloading_lb_strategy": "aggressiveHybrid",
     "offloading_input_file" : "",
     "offloading_progress" : "none",   
     "offloading_CCP_temperature" : 0,

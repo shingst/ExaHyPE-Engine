@@ -215,18 +215,23 @@ void exahype::offloading::OffloadingAnalyser::endIteration(double numberOfInnerL
 
   updateZeroTresholdAndFilteredSnapshot();
   printWaitingTimes();
-#if defined(OffloadingStrategyDiffusive)
-  exahype::offloading::DiffusiveDistributor::getInstance().updateLoadDistribution();
-#elif defined(OffloadingStrategyAggressive)
-  exahype::offloading::AggressiveDistributor::getInstance().printOffloadingStatistics();
-  exahype::offloading::AggressiveDistributor::getInstance().updateLoadDistribution();
-#elif defined(OffloadingStrategyAggressiveCCP)
-  exahype::offloading::AggressiveCCPDistributor::getInstance().printOffloadingStatistics();
-  exahype::offloading::AggressiveCCPDistributor::getInstance().updateLoadDistribution();
-#elif defined(OffloadingStrategyAggressiveHybrid)
-  exahype::offloading::AggressiveHybridDistributor::getInstance().printOffloadingStatistics();
-  exahype::offloading::AggressiveHybridDistributor::getInstance().updateLoadDistribution();
-#endif
+
+  switch(exahype::offloading::OffloadingManager::getInstance().getOffloadingStrategy()){
+    case exahype::offloading::OffloadingManager::OffloadingStrategy::Diffusive:
+      exahype::offloading::DiffusiveDistributor::getInstance().updateLoadDistribution(); break;
+    case exahype::offloading::OffloadingManager::OffloadingStrategy::Aggressive:
+      exahype::offloading::AggressiveDistributor::getInstance().printOffloadingStatistics();
+      exahype::offloading::AggressiveDistributor::getInstance().updateLoadDistribution();
+      break;
+    case exahype::offloading::OffloadingManager::OffloadingStrategy::AggressiveCCP:
+      exahype::offloading::AggressiveCCPDistributor::getInstance().printOffloadingStatistics();
+      exahype::offloading::AggressiveCCPDistributor::getInstance().updateLoadDistribution();
+      break;
+    case exahype::offloading::OffloadingManager::OffloadingStrategy::AggressiveHybrid:
+      exahype::offloading::AggressiveHybridDistributor::getInstance().printOffloadingStatistics();
+      exahype::offloading::AggressiveHybridDistributor::getInstance().updateLoadDistribution();
+      break;
+  }
   exahype::offloading::OffloadingManager::getInstance().printBlacklist();
   //exahype::offloading::OffloadingManager::getInstance().resetPostedRequests();
 

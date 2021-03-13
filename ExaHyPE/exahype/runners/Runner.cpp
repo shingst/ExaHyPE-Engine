@@ -329,6 +329,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
   if (_parser.isValid()) {
     exahype::parser::Parser::OffloadingStrategy selectedStrategy = _parser.getOffloadingStrategy();
     if(selectedStrategy!=exahype::parser::Parser::OffloadingStrategy::None)  {
+      exahype::offloading::OffloadingAnalyser::getInstance().enable(true);
       // Create new MPI communicators + progress engine for offloading related MPI communication
       exahype::offloading::OffloadingManager::getInstance().initialize();
       exahype::offloading::OffloadingProgressService::getInstance().enable();
@@ -636,12 +637,9 @@ void exahype::runners::Runner::shutdownSharedMemoryConfiguration() {
   SCOREP_USER_REGION( (std::string("exahype::runners::Runner::shutdownSharedMemoryConfiguration")).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
   #ifdef SharedMemoryParallelisation
 
-#ifdef DistributedOffloading
- // while(!exahype::offloading::PerformanceMonitor::getInstance().isGloballyTerminated()) {
+  if(exahype::offloading::OffloadingManager::getInstance().isEnabled()) {
    while(  tarch::multicore::jobs::finishToProcessBackgroundJobs() ) {};
- // }
-   //sleep(1); //despite finish there sometimes seems to still be an stp in the queue causing a race condition with destroying MPI communicators
-#endif
+  }
 
   tarch::multicore::jobs::plotStatistics();
 

@@ -19,7 +19,6 @@
 #include "tbb/concurrent_hash_map.h"
 #include "tbb/concurrent_queue.h"
 
-#include "exahype/solvers/Solver.h"
 
 #include <mpi.h>
 #include <atomic>
@@ -27,6 +26,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <limits>
 
 #if defined(UseMPIThreadSplit)
 #define MAX_THREADS 48
@@ -311,6 +311,7 @@ class exahype::offloading::OffloadingManager {
         Aggressive,
         AggressiveCCP,
         AggressiveHybrid,
+        Static,
         StaticHardcoded
     };
 

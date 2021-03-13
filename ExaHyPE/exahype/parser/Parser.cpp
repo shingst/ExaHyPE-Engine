@@ -342,7 +342,7 @@ std::string exahype::parser::Parser::getStringFromPath(std::string path, std::st
 bool exahype::parser::Parser::stringFromPathEquals(const std::string& path, const std::string& defaultValue,const bool isOptional, const std::string& otherString) const {
   assertion(isValid());
   try {
-    return _impl->getFromPath(path, defaultValue, isOptional).compare(otherString);
+    return _impl->getFromPath(path, defaultValue, isOptional).compare(otherString)==0;
   } catch(std::runtime_error& e) {
     logError("stringFromPathEquals()", e.what());
     invalidate();
@@ -1357,12 +1357,15 @@ exahype::parser::Parser::TBBInvadeStrategy exahype::parser::Parser::getTBBInvade
 
 exahype::parser::Parser::OffloadingStrategy exahype::parser::Parser::getOffloadingStrategy() const{
   if (stringFromPathEquals("/distributed_memory/offloading_lb_strategy", "none", true, "aggressiveHybrid")) {
+    std::cout<<"setting  aggressive"<<std::endl;
     return OffloadingStrategy::AggressiveHybrid;
   }
   if (stringFromPathEquals("/distributed_memory/offloading_lb_strategy", "none", true, "none")) {
+    std::cout<<"setting  none"<<std::endl;
     return OffloadingStrategy::None;
   }
   if (stringFromPathEquals("/distributed_memory/offloading_lb_strategy", "none", true, "static_hardcoded")) {
+    std::cout<<"setting  static hardcoded"<<std::endl;
     return OffloadingStrategy::StaticHardcoded;
   }
   return OffloadingStrategy::None;

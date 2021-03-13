@@ -850,15 +850,11 @@ void exahype::solvers::ADERDGSolver::fusedTimeStepBody(
   if (
       SpawnPredictionAsBackgroundJob &&
       !mustBeDoneImmediately 
-#ifndef DistributedOffloading
-      &&
-      isLastTimeStepOfBatch // only spawned in last iteration if a FusedTimeStepJob was spawned before
-#endif
+      && (isLastTimeStepOfBatch || exahype::offloading::OffloadingManager::getInstance().isEnabled()) // only spawned in last iteration if a FusedTimeStepJob was spawned before
   ) {
     const int element = cellInfo.indexOfADERDGCellDescription(cellDescription.getSolverNumber());
-#ifdef DistributedOffloading
     //skeleton cells are not considered for offloading
-    if (isSkeletonCell) {
+    if (isSkeletonCell || !exahype::offloading::OffloadingManager::getInstance().isEnabled()) {
       peano::datatraversal::TaskSet( new PredictionJob(
         *this, cellDescription, cellInfo._cellDescriptionsIndex, element,
         predictionTimeStamp,  // corrector time step data is correct; see docu
@@ -870,11 +866,11 @@ void exahype::solvers::ADERDGSolver::fusedTimeStepBody(
 #ifdef USE_ITAC
      // VT_begin(event_spawn);
 #endif
-      MigratablePredictionJob *stealablePredictionJob = new MigratablePredictionJob(*this,
+      MigratablePredictionJob *migratablePredictionJob = new MigratablePredictionJob(*this,
           cellInfo._cellDescriptionsIndex, element,
           predictionTimeStamp,
           predictionTimeStepSize);
-      submitOrSendMigratablePredictionJob(stealablePredictionJob);
+      submitOrSendMigratablePredictionJob(migratablePredictionJob);
 
       //peano::datatraversal::TaskSet spawnedSet( stealablePredictionJob, peano::datatraversal::TaskSet::TaskType::Background );
       exahype::offloading::OffloadingProfiler::getInstance().notifySpawnedTask();
@@ -882,13 +878,8 @@ void exahype::solvers::ADERDGSolver::fusedTimeStepBody(
       //VT_end(event_spawn);
 #endif
     }
-#else
-    peano::datatraversal::TaskSet( new PredictionJob(
-        *this, cellDescription, cellInfo._cellDescriptionsIndex,element,
-        predictionTimeStamp, predictionTimeStepSize,
-        false/*is uncompressed*/, isSkeletonCell, isLastTimeStepOfBatch/*addVolumeIntegralResultToUpdate*/ ) );
-#endif
-  } else {
+  }
+  else {
     predictionAndVolumeIntegralBody(
         cellDescription,
         predictionTimeStamp, predictionTimeStepSize,
@@ -925,9 +916,7 @@ void exahype::solvers::ADERDGSolver::fusedTimeStepOrRestrict(
       if (
           (SpawnUpdateAsBackgroundJob || (SpawnPredictionAsBackgroundJob && !isLastTimeStepOfBatch)) &&
           !mustBeDoneImmediately
-#if defined(DistributedOffloading)
-          && false
-#endif
+          && !exahype::offloading::OffloadingManager::getInstance().isEnabled()
       ) {
         const auto predictionTimeStepData = getPredictionTimeStepData(cellDescription,true);
         peano::datatraversal::TaskSet( new FusedTimeStepJob(
@@ -1132,9 +1121,8 @@ void exahype::solvers::ADERDGSolver::predictionAndVolumeIntegral(
     const bool mustBeDoneImmediately = isSkeletonCell && PredictionSweeps==1;
 
     if ( SpawnPredictionAsBackgroundJob && !mustBeDoneImmediately ) {
-#ifdef DistributedOffloading
       //skeleton cells are not considered for offloading
-      if (isSkeletonCell) {
+      if (isSkeletonCell || !exahype::offloading::OffloadingManager::getInstance().isEnabled()) {
         peano::datatraversal::TaskSet( new PredictionJob(
               *this, cellDescription, cellInfo._cellDescriptionsIndex, element,
               predictorTimeStamp,predictorTimeStepSize,
@@ -1144,22 +1132,16 @@ void exahype::solvers::ADERDGSolver::predictionAndVolumeIntegral(
 #ifdef USE_ITAC
        // VT_begin(event_spawn);
 #endif
-        MigratablePredictionJob *stealablePredictionJob = new MigratablePredictionJob(*this,
+        MigratablePredictionJob *migratablePredictionJob = new MigratablePredictionJob(*this,
           cellInfo._cellDescriptionsIndex, element,
           predictorTimeStamp,
           predictorTimeStepSize);
-        submitOrSendMigratablePredictionJob(stealablePredictionJob);
+        submitOrSendMigratablePredictionJob(migratablePredictionJob);
         exahype::offloading::OffloadingProfiler::getInstance().notifySpawnedTask();
 #ifdef USE_ITAC
      // VT_end(event_spawn);
 #endif
-     }
-#else
-     peano::datatraversal::TaskSet( new PredictionJob(
-              *this, cellDescription, cellInfo._cellDescriptionsIndex, element,
-              predictorTimeStamp,predictorTimeStepSize,
-              uncompressBefore,isSkeletonCell,addVolumeIntegralResultToUpdate) );
-#endif
+      }
     }
     else {
       predictionAndVolumeIntegralBody(
@@ -2518,7 +2500,6 @@ void exahype::solvers::ADERDGSolver::toString (std::ostream& out) const {
 ///////////////////////////////////
 // DISTRIBUTED OFFLOADING
 ///////////////////////////////////
-//#if defined(DistributedOffloading)
 
 #if defined (TaskSharing) //|| defined(OffloadingLocalRecompute)
 void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
@@ -3706,7 +3687,6 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
 }
 
 void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDGSolver* solver, bool runOnMaster, int maxIts) {
-
 #if defined(OffloadingCheckForSlowOperations)
   double timing = -MPI_Wtime();
 #endif

@@ -34,9 +34,7 @@ public:
   virtual ~NoiseGenerationStrategyChaseVictim();
 
   virtual void generateNoise(int rank, std::chrono::system_clock::time_point timestamp);
-  virtual void generateNoiseSTP(int rank, std::chrono::system_clock::time_point timestamp);
 private:
-
   double _factor;
   double _baseNoise;
 };

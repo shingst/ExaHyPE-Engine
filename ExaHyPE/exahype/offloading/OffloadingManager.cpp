@@ -879,15 +879,17 @@ void exahype::offloading::OffloadingManager::triggerEmergencyForRank(int rank) {
 //    logInfo("triggerEmergency()","emergency event triggered");
 //    _emergencyTriggered = true;
 //  }
-#ifdef OffloadingStrategyAggressive
-  exahype::offloading::AggressiveDistributor::getInstance().handleEmergencyOnRank(rank);
-#elif OffloadingStrategyAggressiveCCP
-  exahype::offloading::AggressiveCCPDistributor::getInstance().handleEmergencyOnRank(rank);
-#elif OffloadingStrategyAggressiveHybrid
-  exahype::offloading::AggressiveHybridDistributor::getInstance().handleEmergencyOnRank(rank);
-#elif OffloadingStrategyDiffusive
-  exahype::offloading::DiffusiveDistributor::getInstance().handleEmergencyOnRank(rank);
-#endif
+  switch(exahype::offloading::OffloadingManager::getInstance().getOffloadingStrategy()){
+    case OffloadingManager::OffloadingStrategy::Aggressive:
+      exahype::offloading::AggressiveDistributor::getInstance().handleEmergencyOnRank(rank); break;
+    case OffloadingManager::OffloadingStrategy::AggressiveCCP:
+      exahype::offloading::AggressiveCCPDistributor::getInstance().handleEmergencyOnRank(rank); break;
+    case OffloadingManager::OffloadingStrategy::AggressiveHybrid:
+      exahype::offloading::AggressiveHybridDistributor::getInstance().handleEmergencyOnRank(rank); break;
+    case OffloadingManager::OffloadingStrategy::Diffusive:
+      exahype::offloading::DiffusiveDistributor::getInstance().handleEmergencyOnRank(rank); break;
+  }
+
   _localBlacklist[rank]++;
   exahype::offloading::PerformanceMonitor::getInstance().submitBlacklistValueForRank(_localBlacklist[rank], rank);
   logInfo("triggerEmergencyForRank()","blacklist value for rank "<<rank<<":"<<_localBlacklist[rank]
@@ -1002,13 +1004,13 @@ void exahype::offloading::OffloadingManager::notifyAllVictimsSendCompletedIfNotN
     logInfo("notifyAllVictimsSendCompleted","notifying that last job was sent to victims");
     _hasNotifiedSendCompleted = true;
     std::vector<int> victimRanks;
-#if defined(OffloadingStrategyAggressiveHybrid)
-    exahype::offloading::AggressiveHybridDistributor::getInstance().getAllVictimRanks(victimRanks);
-#elif defined(OffloadingStrategyStaticHardcoded)
-    exahype::offloading::StaticDistributor::getInstance().getAllVictimRanks(victimRanks);
-#endif
+    if(_offloadingStrategy==OffloadingStrategy::AggressiveHybrid)
+      exahype::offloading::AggressiveHybridDistributor::getInstance().getAllVictimRanks(victimRanks);
+    if(_offloadingStrategy==OffloadingStrategy::Static)
+      exahype::offloading::StaticDistributor::getInstance().getAllVictimRanks(victimRanks);
+
     for(auto victim : victimRanks)
-    notifySendCompleted(victim);
+      notifySendCompleted(victim);
   }
 }
 #endif

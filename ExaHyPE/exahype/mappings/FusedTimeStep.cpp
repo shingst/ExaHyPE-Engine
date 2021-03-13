@@ -30,12 +30,10 @@
 #include "teaMPI.h"
 #endif
 
-#ifdef DistributedOffloading
 #include "exahype/offloading/PerformanceMonitor.h"
 #include "exahype/offloading/StaticDistributor.h"
 #include "exahype/offloading/DiffusiveDistributor.h"
 #include "exahype/offloading/OffloadingAnalyser.h"
-#endif
 
 #include "exahype/offloading/NoiseGenerator.h"
 #include "exahype/offloading/STPStatsTracer.h"
@@ -175,9 +173,8 @@ void exahype::mappings::FusedTimeStep::beginIteration(
   }
 
 #ifdef Parallel
-#ifdef DistributedOffloading
-  if (
-      !tarch::parallel::Node::getInstance().isGlobalMaster())
+  if ( exahype::offloading::OffloadingManager::getInstance().isEnabled()
+     && !tarch::parallel::Node::getInstance().isGlobalMaster())
   {
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
       if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
@@ -192,12 +189,14 @@ void exahype::mappings::FusedTimeStep::beginIteration(
     } 
   }
 
-#if defined(OffloadingStrategyStatic) || defined(OffloadingStrategyStaticHardcoded)
-  if(issuePredictionJobsInThisIteration()) {
+  if( (exahype::offloading::OffloadingManager::getInstance().getOffloadingStrategy()
+      ==exahype::offloading::OffloadingManager::OffloadingStrategy::StaticHardcoded)
+    ||
+      (exahype::offloading::OffloadingManager::getInstance().getOffloadingStrategy()
+      ==exahype::offloading::OffloadingManager::OffloadingStrategy::Static)
+     && issuePredictionJobsInThisIteration()) {
     exahype::offloading::StaticDistributor::getInstance().resetRemainingTasksToOffload();
   }
-#endif
-#endif
 
   // ensure reductions are inititated from worker side
   solverState.setReduceStateAndCell( exahype::State::isLastIterationOfBatchOrNoBatch() );
@@ -249,14 +248,13 @@ void exahype::mappings::FusedTimeStep::endIteration(
    // #endif
   }
 
-#if defined(Parallel) && defined(DistributedOffloading)
-#if defined(OffloadingStrategyAggressive) || defined(OffloadingStrategyAggressiveHybrid) || defined(OffloadingStrategyAggressiveDiffusive) || defined(OffloadingStrategyStaticHardcoded)
+#if defined(Parallel)
 #ifdef OffloadingUseProgressTask
-  if( issuePredictionJobsInThisIteration() ) {
+  if( issuePredictionJobsInThisIteration()
+     && exahype::offloading::OffloadingManager::getInstance().isEnabled()) {
     exahype::offloading::OffloadingManager::getInstance().notifyAllVictimsSendCompletedIfNotNotified();
     exahype::offloading::OffloadingManager::getInstance().resetHasNotifiedSendCompleted();
   }
-#endif
 #endif 
 
   if (

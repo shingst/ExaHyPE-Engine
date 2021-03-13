@@ -59,9 +59,8 @@
 #include <tbb/cache_aligned_allocator.h> // prevents false sharing
 #endif
 
-#if defined(DistributedOffloading)
-#include <tbb/concurrent_queue.h>
-#include "exahype/offloading/DiffusiveDistributor.h"
+//#include <tbb/concurrent_queue.h>
+//#include "exahype/offloading/DiffusiveDistributor.h"
 #include "exahype/offloading/OffloadingManager.h"
 
 namespace exahype {
@@ -72,7 +71,7 @@ namespace exahype {
 }
 
 //#include "tarch/multicore/Core.h"
-#endif
+//#endif
 
 #ifdef OffloadingUseProfiler
 #include "exahype/offloading/OffloadingProfiler.h"
@@ -1171,15 +1170,12 @@ public:
   #ifdef USE_ITAC
     VT_begin(waitUntilCompletedLastStepHandle);
   #endif
-
-  #if defined(DistributedOffloading)
-    if ( this->getType() == solvers::Solver::Type::ADERDG ) {
+    if ( this->getType() == solvers::Solver::Type::ADERDG
+        && exahype::offloading::OffloadingManager::getInstance().isEnabled()) {
       waitUntilCompletedLastStepOffloading((const void*) &cellDescription, waitForHighPriorityJob, receiveDanglingMessages);
     }
     else
     {
-  #endif
-
       if ( !cellDescription.getHasCompletedLastStep() ) {
         peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
       }
@@ -1205,9 +1201,7 @@ public:
             break;
          }
      }
-  #if defined(DistributedOffloading)
-    }
-  #endif
+   }
 
   #ifdef USE_ITAC
     VT_end(waitUntilCompletedLastStepHandle);
@@ -2161,9 +2155,7 @@ public:
    */
 
  protected:
-#if defined(DistributedOffloading)
   virtual void waitUntilCompletedLastStepOffloading(const void *cellDescription, const bool waitForHighPriorityJob,const bool receiveDanglingMessages);
-#endif
   /**
    * On coarser grids, the solver can hint on the eventual load or memory distribution
    * with this function.

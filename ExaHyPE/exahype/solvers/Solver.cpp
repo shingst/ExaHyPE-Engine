@@ -890,15 +890,12 @@ void exahype::solvers::Solver::mergeWithWorkerMeshUpdateEvent(
   }
 }
 
-#if defined(DistributedOffloading)
 void exahype::solvers::Solver::waitUntilCompletedLastStepOffloading(
     const void *cellDescription,
     const bool waitForHighPriorityJob,
     const bool receiveDanglingMessages ) {
   //do nothing
 }
-
-#endif
 
 #endif
 
