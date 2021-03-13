@@ -34,9 +34,8 @@
 
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
-#include "exahype/offloading/AggressiveHybridDistributor.h"
-
 #include <sstream>
+#include "../reactive/AggressiveHybridDistributor.h"
 
 bool exahype::mappings::MeshRefinement::DynamicLoadBalancing    = false;
 
@@ -148,9 +147,9 @@ void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverSt
       exit(-1);
   }
   
-  if(exahype::offloading::OffloadingManager::getInstance().getOffloadingStrategy()
-     == exahype::offloading::OffloadingManager::OffloadingStrategy::AggressiveHybrid)
-    exahype::offloading::AggressiveHybridDistributor::getInstance().disable();  
+  if(exahype::reactive::OffloadingManager::getInstance().getOffloadingStrategy()
+     == exahype::reactive::OffloadingManager::OffloadingStrategy::AggressiveHybrid)
+    exahype::reactive::AggressiveHybridDistributor::getInstance().disable();  
   #endif
 }
 

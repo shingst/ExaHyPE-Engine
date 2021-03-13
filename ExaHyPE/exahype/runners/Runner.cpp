@@ -95,17 +95,17 @@
 #include "VT.h"
 #endif
 
-#include "exahype/offloading/OffloadingAnalyser.h"
-#include "exahype/offloading/ResilienceTools.h"
+#include "../reactive/OffloadingAnalyser.h"
+#include "../reactive/ResilienceTools.h"
 
 //#if defined(DistributedOffloading)
-#include "exahype/offloading/JobTableStatistics.h"
-#include "exahype/offloading/PerformanceMonitor.h"
-#include "exahype/offloading/OffloadingProgressService.h"
-#include "exahype/offloading/StaticDistributor.h"
-#include "exahype/offloading/AggressiveHybridDistributor.h"
+#include "../reactive/JobTableStatistics.h"
+#include "../reactive/PerformanceMonitor.h"
+#include "../reactive/OffloadingProgressService.h"
+#include "../reactive/StaticDistributor.h"
+#include "../reactive/AggressiveHybridDistributor.h"
 
-#include "exahype/offloading/OffloadingProfiler.h"
+#include "../reactive/OffloadingProfiler.h"
 //#endif
 
 #if defined(TMPI_Heartbeats)
@@ -123,7 +123,7 @@
 #endif
 
 #if defined(FileTrace)
-#include "exahype/offloading/STPStatsTracer.h"
+#include "../reactive/STPStatsTracer.h"
 #endif
 
 tarch::logging::Log exahype::runners::Runner::_log("exahype::runners::Runner");
@@ -298,16 +298,16 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
   //Resilience configuration
   if ( _parser.isValid() ) {
     //always use offloading analyser
-    peano::performanceanalysis::Analysis::getInstance().setDevice(&exahype::offloading::OffloadingAnalyser::getInstance());
+    peano::performanceanalysis::Analysis::getInstance().setDevice(&exahype::reactive::OffloadingAnalyser::getInstance());
 
     if(_parser.compareSoftErrorGenerationStrategy("no")){
-      exahype::offloading::ResilienceTools::setSoftErrorGenerationStrategy(exahype::offloading::ResilienceTools::SoftErrorGenerationStrategy::None);
+      exahype::reactive::ResilienceTools::setSoftErrorGenerationStrategy(exahype::reactive::ResilienceTools::SoftErrorGenerationStrategy::None);
     }
     else if (_parser.compareSoftErrorGenerationStrategy("migratable_stp_tasks_bitflip")){
-      exahype::offloading::ResilienceTools::setSoftErrorGenerationStrategy(exahype::offloading::ResilienceTools::SoftErrorGenerationStrategy::Bitflips);
+      exahype::reactive::ResilienceTools::setSoftErrorGenerationStrategy(exahype::reactive::ResilienceTools::SoftErrorGenerationStrategy::Bitflips);
     }
     else if (_parser.compareSoftErrorGenerationStrategy("migratable_stp_tasks_overwrite")) {
-      exahype::offloading::ResilienceTools::setSoftErrorGenerationStrategy(exahype::offloading::ResilienceTools::SoftErrorGenerationStrategy::Overwrite);
+      exahype::reactive::ResilienceTools::setSoftErrorGenerationStrategy(exahype::reactive::ResilienceTools::SoftErrorGenerationStrategy::Overwrite);
     }
     else{
       logError("initDistributedMemoryConfiguration()", "no valid soft error generation strategy specified");
@@ -315,12 +315,12 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     }
 #if defined(USE_TMPI)
     if(!TMPI_IsLeadingRank()) {
-      exahype::offloading::ResilienceTools::setSoftErrorGenerationStrategy(exahype::offloading::ResilienceTools::SoftErrorGenerationStrategy::None);
+      exahype::reactive::ResilienceTools::setSoftErrorGenerationStrategy(exahype::reactive::ResilienceTools::SoftErrorGenerationStrategy::None);
     }
 #endif
-    exahype::offloading::ResilienceTools::TriggerAllMigratableSTPs = _parser.getTriggerAllMigratableSTPs();
-    exahype::offloading::ResilienceTools::TriggerLimitedCellsOnly= _parser.getTriggerLimitedCellsOnly();
-    exahype::offloading::ResilienceTools::TriggerFlipped = _parser.getTriggerCorrupted();
+    exahype::reactive::ResilienceTools::TriggerAllMigratableSTPs = _parser.getTriggerAllMigratableSTPs();
+    exahype::reactive::ResilienceTools::TriggerLimitedCellsOnly= _parser.getTriggerLimitedCellsOnly();
+    exahype::reactive::ResilienceTools::TriggerFlipped = _parser.getTriggerCorrupted();
   }
 
 //#if defined(DistributedOffloading)
@@ -329,18 +329,18 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
   if (_parser.isValid()) {
     exahype::parser::Parser::OffloadingStrategy selectedStrategy = _parser.getOffloadingStrategy();
     if(selectedStrategy!=exahype::parser::Parser::OffloadingStrategy::None)  {
-      exahype::offloading::OffloadingAnalyser::getInstance().enable(true);
+      exahype::reactive::OffloadingAnalyser::getInstance().enable(true);
       // Create new MPI communicators + progress engine for offloading related MPI communication
-      exahype::offloading::OffloadingManager::getInstance().initialize();
-      exahype::offloading::OffloadingProgressService::getInstance().enable();
+      exahype::reactive::OffloadingManager::getInstance().initialize();
+      exahype::reactive::OffloadingProgressService::getInstance().enable();
 
       if(selectedStrategy == exahype::parser::Parser::OffloadingStrategy::StaticHardcoded) {
-        exahype::offloading::StaticDistributor::getInstance().loadDistributionFromFile(_parser.getOffloadingInputFile());
-        exahype::offloading::OffloadingManager::getInstance().setOffloadingStrategy(exahype::offloading::OffloadingManager::OffloadingStrategy::StaticHardcoded);
+        exahype::reactive::StaticDistributor::getInstance().loadDistributionFromFile(_parser.getOffloadingInputFile());
+        exahype::reactive::OffloadingManager::getInstance().setOffloadingStrategy(exahype::reactive::OffloadingManager::OffloadingStrategy::StaticHardcoded);
       }
       if(selectedStrategy == exahype::parser::Parser::OffloadingStrategy::AggressiveHybrid) {
-        exahype::offloading::OffloadingManager::getInstance().setOffloadingStrategy(exahype::offloading::OffloadingManager::OffloadingStrategy::AggressiveHybrid);
-        exahype::offloading::AggressiveHybridDistributor::getInstance().configure(
+        exahype::reactive::OffloadingManager::getInstance().setOffloadingStrategy(exahype::reactive::OffloadingManager::OffloadingStrategy::AggressiveHybrid);
+        exahype::reactive::AggressiveHybridDistributor::getInstance().configure(
            _parser.getCCPTemperatureOffloading(),
            _parser.getDiffusionTemperatureOffloading(),
            _parser.getCCPFrequencyOffloading(),
@@ -397,7 +397,7 @@ void exahype::runners::Runner::shutdownDistributedMemoryConfiguration() {
   tarch::parallel::NodePool::getInstance().terminate();
 
   if(_parser.getOffloadingStrategy()!=exahype::parser::Parser::OffloadingStrategy::None) {
-    exahype::offloading::OffloadingManager::getInstance().destroy();
+    exahype::reactive::OffloadingManager::getInstance().destroy();
     logInfo("shutdownDistributedMemoryConfiguration()","destroyed MPI communicators + progress engine");
   }
   exahype::repositories::RepositoryFactory::getInstance().shutdownAllParallelDatatypes();
@@ -637,7 +637,7 @@ void exahype::runners::Runner::shutdownSharedMemoryConfiguration() {
   SCOREP_USER_REGION( (std::string("exahype::runners::Runner::shutdownSharedMemoryConfiguration")).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
   #ifdef SharedMemoryParallelisation
 
-  if(exahype::offloading::OffloadingManager::getInstance().isEnabled()) {
+  if(exahype::reactive::OffloadingManager::getInstance().isEnabled()) {
    while(  tarch::multicore::jobs::finishToProcessBackgroundJobs() ) {};
   }
 
@@ -917,18 +917,18 @@ void exahype::runners::Runner::initHPCEnvironment() {
   }
 
   #if defined(MemoryMonitoring) && defined(MemoryMonitoringTrack)
-  exahype::offloading::MemoryMonitor::getInstance().setOutputDir(_parser.getMemoryStatsOutputDir());
+  exahype::reactive::MemoryMonitor::getInstance().setOutputDir(_parser.getMemoryStatsOutputDir());
   #endif
 
   #if defined(GenerateNoise)
-  exahype::offloading::NoiseGenerator::getInstance().setStrategy(new exahype::offloading::NoiseGenerationStrategyChaseVictim(
+  exahype::reactive::NoiseGenerator::getInstance().setStrategy(new exahype::reactive::NoiseGenerationStrategyChaseVictim(
 																 _parser.getNoiseGenerationFactor(),
 																 _parser.getNoiseBaseTime()));
   #endif
 
   #if defined(FileTrace)
-  exahype::offloading::STPStatsTracer::getInstance().setOutputDir(_parser.getSTPTracingOutputDirName());
-  exahype::offloading::STPStatsTracer::getInstance().setDumpInterval(_parser.getSTPTracingDumpInterval());
+  exahype::reactive::STPStatsTracer::getInstance().setOutputDir(_parser.getSTPTracingOutputDirName());
+  exahype::reactive::STPStatsTracer::getInstance().setDumpInterval(_parser.getSTPTracingDumpInterval());
   #endif
   //
   // Configure ITAC profiling
@@ -1065,11 +1065,11 @@ int exahype::runners::Runner::run() {
     }
 
 #if defined(TMPI_Heartbeats)
-    exahype::offloading::HeartbeatJob::stopHeartbeatJob();
+    exahype::reactive::HeartbeatJob::stopHeartbeatJob();
 #endif
 
 //#if defined(DistributedOffloading)
-  if(exahype::offloading::OffloadingManager::getInstance().isEnabled()){
+  if(exahype::reactive::OffloadingManager::getInstance().isEnabled()){
     exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
       if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
@@ -1091,13 +1091,13 @@ int exahype::runners::Runner::run() {
 
     logInfo("shutdownDistributedMemoryConfiguration()","stopped offloading manager");
  #if defined(TaskSharing) || defined(OffloadingLocalRecompute)
-    exahype::offloading::JobTableStatistics::getInstance().printStatistics();
+    exahype::reactive::JobTableStatistics::getInstance().printStatistics();
 #endif
   }
 //#endif
 
 #if defined(MemoryMonitoring) && defined(MemoryMonitoringTrack)
-     exahype::offloading::MemoryMonitor::getInstance().dumpMemoryUsage();
+     exahype::reactive::MemoryMonitor::getInstance().dumpMemoryUsage();
 #endif
       
     if ( _parser.isValid() )

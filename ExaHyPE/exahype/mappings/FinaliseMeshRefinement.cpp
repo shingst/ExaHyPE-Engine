@@ -13,6 +13,12 @@
  
 #include "exahype/mappings/FinaliseMeshRefinement.h"
 
+#include "../reactive/AggressiveCCPDistributor.h"
+#include "../reactive/AggressiveDistributor.h"
+#include "../reactive/AggressiveHybridDistributor.h"
+#include "../reactive/OffloadingAnalyser.h"
+#include "../reactive/OffloadingManager.h"
+#include "../reactive/PerformanceMonitor.h"
 #include "tarch/multicore/Loop.h"
 
 #include "peano/datatraversal/autotuning/Oracle.h"
@@ -25,12 +31,6 @@
 #include "exahype/mappings/MeshRefinement.h"
 #include "exahype/mappings/RefinementStatusSpreading.h"
 
-#include "exahype/offloading/PerformanceMonitor.h"
-#include "exahype/offloading/AggressiveDistributor.h"
-#include "exahype/offloading/AggressiveCCPDistributor.h"
-#include "exahype/offloading/AggressiveHybridDistributor.h"
-#include "exahype/offloading/OffloadingAnalyser.h"
-#include "exahype/offloading/OffloadingManager.h"
 
 
 #if defined(TMPI_Heartbeats)
@@ -243,9 +243,9 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
   NumberOfEnclaveCells = _numberOfEnclaveCells;
   NumberOfSkeletonCells = _numberOfSkeletonCells;
 //#if defined(DistributedOffloading)
-  exahype::offloading::PerformanceMonitor::getInstance().setTasksPerTimestep(_numberOfEnclaveCells + _numberOfSkeletonCells);
+  exahype::reactive::PerformanceMonitor::getInstance().setTasksPerTimestep(_numberOfEnclaveCells + _numberOfSkeletonCells);
 
-  if(exahype::offloading::OffloadingManager::getInstance().isEnabled()) {
+  if(exahype::reactive::OffloadingManager::getInstance().isEnabled()) {
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
       if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
         static_cast<exahype::solvers::ADERDGSolver*>(solver)->startOffloadingManager();
@@ -256,16 +256,16 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
     }
   }
 
-  if(exahype::offloading::OffloadingManager::getInstance().getOffloadingStrategy()
+  if(exahype::reactive::OffloadingManager::getInstance().getOffloadingStrategy()
      ==
-     exahype::offloading::OffloadingManager::OffloadingStrategy::AggressiveHybrid) {
-    exahype::offloading::AggressiveHybridDistributor::getInstance().resetTasksToOffload();
-    exahype::offloading::OffloadingAnalyser::getInstance().resetMeasurements();
-    exahype::offloading::AggressiveHybridDistributor::getInstance().enable();
+     exahype::reactive::OffloadingManager::OffloadingStrategy::AggressiveHybrid) {
+    exahype::reactive::AggressiveHybridDistributor::getInstance().resetTasksToOffload();
+    exahype::reactive::OffloadingAnalyser::getInstance().resetMeasurements();
+    exahype::reactive::AggressiveHybridDistributor::getInstance().enable();
   }
 
 #if defined(TMPI_Heartbeats)
-  exahype::offloading::HeartbeatJob::startHeartbeatJob();
+  exahype::reactive::HeartbeatJob::startHeartbeatJob();
 #endif
 
   _backgroundJobsHaveTerminated = false;

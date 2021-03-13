@@ -30,13 +30,13 @@
 #include "teaMPI.h"
 #endif
 
-#include "exahype/offloading/PerformanceMonitor.h"
-#include "exahype/offloading/StaticDistributor.h"
-#include "exahype/offloading/DiffusiveDistributor.h"
-#include "exahype/offloading/OffloadingAnalyser.h"
+#include "../reactive/PerformanceMonitor.h"
+#include "../reactive/StaticDistributor.h"
+#include "../reactive/DiffusiveDistributor.h"
+#include "../reactive/OffloadingAnalyser.h"
 
-#include "exahype/offloading/NoiseGenerator.h"
-#include "exahype/offloading/STPStatsTracer.h"
+#include "../reactive/NoiseGenerator.h"
+#include "../reactive/STPStatsTracer.h"
 
 #ifdef USE_ITAC
 #include "VT.h"
@@ -173,7 +173,7 @@ void exahype::mappings::FusedTimeStep::beginIteration(
   }
 
 #ifdef Parallel
-  if ( exahype::offloading::OffloadingManager::getInstance().isEnabled()
+  if ( exahype::reactive::OffloadingManager::getInstance().isEnabled()
      && !tarch::parallel::Node::getInstance().isGlobalMaster())
   {
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
@@ -189,13 +189,13 @@ void exahype::mappings::FusedTimeStep::beginIteration(
     } 
   }
 
-  if( (exahype::offloading::OffloadingManager::getInstance().getOffloadingStrategy()
-      ==exahype::offloading::OffloadingManager::OffloadingStrategy::StaticHardcoded)
+  if( (exahype::reactive::OffloadingManager::getInstance().getOffloadingStrategy()
+      ==exahype::reactive::OffloadingManager::OffloadingStrategy::StaticHardcoded)
     ||
-      (exahype::offloading::OffloadingManager::getInstance().getOffloadingStrategy()
-      ==exahype::offloading::OffloadingManager::OffloadingStrategy::Static)
+      (exahype::reactive::OffloadingManager::getInstance().getOffloadingStrategy()
+      ==exahype::reactive::OffloadingManager::OffloadingStrategy::Static)
      && issuePredictionJobsInThisIteration()) {
-    exahype::offloading::StaticDistributor::getInstance().resetRemainingTasksToOffload();
+    exahype::reactive::StaticDistributor::getInstance().resetRemainingTasksToOffload();
   }
 
   // ensure reductions are inititated from worker side
@@ -214,7 +214,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
 #ifdef USE_ITAC
     VT_begin(noiseHandle);
 #endif
-    exahype::offloading::NoiseGenerator::getInstance().generateNoise();
+    exahype::reactive::NoiseGenerator::getInstance().generateNoise();
 #ifdef USE_ITAC
     VT_end(noiseHandle);
 #endif
@@ -223,7 +223,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
 
 #if defined(FileTrace)
   if ( sendOutRiemannDataInThisIteration() ) {
-    exahype::offloading::STPStatsTracer::getInstance().dumpAndResetTraceIfActive();
+    exahype::reactive::STPStatsTracer::getInstance().dumpAndResetTraceIfActive();
   }
 #endif
 
@@ -251,9 +251,9 @@ void exahype::mappings::FusedTimeStep::endIteration(
 #if defined(Parallel)
 #ifdef OffloadingUseProgressTask
   if( issuePredictionJobsInThisIteration()
-     && exahype::offloading::OffloadingManager::getInstance().isEnabled()) {
-    exahype::offloading::OffloadingManager::getInstance().notifyAllVictimsSendCompletedIfNotNotified();
-    exahype::offloading::OffloadingManager::getInstance().resetHasNotifiedSendCompleted();
+     && exahype::reactive::OffloadingManager::getInstance().isEnabled()) {
+    exahype::reactive::OffloadingManager::getInstance().notifyAllVictimsSendCompletedIfNotNotified();
+    exahype::reactive::OffloadingManager::getInstance().resetHasNotifiedSendCompleted();
   }
 #endif 
 

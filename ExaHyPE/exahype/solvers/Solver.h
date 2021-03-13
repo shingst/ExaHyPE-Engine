@@ -61,7 +61,7 @@
 
 //#include <tbb/concurrent_queue.h>
 //#include "exahype/offloading/DiffusiveDistributor.h"
-#include "exahype/offloading/OffloadingManager.h"
+#include "../reactive/OffloadingManager.h"
 
 namespace exahype {
   namespace solvers{
@@ -1171,7 +1171,7 @@ public:
     VT_begin(waitUntilCompletedLastStepHandle);
   #endif
     if ( this->getType() == solvers::Solver::Type::ADERDG
-        && exahype::offloading::OffloadingManager::getInstance().isEnabled()) {
+        && exahype::reactive::OffloadingManager::getInstance().isEnabled()) {
       waitUntilCompletedLastStepOffloading((const void*) &cellDescription, waitForHighPriorityJob, receiveDanglingMessages);
     }
     else

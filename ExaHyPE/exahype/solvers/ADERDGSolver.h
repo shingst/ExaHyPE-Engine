@@ -48,14 +48,14 @@
 #define NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME 3
 #endif
 
-#include "exahype/offloading/OffloadingManager.h"
+#include "../reactive/OffloadingManager.h"
 #include <tbb/concurrent_hash_map.h>
 #include <tbb/concurrent_queue.h>
 #include <tbb/task.h>
 #include <tbb/task_group.h>
 #include <unordered_set>
 #include "tarch/multicore/Jobs.h"
-#include "exahype/offloading/JobTableStatistics.h"
+#include "../reactive/JobTableStatistics.h"
 //#endif
 
 namespace exahype {
@@ -956,8 +956,8 @@ private:
 //#if defined(DistributedOffloading)
   static int getTaskPriorityLocalStealableJob(int cellDescriptionsIndex, int element, double timeStamp) {
 #if defined(TaskSharing)
-    int team = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank();
-    int teamSize = exahype::offloading::OffloadingManager::getInstance().getTMPITeamSize();
+    int team = exahype::reactive::OffloadingManager::getInstance().getTMPIInterTeamRank();
+    int teamSize = exahype::reactive::OffloadingManager::getInstance().getTMPITeamSize();
 
     CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex, element);
 
@@ -3533,7 +3533,7 @@ public:
  #endif
 
  #ifdef OffloadingUseProfiler
-   exahype::offloading::OffloadingProfiler::getInstance().beginWaitForTasks();
+   exahype::reactive::OffloadingProfiler::getInstance().beginWaitForTasks();
    double time_background = -MPI_Wtime();
  #endif
 
@@ -3611,7 +3611,7 @@ public:
             if(recompJob!=nullptr) {// got one
               recompJob->run(true);
               hasRecomputed = true;
-              exahype::offloading::JobTableStatistics::getInstance().notifyRecomputedTask();
+              exahype::reactive::JobTableStatistics::getInstance().notifyRecomputedTask();
             }
       	}
       	if(!hasTriggeredEmergency) {
@@ -3621,7 +3621,7 @@ public:
               logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank);
               exahype::solvers::ADERDGSolver::VetoEmergency = true;
               exahype::solvers::ADERDGSolver::LastEmergencyCell = &cellDescription;
-              exahype::offloading::OffloadingManager::getInstance().triggerEmergencyForRank(responsibleRank);
+              exahype::reactive::OffloadingManager::getInstance().triggerEmergencyForRank(responsibleRank);
     	    }
       	}
   	    lock.free();
@@ -3629,7 +3629,7 @@ public:
       	if(!hasTriggeredEmergency) {
     	    hasTriggeredEmergency = true;
           logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank);
-          exahype::offloading::OffloadingManager::getInstance().triggerEmergencyForRank(responsibleRank);
+          exahype::reactive::OffloadingManager::getInstance().triggerEmergencyForRank(responsibleRank);
       	}
 #endif
       }
@@ -3654,7 +3654,7 @@ public:
  #endif
           hasTriggeredEmergency = true;
           logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank);
-          exahype::offloading::OffloadingManager::getInstance().triggerEmergencyForRank(responsibleRank);
+          exahype::reactive::OffloadingManager::getInstance().triggerEmergencyForRank(responsibleRank);
  #ifdef USE_ITAC
    // VT_end(event_emergency);
  #endif
@@ -3670,7 +3670,7 @@ public:
 
  #ifdef OffloadingUseProfiler
    time_background += MPI_Wtime();
-   exahype::offloading::OffloadingProfiler::getInstance().endWaitForTasks(time_background);
+   exahype::reactive::OffloadingProfiler::getInstance().endWaitForTasks(time_background);
  #endif
 
  #ifdef USE_ITAC
