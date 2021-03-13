@@ -1455,10 +1455,10 @@ public:
       const int                                    level) final override;
 
 
-#if defined DistributedOffloading
+//#if defined DistributedOffloading
    void startOffloadingManager();
    void stopOffloadingManager();
-#endif
+//#endif
 
 #endif
 

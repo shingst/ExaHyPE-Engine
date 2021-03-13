@@ -11,8 +11,8 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if !defined(_EXAHYPE_STEALING_STATICDISTRIBUTOR_H_) && defined(SharedTBB)  && defined(Parallel)
-#define _EXAHYPE_STEALING_STATICDISTRIBUTOR_H_
+#if !defined(_EXAHYPE_OFFLOADING_STATICDISTRIBUTOR_H_) && defined(SharedTBB)  && defined(Parallel)
+#define _EXAHYPE_OFFLOADING_STATICDISTRIBUTOR_H_
 
 #include "tarch/logging/Log.h"
 #include "tarch/multicore/BooleanSemaphore.h"
@@ -66,9 +66,7 @@ class exahype::offloading::StaticDistributor {
     // return next victim rank
     bool selectVictimRank(int& victim);
 
-#ifdef OffloadingStrategyStaticHardcoded
     void loadDistributionFromFile(const std::string& filename);
-#endif
 };
 
 #endif

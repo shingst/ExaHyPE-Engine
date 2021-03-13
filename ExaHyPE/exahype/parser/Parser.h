@@ -720,6 +720,14 @@ class exahype::parser::Parser {
 
   TBBInvadeStrategy getTBBInvadeStrategy() const;
 
+  enum class OffloadingStrategy {
+      None,
+      AggressiveHybrid,
+      StaticHardcoded
+   };
+
+  OffloadingStrategy getOffloadingStrategy() const;
+
   //Todo: docu!
   std::string getOffloadingInputFile() const;
 

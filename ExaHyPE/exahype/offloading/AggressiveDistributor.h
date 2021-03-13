@@ -17,6 +17,8 @@
 #include "tarch/logging/Log.h"
 #include "tarch/multicore/BooleanSemaphore.h"
 
+#include "exahype/offloading/OffloadingManager.h"
+
 #include <mpi.h>
 #include <atomic>
 

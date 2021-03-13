@@ -12,7 +12,7 @@
  **/
 
 //#if  defined(SharedTBB)  && defined(Parallel) && defined(DistributedOffloading)
-#if  defined(Parallel) && defined(DistributedOffloading)
+#if  defined(Parallel)
 #include "exahype/offloading/PerformanceMonitor.h"
 
 #include <algorithm>

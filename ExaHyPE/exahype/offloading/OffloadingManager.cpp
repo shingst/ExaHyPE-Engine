@@ -11,8 +11,7 @@
  * For the full license text, see LICENSE.txt
  **/
 
-//#if defined(SharedTBB)  && defined(Parallel) && defined(DistributedOffloading)
-#if  defined(Parallel) && defined(DistributedOffloading)
+#if  defined(Parallel)
 
 #include "exahype/offloading/OffloadingManager.h"
 
@@ -86,15 +85,17 @@ MPI_Comm exahype::offloading::OffloadingManager::_interTeamCommsAck[MAX_THREADS]
 
 exahype::offloading::OffloadingManager::OffloadingManager(int threadId) :
     _threadId(threadId),
+    _offloadingStrategy(OffloadingStrategy::None),
     _nextRequestId(0),
     _nextGroupId(0),
     _numProgressJobs(0),
     _emergencyTriggered(false),
     _hasNotifiedSendCompleted(false) {
 
+  int ierr;
 #ifdef USE_ITAC
   static const char *event_name_handle = "handleRequest";
-  int ierr = VT_funcdef(event_name_handle, VT_NOCLASS, &event_handling); assertion(ierr==0);
+  ierr = VT_funcdef(event_name_handle, VT_NOCLASS, &event_handling); assertion(ierr==0);
   static const char *event_name_send = "progressSends";
   ierr = VT_funcdef(event_name_send, VT_NOCLASS, &event_progress_send); assertion(ierr==0);
   static const char *event_name_receive = "progressReceives";
@@ -118,9 +119,12 @@ exahype::offloading::OffloadingManager::OffloadingManager(int threadId) :
   std::fill(&_postedSendBacksPerRank[0], &_postedSendBacksPerRank[nnodes], 0);
   _postedReceiveBacksPerRank = new std::atomic<int>[nnodes];
   std::fill(&_postedReceiveBacksPerRank[0], &_postedReceiveBacksPerRank[nnodes], 0);
+  _postedSendOutcomesPerRank = new std::atomic<int>[nnodes];
+  std::fill(&_postedSendOutcomesPerRank[0], &_postedSendOutcomesPerRank[nnodes], 0);
+  _postedReceiveOutcomesPerRank = new std::atomic<int>[nnodes];
+  std::fill(&_postedReceiveOutcomesPerRank[0], &_postedReceiveOutcomesPerRank[nnodes], 0);
 
   int flag = 0;
-  int ierr;
   MPI_CHECK("OffloadingManager()" , MPI_Comm_get_attr(MPI_COMM_WORLD, MPI_TAG_UB, &_maxTag, &flag));
   assertion(ierr==MPI_SUCCESS);
 
@@ -130,12 +134,25 @@ exahype::offloading::OffloadingManager::OffloadingManager(int threadId) :
 }
 
 exahype::offloading::OffloadingManager::~OffloadingManager() {
-  
   delete[] _postedSendsPerRank;
   delete[] _postedReceivesPerRank;
   delete[] _postedSendBacksPerRank;
   delete[] _postedReceiveBacksPerRank;
+  delete[] _postedSendOutcomesPerRank;
+  delete[] _postedReceiveOutcomesPerRank;
   delete[] _localBlacklist;
+}
+
+void exahype::offloading::OffloadingManager::setOffloadingStrategy(OffloadingStrategy strategy) {
+  _offloadingStrategy = strategy;
+}
+
+exahype::offloading::OffloadingManager::OffloadingStrategy exahype::offloading::OffloadingManager::getOffloadingStrategy() {
+  return _offloadingStrategy;
+}
+
+bool exahype::offloading::OffloadingManager::isEnabled() {
+  return _offloadingStrategy!=OffloadingStrategy::None;
 }
 
 void exahype::offloading::OffloadingManager::initialize() {
@@ -290,6 +307,8 @@ void exahype::offloading::OffloadingManager::resetPostedRequests() {
   std::fill(&_postedReceivesPerRank[0], &_postedReceivesPerRank[nnodes], 0);
   std::fill(&_postedSendBacksPerRank[0], &_postedSendBacksPerRank[nnodes], 0);
   std::fill(&_postedReceiveBacksPerRank[0], &_postedReceiveBacksPerRank[nnodes], 0);
+  std::fill(&_postedReceiveOutcomesPerRank[0], &_postedReceiveOutcomesPerRank[nnodes], 0);
+  std::fill(&_postedSendOutcomesPerRank[0], &_postedSendOutcomesPerRank[nnodes], 0);
 
 }
 
@@ -373,21 +392,24 @@ void exahype::offloading::OffloadingManager::submitRequests(
   //bug only appears when using scorep
   #ifdef ScoreP
   for(int i=0; i<nRequests; i++) {
-	assertion(requests[i]!=MPI_REQUEST_NULL);
+	  assertion(requests[i]!=MPI_REQUEST_NULL);
   }
   #endif
 
 
   switch(type) {
     case RequestType::send:
-    _postedSendsPerRank[remoteRank]++; break;
+      _postedSendsPerRank[remoteRank]++; break;
     case RequestType::receive:
-    _postedReceivesPerRank[remoteRank]++; break;
+      _postedReceivesPerRank[remoteRank]++; break;
     case RequestType::sendBack:
-    _postedSendBacksPerRank[remoteRank]++; break;
+      _postedSendBacksPerRank[remoteRank]++; break;
     case RequestType::receiveBack:
-    _postedReceiveBacksPerRank[remoteRank]++; break;
-    //todo: track replicas here too for task sharing
+      _postedReceiveBacksPerRank[remoteRank]++; break;
+    case RequestType::receiveOutcome:
+      _postedReceiveOutcomesPerRank[remoteRank]++; break;
+    case RequestType::sendOutcome:
+      _postedSendOutcomesPerRank[remoteRank]++; break;
   } 
 
   int finished = -1;
@@ -520,8 +542,8 @@ void exahype::offloading::OffloadingManager::cancelOutstandingRequests() {
       RequestType::sendBack,
       RequestType::receive,
       RequestType::receiveBack,
-      RequestType::sendReplica,
-      RequestType::receiveReplica
+      RequestType::sendOutcome,
+      RequestType::receiveOutcome
   };
   tarch::multicore::Lock lock(_progressSemaphore, false);
   lock.lock();
@@ -574,8 +596,8 @@ void exahype::offloading::OffloadingManager::progressRequests() {
         <<","<<getNumberOfOutstandingRequests(RequestType::receive)<<" receive requests remaining"
         <<","<<getNumberOfOutstandingRequests(RequestType::sendBack)<<" sendBack requests remaining"
         <<","<<getNumberOfOutstandingRequests(RequestType::receiveBack)<<" receiveBack requests remaining"
-		<<","<<getNumberOfOutstandingRequests(RequestType::sendReplica)<<" replica send requests remaining"
-		<<","<<getNumberOfOutstandingRequests(RequestType::receiveReplica)<<" replica receive requests remaining");
+        <<","<<getNumberOfOutstandingRequests(RequestType::sendOutcome)<<" replica send requests remaining"
+        <<","<<getNumberOfOutstandingRequests(RequestType::receiveOutcome)<<" replica receive requests remaining");
   }
 
   if(hasOutstandingRequestOfType(RequestType::send)) {
@@ -615,11 +637,11 @@ void exahype::offloading::OffloadingManager::progressRequests() {
 #endif
   }
 #if defined(TaskSharing)
-  if (hasOutstandingRequestOfType(RequestType::receiveReplica)) {
-     progressRequestsOfType(RequestType::receiveReplica);
+  if (hasOutstandingRequestOfType(RequestType::receiveOutcome)) {
+    progressRequestsOfType(RequestType::receiveOutcome);
   }
-  if (hasOutstandingRequestOfType(RequestType::sendReplica)) {
-	 progressRequestsOfType(RequestType::sendReplica);
+  if (hasOutstandingRequestOfType(RequestType::sendOutcome)) {
+    progressRequestsOfType(RequestType::sendOutcome);
   }
 #endif
 }
@@ -664,11 +686,11 @@ void exahype::offloading::OffloadingManager::progressAnyRequests() {
   }
 #if defined(TaskSharing)
   //always progress both sends and receives for replica tasks!
-  if (hasOutstandingRequestOfType(RequestType::receiveReplica)) {
-     progressRequestsOfType(RequestType::receiveReplica);
+  if (hasOutstandingRequestOfType(RequestType::receiveOutcome)) {
+    progressRequestsOfType(RequestType::receiveOutcome);
   }
-  if (hasOutstandingRequestOfType(RequestType::sendReplica)) {
-	 progressRequestsOfType(RequestType::sendReplica);
+  if (hasOutstandingRequestOfType(RequestType::sendOutcome)) {
+    progressRequestsOfType(RequestType::sendOutcome);
   }
 #endif
 }
@@ -714,7 +736,7 @@ bool exahype::offloading::OffloadingManager::progressRequestsOfType( RequestType
   int nRequests = _activeRequests[mapId].size();
   if(nRequests==0) {
     //logInfo("progressRequestsOfType()", "begin create req array");
-    if(type==RequestType::receiveBack || type==RequestType::sendReplica)
+    if(type==RequestType::receiveBack || type==RequestType::sendOutcome)
       createRequestArray( type, _activeRequests[mapId], _internalIdsOfActiveRequests[mapId] );
       //createRequestArray( type, _activeRequests[mapId], _internalIdsOfActiveRequests[mapId], 10 );
     else {
@@ -913,18 +935,19 @@ bool exahype::offloading::OffloadingManager::isEmergencyTriggeredOnRank(int rank
 
 bool exahype::offloading::OffloadingManager::selectVictimRank(int& victim, bool& last) {
   last = false;
-#if defined(OffloadingStrategyStaticHardcoded)
-  return exahype::offloading::StaticDistributor::getInstance().selectVictimRank(victim);
-#elif defined(OffloadingStrategyDiffusive)
-  return exahype::offloading::DiffusiveDistributor::getInstance().selectVictimRank(victim);
-#elif defined(OffloadingStrategyAggressive)
-  return exahype::offloading::AggressiveDistributor::getInstance().selectVictimRank(victim);
-#elif defined(OffloadingStrategyAggressiveCCP)
-  return exahype::offloading::AggressiveCCPDistributor::getInstance().selectVictimRank(victim);
-#elif defined(OffloadingStrategyAggressiveHybrid)
-  return exahype::offloading::AggressiveHybridDistributor::getInstance().selectVictimRank(victim, last);
-#else
-  double remainingLoadRatio = static_cast<double> (exahype::offloading::PerformanceMonitor::getInstance().getRemainingTasks())
+  if(_offloadingStrategy==OffloadingStrategy::StaticHardcoded)
+    return exahype::offloading::StaticDistributor::getInstance().selectVictimRank(victim);
+  if(_offloadingStrategy==OffloadingStrategy::Diffusive)
+    return exahype::offloading::DiffusiveDistributor::getInstance().selectVictimRank(victim);
+  if(_offloadingStrategy==OffloadingStrategy::Aggressive)
+    return exahype::offloading::AggressiveDistributor::getInstance().selectVictimRank(victim);
+  if(_offloadingStrategy==OffloadingStrategy::AggressiveCCP)
+    return exahype::offloading::AggressiveCCPDistributor::getInstance().selectVictimRank(victim);
+  if(_offloadingStrategy==OffloadingStrategy::AggressiveHybrid)
+    return exahype::offloading::AggressiveHybridDistributor::getInstance().selectVictimRank(victim, last);
+
+  return false;
+/*  double remainingLoadRatio = static_cast<double> (exahype::offloading::PerformanceMonitor::getInstance().getRemainingTasks())
   /
   exahype::offloading::PerformanceMonitor::getInstance().getTasksPerTimestep();
   // this is currently hardcoded: the goal is to refrain from giving tasks away if there is not enough work left
@@ -948,8 +971,7 @@ bool exahype::offloading::OffloadingManager::selectVictimRank(int& victim, bool&
   else {
     logDebug("offloadingManager", "could not select victim remaining load ratio "<<remainingLoadRatio);
     return false;
-  }
-#endif
+  }*/
 }
 
 #ifdef OffloadingUseProgressTask

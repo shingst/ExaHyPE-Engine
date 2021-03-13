@@ -1355,6 +1355,19 @@ exahype::parser::Parser::TBBInvadeStrategy exahype::parser::Parser::getTBBInvade
   return TBBInvadeStrategy::Undef;
 }
 
+exahype::parser::Parser::OffloadingStrategy exahype::parser::Parser::getOffloadingStrategy() const{
+  if (stringFromPathEquals("/distributed_memory/offloading_lb_strategy", "none", true, "aggressiveHybrid")) {
+    return OffloadingStrategy::AggressiveHybrid;
+  }
+  if (stringFromPathEquals("/distributed_memory/offloading_lb_strategy", "none", true, "none")) {
+    return OffloadingStrategy::None;
+  }
+  if (stringFromPathEquals("/distributed_memory/offloading_lb_strategy", "none", true, "static_hardcoded")) {
+    return OffloadingStrategy::StaticHardcoded;
+  }
+  return OffloadingStrategy::None;
+}
+
 double exahype::parser::Parser::getCCPTemperatureOffloading() const {
   double result = getDoubleFromPath("/distributed_memory/offloading_CCP_temperature", 0, isOptional); 
   return result;

@@ -1991,7 +1991,7 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithMasterData(
   _solver->mergeWithMasterData(masterRank,x,level);
 }
 
-#if defined(DistributedOffloading)
+//#if defined(DistributedOffloading)
 void exahype::solvers::LimitingADERDGSolver::startOffloadingManager() {
   _solver->startOffloadingManager();
 }
@@ -1999,7 +1999,7 @@ void exahype::solvers::LimitingADERDGSolver::startOffloadingManager() {
 void exahype::solvers::LimitingADERDGSolver::stopOffloadingManager() {
   _solver->stopOffloadingManager();
 }
-#endif
+//#endif
 
 #endif
 

@@ -142,7 +142,7 @@ double exahype::offloading::ResilienceTools::computeL2NormError(double *a1, doub
 double exahype::offloading::ResilienceTools::computeInfNormErrorRel(double *a1, double *a2, size_t length) {
   double result = 0.0;
   for(size_t i = 0; i<length; i++) {
-	if(a1[i]+a2[i]!=0)
+    if(a1[i]+a2[i]!=0)
       result = std::max(result, std::abs(a1[i]-a2[i])/(0.5*(a1[i]+a2[i])));
   }
   return result;
@@ -152,7 +152,7 @@ double exahype::offloading::ResilienceTools::computeL1NormErrorRel(double *a1, d
   double result = 0.0;
   for(size_t i = 0; i<length; i++) {
     if(a1[i]+a2[i]!=0)
-	 result += std::abs(a1[i]-a2[i])/(0.5*(a1[i]+a2[i]));
+      result += std::abs(a1[i]-a2[i])/(0.5*(a1[i]+a2[i]));
   }
   return result;
 }

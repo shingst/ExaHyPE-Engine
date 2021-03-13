@@ -35,7 +35,7 @@
 #include "exahype/profilers/simple/NoOpProfiler.h"
 #include "exahype/records/ADERDGCellDescription.h"
 
-#if defined(DistributedOffloading)
+//#if defined(DistributedOffloading)
 #include <mpi.h>
 
 #define OFFLOADING_SLOW_OPERATION_THRESHOLD 0.001
@@ -56,7 +56,7 @@
 #include <unordered_set>
 #include "tarch/multicore/Jobs.h"
 #include "exahype/offloading/JobTableStatistics.h"
-#endif
+//#endif
 
 namespace exahype {
   namespace parser {
@@ -216,7 +216,7 @@ public:
   typedef exahype::records::ADERDGCellDescription CellDescription;
   typedef peano::heap::RLEHeap<CellDescription> Heap;
 
-#if defined (DistributedOffloading)
+//#if defined (DistributedOffloading)
   /**
    * Semaphore that is used to guarantee mutual exclusion for
    * offloading progress.
@@ -237,7 +237,7 @@ public:
   static std::atomic<bool> VetoEmergency;
   static const CellDescription* LastEmergencyCell;
   static tarch::multicore::BooleanSemaphore  EmergencySemaphore;
-#endif
+//#endif
 
   /**
    * @return if this an ADER-DG solver which is not able to solve nonlinear problems.
@@ -953,7 +953,7 @@ private:
   static void prepareWorkerCellDescriptionAtMasterWorkerBoundary(
       CellDescription& cellDescription);
 
-#if defined(DistributedOffloading)
+//#if defined(DistributedOffloading)
   static int getTaskPriorityLocalStealableJob(int cellDescriptionsIndex, int element, double timeStamp) {
 #if defined(TaskSharing)
     int team = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamRank();
@@ -1009,7 +1009,7 @@ private:
         Running,
         Resume,
         Paused,
-	    Terminate,
+        Terminate,
        	Terminated
       };
 	  OffloadingManagerJob(ADERDGSolver& solver);
@@ -1169,8 +1169,8 @@ private:
 
     private:
       ADERDGSolver&    			  _solver;
-	  const int                   _cellDescriptionsIndex;
-	  const int                   _element;
+      const int                   _cellDescriptionsIndex;
+      const int                   _element;
       const double                _predictorTimeStamp;
       const double                _predictorTimeStepSize;
       const int                   _originRank;
@@ -1589,7 +1589,7 @@ private:
    */
   void submitOrSendMigratablePredictionJob(MigratablePredictionJob *job);
 
-#endif
+//#endif
 
 #endif
 
@@ -3045,7 +3045,7 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) override;
 
-#ifdef DistributedOffloading
+//#ifdef DistributedOffloading
   /*
    * Makes progress on all offloading-related MPI communication.
    */
@@ -3114,7 +3114,7 @@ public:
   void addRecomputeJobForCellDescription(tarch::multicore::jobs::Job* job, const CellDescription* cellDescription);
 #endif
 
-#endif /*DistributedOffloading*/
+//#endif /*DistributedOffloading*/
 
 #endif
 
@@ -3522,7 +3522,7 @@ public:
      return specifiedRelaxationParameter;
   }
 
-#if defined(DistributedOffloading)
+//#if defined(DistributedOffloading)
   virtual void waitUntilCompletedLastStepOffloading(
       const void* cellDescripPtr,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) {
  #ifdef USE_ITAC
@@ -3677,7 +3677,7 @@ public:
     VT_end(waitUntilCompletedLastStepHandle);
  #endif
   }
-#endif
+//#endif
 };
 
 #endif

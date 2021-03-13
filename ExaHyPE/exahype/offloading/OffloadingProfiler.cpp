@@ -11,7 +11,6 @@
  * For the full license text, see LICENSE.txt
  **/
 
-//#if defined(SharedTBB) && defined(Parallel)
 #if defined(Parallel)
 
 #include "exahype/offloading/OffloadingProfiler.h"
@@ -201,8 +200,6 @@ void exahype::offloading::OffloadingProfiler::endCommunication(bool successful, 
 }
 
 void exahype::offloading::OffloadingProfiler::beginHandling() {
-#if defined(OffloadingUseProfiler)
-#endif
 }
 
 void exahype::offloading::OffloadingProfiler::endHandling(double elapsed) {

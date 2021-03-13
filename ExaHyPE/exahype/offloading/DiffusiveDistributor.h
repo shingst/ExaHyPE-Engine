@@ -11,8 +11,8 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if !defined(_EXAHYPE_STEALING_DIFFUSIVEDISTRIBUTOR_H_) && defined(SharedTBB)  && defined(Parallel)
-#define _EXAHYPE_STEALING_DIFFUSIVEDISTRIBUTOR_H_
+#if !defined(_EXAHYPE_OFFLOADING_DIFFUSIVEDISTRIBUTOR_H_) && defined(SharedTBB)  && defined(Parallel)
+#define _EXAHYPE_OFFLOADING_DIFFUSIVEDISTRIBUTOR_H_
 
 #include "tarch/logging/Log.h"
 #include "tarch/multicore/BooleanSemaphore.h"

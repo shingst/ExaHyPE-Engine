@@ -51,7 +51,6 @@ exahype::offloading::StaticDistributor::~StaticDistributor() {
   delete[] _consumersPerRank;
 }
 
-#ifdef OffloadingStrategyStaticHardcoded
 void exahype::offloading::StaticDistributor::loadDistributionFromFile(const std::string& filename) {
 
   logInfo("loadDistributionFromFile()", "loading from file "<<filename);
@@ -103,7 +102,6 @@ void exahype::offloading::StaticDistributor::loadDistributionFromFile(const std:
     }
   }
 }
-#endif
 
 void exahype::offloading::StaticDistributor::computeNewLoadDistribution(int enclaveCells, int skeletonCells) {
 

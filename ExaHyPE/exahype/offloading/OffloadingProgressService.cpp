@@ -11,8 +11,7 @@
  * For the full license text, see LICENSE.txt
  **/
 
-//#if defined(SharedTBB)  && defined(Parallel) && defined(DistributedOffloading)
-#if defined(Parallel) && defined(DistributedOffloading)
+#if defined(Parallel)
 
 #include "exahype/offloading/OffloadingProgressService.h"
 #include "tarch/services/ServiceFactory.h"

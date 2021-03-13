@@ -11,8 +11,8 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if !defined(_EXAHYPE_STEALING_STEALINGPROFILER_H_)  
-#define _EXAHYPE_STEALING_STEALINGPROFILER_H_
+#if !defined(_EXAHYPE_OFFLOADINGPROFILER_H_)
+#define _EXAHYPE_OFFLOADINGPROFILER_H_
 
 #include "tarch/logging/Log.h"
 #include "tarch/multicore/BooleanSemaphore.h"

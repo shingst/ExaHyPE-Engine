@@ -11,8 +11,7 @@
  * For the full license text, see LICENSE.txt
  **/
 
-//#if  defined(SharedTBB)  && defined(Parallel) && (defined(DistributedOffloading) || defined(AnalyseWaitingTimes))
-#if  defined(Parallel) && (defined(DistributedOffloading) || defined(AnalyseWaitingTimes))
+#if  defined(Parallel)
 #include "exahype/offloading/OffloadingAnalyser.h"
 
 #include "tarch/parallel/Node.h"
@@ -112,7 +111,9 @@ double exahype::offloading::OffloadingAnalyser::getTimePerTimeStep() {
 }
 
 void exahype::offloading::OffloadingAnalyser::updateZeroTresholdAndFilteredSnapshot() {
-#if !defined(AnalyseWaitingTimes)
+  if(!_isSwitchedOn) return;
+
+//#if !defined(AnalyseWaitingTimes)
   const double* currentWaitingTimesSnapshot = exahype::offloading::PerformanceMonitor::getInstance().getWaitingTimesSnapshot();
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
@@ -168,7 +169,7 @@ void exahype::offloading::OffloadingAnalyser::updateZeroTresholdAndFilteredSnaps
     _currentZeroThreshold = newThreshold;
     logDebug("updateZeroTresholdAndFilteredSnapshot()", " zero threshold set to "<< newThreshold);
   }
-#endif
+//#endif
 }
 
 void exahype::offloading::OffloadingAnalyser::beginIteration() {
@@ -177,34 +178,31 @@ void exahype::offloading::OffloadingAnalyser::beginIteration() {
   if(_iterationCounter%2 !=0) return;
 
   if (_isSwitchedOn) {
-     
-     if(_timeStepWatch.isOn()) {
-       _timeStepWatch.stopTimer();
-       if(timestep_cnt <=5) {
-          setTimePerTimeStep(_timeStepWatch.getCalendarTime());
-       }
-       timestep_cnt++;
-     }
-     _timeStepWatch.startTimer();
+    if(_timeStepWatch.isOn()) {
+      _timeStepWatch.stopTimer();
+      if(timestep_cnt <=5) {
+        setTimePerTimeStep(_timeStepWatch.getCalendarTime());
+      }
+      timestep_cnt++;
+    }
+    _timeStepWatch.startTimer();
+
+    exahype::offloading::OffloadingManager::getInstance().resetVictimFlag(); //TODO: correct position here?
+    exahype::offloading::OffloadingManager::getInstance().recoverBlacklistedRanks();
   }
-#if !defined(AnalyseWaitingTimes)
-  exahype::offloading::OffloadingManager::getInstance().resetVictimFlag(); //TODO: correct position here?
-  exahype::offloading::OffloadingManager::getInstance().recoverBlacklistedRanks();
-#endif
 }
 
 
 void exahype::offloading::OffloadingAnalyser::endIteration(double numberOfInnerLeafCells, double numberOfOuterLeafCells, double numberOfInnerCells, double numberOfOuterCells, double numberOfLocalCells, double numberOfLocalVertices) {
-#if !defined(AnalyseWaitingTimes)
+  if(!_isSwitchedOn) return;
+
   exahype::offloading::OffloadingManager::getInstance().printBlacklist();
-#endif
 
   if(_iterationCounter%2 !=0) {
     _iterationCounter++;
     return;
   }
 
-#if !defined(AnalyseWaitingTimes)
   _currentAccumulatedWorkerTime = 0;
  
   for(size_t i=0; i<_waitForOtherRank.size(); i++) {
@@ -233,10 +231,10 @@ void exahype::offloading::OffloadingAnalyser::endIteration(double numberOfInnerL
   //exahype::offloading::OffloadingManager::getInstance().resetPostedRequests();
 
   _iterationCounter++;
-#endif
 }
 
 void exahype::offloading::OffloadingAnalyser::printWaitingTimes() {
+  if(!_isSwitchedOn) return;
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
   const double* waitingTimesSnapshot = getFilteredWaitingTimesSnapshot();
@@ -252,6 +250,8 @@ void exahype::offloading::OffloadingAnalyser::printWaitingTimes() {
 }
 
 void exahype::offloading::OffloadingAnalyser::beginToReceiveDataFromWorker() {
+  if(!_isSwitchedOn) return;
+
   if (_isSwitchedOn) {
     _waitForWorkerDataWatch.startTimer();
     int pendingJobs  = tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs();
@@ -310,6 +310,7 @@ void exahype::offloading::OffloadingAnalyser::endToReceiveDataFromWorker( int fr
 }
 
 void exahype::offloading::OffloadingAnalyser::resetMeasurements() {
+  if(!_isSwitchedOn) return;
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
   for(int i=0; i<nnodes; i++)
@@ -325,7 +326,7 @@ void exahype::offloading::OffloadingAnalyser::beginToReceiveDataFromMaster(int m
 
 
 void exahype::offloading::OffloadingAnalyser::endToReceiveDataFromMaster(int master) {
-
+  if(!_isSwitchedOn) return;
   if(master==0) 
      endToReceiveDataFromGlobalMaster();
   /*if (_isSwitchedOn && _waitForMasterDataWatch.isOn()) {
@@ -443,7 +444,6 @@ void exahype::offloading::OffloadingAnalyser::endToReceiveDataFromGlobalMaster()
     }
 #endif
   }
-
 }
 
 void exahype::offloading::OffloadingAnalyser::dataWasNotReceivedInBackground( int fromRank, int tag, int cardinality, int pageSize ) {

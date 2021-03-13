@@ -52,7 +52,7 @@
 #include <immintrin.h>
 #endif
 
-#if defined(DistributedOffloading)
+//#if defined(DistributedOffloading)
 
 #if defined(TaskSharing)
 #include "teaMPI.h"
@@ -86,7 +86,7 @@
 #include "exahype/offloading/OffloadingProfiler.h"
 #include "exahype/offloading/JobTableStatistics.h"
 #include "peano/utils/UserInterface.h"
-#endif
+//#endif
 
 //#undef assertion
 //#define assertion assert
@@ -166,7 +166,7 @@ tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::RestrictionSe
 
 tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::CoarseGridSemaphore;
 
-#if defined(DistributedOffloading)
+//#if defined(DistributedOffloading)
 tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::OffloadingSemaphore;
 
 //ToDo (Philipp): may no longer be necessary
@@ -196,7 +196,7 @@ int exahype::solvers::ADERDGSolver::REQUEST_JOB_ACK = 1;
 #ifdef OffloadingUseProgressTask
 std::unordered_set<int> exahype::solvers::ADERDGSolver::ActiveSenders;
 #endif
-#endif
+//#endif
 
 
 int exahype::solvers::ADERDGSolver::computeWeight(const int cellDescriptionsIndex) {
@@ -306,7 +306,7 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
      _minRefinementStatusForTroubledCell(_refineOrKeepOnFineGrid+3),
      _checkForNaNs(true),
      _meshUpdateEvent(MeshUpdateEvent::None) 
-#if defined(DistributedOffloading)
+//#if defined(DistributedOffloading)
         ,_lastReceiveTag(tarch::parallel::Node::getInstance().getNumberOfNodes()),
          _lastReceiveBackTag(tarch::parallel::Node::getInstance().getNumberOfNodes()),
         _offloadingManagerJob(nullptr),
@@ -318,7 +318,7 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
         _jobDatabase(),
         _allocatedJobs()
 #endif
-#endif
+//#endif
 {
   // register tags with profiler
   for (const char* tag : tags) {
@@ -326,11 +326,11 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
   }
 
   #ifdef Parallel
-#if defined(DistributedOffloading)
+//#if defined(DistributedOffloading)
   MigratablePredictionJobMetaData::initDatatype();
   //todo: may need to add support for multiple solvers
   exahype::offloading::OffloadingProgressService::getInstance().setSolver(this);
-#endif
+//#endif
 
 #ifdef OffloadingUseProfiler
   exahype::offloading::OffloadingProfiler::getInstance().beginPhase();
@@ -514,10 +514,10 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
   // call user code
   endTimeStep(_minTimeStamp,isLastTimeStepOfBatchOrNoBatch);
 
-#if defined(DistributedOffloading) && (defined(TaskSharing) || defined(OffloadingLocalRecompute))
+#if (defined(TaskSharing) || defined(OffloadingLocalRecompute))
   exahype::offloading::JobTableStatistics::getInstance().printStatistics();
 #endif
-#if defined(DistributedOffloading) && defined(TaskSharing)
+#if defined(TaskSharing)
   cleanUpStaleTaskOutcomes();
 #endif
 }
@@ -1013,7 +1013,6 @@ void exahype::solvers::ADERDGSolver::updateOrRestrict(
     synchroniseTimeStepping(cellDescription);
     cellDescription.setHasCompletedLastStep(false);
 
-    const bool isAtRemoteBoundary = tarch::la::oneEquals(boundaryMarkers,exahype::mappings::LevelwiseAdjacencyBookkeeping::RemoteAdjacencyIndex);
     if ( cellDescription.getType()==CellDescription::Type::Leaf && SpawnUpdateAsBackgroundJob ) {
       peano::datatraversal::TaskSet ( new UpdateJob(*this,cellDescription,cellInfo,boundaryMarkers) );
     }
@@ -1092,7 +1091,7 @@ int exahype::solvers::ADERDGSolver::predictionAndVolumeIntegralBody(
       predictorTimeStepSize,
       addVolumeIntegralResultToUpdate); // TODO(Dominic): fix 'false' case
 
-#if !(defined(TaskSharing) || defined(DistributedOffloading))
+#if !(defined(TaskSharing))
   bool hasFlipped = exahype::offloading::ResilienceTools::getInstance().corruptDataIfActive(lduh, getUpdateSize());
 #endif
 
@@ -2519,7 +2518,7 @@ void exahype::solvers::ADERDGSolver::toString (std::ostream& out) const {
 ///////////////////////////////////
 // DISTRIBUTED OFFLOADING
 ///////////////////////////////////
-#if defined(DistributedOffloading)
+//#if defined(DistributedOffloading)
 
 #if defined (TaskSharing) //|| defined(OffloadingLocalRecompute)
 void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
@@ -2544,8 +2543,8 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
                                                                      <<" entrys in hash map "<<_jobDatabase.size()
                                                                      <<" sent STPs "<<SentSTPs
                                                                      <<" completed sends "<<CompletedSentSTPs
-                                                                     <<" outstanding requests "<<exahype::offloading::OffloadingManager::getInstance().getNumberOfOutstandingRequests(exahype::offloading::RequestType::sendReplica)
-                                                                                            +exahype::offloading::OffloadingManager::getInstance().getNumberOfOutstandingRequests(exahype::offloading::RequestType::receiveReplica)
+                                                                     <<" outstanding requests "<<exahype::offloading::OffloadingManager::getInstance().getNumberOfOutstandingRequests(exahype::offloading::RequestType::sendOutcome)
+                                                                                            +exahype::offloading::OffloadingManager::getInstance().getNumberOfOutstandingRequests(exahype::offloading::RequestType::receiveOutcome)
                                                                                                       );
 
 
@@ -2622,8 +2621,8 @@ size_t exahype::solvers::ADERDGSolver::getAdditionalCurrentMemoryUsageReplicatio
 void exahype::solvers::ADERDGSolver::finishOutstandingInterTeamCommunication () {
   MPI_Comm interTeamComm = exahype::offloading::OffloadingManager::getInstance().getTMPIInterTeamCommunicatorData();
 
-  while(exahype::offloading::OffloadingManager::getInstance().hasOutstandingRequestOfType(exahype::offloading::RequestType::sendReplica)
-    || exahype::offloading::OffloadingManager::getInstance().hasOutstandingRequestOfType(exahype::offloading::RequestType::receiveReplica) ) {
+  while(exahype::offloading::OffloadingManager::getInstance().hasOutstandingRequestOfType(exahype::offloading::RequestType::sendOutcome)
+    || exahype::offloading::OffloadingManager::getInstance().hasOutstandingRequestOfType(exahype::offloading::RequestType::receiveOutcome) ) {
     progressOffloading(this, false, std::numeric_limits<int>::max());
   }
   MPI_Request request;
@@ -2647,7 +2646,7 @@ void exahype::solvers::ADERDGSolver::sendRequestForJobAndReceive(int jobTag, int
     MPI_Isend(&REQUEST_JOB_CANCEL, 1, MPI_INT, rank, jobTag, teamInterCommAck, &sendRequest);
     exahype::offloading::OffloadingManager::getInstance().submitRequests(&sendRequest, 1, jobTag, rank,
                                                                MigratablePredictionJob::sendAckHandlerTaskSharing,
-                                                               exahype::offloading::RequestType::sendReplica,
+                                                               exahype::offloading::RequestType::sendOutcome,
                                                                this, false);
     exahype::offloading::JobTableStatistics::getInstance().notifyDeclinedTask();
   }
@@ -2668,7 +2667,7 @@ void exahype::solvers::ADERDGSolver::sendRequestForJobAndReceive(int jobTag, int
     MPI_Isend(&REQUEST_JOB_ACK, 1, MPI_INT, rank, jobTag, teamInterCommAck, &sendRequest);
     exahype::offloading::OffloadingManager::getInstance().submitRequests(&sendRequest, 1, jobTag, rank,
                                                                          MigratablePredictionJob::sendAckHandlerTaskSharing,
-                                                                         exahype::offloading::RequestType::sendReplica,
+                                                                         exahype::offloading::RequestType::sendOutcome,
                                                                           this, false);
     for(int i=0; i<DIMENSIONS; i++)
       data->_metadata._center[i] = key[i];
@@ -2694,7 +2693,7 @@ void exahype::solvers::ADERDGSolver::sendRequestForJobAndReceive(int jobTag, int
                   jobTag,
                   rank,
                   MigratablePredictionJob::receiveHandlerTaskSharing,
-                  exahype::offloading::RequestType::receiveReplica,
+                  exahype::offloading::RequestType::receiveOutcome,
                   this,
                   false);
     }
@@ -2763,7 +2762,7 @@ void exahype::solvers::ADERDGSolver::sendKeyOfTaskOutcomeToOtherTeams(Migratable
      exahype::offloading::OffloadingManager::getInstance().submitRequests(
                    sendRequests, teams-1, tag, -1,
                    MigratablePredictionJob::sendKeyHandlerTaskSharing,
-                   exahype::offloading::RequestType::sendReplica,
+                   exahype::offloading::RequestType::sendOutcome,
                    this, MPI_BLOCKING);
      exahype::offloading::JobTableStatistics::getInstance().notifySentKey();
      delete[] sendRequests;
@@ -2805,7 +2804,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
     int j = 0;
     for(int i=0; i<teams; i++) {
       if(i!=interCommRank) {
-        logDebug("sendReplicatedSTPToOtherTeams"," team "<< interCommRank
+        logDebug("sendOutcometedSTPToOtherTeams"," team "<< interCommRank
                                                          <<" send replica job: "
                                                          <<metadata->to_string()
                                                          <<" time stamp = "<<job->_predictorTimeStamp
@@ -2856,7 +2855,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
     int j = 0;
     for(int i=0; i<teams; i++) {
       if(i!=interCommRank) {
-          logDebug("sendReplicatedSTPToOtherTeams"," team "<< interCommRank
+          logDebug("sendOutcometedSTPToOtherTeams"," team "<< interCommRank
                                                    <<" send replica job: "
                                                    << data->_metadata.to_string()
                                                    <<" time stamp = "<<job->_predictorTimeStamp
@@ -2879,7 +2878,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
                                                                          tag,
                                                                          -1,
                                                                          MigratablePredictionJob::sendHandlerTaskSharing,
-                                                                         exahype::offloading::RequestType::sendReplica,
+                                                                         exahype::offloading::RequestType::sendOutcome,
                                                                          this, MPI_BLOCKING);
    delete[] sendRequests;
 #endif
@@ -3418,7 +3417,7 @@ void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahyp
          tag,
          src,
          MigratablePredictionJob::receiveHandlerTaskSharing,
-         exahype::offloading::RequestType::receiveReplica,
+         exahype::offloading::RequestType::receiveOutcome,
          solver,
          MPI_BLOCKING);
 #endif
@@ -3674,7 +3673,7 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
                              statRepAck.MPI_TAG,
                              statRepAck.MPI_SOURCE,
                              MigratablePredictionJob::sendHandlerTaskSharing,
-                             exahype::offloading::RequestType::sendReplica,
+                             exahype::offloading::RequestType::sendOutcome,
                              solver, false);
          delete[] sendRequests;
        }
@@ -4990,7 +4989,7 @@ bool exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOutcomeOffloa
 
 #endif
 
-#endif
+//#endif
 
 exahype::solvers::ADERDGSolver::CompressionJob::CompressionJob(
   const ADERDGSolver& solver,

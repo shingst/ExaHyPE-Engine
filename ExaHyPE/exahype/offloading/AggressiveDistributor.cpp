@@ -11,7 +11,7 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if  defined(SharedTBB)  && defined(Parallel) && defined(DistributedOffloading)
+#if  defined(SharedTBB)  && defined(Parallel)
 #include "exahype/offloading/AggressiveDistributor.h"
 
 #include <algorithm>

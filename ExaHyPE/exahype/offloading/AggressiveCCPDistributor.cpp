@@ -11,7 +11,7 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if  defined(SharedTBB)  && defined(Parallel) && defined(DistributedOffloading)
+#if defined(Parallel)
 #include "exahype/offloading/AggressiveCCPDistributor.h"
 
 #include <algorithm>
@@ -25,6 +25,7 @@
 #include "exahype/offloading/OffloadingProfiler.h"
 #include "exahype/offloading/PerformanceMonitor.h"
 #include "exahype/offloading/OffloadingAnalyser.h"
+#include "exahype/offloading/OffloadingManager.h"
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/tbb/Jobs.h"
 
@@ -92,7 +93,7 @@ void exahype::offloading::AggressiveCCPDistributor::computeIdealLoadDistribution
   int totalCells   = enclaveCells + skeletonCells;
   MPI_Allgather(&totalCells, 1, MPI_INT, _initialLoadPerRank, 1, MPI_INT, MPI_COMM_WORLD);
 
-#if defined(STEALING_USE_MASTER)
+#if defined(OffloadingUseMaster)
   int input_r=0, input_l=0;
   int output_r=0, output_l=0;
 #else
@@ -103,7 +104,7 @@ void exahype::offloading::AggressiveCCPDistributor::computeIdealLoadDistribution
   int total_l=0;
   total_l = std::accumulate(&_initialLoadPerRank[0], &_initialLoadPerRank[nnodes], total_l);
 
-#if defined(STEALING_USE_MASTER)
+#if defined(OffloadingUseMaster)
   int avg_l = total_l / nnodes;
 #else
   int avg_l = total_l / (nnodes-1);

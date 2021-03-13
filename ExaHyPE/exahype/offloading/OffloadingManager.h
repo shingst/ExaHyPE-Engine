@@ -11,8 +11,8 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if !defined(_EXAHYPE_STEALING_STEALINGMANAGER_H_)  && defined(Parallel)
-#define _EXAHYPE_STEALING_STEALINGMANAGER_H_
+#if !defined(_EXAHYPE_OFFLOADINGMANAGER_H_)  && defined(Parallel)
+#define _EXAHYPE_OFFLOADINGMANAGER_H_
 
 #include "tarch/logging/Log.h"
 #include "tarch/multicore/BooleanSemaphore.h"
@@ -45,8 +45,8 @@ namespace exahype {
       sendBack = 1,
       receive = 2,
       receiveBack = 3,
-      sendReplica = 4,
-      receiveReplica = 5
+      sendOutcome = 4,
+      receiveOutcome = 5
     };
   }
 }
@@ -168,6 +168,8 @@ class exahype::offloading::OffloadingManager {
     std::atomic<int> *_postedReceivesPerRank;
     std::atomic<int> *_postedSendBacksPerRank;
     std::atomic<int> *_postedReceiveBacksPerRank;
+    std::atomic<int> *_postedSendOutcomesPerRank;
+    std::atomic<int> *_postedReceiveOutcomesPerRank;
 
     /**
      * Flag is set, if this rank has become a victim rank in this
@@ -302,6 +304,23 @@ class exahype::offloading::OffloadingManager {
     static MPI_Comm  _interTeamCommsAck[MAX_THREADS];
 
   public:
+    enum class OffloadingStrategy {
+        None,
+        Dynamic,
+        Diffusive,
+        Aggressive,
+        AggressiveCCP,
+        AggressiveHybrid,
+        StaticHardcoded
+    };
+
+    OffloadingStrategy _offloadingStrategy;
+
+    void setOffloadingStrategy(OffloadingStrategy strategy);
+    OffloadingStrategy getOffloadingStrategy();
+
+    bool isEnabled();
+
     //Todo: with these two function, we can clean up the interface and make some more functions private
     void initialize();
 

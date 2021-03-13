@@ -11,7 +11,7 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if  defined(SharedTBB)  && defined(Parallel) && defined(DistributedOffloading)
+#if  defined(SharedTBB)  && defined(Parallel)
 #include "exahype/offloading/DiffusiveDistributor.h"
 
 #include <algorithm>
@@ -21,6 +21,7 @@
 #include "tarch/parallel/Node.h"
 
 #include "exahype/offloading/OffloadingProfiler.h"
+#include "exahype/offloading/OffloadingManager.h"
 #include "exahype/offloading/PerformanceMonitor.h"
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/Jobs.h"
