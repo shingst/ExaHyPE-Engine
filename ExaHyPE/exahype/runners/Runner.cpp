@@ -76,7 +76,7 @@
 
 #include "peano/datatraversal/TaskSet.h"
 
-#if defined(TMPI) || defined(TaskSharing)
+#if defined(USE_TMPI)
 #include "teaMPI.h"
 #endif
 
@@ -97,16 +97,13 @@
 
 #include "../reactive/OffloadingAnalyser.h"
 #include "../reactive/ResilienceTools.h"
-
-//#if defined(DistributedOffloading)
 #include "../reactive/JobTableStatistics.h"
 #include "../reactive/PerformanceMonitor.h"
 #include "../reactive/OffloadingProgressService.h"
 #include "../reactive/StaticDistributor.h"
 #include "../reactive/AggressiveHybridDistributor.h"
-
 #include "../reactive/OffloadingProfiler.h"
-//#endif
+
 
 #if defined(TMPI_Heartbeats)
 #include "exahype/offloading/HeartbeatJob.h"
@@ -297,6 +294,29 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
 
   //Resilience configuration
   if ( _parser.isValid() ) {
+    //Task sharing configuration
+    exahype::parser::Parser::ResilienceStrategy selectedStrategy = _parser.getResilienceStrategy();
+    if(selectedStrategy!=exahype::parser::Parser::ResilienceStrategy::None)  {
+#if !defined(USE_TMPI)
+        logError("initDistributedMemoryConfiguration()", "You must link against teaMPI in order to use resilience futures (USE_TMPI must be set)! Aborting, please re-run toolkit and recompile...");
+        _parser.invalidate();
+#endif
+
+        if(selectedStrategy == exahype::parser::Parser::ResilienceStrategy::TaskSharing) {
+          exahype::reactive::OffloadingManager::getInstance().setResilienceStrategy(exahype::reactive::OffloadingManager::ResilienceStrategy::TaskSharing);
+        }
+        if(selectedStrategy == exahype::parser::Parser::ResilienceStrategy::TaskSharingResilienceChecks) {
+          exahype::reactive::OffloadingManager::getInstance().setResilienceStrategy(exahype::reactive::OffloadingManager::ResilienceStrategy::TaskSharingResilienceChecks);
+        }
+        if(selectedStrategy == exahype::parser::Parser::ResilienceStrategy::TaskSharingResilienceCorrection) {
+          //Todo: this is not implemented yet!
+          exahype::reactive::OffloadingManager::getInstance().setResilienceStrategy(exahype::reactive::OffloadingManager::ResilienceStrategy::TaskSharingResilienceCorrection);
+        }
+        // order is important: set resilience strategy first before initialization
+        //exahype::reactive::OffloadingManager::getInstance().initialize();
+        exahype::reactive::OffloadingProgressService::getInstance().enable();
+    }
+
     //always use offloading analyser
     peano::performanceanalysis::Analysis::getInstance().setDevice(&exahype::reactive::OffloadingAnalyser::getInstance());
 
@@ -315,7 +335,8 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     }
 #if defined(USE_TMPI)
     if(!TMPI_IsLeadingRank()) {
-      exahype::reactive::ResilienceTools::setSoftErrorGenerationStrategy(exahype::reactive::ResilienceTools::SoftErrorGenerationStrategy::None);
+      exahype::reactive::ResilienceTools::setSoftErrorGenerationStrategy(
+          exahype::reactive::ResilienceTools::SoftErrorGenerationStrategy::None);
     }
 #endif
     exahype::reactive::ResilienceTools::TriggerAllMigratableSTPs = _parser.getTriggerAllMigratableSTPs();
@@ -323,15 +344,13 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     exahype::reactive::ResilienceTools::TriggerFlipped = _parser.getTriggerCorrupted();
   }
 
-//#if defined(DistributedOffloading)
-
   //Reactive load balancing configuration
   if (_parser.isValid()) {
     exahype::parser::Parser::OffloadingStrategy selectedStrategy = _parser.getOffloadingStrategy();
     if(selectedStrategy!=exahype::parser::Parser::OffloadingStrategy::None)  {
       exahype::reactive::OffloadingAnalyser::getInstance().enable(true);
       // Create new MPI communicators + progress engine for offloading related MPI communication
-      exahype::reactive::OffloadingManager::getInstance().initialize();
+      //exahype::reactive::OffloadingManager::getInstance().initialize();
       exahype::reactive::OffloadingProgressService::getInstance().enable();
 
       if(selectedStrategy == exahype::parser::Parser::OffloadingStrategy::StaticHardcoded) {
@@ -351,8 +370,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
         );
       }
     }
-//#endif
-//#endif
+
     tarch::parallel::NodePool::getInstance().restart();
 
     tarch::parallel::Node::getInstance().setDeadlockTimeOut(_parser.getMPITimeOut());
@@ -396,12 +414,12 @@ void exahype::runners::Runner::shutdownDistributedMemoryConfiguration() {
 #ifdef Parallel
   tarch::parallel::NodePool::getInstance().terminate();
 
-  if(_parser.getOffloadingStrategy()!=exahype::parser::Parser::OffloadingStrategy::None) {
+/*  if(_parser.getOffloadingStrategy()!=exahype::parser::Parser::OffloadingStrategy::None
+      || _parser.getResilienceStrategy()!=exahype::parser::Parser::ResilienceStrategy::None) {
     exahype::reactive::OffloadingManager::getInstance().destroy();
     logInfo("shutdownDistributedMemoryConfiguration()","destroyed MPI communicators + progress engine");
-  }
+  }*/
   exahype::repositories::RepositoryFactory::getInstance().shutdownAllParallelDatatypes();
-
 #endif
 }
 
@@ -631,7 +649,6 @@ void exahype::runners::Runner::initDataCompression() {
     }
   }
 }
-
 
 void exahype::runners::Runner::shutdownSharedMemoryConfiguration() {
   SCOREP_USER_REGION( (std::string("exahype::runners::Runner::shutdownSharedMemoryConfiguration")).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
@@ -949,6 +966,7 @@ void exahype::runners::Runner::initHPCEnvironment() {
   ierr=VT_funcdef("ADERDGSolver::mergeNeighboursHandle"                   , VT_NOCLASS, &exahype::solvers::ADERDGSolver::mergeNeighboursHandle                  ); assertion(ierr==0);
   ierr=VT_funcdef("ADERDGSolver::prolongateFaceDataToVirtualCellHandle"   , VT_NOCLASS, &exahype::solvers::ADERDGSolver::prolongateFaceDataToVirtualCellHandle  ); assertion(ierr==0);
   ierr=VT_funcdef("ADERDGSolver::restrictToTopMostParentHandle"           , VT_NOCLASS, &exahype::solvers::ADERDGSolver::restrictToTopMostParentHandle          ); assertion(ierr==0);
+  //todo(Philipp): are all these still used?
   ierr=VT_funcdef("ADERDGSolver::computeSTP"                              , VT_NOCLASS, &exahype::solvers::ADERDGSolver::event_stp                              ); assertion(ierr==0);
   ierr=VT_funcdef("ADERDGSolver::computeSTPLocalReplica"                  , VT_NOCLASS, &exahype::solvers::ADERDGSolver::event_stp_local_replica                ); assertion(ierr==0);
   ierr=VT_funcdef("ADERDGSolver::computeSTPRemoteReplica"                 , VT_NOCLASS, &exahype::solvers::ADERDGSolver::event_stp_remote                       ); assertion(ierr==0);
@@ -1075,12 +1093,10 @@ int exahype::runners::Runner::run() {
       if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
       //static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopOffloadingManager();
 #if !defined(DirtyCleanUp)
-#if defined(TaskSharing)
-        static_cast<exahype::solvers::ADERDGSolver*>(solver)->finishOutstandingInterTeamCommunication();
-#endif
-#if defined(TaskSharing)
-        static_cast<exahype::solvers::ADERDGSolver*>(solver)->cleanUpStaleTaskOutcomes(true);
-#endif
+        if(exahype::reactive::OffloadingManager::getInstance().getResilienceStrategy()!=exahype::reactive::OffloadingManager::ResilienceStrategy::None) {
+          static_cast<exahype::solvers::ADERDGSolver*>(solver)->finishOutstandingInterTeamCommunication();
+          static_cast<exahype::solvers::ADERDGSolver*>(solver)->cleanUpStaleTaskOutcomes(true);
+        }
 #endif
         static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopOffloadingManager();
       }
@@ -1090,11 +1106,10 @@ int exahype::runners::Runner::run() {
     }
 
     logInfo("shutdownDistributedMemoryConfiguration()","stopped offloading manager");
- #if defined(TaskSharing) || defined(OffloadingLocalRecompute)
-    exahype::reactive::JobTableStatistics::getInstance().printStatistics();
-#endif
+    //Todo(Philipp): print also with local recomp
+    if(exahype::reactive::OffloadingManager::getInstance().getResilienceStrategy()!=exahype::reactive::OffloadingManager::ResilienceStrategy::None)
+      exahype::reactive::JobTableStatistics::getInstance().printStatistics();
   }
-//#endif
 
 #if defined(MemoryMonitoring) && defined(MemoryMonitoringTrack)
      exahype::reactive::MemoryMonitor::getInstance().dumpMemoryUsage();

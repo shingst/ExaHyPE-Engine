@@ -728,6 +728,15 @@ class exahype::parser::Parser {
 
   OffloadingStrategy getOffloadingStrategy() const;
 
+  enum class ResilienceStrategy {
+      None,
+      TaskSharing,
+      TaskSharingResilienceChecks,
+      TaskSharingResilienceCorrection
+   };
+
+  ResilienceStrategy getResilienceStrategy() const;
+
   //Todo: docu!
   std::string getOffloadingInputFile() const;
 

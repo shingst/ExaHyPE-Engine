@@ -633,9 +633,10 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
 
   if (
       (solverPatch.getRefinementStatus()<_solver->_minRefinementStatusForTroubledCell
-#if defined(ResilienceChecks) && defined(TaskSharing)
-	  || true
-#endif
+	  || (exahype::reactive::OffloadingManager::getInstance().getInstance().getResilienceStrategy()
+	      == exahype::reactive::OffloadingManager::ResilienceStrategy::TaskSharingResilienceChecks)
+	  ||  (exahype::reactive::OffloadingManager::getInstance().getInstance().getResilienceStrategy()
+        == exahype::reactive::OffloadingManager::ResilienceStrategy::TaskSharingResilienceCorrection)
 	  )
 	  &&
       SpawnPredictionAsBackgroundJob &&

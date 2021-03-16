@@ -230,7 +230,7 @@ class exahype::reactive::OffloadingManager {
      * Communicator for communication between replicating ranks.
      */
     //MPI_Comm _interTeamComm, _interTeamCommKey, _interTeamCommAck;
-    static int _team;
+    static int _numTeams;
     static int _interTeamRank;
 
     /**
@@ -315,10 +315,22 @@ class exahype::reactive::OffloadingManager {
         StaticHardcoded
     };
 
+    enum class ResilienceStrategy {
+        None,
+        TaskSharing,
+        TaskSharingResilienceChecks,
+        TaskSharingResilienceCorrection
+    };
+
     OffloadingStrategy _offloadingStrategy;
+
+    ResilienceStrategy _resilienceStrategy;
 
     void setOffloadingStrategy(OffloadingStrategy strategy);
     OffloadingStrategy getOffloadingStrategy();
+
+    void setResilienceStrategy(ResilienceStrategy strategy);
+    ResilienceStrategy getResilienceStrategy();
 
     bool isEnabled();
 
@@ -365,8 +377,8 @@ class exahype::reactive::OffloadingManager {
     MPI_Comm getTMPIInterTeamCommunicatorKey();
     MPI_Comm getTMPIInterTeamCommunicatorAck();
 
-    void setTMPITeamSize(int team);
-    int getTMPITeamSize();
+    void setTMPINumTeams(int team);
+    int getTMPINumTeams();
 
     void setTMPIInterTeamRank(int interTeamRank);
     int getTMPIInterTeamRank();

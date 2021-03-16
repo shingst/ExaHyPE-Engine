@@ -566,7 +566,7 @@ bool exahype::reactive::AggressiveHybridDistributor::selectVictimRank(int& victi
         threshold) {
 	  logInfo("selectVictimRank", "threshold "<<threshold
 	  		                       << " there are "<<exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs-exahype::solvers::ADERDGSolver::NumberOfRemoteJobs
-	  							   <<" jobs "<< " and "<<tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs());
+	  							             <<" jobs "<< " and "<<tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs());
 
     _tasksNotOffloaded[victim]++;
     victim = myRank;

@@ -54,7 +54,7 @@
 
 //#if defined(DistributedOffloading)
 
-#if defined(TaskSharing)
+#if defined(USE_TMPI)
 #include "teaMPI.h"
 #endif
 
@@ -188,16 +188,13 @@ std::atomic<bool> exahype::solvers::ADERDGSolver::VetoEmergency(false);
 const exahype::solvers::ADERDGSolver::CellDescription* exahype::solvers::ADERDGSolver::LastEmergencyCell;
 tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::EmergencySemaphore;
 
-#ifdef TaskSharing
+//todo(Philipp): probably, this should be moved somewhere else!
 int exahype::solvers::ADERDGSolver::REQUEST_JOB_CANCEL = 0;
 int exahype::solvers::ADERDGSolver::REQUEST_JOB_ACK = 1;
-#endif
 
 #ifdef OffloadingUseProgressTask
 std::unordered_set<int> exahype::solvers::ADERDGSolver::ActiveSenders;
 #endif
-//#endif
-
 
 int exahype::solvers::ADERDGSolver::computeWeight(const int cellDescriptionsIndex) {
   if ( ADERDGSolver::isValidCellDescriptionIndex(cellDescriptionsIndex) ) {
@@ -305,20 +302,17 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
      _DMPObservables(DMPObservables),
      _minRefinementStatusForTroubledCell(_refineOrKeepOnFineGrid+3),
      _checkForNaNs(true),
-     _meshUpdateEvent(MeshUpdateEvent::None) 
-//#if defined(DistributedOffloading)
-        ,_lastReceiveTag(tarch::parallel::Node::getInstance().getNumberOfNodes()),
-         _lastReceiveBackTag(tarch::parallel::Node::getInstance().getNumberOfNodes()),
-        _offloadingManagerJob(nullptr),
-        _offloadingManagerJobTerminated(false),
-        _offloadingManagerJobStarted(false),
-        _offloadingManagerJobTriggerTerminate(false)
-#if defined(TaskSharing)
-        ,_lastReceiveReplicaTag(tarch::parallel::Node::getInstance().getNumberOfNodes()*TMPI_GetInterTeamCommSize()),
-        _jobDatabase(),
-        _allocatedJobs()
-#endif
-//#endif
+     _meshUpdateEvent(MeshUpdateEvent::None),
+     _lastReceiveTag(tarch::parallel::Node::getInstance().getNumberOfNodes()),
+     _lastReceiveBackTag(tarch::parallel::Node::getInstance().getNumberOfNodes()),
+     _offloadingManagerJob(nullptr),
+     _offloadingManagerJobTerminated(false),
+     _offloadingManagerJobStarted(false),
+     _offloadingManagerJobTriggerTerminate(false),
+     _lastReceiveReplicaTag(tarch::parallel::Node::getInstance().getNumberOfNodes()
+                            *exahype::reactive::OffloadingManager::getInstance().getTMPINumTeams()),
+     _jobDatabase(),
+     _allocatedJobs()
 {
   // register tags with profiler
   for (const char* tag : tags) {
@@ -514,12 +508,11 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
   // call user code
   endTimeStep(_minTimeStamp,isLastTimeStepOfBatchOrNoBatch);
 
-#if (defined(TaskSharing) || defined(OffloadingLocalRecompute))
-  exahype::reactive::JobTableStatistics::getInstance().printStatistics();
-#endif
-#if defined(TaskSharing)
-  cleanUpStaleTaskOutcomes();
-#endif
+  //Todo(Philipp): do this also with local recomp!! OffloadingLocalRecompute
+  if(exahype::reactive::OffloadingManager::getInstance().getResilienceStrategy()!=exahype::reactive::OffloadingManager::ResilienceStrategy::None) {
+    exahype::reactive::JobTableStatistics::getInstance().printStatistics();
+    cleanUpStaleTaskOutcomes();
+  }
 }
 
 void exahype::solvers::ADERDGSolver::updateTimeStepSize() {
@@ -1080,16 +1073,15 @@ int exahype::solvers::ADERDGSolver::predictionAndVolumeIntegralBody(
       predictorTimeStepSize,
       addVolumeIntegralResultToUpdate); // TODO(Dominic): fix 'false' case
 
-#if !(defined(TaskSharing))
-  bool hasFlipped = exahype::reactive::ResilienceTools::getInstance().corruptDataIfActive(lduh, getUpdateSize());
-#endif
+  //Todo(Philipp): print also with local recomp
+  if(exahype::reactive::OffloadingManager::getInstance().getResilienceStrategy()==exahype::reactive::OffloadingManager::ResilienceStrategy::None)
+     exahype::reactive::ResilienceTools::getInstance().corruptDataIfActive(lduh, getUpdateSize());
 
   compress(cellDescription,isSkeletonCell);
 
   validateCellDescriptionData(cellDescription,true,true,false,"exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody [post]");
 
   cellDescription.setHasCompletedLastStep(true);
-
   
   #ifdef USE_ITAC
   if ( isSkeletonCell ) {
@@ -2501,7 +2493,7 @@ void exahype::solvers::ADERDGSolver::toString (std::ostream& out) const {
 // DISTRIBUTED OFFLOADING
 ///////////////////////////////////
 
-#if defined (TaskSharing) //|| defined(OffloadingLocalRecompute)
+//#if defined(OffloadingLocalRecompute)
 void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
   int unsafe_size = _allocatedJobs.unsafe_size();
   assertion(unsafe_size>=0);
@@ -2596,9 +2588,8 @@ size_t exahype::solvers::ADERDGSolver::getAdditionalCurrentMemoryUsageReplicatio
                     + sizeof(double) * ( getDataPerCell() + getUpdateSize() + getBndTotalSize() + getBndFluxTotalSize() );
   return (AllocatedSTPsSend + AllocatedSTPsReceive) * sizePerSTP;
 }
-#endif
 
-#if defined(TaskSharing)
+//#if defined(TaskSharing)
 void exahype::solvers::ADERDGSolver::finishOutstandingInterTeamCommunication () {
   MPI_Comm interTeamComm = exahype::reactive::OffloadingManager::getInstance().getTMPIInterTeamCommunicatorData();
 
@@ -2683,7 +2674,7 @@ void exahype::solvers::ADERDGSolver::sendRequestForJobAndReceive(int jobTag, int
 }
 
 void exahype::solvers::ADERDGSolver::sendKeyOfTaskOutcomeToOtherTeams(MigratablePredictionJob *job) {
-    int teams = exahype::reactive::OffloadingManager::getInstance().getTMPITeamSize();
+    int teams = exahype::reactive::OffloadingManager::getInstance().getTMPINumTeams();
     int interCommRank = exahype::reactive::OffloadingManager::getInstance().getTMPIInterTeamRank();
     MPI_Comm teamInterCommKey = exahype::reactive::OffloadingManager::getInstance().getTMPIInterTeamCommunicatorKey();
 
@@ -2752,7 +2743,7 @@ void exahype::solvers::ADERDGSolver::sendKeyOfTaskOutcomeToOtherTeams(Migratable
 
 void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredictionJob *job) {
 
-    int teams = exahype::reactive::OffloadingManager::getInstance().getTMPITeamSize();
+    int teams = exahype::reactive::OffloadingManager::getInstance().getTMPINumTeams();
     int interCommRank = exahype::reactive::OffloadingManager::getInstance().getTMPIInterTeamRank();
     MPI_Comm teamInterComm = exahype::reactive::OffloadingManager::getInstance().getTMPIInterTeamCommunicatorData();
 
@@ -2865,7 +2856,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
 #endif
 }
 
-#endif
+//#endif
 
 void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(MigratablePredictionJob* job) {
 
@@ -3327,8 +3318,7 @@ void exahype::solvers::ADERDGSolver::receiveBackMigratableJob(int tag, int src, 
 #endif
 }
 
-
-#if defined(TaskSharing)
+//#if defined(TaskSharing)
 void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahype::solvers::ADERDGSolver *solver, int rail) {
   MPI_Comm interTeamComm = exahype::reactive::OffloadingManager::getInstance().getTMPIInterTeamCommunicatorData();
 
@@ -3403,7 +3393,7 @@ void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahyp
          MPI_BLOCKING);
 #endif
 }
-#endif
+//#endif
 
 void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exahype::solvers::ADERDGSolver *solver, bool calledOnMaster, int maxIts) {
 
@@ -3433,7 +3423,7 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
   int iprobesCounter = 0;
   int ierr;
 
-#if defined(TaskSharing)
+//#if defined(TaskSharing)
   MPI_Comm interTeamComm = exahype::reactive::OffloadingManager::getInstance().getTMPIInterTeamCommunicatorData();
   MPI_Comm interTeamCommKey = exahype::reactive::OffloadingManager::getInstance().getTMPIInterTeamCommunicatorKey();
   MPI_Comm interTeamCommAck = exahype::reactive::OffloadingManager::getInstance().getTMPIInterTeamCommunicatorAck();
@@ -3441,7 +3431,7 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
   int receivedReplicaAck = 0;
   int receivedReplicaKey = 0;
   MPI_Status statRepData, statRepAck, statRepKey;
-#endif
+//#endif
 
 #if defined(UseSmartMPI)
   MPI_CHECK("pollForOutstandingCommunicationRequests", MPI_Iprobe_offload(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat));
@@ -3460,7 +3450,7 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
   assertion(ierr==MPI_SUCCESS);
 #endif
 #endif
-#if defined(TaskSharing)
+//#if defined(TaskSharing)
 #if !defined(TaskSharingUseHandshake)
 #if defined(UseSmartMPI)
   MPI_Status_Offload statRepDataOffload;
@@ -3472,19 +3462,19 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
 #endif
   MPI_CHECK("pollForOutstandingCommunicationRequests", MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamCommAck, &receivedReplicaAck, &statRepAck));
   MPI_CHECK("pollForOutstandingCommunicationRequests", MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, interTeamCommKey, &receivedReplicaKey, &statRepKey));
-#endif
+//#endif
 
   bool terminateImmediately = false;
 
-#if defined (TaskSharing)
+//#if defined (TaskSharing)
   while(
       (receivedTask || receivedTaskBack || receivedReplicaTask || receivedReplicaAck || receivedReplicaKey)
       && (iprobesCounter<MaxIprobesInOffloadingProgress || receivedReplicaKey || receivedReplicaAck || receivedReplicaTask) && !terminateImmediately
       && iprobesCounter<maxIts)
   {
-#else
-  while( (receivedTask || receivedTaskBack) && iprobesCounter<MaxIprobesInOffloadingProgress && !terminateImmediately ) {
-#endif
+//#else
+//  while( (receivedTask || receivedTaskBack) && iprobesCounter<MaxIprobesInOffloadingProgress && !terminateImmediately ) {
+//#endif
     iprobesCounter++;
     // RECEIVE TASK BACK
 #if defined(OffloadingNoEarlyReceiveBacks)
@@ -3568,7 +3558,7 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
     MPI_CHECK("pollForOutstandingCommunicationRequests", MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, comm, &receivedTask, &stat));
 #endif
     assertion(ierr==MPI_SUCCESS);
-#if defined(TaskSharing)
+//#if defined(TaskSharing)
 #if !defined(TaskSharingUseHandshake)
     if(receivedReplicaTask) {
       int msgLenDouble = -1;
@@ -3674,7 +3664,7 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
    //    lock.free();
    //  }
 #endif
-#endif
+//#endif
      exahype::reactive::OffloadingManager::getInstance().progressRequests();
    //  if(calledOnMaster) break;
 #endif

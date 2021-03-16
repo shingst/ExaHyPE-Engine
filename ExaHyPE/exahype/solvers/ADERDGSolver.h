@@ -35,7 +35,6 @@
 #include "exahype/profilers/simple/NoOpProfiler.h"
 #include "exahype/records/ADERDGCellDescription.h"
 
-//#if defined(DistributedOffloading)
 #include <mpi.h>
 
 #define OFFLOADING_SLOW_OPERATION_THRESHOLD 0.001
@@ -48,15 +47,15 @@
 #define NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME 3
 #endif
 
-#include "../reactive/OffloadingManager.h"
+#include "exahype/reactive/OffloadingManager.h"
+#include "exahype/reactive/JobTableStatistics.h"
+
 #include <tbb/concurrent_hash_map.h>
 #include <tbb/concurrent_queue.h>
 #include <tbb/task.h>
 #include <tbb/task_group.h>
 #include <unordered_set>
 #include "tarch/multicore/Jobs.h"
-#include "../reactive/JobTableStatistics.h"
-//#endif
 
 namespace exahype {
   namespace parser {
@@ -144,6 +143,7 @@ public:
   static int prolongateFaceDataToVirtualCellHandle;
   static int restrictToTopMostParentHandle;
 
+  //Todo(Philipp): are these still used?
   static int event_stp;
   static int event_stp_local_replica;
   static int event_stp_remote;
@@ -216,7 +216,6 @@ public:
   typedef exahype::records::ADERDGCellDescription CellDescription;
   typedef peano::heap::RLEHeap<CellDescription> Heap;
 
-//#if defined (DistributedOffloading)
   /**
    * Semaphore that is used to guarantee mutual exclusion for
    * offloading progress.
@@ -953,18 +952,19 @@ private:
   static void prepareWorkerCellDescriptionAtMasterWorkerBoundary(
       CellDescription& cellDescription);
 
-//#if defined(DistributedOffloading)
   static int getTaskPriorityLocalStealableJob(int cellDescriptionsIndex, int element, double timeStamp) {
-#if defined(TaskSharing)
-    int team = exahype::reactive::OffloadingManager::getInstance().getTMPIInterTeamRank();
-    int teamSize = exahype::reactive::OffloadingManager::getInstance().getTMPITeamSize();
+    if(exahype::reactive::OffloadingManager::getInstance().getResilienceStrategy()
+        !=exahype::reactive::OffloadingManager::ResilienceStrategy::None) {
 
-    CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex, element);
+      int team = exahype::reactive::OffloadingManager::getInstance().getTMPIInterTeamRank();
+      int teamSize = exahype::reactive::OffloadingManager::getInstance().getTMPINumTeams();
 
-    tarch::la::Vector<DIMENSIONS, double> center;
-    center = (cellDescription.getOffset()+0.5*cellDescription.getSize());
+      CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex, element);
 
-    int prio = getTaskPriority(false)+(LocalStealableSTPCounter+team)%teamSize;
+      tarch::la::Vector<DIMENSIONS, double> center;
+      center = (cellDescription.getOffset()+0.5*cellDescription.getSize());
+
+      int prio = getTaskPriority(false)+(LocalStealableSTPCounter+team)%teamSize;
 
 /*    logDebug("getTaskPriorityLocalStealableJob()", "team = "<<team
                                                  <<" center[0] = "<< center[0]
@@ -974,11 +974,10 @@ private:
 #endif
 						 <<" time stamp = "<<timeStamp
                                                  <<" prio = "<<prio);*/
-
-    return prio;
-#else
-    return getTaskPriority(false);
-#endif
+      return prio;
+    }
+    else
+      return getTaskPriority(false);
   }
 
 #ifdef OffloadingUseProgressTask
@@ -1122,10 +1121,10 @@ private:
    * and its data has been sent back.
    */
   tbb::concurrent_hash_map<std::pair<int,int>, MigratablePredictionJobData*> _mapTagRankToStolenData;
-#if defined(TaskSharing)
+//#if defined(TaskSharing)
   tbb::concurrent_hash_map<std::pair<int,int>, MigratablePredictionJobData*> _mapTagRankToReplicaData;
   tbb::concurrent_hash_map<std::pair<int,int>, double*> _mapTagRankToReplicaKey;
-#endif
+//#endif
   tbb::concurrent_hash_map<int, CellDescription*> _mapTagToCellDesc;
   tbb::concurrent_hash_map<const CellDescription*, std::pair<int,int>> _mapCellDescToTagRank;
   tbb::concurrent_hash_map<const CellDescription*, tarch::multicore::jobs::Job*> _mapCellDescToRecompJob;
@@ -1240,7 +1239,7 @@ private:
     	  exahype::solvers::Solver* solver,
 		    int tag,
 		    int rank);
-#if defined(TaskSharing)
+//#if defined(TaskSharing)
       static void sendKeyHandlerTaskSharing(
     	  exahype::solvers::Solver* solver,
 		    int tag,
@@ -1255,7 +1254,7 @@ private:
     	  exahype::solvers::Solver* solver,
 		    int tag,
 		    int rank);
-#endif
+//#endif
 
       // call-back method: called when a remotely executed job has been returned back
       static void receiveBackHandler(
@@ -1268,7 +1267,7 @@ private:
 		    int tag,
 		    int rank);
 
-#if defined(TaskSharing)
+//#if defined(TaskSharing)
       static void receiveKeyHandlerTaskSharing(
     	  exahype::solvers::Solver* solver,
 		    int tag,
@@ -1278,7 +1277,7 @@ private:
     	  exahype::solvers::Solver* solver,
 		    int tag,
 		    int rank);
-#endif
+//#endif
       bool run(bool calledFromMaster) override;
   };
 

@@ -63,16 +63,18 @@ static int event_progress_sendBack;
 static int event_progress_receiveBack;
 #endif
 
-#if defined(TMPI) || defined(TaskSharing)
+#if defined(USE_TMPI)
 #include "teaMPI.h"
 #endif
+
+#include <mpi.h>
 
 //#undef assertion
 //#define assertion assert
 
 tarch::logging::Log exahype::reactive::OffloadingManager::_log( "exahype::reactive::OffloadingManager" );
 
-int exahype::reactive::OffloadingManager::_team(-1);
+int exahype::reactive::OffloadingManager::_numTeams(-1);
 int exahype::reactive::OffloadingManager::_interTeamRank(-1);
 
 exahype::reactive::OffloadingManager* exahype::reactive::OffloadingManager::_static_managers[MAX_THREADS];
@@ -86,6 +88,7 @@ MPI_Comm exahype::reactive::OffloadingManager::_interTeamCommsAck[MAX_THREADS];
 exahype::reactive::OffloadingManager::OffloadingManager(int threadId) :
     _threadId(threadId),
     _offloadingStrategy(OffloadingStrategy::None),
+    _resilienceStrategy(ResilienceStrategy::None),
     _nextRequestId(0),
     _nextGroupId(0),
     _numProgressJobs(0),
@@ -131,9 +134,13 @@ exahype::reactive::OffloadingManager::OffloadingManager(int threadId) :
   if(!flag) {
     logWarning("OffloadingManager()"," maximum allowed MPI tag could not be determined. Offloading may leave the space of allowed tags for longer runs...");
   }
+
+  initialize();
 }
 
 exahype::reactive::OffloadingManager::~OffloadingManager() {
+  destroy();
+
   delete[] _postedSendsPerRank;
   delete[] _postedReceivesPerRank;
   delete[] _postedSendBacksPerRank;
@@ -151,25 +158,30 @@ exahype::reactive::OffloadingManager::OffloadingStrategy exahype::reactive::Offl
   return _offloadingStrategy;
 }
 
+void exahype::reactive::OffloadingManager::setResilienceStrategy(ResilienceStrategy strategy) {
+  _resilienceStrategy = strategy;
+}
+
+exahype::reactive::OffloadingManager::ResilienceStrategy exahype::reactive::OffloadingManager::getResilienceStrategy() {
+  return _resilienceStrategy;
+}
+
 bool exahype::reactive::OffloadingManager::isEnabled() {
-  return _offloadingStrategy!=OffloadingStrategy::None;
+  return _offloadingStrategy!=OffloadingStrategy::None || _resilienceStrategy!=ResilienceStrategy::None;
 }
 
 void exahype::reactive::OffloadingManager::initialize() {
   //exahype::reactive::OffloadingManager::getInstance().createMPICommunicator();
+ static bool initialized = false;
 
-
-//#if defined(UseMPIThreadSplit)
+ if(!initialized)
   createMPICommunicators();
-//#endif
+
+ initialized = true;
 }
 
 void exahype::reactive::OffloadingManager::destroy() {
- // exahype::reactive::OffloadingManager::destroyMPICommunicator();
-
-//#if defined(UseMPIThreadSplit)
   destroyMPICommunicators();
-//#endif
 }
 
 /*void exahype::reactive::OffloadingManager::setTMPIInterTeamCommunicators(MPI_Comm comm, MPI_Comm commKey, MPI_Comm commAck) {
@@ -190,12 +202,12 @@ MPI_Comm exahype::reactive::OffloadingManager::getTMPIInterTeamCommunicatorAck()
   return _interTeamCommsAck[_threadId];
 }
 
-void exahype::reactive::OffloadingManager::setTMPITeamSize(int team) {
-  _team = team;
+void exahype::reactive::OffloadingManager::setTMPINumTeams(int nteams) {
+  _numTeams = nteams;
 }
 
-int exahype::reactive::OffloadingManager::getTMPITeamSize() {
-  return _team;
+int exahype::reactive::OffloadingManager::getTMPINumTeams() {
+  return _numTeams;
 }
 
 void exahype::reactive::OffloadingManager::setTMPIInterTeamRank(int interTeamRank) {
@@ -218,9 +230,9 @@ void exahype::reactive::OffloadingManager::createMPICommunicators() {
   int rank;
   int ierr;
   MPI_CHECK("createMPICommunicators", MPI_Comm_rank(MPI_COMM_WORLD, &rank));
+  MPI_Comm interTeamComm = MPI_COMM_NULL;
 
-#if defined(TaskSharing)
-  MPI_Comm interTeamComm;
+#if defined(USE_TMPI)
   int worldRank = TMPI_GetWorldRank();
   MPI_CHECK("createMPICommunicators", MPI_Comm_split(MPI_COMM_WORLD, rank, worldRank, &interTeamComm));
 
@@ -231,7 +243,7 @@ void exahype::reactive::OffloadingManager::createMPICommunicators() {
   MPI_Comm_rank(interTeamComm, &rankInterComm);
   int team = TMPI_GetTeamNumber();
 
-  _team  = nteams;
+  _numTeams  = nteams;
   _interTeamRank = rankInterComm;
 
   //exahype::reactive::OffloadingManager::getInstance().setTMPIInterTeamCommunicators(interTeamComm, interTeamCommDupKey, interTeamCommDupAck);
@@ -239,6 +251,12 @@ void exahype::reactive::OffloadingManager::createMPICommunicators() {
   logInfo("createMPICommunicators()", " teams: "<<nteams<<", rank in team "
                                                 <<team<<" : "<<rank<<", team rank in intercomm: "<<rankInterComm);
 
+#else
+  _numTeams = 1;
+  _interTeamRank = 0;
+
+  MPI_CHECK("createMPICommunicators", MPI_Comm_rank(MPI_COMM_WORLD, &rank));
+  MPI_CHECK("createMPICommunicators", MPI_Comm_split(MPI_COMM_WORLD, rank, rank, &interTeamComm));
 #endif
 
   for(int i=0; i<MAX_THREADS;i++) {
@@ -256,7 +274,6 @@ void exahype::reactive::OffloadingManager::createMPICommunicators() {
     MPI_CHECK("createMPICommunicators", MPI_Comm_set_info(_offloadingCommsMapped[i], info));
     assertion(ierr==MPI_SUCCESS);
 
-#if defined TaskSharing
     MPI_CHECK("createMPICommunicators", MPI_Comm_dup(interTeamComm, &_interTeamComms[i])); assertion(ierr==MPI_SUCCESS);
     MPI_CHECK("createMPICommunicators", MPI_Comm_set_info(_interTeamComms[i], info));
     assertion(ierr==MPI_SUCCESS);
@@ -268,12 +285,10 @@ void exahype::reactive::OffloadingManager::createMPICommunicators() {
     MPI_CHECK("createMPICommunicators", MPI_Comm_dup(interTeamComm, &_interTeamCommsAck[i])); assertion(ierr==MPI_SUCCESS);
     MPI_CHECK("createMPICommunicators", MPI_Comm_set_info(_interTeamCommsAck[i], info));
     assertion(ierr==MPI_SUCCESS);
-#endif
+
     MPI_Info_free(&info);
   }
-#if defined(TaskSharing)
   MPI_CHECK("createMPICommunicators", MPI_Comm_free(&interTeamComm));
-#endif
 }
 
 void exahype::reactive::OffloadingManager::destroyMPICommunicators() {
@@ -282,12 +297,9 @@ void exahype::reactive::OffloadingManager::destroyMPICommunicators() {
     MPI_CHECK("destroyMPICommunicators", MPI_Comm_free(&_offloadingComms[i])); assertion(ierr==MPI_SUCCESS);
     MPI_CHECK("destroyMPICommunicators", MPI_Comm_free(&_offloadingCommsMapped[i])); assertion(ierr==MPI_SUCCESS);
 
-#if defined (TaskSharing)
     MPI_CHECK("destroyMPICommunicators", MPI_Comm_free(&_interTeamComms[i])); assertion(ierr==MPI_SUCCESS);
     MPI_CHECK("destroyMPICommunicators", MPI_Comm_free(&_interTeamCommsKey[i])); assertion(ierr==MPI_SUCCESS);
     MPI_CHECK("destroyMPICommunicators", MPI_Comm_free(&_interTeamCommsAck[i])); assertion(ierr==MPI_SUCCESS);
-#endif
-
   }
 }
 //#endif
@@ -636,14 +648,13 @@ void exahype::reactive::OffloadingManager::progressRequests() {
     VT_end(event_progress_sendBack);
 #endif
   }
-#if defined(TaskSharing)
+  //Todo: add ITAC events if needed
   if (hasOutstandingRequestOfType(RequestType::receiveOutcome)) {
     progressRequestsOfType(RequestType::receiveOutcome);
   }
   if (hasOutstandingRequestOfType(RequestType::sendOutcome)) {
     progressRequestsOfType(RequestType::sendOutcome);
   }
-#endif
 }
 
 void exahype::reactive::OffloadingManager::progressAnyRequests() {
@@ -684,15 +695,14 @@ void exahype::reactive::OffloadingManager::progressAnyRequests() {
     VT_end(event_progress_sendBack);
 #endif
   }
-#if defined(TaskSharing)
   //always progress both sends and receives for replica tasks!
+  //todo: add ITAC events if needed
   if (hasOutstandingRequestOfType(RequestType::receiveOutcome)) {
     progressRequestsOfType(RequestType::receiveOutcome);
   }
   if (hasOutstandingRequestOfType(RequestType::sendOutcome)) {
     progressRequestsOfType(RequestType::sendOutcome);
   }
-#endif
 }
 
 bool exahype::reactive::OffloadingManager::progressReceiveBackRequests() {
@@ -888,6 +898,9 @@ void exahype::reactive::OffloadingManager::triggerEmergencyForRank(int rank) {
       exahype::reactive::AggressiveHybridDistributor::getInstance().handleEmergencyOnRank(rank); break;
     case OffloadingManager::OffloadingStrategy::Diffusive:
       exahype::reactive::DiffusiveDistributor::getInstance().handleEmergencyOnRank(rank); break;
+    default:
+      //do nothing, not implemented yet
+      break;
   }
 
   _localBlacklist[rank]++;

@@ -97,7 +97,6 @@ void JobTableStatistics::notifyDetectedError() {
 }
 
 void JobTableStatistics::printStatistics() {
-#if defined(TaskSharing) || defined(OffloadingLocalRecompute) 
      int team = exahype::reactive::OffloadingManager::getInstance().getTMPIInterTeamRank();
      logInfo("printStatistics", " team "<<team
            <<" spawned tasks = "<<_spawnedTasks
@@ -112,7 +111,6 @@ void JobTableStatistics::printStatistics() {
            <<" declined tasks = "<<_declinedTasks
            <<" late tasks = "<<_lateTasks
 		   <<" recomputed tasks = "<<_recomputedTasks);
-#endif
 }
 
 } /* namespace offloading */
