@@ -77,9 +77,9 @@ PROJECT_CFLAGS += -DPerformanceAnalysis
 {% endif %}
 
 {% if tasksharingMode=="task_sharing" %}
-PROJECT_CFLAGS += -DUSE_TMPI -DTaskSharing 
+PROJECT_CFLAGS += -DUSE_TMPI 
 {% elif tasksharingMode=="task_sharing_resilience_checks" %}
-PROJECT_CFLAGS += -DUSE_TMPI -DTaskSharing -DResilienceChecks 
+PROJECT_CFLAGS += -DUSE_TMPI -DResilienceChecks 
 {% endif %}
 
 {% if useLocalRecompute %}
