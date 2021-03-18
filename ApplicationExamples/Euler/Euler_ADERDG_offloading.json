@@ -8,7 +8,7 @@
   "architecture": "hsw",
   "computational_domain": {
     "dimension": 3,
-    "time_steps": 200,
+    "time_steps": 20000,
     "offset": [
       0.0,
       0.0,
@@ -26,16 +26,16 @@
     "autotuning_strategy": "dummy"
   },
   "distributed_memory": {
-    "offloading_lb_strategy": "none",
+    "offloading_lb_strategy": "aggressiveHybrid",
     "offloading_input_file" : "",
-    "offloading_progress" : "progress_thread",
+    "offloading_progress" : "none",
     "offloading_CCP_temperature" : 0,
     "offloading_diffusion_temperature" : 1,
     "offloading_CCP_frequency" : 0,
     "offloading_CCP_steps" : 0,
     "offloading_update_temperature" : true,
     "offloading_increase_temp_threshold" : 1.0,
-    "task_sharing" : "task_sharing",
+    "task_sharing" : "no",
     "timeout": 12000,
     "load_balancing_type": "static",
     "buffer_size"            : 1600,
@@ -67,7 +67,7 @@
       "type": "ADER-DG",
       "name": "EulerSolver_ADERDG",
       "order": 5,
-      "maximum_mesh_size": 0.05,
+      "maximum_mesh_size": 0.3,
       "time_stepping": "global",
       "aderdg_kernel": {
         "language": "C",
@@ -98,7 +98,7 @@
       "parameters": {
         "reference": "entropywave"
       },
-      "plotters": [
+      "_plotters": [
         {
           "type": "vtk::Cartesian::vertices::ascii",
           "name": "ErrorPlotter",

@@ -348,6 +348,12 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
   if (_parser.isValid()) {
     exahype::parser::Parser::OffloadingStrategy selectedStrategy = _parser.getOffloadingStrategy();
     if(selectedStrategy!=exahype::parser::Parser::OffloadingStrategy::None)  {
+
+#if !defined(PerformanceAnalysis)
+      logError("initDistributedMemoryConfiguration()","You've selected reactive task offloading but compiled without Peano's performance analysis (-DPerformanceAnalysis, MODE=PeanoProfile). Please re-run toolkit and re-compile.");
+      std::abort();
+      _parser.invalidate();
+#endif
       exahype::reactive::OffloadingAnalyser::getInstance().enable(true);
       // Create new MPI communicators + progress engine for offloading related MPI communication
       //exahype::reactive::OffloadingManager::getInstance().initialize();

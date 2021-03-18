@@ -110,7 +110,9 @@ exahype::reactive::OffloadingManager::OffloadingManager(int threadId) :
 #endif
   MPI_Comm_set_errhandler(MPI_COMM_WORLD, MPI_ERRORS_RETURN);
 
-  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
+  initializeCommunicatorsAndTeamMetadata();
+
+  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes()*_numTeams;
   _localBlacklist = new double[nnodes];
   std::fill(&_localBlacklist[0], &_localBlacklist[nnodes], 0);
 
@@ -135,7 +137,6 @@ exahype::reactive::OffloadingManager::OffloadingManager(int threadId) :
     logWarning("OffloadingManager()"," maximum allowed MPI tag could not be determined. Offloading may leave the space of allowed tags for longer runs...");
   }
 
-  initialize();
 }
 
 exahype::reactive::OffloadingManager::~OffloadingManager() {
@@ -170,7 +171,7 @@ bool exahype::reactive::OffloadingManager::isEnabled() {
   return _offloadingStrategy!=OffloadingStrategy::None || _resilienceStrategy!=ResilienceStrategy::None;
 }
 
-void exahype::reactive::OffloadingManager::initialize() {
+void exahype::reactive::OffloadingManager::initializeCommunicatorsAndTeamMetadata() {
   //exahype::reactive::OffloadingManager::getInstance().createMPICommunicator();
  static bool initialized = false;
 
@@ -400,6 +401,8 @@ void exahype::reactive::OffloadingManager::submitRequests(
     exahype::solvers::Solver *solver,
     bool block ) {
   
+  assertion(remoteRank>=0);
+
   int ierr;
   //bug only appears when using scorep
   #ifdef ScoreP
@@ -407,7 +410,6 @@ void exahype::reactive::OffloadingManager::submitRequests(
 	  assertion(requests[i]!=MPI_REQUEST_NULL);
   }
   #endif
-
 
   switch(type) {
     case RequestType::send:

@@ -189,12 +189,15 @@ void exahype::mappings::FusedTimeStep::beginIteration(
     } 
   }
 
-  if( (exahype::reactive::OffloadingManager::getInstance().getOffloadingStrategy()
-      ==exahype::reactive::OffloadingManager::OffloadingStrategy::StaticHardcoded)
-    ||
-      (exahype::reactive::OffloadingManager::getInstance().getOffloadingStrategy()
-      ==exahype::reactive::OffloadingManager::OffloadingStrategy::Static)
-     && issuePredictionJobsInThisIteration()) {
+  if( (
+        (exahype::reactive::OffloadingManager::getInstance().getOffloadingStrategy()
+         ==exahype::reactive::OffloadingManager::OffloadingStrategy::StaticHardcoded)
+        ||
+        (exahype::reactive::OffloadingManager::getInstance().getOffloadingStrategy()
+         ==exahype::reactive::OffloadingManager::OffloadingStrategy::Static)
+     )
+     &&  issuePredictionJobsInThisIteration()
+     ) {
     exahype::reactive::StaticDistributor::getInstance().resetRemainingTasksToOffload();
   }
 

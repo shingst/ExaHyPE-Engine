@@ -2848,7 +2848,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
     exahype::reactive::OffloadingManager::getInstance().submitRequests(sendRequests,
                                                                          (teams-1)*(NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME+1),
                                                                          tag,
-                                                                         -1,
+                                                                         0,  //hack: need a better rank number here
                                                                          MigratablePredictionJob::sendHandlerTaskSharing,
                                                                          exahype::reactive::RequestType::sendOutcome,
                                                                          this, MPI_BLOCKING);

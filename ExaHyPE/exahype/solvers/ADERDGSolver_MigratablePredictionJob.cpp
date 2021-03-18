@@ -808,6 +808,17 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
       a_tagToCellDesc);
   a_tagToCellDesc.release();
 
+  tbb::concurrent_hash_map<int, MigratablePredictionJobMetaData*>::accessor a_tagToMetaData;
+  found =
+      static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagToMetaData.find(
+          a_tagToMetaData, tag);
+  assertion(found);
+  MigratablePredictionJobMetaData *metadata = a_tagToMetaData->second;
+  delete metadata;
+  static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagToMetaData.erase(
+      a_tagToMetaData);
+  a_tagToMetaData.release();
+
 #ifndef OffloadingLocalRecompute
   tbb::concurrent_hash_map<const CellDescription*, std::pair<int,int>>::accessor a_cellDescToTagRank;
   found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapCellDescToTagRank.find(a_cellDescToTagRank, cellDescription);

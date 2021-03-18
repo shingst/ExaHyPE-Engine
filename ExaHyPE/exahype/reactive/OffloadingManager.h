@@ -335,7 +335,7 @@ class exahype::reactive::OffloadingManager {
     bool isEnabled();
 
     //Todo: with these two function, we can clean up the interface and make some more functions private
-    void initialize();
+    void initializeCommunicatorsAndTeamMetadata();
 
     void destroy();
 
