@@ -32,7 +32,7 @@
     "manual_pinning": false
   },
   "distributed_memory": {
-    "offloading_lb_strategy": "aggressiveHybrid",
+    "offloading_lb_strategy": "none",
     "offloading_input_file" : "",
     "offloading_progress" : "none",   
     "offloading_CCP_temperature" : 0,
@@ -41,7 +41,7 @@
     "offloading_CCP_steps" : 0,
     "offloading_update_temperature" : true,
     "offloading_increase_temp_threshold" : 1.0,
-    "task_sharing" : "no",
+    "task_sharing" : "task_sharing",
     "timeout": 12000,
     "load_balancing_type": "static",
     "buffer_size"            : 1600,    

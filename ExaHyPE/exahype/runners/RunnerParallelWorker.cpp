@@ -27,13 +27,11 @@
 
 #include "exahype/Vertex.h"
 
-#if defined(DistributedOffloading)
-#include "exahype/offloading/StaticDistributor.h"
-#include "exahype/offloading/AggressiveDistributor.h"
-#include "exahype/offloading/AggressiveCCPDistributor.h"
-#include "exahype/offloading/AggressiveHybridDistributor.h"
-#include "exahype/offloading/OffloadingManager.h"
-#endif
+#include "../reactive/StaticDistributor.h"
+#include "../reactive/AggressiveDistributor.h"
+#include "../reactive/AggressiveCCPDistributor.h"
+#include "../reactive/AggressiveHybridDistributor.h"
+#include "../reactive/OffloadingManager.h"
 
 #if defined(SharedMemoryParallelisation) && defined(PerformanceAnalysis)
 #include "sharedmemoryoracles/OracleForOnePhaseWithShrinkingGrainSize.h"
@@ -128,49 +126,47 @@ void exahype::runners::Runner::runGlobalStep() {
   assertion(!peano::parallel::loadbalancing::Oracle::getInstance()
                  .isLoadBalancingActivated());
 
-#if defined(DistributedOffloading)
   // For the static offloading strategy, we need to allgather load information
   // from all ranks once and compute a new target load distribution.
-#if defined(OffloadingStrategyStatic)
-  logInfo("runner(...)",
-          "running global step "<<exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells<<
-		  ", "<<exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells );
-  exahype::offloading::StaticDistributor::getInstance().computeNewLoadDistribution(
+  switch(exahype::reactive::OffloadingManager::getInstance().getOffloadingStrategy()) {
+  case exahype::reactive::OffloadingManager::OffloadingStrategy::Static:
+    logInfo("runner(...)",
+            "running global step "<<exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells<<
+		        ", "<<exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells );
+    exahype::reactive::StaticDistributor::getInstance().computeNewLoadDistribution(
       exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells,
-	  exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells);
-#elif defined(OffloadingStrategyAggressive)
-  logInfo("runner(...)",
+	    exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells);
+    break;
+  case exahype::reactive::OffloadingManager::OffloadingStrategy::Aggressive:
+    logInfo("runner(...)",
           "running global step "<<exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells<<
-		  ", "<<exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells );
-  exahype::offloading::AggressiveDistributor::getInstance().computeIdealLoadDistribution(
+		      ", "<<exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells );
+    exahype::reactive::AggressiveDistributor::getInstance().computeIdealLoadDistribution(
       exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells,
-	  exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells);
-#elif defined(OffloadingStrategyAggressiveCCP)
-  logInfo("runner(...)",
+	    exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells);
+    exahype::reactive::AggressiveDistributor::getInstance().enable();
+    break;
+  case exahype::reactive::OffloadingManager::OffloadingStrategy::AggressiveCCP:
+    logInfo("runner(...)",
           "running global step "<<exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells<<
-      ", "<<exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells );
-  exahype::offloading::AggressiveCCPDistributor::getInstance().computeIdealLoadDistribution(
+          ", "<<exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells );
+    exahype::reactive::AggressiveCCPDistributor::getInstance().computeIdealLoadDistribution(
       exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells,
-    exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells);
-#elif defined(OffloadingStrategyAggressiveHybrid)
-  logInfo("runner(...)",
+      exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells);
+    exahype::reactive::AggressiveCCPDistributor::getInstance().enable();
+    break;
+  case exahype::reactive::OffloadingManager::OffloadingStrategy::AggressiveHybrid:
+    logInfo("runner(...)",
           "running global step "<<exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells<<
-      ", "<<exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells );
-  exahype::offloading::AggressiveHybridDistributor::getInstance().computeIdealLoadDistribution(
+          ", "<<exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells );
+    exahype::reactive::AggressiveHybridDistributor::getInstance().computeIdealLoadDistribution(
       exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells,
-    exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells);
-#endif 
-
-
-#if defined(OffloadingStrategyAggressive)
-  exahype::offloading::AggressiveDistributor::getInstance().enable();
-#elif defined(OffloadingStrategyAggressiveCCP)
-  exahype::offloading::AggressiveCCPDistributor::getInstance().enable();
-#elif defined(OffloadingStrategyAggressiveHybrid)
-  exahype::offloading::AggressiveHybridDistributor::getInstance().enable();
-#endif
-
-#endif
+      exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells);
+    exahype::reactive::AggressiveHybridDistributor::getInstance().enable();
+    break;
+  default:
+    break;
+  }
 
 }
 #endif

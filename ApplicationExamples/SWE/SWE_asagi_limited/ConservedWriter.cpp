@@ -7,8 +7,6 @@
 // ========================
 #include "ConservedWriter.h"
 
-unsigned long long sum = 0;
-
 SWE::ConservedWriter::ConservedWriter(SWE::MySWESolver& solver) {
   // @TODO Please insert your code here.
 }
@@ -18,13 +16,11 @@ SWE::ConservedWriter::~ConservedWriter() {
 
 void SWE::ConservedWriter::startPlotting( double time) {
   // @TODO Please insert your code here.
-  sum = 0;
 }
 
 
 void SWE::ConservedWriter::finishPlotting() {
   // @TODO Please insert your code here.
-	std::cout<<" hash sum "<<sum<<std::endl;
 }
 
 void SWE::ConservedWriter::mapQuantities(
@@ -39,8 +35,6 @@ void SWE::ConservedWriter::mapQuantities(
   const int writtenUnknowns = 5;
   for (int i=0; i<writtenUnknowns-1; i++){ 
     outputQuantities[i] = Q[i];
-    unsigned long long* uPtr = (unsigned long long*) &(Q[i]);
-    sum = (sum) ^ (*uPtr);
   }
   outputQuantities[4] = 0;
   if(Q[3] < 0.0)

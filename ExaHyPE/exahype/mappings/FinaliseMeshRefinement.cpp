@@ -13,6 +13,12 @@
  
 #include "exahype/mappings/FinaliseMeshRefinement.h"
 
+#include "../reactive/AggressiveCCPDistributor.h"
+#include "../reactive/AggressiveDistributor.h"
+#include "../reactive/AggressiveHybridDistributor.h"
+#include "../reactive/OffloadingAnalyser.h"
+#include "../reactive/OffloadingManager.h"
+#include "../reactive/PerformanceMonitor.h"
 #include "tarch/multicore/Loop.h"
 
 #include "peano/datatraversal/autotuning/Oracle.h"
@@ -26,13 +32,6 @@
 #include "exahype/mappings/RefinementStatusSpreading.h"
 
 
-#ifdef DistributedOffloading
-#include "exahype/offloading/PerformanceMonitor.h"
-#include "exahype/offloading/AggressiveDistributor.h"
-#include "exahype/offloading/AggressiveCCPDistributor.h"
-#include "exahype/offloading/AggressiveHybridDistributor.h"
-#include "exahype/offloading/OffloadingAnalyser.h"
-#endif
 
 #if defined(TMPI_Heartbeats)
 #include "exahype/offloading/HeartbeatJob.h"
@@ -243,28 +242,30 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
 
   NumberOfEnclaveCells = _numberOfEnclaveCells;
   NumberOfSkeletonCells = _numberOfSkeletonCells;
+//#if defined(DistributedOffloading)
+  exahype::reactive::PerformanceMonitor::getInstance().setTasksPerTimestep(_numberOfEnclaveCells + _numberOfSkeletonCells);
 
-#ifdef DistributedOffloading
-  exahype::offloading::PerformanceMonitor::getInstance().setTasksPerTimestep(_numberOfEnclaveCells + _numberOfSkeletonCells);
-
-  for (auto* solver : exahype::solvers::RegisteredSolvers) {
-    if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
-      static_cast<exahype::solvers::ADERDGSolver*>(solver)->startOffloadingManager();
-    }
-    if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-      static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->startOffloadingManager();
+  if(exahype::reactive::OffloadingManager::getInstance().isEnabled()) {
+    for (auto* solver : exahype::solvers::RegisteredSolvers) {
+      if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
+        static_cast<exahype::solvers::ADERDGSolver*>(solver)->startOffloadingManager();
+      }
+      if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->startOffloadingManager();
+      }
     }
   }
 
-#if defined(OffloadingStrategyAggressiveHybrid)
-  exahype::offloading::AggressiveHybridDistributor::getInstance().resetTasksToOffload();
-  exahype::offloading::OffloadingAnalyser::getInstance().resetMeasurements();
-  exahype::offloading::AggressiveHybridDistributor::getInstance().enable();  
-#endif
-#endif
+  if(exahype::reactive::OffloadingManager::getInstance().getOffloadingStrategy()
+     ==
+     exahype::reactive::OffloadingManager::OffloadingStrategy::AggressiveHybrid) {
+    exahype::reactive::AggressiveHybridDistributor::getInstance().resetTasksToOffload();
+    exahype::reactive::OffloadingAnalyser::getInstance().resetMeasurements();
+    exahype::reactive::AggressiveHybridDistributor::getInstance().enable();
+  }
 
 #if defined(TMPI_Heartbeats)
-  exahype::offloading::HeartbeatJob::startHeartbeatJob();
+  exahype::reactive::HeartbeatJob::startHeartbeatJob();
 #endif
 
   _backgroundJobsHaveTerminated = false;

@@ -72,32 +72,16 @@ ifeq ($(DISTRIBUTEDMEM),)
 {% endif %}
 endif
 
-{% if offloading=="static" %}
-PROJECT_CFLAGS += -DDistributedOffloading -DOffloadingStrategyStatic
-{% elif offloading=="dynamic" %}
-PROJECT_CFLAGS += -DDistributedOffloading -DOffloadingStrategyDynamic
-{% elif offloading=="dynamic_diffusive" %}
-PROJECT_CFLAGS += -DDistributedOffloading -DOffloadingStrategyDiffusive 
-{% elif offloading=="aggressive_diffusive" %}
-PROJECT_CFLAGS += -DDistributedOffloading -DOffloadingStrategyAggressive 
-{% elif offloading=="aggressiveCCP_diffusive" %}
-PROJECT_CFLAGS += -DDistributedOffloading -DOffloadingStrategyAggressiveCCP 
-{% elif offloading=="aggressiveHybrid" %}
-PROJECT_CFLAGS += -DDistributedOffloading -DOffloadingStrategyAggressiveHybrid -DPerformanceAnalysis 
-{% elif offloading=="hybrid" %}
-PROJECT_CFLAGS += -DDistributedOffloading -DOffloadingStrategyHybrid
-{% elif offloading=="static_hardcoded" %}
-PROJECT_CFLAGS += -DDistributedOffloading -DOffloadingStrategyStaticHardcoded
-{% elif offloading=="none" %}
-PROJECT_CFLAGS += -DAnalyseWaitingTimes
+{% if offloading!="none" %}
+PROJECT_CFLAGS += -DPerformanceAnalysis
 {% endif %}
 
 {% if tasksharingMode=="task_sharing" %}
-PROJECT_CFLAGS += -DUSE_TMPI -DDistributedOffloading -DTaskSharing 
+PROJECT_CFLAGS += -DUSE_TMPI  
 {% elif tasksharingMode=="task_sharing_resilience_checks" %}
-PROJECT_CFLAGS += -DUSE_TMPI -DDistributedOffloading -DTaskSharing -DResilienceChecks 
+PROJECT_CFLAGS += -DUSE_TMPI -DResilienceChecks 
 {% elif tasksharingMode=="task_sharing_resilience_correction" %}
-PROJECT_CFLAGS += -DUSE_TMPI -DDistributedOffloading -DTaskSharing -DResilienceChecks -DResilienceHealing 
+PROJECT_CFLAGS += -DUSE_TMPI -DResilienceChecks -DResilienceHealing 
 {% endif %}
 
 {% if useLocalRecompute %}

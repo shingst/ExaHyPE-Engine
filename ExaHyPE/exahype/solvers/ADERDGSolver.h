@@ -35,7 +35,6 @@
 #include "exahype/profilers/simple/NoOpProfiler.h"
 #include "exahype/records/ADERDGCellDescription.h"
 
-#if defined(DistributedOffloading)
 #include <mpi.h>
 
 #define OFFLOADING_SLOW_OPERATION_THRESHOLD 0.001
@@ -56,16 +55,15 @@
 #endif
 #endif
 
+#include "exahype/reactive/OffloadingManager.h"
+#include "exahype/reactive/JobTableStatistics.h"
+
 #include <tbb/concurrent_hash_map.h>
 #include <tbb/concurrent_queue.h>
 #include <tbb/task.h>
 #include <tbb/task_group.h>
 #include <unordered_set>
 #include "tarch/multicore/Jobs.h"
-#include "exahype/offloading/JobTableStatistics.h"
-#include "exahype/offloading/OffloadingManager.h"
-#endif
-
 
 namespace exahype {
   namespace parser {
@@ -153,6 +151,7 @@ public:
   static int prolongateFaceDataToVirtualCellHandle;
   static int restrictToTopMostParentHandle;
 
+  //Todo(Philipp): are these still used?
   static int event_stp;
   static int event_stp_local_replica;
   static int event_stp_remote;
@@ -225,7 +224,6 @@ public:
   typedef exahype::records::ADERDGCellDescription CellDescription;
   typedef peano::heap::RLEHeap<CellDescription> Heap;
 
-#if defined (DistributedOffloading)
   /**
    * Semaphore that is used to guarantee mutual exclusion for
    * offloading progress.
@@ -246,7 +244,7 @@ public:
   static std::atomic<bool> VetoEmergency;
   static const CellDescription* LastEmergencyCell;
   static tarch::multicore::BooleanSemaphore  EmergencySemaphore;
-#endif
+//#endif
 
   /**
    * @return if this an ADER-DG solver which is not able to solve nonlinear problems.
@@ -962,7 +960,7 @@ private:
   static void prepareWorkerCellDescriptionAtMasterWorkerBoundary(
       CellDescription& cellDescription);
 
-#if defined(DistributedOffloading)
+
   static int getTaskPriorityLocalStealableJob(int cellDescriptionsIndex, int element, double timeStamp);
 
 #ifdef OffloadingUseProgressTask
@@ -1107,10 +1105,10 @@ private:
    * and its data has been sent back.
    */
   tbb::concurrent_hash_map<std::pair<int,int>, MigratablePredictionJobData*> _mapTagRankToStolenData;
-#if defined(TaskSharing)
+//#if defined(TaskSharing)
   tbb::concurrent_hash_map<std::pair<int,int>, MigratablePredictionJobData*> _mapTagRankToReplicaData;
   tbb::concurrent_hash_map<std::pair<int,int>, double*> _mapTagRankToReplicaKey;
-#endif
+//#endif
   tbb::concurrent_hash_map<int, CellDescription*> _mapTagToCellDesc;
   tbb::concurrent_hash_map<const CellDescription*, std::pair<int,int>> _mapCellDescToTagRank;
   tbb::concurrent_hash_map<const CellDescription*, tarch::multicore::jobs::Job*> _mapCellDescToRecompJob;
@@ -1228,7 +1226,7 @@ private:
     	  exahype::solvers::Solver* solver,
 		    int tag,
 		    int rank);
-#if defined(TaskSharing)
+//#if defined(TaskSharing)
       static void sendKeyHandlerTaskSharing(
     	  exahype::solvers::Solver* solver,
 		    int tag,
@@ -1243,7 +1241,7 @@ private:
     	  exahype::solvers::Solver* solver,
 		    int tag,
 		    int rank);
-#endif
+//#endif
 
       // call-back method: called when a remotely executed job has been returned back
       static void receiveBackHandler(
@@ -1256,7 +1254,7 @@ private:
 		    int tag,
 		    int rank);
 
-#if defined(TaskSharing)
+//#if defined(TaskSharing)
       static void receiveKeyHandlerTaskSharing(
     	  exahype::solvers::Solver* solver,
 		    int tag,
@@ -1266,12 +1264,12 @@ private:
     	  exahype::solvers::Solver* solver,
 		    int tag,
 		    int rank);
-#endif
+//#endif
       bool run(bool calledFromMaster) override;
   };
 
 //#if defined(TaskSharing) // || defined(OffloadingLocalRecompute) //Todo(Philipp): do we still need this for local recompute?
-#if defined(TaskSharing)
+
   static int REQUEST_JOB_CANCEL;
   static int REQUEST_JOB_ACK;
 
@@ -1344,12 +1342,12 @@ private:
   void releasePendingOutcomeAndShare(int cellDescriptionsIndex, int element);
 
   class ConcurrentJobKeysList {
-    private:
-	    std::list<JobTableKey> _keys;
-	    std::mutex _mtx;
+     private:
+	  std::list<JobTableKey> _keys;
+	  std::mutex _mtx;
 
-    public:
-	    ConcurrentJobKeysList() : _keys(), _mtx() {};
+     public:
+	  ConcurrentJobKeysList() : _keys(), _mtx() {};
 
       bool try_pop_front(JobTableKey *result) {
     	bool found = false;
@@ -1382,7 +1380,7 @@ private:
 
   ConcurrentJobKeysList _allocatedJobs;
   //tbb::concurrent_queue<JobTableKey> _allocatedJobs;
-#endif
+//#endif
 
   /**
    * If a task decides to send itself away, an offload entry is generated and submitted into
@@ -1616,7 +1614,8 @@ private:
    * to another rank.
    */
   void submitOrSendMigratablePredictionJob(MigratablePredictionJob *job);
-#endif
+
+//#endif
 
 #endif
 
@@ -3072,7 +3071,7 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) override;
 
-#ifdef DistributedOffloading
+//#ifdef DistributedOffloading
   /*
    * Makes progress on all offloading-related MPI communication.
    */
@@ -3141,7 +3140,7 @@ public:
   void addRecomputeJobForCellDescription(tarch::multicore::jobs::Job* job, const CellDescription* cellDescription);
 #endif
 
-#endif /*DistributedOffloading*/
+//#endif /*DistributedOffloading*/
 
 #endif
 
@@ -3549,7 +3548,7 @@ public:
      return specifiedRelaxationParameter;
   }
 
-#if defined(DistributedOffloading)
+//#if defined(DistributedOffloading)
   virtual void waitUntilCompletedLastStepOffloading(
       const void* cellDescripPtr,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) {
  #ifdef USE_ITAC
@@ -3560,7 +3559,7 @@ public:
  #endif
 
  #ifdef OffloadingUseProfiler
-   exahype::offloading::OffloadingProfiler::getInstance().beginWaitForTasks();
+   exahype::reactive::OffloadingProfiler::getInstance().beginWaitForTasks();
    double time_background = -MPI_Wtime();
  #endif
 
@@ -3638,7 +3637,7 @@ public:
             if(recompJob!=nullptr) {// got one
               recompJob->run(true);
               hasRecomputed = true;
-              exahype::offloading::JobTableStatistics::getInstance().notifyRecomputedTask();
+              exahype::reactive::JobTableStatistics::getInstance().notifyRecomputedTask();
             }
       	}
       	if(!hasTriggeredEmergency) {
@@ -3648,7 +3647,7 @@ public:
               logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank);
               exahype::solvers::ADERDGSolver::VetoEmergency = true;
               exahype::solvers::ADERDGSolver::LastEmergencyCell = &cellDescription;
-              exahype::offloading::OffloadingManager::getInstance().triggerEmergencyForRank(responsibleRank);
+              exahype::reactive::OffloadingManager::getInstance().triggerEmergencyForRank(responsibleRank);
     	    }
       	}
   	    lock.free();
@@ -3656,7 +3655,7 @@ public:
       	if(!hasTriggeredEmergency) {
     	    hasTriggeredEmergency = true;
           logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank);
-          exahype::offloading::OffloadingManager::getInstance().triggerEmergencyForRank(responsibleRank);
+          exahype::reactive::OffloadingManager::getInstance().triggerEmergencyForRank(responsibleRank);
       	}
 #endif
       }
@@ -3681,7 +3680,7 @@ public:
  #endif
           hasTriggeredEmergency = true;
           logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank);
-          exahype::offloading::OffloadingManager::getInstance().triggerEmergencyForRank(responsibleRank);
+          exahype::reactive::OffloadingManager::getInstance().triggerEmergencyForRank(responsibleRank);
  #ifdef USE_ITAC
    // VT_end(event_emergency);
  #endif
@@ -3697,14 +3696,14 @@ public:
 
  #ifdef OffloadingUseProfiler
    time_background += MPI_Wtime();
-   exahype::offloading::OffloadingProfiler::getInstance().endWaitForTasks(time_background);
+   exahype::reactive::OffloadingProfiler::getInstance().endWaitForTasks(time_background);
  #endif
 
  #ifdef USE_ITAC
     VT_end(waitUntilCompletedLastStepHandle);
  #endif
   }
-#endif
+//#endif
 };
 
 #endif

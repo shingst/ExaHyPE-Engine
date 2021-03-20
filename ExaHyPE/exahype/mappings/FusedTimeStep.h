@@ -17,10 +17,6 @@
 #include "tarch/la/Vector.h"
 #include "tarch/logging/Log.h"
 
-#if defined(DistributedOffloading) && defined(OffloadingStrategyDiffusive)
-#include "tarch/timing/Watch.h"
-#endif
-
 #include "peano/CommunicationSpecification.h"
 #include "peano/MappingSpecification.h"
 #include "peano/grid/VertexEnumerator.h"

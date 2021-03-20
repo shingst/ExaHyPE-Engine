@@ -342,7 +342,7 @@ std::string exahype::parser::Parser::getStringFromPath(std::string path, std::st
 bool exahype::parser::Parser::stringFromPathEquals(const std::string& path, const std::string& defaultValue,const bool isOptional, const std::string& otherString) const {
   assertion(isValid());
   try {
-    return _impl->getFromPath(path, defaultValue, isOptional).compare(otherString);
+    return _impl->getFromPath(path, defaultValue, isOptional).compare(otherString)==0;
   } catch(std::runtime_error& e) {
     logError("stringFromPathEquals()", e.what());
     invalidate();
@@ -1354,6 +1354,37 @@ exahype::parser::Parser::TBBInvadeStrategy exahype::parser::Parser::getTBBInvade
 
   return TBBInvadeStrategy::Undef;
 }
+
+exahype::parser::Parser::OffloadingStrategy exahype::parser::Parser::getOffloadingStrategy() const{
+  if (stringFromPathEquals("/distributed_memory/offloading_lb_strategy", "none", true, "aggressiveHybrid")) {
+    return OffloadingStrategy::AggressiveHybrid;
+  }
+  if (stringFromPathEquals("/distributed_memory/offloading_lb_strategy", "none", true, "none")) {
+    return OffloadingStrategy::None;
+  }
+  if (stringFromPathEquals("/distributed_memory/offloading_lb_strategy", "none", true, "static_hardcoded")) {
+    return OffloadingStrategy::StaticHardcoded;
+  }
+  return OffloadingStrategy::None;
+}
+
+exahype::parser::Parser::ResilienceStrategy exahype::parser::Parser::getResilienceStrategy() const{
+  if (stringFromPathEquals("/distributed_memory/task_sharing", "no", true, "no")) {
+    return ResilienceStrategy::None;
+  }
+  if (stringFromPathEquals("/distributed_memory/task_sharing", "no", true, "task_sharing")) {
+    return ResilienceStrategy::TaskSharing;
+  }
+  if (stringFromPathEquals("/distributed_memory/task_sharing", "no", true, "task_sharing_resilience_checks")) {
+    return ResilienceStrategy::TaskSharingResilienceChecks;
+  }
+  //todo: not implemented yet
+  if (stringFromPathEquals("/distributed_memory/task_sharing", "no", true, "task_sharing_resilience_correction")) {
+    return ResilienceStrategy::TaskSharingResilienceCorrection;
+  }
+  return ResilienceStrategy::None;
+}
+
 
 double exahype::parser::Parser::getCCPTemperatureOffloading() const {
   double result = getDoubleFromPath("/distributed_memory/offloading_CCP_temperature", 0, isOptional); 

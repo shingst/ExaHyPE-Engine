@@ -6,7 +6,7 @@
 
 #if defined(FileTrace)
 #include <chrono>
-#include "exahype/offloading/STPStatsTracer.h"
+#include "../reactive/STPStatsTracer.h"
 #endif
 
 #if defined(SharedTBB) && !defined(noTBBPrefetchesJobData)
@@ -70,10 +70,10 @@ bool exahype::solvers::ADERDGSolver::PredictionJob::run(bool runOnMasterThread) 
 
   //std::stringstream stream;
   #if defined Picard
-  exahype::offloading::STPStatsTracer::getInstance().writeTracingEventRunIterations(duration.count(), numberIterations, exahype::offloading::STPTraceKey::ADERDGPrediction);
+  exahype::reactive::STPStatsTracer::getInstance().writeTracingEventRunIterations(duration.count(), numberIterations, exahype::reactive::STPTraceKey::ADERDGPrediction);
   #else
-  exahype::offloading::STPStatsTracer::getInstance().writeTracingEventRun(duration.count(), exahype::offloading::STPTraceKey::ADERDGPrediction);
-  exahype::offloading::STPStatsTracer::getInstance().writeTracingEventIterations(numberIterations, exahype::offloading::STPTraceKey::ADERDGPrediction);
+  exahype::reactive::STPStatsTracer::getInstance().writeTracingEventRun(duration.count(), exahype::reactive::STPTraceKey::ADERDGPrediction);
+  exahype::reactive::STPStatsTracer::getInstance().writeTracingEventIterations(numberIterations, exahype::reactive::STPTraceKey::ADERDGPrediction);
   #endif 
 //  int rank=tarch::parallel::Node::getInstance().getRank();
 //  #if defined SharedTBB
