@@ -11,13 +11,14 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if !defined(_EXAHYPE_OFFLOADINGMANAGER_H_)  && defined(Parallel)
-#define _EXAHYPE_OFFLOADINGMANAGER_H_
+#if !defined(_EXAHYPE_REQUESTMANAGER_H_)  && defined(Parallel)
+#define _EXAHYPE_REQUESTMANAGER_H_
 
 #include "tarch/logging/Log.h"
 #include "tarch/multicore/BooleanSemaphore.h"
 #include "tbb/concurrent_hash_map.h"
 #include "tbb/concurrent_queue.h"
+#include "tarch/multicore/Jobs.h"
 
 
 #include <mpi.h>
@@ -36,7 +37,7 @@
 
 namespace exahype {
   namespace reactive {
-    class OffloadingManager;
+    class RequestManager;
     /**
      * Different MPI request types for prioritizing message requests.
      */
@@ -59,15 +60,12 @@ namespace exahype {
 }
 
 /**
- * The offloading manager manages the created asynchronous MPI requests,
- * e.g., when a task is offloaded (we use those terms
- * interchangeably). In addition, the offloading
- * manager serves as a connecting point to the ADERDGSolver
- * for making decisions on whether a task should be offloaded or not.
- * Finally it keeps track of some meta information such as the
- * number of emergency events (i.e., local blacklist).
+ * The request manager manages the created asynchronous non-blocking MPI requests,
+ * arising for instance when a task is offloaded.
+ * It allows to progress any outstanding requests and invoke call back methods
+ * whenever outstanding requests have been completed.
  */
-class exahype::reactive::OffloadingManager {
+class exahype::reactive::RequestManager {
   private:
     /**
      * The logging device.
@@ -93,8 +91,6 @@ class exahype::reactive::OffloadingManager {
      *  requests.
      */
     std::atomic<int> _nextGroupId;
-
-    int _maxTag;
 
     /**
      * Counts number of running progress jobs.
@@ -171,30 +167,7 @@ class exahype::reactive::OffloadingManager {
     std::atomic<int> *_postedSendOutcomesPerRank;
     std::atomic<int> *_postedReceiveOutcomesPerRank;
 
-    /**
-     * Flag is set, if this rank has become a victim rank in this
-     * time step.
-     */
-    std::atomic<bool> _isVictim;
-
-    /**
-     * Flag indicating whether this rank has triggered an emergency.
-     */
-    std::atomic<bool> _emergencyTriggered;
-
-    /**
-     * Local instance of blacklist.
-     */
-    double *_localBlacklist;
-
-    /**
-     * Flag indicating whether the rank has notified
-     * all its victims that no more tasks will be
-     * offloaded in this time step.
-     */
-    bool _hasNotifiedSendCompleted;
-
-    OffloadingManager(int threadId);
+    RequestManager(int threadId);
 
     /**
      * This method makes progress on all current requests of the given request type.
@@ -217,23 +190,6 @@ class exahype::reactive::OffloadingManager {
         int limit = std::numeric_limits<int>::max());
 
     /**
-     * Communicator for sending/receiving offloaded tasks.
-     */
-    //MPI_Comm _offloadingComm;
-
-    /**
-     * Communicator for sending/receiving results of offloaded tasks.
-     */
-    //MPI_Comm _offloadingCommMapped;
-
-    /**
-     * Communicator for communication between replicating ranks.
-     */
-    //MPI_Comm _interTeamComm, _interTeamCommKey, _interTeamCommAck;
-    static int _numTeams;
-    static int _interTeamRank;
-
-    /**
      * The request handler job aims to distribute the work that is to be done
      * when a request group is finished evenly among the TBB worker threads.
      */
@@ -253,7 +209,6 @@ class exahype::reactive::OffloadingManager {
       bool operator()();
     };
 
-  #ifdef OffloadingUseProgressTask
     class ProgressJob : public tarch::multicore::jobs::Job
     {
       public:
@@ -281,8 +236,6 @@ class exahype::reactive::OffloadingManager {
       ProgressReceiveBackJob();
       bool operator()();
     };
-  #endif
-
 
     inline int getNextRequestId() {
       // Todo: Deal with overflow
@@ -294,56 +247,14 @@ class exahype::reactive::OffloadingManager {
       return _nextGroupId++;
     }
 
-    static OffloadingManager* _static_managers[MAX_THREADS];
-
-    static MPI_Comm  _offloadingComms[MAX_THREADS];
-    static MPI_Comm  _offloadingCommsMapped[MAX_THREADS];
-
-    static MPI_Comm  _interTeamComms[MAX_THREADS];
-    static MPI_Comm  _interTeamCommsKey[MAX_THREADS];
-    static MPI_Comm  _interTeamCommsAck[MAX_THREADS];
+    static RequestManager* _static_managers[MAX_THREADS];
 
   public:
-    enum class OffloadingStrategy {
-        None,
-        Dynamic,
-        Diffusive,
-        Aggressive,
-        AggressiveCCP,
-        AggressiveHybrid,
-        Static,
-        StaticHardcoded
-    };
-
-    enum class ResilienceStrategy {
-        None,
-        TaskSharing,
-        TaskSharingResilienceChecks,
-        TaskSharingResilienceCorrection
-    };
-
-    OffloadingStrategy _offloadingStrategy;
-
-    ResilienceStrategy _resilienceStrategy;
-
-    void setOffloadingStrategy(OffloadingStrategy strategy);
-    OffloadingStrategy getOffloadingStrategy();
-
-    void setResilienceStrategy(ResilienceStrategy strategy);
-    ResilienceStrategy getResilienceStrategy();
-
-    bool isEnabled();
-
-    //Todo: with these two function, we can clean up the interface and make some more functions private
-    void initializeCommunicatorsAndTeamMetadata();
-
-    void destroy();
 
     int getNumberOfOutstandingRequests(RequestType type);
 
     void printPostedRequests();
     void resetPostedRequests();
-    int getOffloadingTag();
 
     /**
      * Submit a group of MPI requests with a given MPI message tag.
@@ -371,53 +282,6 @@ class exahype::reactive::OffloadingManager {
     void cancelOutstandingRequests();
 #endif
 
-//#if defined (TaskSharing)
-    void setTMPIInterTeamCommunicators(MPI_Comm comm, MPI_Comm commKey, MPI_Comm commAck);
-    MPI_Comm getTMPIInterTeamCommunicatorData();
-    MPI_Comm getTMPIInterTeamCommunicatorKey();
-    MPI_Comm getTMPIInterTeamCommunicatorAck();
-
-    void setTMPINumTeams(int team);
-    int getTMPINumTeams();
-
-    void setTMPIInterTeamRank(int interTeamRank);
-    int getTMPIInterTeamRank();
-//#endif
-
-    /**
-     * Creates offloading MPI communicators.
-     */
-    //void createMPICommunicator();
-
-    static void createMPICommunicators();
-    static void destroyMPICommunicators();
-
-    /**
-     * Destroys offloading MPI communicators.
-     */
-    //void destroyMPICommunicator();
-
-    /**
-     * Returns MPI communicator used for
-     * distributing load information and
-     * sending/receiving tasks to/from a rank.
-     */
-    MPI_Comm getMPICommunicator();
-
-    /**
-     * Return MPI communicator for sending/receiving back
-     * results of an offloaded task.
-     */
-    MPI_Comm getMPICommunicatorMapped();
-
-    /**
-     * Given the current load situation and global knowledge of the performance
-     * of the other ranks, this method selects a victim rank for a
-     * stealable task, i.e.,
-     * a rank to which local work should be offloaded in order to
-     * improve load balance.
-     */
-    bool selectVictimRank(int& victim, bool& last);
 
 #ifdef OffloadingUseProgressTask
     void resetHasNotifiedSendCompleted();
@@ -426,20 +290,8 @@ class exahype::reactive::OffloadingManager {
     void notifyAllVictimsSendCompletedIfNotNotified();
 #endif
 
-    void triggerVictimFlag();
-    void resetVictimFlag();
-    bool isVictim();
-
-    bool isBlacklisted(int rank);
-    bool isEmergencyTriggered();
-    bool isEmergencyTriggeredOnRank(int rank);
-    void triggerEmergencyForRank(int rank);
-
-    void recoverBlacklistedRanks();
-    void printBlacklist();
-
-    static OffloadingManager& getInstance();
-    virtual ~OffloadingManager();
+    static RequestManager& getInstance();
+    virtual ~RequestManager();
 };
 
 #endif

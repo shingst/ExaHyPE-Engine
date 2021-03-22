@@ -30,7 +30,7 @@
 #include "../reactive/AggressiveDistributor.h"
 #include "../reactive/AggressiveCCPDistributor.h"
 #include "../reactive/AggressiveHybridDistributor.h"
-#include "../reactive/OffloadingManager.h"
+#include "OffloadingContext.h"
 
 tarch::logging::Log  exahype::reactive::OffloadingAnalyser::_log( "exahype::reactive::OffloadingAnalyser" );
 
@@ -187,8 +187,8 @@ void exahype::reactive::OffloadingAnalyser::beginIteration() {
     }
     _timeStepWatch.startTimer();
 
-    exahype::reactive::OffloadingManager::getInstance().resetVictimFlag(); //TODO: correct position here?
-    exahype::reactive::OffloadingManager::getInstance().recoverBlacklistedRanks();
+    exahype::reactive::OffloadingContext::getInstance().resetVictimFlag(); //TODO: correct position here?
+    exahype::reactive::OffloadingContext::getInstance().recoverBlacklistedRanks();
   }
 }
 
@@ -196,7 +196,7 @@ void exahype::reactive::OffloadingAnalyser::beginIteration() {
 void exahype::reactive::OffloadingAnalyser::endIteration(double numberOfInnerLeafCells, double numberOfOuterLeafCells, double numberOfInnerCells, double numberOfOuterCells, double numberOfLocalCells, double numberOfLocalVertices) {
   if(!_isSwitchedOn) return;
 
-  exahype::reactive::OffloadingManager::getInstance().printBlacklist();
+  exahype::reactive::OffloadingContext::getInstance().printBlacklist();
 
   if(_iterationCounter%2 !=0) {
     _iterationCounter++;
@@ -216,23 +216,23 @@ void exahype::reactive::OffloadingAnalyser::endIteration(double numberOfInnerLea
   updateZeroTresholdAndFilteredSnapshot();
   printWaitingTimes();
 
-  switch(exahype::reactive::OffloadingManager::getInstance().getOffloadingStrategy()){
-    case exahype::reactive::OffloadingManager::OffloadingStrategy::Diffusive:
+  switch(exahype::reactive::OffloadingContext::getInstance().getOffloadingStrategy()){
+    case exahype::reactive::OffloadingContext::OffloadingStrategy::Diffusive:
       exahype::reactive::DiffusiveDistributor::getInstance().updateLoadDistribution(); break;
-    case exahype::reactive::OffloadingManager::OffloadingStrategy::Aggressive:
+    case exahype::reactive::OffloadingContext::OffloadingStrategy::Aggressive:
       exahype::reactive::AggressiveDistributor::getInstance().printOffloadingStatistics();
       exahype::reactive::AggressiveDistributor::getInstance().updateLoadDistribution();
       break;
-    case exahype::reactive::OffloadingManager::OffloadingStrategy::AggressiveCCP:
+    case exahype::reactive::OffloadingContext::OffloadingStrategy::AggressiveCCP:
       exahype::reactive::AggressiveCCPDistributor::getInstance().printOffloadingStatistics();
       exahype::reactive::AggressiveCCPDistributor::getInstance().updateLoadDistribution();
       break;
-    case exahype::reactive::OffloadingManager::OffloadingStrategy::AggressiveHybrid:
+    case exahype::reactive::OffloadingContext::OffloadingStrategy::AggressiveHybrid:
       exahype::reactive::AggressiveHybridDistributor::getInstance().printOffloadingStatistics();
       exahype::reactive::AggressiveHybridDistributor::getInstance().updateLoadDistribution();
       break;
   }
-  exahype::reactive::OffloadingManager::getInstance().printBlacklist();
+  exahype::reactive::OffloadingContext::getInstance().printBlacklist();
   //exahype::reactive::OffloadingManager::getInstance().resetPostedRequests();
 
   _iterationCounter++;

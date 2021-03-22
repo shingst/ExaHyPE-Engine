@@ -147,8 +147,8 @@ void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverSt
       exit(-1);
   }
   
-  if(exahype::reactive::OffloadingManager::getInstance().getOffloadingStrategy()
-     == exahype::reactive::OffloadingManager::OffloadingStrategy::AggressiveHybrid)
+  if(exahype::reactive::OffloadingContext::getInstance().getOffloadingStrategy()
+     == exahype::reactive::OffloadingContext::OffloadingStrategy::AggressiveHybrid)
     exahype::reactive::AggressiveHybridDistributor::getInstance().disable();  
   #endif
 }

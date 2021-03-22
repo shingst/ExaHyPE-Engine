@@ -17,7 +17,7 @@
 #include "../reactive/AggressiveDistributor.h"
 #include "../reactive/AggressiveHybridDistributor.h"
 #include "../reactive/OffloadingAnalyser.h"
-#include "../reactive/OffloadingManager.h"
+#include "../reactive/OffloadingContext.h"
 #include "../reactive/PerformanceMonitor.h"
 #include "tarch/multicore/Loop.h"
 
@@ -245,7 +245,7 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
 //#if defined(DistributedOffloading)
   exahype::reactive::PerformanceMonitor::getInstance().setTasksPerTimestep(_numberOfEnclaveCells + _numberOfSkeletonCells);
 
-  if(exahype::reactive::OffloadingManager::getInstance().isEnabled()) {
+  if(exahype::reactive::OffloadingContext::getInstance().isEnabled()) {
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
       if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
         static_cast<exahype::solvers::ADERDGSolver*>(solver)->startOffloadingManager();
@@ -256,9 +256,9 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
     }
   }
 
-  if(exahype::reactive::OffloadingManager::getInstance().getOffloadingStrategy()
+  if(exahype::reactive::OffloadingContext::getInstance().getOffloadingStrategy()
      ==
-     exahype::reactive::OffloadingManager::OffloadingStrategy::AggressiveHybrid) {
+     exahype::reactive::OffloadingContext::OffloadingStrategy::AggressiveHybrid) {
     exahype::reactive::AggressiveHybridDistributor::getInstance().resetTasksToOffload();
     exahype::reactive::OffloadingAnalyser::getInstance().resetMeasurements();
     exahype::reactive::AggressiveHybridDistributor::getInstance().enable();

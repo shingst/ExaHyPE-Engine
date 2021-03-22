@@ -47,7 +47,7 @@
 #define NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME 3
 #endif
 
-#include "exahype/reactive/OffloadingManager.h"
+#include "../reactive/OffloadingContext.h"
 #include "exahype/reactive/JobTableStatistics.h"
 
 #include <tbb/concurrent_hash_map.h>
@@ -953,11 +953,11 @@ private:
       CellDescription& cellDescription);
 
   static int getTaskPriorityLocalStealableJob(int cellDescriptionsIndex, int element, double timeStamp) {
-    if(exahype::reactive::OffloadingManager::getInstance().getResilienceStrategy()
-        !=exahype::reactive::OffloadingManager::ResilienceStrategy::None) {
+    if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
+        !=exahype::reactive::OffloadingContext::ResilienceStrategy::None) {
 
-      int team = exahype::reactive::OffloadingManager::getInstance().getTMPIInterTeamRank();
-      int teamSize = exahype::reactive::OffloadingManager::getInstance().getTMPINumTeams();
+      int team = exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank();
+      int teamSize = exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams();
 
       CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex, element);
 
@@ -3620,7 +3620,7 @@ public:
               logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank);
               exahype::solvers::ADERDGSolver::VetoEmergency = true;
               exahype::solvers::ADERDGSolver::LastEmergencyCell = &cellDescription;
-              exahype::reactive::OffloadingManager::getInstance().triggerEmergencyForRank(responsibleRank);
+              exahype::reactive::OffloadingContext::getInstance().triggerEmergencyForRank(responsibleRank);
     	    }
       	}
   	    lock.free();
@@ -3628,7 +3628,7 @@ public:
       	if(!hasTriggeredEmergency) {
     	    hasTriggeredEmergency = true;
           logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank);
-          exahype::reactive::OffloadingManager::getInstance().triggerEmergencyForRank(responsibleRank);
+          exahype::reactive::OffloadingContext::getInstance().triggerEmergencyForRank(responsibleRank);
       	}
 #endif
       }
@@ -3653,7 +3653,7 @@ public:
  #endif
           hasTriggeredEmergency = true;
           logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank);
-          exahype::reactive::OffloadingManager::getInstance().triggerEmergencyForRank(responsibleRank);
+          exahype::reactive::OffloadingContext::getInstance().triggerEmergencyForRank(responsibleRank);
  #ifdef USE_ITAC
    // VT_end(event_emergency);
  #endif

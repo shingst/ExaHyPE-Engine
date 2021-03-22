@@ -13,7 +13,7 @@
 
 #include "../reactive/JobTableStatistics.h"
 
-#include "../reactive/OffloadingManager.h"
+#include "OffloadingContext.h"
 
 namespace exahype {
 namespace reactive {
@@ -97,7 +97,7 @@ void JobTableStatistics::notifyDetectedError() {
 }
 
 void JobTableStatistics::printStatistics() {
-     int team = exahype::reactive::OffloadingManager::getInstance().getTMPIInterTeamRank();
+     int team = exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank();
      logInfo("printStatistics", " team "<<team
            <<" spawned tasks = "<<_spawnedTasks
            <<" executed tasks = "<<_executedTasks

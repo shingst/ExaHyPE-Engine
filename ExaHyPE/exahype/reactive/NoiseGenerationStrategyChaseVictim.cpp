@@ -19,7 +19,7 @@
 #include <string>
 #include "../reactive/AggressiveHybridDistributor.h"
 #include "../reactive/OffloadingAnalyser.h"
-#include "../reactive/OffloadingManager.h"
+#include "OffloadingContext.h"
 
 namespace exahype {
 namespace reactive {
@@ -52,7 +52,7 @@ void NoiseGenerationStrategyChaseVictim::generateNoise(int rank, std::chrono::sy
     kLastTriggered = -1;
   }
 
-  if (OffloadingManager::getInstance().isVictim() && !triggeredVictim) {
+  if (OffloadingContext::getInstance().isVictim() && !triggeredVictim) {
     //double timePerTimeStep = exahype::reactive::OffloadingAnalyser::getInstance().getTimePerTimeStep();
     double timeToWait = _baseNoise*_factor;
     std::string call = " kill -STOP "+std::to_string(pid)+" ; sleep "+std::to_string(timeToWait)+"; kill -CONT "+std::to_string(pid);
@@ -65,7 +65,7 @@ void NoiseGenerationStrategyChaseVictim::generateNoise(int rank, std::chrono::sy
       exit(-1);
     }
 
-    if(OffloadingManager::getInstance().isVictim()) {
+    if(OffloadingContext::getInstance().isVictim()) {
       triggeredVictim = true;
       kLastTriggered = cnt;
     }

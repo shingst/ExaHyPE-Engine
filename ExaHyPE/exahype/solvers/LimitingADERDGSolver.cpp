@@ -633,10 +633,10 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
 
   if (
       (solverPatch.getRefinementStatus()<_solver->_minRefinementStatusForTroubledCell
-	  || (exahype::reactive::OffloadingManager::getInstance().getInstance().getResilienceStrategy()
-	      == exahype::reactive::OffloadingManager::ResilienceStrategy::TaskSharingResilienceChecks)
-	  ||  (exahype::reactive::OffloadingManager::getInstance().getInstance().getResilienceStrategy()
-        == exahype::reactive::OffloadingManager::ResilienceStrategy::TaskSharingResilienceCorrection)
+	  || (exahype::reactive::OffloadingContext::getInstance().getInstance().getResilienceStrategy()
+	      == exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks)
+	  ||  (exahype::reactive::OffloadingContext::getInstance().getInstance().getResilienceStrategy()
+        == exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceCorrection)
 	  )
 	  &&
       SpawnPredictionAsBackgroundJob &&
@@ -646,7 +646,7 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
     const int element = cellInfo.indexOfADERDGCellDescription(solverPatch.getSolverNumber());
     logDebug("fusedTimeStepBody", "spawning for "<< cellInfo._cellDescriptionsIndex<< " predictionTimeStamp "<<predictionTimeStamp<<" predictionTimeStepSize "<<predictionTimeStepSize);
     //skeleton cells are not considered for offloading
-    if (isSkeletonCell || !exahype::reactive::OffloadingManager::getInstance().isEnabled()) {
+    if (isSkeletonCell || !exahype::reactive::OffloadingContext::getInstance().isEnabled()) {
       peano::datatraversal::TaskSet(
           new ADERDGSolver::PredictionJob(
               *_solver.get(),solverPatch/*the reductions are delegated to _solver anyway*/,
