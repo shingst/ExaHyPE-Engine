@@ -29,7 +29,7 @@
       "thread_stack_size" : 12582912
   },
   "distributed_memory": {
-    "offloading_lb_strategy": "{{offloading_lb_strategy}}",
+    "offloading_lb_strategy": "{{offloading}}",
     "offloading_input_file" : "",
     "offloading_progress" : "{{offloading_progress}}",
     "offloading_CCP_temperature" : {{offloading_CCP_temperature}},
