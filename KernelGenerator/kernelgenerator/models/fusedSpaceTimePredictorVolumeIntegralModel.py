@@ -80,9 +80,8 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
             else:
                 self.render(("aderdg", "fusedSPTVI_nonlinear_cpp.template"), "fusedSpaceTimePredictorVolumeIntegral.cpp")
        
-        # generates gemms
-        if self.context["useLibxsmm"]:
-            self.controller.generateGemms("asm_fstpvi.c", self.context["matmulConfigs"].values())
+        # return required gemms
+        return {"matmulList": self.context["matmulConfigs"].values(), "fileName": "asm_fstpvi.c"}
     
     
     def buildGemmsConfig(self):

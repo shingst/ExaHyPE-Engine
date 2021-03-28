@@ -30,6 +30,7 @@ from ..utils import MathsUtils #matrix operation and build functions
 class QuadratureModel(AbstractModelBaseClass):
 
     def generateCode(self):
+    
         if self.context["quadratureType"] == "Gauss-Legendre":
             QuadratureWeights, QuadratureNodes = MathsUtils.getGaussLegendre(self.context["nDof"])
             OtherQuadratureWeights, OtherQuadratureNodes = MathsUtils.getGaussLobatto(self.context["nDof"])
@@ -50,21 +51,21 @@ class QuadratureModel(AbstractModelBaseClass):
 
         if(self.context["nDim"] == 2):
             # weightsVector is QuadratureWeights itself
-            weightsVector = MathsUtils.vectorPad(QuadratureWeights, self.controller.getPadSize(len(QuadratureWeights)))
+            weightsVector = MathsUtils.vectorPad(QuadratureWeights, self.context["function_utils"]["getPadSize"](len(QuadratureWeights)))
             self.context["weights2"] = weightsVector
             self.context["w2Size"] = len(self.context["weights2"])
             self.context["w2_seq"] = range(self.context["w2Size"])
 
             # all combinations of two weights, written as an 1D array
             weightsVector = [QuadratureWeights[i] * QuadratureWeights[j] for i in range(self.context["nDof"]) for j in range(self.context["nDof"])]
-            weightsVector = MathsUtils.vectorPad(weightsVector, self.controller.getPadSize(len(weightsVector)))
+            weightsVector = MathsUtils.vectorPad(weightsVector, self.context["function_utils"]["getPadSize"](len(weightsVector)))
             self.context["weights3"] = weightsVector
             self.context["w3Size"] = len(self.context["weights3"])
             self.context["w3_seq"] = range(self.context["w3Size"])
             
             # all combinations of three weights, written as an 1D array
             weightsVector = [QuadratureWeights[i] * QuadratureWeights[j] * QuadratureWeights[k] for i in range(self.context["nDof"]) for j in range(self.context["nDof"]) for k in range(self.context["nDof"])]
-            weightsVector = MathsUtils.vectorPad(weightsVector, self.controller.getPadSize(len(weightsVector)))
+            weightsVector = MathsUtils.vectorPad(weightsVector, self.context["function_utils"]["getPadSize"](len(weightsVector)))
             self.context["weights4"] = weightsVector
             self.context["w4Size"] = len(self.context["weights4"])
             self.context["w4_seq"] = range(self.context["w4Size"])
@@ -72,21 +73,21 @@ class QuadratureModel(AbstractModelBaseClass):
         elif(self.context["nDim"] == 3):
             # all combinations of two weights, written as an 1D array
             weightsVector = [QuadratureWeights[i] * QuadratureWeights[j] for i in range(self.context["nDof"]) for j in range(self.context["nDof"])]
-            weightsVector = MathsUtils.vectorPad(weightsVector, self.controller.getPadSize(len(weightsVector)))
+            weightsVector = MathsUtils.vectorPad(weightsVector, self.context["function_utils"]["getPadSize"](len(weightsVector)))
             self.context["weights2"] = weightsVector
             self.context["w2Size"] = len(self.context["weights2"])
             self.context["w2_seq"] = range(self.context["w2Size"])
 
             # all combination of three weights, written as an 1D array
             weightsVector = [QuadratureWeights[i] * QuadratureWeights[j] * QuadratureWeights[k] for i in range(self.context["nDof"]) for j in range(self.context["nDof"]) for k in range(self.context["nDof"])]
-            weightsVector = MathsUtils.vectorPad(weightsVector, self.controller.getPadSize(len(weightsVector)))
+            weightsVector = MathsUtils.vectorPad(weightsVector, self.context["function_utils"]["getPadSize"](len(weightsVector)))
             self.context["weights3"] = weightsVector
             self.context["w3Size"] = len(self.context["weights3"])
             self.context["w3_seq"] = range(self.context["w3Size"])
 
             # all combination of four weights, written as an 1D array
             weightsVector = [QuadratureWeights[i] * QuadratureWeights[j] * QuadratureWeights[k] * QuadratureWeights[l] for i in range(self.context["nDof"]) for j in range(self.context["nDof"]) for k in range(self.context["nDof"]) for l in range(self.context["nDof"])]
-            weightsVector = MathsUtils.vectorPad(weightsVector, self.controller.getPadSize(len(weightsVector)))
+            weightsVector = MathsUtils.vectorPad(weightsVector, self.context["function_utils"]["getPadSize"](len(weightsVector)))
             self.context["weights4"] = weightsVector
             self.context["w4Size"] = len(self.context["weights4"])
             self.context["w4_seq"] = range(self.context["w4Size"])

@@ -26,7 +26,6 @@
 
 import os
 import copy
-import subprocess
 import errno
 import time
 
@@ -145,6 +144,7 @@ class Controller:
         self.config["vectSize"] = Configuration.simdWidth[self.config["architecture"]] #only initialize once architecture has been validated
         self.config["cachelineSize"] = Configuration.cachelineSize[self.config["architecture"]] #only initialize once architecture has been validated
         self.baseContext = self.generateBaseContext() # default context build from config
+        self.matmulList = [] #list to store the tupple (fileName, matmulConfig) of all requested Matmul (used for gemmsGeneratorModel)
         self.gemmList = [] #list to store the name of all generated gemms (used for gemmsCPPModel)
 
     def validateConfig(self, validArchitectures):
@@ -194,6 +194,8 @@ class Controller:
             context["ghostLayerWidth3D"] = 0 if context["nDim"] == 2 else context["ghostLayerWidth"]
             context["nDofG"] = context["ghostLayerWidth"]*2 + context["nDof"]
             context["nDofG3D"] = 1 if context["nDim"] == 2 else context["nDofG"]
+            
+        context["function_utils"] = {"getPadSize": self.getPadSize} # quadratureModel needs access to the controller function to calculate padding size
         return context
 
     def getSizeWithPadding(self, sizeWithoutPadding):
@@ -231,14 +233,14 @@ class Controller:
         self.runModel(    "configurationParameters",  configurationParametersModel.ConfigurationParametersModel(self.baseContext))
         
         if self.config["kernelType"] in ["aderdg", "limiter"]:
-            self.runModel("quadrature",               quadratureModel.QuadratureModel(self.baseContext, self))
+            self.runModel("quadrature",               quadratureModel.QuadratureModel(self.baseContext))
         
         if self.config["kernelType"] == "aderdg":
             self.runModel("converter",                converterModel.ConverterModel(self.baseContext))
-            self.runModel("amrRoutines",              amrRoutinesModel.AMRRoutinesModel(self.baseContext, self))
+            self.runModel("amrRoutines",              amrRoutinesModel.AMRRoutinesModel(self.baseContext))
             self.runModel("deltaDistribution",        deltaDistributionModel.DeltaDistributionModel(self.baseContext))
             self.runModel("faceIntegral",             faceIntegralModel.FaceIntegralModel(self.baseContext))
-            self.runModel("fusedSTPVI",               fusedSpaceTimePredictorVolumeIntegralModel.FusedSpaceTimePredictorVolumeIntegralModel(self.baseContext, self))
+            self.runModel("fusedSTPVI",               fusedSpaceTimePredictorVolumeIntegralModel.FusedSpaceTimePredictorVolumeIntegralModel(self.baseContext))
             self.runModel("matrixUtils",              matrixUtilsModel.MatrixUtilsModel(self.baseContext))
             self.runModel("dgMatrix",                 dgMatrixModel.DGMatrixModel(self.baseContext))
             self.runModel("solutionUpdate",           solutionUpdateModel.SolutionUpdateModel(self.baseContext))
@@ -251,7 +253,7 @@ class Controller:
             self.runModel("ghostLayerFilling",        fvGhostLayerFillingModel.FVGhostLayerFillingModel(self.baseContext))
             self.runModel("ghostLayerFillingAtBoundary", fvGhostLayerFillingAtBoundaryModel.FVGhostLayerFillingAtBoundaryModel(self.baseContext))
             self.runModel("boundaryLayerExtraction",  fvBoundaryLayerExtractionModel.FVBoundaryLayerExtractionModel(self.baseContext))
-            self.runModel("solutionUpdate",           fvSolutionUpdateModel.FVSolutionUpdateModel(self.baseContext, self))
+            self.runModel("solutionUpdate",           fvSolutionUpdateModel.FVSolutionUpdateModel(self.baseContext))
         
         if self.config["kernelType"] in ["aderdg", "fv"]:
             self.runModel("boundaryConditions",       boundaryConditionsModel.BoundaryConditionsModel(self.baseContext))
@@ -260,6 +262,9 @@ class Controller:
             self.runModel("riemannSolver",            riemannModel.RiemannModel(self.baseContext))
         
         ## must be run only after all gemm's configurations have been generated
+        gemmsGeneratorContext = copy.copy(self.baseContext)
+        gemmsGeneratorContext["matmulList"] = self.matmulList
+        self.runModel(    "gemmsGenerator",           gemmsGeneratorModel.GemmsGeneratorModel(gemmsGeneratorContext))
         gemmsContext = copy.copy(self.baseContext)
         gemmsContext["gemmList"] = self.gemmList
         self.runModel(    "gemmsCPP",                 gemmsCPPModel.GemmsCPPModel(gemmsContext))
@@ -268,37 +273,15 @@ class Controller:
     def runModel(self, name, model):
         """Run the given model and if debug then print runtime"""
         start = time.perf_counter()
-        model.generateCode()
+        out = model.generateCode()
+        if out is not None and "matmulList" in out and "fileName" in out:
+            self.matmulList += map(lambda m: (out["fileName"], m), out["matmulList"])
+        if out is not None and "gemmList" in out:
+            self.gemmList += out["gemmList"]
         if self.config["runtimeDebug"]:
             t = time.perf_counter() - start
             print(name+": "+str(t))
 
-    def generateGemms(self, outputFileName, matmulConfigList):
-        """Generate the gemms with the given config list using LIBXSMM"""
-        for matmul in matmulConfigList:
-            # add the gemm name to the list of generated gemm
-            self.gemmList.append((matmul.baseroutinename, matmul.precision))
-            prefecthing = "nopf" # No native prefetching supported!
-            type = "dense" # for plain assembly code (rather than inline assembly) choose dense_asm
-            commandLineArguments = " " + type  + \
-                " " + os.path.join(self.config["pathToOutputDirectory"], outputFileName) + \
-                " " + self.config["codeNamespace"] + "::" + matmul.baseroutinename + \
-                " " + str(matmul.M) + \
-                " " + str(matmul.N) + \
-                " " + str(matmul.K) + \
-                " " + str(matmul.LDA) + \
-                " " + str(matmul.LDB) + \
-                " " + str(matmul.LDC) + \
-                " " + str(matmul.alpha) + \
-                " " + str(matmul.beta) + \
-                " " + str(matmul.alignment_A) + \
-                " " + str(matmul.alignment_C) + \
-                " " + self.config["architecture"] + \
-                " " + prefecthing + \
-                " " + matmul.precision
-            
-            bashCommand = self.config["pathToLibxsmmGemmGenerator"] + commandLineArguments
-            subprocess.call(bashCommand.split())
             
     def symlinkBLASlib(self):
         if self.config["useEigen"]:

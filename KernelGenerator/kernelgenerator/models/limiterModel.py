@@ -30,9 +30,9 @@ class LimiterModel(AbstractModelBaseClass):
     
     def generateCode(self):
         self.render(("limiter", "limiter_cpp.template"), "limiter.cpp")
-        # generates gemms
-        if(self.context["useLibxsmm"]):
-            self.controller.generateGemms("asm_limiter.c", self.context["matmulConfigs"].values())
+        # return required gemms
+        return {"matmulList": self.context["matmulConfigs"].values(), "fileName": "asm_limiter.c"}
+
     
     
     def buildGemmsConfig(self):
