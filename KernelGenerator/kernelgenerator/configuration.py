@@ -62,12 +62,27 @@ class Configuration:
                 }
 
     # choose the BLAS library for the matmul: "None" (= C++ loops), "Libxsmm" or "Eigen"
-    matmulLib = "Libxsmm";
-    #matmulLib = "Eigen";
-    #matmulLib = "None";
+    #matmulLib = "Libxsmm"
+    #matmulLib = "Eigen"
+    matmulLib = "None"
 
     # set to true to print models runtime
-    runtimeDebug = False;
+    runtimeDebug = False
+    
+    # prefetching settings
+    # Experimental, not supported by all kernel
+    # Will use prefetching to optimize tensor operation (prefetch the next slice of an LoG)
+    prefetching = "All" # "Inputs", "Outputs", "All"
+    prefetchLevel = "_MM_HINT_T0" # intrisic _mm_prefetch locality hint (_MM_HINT_T0 = all level of cache), see compiler header xmmintrin.h
+    cachelineSize = {
+                  "noarch" : 8,
+                  "wsm"    : 8,
+                  "snb"    : 8,
+                  "hsw"    : 8,
+                  "knc"    : 8,
+                  "knl"    : 8,
+                  "skx"    : 8
+    } # size for double, CPUs usuallly have 64B L1 Cache line
 
 
 

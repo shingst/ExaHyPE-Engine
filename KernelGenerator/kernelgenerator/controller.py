@@ -70,7 +70,10 @@ class Controller:
             "useLibxsmm"            : Configuration.matmulLib == "Libxsmm",
             "useEigen"              : Configuration.matmulLib == "Eigen",
             "pathToLibxsmmGemmGenerator"  : Configuration.pathToLibxsmmGemmGenerator,
-            "runtimeDebug"          : Configuration.runtimeDebug #for debug
+            "runtimeDebug"          : Configuration.runtimeDebug, #for debug
+            "prefetchInputs"        : Configuration.prefetching in ["Inputs", "All"],
+            "prefetchOutputs"       : Configuration.prefetching in ["Outputs", "All"],
+            "prefetchLevel"         : Configuration.prefetchLevel
         }
         
         if self.config["kernelType"] == "aderdg":
@@ -140,6 +143,7 @@ class Controller:
             
         self.validateConfig(Configuration.simdWidth.keys())
         self.config["vectSize"] = Configuration.simdWidth[self.config["architecture"]] #only initialize once architecture has been validated
+        self.config["cachelineSize"] = Configuration.cachelineSize[self.config["architecture"]] #only initialize once architecture has been validated
         self.baseContext = self.generateBaseContext() # default context build from config
         self.gemmList = [] #list to store the name of all generated gemms (used for gemmsCPPModel)
 

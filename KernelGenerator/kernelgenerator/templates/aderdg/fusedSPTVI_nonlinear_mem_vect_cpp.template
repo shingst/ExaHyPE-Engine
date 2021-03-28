@@ -309,12 +309,12 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       // Compute the "derivatives" (contributions of the stiffness matrix)      
       // x direction (independent from the y and z derivatives), note transposed n and x
       for (int zy = 0; zy < {{nDof3D*nDof}}; zy++) {
-        {{ m.matmul('rhs_x', 'rhsCoeff_T', 'lFhi', 'rhs', '0', idxLFhi(0,0,zy,0,0), idxRhs(t,0,zy,0,0)) | indent(8) }}{##}
+        {{ m.matmul_prefetch('rhs_x', 'rhsCoeff_T', 'lFhi', 'rhs', '0', idxLFhi(0,0,zy,0,0), idxRhs(t,0,zy,0,0), '0', idxLFhi(0,0,'(zy+1)',0,0), idxRhs(t,0,'(zy+1)',0,0)) | indent(8) }}{##}
       }
       
       // y direction (independent from the x and z derivatives), fuse nx
       for (int z = 0; z < {{nDof3D}}; z++) {
-        {{ m.matmul('rhs_y', 'lFhi', 'rhsCoeff', 'rhs', idxLFhi(1,z,0,0,0), '0', idxRhs(t,z,0,0,0)) | indent(8) }}{##}
+        {{ m.matmul_prefetch('rhs_y', 'lFhi', 'rhsCoeff', 'rhs', idxLFhi(1,z,0,0,0), '0', idxRhs(t,z,0,0,0), idxLFhi(1,'(z+1)',0,0,0), '0', idxRhs(t,'(z+1)',0,0,0)) | indent(8) }}{##}
       }
        
 {% if nDim==3 %}
@@ -792,7 +792,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   // Assume equispaced mesh, dx[0] == dx[1] == dx[2]
   //x, note transposed n and x
   for (int zy = 0; zy < {{nDof3D*nDof}}; zy++) {
-    {{ m.matmul('lduh_x', 'coeffVolume_T', 'lFhi', 'lQi', '0', idxLFhi(0,0,zy,0,0), idxLQhi(0,zy,0,0)) | indent(4) }}{##}
+    {{ m.matmul_prefetch('lduh_x', 'coeffVolume_T', 'lFhi', 'lQi', '0', idxLFhi(0,0,zy,0,0), idxLQhi(0,zy,0,0), '0', idxLFhi(0,0,'(zy+1)',0,0), idxLQhi(0,'(zy+1)',0,0)) | indent(4) }}{##}
   }
 
   double coeffVolume[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
@@ -810,7 +810,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 
   //y, fuse nx
   for (int z = 0; z < {{nDof3D}}; z++) {
-    {{ m.matmul('lduh_y', 'lFhi', 'coeffVolume', 'lQi', idxLFhi(1,z,0,0,0), '0', idxLQhi(z,0,0,0)) | indent(4) }}{##}
+    {{ m.matmul_prefetch('lduh_y', 'lFhi', 'coeffVolume', 'lQi', idxLFhi(1,z,0,0,0), '0', idxLQhi(z,0,0,0), idxLFhi(1,'(z+1)',0,0,0), '0', idxLQhi('(z+1)',0,0,0)) | indent(4) }}{##}
   }
 
 {% if nDim == 3 %}

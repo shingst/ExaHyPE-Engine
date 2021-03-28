@@ -60,6 +60,10 @@ _mm_free({{name}});
 */
 #}
 {% macro matmulInclude() %}
+{% if prefetchInputs or prefetchOutputs%}
+// intrisics for prefetching
+#include <xmmintrin.h>
+{% endif %}
 {% if useEigen %}
 // include Eigen for matmul
 #include <{{pathToOptKernel}}/Eigen/Dense>

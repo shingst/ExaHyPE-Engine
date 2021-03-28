@@ -156,12 +156,12 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
             if self.context["predictorRecompute"]: # TODO JMG matmuls for gradQ, rhs and lduh are exactly the same...
                 if self.context["useVectPDE"]:
                     if self.context["useFlux"]:
-                        self.context["matmulConfigs"]["rhs_x"] =     MatmulConfig(nDofPad,           nVar, nDof, nDofPad,           nDofPad, nDofPad          , 1, 1, 1, 1, 1, "rhs_x")
-                        self.context["matmulConfigs"]["rhs_y"] =     MatmulConfig(nDofPad*nVar,      nDof, nDof, nDofPad*nVar,      nDofPad, nDofPad*nVar     , 1, 1, 1, 1, 1, "rhs_y")
+                        self.context["matmulConfigs"]["rhs_x"] =     MatmulConfig(nDofPad,           nVar, nDof, nDofPad,           nDofPad, nDofPad          , 1, 1, 1, 1, 1, "rhs_x", prefetchInput="B", prefetchOutput="C")
+                        self.context["matmulConfigs"]["rhs_y"] =     MatmulConfig(nDofPad*nVar,      nDof, nDof, nDofPad*nVar,      nDofPad, nDofPad*nVar     , 1, 1, 1, 1, 1, "rhs_y", prefetchInput="A", prefetchOutput="C")
                         if self.context["nDim"]>=3:
                             self.context["matmulConfigs"]["rhs_z"] = MatmulConfig(nDofPad*nVar*nDof, nDof, nDof, nDofPad*nVar*nDof, nDofPad, nDofPad*nVar*nDof , 1, 1, 1, 1, 1, "rhs_z")
-                        self.context["matmulConfigs"]["lduh_x"] =     MatmulConfig(nDofPad,           nVar, nDof, nDofPad,           nDofPad, nDofPad          , 1, 1, 1, 1, 1, "lduh_x")
-                        self.context["matmulConfigs"]["lduh_y"] =     MatmulConfig(nDofPad*nVar,      nDof, nDof, nDofPad*nVar,      nDofPad, nDofPad*nVar     , 1, 1, 1, 1, 1, "lduh_y")
+                        self.context["matmulConfigs"]["lduh_x"] =     MatmulConfig(nDofPad,           nVar, nDof, nDofPad,           nDofPad, nDofPad          , 1, 1, 1, 1, 1, "lduh_x", prefetchInput="B", prefetchOutput="C")
+                        self.context["matmulConfigs"]["lduh_y"] =     MatmulConfig(nDofPad*nVar,      nDof, nDof, nDofPad*nVar,      nDofPad, nDofPad*nVar     , 1, 1, 1, 1, 1, "lduh_y", prefetchInput="A", prefetchOutput="C")
                         if self.context["nDim"]>=3:
                             self.context["matmulConfigs"]["lduh_z"] = MatmulConfig(nDofPad*nVar*nDof, nDof, nDof, nDofPad*nVar*nDof, nDofPad, nDofPad*nVar*nDof, 1, 1, 1, 1, 1, "lduh_z")
                     if self.context["useNCP"] or self.context['useViscousFlux']:
