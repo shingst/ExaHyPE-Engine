@@ -327,9 +327,9 @@ void exahype::reactive::AggressiveHybridDistributor::printOffloadingStatistics()
   for(int i=0; i<nnodes; i++) {
     if(i==myRank)
       continue;
-    if(_tasksToOffload[i]>0)
-      logInfo("printOffloadingStatistics()", "target tasks to rank "<<i<<" ntasks "<<_tasksToOffload[i]<<" not offloaded "
-                                            <<_tasksNotOffloaded[i]<<" actually offloaded "<<_tasksActuallyOffloaded[i]); 
+    //if(_tasksToOffload[i]>0)
+    //  logInfo("printOffloadingStatistics()", "target tasks to rank "<<i<<" ntasks "<<_tasksToOffload[i]<<" not offloaded "
+    //                                        <<_tasksNotOffloaded[i]<<" actually offloaded "<<_tasksActuallyOffloaded[i]); 
     _tasksNotOffloaded[i] = 0;
     _tasksActuallyOffloaded[i] = 0;
   }
@@ -444,7 +444,7 @@ void exahype::reactive::AggressiveHybridDistributor::updateLoadDistributionCCP()
     if(_idealTasksToOffloadCCP[i]>0) {
       //we have a potential victim rank
 //     if(!exahype::reactive::OffloadingManager::getInstance().isBlacklisted(i)) {
-      logInfo("updateLoadDistributionCCP", "offloading to "<<i<<" tasks "<<_temperatureCCP*_idealTasksToOffloadCCP[i]);
+      //logInfo("updateLoadDistributionCCP", "offloading to "<<i<<" tasks "<<_temperatureCCP*_idealTasksToOffloadCCP[i]);
       _optimalTasks[i] = _idealTasksToOffloadCCP[i];
       _tasksToOffload[i] = std::ceil(std::max((1.0-_temperatureCCP), 0.0)*_tasksToOffload[i] + _temperatureCCP*_idealTasksToOffloadCCP[i]);
 #ifdef DistributedOffloadingDisable
@@ -564,7 +564,7 @@ bool exahype::reactive::AggressiveHybridDistributor::selectVictimRank(int& victi
 
   if(exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs-exahype::solvers::ADERDGSolver::NumberOfRemoteJobs<
         threshold) {
-	  logInfo("selectVictimRank", "threshold "<<threshold
+	  logDebug("selectVictimRank", "threshold "<<threshold
 	  		                       << " there are "<<exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs-exahype::solvers::ADERDGSolver::NumberOfRemoteJobs
 	  							             <<" jobs "<< " and "<<tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs());
 

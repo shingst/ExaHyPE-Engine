@@ -343,9 +343,9 @@ void exahype::reactive::OffloadingContext::triggerEmergencyForRank(int rank) {
 
   _localBlacklist[rank]++;
   exahype::reactive::PerformanceMonitor::getInstance().submitBlacklistValueForRank(_localBlacklist[rank], rank);
-  logInfo("triggerEmergencyForRank()","blacklist value for rank "<<rank<<":"<<_localBlacklist[rank]
-	                                 <<" NumberOfRemoteJobs"<<  exahype::solvers::ADERDGSolver::NumberOfRemoteJobs
-									                 <<" NumberOfEnclaveJobs"<<  exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs);
+  //logInfo("triggerEmergencyForRank()","blacklist value for rank "<<rank<<":"<<_localBlacklist[rank]
+	//                                 <<" NumberOfRemoteJobs"<<  exahype::solvers::ADERDGSolver::NumberOfRemoteJobs
+	//								                 <<" NumberOfEnclaveJobs"<<  exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs);
 }
 
 void exahype::reactive::OffloadingContext::recoverBlacklistedRanks() {
@@ -452,7 +452,7 @@ void exahype::reactive::OffloadingContext::receiveCompleted(int rank, int rail) 
 
 void exahype::reactive::OffloadingContext::notifyAllVictimsSendCompletedIfNotNotified() {
   if(!_hasNotifiedSendCompleted) {
-    logInfo("notifyAllVictimsSendCompleted","notifying that last job was sent to victims");
+    //logInfo("notifyAllVictimsSendCompleted","notifying that last job was sent to victims");
     _hasNotifiedSendCompleted = true;
     std::vector<int> victimRanks;
     if(_offloadingStrategy==OffloadingStrategy::AggressiveHybrid)

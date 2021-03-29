@@ -196,7 +196,7 @@ void exahype::reactive::OffloadingAnalyser::beginIteration() {
 void exahype::reactive::OffloadingAnalyser::endIteration(double numberOfInnerLeafCells, double numberOfOuterLeafCells, double numberOfInnerCells, double numberOfOuterCells, double numberOfLocalCells, double numberOfLocalVertices) {
   if(!_isSwitchedOn) return;
 
-  exahype::reactive::OffloadingContext::getInstance().printBlacklist();
+  //exahype::reactive::OffloadingContext::getInstance().printBlacklist();
 
   if(_iterationCounter%2 !=0) {
     _iterationCounter++;
@@ -214,7 +214,7 @@ void exahype::reactive::OffloadingAnalyser::endIteration(double numberOfInnerLea
   }
 
   updateZeroTresholdAndFilteredSnapshot();
-  printWaitingTimes();
+  //printWaitingTimes();
 
   switch(exahype::reactive::OffloadingContext::getInstance().getOffloadingStrategy()){
     case exahype::reactive::OffloadingContext::OffloadingStrategy::Diffusive:
