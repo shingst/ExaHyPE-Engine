@@ -132,16 +132,16 @@ class MeshInfoTool(Tool):
     self.log.info("---------------------------------------------------------------------------------------------")
     
     # domain decomposition recommendations
-    if (info.boundingBoxOutsideCellsLeft is 0 and
-       info.boundingBoxOutsideCellsRight is 0) or\
-       (info.boundingBoxOutsideCellsLeft is 1 and\
-       info.boundingBoxOutsideCellsRight is 1):
+    if (info.boundingBoxOutsideCellsLeft == 0 and
+       info.boundingBoxOutsideCellsRight == 0) or\
+       (info.boundingBoxOutsideCellsLeft == 1 and\
+       info.boundingBoxOutsideCellsRight == 1):
       boundingBoxCells = 3**info.boundingBoxMeshLevel
       ranks = [[] for i in range(1,info.boundingBoxMeshLevel)]
   
       # count inside cells in each coordinate direction
       insideCells = []
-      padding = 0 if info.boundingBoxOutsideCellsLeft is 0 else 2
+      padding = 0 if info.boundingBoxOutsideCellsLeft == 0 else 2
       for d in range(0,dim):
         insideCells.append(int(round(info.domainSize[d]/info.boundingBoxMeshSize)))
       for i in range(1,info.boundingBoxMeshLevel):
