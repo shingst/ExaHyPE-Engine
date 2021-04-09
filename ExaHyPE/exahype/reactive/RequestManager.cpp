@@ -589,6 +589,7 @@ bool exahype::reactive::RequestManager::progressRequestsOfType( RequestType type
     int reqIdx = arrOfIndices[i];
     int reqId = _internalIdsOfActiveRequests[mapId][reqIdx];
     assertion(_activeRequests[mapId][reqIdx]==MPI_REQUEST_NULL);
+    _internalIdsOfActiveRequests[mapId].erase(reqIdx);
 
     _reqIdToReqHandle[mapId].erase(reqId);
     int groupId;
@@ -638,6 +639,27 @@ bool exahype::reactive::RequestManager::progressRequestsOfType( RequestType type
       _solvers[mapId].erase(groupId);
       _groupIdToRank[mapId].erase(groupId);
       _groupIdToTag[mapId].erase(groupId);
+    }
+
+    //try to grab and add a new request to active requests (thanks to Joseph Schuchart for the suggestion)
+    int mapId = requestTypeToMsgQueueIdx(type);
+
+    int new_req_id;
+    bool gotOne = _outstandingRequests[mapId].try_pop(new_req_id);
+
+    if(gotOne) {
+      tbb::concurrent_hash_map<int, MPI_Request>::accessor a_requests;
+      bool found = _reqIdToReqHandle[mapId].find(a_requests, new_req_id);
+      assertion(found);
+      if(!found)
+        logError("progressRequestsOfType", "didn't find MPI request.");
+      if(found) {
+        MPI_Request request = a_requests->second;
+        a_requests.release();
+        _activeRequests[mapId][reqIdx] = request; //replace finished request
+        _internalIdsOfActiveRequests[mapId].insert(std::pair<int,int>(reqIdx, new_req_id));
+        logInfo("progressRequestsOfType","Inserted "<<request<<"  at reqIdx "<<reqIdx<<"  internal id "<<new_req_id);
+      }
     }
   }
 
