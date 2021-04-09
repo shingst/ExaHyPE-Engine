@@ -29,7 +29,7 @@
  "distributed_memory": {
     "offloading_lb_strategy": "aggressiveHybrid",
     "offloading_input_file" : "",
-    "offloading_progress" : "smartmpi",
+    "offloading_progress" : "none",
     "offloading_CCP_temperature" : 0,
     "offloading_diffusion_temperature" : 1,
     "offloading_CCP_frequency" : 0,
