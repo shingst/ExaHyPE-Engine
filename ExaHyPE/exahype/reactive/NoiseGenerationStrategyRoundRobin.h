@@ -16,7 +16,7 @@
 
 #if defined(Parallel)
 
-#include "../reactive/NoiseGenerationStrategy.h"
+#include "exahype/reactive/NoiseGenerationStrategy.h"
 #include "tarch/logging/Log.h"
 
 namespace exahype {

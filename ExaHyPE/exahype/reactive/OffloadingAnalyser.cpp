@@ -12,7 +12,7 @@
  **/
 
 #if  defined(Parallel)
-#include "../reactive/OffloadingAnalyser.h"
+#include "exahype/reactive/OffloadingAnalyser.h"
 
 #include "tarch/parallel/Node.h"
 #include "tarch/parallel/NodePool.h"
@@ -25,11 +25,11 @@
 #include <thread>
 #include <limits>
 
-#include "../reactive/PerformanceMonitor.h"
-#include "../reactive/DiffusiveDistributor.h"
-#include "../reactive/AggressiveDistributor.h"
-#include "../reactive/AggressiveCCPDistributor.h"
-#include "../reactive/AggressiveHybridDistributor.h"
+#include "exahype/reactive/PerformanceMonitor.h"
+#include "exahype/reactive/DiffusiveDistributor.h"
+#include "exahype/reactive/AggressiveDistributor.h"
+#include "exahype/reactive/AggressiveCCPDistributor.h"
+#include "exahype/reactive/AggressiveHybridDistributor.h"
 #include "OffloadingContext.h"
 
 tarch::logging::Log  exahype::reactive::OffloadingAnalyser::_log( "exahype::reactive::OffloadingAnalyser" );
@@ -196,7 +196,7 @@ void exahype::reactive::OffloadingAnalyser::beginIteration() {
 void exahype::reactive::OffloadingAnalyser::endIteration(double numberOfInnerLeafCells, double numberOfOuterLeafCells, double numberOfInnerCells, double numberOfOuterCells, double numberOfLocalCells, double numberOfLocalVertices) {
   if(!_isSwitchedOn) return;
 
-  exahype::reactive::OffloadingContext::getInstance().printBlacklist();
+  //exahype::reactive::OffloadingContext::getInstance().printBlacklist();
 
   if(_iterationCounter%2 !=0) {
     _iterationCounter++;
@@ -214,7 +214,7 @@ void exahype::reactive::OffloadingAnalyser::endIteration(double numberOfInnerLea
   }
 
   updateZeroTresholdAndFilteredSnapshot();
-  printWaitingTimes();
+  //printWaitingTimes();
 
   switch(exahype::reactive::OffloadingContext::getInstance().getOffloadingStrategy()){
     case exahype::reactive::OffloadingContext::OffloadingStrategy::Diffusive:

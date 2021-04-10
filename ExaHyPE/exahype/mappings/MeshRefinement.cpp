@@ -34,8 +34,10 @@
 
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
+#include "exahype/reactive/AggressiveHybridDistributor.h"
+
+
 #include <sstream>
-#include "../reactive/AggressiveHybridDistributor.h"
 
 bool exahype::mappings::MeshRefinement::DynamicLoadBalancing    = false;
 

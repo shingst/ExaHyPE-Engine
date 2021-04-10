@@ -6,7 +6,7 @@
 
 #if defined(FileTrace)
 #include <chrono>
-#include "../reactive/STPStatsTracer.h"
+#include "exahype/reactive/STPStatsTracer.h"
 #endif
 
 #if defined(SharedTBB) && !defined(noTBBPrefetchesJobData)

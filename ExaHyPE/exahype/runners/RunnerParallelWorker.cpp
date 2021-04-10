@@ -27,11 +27,11 @@
 
 #include "exahype/Vertex.h"
 
-#include "../reactive/StaticDistributor.h"
-#include "../reactive/AggressiveDistributor.h"
-#include "../reactive/AggressiveCCPDistributor.h"
-#include "../reactive/AggressiveHybridDistributor.h"
-#include "../reactive/OffloadingContext.h"
+#include "exahype/reactive/StaticDistributor.h"
+#include "exahype/reactive/AggressiveDistributor.h"
+#include "exahype/reactive/AggressiveCCPDistributor.h"
+#include "exahype/reactive/AggressiveHybridDistributor.h"
+#include "exahype/reactive/OffloadingContext.h"
 
 #if defined(SharedMemoryParallelisation) && defined(PerformanceAnalysis)
 #include "sharedmemoryoracles/OracleForOnePhaseWithShrinkingGrainSize.h"

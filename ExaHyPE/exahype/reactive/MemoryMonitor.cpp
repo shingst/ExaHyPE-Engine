@@ -13,7 +13,7 @@
 
 #if defined(SharedTBB)  && defined(Parallel)
 
-#include "../reactive/MemoryMonitor.h"
+#include "exahype/reactive/MemoryMonitor.h"
 #include "tarch/services/ServiceFactory.h"
 #include "tarch/multicore/Jobs.h"
 #include "peano/utils/UserInterface.h"

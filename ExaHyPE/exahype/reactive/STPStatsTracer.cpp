@@ -11,7 +11,7 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#include "../reactive/STPStatsTracer.h"
+#include "exahype/reactive/STPStatsTracer.h"
 
 #include <sstream>
 #include <fstream>

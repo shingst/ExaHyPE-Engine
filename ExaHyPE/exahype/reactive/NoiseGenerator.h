@@ -14,7 +14,7 @@
 #ifndef EXAHYPE_EXAHYPE_REACTIVE_NOISEGENERATOR_H_
 #define EXAHYPE_EXAHYPE_REACTIVE_NOISEGENERATOR_H_
 
-#include "../reactive/NoiseGenerationStrategy.h"
+#include "exahype/reactive/NoiseGenerationStrategy.h"
 
 namespace exahype {
  namespace reactive {

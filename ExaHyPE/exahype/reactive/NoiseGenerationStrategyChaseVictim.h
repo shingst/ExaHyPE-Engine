@@ -14,7 +14,7 @@
 #ifndef EXAHYPE_EXAHYPE_REACTIVE_NOISEGENERATIONSTRATEGYCHASEVICTIM_H_
 #define EXAHYPE_EXAHYPE_REACTIVE_NOISEGENERATIONSTRATEGYCHASEVICTIM_H_
 
-#include "../reactive/NoiseGenerationStrategy.h"
+#include "exahype/reactive/NoiseGenerationStrategy.h"
 #include "tarch/logging/Log.h"
 
 namespace exahype {

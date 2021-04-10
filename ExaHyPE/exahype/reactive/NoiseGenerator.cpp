@@ -11,14 +11,14 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#include "../reactive/NoiseGenerator.h"
+#include "exahype/reactive/NoiseGenerator.h"
 
 #include <unistd.h>
 
 #include "tarch/parallel/Node.h"
 #include <chrono>
-#include "../reactive/NoiseGenerationStrategy.h"
-#include "../reactive/NoiseGenerationStrategyRoundRobin.h"
+#include "exahype/reactive/NoiseGenerationStrategy.h"
+#include "exahype/reactive/NoiseGenerationStrategyRoundRobin.h"
 
 #if defined(Parallel)
 

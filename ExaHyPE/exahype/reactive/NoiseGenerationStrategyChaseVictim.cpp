@@ -11,7 +11,7 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#include "../reactive/NoiseGenerationStrategyChaseVictim.h"
+#include "exahype/reactive/NoiseGenerationStrategyChaseVictim.h"
 
 #include "tarch/parallel/Node.h"
 #include <unistd.h>
