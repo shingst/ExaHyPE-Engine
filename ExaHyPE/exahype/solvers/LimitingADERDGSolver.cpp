@@ -19,7 +19,7 @@
 
 #include "LimitingADERDGSolver.h"
 
-#include "../reactive/OffloadingProfiler.h"
+#include "exahype/reactive/OffloadingProfiler.h"
 #include "exahype/VertexOperations.h"
 #include "exahype/amr/AdaptiveMeshRefinement.h"
 

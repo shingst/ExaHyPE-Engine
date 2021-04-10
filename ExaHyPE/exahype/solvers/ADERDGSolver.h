@@ -35,8 +35,6 @@
 #include "exahype/profilers/simple/NoOpProfiler.h"
 #include "exahype/records/ADERDGCellDescription.h"
 
-#include <mpi.h>
-
 #define OFFLOADING_SLOW_OPERATION_THRESHOLD 0.001
 
 #define NUM_REQUESTS_MIGRATABLE_COMM 1
@@ -47,7 +45,7 @@
 #define NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME 3
 #endif
 
-#include "../reactive/OffloadingContext.h"
+#include "exahype/reactive/OffloadingContext.h"
 #include "exahype/reactive/JobTableStatistics.h"
 
 #include <tbb/concurrent_hash_map.h>
@@ -56,6 +54,8 @@
 #include <tbb/task_group.h>
 #include <unordered_set>
 #include "tarch/multicore/Jobs.h"
+
+#include <mpi.h>
 
 namespace exahype {
   namespace parser {

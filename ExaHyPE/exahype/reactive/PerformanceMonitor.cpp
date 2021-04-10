@@ -12,7 +12,7 @@
  **/
 
 #if  defined(Parallel)
-#include "../reactive/PerformanceMonitor.h"
+#include "exahype/reactive/PerformanceMonitor.h"
 
 #include <algorithm>
 #include <numeric>
@@ -21,9 +21,9 @@
 #include "tarch/parallel/Node.h"
 #include "tarch/timing/Watch.h"
 
-#include "../reactive/OffloadingProfiler.h"
-#include "../reactive/DynamicDistributor.h"
-#include "../reactive/StaticDistributor.h"
+#include "exahype/reactive/OffloadingProfiler.h"
+#include "exahype/reactive/DynamicDistributor.h"
+#include "exahype/reactive/StaticDistributor.h"
 #include "OffloadingContext.h"
 
 

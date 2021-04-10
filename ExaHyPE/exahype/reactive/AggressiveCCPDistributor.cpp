@@ -12,22 +12,23 @@
  **/
 
 #if defined(Parallel)
-#include "../reactive/AggressiveCCPDistributor.h"
-
-#include <algorithm>
-#include <numeric>
-#include <cmath>
+#include "exahype/reactive/AggressiveCCPDistributor.h"
 
 #include "tarch/multicore/Lock.h"
 #include "tarch/parallel/Node.h"
 #include "tarch/timing/Watch.h"
 
-#include "../reactive/OffloadingProfiler.h"
-#include "../reactive/PerformanceMonitor.h"
-#include "../reactive/OffloadingAnalyser.h"
-#include "OffloadingContext.h"
+#include "exahype/reactive/OffloadingProfiler.h"
+#include "exahype/reactive/PerformanceMonitor.h"
+#include "exahype/reactive/OffloadingAnalyser.h"
+#include "exahype/reactive/OffloadingContext.h"
+
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/tbb/Jobs.h"
+
+#include <algorithm>
+#include <numeric>
+#include <cmath>
 
 tarch::logging::Log exahype::reactive::AggressiveCCPDistributor::_log( "exahype::reactive::AggressiveCCPDistributor" );
 

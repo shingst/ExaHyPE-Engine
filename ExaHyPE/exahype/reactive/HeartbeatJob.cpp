@@ -13,7 +13,7 @@
 
 #if  defined(SharedTBB)  && defined(Parallel)
 
-#include "../reactive/HeartbeatJob.h"
+#include "exahype/reactive/HeartbeatJob.h"
 
 #include <mpi.h>
 #include <unistd.h>

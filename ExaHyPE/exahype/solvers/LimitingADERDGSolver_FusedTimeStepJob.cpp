@@ -1,7 +1,7 @@
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
 #if defined(FileTrace)
-#include "../reactive/STPStatsTracer.h"
+#include "exahype/reactive/STPStatsTracer.h"
 #include <chrono>
 #endif
 

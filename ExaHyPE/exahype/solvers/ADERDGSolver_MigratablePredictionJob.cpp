@@ -5,19 +5,19 @@
 #endif
 
 #if defined(FileTrace)
-#include "../reactive/STPStatsTracer.h"
+#include "exahype/reactive/STPStatsTracer.h"
 #endif
 
 #include "ADERDGSolver.h"
 
-#include "../reactive/PerformanceMonitor.h"
-#include "../reactive/OffloadingAnalyser.h"
-#include "../reactive/OffloadingProfiler.h"
-#include "../reactive/JobTableStatistics.h"
-#include "../reactive/MemoryMonitor.h"
-#include "../reactive/NoiseGenerator.h"
-#include "../reactive/ResilienceTools.h"
-#include "../reactive/RequestManager.h"
+#include "exahype/reactive/PerformanceMonitor.h"
+#include "exahype/reactive/OffloadingAnalyser.h"
+#include "exahype/reactive/OffloadingProfiler.h"
+#include "exahype/reactive/JobTableStatistics.h"
+#include "exahype/reactive/MemoryMonitor.h"
+#include "exahype/reactive/NoiseGenerator.h"
+#include "exahype/reactive/ResilienceTools.h"
+#include "exahype/reactive/RequestManager.h"
 
 #if defined(USE_TMPI)
 #include "teaMPI.h"

@@ -12,7 +12,7 @@
  **/
 
 #if defined(SharedTBB) && defined(Parallel)
-#include "../reactive/AggressiveHybridDistributor.h"
+#include "exahype/reactive/AggressiveHybridDistributor.h"
 
 #include <algorithm>
 #include <numeric>
@@ -22,9 +22,9 @@
 #include "tarch/parallel/Node.h"
 #include "tarch/timing/Watch.h"
 
-#include "../reactive/OffloadingProfiler.h"
-#include "../reactive/PerformanceMonitor.h"
-#include "../reactive/OffloadingAnalyser.h"
+#include "exahype/reactive/OffloadingProfiler.h"
+#include "exahype/reactive/PerformanceMonitor.h"
+#include "exahype/reactive/OffloadingAnalyser.h"
 #include "exahype/solvers/ADERDGSolver.h"
 #include "exahype/solvers/LimitingADERDGSolver.h"
 #include "tarch/multicore/Core.h"
@@ -566,7 +566,7 @@ bool exahype::reactive::AggressiveHybridDistributor::selectVictimRank(int& victi
         threshold) {
 	  logDebug("selectVictimRank", "threshold "<<threshold
 	  		                       << " there are "<<exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs-exahype::solvers::ADERDGSolver::NumberOfRemoteJobs
-	  							             <<" jobs "<< " and "<<tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs());
+	                                       <<" jobs "<< " and "<<tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs());
 
     _tasksNotOffloaded[victim]++;
     victim = myRank;

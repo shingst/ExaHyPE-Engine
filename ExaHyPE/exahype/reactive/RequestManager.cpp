@@ -27,20 +27,6 @@
 #include "../reactive/OffloadingContext.h"
 #include "../reactive/OffloadingProfiler.h"
 
-#ifndef MPI_CHECK
-#ifndef Asserts
-#define MPI_CHECK(func, x) do { \
-  ierr = (x); \
-  if (ierr != MPI_SUCCESS) { \
-    logError(#func, "Runtime error:"<<#x<<" returned "<<ierr<<" at " << __FILE__<< ":"<< __LINE__); \
-  } \
-} while (0)
-#else
-#define MPI_CHECK(func, x) do { \
-  ierr = (x); \
-  } while (0)
-#endif
-#endif
 
 #if defined(UseSmartMPI)
 #include "mpi_offloading.h"

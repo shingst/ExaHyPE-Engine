@@ -12,7 +12,7 @@
  **/
 
 #if  defined(Parallel)
-#include "../reactive/OffloadingAnalyser.h"
+#include "exahype/reactive/OffloadingAnalyser.h"
 
 #include "tarch/parallel/Node.h"
 #include "tarch/parallel/NodePool.h"
@@ -25,11 +25,11 @@
 #include <thread>
 #include <limits>
 
-#include "../reactive/PerformanceMonitor.h"
-#include "../reactive/DiffusiveDistributor.h"
-#include "../reactive/AggressiveDistributor.h"
-#include "../reactive/AggressiveCCPDistributor.h"
-#include "../reactive/AggressiveHybridDistributor.h"
+#include "exahype/reactive/PerformanceMonitor.h"
+#include "exahype/reactive/DiffusiveDistributor.h"
+#include "exahype/reactive/AggressiveDistributor.h"
+#include "exahype/reactive/AggressiveCCPDistributor.h"
+#include "exahype/reactive/AggressiveHybridDistributor.h"
 #include "OffloadingContext.h"
 
 tarch::logging::Log  exahype::reactive::OffloadingAnalyser::_log( "exahype::reactive::OffloadingAnalyser" );

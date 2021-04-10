@@ -30,13 +30,13 @@
 #include "teaMPI.h"
 #endif
 
-#include "../reactive/PerformanceMonitor.h"
-#include "../reactive/StaticDistributor.h"
-#include "../reactive/DiffusiveDistributor.h"
-#include "../reactive/OffloadingAnalyser.h"
+#include "exahype/reactive/PerformanceMonitor.h"
+#include "exahype/reactive/StaticDistributor.h"
+#include "exahype/reactive/DiffusiveDistributor.h"
+#include "exahype/reactive/OffloadingAnalyser.h"
 
-#include "../reactive/NoiseGenerator.h"
-#include "../reactive/STPStatsTracer.h"
+#include "exahype/reactive/NoiseGenerator.h"
+#include "exahype/reactive/STPStatsTracer.h"
 
 #ifdef USE_ITAC
 #include "VT.h"

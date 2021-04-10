@@ -12,19 +12,19 @@
  **/
 
 #if  defined(SharedTBB)  && defined(Parallel)
-#include "../reactive/AggressiveDistributor.h"
-
-#include <algorithm>
-#include <numeric>
+#include "exahype/reactive/AggressiveDistributor.h"
 
 #include "tarch/multicore/Lock.h"
 #include "tarch/parallel/Node.h"
 #include "tarch/timing/Watch.h"
 
-#include "../reactive/OffloadingProfiler.h"
-#include "../reactive/PerformanceMonitor.h"
+#include "exahype/reactive/OffloadingProfiler.h"
+#include "exahype/reactive/PerformanceMonitor.h"
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/tbb/Jobs.h"
+
+#include <algorithm>
+#include <numeric>
 
 tarch::logging::Log exahype::reactive::AggressiveDistributor::_log( "exahype::reactive::AggressiveDistributor" );
 

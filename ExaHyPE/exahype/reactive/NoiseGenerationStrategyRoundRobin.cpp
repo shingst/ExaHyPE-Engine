@@ -11,7 +11,7 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#include "../reactive/NoiseGenerationStrategyRoundRobin.h"
+#include "exahype/reactive/NoiseGenerationStrategyRoundRobin.h"
 
 #include <unistd.h>
 #include <chrono>
@@ -19,7 +19,7 @@
 #include <string>
 
 #include "../../../Peano/tarch/parallel/Node.h"
-#include "../reactive/OffloadingAnalyser.h"
+#include "exahype/reactive/OffloadingAnalyser.h"
 
 #if defined(Parallel)
 namespace exahype {
