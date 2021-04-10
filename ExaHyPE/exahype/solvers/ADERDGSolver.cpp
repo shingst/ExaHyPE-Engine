@@ -14,13 +14,15 @@
  **/
 #include "exahype/solvers/ADERDGSolver.h"
 
-#include <limits>
-#include <iomanip>
-#include <vector>
-#include <chrono>
-#include <algorithm> // copy_n
+#include "exahype/reactive/ResilienceTools.h"
+#include "exahype/reactive/PerformanceMonitor.h"
+#include "exahype/reactive/OffloadingContext.h"
+#include "exahype/reactive/RequestManager.h"
+#include "exahype/reactive/OffloadingProgressService.h"
+#include "exahype/reactive/OffloadingProfiler.h"
+#include "exahype/reactive/JobTableStatistics.h"
+#include "peano/utils/UserInterface.h"
 
-#include "../reactive/ResilienceTools.h"
 #include "exahype/Cell.h"
 #include "exahype/Vertex.h"
 #include "exahype/VertexOperations.h"
@@ -29,12 +31,10 @@
 #include "tarch/multicore/Lock.h"
 
 #include "exahype/mappings/LevelwiseAdjacencyBookkeeping.h"
-
 #include "exahype/amr/AdaptiveMeshRefinement.h"
 
 #include "peano/heap/CompressedFloatingPointNumbers.h"
 #include "peano/datatraversal/TaskSet.h"
-
 #include "peano/grid/aspects/VertexStateAnalysis.h"
 
 #include "exahype/solvers/LimitingADERDGSolver.h"
@@ -44,60 +44,30 @@
 #include "tarch/multicore/Jobs.h"
 #include "tarch/multicore/Core.h"
 #include "tarch/la/Vector.h"
+#include "tarch/timing/Watch.h"
 
+#include <limits>
+#include <iomanip>
+#include <vector>
+#include <chrono>
+#include <algorithm> // copy_n
 
-//need this for soft error generation
 
 #if defined(SharedTBB) && !defined(noTBBPrefetchesJobData)
 #include <immintrin.h>
 #endif
 
-//#if defined(DistributedOffloading)
-
 #if defined(USE_TMPI)
 #include "teaMPI.h"
 #endif
-
-#ifndef MPI_CHECK
-#ifndef Asserts
-#define MPI_CHECK(func, x) do { \
-  ierr = (x); \
-  if (ierr != MPI_SUCCESS) { \
-    logError(#func, "Runtime error:"<<#x<<" returned "<<ierr<<" at " << __FILE__<< ":"<< __LINE__); \
-  } \
-} while (0)
-#else
-#define MPI_CHECK(func, x) do { \
-  ierr = (x); \
-  } while (0)
-#endif
-#endif
-
-#ifndef MPI_BLOCKING
-#define MPI_BLOCKING false
-#endif
-
-#include "../reactive/PerformanceMonitor.h"
-#include "../reactive/StaticDistributor.h"
-#include "../reactive/DiffusiveDistributor.h"
-#include "../reactive/OffloadingContext.h"
-#include "../reactive/RequestManager.h"
-#include "../reactive/OffloadingAnalyser.h"
-#include "../reactive/OffloadingProgressService.h"
-#include "../reactive/OffloadingProfiler.h"
-#include "../reactive/JobTableStatistics.h"
-#include "peano/utils/UserInterface.h"
-//#endif
-
-//#undef assertion
-//#define assertion assert
 
 #if defined(UseSmartMPI)
 #include "mpi_offloading.h"
 #endif
 
-#include "tarch/timing/Watch.h"
-
+#ifndef MPI_BLOCKING
+#define MPI_BLOCKING false
+#endif
 
 namespace {
   constexpr const char* tags[]{"solutionUpdate",
@@ -164,10 +134,8 @@ constexpr int exahype::solvers::ADERDGSolver::Erase;
 constexpr int exahype::solvers::ADERDGSolver::Keep;
 
 tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::RestrictionSemaphore;
-
 tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::CoarseGridSemaphore;
 
-//#if defined(DistributedOffloading)
 tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::OffloadingSemaphore;
 
 //ToDo (Philipp): may no longer be necessary
@@ -176,8 +144,6 @@ std::atomic<int> exahype::solvers::ADERDGSolver::MaxIprobesInOffloadingProgress 
 std::atomic<int> exahype::solvers::ADERDGSolver::MigratablePredictionJob::JobCounter (0);
 std::atomic<int> exahype::solvers::ADERDGSolver::NumberOfReceiveJobs (0);
 std::atomic<int> exahype::solvers::ADERDGSolver::NumberOfReceiveBackJobs (0);
-//std::atomic<int> exahype::solvers::ADERDGSolver::NumberOfOffloadingManagers (0);
-//std::atomic<int> exahype::solvers::ADERDGSolver::NumberOfRunningManagers (0);
 std::atomic<int> exahype::solvers::ADERDGSolver::LocalStealableSTPCounter (0);
 std::atomic<int> exahype::solvers::ADERDGSolver::CompletedSentSTPs(0);
 std::atomic<int> exahype::solvers::ADERDGSolver::SentSTPs (0);

@@ -41,7 +41,9 @@ namespace exahype {
 }
 
 /**
- * TODO
+ * The OffloadingContext singleton stores the configuration of the reactive mechanisms in ExaHyPE.
+ * It further manages MPI communicators for offloading- or tasksharing-related communication and the blacklist
+ * for potentially overloaded ranks.
  */
 class exahype::reactive::OffloadingContext {
   public:

@@ -95,15 +95,17 @@
 #include "VT.h"
 #endif
 
-#include "../reactive/OffloadingAnalyser.h"
-#include "../reactive/ResilienceTools.h"
-#include "../reactive/JobTableStatistics.h"
-#include "../reactive/PerformanceMonitor.h"
-#include "../reactive/OffloadingProgressService.h"
-#include "../reactive/StaticDistributor.h"
-#include "../reactive/AggressiveHybridDistributor.h"
-#include "../reactive/OffloadingProfiler.h"
-
+#include "exahype/reactive/OffloadingAnalyser.h"
+#include "exahype/reactive/ResilienceTools.h"
+#include "exahype/reactive/JobTableStatistics.h"
+#include "exahype/reactive/PerformanceMonitor.h"
+#include "exahype/reactive/OffloadingProgressService.h"
+#include "exahype/reactive/StaticDistributor.h"
+#include "exahype/reactive/AggressiveHybridDistributor.h"
+#include "exahype/reactive/OffloadingProfiler.h"
+#if defined(FileTrace)
+#include "exahype/reactive/STPStatsTracer.h"
+#endif
 
 #if defined(TMPI_Heartbeats)
 #include "exahype/offloading/HeartbeatJob.h"
@@ -119,9 +121,7 @@
 #include "exahype/offloading/NoiseGenerationStrategyChaseVictim.h"
 #endif
 
-#if defined(FileTrace)
-#include "../reactive/STPStatsTracer.h"
-#endif
+
 
 tarch::logging::Log exahype::runners::Runner::_log("exahype::runners::Runner");
 

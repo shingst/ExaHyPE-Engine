@@ -16,10 +16,10 @@
 
 #include "tarch/logging/Log.h"
 #include "tarch/multicore/BooleanSemaphore.h"
-#include "tbb/concurrent_hash_map.h"
-#include "tbb/concurrent_queue.h"
 #include "tarch/multicore/Jobs.h"
 
+#include "tbb/concurrent_hash_map.h"
+#include "tbb/concurrent_queue.h"
 
 #include <mpi.h>
 #include <atomic>
@@ -28,6 +28,21 @@
 #include <vector>
 #include <unordered_map>
 #include <limits>
+
+#ifndef MPI_CHECK
+#ifndef Asserts
+#define MPI_CHECK(func, x) do { \
+  ierr = (x); \
+  if (ierr != MPI_SUCCESS) { \
+    logError(#func, "Runtime error:"<<#x<<" returned "<<ierr<<" at " << __FILE__<< ":"<< __LINE__); \
+  } \
+} while (0)
+#else
+#define MPI_CHECK(func, x) do { \
+  ierr = (x); \
+  } while (0)
+#endif
+#endif
 
 #if defined(UseMPIThreadSplit)
 #define MAX_THREADS 48
