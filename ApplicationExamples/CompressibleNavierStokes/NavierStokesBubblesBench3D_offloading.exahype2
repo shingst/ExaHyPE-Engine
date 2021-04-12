@@ -27,15 +27,15 @@
     "autotuning_strategy": "dummy"
   },
  "distributed_memory": {
-    "offloading_lb_strategy": "aggressiveHybrid",
-    "offloading_progress" : "smartmpi",
+    "offloading_lb_strategy": "none",
+    "offloading_progress" : "none",
     "offloading_CCP_temperature" : 0,
     "offloading_diffusion_temperature" : 1,
     "offloading_CCP_frequency" : 0,
     "offloading_CCP_steps" : 0,
     "offloading_update_temperature" : true,
     "offloading_increase_temp_threshold" : 1.0,
-    "task_sharing" : "no",
+    "task_sharing" : "task_sharing",
     "ranks_per_node": 1,
     "load_balancing_strategy": "hotspot",
     "load_balancing_type": "static",

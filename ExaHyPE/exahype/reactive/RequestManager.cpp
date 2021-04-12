@@ -644,7 +644,7 @@ bool exahype::reactive::RequestManager::progressRequestsOfType( RequestType type
         a_requests.release();
         _activeRequests[mapId][reqIdx] = request; //replace finished request
         _internalIdsOfActiveRequests[mapId].insert(std::pair<int,int>(reqIdx, new_req_id));
-        logInfo("progressRequestsOfType","Inserted "<<request<<"  at reqIdx "<<reqIdx<<"  internal id "<<new_req_id);
+        logDebug("progressRequestsOfType","Inserted "<<request<<"  at reqIdx "<<reqIdx<<"  internal id "<<new_req_id);
       }
     }
   }

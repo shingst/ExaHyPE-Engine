@@ -28,17 +28,13 @@
   },
   "distributed_memory": {
     "offloading_lb_strategy" : "none",
-    "task_sharing" : "task_sharing_resilience_checks",
-    
+    "task_sharing" : "task_sharing_resilience_checks",    
     "timeout": 60,
     "load_balancing_type": "static",
     "buffer_size": 64,
     "load_balancing_strategy": "hotspot",
     "node_pool_strategy": "fair",
     "ranks_per_node": 1
-  },
-  "stp_stats_tracing" : {
-    "stp_tracing_output_dir" : "./test"
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",

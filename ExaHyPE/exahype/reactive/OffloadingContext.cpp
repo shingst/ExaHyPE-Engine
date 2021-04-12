@@ -303,11 +303,20 @@ exahype::reactive::OffloadingContext& exahype::reactive::OffloadingContext::getI
 
 
 int exahype::reactive::OffloadingContext::getOffloadingTag() {
-  static std::atomic<int> counter(1); //0 is reserved for status
-  int val =  counter.fetch_add(1);
-  if(val==_maxTag-1) {
-    counter = 1;
+  static std::atomic<int> next_tag(1); //0 is reserved for status
+retry:
+  int val =  next_tag.load();
+  int val_o = next_tag.load();
+
+  if(val>_maxTag-1) {
+    logWarning("getOffloadingTag","MPI tag rollover for reactive communication!");
     val = 1;
+  }
+
+  int update = val + 1;
+
+  if(!std::atomic_compare_exchange_strong(&next_tag, &val_o, update)) {
+    goto retry;
   }
   return val;
 }
