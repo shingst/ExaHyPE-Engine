@@ -114,8 +114,10 @@ exahype::reactive::OffloadingContext::OffloadingContext(int threadId) :
   _localBlacklist = new double[nnodes];
   std::fill(&_localBlacklist[0], &_localBlacklist[nnodes], 0);
 
+  int *tag_ptr;
   int flag = 0;
-  MPI_CHECK("OffloadingManager()" , MPI_Comm_get_attr(MPI_COMM_WORLD, MPI_TAG_UB, &_maxTag, &flag));
+  MPI_CHECK("OffloadingManager()" , MPI_Comm_get_attr(MPI_COMM_WORLD, MPI_TAG_UB, &tag_ptr, &flag));
+  _maxTag = *tag_ptr;
   assertion(ierr==MPI_SUCCESS);
 
   if(!flag) {
