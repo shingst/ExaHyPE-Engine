@@ -161,7 +161,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryFindOutcomeAndC
      else {
        //soft error detected
        reschedule = false;
-        MPI_Abort(MPI_COMM_WORLD, -1);
+       MPI_Abort(MPI_COMM_WORLD, -1);
      }
   }
   else {
@@ -307,7 +307,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 
     bool hasFlipped = exahype::reactive::ResilienceTools::getInstance().corruptDataIfActive(lduh, _solver.getUpdateSize());
     setTrigger(hasFlipped);
- 
+
     if(hasFlipped) {
       tarch::la::Vector<DIMENSIONS, double> center;
       center = cellDescription.getOffset() + 0.5 * cellDescription.getSize();
@@ -442,7 +442,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleRemoteExecut
   assertion(_lGradQhbnd!=nullptr);
   assertion(_lFhbnd!=nullptr);
   assertion(_luh!=nullptr);
-    
+
 #if DIMENSIONS==3
   logDebug("handleRemoteExecution",
         " processJob: center[0] = "<<_center[0]
@@ -488,14 +488,14 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleRemoteExecut
       <<" time stamp = "<<_predictorTimeStamp
       <<" origin rank = "<<_originRank);
 #endif
-   
+
    hasComputed = true;
 #if defined(USE_ITAC)
     VT_end(event_stp_remote);
 #endif
 #if defined(FileTrace)
-    auto stop = std::chrono::high_resolution_clock::now(); 
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start); 
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
 
    // exahype::reactive::STPStatsTracer::getInstance().writeTracingEventIteration(iterations, exahype::reactive::STPTraceKey::ADERDGRemoteMigratable);
     exahype::reactive::STPStatsTracer::getInstance().writeTracingEventRunIterations(duration.count(), iterations, exahype::reactive::STPTraceKey::ADERDGRemoteMigratable);
@@ -516,7 +516,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackOutcomeToO
   logDebug("sendBackOutcomeToOrigin",
         " send job outcome: center[0] = "<<_center[0]
       <<" center[1] = "<<_center[1]
-      <<" time stamp = "<<_predictorTimeStamp      
+      <<" time stamp = "<<_predictorTimeStamp
       <<" tag = "<<_tag
       <<" origin = "<<_originRank);
 #endif
@@ -1222,8 +1222,6 @@ int exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getElement(
 int exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getOrigin() const {
   return _originRank;
 }
-
-//#endif
 
 //#undef assertion
 //#define assertion(expr) 

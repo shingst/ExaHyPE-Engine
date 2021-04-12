@@ -122,7 +122,6 @@
 #endif
 
 
-
 tarch::logging::Log exahype::runners::Runner::_log("exahype::runners::Runner");
 
 exahype::runners::Runner::Runner(exahype::parser::Parser& parser, std::vector<std::string>& cmdlineargs) :

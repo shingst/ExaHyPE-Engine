@@ -28,7 +28,6 @@
   },
  "distributed_memory": {
     "offloading_lb_strategy": "aggressiveHybrid",
-    "offloading_input_file" : "",
     "offloading_progress" : "smartmpi",
     "offloading_CCP_temperature" : 0,
     "offloading_diffusion_temperature" : 1,
