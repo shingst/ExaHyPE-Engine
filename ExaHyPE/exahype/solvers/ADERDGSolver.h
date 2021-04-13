@@ -1149,7 +1149,7 @@ private:
     enum class State { INITIAL, CHECK_REQUIRED, HEALING_REQUIRED};
 
     private:
-      ADERDGSolver&    			  _solver;
+      ADERDGSolver&    			      _solver;
       const int                   _cellDescriptionsIndex;
       const int                   _element;
       const double                _predictorTimeStamp;
@@ -1163,7 +1163,7 @@ private:
       double*                     _lGradQhbnd;
       double                      _center[DIMENSIONS];
       double                      _dx[DIMENSIONS];
-      bool 		          _isLocalReplica;
+      bool 		                    _isLocalReplica;
       unsigned char               _isPotSoftErrorTriggered;
       unsigned char               _isCorrupted;
       State                       _currentState;

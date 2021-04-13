@@ -23,6 +23,8 @@ info  sharedmemoryoracles        -1  black
 
 info  Z4Solver                                -1  black
 info  exahype::solvers::ADERDGSolver          -1  black
+info  exahype::solvers::ADERDGSolver::tryFindOutcomeAndCheck          -1  white
+info  exahype::solvers::ADERDGSolver::tryFindAndExtractEquivalentSharedOutcome          -1  white
 #info  exahype::solvers::ADERDGSolver::progressOffloading          -1 white
 info  exahype::solvers::Plotter               -1  black
 info  exahype::runner::Runner::runAsWorker    -1  black

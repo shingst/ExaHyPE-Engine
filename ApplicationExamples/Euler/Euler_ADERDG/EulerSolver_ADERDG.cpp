@@ -31,6 +31,10 @@ tarch::logging::Log Euler::EulerSolver_ADERDG::_log("Euler::EulerSolver_ADERDG")
 
 Euler::EulerSolver_ADERDG::Reference Euler::EulerSolver_ADERDG::ReferenceChoice = Euler::EulerSolver_ADERDG::Reference::EntropyWave;
 
+#ifdef INJECT_ERROR
+#include "teaMPI.h"
+#endif
+
 void Euler::EulerSolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   if (constants.isValueValidString("reference")) {
     std::string reference = constants.getValueAsString("reference");
@@ -332,6 +336,13 @@ void Euler::EulerSolver_ADERDG::adjustPointSolution(const double* const x,const 
     referenceSolution(x,0.0,Q);
   }
   //referenceSolution(x,0.0,Q);
+#ifdef INJECT_ERROR
+  if(TMPI_IsLeadingRank() && tarch::la::equals(t, 0.0055342, 0.00001) && tarch::la::equals(x[0], 0.55690, 0.0001) && tarch::la::equals(x[1], 0.55690, 0.0001) && tarch::la::equals(x[2], 0.55690, 0.0001) ) {
+    //std::cout<<" t "<<t<<" dt "<<dt<<"x:"<<x[0]<<","<<x[1]<<","<<x[2]<<std::endl; 
+    Q[0]=Q[0]*1.1;	 	
+  }
+#endif
+
 }
 
 exahype::solvers::Solver::RefinementControl

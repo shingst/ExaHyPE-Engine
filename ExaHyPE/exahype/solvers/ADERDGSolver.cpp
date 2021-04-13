@@ -31,6 +31,7 @@
 #include "tarch/multicore/Lock.h"
 
 #include "exahype/mappings/LevelwiseAdjacencyBookkeeping.h"
+#include "exahype/mappings/FinaliseMeshRefinement.h"
 #include "exahype/amr/AdaptiveMeshRefinement.h"
 
 #include "peano/heap/CompressedFloatingPointNumbers.h"
@@ -2465,8 +2466,8 @@ int exahype::solvers::ADERDGSolver::getTaskPriorityLocalStealableJob(int cellDes
   if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
      !=exahype::reactive::OffloadingContext::ResilienceStrategy::None) {
 
-    int team = exahype::reactive::OffloadingManager::getInstance().getTMPIInterTeamRank();
-    int teamSize = exahype::reactive::OffloadingManager::getInstance().getTMPINumTeams();
+    int team = exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank();
+    int teamSize = exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams();
 
     CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex, element);
 
@@ -2717,7 +2718,7 @@ void exahype::solvers::ADERDGSolver::sendKeyOfTaskOutcomeToOtherTeams(Migratable
 
     MPI_Request *sendRequests = new MPI_Request[teams-1];
 
-    //int tag = job->_cellDescriptionsIndex; //exahype::reactive::OffloadingManager::getInstance().getOffloadingTag();
+    //int tag = job->_cellDescriptionsIndex; //exahype::reactive::OffloadingContext::getInstance().getOffloadingTag();
     int tag = exahype::reactive::OffloadingContext::getInstance().getOffloadingTag();
 
     //_mapTagToReplicationSendKey.insert(std::make_pair(tag, metadata));
@@ -2776,7 +2777,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
     job->packMetaData(metadata);
     
     int tag = exahype::reactive::OffloadingContext::getInstance().getOffloadingTag();
-    //int tag = job->_cellDescriptionsIndex; //exahype::reactive::OffloadingManager::getInstance().getOffloadingTag();
+    //int tag = job->_cellDescriptionsIndex; //exahype::reactive::OffloadingContext::getInstance().getOffloadingTag();
     //_mapTagToReplicationSendData.insert(std::make_pair(tag, data));
 
     bool hasSent = false; //indicates whether at least one send was successful
@@ -2832,7 +2833,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
 
     MPI_Request *sendRequests = new MPI_Request[(NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME+1)*(teams-1)];
 
-    //int tag = job->_cellDescriptionsIndex; // exahype::reactive::OffloadingManager::getInstance().getOffloadingTag();
+    //int tag = job->_cellDescriptionsIndex; // exahype::reactive::OffloadingContext::getInstance().getOffloadingTag();
     int tag = exahype::reactive::OffloadingContext::getInstance().getOffloadingTag();
 
     _mapTagToSTPData.insert(std::make_pair(tag, data));
@@ -2933,12 +2934,12 @@ void exahype::solvers::ADERDGSolver::releasePendingOutcomeAndShare(int cellDescr
     logInfo("releasePendingOutcomeAndShare","releasing a pending outcome");
 
     //Share now
-    int teams = exahype::reactive::OffloadingManager::getInstance().getTMPINumTeams();
-    int interCommRank = exahype::reactive::OffloadingManager::getInstance().getTMPIInterTeamRank();
-    MPI_Comm teamInterComm = exahype::reactive::OffloadingManager::getInstance().getTMPIInterTeamCommunicatorData();
+    int teams = exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams();
+    int interCommRank = exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank();
+    MPI_Comm teamInterComm = exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamCommunicatorData();
     MPI_Request *sendRequests = new MPI_Request[(NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME+1)*(teams-1)];
-    //int tag = job->_cellDescriptionsIndex; // exahype::reactive::OffloadingManager::getInstance().getOffloadingTag();
-    int tag = exahype::reactive::OffloadingManager::getInstance().getOffloadingTag();
+    //int tag = job->_cellDescriptionsIndex; // exahype::reactive::OffloadingContext::getInstance().getOffloadingTag();
+    int tag = exahype::reactive::OffloadingContext::getInstance().getOffloadingTag();
     _mapTagToSTPData.insert(std::make_pair(tag, data));
 
     int j = 0;
@@ -2976,7 +2977,7 @@ void exahype::solvers::ADERDGSolver::releasePendingOutcomeAndShare(int cellDescr
       }
     }
     SentSTPs++;
-    exahype::reactive::OffloadingManager::getInstance().submitRequests(sendRequests,
+    exahype::reactive::RequestManager::getInstance().submitRequests(sendRequests,
                                                                          (teams-1)*(NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME+1),
                                                                          tag,
                                                                          -1,

@@ -1,4 +1,4 @@
-#if defined(Parallel)
+#include "ADERDGSolver.h"
 
 #if defined(ScoreP)
 #include "scorep/SCOREP_User.h"
@@ -7,8 +7,6 @@
 #if defined(FileTrace)
 #include "exahype/reactive/STPStatsTracer.h"
 #endif
-
-#include "ADERDGSolver.h"
 
 #include "exahype/reactive/PerformanceMonitor.h"
 #include "exahype/reactive/OffloadingAnalyser.h"
@@ -162,6 +160,11 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::recoverWithOutcome
   CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
         _element);
 
+  if(outcome->_metadata._isPotSoftErrorTriggered) {
+    logError("recoverWithOutcome","Error: we have two potentially corrupted outcomes, cannot determine right one. Aborting...");
+    MPI_Abort(MPI_COMM_WORLD, -1);
+  }
+
   double *luh = static_cast<double*>(cellDescription.getSolution());
   double *lduh = static_cast<double*>(cellDescription.getUpdate());
   double *lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
@@ -195,7 +198,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryFindOutcomeAndH
   if(found) {
     recoverWithOutcome(outcome);
     cellDescription.setHasCompletedLastStep(true);
-    std::cout<<"has healed!"<<std::endl;
+    logError("tryFindOutcomeAndHeal","has healed!");
     return false;
   }
   else {
@@ -216,6 +219,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryFindOutcomeAndC
   bool reschedule;
   CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
         _element);
+  tarch::la::Vector<DIMENSIONS, double> center;
+  center = cellDescription.getOffset() + 0.5 * cellDescription.getSize();
 
   if(found && status==JobOutcomeStatus::received) {
     if(matchesOtherOutcome(outcome)) {
@@ -225,11 +230,19 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryFindOutcomeAndC
     else {
       //soft error detected
 #if defined(ResilienceHealing)
-      logError("handleLocalExecution", "could switch on healing mode now!");
       recoverWithOutcome(outcome);
       cellDescription.setHasCompletedLastStep(true);
       reschedule = false;
-      _solver.switchToHealingMode();
+      logError("tryFindOutcomeAndCheck", "switch on healing mode now!");
+      //_solver.switchToHealingMode();
+      logInfo("tryFindOutcomeAndCheck","tried to recover cell "
+               <<_cellDescriptionsIndex
+               <<" center[0] = "
+               << center[0]
+               <<" center[1] = "
+               << center[1]
+               <<" center[2] = "
+               << center[2]);
 #else
       reschedule = false;
       logError("tryFindOutcomeAndCheck", "soft error detected but we are ignoring it...");
@@ -240,6 +253,14 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryFindOutcomeAndC
     }
   }
   else {
+    logInfo("tryFindOutcomeAndCheck","Looking for cell "
+             <<_cellDescriptionsIndex
+             <<" center[0] = "
+             << center[0]
+             <<" center[1] = "
+             << center[1]
+             <<" center[2] = "
+             << center[2]);
     reschedule = true;
   }
 
@@ -324,14 +345,14 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
         case JobOutcomeStatus::received:
       	  hasResult = true;
 #if defined(ResilienceChecks)
-        needToCompute = outcome->_metadata._isPotSoftErrorTriggered;
-        copyResult = !outcome->_metadata._isPotSoftErrorTriggered;
-        needToCheck = outcome->_metadata._isPotSoftErrorTriggered;
-        needToShare = outcome->_metadata._isPotSoftErrorTriggered;
+          needToCompute = outcome->_metadata._isPotSoftErrorTriggered;
+          copyResult = !outcome->_metadata._isPotSoftErrorTriggered;
+          needToCheck = outcome->_metadata._isPotSoftErrorTriggered;
+          needToShare = outcome->_metadata._isPotSoftErrorTriggered;
 #else
-      	needToShare = false;
-      	needToCompute = false;
-        copyResult = true;
+      	  needToShare = false;
+      	  needToCompute = false;
+          copyResult = true;
 #endif
         break;
       case JobOutcomeStatus::transit:
@@ -345,7 +366,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 
     if(copyResult) {
       if(outcome->_metadata._isCorrupted)
-        logError("handleLocalExecution","Warning: we're using a corrupted outcome!");
+        logError("handleLocalExecution","Error: we're using a corrupted outcome!");
 
       assertion(outcome!=nullptr);
       std::memcpy(lduh, &outcome->_lduh[0], outcome->_lduh.size() * sizeof(double));
@@ -433,13 +454,13 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
         bool hasNoError = matchesOtherOutcome(outcome);
         if(!hasNoError) {
 #if defined(ResilienceHealing)
-          logInfo("handleLocalExecution", "could switch on healing mode now!");
+          //logInfo("handleLocalExecution", "could switch on healing mode now!");
           recoverWithOutcome(outcome);
           reschedule = false;
-          _solver.switchToHealingMode();
+          //_solver.switchToHealingMode();
           //MPI_Abort(MPI_COMM_WORLD, -1);
 #else
-          //MPI_Abort(MPI_COMM_WORLD, -1); //for now, abort immediately
+          MPI_Abort(MPI_COMM_WORLD, -1); //for now, abort immediately
           logError("handleLocalExecution", "soft error detected but we ignore it...");
           reschedule = false;
 #endif
@@ -528,7 +549,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryToFindAndExtrac
 
     if((*outcome)->_metadata._isCorrupted)
       logError("tryToFindAndExtractEquivalentSharedOutcome()",
-            "team "<<exahype::reactive::OffloadingManager::getInstance().getTMPIInterTeamRank()
+            "team "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
             <<" found corrupted STP in received jobs:"
             <<(*outcome)->_metadata.to_string());
   }
@@ -703,7 +724,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
   //local treatment if this job belongs to the local rank
   if (_originRank == myRank) {
     result = handleLocalExecution(isRunOnMaster, hasComputed);
-#if !defined(OffloadingUseProgressThread)  && defined(TaskSharing)
+#if !defined(OffloadingUseProgressThread)  //&& defined(TaskSharing)
     if (!isRunOnMaster)
       exahype::solvers::ADERDGSolver::progressOffloading(&_solver,
           isRunOnMaster, std::numeric_limits<int>::max());

@@ -8,7 +8,7 @@
   "architecture": "hsw",
   "computational_domain": {
     "dimension": 3,
-    "time_steps": 200,
+    "time_steps": 100,
     "offset": [
       0.0,
       0.0,
@@ -45,7 +45,7 @@
   },
   "resilience" : {
     "generate_soft_errors" : "no",
-    "trigger_mechanism" : "none"
+    "trigger_mechanism" : "trigger_all"
   },
   "_stp_stats_tracing" : {
     "stp_tracing_output_dir" : "./test"
@@ -66,7 +66,7 @@
     {
       "type": "ADER-DG",
       "name": "EulerSolver_ADERDG",
-      "order": 5,
+      "order": 7,
       "maximum_mesh_size": 0.3,
       "time_stepping": "global",
       "aderdg_kernel": {
