@@ -17,9 +17,8 @@
 #include "tarch/logging/Log.h"
 #include "tarch/multicore/BooleanSemaphore.h"
 
-#include "../reactive/OffloadingManager.h"
+#include "exahype/reactive/OffloadingContext.h"
 
-#include <mpi.h>
 #include <atomic>
 
 namespace exahype {

@@ -12,19 +12,19 @@
  **/
 
 #if  defined(SharedTBB)  && defined(Parallel)
-#include "../reactive/AggressiveDistributor.h"
-
-#include <algorithm>
-#include <numeric>
+#include "exahype/reactive/AggressiveDistributor.h"
 
 #include "tarch/multicore/Lock.h"
 #include "tarch/parallel/Node.h"
 #include "tarch/timing/Watch.h"
 
-#include "../reactive/OffloadingProfiler.h"
-#include "../reactive/PerformanceMonitor.h"
+#include "exahype/reactive/OffloadingProfiler.h"
+#include "exahype/reactive/PerformanceMonitor.h"
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/tbb/Jobs.h"
+
+#include <algorithm>
+#include <numeric>
 
 tarch::logging::Log exahype::reactive::AggressiveDistributor::_log( "exahype::reactive::AggressiveDistributor" );
 
@@ -224,7 +224,7 @@ void exahype::reactive::AggressiveDistributor::updateLoadDistribution() {
     for(int j=0; j<nnodes; j++) {
       if(waitingTimesSnapshot[k+j]>0)
         logInfo("updateLoadDistribution()","rank "<<i<<" waiting for "<<waitingTimesSnapshot[k+j]<<" for rank "<<j);
-      if(waitingTimesSnapshot[k+j]>currentLongestWaitTime && !exahype::reactive::OffloadingManager::getInstance().isBlacklisted(i)) {
+      if(waitingTimesSnapshot[k+j]>currentLongestWaitTime && !exahype::reactive::OffloadingContext::getInstance().isBlacklisted(i)) {
         currentLongestWaitTime = waitingTimesSnapshot[k+j];
         currentOptimalVictim = i;
       }
@@ -247,7 +247,7 @@ void exahype::reactive::AggressiveDistributor::updateLoadDistribution() {
 
   logInfo("updateLoadDistribution()", "optimal victim: "<<currentOptimalVictim<<" critical rank:"<<criticalRank);
 
-  bool isVictim = exahype::reactive::OffloadingManager::getInstance().isVictim();
+  bool isVictim = exahype::reactive::OffloadingContext::getInstance().isVictim();
   if(myRank == criticalRank && criticalRank!=currentOptimalVictim) {
     if(!isVictim) {
       int currentTasksCritical = _initialLoadPerRank[criticalRank];

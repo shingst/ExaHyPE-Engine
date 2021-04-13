@@ -5,18 +5,19 @@
 #endif
 
 #if defined(FileTrace)
-#include "../reactive/STPStatsTracer.h"
+#include "exahype/reactive/STPStatsTracer.h"
 #endif
 
 #include "ADERDGSolver.h"
 
-#include "../reactive/PerformanceMonitor.h"
-#include "../reactive/OffloadingAnalyser.h"
-#include "../reactive/OffloadingProfiler.h"
-#include "../reactive/JobTableStatistics.h"
-#include "../reactive/MemoryMonitor.h"
-#include "../reactive/NoiseGenerator.h"
-#include "../reactive/ResilienceTools.h"
+#include "exahype/reactive/PerformanceMonitor.h"
+#include "exahype/reactive/OffloadingAnalyser.h"
+#include "exahype/reactive/OffloadingProfiler.h"
+#include "exahype/reactive/JobTableStatistics.h"
+#include "exahype/reactive/MemoryMonitor.h"
+#include "exahype/reactive/NoiseGenerator.h"
+#include "exahype/reactive/ResilienceTools.h"
+#include "exahype/reactive/RequestManager.h"
 
 #if defined(USE_TMPI)
 #include "teaMPI.h"
@@ -311,8 +312,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   bool found = false;
 
 //#if defined(TaskSharing)
-  if(exahype::reactive::OffloadingManager::getInstance().getResilienceStrategy()
-      != exahype::reactive::OffloadingManager::ResilienceStrategy::None) {
+  if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
+      != exahype::reactive::OffloadingContext::ResilienceStrategy::None) {
     needToShare = (AllocatedSTPsSend
           <= exahype::reactive::PerformanceMonitor::getInstance().getTasksPerTimestep());
 
@@ -420,8 +421,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   }
 #endif
 
-  if((exahype::reactive::OffloadingManager::getInstance().getResilienceStrategy()
-    != exahype::reactive::OffloadingManager::ResilienceStrategy::None)) {
+  if((exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
+    != exahype::reactive::OffloadingContext::ResilienceStrategy::None)) {
     if(!hasResult) {
       hasResult = tryToFindAndExtractEquivalentSharedOutcome(status, &outcome);
     }
@@ -521,7 +522,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryToFindAndExtrac
     _solver._jobDatabase.erase(a_jobToData);
 
     logDebug("tryToFindAndExtractEquivalentSharedOutcome()",
-        "team "<<exahype::reactive::OffloadingManager::getInstance().getTMPIInterTeamRank()
+        "team "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
         <<" found STP in received jobs:"
         <<(*outcome)->_metadata.to_string());
 
@@ -557,7 +558,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleRemoteExecut
   assertion(_lGradQhbnd!=nullptr);
   assertion(_lFhbnd!=nullptr);
   assertion(_luh!=nullptr);
-    
+
 #if DIMENSIONS==3
   logDebug("handleRemoteExecution",
         " processJob: center[0] = "<<_center[0]
@@ -646,9 +647,9 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackOutcomeToO
        _lGradQhbnd,
        _originRank,
        _tag,
-       exahype::reactive::OffloadingManager::getInstance().getMPICommunicatorMapped(),
+       exahype::reactive::OffloadingContext::getInstance().getMPICommunicatorMapped(),
        sendBackRequests);
-  exahype::reactive::OffloadingManager::getInstance().submitRequests(
+  exahype::reactive::OffloadingContext::getInstance().submitRequests(
        sendBackRequests,
        NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME,
        _tag,
@@ -664,7 +665,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackOutcomeToO
       _lGradQhbnd,
       _originRank,
       _tag,
-      exahype::reactive::OffloadingManager::getInstance().getMPICommunicatorMapped()
+      exahype::reactive::OffloadingContext::getInstance().getMPICommunicatorMapped()
   );
   MigratablePredictionJob::sendBackHandler(&_solver, _tag, _originRank);
 #endif
@@ -677,9 +678,9 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackOutcomeToO
        _lGradQhbnd,
        _originRank,
        _tag,
-       exahype::reactive::OffloadingManager::getInstance().getMPICommunicatorMapped(),
+       exahype::reactive::OffloadingContext::getInstance().getMPICommunicatorMapped(),
        sendBackRequests);
-  exahype::reactive::OffloadingManager::getInstance().submitRequests(
+  exahype::reactive::RequestManager::getInstance().submitRequests(
        sendBackRequests,
        NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME,
        _tag,
@@ -865,7 +866,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
 #endif
 
   logDebug("receiveHandlerTaskSharing", "team "
-      <<exahype::reactive::OffloadingManager::getInstance().getTMPIInterTeamRank()
+      <<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
       <<" received task outcome: "
       <<data->_metadata.to_string());
 
@@ -1347,8 +1348,6 @@ int exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getElement(
 int exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getOrigin() const {
   return _originRank;
 }
-
-#endif
 
 //#undef assertion
 //#define assertion(expr) 

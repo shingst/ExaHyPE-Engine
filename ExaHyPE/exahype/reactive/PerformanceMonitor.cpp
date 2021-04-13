@@ -12,7 +12,7 @@
  **/
 
 #if  defined(Parallel)
-#include "../reactive/PerformanceMonitor.h"
+#include "exahype/reactive/PerformanceMonitor.h"
 
 #include <algorithm>
 #include <numeric>
@@ -21,10 +21,10 @@
 #include "tarch/parallel/Node.h"
 #include "tarch/timing/Watch.h"
 
-#include "../reactive/OffloadingProfiler.h"
-#include "../reactive/DynamicDistributor.h"
-#include "../reactive/StaticDistributor.h"
-#include "../reactive/OffloadingManager.h"
+#include "exahype/reactive/OffloadingProfiler.h"
+#include "exahype/reactive/DynamicDistributor.h"
+#include "exahype/reactive/StaticDistributor.h"
+#include "OffloadingContext.h"
 
 
 #define TERMINATE_SIGNAL -1.0
@@ -235,7 +235,7 @@ void exahype::reactive::PerformanceMonitor::postFusedRequest() {
  
   //for(int i=0; i< nnodes*2;i++)
   //  logInfo("postFusedrequest()", "send buffer "<<_currentFusedDataSendBuffer[i]);
-  MPI_Comm comm =  exahype::reactive::OffloadingManager::getInstance().getMPICommunicator(); 
+  MPI_Comm comm =  exahype::reactive::OffloadingContext::getInstance().getMPICommunicator(); 
   
   if(comm!=MPI_COMM_NULL) {
     int err = MPI_Iallgather(&_currentFusedDataSendBuffer[0], 2*nnodes+2, MPI_DOUBLE, &_currentFusedDataReceiveBuffer[0],

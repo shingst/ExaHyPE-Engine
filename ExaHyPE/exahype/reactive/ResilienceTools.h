@@ -1,4 +1,3 @@
-
 /**
  * This file is part of the ExaHyPE project.
  * Copyright (c) 2020  http://exahype.eu

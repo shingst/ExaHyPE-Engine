@@ -30,13 +30,13 @@
 #include "teaMPI.h"
 #endif
 
-#include "../reactive/PerformanceMonitor.h"
-#include "../reactive/StaticDistributor.h"
-#include "../reactive/DiffusiveDistributor.h"
-#include "../reactive/OffloadingAnalyser.h"
+#include "exahype/reactive/PerformanceMonitor.h"
+#include "exahype/reactive/StaticDistributor.h"
+#include "exahype/reactive/DiffusiveDistributor.h"
+#include "exahype/reactive/OffloadingAnalyser.h"
 
-#include "../reactive/NoiseGenerator.h"
-#include "../reactive/STPStatsTracer.h"
+#include "exahype/reactive/NoiseGenerator.h"
+#include "exahype/reactive/STPStatsTracer.h"
 
 #ifdef USE_ITAC
 #include "VT.h"
@@ -173,7 +173,7 @@ void exahype::mappings::FusedTimeStep::beginIteration(
   }
 
 #ifdef Parallel
-  if ( exahype::reactive::OffloadingManager::getInstance().isEnabled()
+  if ( exahype::reactive::OffloadingContext::getInstance().isEnabled()
      && !tarch::parallel::Node::getInstance().isGlobalMaster())
   {
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
@@ -190,11 +190,11 @@ void exahype::mappings::FusedTimeStep::beginIteration(
   }
 
   if( (
-        (exahype::reactive::OffloadingManager::getInstance().getOffloadingStrategy()
-         ==exahype::reactive::OffloadingManager::OffloadingStrategy::StaticHardcoded)
+        (exahype::reactive::OffloadingContext::getInstance().getOffloadingStrategy()
+         ==exahype::reactive::OffloadingContext::OffloadingStrategy::StaticHardcoded)
         ||
-        (exahype::reactive::OffloadingManager::getInstance().getOffloadingStrategy()
-         ==exahype::reactive::OffloadingManager::OffloadingStrategy::Static)
+        (exahype::reactive::OffloadingContext::getInstance().getOffloadingStrategy()
+         ==exahype::reactive::OffloadingContext::OffloadingStrategy::Static)
      )
      &&  issuePredictionJobsInThisIteration()
      ) {
@@ -254,9 +254,9 @@ void exahype::mappings::FusedTimeStep::endIteration(
 #if defined(Parallel)
 #ifdef OffloadingUseProgressTask
   if( issuePredictionJobsInThisIteration()
-     && exahype::reactive::OffloadingManager::getInstance().isEnabled()) {
-    exahype::reactive::OffloadingManager::getInstance().notifyAllVictimsSendCompletedIfNotNotified();
-    exahype::reactive::OffloadingManager::getInstance().resetHasNotifiedSendCompleted();
+     && exahype::reactive::OffloadingContext::getInstance().isEnabled()) {
+    exahype::reactive::OffloadingContext::getInstance().notifyAllVictimsSendCompletedIfNotNotified();
+    exahype::reactive::OffloadingContext::getInstance().resetHasNotifiedSendCompleted();
   }
 #endif 
 

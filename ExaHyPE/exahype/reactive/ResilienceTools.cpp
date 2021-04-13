@@ -14,7 +14,7 @@
 //#if defined(SharedTBB)  && defined(Parallel)
 #if  defined(Parallel)
 
-#include "../reactive/ResilienceTools.h"
+#include "exahype/reactive/ResilienceTools.h"
 
 //#include "exahype/parser/Parser.h"
 

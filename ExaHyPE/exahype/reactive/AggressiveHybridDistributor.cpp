@@ -12,7 +12,7 @@
  **/
 
 #if defined(SharedTBB) && defined(Parallel)
-#include "../reactive/AggressiveHybridDistributor.h"
+#include "exahype/reactive/AggressiveHybridDistributor.h"
 
 #include <algorithm>
 #include <numeric>
@@ -22,9 +22,9 @@
 #include "tarch/parallel/Node.h"
 #include "tarch/timing/Watch.h"
 
-#include "../reactive/OffloadingProfiler.h"
-#include "../reactive/PerformanceMonitor.h"
-#include "../reactive/OffloadingAnalyser.h"
+#include "exahype/reactive/OffloadingProfiler.h"
+#include "exahype/reactive/PerformanceMonitor.h"
+#include "exahype/reactive/OffloadingAnalyser.h"
 #include "exahype/solvers/ADERDGSolver.h"
 #include "exahype/solvers/LimitingADERDGSolver.h"
 #include "tarch/multicore/Core.h"
@@ -262,7 +262,7 @@ void exahype::reactive::AggressiveHybridDistributor::determineOptimalVictim(
     for(int j=0; j<nnodes; j++) {
       if(waitingTimesSnapshot[k+j]> exahype::reactive::OffloadingAnalyser::getInstance().getZeroThreshold()) {
          if(waitingTimesSnapshot[k+j]>currentLongestWaitTimeVictim 
-           && !exahype::reactive::OffloadingManager::getInstance().isBlacklisted(i)
+           && !exahype::reactive::OffloadingContext::getInstance().isBlacklisted(i)
            && waitingRanks[i]==0) {
       //     && i!=0) { //exclude rank 0 as optimal victim
              currentOptimalVictim = i;
@@ -327,9 +327,9 @@ void exahype::reactive::AggressiveHybridDistributor::printOffloadingStatistics()
   for(int i=0; i<nnodes; i++) {
     if(i==myRank)
       continue;
-    if(_tasksToOffload[i]>0)
-      logInfo("printOffloadingStatistics()", "target tasks to rank "<<i<<" ntasks "<<_tasksToOffload[i]<<" not offloaded "
-                                            <<_tasksNotOffloaded[i]<<" actually offloaded "<<_tasksActuallyOffloaded[i]); 
+    //if(_tasksToOffload[i]>0)
+    //  logInfo("printOffloadingStatistics()", "target tasks to rank "<<i<<" ntasks "<<_tasksToOffload[i]<<" not offloaded "
+    //                                        <<_tasksNotOffloaded[i]<<" actually offloaded "<<_tasksActuallyOffloaded[i]); 
     _tasksNotOffloaded[i] = 0;
     _tasksActuallyOffloaded[i] = 0;
   }
@@ -444,7 +444,7 @@ void exahype::reactive::AggressiveHybridDistributor::updateLoadDistributionCCP()
     if(_idealTasksToOffloadCCP[i]>0) {
       //we have a potential victim rank
 //     if(!exahype::reactive::OffloadingManager::getInstance().isBlacklisted(i)) {
-      logInfo("updateLoadDistributionCCP", "offloading to "<<i<<" tasks "<<_temperatureCCP*_idealTasksToOffloadCCP[i]);
+//      logInfo("updateLoadDistributionCCP", "offloading to "<<i<<" tasks "<<_temperatureCCP*_idealTasksToOffloadCCP[i]);
       _optimalTasks[i] = _idealTasksToOffloadCCP[i];
       _tasksToOffload[i] = std::ceil(std::max((1.0-_temperatureCCP), 0.0)*_tasksToOffload[i] + _temperatureCCP*_idealTasksToOffloadCCP[i]);
 #ifdef DistributedOffloadingDisable
@@ -477,7 +477,7 @@ void exahype::reactive::AggressiveHybridDistributor::updateLoadDistributionDiffu
 
 #ifndef DistributedOffloadingDisable
 
-  bool isVictim = exahype::reactive::OffloadingManager::getInstance().isVictim();
+  bool isVictim = exahype::reactive::OffloadingContext::getInstance().isVictim();
   if(currentOptimalVictim>=0 && myRank == currentCriticalRank && currentCriticalRank!=currentOptimalVictim) {
     if(!isVictim) {
       int currentTasksCritical = _initialLoad[currentCriticalRank];
@@ -564,9 +564,9 @@ bool exahype::reactive::AggressiveHybridDistributor::selectVictimRank(int& victi
 
   if(exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs-exahype::solvers::ADERDGSolver::NumberOfRemoteJobs<
         threshold) {
-	  logInfo("selectVictimRank", "threshold "<<threshold
+	  logDebug("selectVictimRank", "threshold "<<threshold
 	  		                       << " there are "<<exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs-exahype::solvers::ADERDGSolver::NumberOfRemoteJobs
-	  							             <<" jobs "<< " and "<<tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs());
+	                                       <<" jobs "<< " and "<<tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs());
 
     _tasksNotOffloaded[victim]++;
     victim = myRank;

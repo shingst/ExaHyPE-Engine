@@ -35,8 +35,6 @@
 #include "exahype/profilers/simple/NoOpProfiler.h"
 #include "exahype/records/ADERDGCellDescription.h"
 
-#include <mpi.h>
-
 #define OFFLOADING_SLOW_OPERATION_THRESHOLD 0.001
 
 #define NUM_REQUESTS_MIGRATABLE_COMM 1
@@ -55,7 +53,7 @@
 #endif
 #endif
 
-#include "exahype/reactive/OffloadingManager.h"
+#include "exahype/reactive/OffloadingContext.h"
 #include "exahype/reactive/JobTableStatistics.h"
 
 #include <tbb/concurrent_hash_map.h>
@@ -3647,7 +3645,7 @@ public:
               logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank);
               exahype::solvers::ADERDGSolver::VetoEmergency = true;
               exahype::solvers::ADERDGSolver::LastEmergencyCell = &cellDescription;
-              exahype::reactive::OffloadingManager::getInstance().triggerEmergencyForRank(responsibleRank);
+              exahype::reactive::OffloadingContext::getInstance().triggerEmergencyForRank(responsibleRank);
     	    }
       	}
   	    lock.free();
@@ -3655,7 +3653,7 @@ public:
       	if(!hasTriggeredEmergency) {
     	    hasTriggeredEmergency = true;
           logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank);
-          exahype::reactive::OffloadingManager::getInstance().triggerEmergencyForRank(responsibleRank);
+          exahype::reactive::OffloadingContext::getInstance().triggerEmergencyForRank(responsibleRank);
       	}
 #endif
       }
@@ -3680,7 +3678,7 @@ public:
  #endif
           hasTriggeredEmergency = true;
           logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank);
-          exahype::reactive::OffloadingManager::getInstance().triggerEmergencyForRank(responsibleRank);
+          exahype::reactive::OffloadingContext::getInstance().triggerEmergencyForRank(responsibleRank);
  #ifdef USE_ITAC
    // VT_end(event_emergency);
  #endif

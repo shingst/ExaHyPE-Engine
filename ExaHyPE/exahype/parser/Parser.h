@@ -720,14 +720,24 @@ class exahype::parser::Parser {
 
   TBBInvadeStrategy getTBBInvadeStrategy() const;
 
+  //todo: Add support for other strategies again if needed
+  /**
+   * The offloading strategy for lightweight distributed task offloading.
+   */
   enum class OffloadingStrategy {
-      None,
-      AggressiveHybrid,
-      StaticHardcoded
+      None,  //do not use task offloading
+      AggressiveHybrid, //hybrid of CCP guess + diffusion
+      StaticHardcoded //use input file with offloading rules to control how many tasks are offloaded (see StaticDistributor)
    };
 
+  /**
+   * @return The offloading strategy as configured in the specfile.
+   */
   OffloadingStrategy getOffloadingStrategy() const;
 
+  /**
+   * The configuration of the resilience strategy.
+   */
   enum class ResilienceStrategy {
       None,
       TaskSharing,
@@ -735,27 +745,80 @@ class exahype::parser::Parser {
       TaskSharingResilienceCorrection
    };
 
+  /**
+   * @return The configured resilience strategy.
+   */
   ResilienceStrategy getResilienceStrategy() const;
 
-  //Todo: docu!
+  /**
+   * Input filename for offloading rules (to be used with StaticHardcoded strategy).
+   * Can be empty if not specified.
+   */
   std::string getOffloadingInputFile() const;
 
+  /**
+   * @return initial temperature that steers how aggressively task offloading
+   * will converge towards the CCP guess.
+   */
   double getCCPTemperatureOffloading() const;
+
+  /**
+   * @return Initial temperature that steers how aggressively diffusion will offload tasks.
+   */
   double getDiffusionTemperatureOffloading() const;
+
+  /**
+   * @return Number of timesteps after which CCP offloading steps are made.
+   */
   int   getCCPFrequencyOffloading() const;
+
+  /**
+   * @return number of subsequent CCP steps.
+   */
   int   getCCPStepsOffloading() const;
+
+  /**
+   * @return true if diffusion temperatur should be adapted at runtime and false otherwise.
+   */
   bool getUpdateTemperatureActivatedOffloading() const;
+
+  /**
+   * @return Threshold that steers how aggressively the temperature is updated.
+   */
   double getTempIncreaseThreshold() const;
+
+  /**
+   * @return How many tasks must be ready in Peano before tasks are offloaded to other ranks.
+   */
   int getLocalStarvationThreshold() const;
 
+  /**
+   * @return Output directory for detailed tracing data.
+   */
   std::string getSTPTracingOutputDirName() const;
-  
+
+  /**
+   * @return Number of timesteps after which a tracing output is written.
+   */
   int getSTPTracingDumpInterval() const;
 
+  /**
+   * @return `true` if the parsed strategy matches the argument.
+   * @param strategy one of "no","migratable_stp_tasks_bitflip", "migratable_stp_tasks_overwrite"
+   */
   bool compareSoftErrorGenerationStrategy(const std::string& strategy) const;
 
+  /**
+   * @return True if all migratable STPs should be checked (i.e. are considered as potentially having an error).
+   */
   bool getTriggerAllMigratableSTPs() const;
+  /**
+   * @return True if only migratable STPs for which the limiter was activated should be checked (i.e. are considered as potentially having an error).
+   */
   bool getTriggerLimitedCellsOnly() const;
+  /**
+   * @return True if only corrupted STPs (with artificially injected errors) should be triggered as suspicious.
+   */
   bool getTriggerCorrupted() const;
 };
 

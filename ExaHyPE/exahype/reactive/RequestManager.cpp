@@ -13,7 +13,7 @@
 
 #if  defined(Parallel)
 
-#include "../reactive/OffloadingManager.h"
+#include "../reactive/RequestManager.h"
 
 #include <unordered_set>
 #include <vector>
@@ -24,30 +24,9 @@
 #include "tarch/multicore/Core.h"
 #include "tarch/parallel/Node.h"
 
+#include "../reactive/OffloadingContext.h"
 #include "../reactive/OffloadingProfiler.h"
-#include "../reactive/StaticDistributor.h"
-#include "../reactive/DynamicDistributor.h"
-#include "../reactive/DiffusiveDistributor.h"
-#include "../reactive/AggressiveDistributor.h"
-#include "../reactive/AggressiveCCPDistributor.h"
-#include "../reactive/AggressiveHybridDistributor.h"
-#include "../reactive/PerformanceMonitor.h"
-#include "exahype/solvers/LimitingADERDGSolver.h"
 
-#ifndef MPI_CHECK
-#ifndef Asserts
-#define MPI_CHECK(func, x) do { \
-  ierr = (x); \
-  if (ierr != MPI_SUCCESS) { \
-    logError(#func, "Runtime error:"<<#x<<" returned "<<ierr<<" at " << __FILE__<< ":"<< __LINE__); \
-  } \
-} while (0)
-#else
-#define MPI_CHECK(func, x) do { \
-  ierr = (x); \
-  } while (0)
-#endif
-#endif
 
 #if defined(UseSmartMPI)
 #include "mpi_offloading.h"
@@ -72,28 +51,15 @@ static int event_progress_receiveBack;
 //#undef assertion
 //#define assertion assert
 
-tarch::logging::Log exahype::reactive::OffloadingManager::_log( "exahype::reactive::OffloadingManager" );
+tarch::logging::Log exahype::reactive::RequestManager::_log( "exahype::reactive::RequestManager" );
 
-int exahype::reactive::OffloadingManager::_numTeams(-1);
-int exahype::reactive::OffloadingManager::_interTeamRank(-1);
+exahype::reactive::RequestManager* exahype::reactive::RequestManager::_static_managers[MAX_THREADS];
 
-exahype::reactive::OffloadingManager* exahype::reactive::OffloadingManager::_static_managers[MAX_THREADS];
-MPI_Comm exahype::reactive::OffloadingManager::_offloadingComms[MAX_THREADS];
-MPI_Comm exahype::reactive::OffloadingManager::_offloadingCommsMapped[MAX_THREADS];
-
-MPI_Comm exahype::reactive::OffloadingManager::_interTeamComms[MAX_THREADS];
-MPI_Comm exahype::reactive::OffloadingManager::_interTeamCommsKey[MAX_THREADS];
-MPI_Comm exahype::reactive::OffloadingManager::_interTeamCommsAck[MAX_THREADS];
-
-exahype::reactive::OffloadingManager::OffloadingManager(int threadId) :
+exahype::reactive::RequestManager::RequestManager(int threadId) :
     _threadId(threadId),
-    _offloadingStrategy(OffloadingStrategy::None),
-    _resilienceStrategy(ResilienceStrategy::None),
     _nextRequestId(0),
     _nextGroupId(0),
-    _numProgressJobs(0),
-    _emergencyTriggered(false),
-    _hasNotifiedSendCompleted(false) {
+    _numProgressJobs(0) {
 
   int ierr;
 #ifdef USE_ITAC
@@ -110,11 +76,8 @@ exahype::reactive::OffloadingManager::OffloadingManager(int threadId) :
 #endif
   MPI_Comm_set_errhandler(MPI_COMM_WORLD, MPI_ERRORS_RETURN);
 
-  initializeCommunicatorsAndTeamMetadata();
-
-  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes()*_numTeams;
-  _localBlacklist = new double[nnodes];
-  std::fill(&_localBlacklist[0], &_localBlacklist[nnodes], 0);
+  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes()
+      * exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams();
 
   _postedSendsPerRank = new std::atomic<int>[nnodes];
   std::fill(&_postedSendsPerRank[0], &_postedSendsPerRank[nnodes], 0);
@@ -129,191 +92,18 @@ exahype::reactive::OffloadingManager::OffloadingManager(int threadId) :
   _postedReceiveOutcomesPerRank = new std::atomic<int>[nnodes];
   std::fill(&_postedReceiveOutcomesPerRank[0], &_postedReceiveOutcomesPerRank[nnodes], 0);
 
-  int flag = 0;
-  MPI_CHECK("OffloadingManager()" , MPI_Comm_get_attr(MPI_COMM_WORLD, MPI_TAG_UB, &_maxTag, &flag));
-  assertion(ierr==MPI_SUCCESS);
-
-  if(!flag) {
-    logWarning("OffloadingManager()"," maximum allowed MPI tag could not be determined. Offloading may leave the space of allowed tags for longer runs...");
-  }
-
 }
 
-exahype::reactive::OffloadingManager::~OffloadingManager() {
-  destroy();
-
+exahype::reactive::RequestManager::~RequestManager() {
   delete[] _postedSendsPerRank;
   delete[] _postedReceivesPerRank;
   delete[] _postedSendBacksPerRank;
   delete[] _postedReceiveBacksPerRank;
   delete[] _postedSendOutcomesPerRank;
   delete[] _postedReceiveOutcomesPerRank;
-  delete[] _localBlacklist;
 }
 
-void exahype::reactive::OffloadingManager::setOffloadingStrategy(OffloadingStrategy strategy) {
-  _offloadingStrategy = strategy;
-}
-
-exahype::reactive::OffloadingManager::OffloadingStrategy exahype::reactive::OffloadingManager::getOffloadingStrategy() {
-  return _offloadingStrategy;
-}
-
-void exahype::reactive::OffloadingManager::setResilienceStrategy(ResilienceStrategy strategy) {
-  _resilienceStrategy = strategy;
-}
-
-exahype::reactive::OffloadingManager::ResilienceStrategy exahype::reactive::OffloadingManager::getResilienceStrategy() {
-  return _resilienceStrategy;
-}
-
-bool exahype::reactive::OffloadingManager::isEnabled() {
-  return _offloadingStrategy!=OffloadingStrategy::None || _resilienceStrategy!=ResilienceStrategy::None;
-}
-
-void exahype::reactive::OffloadingManager::initializeCommunicatorsAndTeamMetadata() {
-  //exahype::reactive::OffloadingManager::getInstance().createMPICommunicator();
- static bool initialized = false;
-
- if(!initialized)
-  createMPICommunicators();
-
- initialized = true;
-}
-
-void exahype::reactive::OffloadingManager::destroy() {
-  destroyMPICommunicators();
-}
-
-/*void exahype::reactive::OffloadingManager::setTMPIInterTeamCommunicators(MPI_Comm comm, MPI_Comm commKey, MPI_Comm commAck) {
-  _interTeamComm = comm;
-  _interTeamCommKey = commKey;
-  _interTeamCommAck = commAck;
-}*/
-
-MPI_Comm exahype::reactive::OffloadingManager::getTMPIInterTeamCommunicatorData() {
-  return _interTeamComms[_threadId];
-}
-
-MPI_Comm exahype::reactive::OffloadingManager::getTMPIInterTeamCommunicatorKey() {
-  return _interTeamCommsKey[_threadId];
-}
-
-MPI_Comm exahype::reactive::OffloadingManager::getTMPIInterTeamCommunicatorAck() {
-  return _interTeamCommsAck[_threadId];
-}
-
-void exahype::reactive::OffloadingManager::setTMPINumTeams(int nteams) {
-  _numTeams = nteams;
-}
-
-int exahype::reactive::OffloadingManager::getTMPINumTeams() {
-  return _numTeams;
-}
-
-void exahype::reactive::OffloadingManager::setTMPIInterTeamRank(int interTeamRank) {
-  _interTeamRank = interTeamRank;
-}
-
-int exahype::reactive::OffloadingManager::getTMPIInterTeamRank(){
-  return _interTeamRank;
-}
-
-/*void exahype::reactive::OffloadingManager::createMPICommunicator() {
-  int ierr = MPI_Comm_dup(MPI_COMM_WORLD, &_offloadingComm);
-  assertion(ierr==MPI_SUCCESS);
-  ierr = MPI_Comm_dup(MPI_COMM_WORLD, &_offloadingCommMapped);
-  assertion(ierr==MPI_SUCCESS);
-}*/
-
-//#if defined(UseMPIThreadSplit)
-void exahype::reactive::OffloadingManager::createMPICommunicators() {
-  int rank;
-  int ierr;
-  MPI_CHECK("createMPICommunicators", MPI_Comm_rank(MPI_COMM_WORLD, &rank));
-  MPI_Comm interTeamComm = MPI_COMM_NULL;
-
-#if defined(USE_TMPI)
-  int worldRank = TMPI_GetWorldRank();
-  MPI_CHECK("createMPICommunicators", MPI_Comm_split(MPI_COMM_WORLD, rank, worldRank, &interTeamComm));
-
-  int nteams = TMPI_GetInterTeamCommSize();
-   //MPI_Comm interTeamComm = TMPI_GetInterTeamComm();
-
-  int rankInterComm;
-  MPI_Comm_rank(interTeamComm, &rankInterComm);
-  int team = TMPI_GetTeamNumber();
-
-  _numTeams  = nteams;
-  _interTeamRank = rankInterComm;
-
-  //exahype::reactive::OffloadingManager::getInstance().setTMPIInterTeamCommunicators(interTeamComm, interTeamCommDupKey, interTeamCommDupAck);
-
-  logInfo("createMPICommunicators()", " teams: "<<nteams<<", rank in team "
-                                                <<team<<" : "<<rank<<", team rank in intercomm: "<<rankInterComm);
-
-#else
-  _numTeams = 1;
-  _interTeamRank = 0;
-
-  MPI_CHECK("createMPICommunicators", MPI_Comm_rank(MPI_COMM_WORLD, &rank));
-  MPI_CHECK("createMPICommunicators", MPI_Comm_split(MPI_COMM_WORLD, rank, rank, &interTeamComm));
-#endif
-
-  for(int i=0; i<MAX_THREADS;i++) {
-    MPI_Info info;
-    MPI_Info_create(&info);
-    MPI_Info_set(info, "thread_id", std::to_string(i).c_str());
-
-    MPI_CHECK("createMPICommunicators", MPI_Comm_dup(MPI_COMM_WORLD, &_offloadingComms[i]));
-    assertion(ierr==MPI_SUCCESS);
-    MPI_CHECK("createMPICommunicators", MPI_Comm_set_info(_offloadingComms[i], info));
-    assertion(ierr==MPI_SUCCESS);
-
-    MPI_CHECK("createMPICommunicators", MPI_Comm_dup(MPI_COMM_WORLD, &_offloadingCommsMapped[i]));
-    assertion(ierr==MPI_SUCCESS);
-    MPI_CHECK("createMPICommunicators", MPI_Comm_set_info(_offloadingCommsMapped[i], info));
-    assertion(ierr==MPI_SUCCESS);
-
-    MPI_CHECK("createMPICommunicators", MPI_Comm_dup(interTeamComm, &_interTeamComms[i])); assertion(ierr==MPI_SUCCESS);
-    MPI_CHECK("createMPICommunicators", MPI_Comm_set_info(_interTeamComms[i], info));
-    assertion(ierr==MPI_SUCCESS);
-
-    MPI_CHECK("createMPICommunicators", MPI_Comm_dup(interTeamComm, &_interTeamCommsKey[i])); assertion(ierr==MPI_SUCCESS);
-    MPI_CHECK("createMPICommunicators", MPI_Comm_set_info(_interTeamCommsKey[i], info));
-    assertion(ierr==MPI_SUCCESS);
-
-    MPI_CHECK("createMPICommunicators", MPI_Comm_dup(interTeamComm, &_interTeamCommsAck[i])); assertion(ierr==MPI_SUCCESS);
-    MPI_CHECK("createMPICommunicators", MPI_Comm_set_info(_interTeamCommsAck[i], info));
-    assertion(ierr==MPI_SUCCESS);
-
-    MPI_Info_free(&info);
-  }
-  MPI_CHECK("createMPICommunicators", MPI_Comm_free(&interTeamComm));
-}
-
-void exahype::reactive::OffloadingManager::destroyMPICommunicators() {
-  int ierr;
-  for(int i=0; i<MAX_THREADS;i++) {
-    MPI_CHECK("destroyMPICommunicators", MPI_Comm_free(&_offloadingComms[i])); assertion(ierr==MPI_SUCCESS);
-    MPI_CHECK("destroyMPICommunicators", MPI_Comm_free(&_offloadingCommsMapped[i])); assertion(ierr==MPI_SUCCESS);
-
-    MPI_CHECK("destroyMPICommunicators", MPI_Comm_free(&_interTeamComms[i])); assertion(ierr==MPI_SUCCESS);
-    MPI_CHECK("destroyMPICommunicators", MPI_Comm_free(&_interTeamCommsKey[i])); assertion(ierr==MPI_SUCCESS);
-    MPI_CHECK("destroyMPICommunicators", MPI_Comm_free(&_interTeamCommsAck[i])); assertion(ierr==MPI_SUCCESS);
-  }
-}
-//#endif
-
-
-/*void exahype::reactive::OffloadingManager::destroyMPICommunicator() {
-  int ierr = MPI_Comm_free( &_offloadingComm);
-  assertion(ierr==MPI_SUCCESS);
-  ierr =MPI_Comm_free(&_offloadingCommMapped);
-  assertion(ierr==MPI_SUCCESS);
-}*/
-
-void exahype::reactive::OffloadingManager::resetPostedRequests() {
+void exahype::reactive::RequestManager::resetPostedRequests() {
   logDebug("resetPostedRequests","resetting posted requests statistics");
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   std::fill(&_postedSendsPerRank[0], &_postedSendsPerRank[nnodes], 0);
@@ -325,7 +115,7 @@ void exahype::reactive::OffloadingManager::resetPostedRequests() {
 
 }
 
-void exahype::reactive::OffloadingManager::printPostedRequests() {
+void exahype::reactive::RequestManager::printPostedRequests() {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   for(int i=0; i<nnodes; i++) {
     std::string str="for rank "+std::to_string(i)+":";
@@ -341,21 +131,13 @@ void exahype::reactive::OffloadingManager::printPostedRequests() {
   }
 }
 
-int exahype::reactive::OffloadingManager::getNumberOfOutstandingRequests( RequestType type ) {
+int exahype::reactive::RequestManager::getNumberOfOutstandingRequests( RequestType type ) {
   int mapId = requestTypeToMsgQueueIdx(type);
   return _outstandingReqsForGroup[mapId].size() + _outstandingRequests[mapId].unsafe_size();
 }
 
-MPI_Comm exahype::reactive::OffloadingManager::getMPICommunicator() {
-  return _offloadingComms[_threadId];
-}
-
-MPI_Comm exahype::reactive::OffloadingManager::getMPICommunicatorMapped() {
-  return _offloadingCommsMapped[_threadId];
-}
-
-exahype::reactive::OffloadingManager& exahype::reactive::OffloadingManager::getInstance() {
-  //static OffloadingManager offloadingManager;
+exahype::reactive::RequestManager& exahype::reactive::RequestManager::getInstance() {
+  //static RequestManager RequestManager;
   int threadID; // tarch::multicore::Core::getInstance().getThreadNum();
 #if defined(UseMPIThreadSplit)
   threadID = tarch::multicore::Core::getInstance().getThreadNum();
@@ -371,27 +153,18 @@ exahype::reactive::OffloadingManager& exahype::reactive::OffloadingManager::getI
 	  MPI_Abort(MPI_COMM_WORLD, -1);
   }
 
+  //Todo: need to deallocate somewhere
   if(_static_managers[threadID]==nullptr) {
-    _static_managers[threadID] = new OffloadingManager(threadID);
+    _static_managers[threadID] = new RequestManager(threadID);
   }
   return *_static_managers[threadID];
 }
 
-int exahype::reactive::OffloadingManager::requestTypeToMsgQueueIdx( RequestType requestType ) {
+int exahype::reactive::RequestManager::requestTypeToMsgQueueIdx( RequestType requestType ) {
   return static_cast<int> (requestType);
 }
 
-int exahype::reactive::OffloadingManager::getOffloadingTag() {
-  static std::atomic<int> counter(1); //0 is reserved for status
-  int val =  counter.fetch_add(1);
-  if(val==_maxTag-1) {
-    counter = 1;
-    val = 1;
-  }
-  return val;
-}
-
-void exahype::reactive::OffloadingManager::submitRequests(
+void exahype::reactive::RequestManager::submitRequests(
     MPI_Request *requests,
     int nRequests,
     int tag,
@@ -504,7 +277,7 @@ void exahype::reactive::OffloadingManager::submitRequests(
 
     std::pair<int, MPI_Request> reqElem(id, requests[i]);
     std::pair<int, int> reqGroupElem(id, groupId);
-    //logInfo("offloadingManager", "inserted groupid "<<groupId<<" for req "<<id);
+    //logInfo("RequestManager", "inserted groupid "<<groupId<<" for req "<<id);
 
     _reqIdToReqHandle[mapId].insert(reqElem);
     _reqIdToGroup[mapId].insert(reqGroupElem);
@@ -521,7 +294,7 @@ void exahype::reactive::OffloadingManager::submitRequests(
 #endif
 }
 
-void exahype::reactive::OffloadingManager::createRequestArray(
+void exahype::reactive::RequestManager::createRequestArray(
     RequestType type,
     std::vector<MPI_Request> &requests,
     std::unordered_map<int, int> &map,
@@ -551,7 +324,7 @@ void exahype::reactive::OffloadingManager::createRequestArray(
 }
 
 #if defined(DirtyCleanUp)
-void exahype::reactive::OffloadingManager::cancelOutstandingRequests() {
+void exahype::reactive::RequestManager::cancelOutstandingRequests() {
   std::vector<RequestType> types = {RequestType::send,
       RequestType::sendBack,
       RequestType::receive,
@@ -590,7 +363,7 @@ void exahype::reactive::OffloadingManager::cancelOutstandingRequests() {
 }
 #endif
 
-bool exahype::reactive::OffloadingManager::hasOutstandingRequestOfType(RequestType requestType) {
+bool exahype::reactive::RequestManager::hasOutstandingRequestOfType(RequestType requestType) {
   logDebug("hasOutstandingRequestOfType",
            " type "
            <<int(requestType)
@@ -600,7 +373,7 @@ bool exahype::reactive::OffloadingManager::hasOutstandingRequestOfType(RequestTy
   return (!_outstandingRequests[requestTypeToMsgQueueIdx(requestType)].empty() || !_activeRequests[requestTypeToMsgQueueIdx(requestType)].size()==0);
 }
 
-void exahype::reactive::OffloadingManager::progressRequests() {
+void exahype::reactive::RequestManager::progressRequests() {
   static double lastOutputTimeStamp = 0;
 
   if(lastOutputTimeStamp==0 || (MPI_Wtime()-lastOutputTimeStamp)>10) {
@@ -659,7 +432,7 @@ void exahype::reactive::OffloadingManager::progressRequests() {
   }
 }
 
-void exahype::reactive::OffloadingManager::progressAnyRequests() {
+void exahype::reactive::RequestManager::progressAnyRequests() {
 
   if(hasOutstandingRequestOfType(RequestType::send)) {
 #ifdef USE_ITAC
@@ -707,11 +480,11 @@ void exahype::reactive::OffloadingManager::progressAnyRequests() {
   }
 }
 
-bool exahype::reactive::OffloadingManager::progressReceiveBackRequests() {
+bool exahype::reactive::RequestManager::progressReceiveBackRequests() {
   return progressRequestsOfType( RequestType::receiveBack );
 }
 
-bool exahype::reactive::OffloadingManager::progressRequestsOfType( RequestType type ) {
+bool exahype::reactive::RequestManager::progressRequestsOfType( RequestType type ) {
   // First, we ensure here that only one thread at a time progresses offloading
   // this attempts to avoid multithreaded MPI problems
   tarch::multicore::Lock lock(_progressSemaphore, false);
@@ -802,6 +575,7 @@ bool exahype::reactive::OffloadingManager::progressRequestsOfType( RequestType t
     int reqIdx = arrOfIndices[i];
     int reqId = _internalIdsOfActiveRequests[mapId][reqIdx];
     assertion(_activeRequests[mapId][reqIdx]==MPI_REQUEST_NULL);
+    _internalIdsOfActiveRequests[mapId].erase(reqIdx);
 
     _reqIdToReqHandle[mapId].erase(reqId);
     int groupId;
@@ -852,6 +626,27 @@ bool exahype::reactive::OffloadingManager::progressRequestsOfType( RequestType t
       _groupIdToRank[mapId].erase(groupId);
       _groupIdToTag[mapId].erase(groupId);
     }
+
+    //try to grab and add a new request to active requests (thanks to Joseph Schuchart for the suggestion)
+    int mapId = requestTypeToMsgQueueIdx(type);
+
+    int new_req_id;
+    bool gotOne = _outstandingRequests[mapId].try_pop(new_req_id);
+
+    if(gotOne) {
+      tbb::concurrent_hash_map<int, MPI_Request>::accessor a_requests;
+      bool found = _reqIdToReqHandle[mapId].find(a_requests, new_req_id);
+      assertion(found);
+      if(!found)
+        logError("progressRequestsOfType", "didn't find MPI request.");
+      if(found) {
+        MPI_Request request = a_requests->second;
+        a_requests.release();
+        _activeRequests[mapId][reqIdx] = request; //replace finished request
+        _internalIdsOfActiveRequests[mapId].insert(std::pair<int,int>(reqIdx, new_req_id));
+        logDebug("progressRequestsOfType","Inserted "<<request<<"  at reqIdx "<<reqIdx<<"  internal id "<<new_req_id);
+      }
+    }
   }
 
   bool allFinished = true;
@@ -874,163 +669,7 @@ bool exahype::reactive::OffloadingManager::progressRequestsOfType( RequestType t
   return outcount>0;
 }
 
-void exahype::reactive::OffloadingManager::triggerVictimFlag() {
-  _isVictim = true;
-}
-
-void exahype::reactive::OffloadingManager::resetVictimFlag() {
-  _isVictim = false;
-}
-
-bool exahype::reactive::OffloadingManager::isVictim() {
-  return _isVictim;
-}
-
-void exahype::reactive::OffloadingManager::triggerEmergencyForRank(int rank) {
-//  if(!_emergencyTriggered) {
-//    logInfo("triggerEmergency()","emergency event triggered");
-//    _emergencyTriggered = true;
-//  }
-  switch(exahype::reactive::OffloadingManager::getInstance().getOffloadingStrategy()){
-    case OffloadingManager::OffloadingStrategy::Aggressive:
-      exahype::reactive::AggressiveDistributor::getInstance().handleEmergencyOnRank(rank); break;
-    case OffloadingManager::OffloadingStrategy::AggressiveCCP:
-      exahype::reactive::AggressiveCCPDistributor::getInstance().handleEmergencyOnRank(rank); break;
-    case OffloadingManager::OffloadingStrategy::AggressiveHybrid:
-      exahype::reactive::AggressiveHybridDistributor::getInstance().handleEmergencyOnRank(rank); break;
-    case OffloadingManager::OffloadingStrategy::Diffusive:
-      exahype::reactive::DiffusiveDistributor::getInstance().handleEmergencyOnRank(rank); break;
-    default:
-      //do nothing, not implemented yet
-      break;
-  }
-
-  _localBlacklist[rank]++;
-  exahype::reactive::PerformanceMonitor::getInstance().submitBlacklistValueForRank(_localBlacklist[rank], rank);
-  logInfo("triggerEmergencyForRank()","blacklist value for rank "<<rank<<":"<<_localBlacklist[rank]
-	                                 <<" NumberOfRemoteJobs"<<  exahype::solvers::ADERDGSolver::NumberOfRemoteJobs
-									 <<" NumberOfEnclaveJobs"<<  exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs);
-}
-
-void exahype::reactive::OffloadingManager::recoverBlacklistedRanks() {
-  logDebug("decreaseHeat()","decrease heat of emergency heat map");
-  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
-  for(int i=0; i<nnodes;i++) {
-    _localBlacklist[i]*= 0.9;
-    if(_localBlacklist[i]>0)
-    exahype::reactive::PerformanceMonitor::getInstance().submitBlacklistValueForRank(_localBlacklist[i], i);
-    //if(_emergencyHeatMap[i]>0.5) {
-    //  logInfo("decreaseHeat()","blacklist value for rank "<<i<<":"<<_emergencyHeatMap[i]);
-    //}
-  }
-}
-
-bool exahype::reactive::OffloadingManager::isBlacklisted(int rank) {
-  //return _emergencyHeatMap[rank]>0.5;
-  const double* globalHeatMap = exahype::reactive::PerformanceMonitor::getInstance().getBlacklistSnapshot();
-  return (globalHeatMap[rank]>0.5) || (_localBlacklist[rank]>0.5);
-}
-
-void exahype::reactive::OffloadingManager::printBlacklist() {
-  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
-  const double* globalHeatMap = exahype::reactive::PerformanceMonitor::getInstance().getBlacklistSnapshot();
-
-  for(int i=0; i<nnodes; i++) {
-    if(globalHeatMap[i]>0 || _localBlacklist[i]>0)
-    logInfo("printBlacklist", "blacklist value for rank "<<i<<":"<<globalHeatMap[i]);
-  }
-}
-
-bool exahype::reactive::OffloadingManager::isEmergencyTriggered() {
-  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
-  return !std::all_of(&_localBlacklist[0], &_localBlacklist[nnodes], [](double d) {return d<0.5;});
-}
-
-bool exahype::reactive::OffloadingManager::isEmergencyTriggeredOnRank(int rank) {
-  return !(_localBlacklist[rank]<0.5);
-}
-
-bool exahype::reactive::OffloadingManager::selectVictimRank(int& victim, bool& last) {
-  last = false;
-  if(_offloadingStrategy==OffloadingStrategy::StaticHardcoded)
-    return exahype::reactive::StaticDistributor::getInstance().selectVictimRank(victim);
-  if(_offloadingStrategy==OffloadingStrategy::Diffusive)
-    return exahype::reactive::DiffusiveDistributor::getInstance().selectVictimRank(victim);
-  if(_offloadingStrategy==OffloadingStrategy::Aggressive)
-    return exahype::reactive::AggressiveDistributor::getInstance().selectVictimRank(victim);
-  if(_offloadingStrategy==OffloadingStrategy::AggressiveCCP)
-    return exahype::reactive::AggressiveCCPDistributor::getInstance().selectVictimRank(victim);
-  if(_offloadingStrategy==OffloadingStrategy::AggressiveHybrid)
-    return exahype::reactive::AggressiveHybridDistributor::getInstance().selectVictimRank(victim, last);
-
-  return false;
-/*  double remainingLoadRatio = static_cast<double> (exahype::reactive::PerformanceMonitor::getInstance().getRemainingTasks())
-  /
-  exahype::reactive::PerformanceMonitor::getInstance().getTasksPerTimestep();
-  // this is currently hardcoded: the goal is to refrain from giving tasks away if there is not enough work left
-  // for overlap of communication and computation
-  if(remainingLoadRatio>0.1) {
-#if defined(OffloadingStrategyStatic)
-    return exahype::reactive::StaticDistributor::getInstance().selectVictimRank(victim);
-#elif defined(OffloadingStrategyDynamic)
-    return exahype::reactive::DynamicDistributor::getInstance().selectVictimRank(victim);
-#elif defined(OffloadingStrategyHybrid)
-    bool staticDistribution = exahype::reactive::StaticDistributor::getInstance().selectVictimRank(victim);
-    if(staticDistribution) return true;
-    else {
-      return exahype::reactive::DynamicDistributor::getInstance().selectVictimRank(victim);
-    }
-    return false;
-#else
-    return false;
-#endif
-  }
-  else {
-    logDebug("offloadingManager", "could not select victim remaining load ratio "<<remainingLoadRatio);
-    return false;
-  }*/
-}
-
-#ifdef OffloadingUseProgressTask
-void exahype::reactive::OffloadingManager::resetHasNotifiedSendCompleted() {
-  _hasNotifiedSendCompleted = false;
-  logDebug("resetHasNotifiedSendCompleted","resetting flag");
-}
-
-void exahype::reactive::OffloadingManager::notifySendCompleted(int rank) {
-  char send = 1;
-  MPI_Send(&send, 1, MPI_CHAR, rank, 0, getMPICommunicator());
-  //logInfo("notifySendCompleted()","sent status message to "<<rank);
-}
-
-void exahype::reactive::OffloadingManager::receiveCompleted(int rank, int rail) {
-  char receive = 0;
-#if defined (UseSmartMPI)
-  MPI_Status_Offload stat;
-  MPI_Recv_offload(&receive, 1, MPI_CHAR, rank, 0, getMPICommunicator(), &stat, rail);
-#else
-  MPI_Recv(&receive, 1, MPI_CHAR, rank, 0, getMPICommunicator(), MPI_STATUS_IGNORE);
-#endif
-  //logInfo("receiveCompleted()","received status message from "<<rank);
-}
-
-void exahype::reactive::OffloadingManager::notifyAllVictimsSendCompletedIfNotNotified() {
-  if(!_hasNotifiedSendCompleted) {
-    logInfo("notifyAllVictimsSendCompleted","notifying that last job was sent to victims");
-    _hasNotifiedSendCompleted = true;
-    std::vector<int> victimRanks;
-    if(_offloadingStrategy==OffloadingStrategy::AggressiveHybrid)
-      exahype::reactive::AggressiveHybridDistributor::getInstance().getAllVictimRanks(victimRanks);
-    if(_offloadingStrategy==OffloadingStrategy::Static)
-      exahype::reactive::StaticDistributor::getInstance().getAllVictimRanks(victimRanks);
-
-    for(auto victim : victimRanks)
-      notifySendCompleted(victim);
-  }
-}
-#endif
-
-exahype::reactive::OffloadingManager::RequestHandlerJob::RequestHandlerJob(
+exahype::reactive::RequestManager::RequestHandlerJob::RequestHandlerJob(
     std::function<void(exahype::solvers::Solver*, int, int)> handleRequest,
     exahype::solvers::Solver* solver,
     int tag,
@@ -1041,7 +680,7 @@ exahype::reactive::OffloadingManager::RequestHandlerJob::RequestHandlerJob(
   _remoteRank(remoteRank)
 {}
 
-bool exahype::reactive::OffloadingManager::RequestHandlerJob::operator()() {
+bool exahype::reactive::RequestManager::RequestHandlerJob::operator()() {
 #ifdef USE_ITAC
   VT_begin(event_handling);
 #endif
@@ -1052,81 +691,81 @@ bool exahype::reactive::OffloadingManager::RequestHandlerJob::operator()() {
   return false;
 }
 
-#ifdef OffloadingUseProgressTask
-exahype::reactive::OffloadingManager::ProgressJob::ProgressJob() :
+//todo: I think these can be removed as no longer used
+exahype::reactive::RequestManager::ProgressJob::ProgressJob() :
 tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask, 0, tarch::multicore::DefaultPriority*8)
 {}
 
-bool exahype::reactive::OffloadingManager::ProgressJob::run( bool calledFromMaster ) {
+bool exahype::reactive::RequestManager::ProgressJob::run( bool calledFromMaster ) {
 
   if(calledFromMaster) return false;
 
   int flag;
   //logInfo("submitRequests()", "executing progress job (high priority)");
 
-  int mapId = OffloadingManager::requestTypeToMsgQueueIdx(RequestType::send);
-//   while(OffloadingManager::getInstance()._requests[0].unsafe_size()>0 || OffloadingManager::getInstance()._currentOutstandingRequests[0].size()>0
-//        || OffloadingManager::getInstance()._requests[1].unsafe_size()>0 || OffloadingManager::getInstance()._currentOutstandingRequests[1].size()>0
-//        || OffloadingManager::getInstance()._requests[2].unsafe_size()>0 || OffloadingManager::getInstance()._currentOutstandingRequests[2].size()>0
-//        || OffloadingManager::getInstance()._requests[3].unsafe_size()>0 || OffloadingManager::getInstance()._currentOutstandingRequests[3].size()>0
+  int mapId = RequestManager::requestTypeToMsgQueueIdx(RequestType::send);
+//   while(RequestManager::getInstance()._requests[0].unsafe_size()>0 || RequestManager::getInstance()._currentOutstandingRequests[0].size()>0
+//        || RequestManager::getInstance()._requests[1].unsafe_size()>0 || RequestManager::getInstance()._currentOutstandingRequests[1].size()>0
+//        || RequestManager::getInstance()._requests[2].unsafe_size()>0 || RequestManager::getInstance()._currentOutstandingRequests[2].size()>0
+//        || RequestManager::getInstance()._requests[3].unsafe_size()>0 || RequestManager::getInstance()._currentOutstandingRequests[3].size()>0
 //   ) 
-  while(OffloadingManager::getInstance()._outstandingRequests[mapId].unsafe_size()>0 || OffloadingManager::getInstance()._activeRequests[mapId].size()>0)
+  while(RequestManager::getInstance()._outstandingRequests[mapId].unsafe_size()>0 || RequestManager::getInstance()._activeRequests[mapId].size()>0)
   {
     //getInstance().progressAnyRequests();
     getInstance().progressRequestsOfType(RequestType::send);
-    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, OffloadingManager::getInstance().getMPICommunicator(), &flag, MPI_STATUS_IGNORE);
-    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, OffloadingManager::getInstance().getMPICommunicatorMapped(), &flag, MPI_STATUS_IGNORE);
+    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, OffloadingContext::getInstance().getMPICommunicator(), &flag, MPI_STATUS_IGNORE);
+    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, OffloadingContext::getInstance().getMPICommunicatorMapped(), &flag, MPI_STATUS_IGNORE);
   }
   //logInfo("submitRequests()", "terminated progress job (high priority)");
 
-  OffloadingManager::getInstance()._numProgressJobs--;
+  RequestManager::getInstance()._numProgressJobs--;
   return false;
 }
 
-exahype::reactive::OffloadingManager::ProgressSendJob::ProgressSendJob() {}
+exahype::reactive::RequestManager::ProgressSendJob::ProgressSendJob() {}
 
-bool exahype::reactive::OffloadingManager::ProgressSendJob::operator()() {
+bool exahype::reactive::RequestManager::ProgressSendJob::operator()() {
   getInstance().progressRequestsOfType(RequestType::send);
-  int mapId = OffloadingManager::requestTypeToMsgQueueIdx(RequestType::send);
-//   bool reschedule=OffloadingManager::getInstance()._requests[mapId].unsafe_size()>0;
+  int mapId = RequestManager::requestTypeToMsgQueueIdx(RequestType::send);
+//   bool reschedule=RequestManager::getInstance()._requests[mapId].unsafe_size()>0;
 
-  while(OffloadingManager::getInstance()._outstandingRequests[mapId].unsafe_size()>0 || OffloadingManager::getInstance()._activeRequests[mapId].size()>0) {
+  while(RequestManager::getInstance()._outstandingRequests[mapId].unsafe_size()>0 || RequestManager::getInstance()._activeRequests[mapId].size()>0) {
     getInstance().progressRequestsOfType(RequestType::send);
   }
 
 //   if(!reschedule)
-  OffloadingManager::getInstance()._numProgressSendJobs--;
+  RequestManager::getInstance()._numProgressSendJobs--;
   return false;
 }
 
-exahype::reactive::OffloadingManager::ProgressReceiveJob::ProgressReceiveJob() {}
+exahype::reactive::RequestManager::ProgressReceiveJob::ProgressReceiveJob() {}
 
-bool exahype::reactive::OffloadingManager::ProgressReceiveJob::operator()() {
+bool exahype::reactive::RequestManager::ProgressReceiveJob::operator()() {
   getInstance().progressRequestsOfType(RequestType::receive);
-  int mapId = OffloadingManager::requestTypeToMsgQueueIdx(RequestType::receive);
+  int mapId = RequestManager::requestTypeToMsgQueueIdx(RequestType::receive);
 
-  while(OffloadingManager::getInstance()._outstandingRequests[mapId].unsafe_size()>0 || OffloadingManager::getInstance()._activeRequests[mapId].size()>0) {
+  while(RequestManager::getInstance()._outstandingRequests[mapId].unsafe_size()>0 || RequestManager::getInstance()._activeRequests[mapId].size()>0) {
     getInstance().progressRequestsOfType(RequestType::receive);
   }
 
-  OffloadingManager::getInstance()._numProgressReceiveJobs--;
+  RequestManager::getInstance()._numProgressReceiveJobs--;
   return false;
 }
 
-exahype::reactive::OffloadingManager::ProgressReceiveBackJob::ProgressReceiveBackJob() {}
+exahype::reactive::RequestManager::ProgressReceiveBackJob::ProgressReceiveBackJob() {}
 
-bool exahype::reactive::OffloadingManager::ProgressReceiveBackJob::operator()() {
+bool exahype::reactive::RequestManager::ProgressReceiveBackJob::operator()() {
   getInstance().progressRequestsOfType(RequestType::receiveBack);
-  int mapId = OffloadingManager::requestTypeToMsgQueueIdx(RequestType::receiveBack);
+  int mapId = RequestManager::requestTypeToMsgQueueIdx(RequestType::receiveBack);
 
-  while(OffloadingManager::getInstance()._outstandingRequests[mapId].unsafe_size()>0 || OffloadingManager::getInstance()._activeRequests[mapId].size()>0) {
+  while(RequestManager::getInstance()._outstandingRequests[mapId].unsafe_size()>0 || RequestManager::getInstance()._activeRequests[mapId].size()>0) {
     getInstance().progressRequestsOfType(RequestType::receiveBack);
   }
 
-  OffloadingManager::getInstance()._numProgressReceiveBackJobs--;
+  RequestManager::getInstance()._numProgressReceiveBackJobs--;
   return false;
 }
-#endif
+
 #endif
 
 //#undef assertion
