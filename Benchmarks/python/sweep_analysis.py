@@ -228,7 +228,7 @@ def parseResultFile(filePath):
  
             anchor = '|'
             header = '||'
-            if anchor in line and header not in line:
+            if anchor in line and header not in line and "MODULES" not in line :
                 print (line)
                 segments = line.split('|')
                 adapter = segments[1].strip();
