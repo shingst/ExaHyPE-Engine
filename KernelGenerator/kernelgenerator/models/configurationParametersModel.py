@@ -111,16 +111,28 @@ class ConfigurationParametersModel(AbstractModelBaseClass):
             # nonlinear
                 if self.context["predictorRecompute"]:
                     if self.context["useVectPDE"]:
-                        self.context["lQiSize"]   = nDofPad*nVar*(nDof**nDim)
-                        self.context["lQhiSize"]  = nDofPad*nVar*nDof*nDof3D
-                        if nPar > 0:
-                            self.context["lPiSize"]   = nDofPad*nPar*nDof*nDof3D
-                        if self.context["useFlux"]:
-                            self.context["lFhiSize"]  = nDofPad*nVar*nDof*nDof3D*nDim
-                        if self.context["useSource"] or self.context["useNCP"]:
-                            self.context["lShiSize"]  = nDofPad*nVar*nDof*nDof3D
-                        if self.context["useNCP"] or self.context["useViscousFlux"]:
-                            self.context["gradQSize"] = nDofPad*nVar*nDof*nDof3D*nDim
+                        if self.context["useAoSoA2"]:
+                            self.context["lQiSize"]   = nDof2Pad*nVar*nDof*nDof3D
+                            self.context["lQhiSize"]  = nDof2Pad*nVar*nDof3D
+                            if nPar > 0:
+                                self.context["lPiSize"]   = nDof2Pad*nPar*nDof3D
+                            if self.context["useFlux"]:
+                                self.context["lFhiSize"]  = nDof2Pad*nVar*nDof3D*nDim
+                            if self.context["useSource"] or self.context["useNCP"]:
+                                self.context["lShiSize"]  = nDof2Pad*nVar*nDof3D
+                            if self.context["useNCP"] or self.context["useViscousFlux"]:
+                                self.context["gradQSize"] = nDof2Pad*nVar*nDof3D*nDim
+                        else:
+                            self.context["lQiSize"]   = nDofPad*nVar*(nDof**nDim)
+                            self.context["lQhiSize"]  = nDofPad*nVar*nDof*nDof3D
+                            if nPar > 0:
+                                self.context["lPiSize"]   = nDofPad*nPar*nDof*nDof3D
+                            if self.context["useFlux"]:
+                                self.context["lFhiSize"]  = nDofPad*nVar*nDof*nDof3D*nDim
+                            if self.context["useSource"] or self.context["useNCP"]:
+                                self.context["lShiSize"]  = nDofPad*nVar*nDof*nDof3D
+                            if self.context["useNCP"] or self.context["useViscousFlux"]:
+                                self.context["gradQSize"] = nDofPad*nVar*nDof*nDof3D*nDim
                     else: #scalar predictorRecompute
                         self.context["lQiSize"]   = nVarPad*(nDof**(nDim+1))
                         self.context["lQhiSize"]  = nVarPad*(nDof**nDim)
