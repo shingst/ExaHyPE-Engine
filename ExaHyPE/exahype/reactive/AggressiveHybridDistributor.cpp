@@ -333,9 +333,9 @@ void exahype::reactive::AggressiveHybridDistributor::printOffloadingStatistics()
     _tasksNotOffloaded[i] = 0;
     _tasksActuallyOffloaded[i] = 0;
   }
-  logInfo("printOffloadingStatistics()", "temperature value CCP "<<_temperatureCCP );
-  logInfo("printOffloadingStatistics()", "temperature value diffusion "<<_temperatureDiffusion );
-  logInfo("printOffloadingStatistics()", "time per STP  "<< exahype::reactive::OffloadingAnalyser::getInstance().getTimePerSTP());
+  logDebug("printOffloadingStatistics()", "temperature value CCP "<<_temperatureCCP );
+  logDebug("printOffloadingStatistics()", "temperature value diffusion "<<_temperatureDiffusion );
+  logDebug("printOffloadingStatistics()", "time per STP  "<< exahype::reactive::OffloadingAnalyser::getInstance().getTimePerSTP());
 }
 
 
@@ -473,7 +473,7 @@ void exahype::reactive::AggressiveHybridDistributor::updateLoadDistributionDiffu
   double currentLongestWaitTimeVictim=-1;
   determineOptimalVictim(currentOptimalVictim, currentLongestWaitTimeVictim);
 
-  logInfo("updateLoadDistributionDiffusive()", "optimal victim: "<<currentOptimalVictim<<" critical rank:"<<currentCriticalRank);
+  logDebug("updateLoadDistributionDiffusive()", "optimal victim: "<<currentOptimalVictim<<" critical rank:"<<currentCriticalRank);
 
 #ifndef DistributedOffloadingDisable
 
