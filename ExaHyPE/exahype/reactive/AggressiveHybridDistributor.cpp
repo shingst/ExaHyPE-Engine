@@ -372,8 +372,8 @@ void exahype::reactive::AggressiveHybridDistributor::updateLoadDistribution() {
   if(!_isEnabled) {
     return;
   }
-  logInfo("updateLoadDistribution()","total offloaded (target): "<<_totalTasksOffloaded<<" previous: "<<_oldTotalTasksOffloaded);
-  logInfo("updateLoadDistribution()","increment current "<<_incrementCurrent<<" previous: "<<_incrementPrevious);
+  logDebug("updateLoadDistribution()","total offloaded (target): "<<_totalTasksOffloaded<<" previous: "<<_oldTotalTasksOffloaded);
+  logDebug("updateLoadDistribution()","increment current "<<_incrementCurrent<<" previous: "<<_incrementPrevious);
 
 
   _oldTotalTasksOffloaded = _totalTasksOffloaded;
