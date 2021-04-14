@@ -394,7 +394,8 @@ def renderJobScript(jobScriptTemplate,jobScriptBody,jobs,
     context["time"]         = jobs["time"]
     context["class"]        = jobClass
     context["islands"]      = islands
-    context["coresPerRank"] = str( int ( int(jobs["num_cpus"]) / int(ranksPerNode) ) )
+    print(cores)
+    context["coresPerRank"] = cores #str( int ( int(jobs["num_cpus"]) / int(ranksPerNode) ) )
     
     # now verify template parameters are defined in options file
     if not createdFirstJobScript:
