@@ -139,7 +139,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                     self.context["matmulConfigs"]["gradQ_x_sck"] =          MatmulConfig(nVarPad, nDof, nDof, nVarPad      , nDofPad, nVarPad      , 1, 0, 1, 1, 1, "gradQ_x_sck") # beta, 0 => overwrite C
                     self.context["matmulConfigs"]["gradQ_y_sck"] =          MatmulConfig(nVarPad, nDof, nDof, nVarPad*nDof , nDofPad, nVarPad*nDof , 1, 0, 1, 1, 1, "gradQ_y_sck") # beta, 0 => overwrite C
                     if self.context["nDim"]>=3:
-                        self.context["matmulConfigs"]["gradQ_z_sck"] =      MatmulConfig(nVarPad, nDof, nDof, nVarPad*nDof2, nDofPad, nVarPad*nDof2, 1, 0, 1, 1, "gradQ_z_sck", "nopf", "gemm") # beta, 0 => overwrite C
+                        self.context["matmulConfigs"]["gradQ_z_sck"] =      MatmulConfig(nVarPad, nDof, nDof, nVarPad*nDof2, nDofPad, nVarPad*nDof2, 1, 0, 1, 1, 1, "gradQ_z_sck", "nopf", "gemm") # beta, 0 => overwrite C
             else: # default linear
                 if self.context["useFlux"]:
                     self.context["matmulConfigs"]["flux_x"] =     MatmulConfig(nVarPad, nDof, nDof, nVarPad      , nDofPad, nVarPad, 1, 0, 1, 1, 1, "flux_x") # beta, 0 => overwrite C
