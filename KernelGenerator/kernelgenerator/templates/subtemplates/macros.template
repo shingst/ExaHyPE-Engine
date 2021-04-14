@@ -135,3 +135,38 @@ std::copy_n({{gradQY}}, {{incr}}, {{gradQ}}+{{1*incr}}); //y
 std::copy_n({{gradQZ}}, {{incr}}, {{gradQ}}+{{2*incr}}); //z
 {% endif %}
 {% endmacro %}
+{#
+
+/**
+  test transpose macro
+*/
+
+#}
+{% macro transpose(in, out, in_offset, out_offset, A, B) %}
+{# Transpose base, input is a [A][B] matrix #}
+for(int it_1=0; it_1<{{B}}; it_1++) {
+  #pragma omp simd aligned({{out}},{{in}}:ALIGNMENT)
+  for(int it_2=0; it_2<{{A}}; it_2++) {
+    {{out}}[it_1*{{A}}+it_2+{{out_offset}}] = {{in}}[it_2*{{B}}+it_1+{{in_offset}}];
+  }
+}
+{% endmacro %}
+{% macro transpose_rest(in, out, in_offset, out_offset, A, B, trueA, trueB, safe=False) %}
+{# Transpose base, input is a [trueA][trueB] matrix padded to [A][B] when transposing#}
+for(int it_1=0; it_1<{{trueB}}; it_1++) {
+  #pragma omp simd aligned({{out}},{{in}}:ALIGNMENT)
+  for(int it_2=0; it_2<{{trueA}}; it_2++) {
+    {{out}}[it_1*{{A}}+it_2+{{out_offset}}] = {{in}}[it_2*{{B}}+it_1+{{in_offset}}];
+  }
+{% if safe %}
+  #pragma omp simd aligned({{out}},{{in}}:ALIGNMENT)
+  for(int it_2={{trueA}}; it_2<{{A}}; it_2++) {
+    {{out}}[it_1*{{A}}+it_2+{{out_offset}}] = {{in}}[it_1+{{in_offset}}]; // copy first entry to fill output
+  }
+{% endif %}
+}
+{% endmacro %}
+{% macro callflux(inputQ, inputQ_dataSize, outputF, timeInterleaved, time_var) %}
+{% include 'subtemplates/flux_PDE_over_xyz.template' %}
+{% endmacro %}
+

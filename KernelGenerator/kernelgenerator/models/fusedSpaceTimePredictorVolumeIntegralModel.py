@@ -60,7 +60,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                 self.context["tmpArraySize"] = max((self.context["nDof"]*self.context["nVarPad"] if self.context["useFlux"]          else 0), \
                                                    (self.context["nDim"]*self.context["nVarPad"] if self.context["useNCP"]           else 0))
                 
-                self.render(("aderdg", "fusedSPTVI_linear_v2_cpp.template"), "fusedSpaceTimePredictorVolumeIntegral.cpp")
+                self.render(("aderdg", "fusedSPTVI_linear_cpp.template"), "fusedSpaceTimePredictorVolumeIntegral.cpp")
                 
                 if self.context["usePointSources"]:
                     self.context["usePointSources"] = False
