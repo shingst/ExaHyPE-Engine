@@ -102,6 +102,7 @@ class Controller:
                 "useVectPDE"            : args["useVectPDE"],
                 "useAoSoA2"             : args["useAoSoA2"],
                 "predictorRecompute"    : args["predictorRecompute"],
+                "advancedStopCriterion" : False, #TODO JMG put as proper toolkit arg
                 "initialGuess"          : "mixedPicard" #TODO JMG put as proper toolkit arg
                 #"initialGuess"          : "default" #TODO JMG put as proper toolkit arg
             })
