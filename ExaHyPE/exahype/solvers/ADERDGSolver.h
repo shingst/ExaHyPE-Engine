@@ -1177,12 +1177,12 @@ private:
       bool handleLocalExecution(bool isCalledOnMaster, bool& hasComputed);
       bool handleLocalExecutionOld(bool isCalledOnMaster, bool& hasComputed);
       bool handleRemoteExecution(bool& hasComputed);
-      bool tryToFindAndExtractEquivalentSharedOutcome(ADERDGSolver::JobOutcomeStatus &status, MigratablePredictionJobData **outcome);
+      bool tryToFindAndExtractEquivalentSharedOutcomes(int required, ADERDGSolver::JobOutcomeStatus &status, MigratablePredictionJobData **outcome);
       bool tryFindOutcomeAndHeal();
       void sendBackOutcomeToOrigin();
       bool matchesOtherOutcome(MigratablePredictionJobData *data);
       void packMetaData(MigratablePredictionJobMetaData *buffer);
-      void recoverWithOutcome(MigratablePredictionJobData *data);
+      void recoverWithOutcomes(MigratablePredictionJobData *data[2], int availableOutcomes);
       //static size_t getSizeOfMetaData();
       void setState(State newState);
       void setTrigger(bool flipped);
@@ -1321,8 +1321,9 @@ private:
   enum class JobOutcomeStatus { received, transit };
 
   struct JobTableEntry {
-	  MigratablePredictionJobData *data;
-	  JobOutcomeStatus status;
+	  MigratablePredictionJobData *data[2];
+	  JobOutcomeStatus status[2];
+	  int receivedOutcomes;
   };
 
   std::vector<int> _lastReceiveReplicaTag;

@@ -2555,15 +2555,19 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
 
     if(found && (a_jobToData->first.timestamp <_minTimeStamp || isFinal)) {
 
-      //logInfo("cleanUpStaleReplicatedSTPs()", " time stamp "<<a_jobToData->first.timestamp<< " _minTimeStamp "<<_minTimeStamp);
+      logInfo("cleanUpStaleReplicatedSTPs()", " time stamp "<<a_jobToData->first.timestamp<<
+                                              " _minTimeStamp "<<_minTimeStamp<<
+                                              " received outcomes "<<a_jobToData->second.receivedOutcomes);
 
-      MigratablePredictionJobData * data = a_jobToData->second.data;
+      for(int job_idx=0; job_idx<a_jobToData->second.receivedOutcomes; job_idx++) {
+        MigratablePredictionJobData * data = a_jobToData->second.data[job_idx];
+        logDebug("cleanUpStaleTaskOutcomes()",   data->_metadata.to_string());
+        assertion(data!=nullptr);
+        delete data;
+        AllocatedSTPsReceive--;
+        exahype::reactive::JobTableStatistics::getInstance().notifyLateTask();
+      }
       _jobDatabase.erase(a_jobToData);
-      logDebug("cleanUpStaleTaskOutcomes()",   data->_metadata.to_string());
-      assertion(data!=nullptr);
-      delete data;
-      AllocatedSTPsReceive--;
-      exahype::reactive::JobTableStatistics::getInstance().notifyLateTask();
     }
     else if (found) {
       _allocatedJobs.push_front(key); // the job is in the map but it contains data that may be used later
@@ -2614,7 +2618,7 @@ void exahype::solvers::ADERDGSolver::finishOutstandingInterTeamCommunication () 
 }
 
 
-void exahype::solvers::ADERDGSolver::sendRequestForJobAndReceive(int jobTag, int rank, double *key) {
+/*void exahype::solvers::ADERDGSolver::sendRequestForJobAndReceive(int jobTag, int rank, double *key) {
   MPI_Comm teamInterComm = exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamCommunicatorData();
   MPI_Comm teamInterCommAck = exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamCommunicatorAck();
 
@@ -2677,7 +2681,7 @@ void exahype::solvers::ADERDGSolver::sendRequestForJobAndReceive(int jobTag, int
     }
     delete[] key;
 
-}
+}*/
 
 void exahype::solvers::ADERDGSolver::sendKeyOfTaskOutcomeToOtherTeams(MigratablePredictionJob *job) {
     int teams = exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams();
@@ -3492,14 +3496,21 @@ void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahyp
     AllocatedSTPsReceive--;
   }
   else {
-    JobTableEntry entry {data, JobOutcomeStatus::received};
     tbb::concurrent_hash_map<JobTableKey, JobTableEntry>::accessor a_jobToData;
     bool found = solver->_jobDatabase.find(a_jobToData, key);
     if (found) {
-      a_jobToData->second.status = JobOutcomeStatus::received;
+      int currIdx = a_jobToData->second.receivedOutcomes;
+      assert(currIdx<=1);
+      a_jobToData->second.status[currIdx] = JobOutcomeStatus::received;
+      a_jobToData->second.receivedOutcomes++;;
       a_jobToData.release();
     }
     else{
+      JobTableEntry entry;
+      entry.receivedOutcomes = 0;
+      entry.data[entry.receivedOutcomes] = data;
+      entry.status[entry.receivedOutcomes] = JobOutcomeStatus::received;
+      entry.receivedOutcomes++;
       solver->_jobDatabase.insert(std::make_pair(key,entry));
     }
     solver->_allocatedJobs.push_back(key);
@@ -3728,7 +3739,7 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
       if((size_t) msgLenDouble==MigratablePredictionJobMetaData::getMessageLen()) {
         assertion(solver->_lastReceiveReplicaTag[statRepData.MPI_SOURCE]!=statRepData.MPI_TAG);
         solver->_lastReceiveReplicaTag[statRepData.MPI_SOURCE] = statRepData.MPI_TAG;
-        logDebug("progressOffloading","received replica task from "<<statRepData.MPI_SOURCE<<" , tag "<<statRepData.MPI_TAG);
+        logInfo("progressOffloading","team "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()<<" received replica task from "<<statRepData.MPI_SOURCE<<" , tag "<<statRepData.MPI_TAG);
         receiveTaskOutcome(statRepData.MPI_TAG, statRepData.MPI_SOURCE, solver);
       }
 #endif /*UseSmartMPI */
