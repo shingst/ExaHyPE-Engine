@@ -43,6 +43,7 @@
     "buffer_size"            : {{bufferSize}},    
     "load_balancing_strategy": "hotspot",
     "node_pool_strategy": "fair",
+    "node_pool_timeout" : 1,
     "ranks_per_node"         : {{ranksPerNode}}   
   },
   "optimisation": {

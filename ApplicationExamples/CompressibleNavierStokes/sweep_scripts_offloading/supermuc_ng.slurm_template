@@ -26,7 +26,7 @@
 # set number of nodes
 #SBATCH --nodes={{nodes}}
 #SBATCH --ntasks={{ranks}}
-#SBATCH --cpus-per-task={{coresPerRank}}
+##SBATCH --cpus-per-task={{coresPerRank}}
 
 . /etc/profile
 . /etc/profile.d/modules.sh
