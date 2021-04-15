@@ -25,12 +25,16 @@
 from .abstractModelBaseClass import AbstractModelBaseClass
 
 from ..utils import MathsUtils #matrix operation and build functions
-import time #for runtime measurements debug print if context["runtimeDebug"]
 
+import time #for runtime measurements debug print if context["runtimeDebug"]
+from decimal import Decimal
 
 class DGMatrixModel(AbstractModelBaseClass):
 
     def generateCode(self):
+        
+        MathsUtils.setDecimalPrecision() # set Python's decimal precision to mathUtils value (default 50)
+        
         if self.context["quadratureType"] == "Gauss-Legendre":
             #get GL nodes
             wGPN, xGPN = MathsUtils.getGaussLegendre(self.context["nDof"])
@@ -40,7 +44,6 @@ class DGMatrixModel(AbstractModelBaseClass):
             xGPN = xGPN[::-1]
         else:
             raise ValueError("Quadrature type "+self.context["quadratureType"]+" not supported." )
-
     
         padSize = self.context["nDofPad"] - self.context["nDof"]
         self.context["nDofPad_seq"] = range(self.context["nDofPad"])
@@ -49,8 +52,8 @@ class DGMatrixModel(AbstractModelBaseClass):
         start = time.perf_counter()
         # [FLCoeff 0...0]; [FRCoeff 0...0];
         # right now FLCoeff, FRCoeff no pad (gives no benefit w.r.t libxsmm)
-        FLCoeff, _ = MathsUtils.baseFunc1d(0.0, xGPN, self.context["nDof"]) #is also F0
-        FRCoeff, _ = MathsUtils.baseFunc1d(1.0, xGPN, self.context["nDof"])
+        FLCoeff, _ = MathsUtils.baseFunc1d(Decimal("0.0"), xGPN, self.context["nDof"]) #is also F0
+        FRCoeff, _ = MathsUtils.baseFunc1d(Decimal("1.0"), xGPN, self.context["nDof"])
         self.context["FLCoeff"] = MathsUtils.vectorPad(FLCoeff, padSize)
         self.context["FRCoeff"] = MathsUtils.vectorPad(FRCoeff, padSize)
         if self.context["runtimeDebug"]:
@@ -96,9 +99,9 @@ class DGMatrixModel(AbstractModelBaseClass):
         #fineGridProjector1d_T_weighted
         for i in range(self.context["nDof"]):
             for j in range(self.context["nDof"]):
-                fineGridProjector1d_0[i][j] *= wGPN[j]/wGPN[i]/3.0
-                fineGridProjector1d_1[i][j] *= wGPN[j]/wGPN[i]/3.0
-                fineGridProjector1d_2[i][j] *= wGPN[j]/wGPN[i]/3.0
+                fineGridProjector1d_0[i][j] *= wGPN[j]/wGPN[i]/Decimal("3.0")
+                fineGridProjector1d_1[i][j] *= wGPN[j]/wGPN[i]/Decimal("3.0")
+                fineGridProjector1d_2[i][j] *= wGPN[j]/wGPN[i]/Decimal("3.0")
         self.context["fineGridProjector1d_T_weighted_0"] = MathsUtils.matrixPadAndFlatten_RowMajor(fineGridProjector1d_0,padSize)
         self.context["fineGridProjector1d_T_weighted_1"] = MathsUtils.matrixPadAndFlatten_RowMajor(fineGridProjector1d_1,padSize)
         self.context["fineGridProjector1d_T_weighted_2"] = MathsUtils.matrixPadAndFlatten_RowMajor(fineGridProjector1d_2,padSize)

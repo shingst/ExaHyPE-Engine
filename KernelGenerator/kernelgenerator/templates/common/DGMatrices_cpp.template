@@ -10,6 +10,8 @@
  * Released under the BSD 3 Open Source License.
  * For the full license text, see LICENSE.txt
  **/ #}
+{# format decimal numbers with 40 decimal places, exception for 0. in the padding to avoid getting 0.00...0e+40 from Python's Decimal #}
+{% macro formatDecimal(a)%}{{"{:.40e}".format(a) if a != 0.0 else "0.0"}}{% endmacro %}
 
 #include <mm_malloc.h> //g++
 
@@ -100,51 +102,51 @@ void {{codeNamespace}}::initDGMatrices() {
   }
   
 {% for i in nDofPad_seq %}
-  FLCoeff[{{i}}] = {{"{:.15e}".format(FLCoeff[i])}};
+  FLCoeff[{{i}}] = {{formatDecimal(FLCoeff[i])}};
 {% endfor %}
 
 {% for i in nDofPad_seq %}
-  FRCoeff[{{i}}] = {{"{:.15e}".format(FRCoeff[i])}};
+  FRCoeff[{{i}}] = {{formatDecimal(FRCoeff[i])}};
 {% endfor %}
 
 {% for i in nDofPadTimesnDof_seq %}
-  dudx[{{i}}] = {{"{:.15e}".format(dudx[i])}};
+  dudx[{{i}}] = {{formatDecimal(dudx[i])}};
 {% endfor %}
 
 {% for i in nDofPadTimesnDof_seq %}
-  dudx_T[{{i}}] = {{"{:.15e}".format(dudx_T[i])}};
+  dudx_T[{{i}}] = {{formatDecimal(dudx_T[i])}};
 {% endfor %}
 
 {% for i in nDofPadTimesnDof_seq %}
-  iK1_T[{{i}}] = {{"{:.15e}".format(iK1_T[i])}};
+  iK1_T[{{i}}] = {{formatDecimal(iK1_T[i])}};
 {% endfor %}
 
 {% for i in nDofPadTimesnDof_seq %}
-  Kxi[{{i}}] = {{"{:.15e}".format(Kxi[i])}};
+  Kxi[{{i}}] = {{formatDecimal(Kxi[i])}};
 {% endfor %}
 
 {% for i in nDofPadTimesnDof_seq %}
-  Kxi_T[{{i}}] = {{"{:.15e}".format(Kxi_T[i])}};
+  Kxi_T[{{i}}] = {{formatDecimal(Kxi_T[i])}};
 {% endfor %}
 
 {% for i in nDofPadTimesnDof_seq %}
-  fineGridProjector1d[0][{{i}}] = {{"{:.15e}".format(fineGridProjector1d_0[i])}};
+  fineGridProjector1d[0][{{i}}] = {{formatDecimal(fineGridProjector1d_0[i])}};
 {% endfor %}
 {% for i in nDofPadTimesnDof_seq %}
-  fineGridProjector1d[1][{{i}}] = {{"{:.15e}".format(fineGridProjector1d_1[i])}};
+  fineGridProjector1d[1][{{i}}] = {{formatDecimal(fineGridProjector1d_1[i])}};
 {% endfor %}
 {% for i in nDofPadTimesnDof_seq %}
-  fineGridProjector1d[2][{{i}}] = {{"{:.15e}".format(fineGridProjector1d_2[i])}};
+  fineGridProjector1d[2][{{i}}] = {{formatDecimal(fineGridProjector1d_2[i])}};
 {% endfor %}
 
 {% for i in nDofPadTimesnDof_seq %}
-  fineGridProjector1d_T_weighted[0][{{i}}] = {{"{:.15e}".format(fineGridProjector1d_T_weighted_0[i])}};
+  fineGridProjector1d_T_weighted[0][{{i}}] = {{formatDecimal(fineGridProjector1d_T_weighted_0[i])}};
 {% endfor %}
 {% for i in nDofPadTimesnDof_seq %}
-  fineGridProjector1d_T_weighted[1][{{i}}] = {{"{:.15e}".format(fineGridProjector1d_T_weighted_1[i])}};
+  fineGridProjector1d_T_weighted[1][{{i}}] = {{formatDecimal(fineGridProjector1d_T_weighted_1[i])}};
 {% endfor %}
 {% for i in nDofPadTimesnDof_seq %}
-  fineGridProjector1d_T_weighted[2][{{i}}] = {{"{:.15e}".format(fineGridProjector1d_T_weighted_2[i])}};
+  fineGridProjector1d_T_weighted[2][{{i}}] = {{formatDecimal(fineGridProjector1d_T_weighted_2[i])}};
 {% endfor %}
 
 
@@ -167,51 +169,51 @@ void {{codeNamespace}}::initDGMatrices() {
   }
   
 {% for i in nDofPad_seq %}
-  FLCoeff_SP[{{i}}] = {{"{:.15e}".format(FLCoeff[i])}};
+  FLCoeff_SP[{{i}}] = {{formatDecimal(FLCoeff[i])}};
 {% endfor %}
 
 {% for i in nDofPad_seq %}
-  FRCoeff_SP[{{i}}] = {{"{:.15e}".format(FRCoeff[i])}};
+  FRCoeff_SP[{{i}}] = {{formatDecimal(FRCoeff[i])}};
 {% endfor %}
 
 {% for i in nDofPadTimesnDof_seq %}
-  dudx_SP[{{i}}] = {{"{:.15e}".format(dudx[i])}};
+  dudx_SP[{{i}}] = {{formatDecimal(dudx[i])}};
 {% endfor %}
 
 {% for i in nDofPadTimesnDof_seq %}
-  dudx_T_SP[{{i}}] = {{"{:.15e}".format(dudx_T[i])}};
+  dudx_T_SP[{{i}}] = {{formatDecimal(dudx_T[i])}};
 {% endfor %}
 
 {% for i in nDofPadTimesnDof_seq %}
-  iK1_T_SP[{{i}}] = {{"{:.15e}".format(iK1_T[i])}};
+  iK1_T_SP[{{i}}] = {{formatDecimal(iK1_T[i])}};
 {% endfor %}
 
 {% for i in nDofPadTimesnDof_seq %}
-  Kxi_SP[{{i}}] = {{"{:.15e}".format(Kxi[i])}};
+  Kxi_SP[{{i}}] = {{formatDecimal(Kxi[i])}};
 {% endfor %}
 
 {% for i in nDofPadTimesnDof_seq %}
-  Kxi_T_SP[{{i}}] = {{"{:.15e}".format(Kxi_T[i])}};
+  Kxi_T_SP[{{i}}] = {{formatDecimal(Kxi_T[i])}};
 {% endfor %}
 
 {% for i in nDofPadTimesnDof_seq %}
-  fineGridProjector1d_SP[0][{{i}}] = {{"{:.15e}".format(fineGridProjector1d_0[i])}};
+  fineGridProjector1d_SP[0][{{i}}] = {{formatDecimal(fineGridProjector1d_0[i])}};
 {% endfor %}
 {% for i in nDofPadTimesnDof_seq %}
-  fineGridProjector1d_SP[1][{{i}}] = {{"{:.15e}".format(fineGridProjector1d_1[i])}};
+  fineGridProjector1d_SP[1][{{i}}] = {{formatDecimal(fineGridProjector1d_1[i])}};
 {% endfor %}
 {% for i in nDofPadTimesnDof_seq %}
-  fineGridProjector1d_SP[2][{{i}}] = {{"{:.15e}".format(fineGridProjector1d_2[i])}};
+  fineGridProjector1d_SP[2][{{i}}] = {{formatDecimal(fineGridProjector1d_2[i])}};
 {% endfor %}
 
 {% for i in nDofPadTimesnDof_seq %}
-  fineGridProjector1d_T_weighted_SP[0][{{i}}] = {{"{:.15e}".format(fineGridProjector1d_T_weighted_0[i])}};
+  fineGridProjector1d_T_weighted_SP[0][{{i}}] = {{formatDecimal(fineGridProjector1d_T_weighted_0[i])}};
 {% endfor %}
 {% for i in nDofPadTimesnDof_seq %}
-  fineGridProjector1d_T_weighted_SP[1][{{i}}] = {{"{:.15e}".format(fineGridProjector1d_T_weighted_1[i])}};
+  fineGridProjector1d_T_weighted_SP[1][{{i}}] = {{formatDecimal(fineGridProjector1d_T_weighted_1[i])}};
 {% endfor %}
 {% for i in nDofPadTimesnDof_seq %}
-  fineGridProjector1d_T_weighted_SP[2][{{i}}] = {{"{:.15e}".format(fineGridProjector1d_T_weighted_2[i])}};
+  fineGridProjector1d_T_weighted_SP[2][{{i}}] = {{formatDecimal(fineGridProjector1d_T_weighted_2[i])}};
 {% endfor %}
 {% endif %}{# useSinglePrecision #}
 
