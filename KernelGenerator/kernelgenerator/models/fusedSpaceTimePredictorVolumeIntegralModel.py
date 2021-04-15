@@ -41,7 +41,10 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
             if self.context["useSplitCK"]:
                 if self.context["useVectPDE"]:
                     if self.context["useAoSoA2"]:
-                        template = "fusedSPTVI_linear_split_ck_aosoa2_cpp.template"
+                        if self.context["useSinglePrecision"]:
+                            template = "SP_fusedSPTVI_linear_split_ck_aosoa2_cpp.template"
+                        else:
+                            template = "fusedSPTVI_linear_split_ck_aosoa2_cpp.template"
                     else:
                         template = "fusedSPTVI_linear_split_ck_vect_cpp.template"
                 else:
@@ -100,26 +103,39 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
         nDof3    = nDof2*nDof
         nDof3D   = self.context["nDof3D"]
         nDofPad  = self.context["nDofPad"]
-        nDof2Pad  = self.context["nDof2Pad"]
+        nDof2Pad = self.context["nDof2Pad"]
         nDim     = self.context["nDim"]
+        
+        prec = "DP" if not self.context["useSinglePrecision"] else "SP" # only used for Linear SplitCK AoSoA2
+        
+    # LINEAR
         
         if self.context["isLinear"]:
             if self.context["useSplitCK"]:
                 if self.context["useVectPDE"]: 
                     if self.context["useAoSoA2"]: #split_ck aosoa2
+                    
+        # Linear SplitCK AoSoA2
+                    
                         if self.context["useFlux"]:
                             if self.context["useMaterialParam"]:
-                                self.context["matmulConfigs"]["flux_x_sck_aosoa2"] =       MatmulConfig(nDof, nDof, nDof, nDofPad , nDof, nDof    , 1, 0, 1, 1, 1, "flux_x_sck_aosoa2") # beta, 0 => overwrite C
-                                self.context["matmulConfigs"]["flux_y_sck_aosoa2"] =       MatmulConfig(nDof, nDof, nDof, nDof    , nDofPad, nDof , 1, 0, 1, 1, 1, "flux_y_sck_aosoa2") # beta, 0 => overwrite C
-                                self.context["matmulConfigs"]["flux_z_sck_aosoa2"] =       MatmulConfig(nDof2Pad*nVar, nDof, nDof, nDof2Pad*nVar , nDofPad, nDof2Pad*nVar , 1, 0, 1, 1, 1, "flux_z_sck_aosoa2") # beta, 0 => overwrite C
+                                self.context["matmulConfigs"]["flux_x_sck_aosoa2"] =     MatmulConfig(nDof, nDof, nDof, nDofPad , nDof, nDof    , 1, 0, 1, 1, 1, "flux_x_sck_aosoa2", precision=prec) # beta, 0 => overwrite C
+                                self.context["matmulConfigs"]["flux_y_sck_aosoa2"] =     MatmulConfig(nDof, nDof, nDof, nDof    , nDofPad, nDof , 1, 0, 1, 1, 1, "flux_y_sck_aosoa2", precision=prec) # beta, 0 => overwrite C
+                                if self.context["nDim"]>=3:
+                                    self.context["matmulConfigs"]["flux_z_sck_aosoa2"] = MatmulConfig(nDof2Pad*nVar, nDof, nDof, nDof2Pad*nVar , nDofPad, nDof2Pad*nVar , 1, 0, 1, 1, 1, "flux_z_sck_aosoa2", precision=prec) # beta, 0 => overwrite C
                             else:
-                                self.context["matmulConfigs"]["flux_x_sck_aosoa2"] =       MatmulConfig(nDof, nDof, nDof, nDofPad , nDof, nDof    , 1, 1, 1, 1, 1, "flux_x_sck_aosoa2")
-                                self.context["matmulConfigs"]["flux_y_sck_aosoa2"] =       MatmulConfig(nDof, nDof, nDof, nDof    , nDofPad, nDof , 1, 1, 1, 1, 1, "flux_y_sck_aosoa2")
-                                self.context["matmulConfigs"]["flux_z_sck_aosoa2"] =       MatmulConfig(nDof2Pad*nVar, nDof, nDof, nDof2Pad*nVar , nDofPad, nDof2Pad*nVar , 1, 1, 1, 1, 1, "flux_z_sck_aosoa2")
-                        self.context["matmulConfigs"]["gradQ_x_sck_aosoa2"] =     MatmulConfig(nDof, nDof, nDof, nDofPad , nDof, nDof               , 1, 0, 1, 1, 1, "gradQ_x_sck_aosoa2") # beta, 0 => overwrite C
-                        self.context["matmulConfigs"]["gradQ_y_sck_aosoa2"] =     MatmulConfig(nDof, nDof, nDof, nDof , nDofPad, nDof               , 1, 0, 1, 1, 1, "gradQ_y_sck_aosoa2") # beta, 0 => overwrite C
-                        self.context["matmulConfigs"]["gradQ_z_sck_aosoa2"] =     MatmulConfig(nDof2Pad*nVar, nDof, nDof, nDof2Pad*nVar, nDofPad, nDof2Pad*nVar, 1, 0, 1, 1, 1, "gradQ_z_sck_aosoa2") # beta, 0 => overwrite C
-                    else:# split_ck vect
+                                self.context["matmulConfigs"]["flux_x_sck_aosoa2"] =     MatmulConfig(nDof, nDof, nDof, nDofPad , nDof, nDof    , 1, 1, 1, 1, 1, "flux_x_sck_aosoa2", precision=prec)
+                                self.context["matmulConfigs"]["flux_y_sck_aosoa2"] =     MatmulConfig(nDof, nDof, nDof, nDof    , nDofPad, nDof , 1, 1, 1, 1, 1, "flux_y_sck_aosoa2", precision=prec)
+                                if self.context["nDim"]>=3:
+                                    self.context["matmulConfigs"]["flux_z_sck_aosoa2"] = MatmulConfig(nDof2Pad*nVar, nDof, nDof, nDof2Pad*nVar , nDofPad, nDof2Pad*nVar , 1, 1, 1, 1, 1, "flux_z_sck_aosoa2", precision=prec)
+                        self.context["matmulConfigs"]["gradQ_x_sck_aosoa2"] =     MatmulConfig(nDof, nDof, nDof, nDofPad , nDof, nDof               , 1, 0, 1, 1, 1, "gradQ_x_sck_aosoa2", precision=prec) # beta, 0 => overwrite C
+                        self.context["matmulConfigs"]["gradQ_y_sck_aosoa2"] =     MatmulConfig(nDof, nDof, nDof, nDof , nDofPad, nDof               , 1, 0, 1, 1, 1, "gradQ_y_sck_aosoa2", precision=prec) # beta, 0 => overwrite C
+                        if self.context["nDim"]>=3:
+                            self.context["matmulConfigs"]["gradQ_z_sck_aosoa2"] = MatmulConfig(nDof2Pad*nVar, nDof, nDof, nDof2Pad*nVar, nDofPad, nDof2Pad*nVar, 1, 0, 1, 1, 1, "gradQ_z_sck_aosoa2", precision=prec) # beta, 0 => overwrite C
+                    
+        # Linear SplitCK vect (AoSoA)
+                    
+                    else:
                         if self.context["useFlux"]:
                             if self.context["useMaterialParam"]:
                                 self.context["matmulConfigs"]["flux_x_sck_vect"] =       MatmulConfig(nDofPad, nVar, nDof, nDofPad , nDofPad, nDofPad      , 1, 0, 1, 1, 1, "flux_x_sck_vect") # beta, 0 => overwrite C
@@ -133,7 +149,10 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                         self.context["matmulConfigs"]["gradQ_y_sck_vect"] =     MatmulConfig(nDofPad*nVar, nDof, nDof, nDofPad*nVar , nDofPad, nDofPad*nVar , 1, 0, 1, 1, 1, "gradQ_y_sck_vect") # beta, 0 => overwrite C
                         if self.context["nDim"]>=3:
                             self.context["matmulConfigs"]["gradQ_z_sck_vect"] = MatmulConfig(nDofPad*nVar*nDof, nDof, nDof, nDofPad*nVar*nDof, nDofPad, nDofPad*nVar*nDof, 1, 0, 1, 1, 1, "gradQ_z_sck_vect") # beta, 0 => overwrite C
-                else: # split_ck scalar
+                            
+        # Linear SplitCK scalar
+                            
+                else: 
                     if self.context["useFlux"]:
                         self.context["matmulConfigs"]["flux_x_sck"] =       MatmulConfig(nVarPad, nDof, nDof, nVarPad      , nDofPad, nVarPad      , 1, 1, 1, 1, 1, "flux_x_sck")
                         self.context["matmulConfigs"]["flux_y_sck"] =       MatmulConfig(nVarPad, nDof, nDof, nVarPad      , nDofPad, nVarPad*nDof , 1, 1, 1, 1, 1, "flux_y_sck")
@@ -143,7 +162,10 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                     self.context["matmulConfigs"]["gradQ_y_sck"] =          MatmulConfig(nVarPad, nDof, nDof, nVarPad*nDof , nDofPad, nVarPad*nDof , 1, 0, 1, 1, 1, "gradQ_y_sck") # beta, 0 => overwrite C
                     if self.context["nDim"]>=3:
                         self.context["matmulConfigs"]["gradQ_z_sck"] =      MatmulConfig(nVarPad, nDof, nDof, nVarPad*nDof2, nDofPad, nVarPad*nDof2, 1, 0, 1, 1, 1, "gradQ_z_sck", "nopf", "gemm") # beta, 0 => overwrite C
-            else: # default linear
+            
+        # Linear default
+            
+            else: 
                 if self.context["useFlux"]:
                     self.context["matmulConfigs"]["flux_x"] =     MatmulConfig(nVarPad, nDof, nDof, nVarPad      , nDofPad, nVarPad, 1, 0, 1, 1, 1, "flux_x") # beta, 0 => overwrite C
                     self.context["matmulConfigs"]["flux_y"] =     MatmulConfig(nVarPad, nDof, nDof, nVarPad*nDof , nDofPad, nVarPad, 1, 0, 1, 1, 1, "flux_y") # beta, 0 => overwrite C
@@ -155,10 +177,15 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                     if self.context["nDim"]>=3:
                         self.context["matmulConfigs"]["gradQ_z"] = MatmulConfig(nVar, nDof, nDof, nDataPad*nDof2, nDofPad, nVarPad*nDof2, 1, 1, 1, 1, 1, "gradQ_z")
         
-        else: #NonLinear
+    # NONLINEAR
+        
+        else:
             if self.context["predictorRecompute"]: # TODO JMG matmuls for gradQ, rhs and lduh are exactly the same...
                 if self.context["useVectPDE"]:
                     if self.context["useAoSoA2"]: # aosoa2
+                    
+        # Nonlinear PredictorRecompute AoSoA2
+        
                         if self.context["useFlux"]:
                             self.context["matmulConfigs"]["rhs_x"] =     MatmulConfig(nDof, nDof, nDof, nDofPad, nDof, nDof, 1, 1, 1, 1, 1, "rhs_x", prefetchInput="B", prefetchOutput="C")
                             self.context["matmulConfigs"]["rhs_y"] =     MatmulConfig(nDof, nDof, nDof, nDof, nDofPad, nDof, 1, 1, 1, 1, 1, "rhs_y", prefetchInput="A", prefetchOutput="C")
@@ -174,6 +201,9 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                             if self.context["nDim"]>=3:
                                 self.context["matmulConfigs"]["gradQ_z"] = MatmulConfig(nDof2Pad*nVar, nDof, nDof, nDof2Pad*nVar, nDofPad, nDof2Pad*nVar, 1, 1, 1, 1, 1, "gradQ_z")
                         self.context["matmulConfigs"]["lqi"] = MatmulConfig(nDof2Pad, nDof, nDof, nDof2Pad*nVar*nDof3D, nDofPad, nDof2Pad, 1, 0, 1, 1, 1, "lqi") # beta, 0 => overwrite C
+                    
+        # Nonlinear PredictorRecompute vect (AoSoA)
+                    
                     else:
                         if self.context["useFlux"]:
                             self.context["matmulConfigs"]["rhs_x"] =     MatmulConfig(nDofPad,           nVar, nDof, nDofPad,           nDofPad, nDofPad          , 1, 1, 1, 1, 1, "rhs_x", prefetchInput="B", prefetchOutput="C")
@@ -190,7 +220,10 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                             if self.context["nDim"]>=3:
                                 self.context["matmulConfigs"]["gradQ_z"] = MatmulConfig(nDofPad*nVar*nDof, nDof, nDof, nDofPad*nVar*nDof, nDofPad, nDofPad*nVar*nDof, 1, 1, 1, 1, 1, "gradQ_z")
                         self.context["matmulConfigs"]["lqi"] = MatmulConfig(nDofPad*nVar, nDof, nDof, nDofPad*nVar*nDof*nDof3D, nDofPad, nDofPad*nVar, 1, 0, 1, 1, 1, "lqi") # beta, 0 => overwrite C
-                else: #scalar predictor recompute
+                
+        # Nonlinear PredictorRecompute scalar
+                
+                else:
                     if self.context["useFlux"]:
                         self.context["matmulConfigs"]["rhs_x"] =     MatmulConfig(nVarPad, nDof, nDof, nVarPad      , nDofPad, nVarPad      , 1, 1, 1, 1, 1, "rhs_x")
                         self.context["matmulConfigs"]["rhs_y"] =     MatmulConfig(nVarPad, nDof, nDof, nVarPad*nDof , nDofPad, nVarPad*nDof , 1, 1, 1, 1, 1, "rhs_y")
@@ -206,7 +239,10 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                         if self.context["nDim"]>=3:
                             self.context["matmulConfigs"]["gradQ_z"] = MatmulConfig(nVarPad, nDof, nDof, nVarPad*nDof2, nDofPad, nVarPad*nDof2, 1, 1, 1, 1, 1, "gradQ_z")
                     self.context["matmulConfigs"]["lqi"] = MatmulConfig(nVarPad, nDof, nDof, nVarPad*(nDof**nDim), nDofPad, nVarPad, 1, 0, 1, 1, 1, "lqi") # beta, 0 => overwrite C
-            else: # default nonlinear
+            
+        # Nonlinear default
+            
+            else:
                 if self.context["useFlux"]:
                     self.context["matmulConfigs"]["rhs_x"] =     MatmulConfig(nVarPad, nDof, nDof, nVarPad      , nDofPad, nVarPad      , 1, 1, 1, 1, 1, "rhs_x")
                     self.context["matmulConfigs"]["rhs_y"] =     MatmulConfig(nVarPad, nDof, nDof, nVarPad*nDof , nDofPad, nVarPad*nDof , 1, 1, 1, 1, 1, "rhs_y")

@@ -31,6 +31,17 @@ extern double *weights4;
 extern double *iweights1;
 extern double *iweights3;
 
+{% if useSinglePrecision %}
+//single precision version
+extern float *nodes_SP;
+extern float *weights1_SP;
+extern float *weights2_SP;
+extern float *weights3_SP;
+extern float *weights4_SP;
+extern float *iweights1_SP;
+extern float *iweights3_SP;
+{% endif %}
+
 {% if kernelType=="limiter" %}
 // limiter projection matrices
 extern double* uh2lob;
