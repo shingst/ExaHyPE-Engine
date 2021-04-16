@@ -106,10 +106,10 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   double negativeDudx_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
 {% if useLibxsmm %}
 #if defined(USE_IPO) && ! defined(UNSAFE_IPO)
-  double doNotOptimizeAway1 = dudxT_by_dx[0]; // used to prevent the compiler from optimizing dudxT_by_dx away
-  double doNotOptimizeAway2 = dudx_by_dx[0]; // used to prevent the compiler from optimizing dudx_by_dx away
-  double doNotOptimizeAway3 = negativeDudxT_by_dx[0]; // used to prevent the compiler from optimizing dudxT_by_dx away
-  double doNotOptimizeAway4 = negativeDudx_by_dx[0]; // used to prevent the compiler from optimizing dudx_by_dx away
+  volatile double doNotOptimizeAway1 = dudxT_by_dx[0]; // used to prevent the compiler from optimizing dudxT_by_dx away
+  volatile double doNotOptimizeAway2 = dudx_by_dx[0]; // used to prevent the compiler from optimizing dudx_by_dx away
+  volatile double doNotOptimizeAway3 = negativeDudxT_by_dx[0]; // used to prevent the compiler from optimizing dudxT_by_dx away
+  volatile double doNotOptimizeAway4 = negativeDudx_by_dx[0]; // used to prevent the compiler from optimizing dudx_by_dx away
 #endif
 {% endif %}
 
@@ -168,7 +168,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 
 
   // 0. precompute 1/dx * dudx_T. Assume dx[0] == dx[1] == dx[2]
-  #pragma omp simd aligned(dudxT_by_dx,negativeDudxT_by_dx,dudx_by_dx,negativeDudx_by_dx,dudx_T:ALIGNMENT)
+  #pragma omp simd aligned(dudxT_by_dx,negativeDudxT_by_dx,dudx_by_dx,negativeDudx_by_dx,dudx_T,dudx:ALIGNMENT)
   for (int it = 0; it < {{nDof*nDofPad}}; it++) {
     dudxT_by_dx[it] = invDx * dudx_T[it];
     negativeDudxT_by_dx[it] = -dudxT_by_dx[it];
