@@ -23,7 +23,7 @@
 #include "teaMPI.h"
 #endif
 
-#define MAX_PROGRESS_ITS 100
+#define MAX_PROGRESS_ITS 10000
 //#undef assertion
 //#define assertion assert
 
@@ -393,6 +393,10 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryToFindAndExtrac
   CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
 	      _element);
 
+#if !defined(OffloadingUseProgressThread)
+  exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, MAX_PROGRESS_ITS);
+#endif
+
   tarch::la::Vector<DIMENSIONS, double> center;
   center = cellDescription.getOffset() + 0.5 * cellDescription.getSize();
 
@@ -591,6 +595,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
     if (!isRunOnMaster)
       exahype::solvers::ADERDGSolver::progressOffloading(&_solver,
           isRunOnMaster, std::numeric_limits<int>::max());
+      //exahype::solvers::ADERDGSolver::progressOffloading(&_solver,
+      //    isRunOnMaster, MAX_PROGRESS_ITS);
 #endif
     if (!_isLocalReplica) NumberOfEnclaveJobs--;
     assertion( NumberOfEnclaveJobs>=0 );
