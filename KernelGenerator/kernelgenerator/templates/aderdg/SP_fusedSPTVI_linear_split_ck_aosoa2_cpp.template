@@ -50,13 +50,13 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     double* restrict lduh,
     double* restrict lQhbnd,
     double* restrict lFhbnd,
-    double* restrict lQi, // no param, no time dim
-    double* restrict lQi_next, // no param
-    double* restrict lPi,
-    double* restrict lQhi, // no param
-    double* restrict lFhi, // one block
-    double* restrict gradQ, // one block
-    double* restrict PSi,   // for pointSource
+    float* restrict lQi, // no param, no time dim
+    float* restrict lQi_next, // no param
+    float* restrict lPi,
+    float* restrict lQhi, // no param
+    float* restrict lFhi, // one block
+    float* restrict gradQ, // one block
+    float* restrict PSi,   // for pointSource
     const double* const restrict luh,
     const double* const center,
     const double dx, // Assume dx[0] == dx[1] == dx[2]
@@ -79,42 +79,54 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   __assume_aligned(PSi,      ALIGNMENT);
   __assume_aligned(luh,      ALIGNMENT);
   // Aligned global
-  __assume_aligned(dudx,     ALIGNMENT);
-  __assume_aligned(dudx_T,   ALIGNMENT);
-  __assume_aligned(weights1, ALIGNMENT);
-  __assume_aligned(weights3, ALIGNMENT);
-  __assume_aligned(iweights3,ALIGNMENT);
-  __assume_aligned(FLCoeff,  ALIGNMENT);
-  __assume_aligned(FRCoeff,  ALIGNMENT);
+  __assume_aligned(dudx_SP,     ALIGNMENT);
+  __assume_aligned(dudx_T_SP,   ALIGNMENT);
+  __assume_aligned(weights1_SP, ALIGNMENT);
+  __assume_aligned(weights3_SP, ALIGNMENT);
+  __assume_aligned(iweights3_SP,ALIGNMENT);
+  __assume_aligned(FLCoeff_SP,  ALIGNMENT);
+  __assume_aligned(FRCoeff_SP,  ALIGNMENT);
 #endif
 
-// TODO JMG set matmul
-  
+  {{ m.setupMatmul('flux_x_sck_aosoa2') | indent(2) }}{##}
+  {{ m.setupMatmul('flux_y_sck_aosoa2') | indent(2) }}{##}
+  {{ m.setupMatmul('flux_z_sck_aosoa2') | indent(2) }}{##}
+  {{ m.setupMatmul('gradQ_x_sck_aosoa2')| indent(2) }}{##}
+  {{ m.setupMatmul('gradQ_y_sck_aosoa2')| indent(2) }}{##}
+  {{ m.setupMatmul('gradQ_z_sck_aosoa2')| indent(2) }}{##}
 
-  const double invDt = 1. / dt;
-  const double invDx = 1. / dx;
+
+  const float dt_SP = dt;
+  const float dx_SP = dx;
+  const float invDx = 1. / dx;
+  const float invDx_SP = 1. / dx;
 
   // local tmp array
-  double dudxT_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
-  double dudx_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
-  double negativeDudxT_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
-  double negativeDudx_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
+  float dudxT_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
+  float dudx_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
+  float negativeDudxT_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
+  float negativeDudx_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
 {% if useLibxsmm %}
 #if defined(USE_IPO) && ! defined(UNSAFE_IPO)
-  double doNotOptimizeAway1 = dudxT_by_dx[0]; // used to prevent the compiler from optimizing dudxT_by_dx away
-  double doNotOptimizeAway2 = dudx_by_dx[0]; // used to prevent the compiler from optimizing dudx_by_dx away
-  double doNotOptimizeAway3 = negativeDudxT_by_dx[0]; // used to prevent the compiler from optimizing dudxT_by_dx away
-  double doNotOptimizeAway4 = negativeDudx_by_dx[0]; // used to prevent the compiler from optimizing dudx_by_dx away
+  volatile float doNotOptimizeAway1 = dudxT_by_dx[0]; // used to prevent the compiler from optimizing dudxT_by_dx away
+  volatile float doNotOptimizeAway2 = dudx_by_dx[0]; // used to prevent the compiler from optimizing dudx_by_dx away
+  volatile float doNotOptimizeAway3 = negativeDudxT_by_dx[0]; // used to prevent the compiler from optimizing dudxT_by_dx away
+  volatile float doNotOptimizeAway4 = negativeDudx_by_dx[0]; // used to prevent the compiler from optimizing dudx_by_dx away
 #endif
 {% endif %}
 
+  // buffer for output
+  {{ m.allocateArray("lduh_SP",   (nDof**nDim)*nVarPad,        precision="float", forceStack=True) }}{##}
+  {{ m.allocateArray("lQhbnd_SP", 2*nDim*nDof*nDof3D*nDataPad, precision="float", forceStack=True) }}{##}
+  {{ m.allocateArray("lFhbnd_SP", 2*nDim*nDof*nDof3D*nVarPad,  precision="float", forceStack=True) }}{##}
+
 {% if usePointSources %}
   { // 0. compute point source contribution
-    std::memset(PSi, 0, {{nDof*nDof3D*nVar*nDof2Pad}}*sizeof(double));
+    std::memset(PSi, 0, {{nDof*nDof3D*nVar*nDof2Pad}}*sizeof(float));
 
     double tn;
     double x1[{{nDim}}];
-    const double ivolume = 1.0/(dx * dx{{' * dx' if nDim==3}});
+    const float ivolume = 1.0/(dx * dx{{' * dx' if nDim==3}});
     double forceVectorSource[{{nVarPad}}] __attribute__((aligned(ALIGNMENT)));
     std::memset(forceVectorSource, 0, {{nVarPad}}*sizeof(double));
 
@@ -139,16 +151,16 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 
               // Map point source location onto reference element
               const double* const x_ps = solver.pointSourceLocation[p];
-              const double update =   solver.basisFunction[{{nDof-1}}][x]((x_ps[0] - center[0]) * invDx + 0.5)
+              const float update =   (solver.basisFunction[{{nDof-1}}][x]((x_ps[0] - center[0]) * invDx + 0.5)
                                     * solver.basisFunction[{{nDof-1}}][y]((x_ps[1] - center[1]) * invDx + 0.5)
 {% if nDim == 3 %}
-                                    * solver.basisFunction[{{nDof-1}}][z]((x_ps[2] - center[2]) * invDx + 0.5)
+                                    * solver.basisFunction[{{nDof-1}}][z]((x_ps[2] - center[2]) * invDx + 0.5))
 {% endif %}
-                                    * iweights3[(z*{{nDof3D}}+y)*{{nDof}}+x] * ivolume ; //division by weights product and volume
+                                    * iweights3_SP[(z*{{nDof3D}}+y)*{{nDof}}+x] * ivolume ; //division by weights product and volume
 
               #pragma omp simd aligned(PSi,forceVectorSource:ALIGNMENT)
               for (int n = 0; n < {{nVar}}; n++) { //evaluate
-                PSi[{{idxPSi(t,z,n,y,x)}}] += update * forceVectorSource[n];
+                PSi[{{idxPSi(t,z,n,y,x)}}] += update * (float)forceVectorSource[n];
               }// n
 
             }// point sources
@@ -163,11 +175,11 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 
 
   // 0. precompute 1/dx * dudx_T. Assume dx[0] == dx[1] == dx[2]
-  #pragma omp simd aligned(dudxT_by_dx,negativeDudxT_by_dx,dudx_by_dx,negativeDudx_by_dx,dudx_T:ALIGNMENT)
+  #pragma omp simd aligned(dudxT_by_dx,negativeDudxT_by_dx,dudx_by_dx,negativeDudx_by_dx,dudx_T_SP,dudx_SP:ALIGNMENT)
   for (int it = 0; it < {{nDof*nDofPad}}; it++) {
-    dudxT_by_dx[it] = invDx * dudx_T[it];
+    dudxT_by_dx[it] = invDx_SP * dudx_T_SP[it];
     negativeDudxT_by_dx[it] = -dudxT_by_dx[it];
-    dudx_by_dx[it] = invDx * dudx[it];
+    dudx_by_dx[it] = invDx_SP * dudx_SP[it];
     negativeDudx_by_dx[it] = -dudx_by_dx[it];
   }
 
@@ -178,8 +190,8 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   for (int z = 0; z < {{nDof3D}}; z++) {
     for (int n = 0; n < {{nVar}}; n++) {
       for (int yx = 0; yx < {{nDof*nDof}}; yx++) {
-        lQhi[{{idx(z,n,0,yx)}}] = luh[{{idxLuh(z,0,yx,n)}}];
-        lQi[ {{idx(z,n,0,yx)}}] = luh[{{idxLuh(z,0,yx,n)}}];
+        lQhi[{{idx(z,n,0,yx)}}] = (float)luh[{{idxLuh(z,0,yx,n)}}];
+        lQi[ {{idx(z,n,0,yx)}}] = (float)luh[{{idxLuh(z,0,yx,n)}}];
       }
       for (int yx = {{nDof*nDof}}; yx < {{nDof2Pad}}; yx++) {
         lQhi[{{idx(z,n,0,yx)}}] = 0;
@@ -189,7 +201,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% if nPar != 0 %}
     for (int n = 0; n < {{nPar}}; n++) {
       for (int yx = 0; yx < {{nDof*nDof}}; yx++) {
-        lPi[{{idxLPi(z,n,0,yx)}}] = luh[{{idxLuh(z,0,yx,"n+"~nVar)}}];
+        lPi[{{idxLPi(z,n,0,yx)}}] = (float)luh[{{idxLuh(z,0,yx,"n+"~nVar)}}];
       }
       for (int yx = {{nDof*nDof}}; yx < {{nDof2Pad}}; yx++) {
         lPi[{{idxLPi(z,n,0,yx)}}] = 0;
@@ -201,36 +213,36 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% if usePointSources %}
   // Add average PS to zero time derviative and lQh
   for (int t = 0; t < {{nDof}}; t++) {
-    #pragma omp simd aligned(lQi,lQhi,PSi,weights1:ALIGNMENT)
+    #pragma omp simd aligned(lQi,lQhi,PSi,weights1_SP:ALIGNMENT)
     for (int it = 0; it < {{nDof3D*nVar*nDof2Pad}}; it++) {
-      lQi [it] += dt*weights1[t]*PSi[{{idxPSi(t,0,0,0,it)}}];
-      lQhi[it] += dt*weights1[t]*PSi[{{idxPSi(t,0,0,0,it)}}];
+      lQi [it] += dt_SP*weights1_SP[t]*PSi[{{idxPSi(t,0,0,0,it)}}];
+      lQhi[it] += dt_SP*weights1_SP[t]*PSi[{{idxPSi(t,0,0,0,it)}}];
     }
   }
   //Initialize PS derivation operator
-  double derPS[{{nDofPad}}] __attribute__((aligned(ALIGNMENT)));
-  std::copy_n(FLCoeff, {{nDofPad}}, derPS);
+  float derPS[{{nDofPad}}] __attribute__((aligned(ALIGNMENT)));
+  std::copy_n(FLCoeff_SP, {{nDofPad}}, derPS);
 {% endif %}
 
-  double dtavFac = 0.5 * dt;
+  float dtavFac = 0.5 * dt_SP;
   // 3. Cauchy-Kovalewski procedure
   // use lFhi as tmpArray
   for (int t = 0; t < {{nDof}}; t++) {  // time DOFs
     //put source here
     
     // reset lQi_next
-    std::memset(lQi_next, 0, {{nDof3D*nVar*nDof2Pad}} *sizeof(double));
+    std::memset(lQi_next, 0, {{nDof3D*nVar*nDof2Pad}} *sizeof(float));
 
 {% if useFlux %}
     //call flux in x
     for (int z = 0; z < {{nDof3D}}; z++) {
-      solver.{{solverName}}::flux_x_vect(lQi+{{idx(z,0,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,0,0,0)}}{% else %}nullptr{%endif%}, lFhi); //lFhi[N][Y][X]
+      solver.{{solverName}}::flux_x_vect_SP(lQi+{{idx(z,0,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,0,0,0)}}{% else %}nullptr{%endif%}, lFhi); //lFhi[N][Y][X]
 {% if useMaterialParam %}
       // store M*rhs in gradQ[0][n][y][x]
       for (int n = 0; n < {{nVar}}; n++) {
         {{ m.matmul('flux_x_sck_aosoa2', 'negativeDudx_by_dx', 'lFhi', 'gradQ', '0', idx(0,n,0,0), idx(0,n,0,0)) | indent(8) }}{##}
       }
-      solver.{{solverName}}::multiplyMaterialParameterMatrix_vect(lPi+{{idxLPi(z,0,0,0)}}, gradQ);
+      solver.{{solverName}}::multiplyMaterialParameterMatrix_vect_SP(lPi+{{idxLPi(z,0,0,0)}}, gradQ);
       #pragma omp simd aligned(lQi_next,gradQ:ALIGNMENT)
       for (int nyx = 0; nyx < {{nVar*nDof2Pad}} ; nyx++){
         lQi_next[{{idx(z,0,0,nyx)}}] += gradQ[{{idx(0,0,0,nyx)}}];
@@ -251,7 +263,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     
     //call ncp in x
     for (int z = 0; z < {{nDof3D}}; z++) {
-      solver.{{solverName}}::nonConservativeProduct_x_vect(lQi+{{idx(z,0,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,0,0,0)}}{% else %}nullptr{%endif%}, gradQ+{{idx(z,0,0,0)}}, lFhi);
+      solver.{{solverName}}::nonConservativeProduct_x_vect_SP(lQi+{{idx(z,0,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,0,0,0)}}{% else %}nullptr{%endif%}, gradQ+{{idx(z,0,0,0)}}, lFhi);
       #pragma omp simd aligned(lQi_next,lFhi:ALIGNMENT)
       for (int nyx = 0; nyx < {{nVar*nDof2Pad}}; nyx++) {
         lQi_next[{{idx(z,0,0,nyx)}}] -= lFhi[nyx]; 
@@ -261,13 +273,13 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% if useFlux %}
     //call flux in y
     for (int z = 0; z < {{nDof3D}}; z++) {
-      solver.{{solverName}}::flux_y_vect(lQi+{{idx(z,0,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,0,0,0)}}{% else %}nullptr{%endif%}, lFhi); //lFhi[N][Y][X]
+      solver.{{solverName}}::flux_y_vect_SP(lQi+{{idx(z,0,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,0,0,0)}}{% else %}nullptr{%endif%}, lFhi); //lFhi[N][Y][X]
 {% if useMaterialParam %}
       // store M*rhs in gradQ[0][y][n][x]
       for (int n = 0; n < {{nVar}}; n++) {
         {{ m.matmul('flux_y_sck_aosoa2', 'lFhi', 'negativeDudxT_by_dx', 'gradQ', idx(0,n,0,0), '0', idx(0,n,0,0)) | indent(8) }}{##}
       }
-      solver.{{solverName}}::multiplyMaterialParameterMatrix_vect(lPi+{{idxLPi(z,0,0,0)}}, gradQ);
+      solver.{{solverName}}::multiplyMaterialParameterMatrix_vect_SP(lPi+{{idxLPi(z,0,0,0)}}, gradQ);
       #pragma omp simd aligned(lQi_next,gradQ:ALIGNMENT)
       for (int nyx = 0; nyx < {{nVar*nDof2Pad}} ; nyx++){
         lQi_next[{{idx(z,0,0,nyx)}}] += gradQ[{{idx(0,0,0,nyx)}}];
@@ -288,7 +300,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     
     //call ncp in y
     for (int z = 0; z < {{nDof3D}}; z++) {
-      solver.{{solverName}}::nonConservativeProduct_y_vect(lQi+{{idx(z,0,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,0,0,0)}}{% else %}nullptr{%endif%}, gradQ+{{idx(z,0,0,0)}}, lFhi);
+      solver.{{solverName}}::nonConservativeProduct_y_vect_SP(lQi+{{idx(z,0,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,0,0,0)}}{% else %}nullptr{%endif%}, gradQ+{{idx(z,0,0,0)}}, lFhi);
       #pragma omp simd aligned(lQi_next,lFhi:ALIGNMENT)
       for (int nyx = 0; nyx < {{nVar*nDof2Pad}}; nyx++) {
         lQi_next[{{idx(z,0,0,nyx)}}] -= lFhi[nyx]; 
@@ -299,13 +311,13 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% if useFlux %}
     //call flux in z
     for (int z = 0; z < {{nDof}}; z++) {
-      solver.{{solverName}}::flux_z_vect(lQi+{{idx(z,0,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,0,0,0)}}{% else %}nullptr{%endif%}, lFhi+{{idx(z,0,0,0)}}); //lFhi[Z][N][Y][X]
+      solver.{{solverName}}::flux_z_vect_SP(lQi+{{idx(z,0,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,0,0,0)}}{% else %}nullptr{%endif%}, lFhi+{{idx(z,0,0,0)}}); //lFhi[Z][N][Y][X]
     }
 {% if useMaterialParam %}
     // store M*rhs in gradQ[z][n][y][x], fuse n, y and x
     {{ m.matmul('flux_z_sck_aosoa2', 'lFhi', 'negativeDudxT_by_dx', 'gradQ', '0', '0', '0') | indent(4) }}{##}
     for (int z = 0; z < {{nDof}} ; z++){
-      solver.{{solverName}}::multiplyMaterialParameterMatrix_vect(lPi+{{idxLPi(z,0,0,0)}}, gradQ+{{idx(z,0,0,0)}});
+      solver.{{solverName}}::multiplyMaterialParameterMatrix_vect_SP(lPi+{{idxLPi(z,0,0,0)}}, gradQ+{{idx(z,0,0,0)}});
       #pragma omp simd aligned(lQi_next,gradQ:ALIGNMENT)
       for (int nyx = 0; nyx < {{nVar*nDof2Pad}} ; nyx++){
         lQi_next[{{idx(z,0,0,nyx)}}] += gradQ[{{idx(z,0,0,nyx)}}];
@@ -324,7 +336,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     
     //call ncp in z
     for (int z = 0; z < {{nDof3D}}; z++) {
-      solver.{{solverName}}::nonConservativeProduct_z_vect(lQi+{{idx(z,0,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,0,0,0)}}{% else %}nullptr{%endif%}, gradQ+{{idx(z,0,0,0)}}, lFhi);
+      solver.{{solverName}}::nonConservativeProduct_z_vect_SP(lQi+{{idx(z,0,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,0,0,0)}}{% else %}nullptr{%endif%}, gradQ+{{idx(z,0,0,0)}}, lFhi);
       #pragma omp simd aligned(lQi_next,lFhi:ALIGNMENT)
       for (int nyx = 0; nyx < {{nVar*nDof2Pad}}; nyx++) {
         lQi_next[{{idx(z,0,0,nyx)}}] -= lFhi[nyx]; 
@@ -334,7 +346,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% if useSource %}
     //call source
     for (int z = 0; z < {{nDof3D}}; z++) {
-      solver.{{solverName}}::algebraicSource_vect(lQi+{{idx(z,0,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,0,0,0)}}{% else %}nullptr{%endif%}, lFhi, center, tStep);
+      solver.{{solverName}}::algebraicSource_vect_SP(lQi+{{idx(z,0,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,0,0,0)}}{% else %}nullptr{%endif%}, lFhi, center, tStep);
       #pragma omp simd aligned(lQi_next,lFhi:ALIGNMENT)
       for (int nyx = 0; nyx < {{nVar*nDof2Pad}}; nyx++) {
         lQi_next[{{idx(z,0,0,nyx)}}] -= lFhi[nyx];
@@ -350,12 +362,12 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
       }
     }
     
-    double derPS_buffer[{{nDofPad}}] __attribute__((aligned(ALIGNMENT)));
-    std::memset(derPS_buffer,0,{{nDofPad}}*sizeof(double));
+    float derPS_buffer[{{nDofPad}}] __attribute__((aligned(ALIGNMENT)));
+    std::memset(derPS_buffer,0,{{nDofPad}}*sizeof(float));
     for(int it1 = 0 ; it1 < {{nDof}} ; it1++){
       #pragma omp simd aligned(derPS_buffer,dudx:ALIGNMENT)
       for(int it2 = 0 ; it2 < {{nDofPad}} ; it2++){
-        derPS_buffer[it2] += derPS[it1]*dudx[it1*{{nDofPad}}+it2];
+        derPS_buffer[it2] += derPS[it1]*dudx_SP[it1*{{nDofPad}}+it2];
       }
     }
     std::copy_n(derPS_buffer,{{nDofPad}},derPS);
@@ -366,7 +378,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     for (int it = 0; it < {{nDof3D*nVar*nDof2Pad}}; it++) {
         lQhi[it] += dtavFac * lQi_next[it];
     }
-    dtavFac *= dt / (t + 2);
+    dtavFac *= dt_SP / (t + 2);
     
     //switch buffers //TODO JMG pointer swap ?
     std::copy_n(lQi_next,{{nDof3D*nVar*nDof2Pad}},lQi);
@@ -378,7 +390,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   //**** Extrapolation ****
   //***********************
 
-  std::memset(lQhbnd, 0, {{2*nDim*nDof*nDof3D*nDataPad}}*sizeof(double));
+  std::memset(lQhbnd_SP, 0, {{2*nDim*nDof*nDof3D*nDataPad}}*sizeof(float));
 
   // x-direction: face 1 (left) and face 2 (right)
 /*
@@ -410,32 +422,32 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   for (int z = 0; z < {{nDof3D}}; z++) {
     for (int y = 0; y < {{nDof}}; y++) {
       for (int n = 0; n < {{nVar}}; n++) {
-        double tmpL = 0.;
-        double tmpR = 0.;
-        #pragma omp simd aligned(lQhi,FLCoeff,FRCoeff:ALIGNMENT) reduction(+:tmpL,tmpR)
+        float tmpL = 0.;
+        float tmpR = 0.;
+        #pragma omp simd aligned(lQhi,FLCoeff_SP,FRCoeff_SP:ALIGNMENT) reduction(+:tmpL,tmpR)
         for (int x = 0; x < {{nDof}}; x++) {
           // left
-          tmpL += lQhi[{{idx(z,n,y,x)}}] * FLCoeff[x];
+          tmpL += lQhi[{{idx(z,n,y,x)}}] * FLCoeff_SP[x];
           // right
-          tmpR += lQhi[{{idx(z,n,y,x)}}] * FRCoeff[x];
+          tmpR += lQhi[{{idx(z,n,y,x)}}] * FRCoeff_SP[x];
         }
-        lQhbnd[{{idxLQhbnd(0,z,y,n)}}] = tmpL;
-        lQhbnd[{{idxLQhbnd(1,z,y,n)}}] = tmpR;
+        lQhbnd_SP[{{idxLQhbnd(0,z,y,n)}}] = tmpL;
+        lQhbnd_SP[{{idxLQhbnd(1,z,y,n)}}] = tmpR;
       }
 {% if nPar != 0 %}
       for (int n = 0; n < {{nPar}}; n++) {
         //#pragma omp simd aligned(lQhbnd,lPi:ALIGNMENT)
-        double tmpL = 0.;
-        double tmpR = 0.;
-        #pragma omp simd aligned(lPi,FLCoeff,FRCoeff:ALIGNMENT) reduction(+:tmpL,tmpR)
+        float tmpL = 0.;
+        float tmpR = 0.;
+        #pragma omp simd aligned(lPi,FLCoeff_SP,FRCoeff_SP:ALIGNMENT) reduction(+:tmpL,tmpR)
         for (int x = 0; x < {{nDof}}; x++) {
           // left
-          tmpL += lPi[{{idxLPi(z,n,y,x)}}] * FLCoeff[x];
+          tmpL += lPi[{{idxLPi(z,n,y,x)}}] * FLCoeff_SP[x];
           // right
-          tmpR += lPi[{{idxLPi(z,n,y,x)}}] * FRCoeff[x];
+          tmpR += lPi[{{idxLPi(z,n,y,x)}}] * FRCoeff_SP[x];
         }
-        lQhbnd[{{idxLQhbnd(0,z,y,"n+"~nVar)}}] = tmpL;
-        lQhbnd[{{idxLQhbnd(1,z,y,"n+"~nVar)}}] = tmpR;
+        lQhbnd_SP[{{idxLQhbnd(0,z,y,"n+"~nVar)}}] = tmpL;
+        lQhbnd_SP[{{idxLQhbnd(1,z,y,"n+"~nVar)}}] = tmpR;
 {% endif %}
       }
     }
@@ -446,20 +458,20 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   for (int z = 0; z < {{nDof3D}}; z++) {
     for (int y = 0; y < {{nDof}}; y++) {
       for (int x = 0; x < {{nDof}}; x++) {
-        #pragma omp simd aligned(lQhbnd,lQhi:ALIGNMENT)
+        #pragma omp simd aligned(lQhbnd_SP,lQhi:ALIGNMENT)
         for (int n = 0; n < {{nVar}}; n++) {
           // left
-          lQhbnd[{{idxLQhbnd(2,z,x,n)}}] += lQhi[{{idx(z,n,y,x)}}] * FLCoeff[y];
+          lQhbnd_SP[{{idxLQhbnd(2,z,x,n)}}] += lQhi[{{idx(z,n,y,x)}}] * FLCoeff_SP[y];
           // right
-          lQhbnd[{{idxLQhbnd(3,z,x,n)}}] += lQhi[{{idx(z,n,y,x)}}] * FRCoeff[y];
+          lQhbnd_SP[{{idxLQhbnd(3,z,x,n)}}] += lQhi[{{idx(z,n,y,x)}}] * FRCoeff_SP[y];
         }
 {% if nPar != 0 %}
-        #pragma omp simd aligned(lQhbnd,lPi:ALIGNMENT)
+        #pragma omp simd aligned(lQhbnd_SP,lPi:ALIGNMENT)
         for (int n = 0; n < {{nPar}}; n++) {
           // left
-          lQhbnd[{{idxLQhbnd(2,z,x,"n+"~nVar)}}] += lPi[{{idxLPi(z,n,y,x)}}] * FLCoeff[y];
+          lQhbnd_SP[{{idxLQhbnd(2,z,x,"n+"~nVar)}}] += lPi[{{idxLPi(z,n,y,x)}}] * FLCoeff_SP[y];
           // right
-          lQhbnd[{{idxLQhbnd(3,z,x,"n+"~nVar)}}] += lPi[{{idxLPi(z,n,y,x)}}] * FRCoeff[y];
+          lQhbnd_SP[{{idxLQhbnd(3,z,x,"n+"~nVar)}}] += lPi[{{idxLPi(z,n,y,x)}}] * FRCoeff_SP[y];
         }
 {% endif %}
       }
@@ -471,20 +483,20 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   for (int y = 0; y < {{nDof}}; y++) {
     for (int z = 0; z < {{nDof}}; z++) {
       for (int x = 0; x < {{nDof}}; x++) {
-        #pragma omp simd aligned(lQhbnd,lQhi:ALIGNMENT)
+        #pragma omp simd aligned(lQhbnd_SP,lQhi:ALIGNMENT)
         for (int n = 0; n <{{nVar}}; n++) {
         // left
-          lQhbnd[{{idxLQhbnd(4,y,x,n)}}] += lQhi[{{idx(z,n,y,x)}}] * FLCoeff[z];
+          lQhbnd_SP[{{idxLQhbnd(4,y,x,n)}}] += lQhi[{{idx(z,n,y,x)}}] * FLCoeff_SP[z];
         // right
-          lQhbnd[{{idxLQhbnd(5,y,x,n)}}] += lQhi[{{idx(z,n,y,x)}}] * FRCoeff[z];
+          lQhbnd_SP[{{idxLQhbnd(5,y,x,n)}}] += lQhi[{{idx(z,n,y,x)}}] * FRCoeff_SP[z];
       }
 {% if nPar != 0 %}
-        #pragma omp simd aligned(lQhbnd,lPi:ALIGNMENT)
+        #pragma omp simd aligned(lQhbnd_SP,lPi:ALIGNMENT)
         for (int n = 0; n <{{nPar}}; n++) {
           // left
-          lQhbnd[{{idxLQhbnd(4,y,x,"n+"~nVar)}}] += lPi[{{idxLPi(z,n,y,x)}}] * FLCoeff[z];
+          lQhbnd_SP[{{idxLQhbnd(4,y,x,"n+"~nVar)}}] += lPi[{{idxLPi(z,n,y,x)}}] * FLCoeff_SP[z];
           // right
-          lQhbnd[{{idxLQhbnd(5,y,x,"n+"~nVar)}}] += lPi[{{idxLPi(z,n,y,x)}}] * FRCoeff[z];
+          lQhbnd_SP[{{idxLQhbnd(5,y,x,"n+"~nVar)}}] += lPi[{{idxLPi(z,n,y,x)}}] * FRCoeff_SP[z];
         }
 {% endif %}
       }
@@ -501,14 +513,14 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% if usePointSources %}
   // Integrate PSi over time on itself
   { // t=0
-    const double coeff = weights1[0] / {{nDim}};
+    const float coeff = weights1_SP[0] / {{nDim}};
     #pragma omp simd aligned(PSi:ALIGNMENT)
     for (int it = 0; it < {{nDof3D*nVar*nDof2Pad}}; it++) {
       PSi[it] *= coeff;
     }
   }
   for (int t = 1; t < {{nDof}}; t++) {
-    const double coeff = weights1[t] / {{nDim}};
+    const float coeff = weights1_SP[t] / {{nDim}};
     #pragma omp simd aligned(PSi:ALIGNMENT)
     for (int it = 0; it < {{nDof3D*nVar*nDof2Pad}}; it++) {
       PSi[it] += coeff * PSi[{{idxPSi(t,0,0,0,it)}}];
@@ -521,18 +533,18 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% if usePointSources %}
   std::copy_n(PSi, {{nDof3D*nVar*nDof2Pad}}, lFhi); //start with the pointsource values
 {%else%}
-  std::memset(lFhi, 0, {{nDof3D*nVar*nDof2Pad}}*sizeof(double));
+  std::memset(lFhi, 0, {{nDof3D*nVar*nDof2Pad}}*sizeof(float));
 {% endif %}
 {% if useFlux %}
   //call flux in x
   for (int z = 0; z < {{nDof3D}}; z++) {
-    solver.{{solverName}}::flux_x_vect(lQhi+{{idx(z,0,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,0,0,0)}}{% else %}nullptr{%endif%}, lQi_next); //lQi_next[N][Y][X]
+    solver.{{solverName}}::flux_x_vect_SP(lQhi+{{idx(z,0,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,0,0,0)}}{% else %}nullptr{%endif%}, lQi_next); //lQi_next[N][Y][X]
 {% if useMaterialParam %}
     // store M*rhs in gradQ[0][n][y][x]
     for (int n = 0; n < {{nVar}}; n++) {
       {{ m.matmul('flux_x_sck_aosoa2', 'dudx_by_dx', 'lQi_next', 'gradQ', '0', idx(0,n,0,0), idx(0,n,0,0)) | indent(6) }}{##}
     }
-    solver.{{solverName}}::multiplyMaterialParameterMatrix_vect(lPi+{{idxLPi(z,0,0,0)}}, gradQ);
+    solver.{{solverName}}::multiplyMaterialParameterMatrix_vect_SP(lPi+{{idxLPi(z,0,0,0)}}, gradQ);
     #pragma omp simd aligned(lFhi,gradQ:ALIGNMENT)
     for (int nyx = 0; nyx < {{nVar*nDof2Pad}} ; nyx++){
       lFhi[{{idx(z,0,0,nyx)}}] += gradQ[{{idx(0,0,0,nyx)}}];
@@ -553,17 +565,17 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   
   //call ncp in x
   for (int z = 0; z < {{nDof3D}}; z++) {
-    solver.{{solverName}}::nonConservativeProduct_x_vect(lQi+{{idx(z,0,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,0,0,0)}}{% else %}nullptr{%endif%}, gradQ+{{idx(z,0,0,0)}}, lQi_next);
+    solver.{{solverName}}::nonConservativeProduct_x_vect_SP(lQi+{{idx(z,0,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,0,0,0)}}{% else %}nullptr{%endif%}, gradQ+{{idx(z,0,0,0)}}, lQi_next);
     #pragma omp simd aligned(lFhi,lQi_next:ALIGNMENT)
     for (int nyx = 0; nyx < {{nVar*nDof2Pad}}; nyx++) {
       lFhi[{{idx(z,0,0,nyx)}}] += lQi_next[nyx];
     }
   }
   
-  std::memset(lduh, 0, {{(nDof**nDim)*nVarPad}}*sizeof(double)); // reset lduh
+  std::memset(lduh_SP, 0, {{(nDof**nDim)*nVarPad}}*sizeof(float)); // reset lduh
   
   // x boundary and volume
-  std::memset(lFhbnd, 0, {{2*nDof*nDof3D*nVarPad}}*sizeof(double));
+  std::memset(lFhbnd_SP, 0, {{2*nDof*nDof3D*nVarPad}}*sizeof(float));
   /*
   // default
   for (int z = 0; z < {{nDof3D}}; z++) {
@@ -585,23 +597,23 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   for (int z = 0; z < {{nDof3D}}; z++) {
     for (int y = 0; y < {{nDof}}; y++) {
       for (int n = 0; n < {{nVar}}; n++) {
-        double tmpL = 0.;
-        double tmpR = 0.;
+        float tmpL = 0.;
+        float tmpR = 0.;
         #pragma omp simd aligned(lFhi,FLCoeff,FRCoeff:ALIGNMENT) reduction(+:tmpL,tmpR)
         for (int x = 0; x < {{nDof}}; x++) {
           // left
-          tmpL += lFhi[{{idx(z,n,y,x)}}] * FLCoeff[x];
+          tmpL += lFhi[{{idx(z,n,y,x)}}] * FLCoeff_SP[x];
           // right
-          tmpR += lFhi[{{idx(z,n,y,x)}}] * FRCoeff[x];
+          tmpR += lFhi[{{idx(z,n,y,x)}}] * FRCoeff_SP[x];
         }
-        lFhbnd[{{idxLFhbnd(0,z,y,n)}}] = tmpL;
-        lFhbnd[{{idxLFhbnd(1,z,y,n)}}] = tmpR;
+        lFhbnd_SP[{{idxLFhbnd(0,z,y,n)}}] = tmpL;
+        lFhbnd_SP[{{idxLFhbnd(1,z,y,n)}}] = tmpR;
       }
       for (int x = 0; x < {{nDof}}; x++) {
-        #pragma omp simd aligned(lFhi,lduh,weights3:ALIGNMENT)
+        #pragma omp simd aligned(lFhi,lduh_SP:ALIGNMENT)
         for (int n = 0; n < {{nVar}}; n++) {
           // volume
-          lduh[{{idxLduh(z,y,x,n)}}] -= lFhi[{{idx(z,n,y,x)}}] * weights3[{{idxW3(z,y,x)}}];
+          lduh_SP[{{idxLduh(z,y,x,n)}}] -= lFhi[{{idx(z,n,y,x)}}] * weights3_SP[{{idxW3(z,y,x)}}];
         }
       }
     }
@@ -612,18 +624,18 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% if usePointSources %}
   std::copy_n(PSi, {{nDof3D*nVar*nDof2Pad}}, lFhi); //start with the pointsource values
 {%else%}
-  std::memset(lFhi, 0, {{nDof3D*nVar*nDof2Pad}}*sizeof(double));
+  std::memset(lFhi, 0, {{nDof3D*nVar*nDof2Pad}}*sizeof(float));
 {% endif %}
 {% if useFlux %}
   //call flux in y
   for (int z = 0; z < {{nDof3D}}; z++) {
-    solver.{{solverName}}::flux_y_vect(lQhi+{{idx(z,0,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,0,0,0)}}{% else %}nullptr{%endif%}, lQi_next); //lQi_next[N][Y][X]
+    solver.{{solverName}}::flux_y_vect_SP(lQhi+{{idx(z,0,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,0,0,0)}}{% else %}nullptr{%endif%}, lQi_next); //lQi_next[N][Y][X]
 {% if useMaterialParam %}
     // store M*rhs in gradQ[0][y][n][x]
     for (int n = 0; n < {{nVar}}; n++) {
       {{ m.matmul('flux_y_sck_aosoa2', 'lQi_next', 'dudxT_by_dx', 'gradQ', idx(0,n,0,0), '0', idx(0,n,0,0)) | indent(6) }}{##}
     }
-    solver.{{solverName}}::multiplyMaterialParameterMatrix_vect(lPi+{{idxLPi(z,0,0,0)}}, gradQ);
+    solver.{{solverName}}::multiplyMaterialParameterMatrix_vect_SP(lPi+{{idxLPi(z,0,0,0)}}, gradQ);
     #pragma omp simd aligned(lFhi,gradQ:ALIGNMENT)
     for (int nyx = 0; nyx < {{nVar*nDof2Pad}} ; nyx++){
       lFhi[{{idx(z,0,0,nyx)}}] += gradQ[{{idx(0,0,0,nyx)}}];
@@ -644,7 +656,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   
   //call ncp in y
   for (int z = 0; z < {{nDof3D}}; z++) {
-    solver.{{solverName}}::nonConservativeProduct_y_vect(lQhi+{{idx(z,0,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,0,0,0)}}{% else %}nullptr{%endif%}, gradQ+{{idx(z,0,0,0)}}, lQi_next);
+    solver.{{solverName}}::nonConservativeProduct_y_vect_SP(lQhi+{{idx(z,0,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,0,0,0)}}{% else %}nullptr{%endif%}, gradQ+{{idx(z,0,0,0)}}, lQi_next);
     #pragma omp simd aligned(lFhi,lQi_next:ALIGNMENT)
     for (int nyx = 0; nyx < {{nVar*nDof2Pad}}; nyx++) {
       lFhi[{{idx(z,0,0,nyx)}}] += lQi_next[nyx]; 
@@ -652,18 +664,18 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   }
   
   // y boundary and volume
-  std::memset(lFhbnd+{{2*nDof*nDof3D*nVarPad }}, 0, {{2*nDof*nDof3D*nVarPad}}*sizeof(double));
+  std::memset(lFhbnd_SP+{{2*nDof*nDof3D*nVarPad }}, 0, {{2*nDof*nDof3D*nVarPad}}*sizeof(float));
   for (int z = 0; z < {{nDof3D}}; z++) {
     for (int y = 0; y < {{nDof}}; y++) {
       for (int x = 0; x < {{nDof}}; x++) {
         #pragma omp simd aligned(lFhbnd,lFhi,lduh:ALIGNMENT)
         for (int n = 0; n < {{nVar}}; n++) {
           // left
-          lFhbnd[{{idxLFhbnd(2,z,x,n)}}] += lFhi[{{idx(z,n,y,x)}}] * FLCoeff[y];
+          lFhbnd_SP[{{idxLFhbnd(2,z,x,n)}}] += lFhi[{{idx(z,n,y,x)}}] * FLCoeff_SP[y];
           // right
-          lFhbnd[{{idxLFhbnd(3,z,x,n)}}] += lFhi[{{idx(z,n,y,x)}}] * FRCoeff[y];
+          lFhbnd_SP[{{idxLFhbnd(3,z,x,n)}}] += lFhi[{{idx(z,n,y,x)}}] * FRCoeff_SP[y];
           // volume
-          lduh[{{idxLduh(z,y,x,n)}}] -= lFhi[{{idx(z,n,y,x)}}] * weights3[{{idxW3(z,y,x)}}];
+          lduh_SP[{{idxLduh(z,y,x,n)}}] -= lFhi[{{idx(z,n,y,x)}}] * weights3_SP[{{idxW3(z,y,x)}}];
         }
       }
     }
@@ -674,18 +686,18 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% if usePointSources %}
   std::copy_n(PSi, {{nDof3D*nVar*nDof2Pad}}, lFhi); //start with the pointsource values
 {%else%}
-  std::memset(lFhi, 0, {{nDof3D*nVar*nDof2Pad}}*sizeof(double));
+  std::memset(lFhi, 0, {{nDof3D*nVar*nDof2Pad}}*sizeof(float));
 {% endif %}
 {% if useFlux %}
   //call flux in z
   for (int z = 0; z < {{nDof}}; z++) {
-    solver.{{solverName}}::flux_z_vect(lQhi+{{idx(z,0,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,0,0,0)}}{% else %}nullptr{%endif%}, lQi_next+{{idx(z,0,0,0)}}); //lQi_next[Z][N][Y][X]
+    solver.{{solverName}}::flux_z_vect_SP(lQhi+{{idx(z,0,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,0,0,0)}}{% else %}nullptr{%endif%}, lQi_next+{{idx(z,0,0,0)}}); //lQi_next[Z][N][Y][X]
   }
 {% if useMaterialParam %}
   // store M*rhs in gradQ[z][n][y][x], fuse n, y and x
   {{ m.matmul('flux_z_sck_aosoa2', 'lQi_next', 'dudxT_by_dx', 'gradQ', '0', '0', '0') | indent(2) }}{##}
   for (int z = 0; z < {{nDof}} ; z++){
-    solver.{{solverName}}::multiplyMaterialParameterMatrix_vect(lPi+{{idxLPi(z,0,0,0)}}, gradQ+{{idx(z,0,0,0)}});
+    solver.{{solverName}}::multiplyMaterialParameterMatrix_vect_SP(lPi+{{idxLPi(z,0,0,0)}}, gradQ+{{idx(z,0,0,0)}});
     #pragma omp simd aligned(lFhi,gradQ:ALIGNMENT)
     for (int nyx = 0; nyx < {{nVar*nDof2Pad}} ; nyx++){
       lFhi[{{idx(z,0,0,nyx)}}] += gradQ[{{idx(z,0,0,nyx)}}];
@@ -704,7 +716,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   
   //call ncp in z
   for (int z = 0; z < {{nDof3D}}; z++) {
-    solver.{{solverName}}::nonConservativeProduct_z_vect(lQhi+{{idx(z,0,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,0,0,0)}}{% else %}nullptr{%endif%}, gradQ+{{idx(z,0,0,0)}}, lQi_next);
+    solver.{{solverName}}::nonConservativeProduct_z_vect_SP(lQhi+{{idx(z,0,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,0,0,0)}}{% else %}nullptr{%endif%}, gradQ+{{idx(z,0,0,0)}}, lQi_next);
     #pragma omp simd aligned(lFhi,lQi_next:ALIGNMENT)
     for (int nyx = 0; nyx < {{nVar*nDof2Pad}}; nyx++) {
       lFhi[{{idx(z,0,0,nyx)}}] += lQi_next[nyx]; 
@@ -712,18 +724,18 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   }
 
   // z boundary and volume
-  std::memset(lFhbnd+{{4*nDof*nDof3D*nVarPad }}, 0, {{2*nDof*nDof3D*nVarPad}}*sizeof(double));
+  std::memset(lFhbnd_SP+{{4*nDof*nDof3D*nVarPad }}, 0, {{2*nDof*nDof3D*nVarPad}}*sizeof(float));
   for (int z = 0; z < {{nDof}}; z++) {
     for (int y = 0; y < {{nDof}}; y++) {
       for (int x = 0; x < {{nDof}}; x++) {
         #pragma omp simd aligned(lFhbnd,lFhi,lduh:ALIGNMENT)
         for (int n = 0; n < {{nVar}}; n++) {
           // left
-          lFhbnd[{{idxLFhbnd(4,y,x,n)}}] += lFhi[{{idx(z,n,y,x)}}] * FLCoeff[z];
+          lFhbnd_SP[{{idxLFhbnd(4,y,x,n)}}] += lFhi[{{idx(z,n,y,x)}}] * FLCoeff_SP[z];
           // right
-          lFhbnd[{{idxLFhbnd(5,y,x,n)}}] += lFhi[{{idx(z,n,y,x)}}] * FRCoeff[z];
+          lFhbnd_SP[{{idxLFhbnd(5,y,x,n)}}] += lFhi[{{idx(z,n,y,x)}}] * FRCoeff_SP[z];
           // volume
-          lduh[{{idxLduh(z,y,x,n)}}] -= lFhi[{{idx(z,n,y,x)}}] * weights3[{{idxW3(z,y,x)}}];
+          lduh_SP[{{idxLduh(z,y,x,n)}}] -= lFhi[{{idx(z,n,y,x)}}] * weights3_SP[{{idxW3(z,y,x)}}];
         }
       }
     }
@@ -733,15 +745,29 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% if useSource %}
     //call source
     for (int z = 0; z < {{nDof3D}}; z++) {
-      solver.{{solverName}}::algebraicSource_vect(lQhi+{{idx(z,0,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,0,0,0)}}{% else %}nullptr{%endif%}, lQi_next, center, tStep);
+      solver.{{solverName}}::algebraicSource_vect_SP(lQhi+{{idx(z,0,0,0)}}, {% if nPar != 0 %}lPi+{{idxLPi(z,0,0,0)}}{% else %}nullptr{%endif%}, lQi_next, center, tStep);
       for (int yx = 0; yx < {{nDof*nDof}}; yx++) {
         #pragma omp simd aligned(lduh,lQi_next:ALIGNMENT)
         for (int n = 0; n < {{nVar}}; n++) {
-          lduh[{{idxLduh(z,0,yx,n)}}] -= lQi_next[{{idx(0,n,0,yx)}}] * weights3[{{idxW3(z,0,yx)}}];
+          lduh_SP[{{idxLduh(z,0,yx,n)}}] -= lQi_next[{{idx(0,n,0,yx)}}] * weights3_SP[{{idxW3(z,0,yx)}}];
         }
       }
     }
 {% endif %}
+
+  // convert output back from tmp buffers using SIMD conversion (see Conversion Intrinsics)
+  #pragma omp simd aligned(lduh,lduh_SP:ALIGNMENT)
+  for(int it = 0; it<{{(nDof**nDim)*nVarPad}}; it++) {
+    lduh[it] = (double)lduh_SP[it];
+  }
+  #pragma omp simd aligned(lFhbnd,lFhbnd_SP:ALIGNMENT)
+  for(int it = 0; it<{{2*nDim*nDof*nDof3D*nVarPad}}; it++) {
+    lFhbnd[it] = (double)lFhbnd_SP[it];
+  }
+  #pragma omp simd aligned(lQhbnd,lQhbnd_SP:ALIGNMENT)
+  for(int it = 0; it<{{2*nDim*nDof*nDof3D*nDataPad}}; it++) {
+    lQhbnd[it] = (double)lQhbnd_SP[it];
+  }
 
   return -1; //no picard iteration in linear case
 
