@@ -114,8 +114,10 @@ exahype::reactive::OffloadingContext::OffloadingContext(int threadId) :
   _localBlacklist = new double[nnodes];
   std::fill(&_localBlacklist[0], &_localBlacklist[nnodes], 0);
 
+  int *tag_ptr;
   int flag = 0;
-  MPI_CHECK("OffloadingManager()" , MPI_Comm_get_attr(MPI_COMM_WORLD, MPI_TAG_UB, &_maxTag, &flag));
+  MPI_CHECK("OffloadingManager()" , MPI_Comm_get_attr(MPI_COMM_WORLD, MPI_TAG_UB, &tag_ptr, &flag));
+  _maxTag = *tag_ptr;
   assertion(ierr==MPI_SUCCESS);
 
   if(!flag) {
@@ -301,11 +303,20 @@ exahype::reactive::OffloadingContext& exahype::reactive::OffloadingContext::getI
 
 
 int exahype::reactive::OffloadingContext::getOffloadingTag() {
-  static std::atomic<int> counter(1); //0 is reserved for status
-  int val =  counter.fetch_add(1);
-  if(val==_maxTag-1) {
-    counter = 1;
+  static std::atomic<int> next_tag(1); //0 is reserved for status
+retry:
+  int val =  next_tag.load();
+  int val_o = next_tag.load();
+
+  if(val>_maxTag-1) {
+    logWarning("getOffloadingTag","MPI tag rollover for reactive communication!");
     val = 1;
+  }
+
+  int update = val + 1;
+
+  if(!std::atomic_compare_exchange_strong(&next_tag, &val_o, update)) {
+    goto retry;
   }
   return val;
 }

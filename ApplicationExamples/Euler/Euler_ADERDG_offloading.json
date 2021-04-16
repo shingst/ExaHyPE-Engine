@@ -47,9 +47,6 @@
     "generate_soft_errors" : "no",
     "trigger_mechanism" : "none"
   },
-  "stp_stats_tracing" : {
-    "stp_tracing_output_dir" : "./test"
-  },
   "optimisation": {
     "fuse_algorithmic_steps": "all",
     "fuse_algorithmic_steps_rerun_factor": 0.99,
@@ -98,17 +95,14 @@
       "parameters": {
         "reference": "entropywave"
       },
-      "_plotters": [
+      "plotters": [
         {
-          "type": "vtk::Cartesian::vertices::ascii",
-          "name": "ErrorPlotter",
+          "type": "user::defined",
+          "name": "ErrorWriter",
           "time": 0.0,
-          "repeat": 0.01,
-          "output": "./errors",
-          "variables": 15,
-          "parameters": {
-            "resolution": 1
-          }
+          "repeat": 0.001,
+          "output": "not-available",
+          "variables": 5
         }
       ]
     }
