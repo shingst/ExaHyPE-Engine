@@ -705,6 +705,12 @@
                     "available-for" : ["optimised"],
                     "title" : "WiP: use AoSoA[2] data layout, requires vectorise_terms true",
                     "default" : false
+                  },
+                  "SinglePrecision_STP" : {
+                    "type" : "boolean",
+                    "available-for" : ["optimised"],
+                    "title" : "WiP: compute STP with single precision only, requires linear and AoSoA2_layout",
+                    "default" : false
                   }
                 }
               },

@@ -105,7 +105,8 @@ class Controller:
                 "advancedStopCriterion" : False, #TODO JMG put as proper toolkit arg
                 #"initialGuess"          : "mixedPicard", #TODO JMG put as proper toolkit arg
                 "initialGuess"          : "default", #TODO JMG put as proper toolkit arg
-                "useSinglePrecision"    : False # TODO JMG test, only supported by linear splitCK aosoa2
+                "singlePrecisionSTP"    : args["singlePrecisionSTP"], # experiment, not supported by every kernel
+                "useSinglePrecision"    : args["singlePrecisionSTP"] # should be enabled if single precision coeff matrices are required
             })
             self.config["useSourceOrNCP"] = self.config["useSource"] or self.config["useNCP"]
         elif self.config["kernelType"] == "limiter":
@@ -145,6 +146,10 @@ class Controller:
         self.validateConfig(Configuration.simdWidth.keys())
         self.config["vectSize"] = Configuration.simdWidth[self.config["architecture"]] #only initialize once architecture has been validated
         self.config["cachelineSize"] = Configuration.cachelineSize[self.config["architecture"]] #only initialize once architecture has been validated
+        # if single precision is used, multiply SIMD and cache values by 2 (TODO JMG: WiP, this affects all the code instead of only the single precision kernels)
+        if self.config["useSinglePrecision"]:
+            self.config["vectSize"] *= 2
+            self.config["cachelineSize"] *= 2
         self.baseContext = self.generateBaseContext() # default context build from config
         self.matmulList = [] #list to store the tupple (fileName, matmulConfig) of all requested Matmul (used for gemmsGeneratorModel)
         self.gemmList = [] #list to store the name of all generated gemms (used for gemmsCPPModel)

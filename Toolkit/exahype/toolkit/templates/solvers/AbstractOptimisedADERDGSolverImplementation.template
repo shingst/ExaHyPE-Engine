@@ -160,7 +160,7 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
 
   constexpr int totalSize = {{optNamespace}}::getFusedSTPVISize();
   {% if tempVarsOnStack %}
-  double memory[totalSize] __attribute__((aligned(ALIGNMENT)));
+  {{STP_Precision}} memory[totalSize] __attribute__((aligned(ALIGNMENT)));
   {% else %}
   //const int index = exahype::DataHeap::getInstance().createData(totalSize,totalSize,exahype::DataHeap::Allocation::UseRecycledEntriesIfPossibleCreateNewEntriesIfRequired);
   //double* memory = exahype::DataHeap::getInstance().getData(index).data();
@@ -170,37 +170,37 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   {% if isLinear %}
   {% if useSplitCK %}
   {% set SPTbufferSignature="lQi, lQi_next, lPi, lQhi, lFhi, gradQ, PSi" %}
-  double* lQi     = memory + {{optNamespace}}::getlQiShift();
-  double* lQi_next= memory + {{optNamespace}}::getlQiNextShift();
-  double* lPi     = memory + {{optNamespace}}::getlPiShift();
-  double* lQhi    = memory + {{optNamespace}}::getlQhiShift();
-  double* lFhi    = memory + {{optNamespace}}::getlFhiShift();
-  double* gradQ   = memory + {{optNamespace}}::getgradQShift();
-  double* PSi     = memory + {{optNamespace}}::getPSiShift();
+  {{STP_Precision}}* lQi     = memory + {{optNamespace}}::getlQiShift();
+  {{STP_Precision}}* lQi_next= memory + {{optNamespace}}::getlQiNextShift();
+  {{STP_Precision}}* lPi     = memory + {{optNamespace}}::getlPiShift();
+  {{STP_Precision}}* lQhi    = memory + {{optNamespace}}::getlQhiShift();
+  {{STP_Precision}}* lFhi    = memory + {{optNamespace}}::getlFhiShift();
+  {{STP_Precision}}* gradQ   = memory + {{optNamespace}}::getgradQShift();
+  {{STP_Precision}}* PSi     = memory + {{optNamespace}}::getPSiShift();
   {% else %}
   {% set SPTbufferSignature="lQi, lFi, lSi, lQhi, lFhi, lShi, gradQ, PSi, PSderivatives" %}
-  double* lQi = memory + {{optNamespace}}::getlQiShift();
-  double* lQhi = memory + {{optNamespace}}::getlQhiShift();
-  double* lFi = memory + {{optNamespace}}::getlFiShift();
-  double* lFhi = memory + {{optNamespace}}::getlFhiShift();
+  {{STP_Precision}}* lQi = memory + {{optNamespace}}::getlQiShift();
+  {{STP_Precision}}* lQhi = memory + {{optNamespace}}::getlQhiShift();
+  {{STP_Precision}}* lFi = memory + {{optNamespace}}::getlFiShift();
+  {{STP_Precision}}* lFhi = memory + {{optNamespace}}::getlFhiShift();
   {% if useSource %}
-  double* lSi = memory + {{optNamespace}}::getlSiShift();
-  double* lShi = memory + {{optNamespace}}::getlShiShift();
+  {{STP_Precision}}* lSi = memory + {{optNamespace}}::getlSiShift();
+  {{STP_Precision}}* lShi = memory + {{optNamespace}}::getlShiShift();
   {% else %}
-  constexpr double* lSi = nullptr;
-  constexpr double* lShi = nullptr;
+  constexpr {{STP_Precision}}* lSi = nullptr;
+  constexpr {{STP_Precision}}* lShi = nullptr;
   {% endif %}
   {% if useNCP %}
-  double* gradQ = memory + {{optNamespace}}::getgradQShift();
+  {{STP_Precision}}* gradQ = memory + {{optNamespace}}::getgradQShift();
   {% else %}
-  constexpr double* gradQ = nullptr;
+  constexpr {{STP_Precision}}* gradQ = nullptr;
   {% endif %}
   {% if usePointSources %} 
-  double* PSi = memory + {{optNamespace}}::getPSiShift();
-  double* PSderivatives = memory + {{optNamespace}}::getPSderivativesShift();
+  {{STP_Precision}}* PSi = memory + {{optNamespace}}::getPSiShift();
+  {{STP_Precision}}* PSderivatives = memory + {{optNamespace}}::getPSderivativesShift();
   {% else %}
-  constexpr double* PSi = nullptr;
-  constexpr double* PSderivatives = nullptr;
+  constexpr {{STP_Precision}}* PSi = nullptr;
+  constexpr {{STP_Precision}}* PSderivatives = nullptr;
   {% endif %}
   {% endif %}{# useSplitCK #}
   {% else %}{#
@@ -208,43 +208,43 @@ int {{project}}::{{abstractSolver}}::fusedSpaceTimePredictorVolumeIntegral(doubl
   nonlinear case 
 
 #}
-  double* lQi = memory + {{optNamespace}}::getlQiShift();
-  double* lQhi = memory + {{optNamespace}}::getlQhiShift();
+  {{STP_Precision}}* lQi = memory + {{optNamespace}}::getlQiShift();
+  {{STP_Precision}}* lQhi = memory + {{optNamespace}}::getlQhiShift();
   {% if predictorRecompute %}
   {% if numberOfMaterialParameters > 0 %}
-  double* lPi  = memory + {{optNamespace}}::getlPiShift();
+  {{STP_Precision}}* lPi  = memory + {{optNamespace}}::getlPiShift();
   {% else %}
-  constexpr double* lPi = nullptr;
+  constexpr {{STP_Precision}}* lPi = nullptr;
   {% endif %}
   {% endif %}
-  double* rhs = memory + {{optNamespace}}::getrhsShift(); //same size as lQi
+  {{STP_Precision}}* rhs = memory + {{optNamespace}}::getrhsShift(); //same size as lQi
   {% if useFlux %}
   {% if not predictorRecompute %}
-  double* lFi = memory + {{optNamespace}}::getlFiShift();
+  {{STP_Precision}}* lFi = memory + {{optNamespace}}::getlFiShift();
   {% endif %}
-  double* lFhi = memory + {{optNamespace}}::getlFhiShift();
+  {{STP_Precision}}* lFhi = memory + {{optNamespace}}::getlFhiShift();
   {% else %}
-  constexpr double* lFi = nullptr;
-  constexpr double* lFhi = nullptr;
+  constexpr {{STP_Precision}}* lFi = nullptr;
+  constexpr {{STP_Precision}}* lFhi = nullptr;
   {% endif %}
   {% if useNCP or useSource %}
   {% if not predictorRecompute %}
-  double* lSi = memory + {{optNamespace}}::getlSiShift();
+  {{STP_Precision}}* lSi = memory + {{optNamespace}}::getlSiShift();
   {% endif %}
-  double* lShi = memory + {{optNamespace}}::getlShiShift();
+  {{STP_Precision}}* lShi = memory + {{optNamespace}}::getlShiShift();
   {% else %}
-  constexpr double* lSi = nullptr;
-  constexpr double* lShi = nullptr;
+  constexpr {{STP_Precision}}* lSi = nullptr;
+  constexpr {{STP_Precision}}* lShi = nullptr;
   {% endif %}
   {% if useNCP or useViscousFlux %}
-  double* gradQ = memory + {{optNamespace}}::getgradQShift();
+  {{STP_Precision}}* gradQ = memory + {{optNamespace}}::getgradQShift();
   {% else %}
-  constexpr double* gradQ = nullptr;
+  constexpr {{STP_Precision}}* gradQ = nullptr;
   {% endif %}
     {% if useViscousFlux and not predictorRecompute %}
-  double* gradQAvg = memory + {{optNamespace}}::getgradQAvgShift();
+  {{STP_Precision}}* gradQAvg = memory + {{optNamespace}}::getgradQAvgShift();
     {% else %}
-  constexpr double* gradQAvg = nullptr;
+  constexpr {{STP_Precision}}* gradQAvg = nullptr;
     {% endif %}
   {% endif %}{# if case useNCP or useViscousFlux #}
 

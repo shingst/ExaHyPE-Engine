@@ -41,7 +41,7 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
             if self.context["useSplitCK"]:
                 if self.context["useVectPDE"]:
                     if self.context["useAoSoA2"]:
-                        if self.context["useSinglePrecision"]:
+                        if self.context["singlePrecisionSTP"]:
                             template = "SP_fusedSPTVI_linear_split_ck_aosoa2_cpp.template"
                         else:
                             template = "fusedSPTVI_linear_split_ck_aosoa2_cpp.template"
