@@ -139,16 +139,16 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
                         if self.context["useFlux"]:
                             if self.context["useMaterialParam"]:
                                 self.context["matmulConfigs"]["flux_x_sck_vect"] =       MatmulConfig(nDofPad, nVar, nDof, nDofPad , nDofPad, nDofPad      , 1, 0, 1, 1, 1, "flux_x_sck_vect") # beta, 0 => overwrite C
-                                self.context["matmulConfigs"]["flux_y_or_z_sck_vect"] =       MatmulConfig(nDofPad*nVar, nVar, nDof, nDofPad*nVar , nDofPad, nDofPad*nVar      , 1, 0, 1, 1, 1, "flux_y_or_z_sck_vect") # beta, 0 => overwrite C
+                                self.context["matmulConfigs"]["flux_y_or_z_sck_vect"] =       MatmulConfig(nDofPad*nVar, nVar, nDof, nDofPad*nVar , nDofPad, nDofPad*nVar      , 1, 0, 1, 1, 1, "flux_y_or_z_sck_vect") # no moving slices, beta, 0 => overwrite C
                             else:
-                                self.context["matmulConfigs"]["flux_x_sck_vect"] =  MatmulConfig(nDofPad, nVar, nDof, nDofPad      , nDofPad, nDofPad      , 1, 1, 1, 1, 1, "flux_x_sck_vect")
-                                self.context["matmulConfigs"]["flux_y_sck_vect"] =       MatmulConfig(nDofPad*nVar, nDof, nDof, nDofPad*nVar , nDofPad, nDofPad*nVar , 1, 1, 1, 1, 1, "flux_y_sck_vect")
+                                self.context["matmulConfigs"]["flux_x_sck_vect"] =  MatmulConfig(nDofPad, nVar, nDof, nDofPad      , nDofPad, nDofPad      , 1, 1, 1, 1, 1, "flux_x_sck_vect", prefetchOutput="C")
+                                self.context["matmulConfigs"]["flux_y_sck_vect"] =       MatmulConfig(nDofPad*nVar, nDof, nDof, nDofPad*nVar , nDofPad, nDofPad*nVar , 1, 1, 1, 1, 1, "flux_y_sck_vect", prefetchOutput="C")
                                 if self.context["nDim"]>=3:
-                                    self.context["matmulConfigs"]["flux_z_sck_vect"] =   MatmulConfig(nDofPad*nVar, nDof, nDof, nDofPad*nVar , nDofPad, nDofPad*nVar*nDof, 1, 1, 1, 1, 1, "flux_z_sck_vect")
-                        self.context["matmulConfigs"]["gradQ_x_sck_vect"] =     MatmulConfig(nDofPad, nVar*nDof*nDof3D, nDof, nDofPad , nDofPad, nDofPad    , 1, 0, 1, 1, 1, "gradQ_x_sck_vect") # beta, 0 => overwrite C
-                        self.context["matmulConfigs"]["gradQ_y_sck_vect"] =     MatmulConfig(nDofPad*nVar, nDof, nDof, nDofPad*nVar , nDofPad, nDofPad*nVar , 1, 0, 1, 1, 1, "gradQ_y_sck_vect") # beta, 0 => overwrite C
+                                    self.context["matmulConfigs"]["flux_z_sck_vect"] =   MatmulConfig(nDofPad*nVar, nDof, nDof, nDofPad*nVar , nDofPad, nDofPad*nVar*nDof, 1, 1, 1, 1, 1, "flux_z_sck_vect", prefetchOutput="C")
+                        self.context["matmulConfigs"]["gradQ_x_sck_vect"] =     MatmulConfig(nDofPad, nVar*nDof*nDof3D, nDof, nDofPad , nDofPad, nDofPad    , 1, 0, 1, 1, 1, "gradQ_x_sck_vect") # no moving slices, beta, 0 => overwrite C
+                        self.context["matmulConfigs"]["gradQ_y_sck_vect"] =     MatmulConfig(nDofPad*nVar, nDof, nDof, nDofPad*nVar , nDofPad, nDofPad*nVar , 1, 0, 1, 1, 1, "gradQ_y_sck_vect", prefetchInput="A", prefetchOutput="C") # beta, 0 => overwrite C
                         if self.context["nDim"]>=3:
-                            self.context["matmulConfigs"]["gradQ_z_sck_vect"] = MatmulConfig(nDofPad*nVar*nDof, nDof, nDof, nDofPad*nVar*nDof, nDofPad, nDofPad*nVar*nDof, 1, 0, 1, 1, 1, "gradQ_z_sck_vect") # beta, 0 => overwrite C
+                            self.context["matmulConfigs"]["gradQ_z_sck_vect"] = MatmulConfig(nDofPad*nVar*nDof, nDof, nDof, nDofPad*nVar*nDof, nDofPad, nDofPad*nVar*nDof, 1, 0, 1, 1, 1, "gradQ_z_sck_vect") # no moving slices, beta, 0 => overwrite C
                             
         # Linear SplitCK scalar
                             
@@ -187,12 +187,12 @@ class FusedSpaceTimePredictorVolumeIntegralModel(AbstractModelBaseClass):
         # Nonlinear PredictorRecompute AoSoA2
         
                         if self.context["useFlux"]:
-                            self.context["matmulConfigs"]["rhs_x"] =     MatmulConfig(nDof, nDof, nDof, nDofPad, nDof, nDof, 1, 1, 1, 1, 1, "rhs_x", prefetchInput="B", prefetchOutput="C")
-                            self.context["matmulConfigs"]["rhs_y"] =     MatmulConfig(nDof, nDof, nDof, nDof, nDofPad, nDof, 1, 1, 1, 1, 1, "rhs_y", prefetchInput="A", prefetchOutput="C")
+                            self.context["matmulConfigs"]["rhs_x"] =     MatmulConfig(nDof, nDof, nDof, nDofPad, nDof, nDof, 1, 1, 1, 1, 1, "rhs_x") #, prefetchInput="B", prefetchOutput="C")
+                            self.context["matmulConfigs"]["rhs_y"] =     MatmulConfig(nDof, nDof, nDof, nDof, nDofPad, nDof, 1, 1, 1, 1, 1, "rhs_y") #, prefetchInput="A", prefetchOutput="C")
                             if self.context["nDim"]>=3:
                                 self.context["matmulConfigs"]["rhs_z"] = MatmulConfig(nDof2Pad*nVar, nDof, nDof, nDof2Pad*nVar, nDofPad, nDof2Pad*nVar, 1, 1, 1, 1, 1, "rhs_z")
-                            self.context["matmulConfigs"]["lduh_x"] =     MatmulConfig(nDof, nDof, nDof, nDofPad, nDof, nDof, 1, 1, 1, 1, 1, "lduh_x", prefetchInput="B", prefetchOutput="C")
-                            self.context["matmulConfigs"]["lduh_y"] =     MatmulConfig(nDof, nDof, nDof, nDof, nDofPad, nDof, 1, 1, 1, 1, 1, "lduh_y", prefetchInput="A", prefetchOutput="C")
+                            self.context["matmulConfigs"]["lduh_x"] =     MatmulConfig(nDof, nDof, nDof, nDofPad, nDof, nDof, 1, 1, 1, 1, 1, "lduh_x") #, prefetchInput="B", prefetchOutput="C")
+                            self.context["matmulConfigs"]["lduh_y"] =     MatmulConfig(nDof, nDof, nDof, nDof, nDofPad, nDof, 1, 1, 1, 1, 1, "lduh_y") #, prefetchInput="A", prefetchOutput="C")
                             if self.context["nDim"]>=3:
                                 self.context["matmulConfigs"]["lduh_z"] = MatmulConfig(nDof2Pad*nVar, nDof, nDof, nDof2Pad*nVar, nDofPad, nDof2Pad*nVar, 1, 1, 1, 1, 1, "lduh_z")
                         if self.context["useNCP"] or self.context['useViscousFlux']:

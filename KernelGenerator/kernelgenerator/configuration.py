@@ -71,10 +71,11 @@ class Configuration:
     
     # prefetching settings
     # Experimental, not supported by all kernel
-    # Will use prefetching to optimize tensor operation (prefetch the next slice of an LoG)
-    prefetching = "None" # "None", "Inputs", "Outputs", "All"
-    prefetchLevel = "_MM_HINT_T0" # intrisic _mm_prefetch locality hint (_MM_HINT_T0 = all level of cache), see compiler header xmmintrin.h
-    cachelineSize = {
+    # Will use prefetching to optimize tensor operations (prefetch the next slices of an LoG)
+    prefetchingLoG = "None" # "None" (disable the feature), "Inputs" (prefetch only the moving input slices of next LoG), "Outputs" (idem for outputs), "All" (Inputs and outputs)
+    prefetchingPDE = "None" # "None" (disable the feature), "Inputs" (prefetch only the next PDE input chunks), "Outputs" (idem for outputs), "All" (Inputs and outputs)
+    prefetchLevel  = "_MM_HINT_T0" # intrisic _mm_prefetch locality hint (_MM_HINT_T0 = all level of cache), see compiler header xmmintrin.h
+    cachelineSize  = {
                   "noarch" : 8,
                   "wsm"    : 8,
                   "snb"    : 8,

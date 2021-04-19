@@ -60,7 +60,7 @@ _mm_free({{name}});
 */
 #}
 {% macro matmulInclude() %}
-{% if prefetchInputs or prefetchOutputs%}
+{% if prefetchLoGInputs or prefetchLoGOutputs or prefetchPDEInputs or prefetchPDEOutputs %}
 // intrisics for prefetching
 #include <xmmintrin.h>
 {% endif %}
@@ -72,6 +72,24 @@ _mm_free({{name}});
 // include libxsmms' gemms for matmul
 #include "{{pathToOptKernel}}/gemmsCPP.h"
 {% endif %}
+{% endmacro %}
+{#
+
+/**
+  Prefetching macros
+*/
+
+#}
+{% macro prefetchArray(array, size, offset) %}
+{% for offsetLine in range(0, size, cachelineSize)%}
+_mm_prefetch({{array}}+({{offset}}){% if offsetLine != 0 %}+{{offsetLine}}{% endif %}, {{prefetchLevel}});
+{% endfor%}
+{% endmacro %}
+{% macro prefetchPDEInput(array, size, offset) %}
+{% if prefetchPDEInputs %}{{prefetchArray(array, size, offset)}}{% endif %}
+{% endmacro %}
+{% macro prefetchPDEOutput(array, size, offset) %}
+{% if prefetchPDEOutputs %}{{prefetchArray(array, size, offset)}}{% endif %}
 {% endmacro %}
 {#
 

@@ -70,8 +70,10 @@ class Controller:
             "useEigen"              : Configuration.matmulLib == "Eigen",
             "pathToLibxsmmGemmGenerator"  : Configuration.pathToLibxsmmGemmGenerator,
             "runtimeDebug"          : Configuration.runtimeDebug, #for debug
-            "prefetchInputs"        : Configuration.prefetching in ["Inputs", "All"],
-            "prefetchOutputs"       : Configuration.prefetching in ["Outputs", "All"],
+            "prefetchLoGInputs"     : Configuration.prefetchingLoG in ["Inputs", "All"],
+            "prefetchLoGOutputs"    : Configuration.prefetchingLoG in ["Outputs", "All"],
+            "prefetchPDEInputs"     : Configuration.prefetchingPDE in ["Inputs", "All"],
+            "prefetchPDEOutputs"    : Configuration.prefetchingPDE in ["Outputs", "All"],
             "prefetchLevel"         : Configuration.prefetchLevel
         }
         
@@ -102,10 +104,10 @@ class Controller:
                 "useVectPDE"            : args["useVectPDE"],
                 "useAoSoA2"             : args["useAoSoA2"],
                 "predictorRecompute"    : args["predictorRecompute"],
-                "advancedStopCriterion" : False, #TODO JMG put as proper toolkit arg
-                #"initialGuess"          : "mixedPicard", #TODO JMG put as proper toolkit arg
-                "initialGuess"          : "default", #TODO JMG put as proper toolkit arg
-                "singlePrecisionSTP"    : args["singlePrecisionSTP"], # experiment, not supported by every kernel
+                "advancedStopCriterion" : False, #TODO Experimental WiP
+                #"initialGuess"          : "mixedPicard", #TODO Experimental WiP
+                "initialGuess"          : "default", #TODO Experimental WiP
+                "singlePrecisionSTP"    : args["singlePrecisionSTP"], # experiment, only supported by linear AoSoA2
                 "useSinglePrecision"    : args["singlePrecisionSTP"] # should be enabled if single precision coeff matrices are required
             })
             self.config["useSourceOrNCP"] = self.config["useSource"] or self.config["useNCP"]
@@ -146,7 +148,7 @@ class Controller:
         self.validateConfig(Configuration.simdWidth.keys())
         self.config["vectSize"] = Configuration.simdWidth[self.config["architecture"]] #only initialize once architecture has been validated
         self.config["cachelineSize"] = Configuration.cachelineSize[self.config["architecture"]] #only initialize once architecture has been validated
-        # if single precision is used, multiply SIMD and cache values by 2 (TODO JMG: WiP, this affects all the code instead of only the single precision kernels)
+        # if single precision is used, multiply SIMD and cache values by 2 (TODO Experimental: WiP, this affects all the code instead of only the single precision kernels)
         if self.config["useSinglePrecision"]:
             self.config["vectSize"] *= 2
             self.config["cachelineSize"] *= 2

@@ -42,9 +42,9 @@
 {% else %}
 {% set fpFormat = "float" %}
 {% endif %}
-{% set prefetchA = (prefetchInputs and (conf.prefetchInput == "A" or conf.prefetchInput == "AB")) %}
-{% set prefetchB = (prefetchInputs and (conf.prefetchInput == "B" or conf.prefetchInput == "AB")) %}
-{% set prefetchC = (prefetchOutputs and conf.prefetchOutput == "C") %}
+{% set prefetchA = (prefetchLoGInputs and (conf.prefetchInput == "A" or conf.prefetchInput == "AB")) %}
+{% set prefetchB = (prefetchLoGInputs and (conf.prefetchInput == "B" or conf.prefetchInput == "AB")) %}
+{% set prefetchC = (prefetchLoGOutputs and conf.prefetchOutput == "C") %}
 {# /*******************
    **** Sub macros ****
    ********************/ #}
@@ -98,6 +98,15 @@ _mm_prefetch({{array}}+{{offset}}{% if offsetLine != 0 %}+{{offsetLine}}{% endif
   {{Cp}}_m.noalias() {{ '+' if conf.beta == 1 }}= {{ '-' if conf.alpha == -1 }}{{Ap}}_m * {{Bp}}_m {% if (useTrueB and not forceCoeffMatrix) %}* {{trueAlpha}}{% endif %};
 }
 #}
+{% if prefetchA %}{# check global config then local config#}
+{{prefetchMatrix(A, conf.M, conf.LDA, conf.K, A_next)}}{##}
+{% endif %}{# prefetch A #}
+{% if prefetchB %}
+{{prefetchMatrix(B, conf.K, conf.LDB, conf.N, B_next)}}{##}
+{% endif %}{# prefetch B #}
+{% if prefetchC %}
+{{prefetchMatrix(C, conf.M, conf.LDC, conf.N, C_next)}}{##}
+{% endif %}{# prefetch C #}
 #pragma forceinline recursive
 {
   new (&{{conf.baseroutinename}}_A_map) Eigen::Map<Eigen::Matrix<{{fpFormat}},{{conf.M}},{{conf.K}}>, Eigen::{{"Aligned"if conf.alignment_A == 1 else "Unaligned"}}, Eigen::OuterStride<{{conf.LDA}}> >({{A}}{% if A_shift != '0' %}+{{A_shift}}{% endif %}); //{{conf.baseroutinename}}_A_map = {{A}}
