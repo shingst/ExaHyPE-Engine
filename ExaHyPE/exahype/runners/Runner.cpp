@@ -375,6 +375,9 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
         );
       }
     }
+    else {
+      exahype::reactive::PerformanceMonitor::getInstance().disable();
+    }
 
     tarch::parallel::NodePool::getInstance().restart();
 

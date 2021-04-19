@@ -264,7 +264,6 @@ int exahype::main(int argc, char** argv) {
   peano::shutdownParallelEnvironment();
 
   peano::releaseCachedData();
-
   kernels::finalise();  
 
 

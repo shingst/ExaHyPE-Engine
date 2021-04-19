@@ -808,7 +808,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagToCellDesc.find(
           a_tagToCellDesc, tag);
   if(!found)
-    logError("receiveBackHandler", "Received back task but couldn't find cell, inconsistent maps!");
+    logError("receiveBackHandler", "Received back task but couldn't find cell, inconsistent maps! Tag = "<<tag<<" remote rank = "<<remoteRank);
   assertion(found);
   auto cellDescription = a_tagToCellDesc->second;
   static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagToCellDesc.erase(
@@ -983,7 +983,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackHandler(
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagRankToStolenData.find(
           a_tagRankToData, std::make_pair(remoteRank, tag));
   if(!found)
-    logError("sendBackHandler","Couldn't find sent back task data. Inconsistent maps!");
+    logError("sendBackHandler","Couldn't find sent back task data. Inconsistent maps! Tag = "<<tag<<" rank = "<<remoteRank);
   assertion(found);
   data = a_tagRankToData->second;
   a_tagRankToData.release();

@@ -306,7 +306,7 @@ int exahype::reactive::OffloadingContext::getOffloadingTag() {
   static std::atomic<int> next_tag(1); //0 is reserved for status
 retry:
   int val =  next_tag.load();
-  int val_o = next_tag.load();
+  int val_o = val; 
 
   if(val>_maxTag-1) {
     logWarning("getOffloadingTag","MPI tag rollover for reactive communication!");
