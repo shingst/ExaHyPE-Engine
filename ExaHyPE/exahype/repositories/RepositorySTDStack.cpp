@@ -211,6 +211,8 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
 
   tarch::timing::Watch watch( "exahype::repositories::RepositorySTDStack", "iterate(bool)", false);
 
+  static int skip_cnt = 0; //skip measurements first K iterations of FusedTimeStep adapter (useful for excluding first timesteps where offloading has not converged yet)
+
   #ifdef Parallel
   // Start receiving from global master
   // Have to manually place these calls as I do
@@ -289,7 +291,18 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
       case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinement: watch.startTimer(); _gridWithFinaliseMeshRefinement.iterate(); watch.stopTimer(); _measureFinaliseMeshRefinementCPUTime.setValue( watch.getCPUTime() ); _measureFinaliseMeshRefinementCalendarTime.setValue( watch.getCalendarTime() ); break;
       case exahype::records::RepositoryState::UseAdapterFinaliseMeshRefinementOrLocalRollback: watch.startTimer(); _gridWithFinaliseMeshRefinementOrLocalRollback.iterate(); watch.stopTimer(); _measureFinaliseMeshRefinementOrLocalRollbackCPUTime.setValue( watch.getCPUTime() ); _measureFinaliseMeshRefinementOrLocalRollbackCalendarTime.setValue( watch.getCalendarTime() ); break;
       case exahype::records::RepositoryState::UseAdapterInitialPrediction: watch.startTimer(); _gridWithInitialPrediction.iterate(); watch.stopTimer(); _measureInitialPredictionCPUTime.setValue( watch.getCPUTime() ); _measureInitialPredictionCalendarTime.setValue( watch.getCalendarTime() ); break;
-      case exahype::records::RepositoryState::UseAdapterFusedTimeStep: watch.startTimer(); _gridWithFusedTimeStep.iterate(); watch.stopTimer(); _measureFusedTimeStepCPUTime.setValue( watch.getCPUTime() ); _measureFusedTimeStepCalendarTime.setValue( watch.getCalendarTime() ); break;
+      case exahype::records::RepositoryState::UseAdapterFusedTimeStep:
+#if defined(KSkipFirstFusedTimeSteps)
+      if(skip_cnt<KSkipFirstFusedTimeSteps) {
+        skip_cnt++;
+        _gridWithFusedTimeStep.iterate(); break;
+      }
+      else {
+        watch.startTimer(); _gridWithFusedTimeStep.iterate(); watch.stopTimer(); _measureFusedTimeStepCPUTime.setValue( watch.getCPUTime() ); _measureFusedTimeStepCalendarTime.setValue( watch.getCalendarTime() ); break;
+      }
+#else
+      watch.startTimer(); _gridWithFusedTimeStep.iterate(); watch.stopTimer(); _measureFusedTimeStepCPUTime.setValue( watch.getCPUTime() ); _measureFusedTimeStepCalendarTime.setValue( watch.getCalendarTime() ); break;
+#endif
       case exahype::records::RepositoryState::UseAdapterPredictionRerun: watch.startTimer(); _gridWithPredictionRerun.iterate(); watch.stopTimer(); _measurePredictionRerunCPUTime.setValue( watch.getCPUTime() ); _measurePredictionRerunCalendarTime.setValue( watch.getCalendarTime() ); break;
       case exahype::records::RepositoryState::UseAdapterBroadcast: watch.startTimer(); _gridWithBroadcast.iterate(); watch.stopTimer(); _measureBroadcastCPUTime.setValue( watch.getCPUTime() ); _measureBroadcastCalendarTime.setValue( watch.getCalendarTime() ); break;
       case exahype::records::RepositoryState::UseAdapterBroadcastAndDropNeighbourMessages: watch.startTimer(); _gridWithBroadcastAndDropNeighbourMessages.iterate(); watch.stopTimer(); _measureBroadcastAndDropNeighbourMessagesCPUTime.setValue( watch.getCPUTime() ); _measureBroadcastAndDropNeighbourMessagesCalendarTime.setValue( watch.getCalendarTime() ); break;
