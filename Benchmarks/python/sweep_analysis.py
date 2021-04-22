@@ -493,7 +493,6 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
         normalisedCPUTimeColumn  = header.index("normalised_cputime")
         normalisedUserTimeColumn = header.index("normalised_realtime")
         runTimeStepsColumn       = header.index("run_time_steps")
-        
         if runColumn >= adapterColumn:
             print ("ERROR: order of columns not suitable. Column 'run' must come before column 'adapter'!")
         
@@ -521,10 +520,15 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
               fused = False
             
             if timePerTimeStep and (fused and adapter in fusedAdapters) or (not fused and adapter in nonfusedAdapters):
-                summedCPUTimes[-1]            += float(line[cpuTimeColumn]) / float(line[runTimeStepsColumn])
-                summedUserTimes[-1]           += float(line[userTimeColumn]) / float(line[runTimeStepsColumn])
-                summedNormalisedCPUTimes[-1]  += float(line[normalisedCPUTimeColumn]) / float(line[runTimeStepsColumn])
-                summedNormalisedUserTimes[-1] += float(line[normalisedUserTimeColumn]) / float(line[runTimeStepsColumn])
+                normalization_factor = float(line[runTimeStepsColumn])
+                if (fused and adapter in fusedAdapters and int(line[iterationsColumn])/2!=normalization_factor):
+                  print("WARNING: number of time steps run does not match iterations count. Using adapted normalization_factor. You should only see this warning if you have used -DKSkipFirstTimeSteps!")
+                  normalization_factor = float(line[iterationsColumn])/2
+                  print("WARNING: I assume you tracked "+str(normalization_factor)+" fused time steps")
+                summedCPUTimes[-1]            += float(line[cpuTimeColumn]) / normalization_factor
+                summedUserTimes[-1]           += float(line[userTimeColumn])/ normalization_factor
+                summedNormalisedCPUTimes[-1]  += float(line[normalisedCPUTimeColumn]) / normalization_factor
+                summedNormalisedUserTimes[-1] += float(line[normalisedUserTimeColumn]) / normalization_factor
             elif not timePerTimeStep:
                 summedCPUTimes[-1]            += float(line[cpuTimeColumn])
                 summedUserTimes[-1]           += float(line[userTimeColumn])
