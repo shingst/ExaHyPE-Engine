@@ -11,7 +11,7 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if defined(SharedTBB) && defined(Parallel)
+#if defined(Parallel)
 #include "exahype/reactive/AggressiveHybridDistributor.h"
 
 #include <algorithm>
@@ -555,10 +555,14 @@ bool exahype::reactive::AggressiveHybridDistributor::selectVictimRank(int& victi
     //exahype::reactive::OffloadingManager::getInstance().notifyAllVictimsSendCompletedIfNotNotified();
 #endif
 
+#if defined(SharedTBB) //_minimNumberOfJobsPerConsumerRun
   int threshold = (_localStarvationThreshold==-1) ? 1
 		         + std::max(1, tarch::multicore::Core::getInstance().getNumberOfThreads()-1)
                  * tarch::multicore::jobs::internal::_minimalNumberOfJobsPerConsumerRun
 		 : _localStarvationThreshold;
+#else
+  int threshold = 20;
+#endif 
             
   threshold = std::max(threshold, 20);
 

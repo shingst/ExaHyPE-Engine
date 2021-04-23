@@ -16,8 +16,6 @@
 
 #include "tarch/logging/Log.h"
 #include "tarch/multicore/BooleanSemaphore.h"
-#include "tbb/concurrent_hash_map.h"
-#include "tbb/concurrent_queue.h"
 
 
 #include <mpi.h>

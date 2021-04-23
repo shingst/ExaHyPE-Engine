@@ -1,4 +1,4 @@
-#if defined(Parallel)
+#if defined(Parallel) && defined(SharedTBB)
 
 #if defined(ScoreP)
 #include "scorep/SCOREP_User.h"
@@ -796,7 +796,6 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
   exahype::reactive::JobTableStatistics::getInstance().notifyReceivedTask();
 
 }
-#endif
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler(
     exahype::solvers::Solver* solver, int tag, int remoteRank) {
@@ -1228,6 +1227,6 @@ int exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getElement(
 int exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getOrigin() const {
   return _originRank;
 }
-
+#endif
 //#undef assertion
 //#define assertion(expr) 

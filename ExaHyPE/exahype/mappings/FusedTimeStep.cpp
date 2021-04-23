@@ -172,7 +172,7 @@ void exahype::mappings::FusedTimeStep::beginIteration(
         solvers::Solver::getMinTimeStampOfAllSolvers());
   }
 
-#ifdef Parallel
+#if defined(Parallel) && defined(SharedTBB)
   if ( exahype::reactive::OffloadingContext::getInstance().isEnabled()
      && !tarch::parallel::Node::getInstance().isGlobalMaster())
   {
@@ -251,7 +251,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
    // #endif
   }
 
-#if defined(Parallel)
+#if defined(Parallel) && defined(SharedTBB)
 #ifdef OffloadingUseProgressTask
   if( issuePredictionJobsInThisIteration()
      && exahype::reactive::OffloadingContext::getInstance().isEnabled()) {

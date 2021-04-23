@@ -143,7 +143,9 @@ void exahype::offloading::OffloadingManager::initialize() {
 
 
 //#if defined(UseMPIThreadSplit)
+#if defined(SharedTBB)
   createMPICommunicators();
+#endif
 //#endif
 }
 
@@ -151,7 +153,9 @@ void exahype::offloading::OffloadingManager::destroy() {
  // exahype::offloading::OffloadingManager::destroyMPICommunicator();
 
 //#if defined(UseMPIThreadSplit)
-  destroyMPICommunicators();
+#if defined(SharedTBB)
+ destroyMPICommunicators();
+#endif
 //#endif
 }
 

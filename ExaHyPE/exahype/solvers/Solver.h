@@ -1148,7 +1148,7 @@ public:
   * Tries to receive dangling MPI messages while waiting if this
   * is specified by the user.
   *
-  * Work Stealing
+  * Reactive Offloading
   * -------------
   *
   * Assume this rank has stolen jobs from another rank.

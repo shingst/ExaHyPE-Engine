@@ -11,7 +11,7 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if  defined(Parallel)
+#if defined(Parallel) && defined(SharedTBB)
 
 #include "../reactive/RequestManager.h"
 

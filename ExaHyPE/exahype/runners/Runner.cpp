@@ -287,6 +287,9 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     _parser.invalidate();
   }
 
+  exahype::reactive::OffloadingContext::getInstance(); //fixme: always collectively (all MPI procs) call getInstance in order
+                                                       // init communicators!
+
   ///
   /// Configuration of reactive load balancing + task sharing
   ///
@@ -300,6 +303,10 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
         logError("initDistributedMemoryConfiguration()", "You must link against teaMPI in order to use resilience futures (USE_TMPI must be set)! Aborting, please re-run toolkit and recompile...");
         _parser.invalidate();
 #endif
+#if !defined(SharedTBB)
+        logError("initDistributedMemoryConfiguration()", "Tasksharing/resilience without TBB is currently not supported! Aborting, please re-run toolkit and recompile...");
+        _parser.invalidate();
+#endif
 
         if(selectedStrategy == exahype::parser::Parser::ResilienceStrategy::TaskSharing) {
           exahype::reactive::OffloadingContext::getInstance().setResilienceStrategy(exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharing);
@@ -311,10 +318,12 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
           //Todo: this is not implemented yet!
           exahype::reactive::OffloadingContext::getInstance().setResilienceStrategy(exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceCorrection);
         }
+#if defined(SharedTBB)
         // order is important: set resilience strategy first before initialization
         //exahype::reactive::OffloadingManager::getInstance().initialize();
         exahype::reactive::OffloadingProgressService::getInstance().enable();
-    }
+#endif
+   }
 
     //always use offloading analyser
     peano::performanceanalysis::Analysis::getInstance().setDevice(&exahype::reactive::OffloadingAnalyser::getInstance());
@@ -353,10 +362,17 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
       std::abort();
       _parser.invalidate();
 #endif
+#if !defined(SharedTBB)
+      logError("initDistributedMemoryConfiguration()","You've selected reactive task offloading but compiled without TBB (currently not supported). Please re-run toolkit and re-compile.");
+      std::abort();
+      _parser.invalidate();
+#endif
       exahype::reactive::OffloadingAnalyser::getInstance().enable(true);
       // Create new MPI communicators + progress engine for offloading related MPI communication
       //exahype::reactive::OffloadingManager::getInstance().initialize();
-      exahype::reactive::OffloadingProgressService::getInstance().enable();
+#if defined(SharedTBB)
+     exahype::reactive::OffloadingProgressService::getInstance().enable();
+#endif
 
       if(selectedStrategy == exahype::parser::Parser::OffloadingStrategy::StaticHardcoded) {
         exahype::reactive::StaticDistributor::getInstance().loadDistributionFromFile(_parser.getOffloadingInputFile());
@@ -1094,7 +1110,7 @@ int exahype::runners::Runner::run() {
     exahype::reactive::HeartbeatJob::stopHeartbeatJob();
 #endif
 
-//#if defined(DistributedOffloading)
+#if defined(SharedTBB)
   if(exahype::reactive::OffloadingContext::getInstance().isEnabled()){
     exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
@@ -1122,7 +1138,8 @@ int exahype::runners::Runner::run() {
 #if defined(MemoryMonitoring) && defined(MemoryMonitoringTrack)
      exahype::reactive::MemoryMonitor::getInstance().dumpMemoryUsage();
 #endif
-      
+#endif
+
     if ( _parser.isValid() )
       shutdownSharedMemoryConfiguration();
 

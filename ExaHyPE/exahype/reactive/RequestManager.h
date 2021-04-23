@@ -11,7 +11,7 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if !defined(_EXAHYPE_REQUESTMANAGER_H_)  && defined(Parallel)
+#if !defined(_EXAHYPE_REQUESTMANAGER_H_)  && defined(Parallel) && defined(SharedTBB)
 #define _EXAHYPE_REQUESTMANAGER_H_
 
 #include "tarch/logging/Log.h"

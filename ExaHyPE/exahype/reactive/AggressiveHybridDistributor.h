@@ -11,7 +11,7 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if !defined(_EXAHYPE_OFFLOADING_AGGRESSIVEHYBRIDDISTRIBUTOR_H_) && defined(SharedTBB)  && defined(Parallel)
+#if !defined(_EXAHYPE_OFFLOADING_AGGRESSIVEHYBRIDDISTRIBUTOR_H_) && defined(Parallel)
 #define _EXAHYPE_OFFLOADING_AGGRESSIVEHYBRIDDISTRIBUTOR_H_
 
 #include "tarch/logging/Log.h"

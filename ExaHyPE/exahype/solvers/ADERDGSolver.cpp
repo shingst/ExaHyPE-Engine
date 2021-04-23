@@ -138,7 +138,7 @@ tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::CoarseGridSem
 
 tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::OffloadingSemaphore;
 
-//ToDo (Philipp): may no longer be necessary
+#if defined(SharedTBB)
 std::atomic<int> exahype::solvers::ADERDGSolver::MaxIprobesInOffloadingProgress (std::numeric_limits<int>::max());
 
 std::atomic<int> exahype::solvers::ADERDGSolver::MigratablePredictionJob::JobCounter (0);
@@ -158,6 +158,7 @@ tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::EmergencySema
 //todo(Philipp): probably, this should be moved somewhere else!
 int exahype::solvers::ADERDGSolver::REQUEST_JOB_CANCEL = 0;
 int exahype::solvers::ADERDGSolver::REQUEST_JOB_ACK = 1;
+#endif
 
 #ifdef OffloadingUseProgressTask
 std::unordered_set<int> exahype::solvers::ADERDGSolver::ActiveSenders;
@@ -269,8 +270,9 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
      _DMPObservables(DMPObservables),
      _minRefinementStatusForTroubledCell(_refineOrKeepOnFineGrid+3),
      _checkForNaNs(true),
-     _meshUpdateEvent(MeshUpdateEvent::None),
-     _lastReceiveTag(tarch::parallel::Node::getInstance().getNumberOfNodes()),
+     _meshUpdateEvent(MeshUpdateEvent::None)
+#if defined(SharedTBB)
+     ,_lastReceiveTag(tarch::parallel::Node::getInstance().getNumberOfNodes()),
      _lastReceiveBackTag(tarch::parallel::Node::getInstance().getNumberOfNodes()),
      _offloadingManagerJob(nullptr),
      _offloadingManagerJobTerminated(false),
@@ -280,18 +282,19 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
                             *exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams()),
      _jobDatabase(),
      _allocatedJobs()
+#endif
 {
   // register tags with profiler
   for (const char* tag : tags) {
     _profiler->registerTag(tag);
   }
 
-  #ifdef Parallel
-//#if defined(DistributedOffloading)
+#ifdef Parallel
+#if defined(SharedTBB)
   MigratablePredictionJobMetaData::initDatatype();
   //todo: may need to add support for multiple solvers
   exahype::reactive::OffloadingProgressService::getInstance().setSolver(this);
-//#endif
+#endif
 
 #ifdef OffloadingUseProfiler
   exahype::reactive::OffloadingProfiler::getInstance().beginPhase();
@@ -476,10 +479,12 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
   endTimeStep(_minTimeStamp,isLastTimeStepOfBatchOrNoBatch);
 
   //Todo(Philipp): do this also with local recomp!! OffloadingLocalRecompute
+#if defined(SharedTBB)
   if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()!=exahype::reactive::OffloadingContext::ResilienceStrategy::None) {
     exahype::reactive::JobTableStatistics::getInstance().printStatistics();
     cleanUpStaleTaskOutcomes();
   }
+#endif
 }
 
 void exahype::solvers::ADERDGSolver::updateTimeStepSize() {
@@ -826,12 +831,19 @@ void exahype::solvers::ADERDGSolver::fusedTimeStepBody(
 #ifdef USE_ITAC
      // VT_begin(event_spawn);
 #endif
+#if defined(SharedTBB)
       MigratablePredictionJob *migratablePredictionJob = new MigratablePredictionJob(*this,
           cellInfo._cellDescriptionsIndex, element,
           predictionTimeStamp,
           predictionTimeStepSize);
       submitOrSendMigratablePredictionJob(migratablePredictionJob);
-
+#else
+      peano::datatraversal::TaskSet( new PredictionJob(
+        *this, cellDescription, cellInfo._cellDescriptionsIndex, element,
+        predictionTimeStamp,  // corrector time step data is correct; see docu
+        predictionTimeStepSize,
+        false/*is uncompressed*/, isSkeletonCell, isLastTimeStepOfBatch ));
+#endif
       //peano::datatraversal::TaskSet spawnedSet( stealablePredictionJob, peano::datatraversal::TaskSet::TaskType::Background );
       exahype::reactive::OffloadingProfiler::getInstance().notifySpawnedTask();
 #ifdef USE_ITAC
@@ -1091,12 +1103,19 @@ void exahype::solvers::ADERDGSolver::predictionAndVolumeIntegral(
 #ifdef USE_ITAC
        // VT_begin(event_spawn);
 #endif
+#if defined(SharedTBB)
         MigratablePredictionJob *migratablePredictionJob = new MigratablePredictionJob(*this,
           cellInfo._cellDescriptionsIndex, element,
           predictorTimeStamp,
           predictorTimeStepSize);
         submitOrSendMigratablePredictionJob(migratablePredictionJob);
         exahype::reactive::OffloadingProfiler::getInstance().notifySpawnedTask();
+#else
+        peano::datatraversal::TaskSet( new PredictionJob(
+              *this, cellDescription, cellInfo._cellDescriptionsIndex, element,
+              predictorTimeStamp,predictorTimeStepSize,
+              uncompressBefore,isSkeletonCell,addVolumeIntegralResultToUpdate) );
+#endif
 #ifdef USE_ITAC
      // VT_end(event_spawn);
 #endif
@@ -2459,7 +2478,7 @@ void exahype::solvers::ADERDGSolver::toString (std::ostream& out) const {
 ///////////////////////////////////
 // DISTRIBUTED OFFLOADING
 ///////////////////////////////////
-
+#if defined(SharedTBB)
 //#if defined(OffloadingLocalRecompute)
 void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
   int unsafe_size = _allocatedJobs.unsafe_size();
@@ -4926,7 +4945,7 @@ bool exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOutcomeOffloa
 
 #endif
 
-//#endif
+#endif
 
 exahype::solvers::ADERDGSolver::CompressionJob::CompressionJob(
   const ADERDGSolver& solver,

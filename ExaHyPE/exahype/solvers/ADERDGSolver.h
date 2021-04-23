@@ -48,10 +48,12 @@
 #include "exahype/reactive/OffloadingContext.h"
 #include "exahype/reactive/JobTableStatistics.h"
 
+#if defined(SharedTBB)
 #include <tbb/concurrent_hash_map.h>
 #include <tbb/concurrent_queue.h>
 #include <tbb/task.h>
 #include <tbb/task_group.h>
+#endif
 #include <unordered_set>
 #include "tarch/multicore/Jobs.h"
 
@@ -979,7 +981,7 @@ private:
     else
       return getTaskPriority(false);
   }
-
+#if defined(SharedTBB)
 #ifdef OffloadingUseProgressTask
   /**
    * Used to track sending ranks from which my rank currently receives tasks.
@@ -1509,20 +1511,20 @@ private:
    */
   void mpiIrecvMigratablePredictionJob(
 	  double *luh,
-          int srcRank,
+      int srcRank,
    	  int tag,
 	  MPI_Comm comm,
-          MPI_Request *requests,
-          MigratablePredictionJobMetaData *metadata =nullptr);
+      MPI_Request *requests,
+      MigratablePredictionJobMetaData *metadata =nullptr);
   
   void mpiIrecvMigratablePredictionJobOffload(
 	  double *luh,
-          int srcRank,
+      int srcRank,
 	  int tag,
 	  MPI_Comm comm,
-          int rail,
-          MPI_Request *requests,
-          MigratablePredictionJobMetaData *metadata =nullptr);
+      int rail,
+      MPI_Request *requests,
+      MigratablePredictionJobMetaData *metadata =nullptr);
 
   /*
    * Receives task outcome of a MigratablePredictionJob from a destination rank.
@@ -1588,7 +1590,7 @@ private:
    */
   void submitOrSendMigratablePredictionJob(MigratablePredictionJob *job);
 
-//#endif
+#endif
 
 #endif
 
@@ -3044,6 +3046,7 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) override;
 
+#if defined(SharedTBB)
 //#ifdef DistributedOffloading
   /*
    * Makes progress on all offloading-related MPI communication.
@@ -3113,7 +3116,7 @@ public:
   void addRecomputeJobForCellDescription(tarch::multicore::jobs::Job* job, const CellDescription* cellDescription);
 #endif
 
-//#endif /*DistributedOffloading*/
+#endif /*SharedTBB*/
 
 #endif
 
@@ -3521,7 +3524,7 @@ public:
      return specifiedRelaxationParameter;
   }
 
-//#if defined(DistributedOffloading)
+#if defined(SharedTBB)
   virtual void waitUntilCompletedLastStepOffloading(
       const void* cellDescripPtr,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) {
  #ifdef USE_ITAC
@@ -3676,7 +3679,6 @@ public:
     VT_end(waitUntilCompletedLastStepHandle);
  #endif
   }
-//#endif
+#endif
 };
-
 #endif

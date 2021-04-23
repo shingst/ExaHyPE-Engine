@@ -108,6 +108,7 @@ exahype::reactive::OffloadingContext::OffloadingContext(int threadId) :
 #endif
   MPI_Comm_set_errhandler(MPI_COMM_WORLD, MPI_ERRORS_RETURN);
 
+  //todo: should not be implicitly invoked
   initializeCommunicatorsAndTeamMetadata();
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes()*_numTeams;
@@ -154,15 +155,20 @@ bool exahype::reactive::OffloadingContext::isEnabled() {
 void exahype::reactive::OffloadingContext::initializeCommunicatorsAndTeamMetadata() {
   //exahype::reactive::OffloadingManager::getInstance().createMPICommunicator();
  static bool initialized = false;
-
+//Todo:  this collective routine should be exposed to the runner instead of being implicitly invoked by the constructor 
+// can cause deadlocks if only a single thread calls the first getInstance() for getting an OffloadingContext
+//#if defined(SharedTBB)
  if(!initialized)
   createMPICommunicators();
+//#endif
 
  initialized = true;
 }
 
 void exahype::reactive::OffloadingContext::destroy() {
+#if defined(SharedTBB)
   destroyMPICommunicators();
+#endif
 }
 
 MPI_Comm exahype::reactive::OffloadingContext::getTMPIInterTeamCommunicatorData() {

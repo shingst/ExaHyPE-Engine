@@ -341,10 +341,12 @@ bool exahype::reactive::AggressiveCCPDistributor::selectVictimRank(int& victim) 
   rank_cnt=l_rank;
  
   //logInfo("selectVictimRank", "chose victim "<<victim<<" _remainingTasksToOffload "<<_remainingTasksToOffload[victim]);
-
+#if defined(SharedTBB)
   int threshold = 1+std::max(1, tarch::multicore::Core::getInstance().getNumberOfThreads()-1)*tarch::multicore::jobs::internal::_minimalNumberOfJobsPerConsumerRun;
   threshold = std::max(threshold, 20);
-
+#else
+  int threshold = 20;
+#endif
 
 //  logInfo("selectVictimRank","waiting "<<tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()<<" criterion "<<threshold);
  
