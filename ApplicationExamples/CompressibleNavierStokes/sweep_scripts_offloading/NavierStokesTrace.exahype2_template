@@ -8,7 +8,7 @@
   "architecture": "{{architecture}}",
   "computational_domain": {
     "dimension": {{dimension}},
-    "end_time" : {{simulationTime}},
+    "time_steps" : {{timeSteps}},
     "offset": [
       0.0,
       0.0,
@@ -33,7 +33,7 @@
      "stp_tracing_frequency"  : {{stp_tracing_frequency}}
   },
   "distributed_memory": {
-    "offloading": "{{offloading}}",
+    "offloading_lb_strategy": "{{offloading}}",
     "offloading_input_file" : "",
     "offloading_progress" : "{{offloading_progress}}",
     "offloading_CCP_temperature" : {{offloading_CCP_temperature}},

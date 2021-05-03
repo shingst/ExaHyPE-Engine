@@ -54,6 +54,7 @@ void NavierStokes::Plotter::mapQuantities(
   const auto pressure = ns.evaluatePressure(vars.E(), vars.rho(), vars.j(),
                                             ns.getZ(Q), ns.getHeight(Q));
   if (writePrimitive) {
+    //printf("Writing primitives\n");
     // Primitive variables are density, velocities and pressure.
     outputQuantities[rho] = Q[rho];
     outputQuantities[j+0] = Q[j+0]/Q[rho];
@@ -63,6 +64,7 @@ void NavierStokes::Plotter::mapQuantities(
 #endif
     outputQuantities[E] = pressure;
     if (ns.useAdvection) {
+      // printf("Writing adv\n");
       outputQuantities[Z] = Q[Z] / Q[rho];
     }
   } else {
@@ -76,7 +78,7 @@ void NavierStokes::Plotter::mapQuantities(
   if (writePotT) {
     const auto temperature = ns.evaluateTemperature(vars.rho(), pressure);
     const auto potT = ns.evaluatePotentialTemperature(temperature, pressure);
-
+    //printf("Writing pot temperature\n");
     // Write potential temperature
     outputQuantities[vars.SizeVariables] = potT;
   } else {

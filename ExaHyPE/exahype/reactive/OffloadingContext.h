@@ -128,6 +128,8 @@ class exahype::reactive::OffloadingContext {
   public:
 
     bool isEnabled();
+    
+    bool usesOffloading();
 
     //Todo: with these two function, we can clean up the interface and make some more functions private
     void initializeCommunicatorsAndTeamMetadata();

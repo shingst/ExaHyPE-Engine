@@ -53,6 +53,11 @@ bool exahype::solvers::ADERDGSolver::PredictionJob::run(bool runOnMasterThread) 
   auto start = std::chrono::high_resolution_clock::now();
   #endif
 
+  #if defined(OffloadingUseProfiler)
+  exahype::reactive::OffloadingProfiler::getInstance().beginComputation();
+  double time = -MPI_Wtime();
+  #endif
+
   int numberIterations =  _solver.predictionAndVolumeIntegralBody(
       _cellDescription,_predictorTimeStamp,_predictorTimeStepSize,
       _uncompressBefore,_isSkeletonJob,_addVolumeIntegralResultToUpdate); // ignore return value
@@ -105,6 +110,11 @@ bool exahype::solvers::ADERDGSolver::PredictionJob::run(bool runOnMasterThread) 
 //  fileIter.open(path,std::fstream::app);
 //  fileIter << (numberIterations+1) << std::endl;
 //  fileIter.close();
+  #endif
+
+  #if defined(OffloadingUseProfiler)
+  time += MPI_Wtime();
+  exahype::reactive::OffloadingProfiler::getInstance().endComputation(time);
   #endif
 
   return false;

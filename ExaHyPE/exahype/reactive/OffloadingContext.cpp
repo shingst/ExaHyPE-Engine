@@ -152,6 +152,10 @@ bool exahype::reactive::OffloadingContext::isEnabled() {
   return _offloadingStrategy!=OffloadingStrategy::None || _resilienceStrategy!=ResilienceStrategy::None;
 }
 
+bool exahype::reactive::OffloadingContext::usesOffloading() {
+  return _offloadingStrategy!=OffloadingStrategy::None;
+}
+
 void exahype::reactive::OffloadingContext::initializeCommunicatorsAndTeamMetadata() {
   //exahype::reactive::OffloadingManager::getInstance().createMPICommunicator();
  static bool initialized = false;
