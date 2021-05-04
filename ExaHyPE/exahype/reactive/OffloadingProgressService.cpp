@@ -23,8 +23,6 @@ registerService(exahype::reactive::OffloadingProgressService)
 #endif
 //#endif
 
-//#include <mpi.h>
-
 tarch::logging::Log exahype::reactive::OffloadingProgressService::_log("exahype::reactive::OffloadingProgressService");
 
 exahype::reactive::OffloadingProgressService::OffloadingProgressService()
@@ -37,14 +35,9 @@ void exahype::reactive::OffloadingProgressService::enable() {
 }
 
 void exahype::reactive::OffloadingProgressService::receiveDanglingMessages() {
-  //double time = -MPI_Wtime();
   if(_isSet && _isEnabled) {
     exahype::solvers::ADERDGSolver::progressOffloading(_solver, true, 1);
   }
-  //time += MPI_Wtime();
-  //if(time> 1.001) {
-  //  logError("receiveDanglingMessages()","took too long "<<time);
-  //}
 }
 
 exahype::reactive::OffloadingProgressService& exahype::reactive::OffloadingProgressService::getInstance() {

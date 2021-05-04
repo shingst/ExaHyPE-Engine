@@ -397,7 +397,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryToFindAndExtrac
 	      _element);
 
 #if !defined(OffloadingUseProgressThread)
-  //exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, MAX_PROGRESS_ITS);
+  exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, MAX_PROGRESS_ITS);
 #endif
 
   tarch::la::Vector<DIMENSIONS, double> center;
@@ -597,17 +597,17 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
     if (!_isLocalReplica) NumberOfEnclaveJobs--;
     assertion( NumberOfEnclaveJobs>=0 );
 #if !defined(OffloadingUseProgressThread)
-    double time = -MPI_Wtime();
+    //double time = -MPI_Wtime();
     if (!isRunOnMaster)
       exahype::solvers::ADERDGSolver::progressOffloading(&_solver,
           isRunOnMaster, std::numeric_limits<int>::max());
       //exahype::solvers::ADERDGSolver::progressOffloading(&_solver,
       //    isRunOnMaster, MAX_PROGRESS_ITS);
-   time += MPI_Wtime();
-   if(time>0.02) {
-     CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
-                                             _element);
-     logError("handleExecution","progress took too long "<<time<<" cellDesc "<<cellDescription.toString());
+   //time += MPI_Wtime();
+   //if(time>0.02) {
+   //  CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
+   //                                          _element);
+   //  logError("handleExecution","progress took too long "<<time<<" cellDesc "<<cellDescription.toString());
 
    }
 #endif

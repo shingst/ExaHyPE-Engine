@@ -4115,11 +4115,11 @@ bool exahype::solvers::ADERDGSolver::OffloadingManagerJob::run( bool isCalledOnM
       //if(peano::utils::UserInterface::getMemoryUsageMB()>50000) {
       //    logInfo("run()", "WARNING: memory usage is quite high!");
       //}
-      double time = -MPI_Wtime();
+      //double time = -MPI_Wtime();
       exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, std::numeric_limits<int>::max());
-      time += MPI_Wtime();
-      if(time>0.02)
-        logInfo("run","took too long"<<time);
+      //time += MPI_Wtime();
+      //if(time>0.02)
+      //  logInfo("run","took too long"<<time);
 
       if(_solver._offloadingManagerJobTriggerTerminate) {
           _state = State::Terminate;

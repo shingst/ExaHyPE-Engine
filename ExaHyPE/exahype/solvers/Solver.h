@@ -1171,7 +1171,7 @@ public:
     VT_begin(waitUntilCompletedLastStepHandle);
   #endif
  
-   double time_background = -MPI_Wtime();
+   //double time_background = -MPI_Wtime();
  #ifdef OffloadingUseProfiler
    exahype::reactive::OffloadingProfiler::getInstance().beginWaitForTasks();
    double time_background = -MPI_Wtime();
@@ -1183,33 +1183,33 @@ public:
     }
     else
     {
-      bool wasIdle = true;
+      //bool wasIdle = true;
       if ( !cellDescription.getHasCompletedLastStep() ) {
         peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
       }
-      double time_waiting = -MPI_Wtime();
-      bool gotLock = false;
+      //double time_waiting = -MPI_Wtime();
+      //bool gotLock = false;
       while ( !cellDescription.getHasCompletedLastStep() ) {
-         double time_process = -MPI_Wtime();
+         //double time_process = -MPI_Wtime();
          #ifdef Parallel
          {
            tarch::multicore::RecursiveLock lock( tarch::services::Service::receiveDanglingMessagesSemaphore, false );
            if(lock.tryLock()) {
-             gotLock = true;
+             //gotLock = true;
              tarch::parallel::Node::getInstance().receiveDanglingMessages();
              lock.free();
            }
          }
          #endif
 
-         double time_receive = time_process + MPI_Wtime();
-        if(time_receive>0.02)
-          logError("waitUntilCompletedLastStep","dangling took too long "<<time_receive);
+         //double time_receive = time_process + MPI_Wtime();
+        //if(time_receive>0.02)
+        //  logError("waitUntilCompletedLastStep","dangling took too long "<<time_receive);
  
-        if(time_background+MPI_Wtime()>5) {
-            logError("waitUntilCompletedLastStep","taking quite long...");
-        }
-        int EnclaveBefore = NumberOfEnclaveJobs;
+        //if(time_background+MPI_Wtime()>5) {
+        //    logError("waitUntilCompletedLastStep","taking quite long...");
+       // }
+        //int EnclaveBefore = NumberOfEnclaveJobs;
         switch ( JobSystemWaitBehaviour ) {
           case JobSystemWaitBehaviourType::ProcessJobsWithSamePriority:
             //wasIdle = !tarch::multicore::jobs::processBackgroundJobs( 1, -1, true );
@@ -1221,20 +1221,20 @@ public:
           default:
             break;
          }
-         time_process += MPI_Wtime();
-         int EnclaveAfter = NumberOfEnclaveJobs;
-         if(time_process>0.02) 
-           logError("waitUntilCompletedLastStep","process took too  long "<<time_process<< " before "<<EnclaveBefore <<" after "<<EnclaveAfter<<" waitForHighPriority "<<waitForHighPriorityJob<< " cell description "<<cellDescription.toString()<<" wasIdle "<<wasIdle); 
+         //time_process += MPI_Wtime();
+         //int EnclaveAfter = NumberOfEnclaveJobs;
+         //if(time_process>0.02) 
+         //  logError("waitUntilCompletedLastStep","process took too  long "<<time_process<< " before "<<EnclaveBefore <<" after "<<EnclaveAfter<<" waitForHighPriority "<<waitForHighPriorityJob<< " cell description "<<cellDescription.toString()<<" wasIdle "<<wasIdle); 
      }
-     time_waiting += MPI_Wtime();
-     if(time_waiting>10) 
-       logError("waitUntilCompletedLastStep","waiting took too  long "<<time_waiting<< " waitForHighPriority "<<waitForHighPriorityJob<<" got lock "<<gotLock); 
+     //time_waiting += MPI_Wtime();
+     //if(time_waiting>10) 
+     //  logError("waitUntilCompletedLastStep","waiting took too  long "<<time_waiting<< " waitForHighPriority "<<waitForHighPriorityJob<<" got lock "<<gotLock); 
    }
  
-    time_background += MPI_Wtime();
-    if(time_background>10) {
-      logError("waitUntilCompletedLastStep"," took too  long "<<time_background<< "Encalves  "<<NumberOfEnclaveJobs<<" Skeleton "<<NumberOfSkeletonJobs<<" waitForHighPriority "<<waitForHighPriorityJob<< " cellDescription "<<cellDescription.toString()); 
-    }
+    //time_background += MPI_Wtime();
+    //if(time_background>10) {
+    //  logError("waitUntilCompletedLastStep"," took too  long "<<time_background<< "Encalves  "<<NumberOfEnclaveJobs<<" Skeleton "<<NumberOfSkeletonJobs<<" waitForHighPriority "<<waitForHighPriorityJob<< " cellDescription "<<cellDescription.toString()); 
+   // }
   
   #ifdef OffloadingUseProfiler
     time_background += MPI_Wtime();
