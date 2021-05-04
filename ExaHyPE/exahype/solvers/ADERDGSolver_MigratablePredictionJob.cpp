@@ -19,6 +19,8 @@
 #include "exahype/reactive/ResilienceTools.h"
 #include "exahype/reactive/RequestManager.h"
 
+#include "tarch/multicore/Core.h"
+
 #if defined(USE_TMPI)
 #include "teaMPI.h"
 #endif
@@ -143,6 +145,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run(
 
 bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryFindOutcomeAndCheck() {
 
+  //caution, this may delay setting the completed flag and cause slowdowns for the master!
 #if !defined(OffloadingUseProgressThread)
   exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, MAX_PROGRESS_ITS);
 #endif
@@ -239,7 +242,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
       != exahype::reactive::OffloadingContext::ResilienceStrategy::None) {
     needToShare = (AllocatedSTPsSend
-          <= exahype::reactive::PerformanceMonitor::getInstance().getTasksPerTimestep());
+          <= exahype::reactive::PerformanceMonitor::getInstance().getTasksPerTimestep()/tarch::multicore::Core::getInstance().getNumberOfThreads());
 
     found = tryToFindAndExtractEquivalentSharedOutcome(status, &outcome);
 
@@ -591,15 +594,23 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
   //local treatment if this job belongs to the local rank
   if (_originRank == myRank) {
     result = handleLocalExecution(isRunOnMaster, hasComputed);
+    if (!_isLocalReplica) NumberOfEnclaveJobs--;
+    assertion( NumberOfEnclaveJobs>=0 );
 #if !defined(OffloadingUseProgressThread)
+    //double time = -MPI_Wtime();
     if (!isRunOnMaster)
       exahype::solvers::ADERDGSolver::progressOffloading(&_solver,
           isRunOnMaster, std::numeric_limits<int>::max());
       //exahype::solvers::ADERDGSolver::progressOffloading(&_solver,
       //    isRunOnMaster, MAX_PROGRESS_ITS);
+   //time += MPI_Wtime();
+   //if(time>0.02) {
+   //  CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
+   //                                          _element);
+   //  logError("handleExecution","progress took too long "<<time<<" cellDesc "<<cellDescription.toString());
+
+   }
 #endif
-    if (!_isLocalReplica) NumberOfEnclaveJobs--;
-    assertion( NumberOfEnclaveJobs>=0 );
   }
   //remote task, need to execute and send it back
   else {

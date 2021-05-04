@@ -3534,11 +3534,6 @@ public:
    //int ierr=VT_funcdef(event_name_emergency, VT_NOCLASS, &event_emergency ); assert(ierr==0);
  #endif
 
- #ifdef OffloadingUseProfiler
-   exahype::reactive::OffloadingProfiler::getInstance().beginWaitForTasks();
-   double time_background = -MPI_Wtime();
- #endif
-
    const CellDescription& cellDescription = *((const CellDescription*) cellDescripPtr);
    //bool hasProcessed = false;
    bool hasTriggeredEmergency = false;
@@ -3668,11 +3663,6 @@ public:
     //  resumeOffloadingManager();
     //}
     exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressOffloading( std::numeric_limits<int>::max() );
- #endif
-
- #ifdef OffloadingUseProfiler
-   time_background += MPI_Wtime();
-   exahype::reactive::OffloadingProfiler::getInstance().endWaitForTasks(time_background);
  #endif
 
  #ifdef USE_ITAC

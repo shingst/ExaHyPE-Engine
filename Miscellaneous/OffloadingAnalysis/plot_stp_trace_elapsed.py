@@ -49,10 +49,13 @@ if __name__=="__main__":
       acc = acc+acc_tmp[n]
 
   legend = ax1.legend(loc='upper left')
-  ax1.set_ylim(0,2200000)
+  ax1.set_ylim(0,40000000)
   #ax1.set_title("accumulated "+str(acc))
+  #ax1.set_yscale("log", base=10)
+  ax1.set_ylim(0)
 
   plt.savefig(dirname+"stp_time_"+str(timestep)+".pdf")
-  import tikzplotlib
-  tikzplotlib.save(dirname+"stp_time_"+str(timestep)+".tex")
+  print("saved:",dirname+"stp_time_"+str(timestep)+".pdf")
+  #import tikzplotlib
+  #tikzplotlib.save(dirname+"stp_time_"+str(timestep)+".tex")
 

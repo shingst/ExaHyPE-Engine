@@ -1141,7 +1141,11 @@ void exahype::solvers::ADERDGSolver::predictionAndVolumeIntegral(
 
     const bool isAMRSkeletonCell = belongsToAMRSkeleton(cellDescription);
     const bool isSkeletonCell    = isAMRSkeletonCell || isAtRemoteBoundary;
+    double time = -MPI_Wtime();
     waitUntilCompletedLastStep(cellDescription,isSkeletonCell,false);
+    time += MPI_Wtime();
+    if(time>1) 
+      logError("predictionAndVolumeIntegral","waiting too long "<<time);
     if ( cellDescription.getType()==CellDescription::Type::Leaf ) {
       const auto predictionTimeStepData = getPredictionTimeStepData(cellDescription,false); // this is either the fused scheme or a predictor recomputation
 
@@ -1575,8 +1579,13 @@ void exahype::solvers::ADERDGSolver::prolongateFaceData(
         CellDescription& parentCellDescription = getCellDescription(
             subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
         assertion1(parentCellDescription.getType()==CellDescription::Type::Leaf,parentCellDescription.toString());
+        
+    double time = -MPI_Wtime();
+    waitUntilCompletedLastStep<CellDescription>(parentCellDescription,true,false); // TODO(Dominic): We wait for skeleton jobs here. It might make sense to receiveDanglingMessages here too
+    time += MPI_Wtime();
+    if(time>1) 
+      logError("predictionAndVolumeIntegral","waiting too long "<<time);
 
-        waitUntilCompletedLastStep<CellDescription>(parentCellDescription,true,false); // TODO(Dominic): We wait for skeleton jobs here. It might make sense to receiveDanglingMessages here too
         if (
             !SpawnProlongationAsBackgroundJob ||
             isAtRemoteBoundary
@@ -1845,8 +1854,14 @@ void exahype::solvers::ADERDGSolver::mergeNeighboursData(
       counter++;
       #endif
 
+      double time = -MPI_Wtime();
       waitUntilCompletedLastStep<CellDescription>(cellDescription1,false,false);  // must be done before any other operation on the patches
       waitUntilCompletedLastStep<CellDescription>(cellDescription2,false,false);
+      time += MPI_Wtime();
+
+      if(time>1) {
+        logError("mergeNeighboursData","waiting too long for neighboour data "<<time<<" cellDesc1: "<<cellDescription1.toString()<<" cellDescription2 "<<cellDescription2.toString());
+      }
 
       if ( CompressionAccuracy > 0.0 ) {
         peano::datatraversal::TaskSet uncompression(
@@ -2491,7 +2506,7 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
 #endif
 
   //Todo (Philipp): refactor and make nice
-  logInfo("cleanUpStaleTaskOutcomes()", "before cleanup there are "<<_allocatedJobs.unsafe_size()<<" allocated received jobs left, "
+  logDebug("cleanUpStaleTaskOutcomes()", "before cleanup there are "<<_allocatedJobs.unsafe_size()<<" allocated received jobs left, "
                                                                      <<_mapTagToSTPData.size()<<" jobs to send,"
                                                                      <<" allocated jobs send "<<AllocatedSTPsSend
                                                                      <<" allocated jobs receive "<<AllocatedSTPsReceive
@@ -2559,7 +2574,7 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
       }
   }
 
-  logInfo("cleanUpStaleTaskOutcomes()", " there are "<<_allocatedJobs.unsafe_size()<<" allocated received jobs left, "<<_mapTagToSTPData.size()<<" jobs to send,"
+  logDebug("cleanUpStaleTaskOutcomes()", " there are "<<_allocatedJobs.unsafe_size()<<" allocated received jobs left, "<<_mapTagToSTPData.size()<<" jobs to send,"
                                           <<" allocated jobs send "<<AllocatedSTPsSend<<" allocated jobs receive "<<AllocatedSTPsReceive<< " iterated through "<<i<<" keys");
 #if defined(OffloadingCheckForSlowOperations)
   timing += MPI_Wtime();
@@ -2810,6 +2825,8 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
 
     _mapTagToSTPData.insert(std::make_pair(tag, data));
 
+    double time = -MPI_Wtime();
+
     int j = 0;
     for(int i=0; i<teams; i++) {
       if(i!=interCommRank) {
@@ -2830,6 +2847,10 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
                                       j++;
       }
     }
+    
+    time += MPI_Wtime();
+    if(time>0.02)
+      logError("sendTaskOutcome","took too long "<<time<<" AllocatedSTPsSend "<<AllocatedSTPsSend);
     SentSTPs++;
     exahype::reactive::RequestManager::getInstance().submitRequests(sendRequests,
                                                                          (teams-1)*(NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME+1),
@@ -3452,6 +3473,9 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
 
   bool terminateImmediately = false;
 
+  bool warningPrinted = false;
+  double timing = -MPI_Wtime();
+
 //#if defined (TaskSharing)
   while(
       (receivedTask || receivedTaskBack || receivedReplicaTask || receivedReplicaAck || receivedReplicaKey)
@@ -3461,6 +3485,12 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
 //#else
 //  while( (receivedTask || receivedTaskBack) && iprobesCounter<MaxIprobesInOffloadingProgress && !terminateImmediately ) {
 //#endif
+    if((timing+MPI_Wtime()) >10 && !warningPrinted) {
+      logError("pollForOutstanding", " warning: polling very long ");
+      warningPrinted = true;
+    }
+
+
     iprobesCounter++;
     // RECEIVE TASK BACK
 #if defined(OffloadingNoEarlyReceiveBacks)
@@ -3644,17 +3674,18 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
      assertion( ierr==MPI_SUCCESS );
 
 #ifndef OffloadingUseProgressThread
-   //  tarch::multicore::RecursiveLock lock( tarch::services::Service::receiveDanglingMessagesSemaphore, false );
-   //  if(lock.tryLock()) {
-   //    tarch::parallel::Node::getInstance().receiveDanglingMessages();
-   //    lock.free();
-   //  }
+     tarch::multicore::RecursiveLock lock( tarch::services::Service::receiveDanglingMessagesSemaphore, false );
+     if(lock.tryLock()) {
+       tarch::parallel::Node::getInstance().receiveDanglingMessages();
+       lock.free();
+      }
 #endif
 //#endif
      exahype::reactive::RequestManager::getInstance().progressRequests();
    //  if(calledOnMaster) break;
 #endif
   }
+
 #if defined(OffloadingCheckForSlowOperations)
   timing += MPI_Wtime();
   if(timing > OFFLOADING_SLOW_OPERATION_THRESHOLD)
@@ -4084,9 +4115,12 @@ bool exahype::solvers::ADERDGSolver::OffloadingManagerJob::run( bool isCalledOnM
       //if(peano::utils::UserInterface::getMemoryUsageMB()>50000) {
       //    logInfo("run()", "WARNING: memory usage is quite high!");
       //}
-
+      //double time = -MPI_Wtime();
       exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, std::numeric_limits<int>::max());
-      
+      //time += MPI_Wtime();
+      //if(time>0.02)
+      //  logInfo("run","took too long"<<time);
+
       if(_solver._offloadingManagerJobTriggerTerminate) {
           _state = State::Terminate;
       }

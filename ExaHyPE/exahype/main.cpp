@@ -33,7 +33,7 @@
 #include "../kernels/GaussLegendreBasis.h"
 
 #ifdef OffloadingUseProfiler
-#include "exahype/offloading/OffloadingProfiler.h"
+#include "exahype/reactive/OffloadingProfiler.h"
 #endif
 
 #ifndef EXAHYPE_LATE_TAKEOVER

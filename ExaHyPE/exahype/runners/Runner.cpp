@@ -307,7 +307,9 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
         logError("initDistributedMemoryConfiguration()", "Tasksharing/resilience without TBB is currently not supported! Aborting, please re-run toolkit and recompile...");
         _parser.invalidate();
 #endif
-
+#if defined(TBBPrefetchesJobData)
+        logWarning("initDistributedMemoryConfiguration()", "Tasksharing with prefetching can lead to degraded performance at high core counts! You may want to recompile with -DnoTBBPrefetchesJobData!")
+#endif
         if(selectedStrategy == exahype::parser::Parser::ResilienceStrategy::TaskSharing) {
           exahype::reactive::OffloadingContext::getInstance().setResilienceStrategy(exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharing);
         }
