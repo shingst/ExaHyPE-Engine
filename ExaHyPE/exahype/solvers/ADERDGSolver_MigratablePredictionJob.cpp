@@ -609,7 +609,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
    //                                          _element);
    //  logError("handleExecution","progress took too long "<<time<<" cellDesc "<<cellDescription.toString());
 
-   }
+   //}
 #endif
   }
   //remote task, need to execute and send it back

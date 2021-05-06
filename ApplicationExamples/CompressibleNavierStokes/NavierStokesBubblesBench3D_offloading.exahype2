@@ -83,7 +83,7 @@
         },
         "optimised_terms": [],
         "optimised_kernel_debugging": [],
-        "implementation": "generic"
+        "implementation": "optimised"
       },
       "point_sources": 0,
       "variables": [
