@@ -71,15 +71,15 @@ class exahype::reactive::ResilienceTools {
 
   static void setSoftErrorGenerationStrategy(SoftErrorGenerationStrategy strat);
 
-  static double computeInfNormError(double *a1, double *a2, size_t length);
-  static double computeL1NormError(double *a1, double *a2, size_t length);
-  static double computeL2NormError(double *a1, double *a2, size_t length);
+  static double computeInfNormError(const double *a1, const double *a2, size_t length);
+  static double computeL1NormError(const double *a1, const double *a2, size_t length);
+  static double computeL2NormError(const double *a1, const double *a2, size_t length);
 
-  static double computeInfNormErrorRel(double *a1, double *a2, size_t length);
-  static double computeL1NormErrorRel(double *a1, double *a2, size_t length);
-  static double computeL2NormErrorRel(double *a1, double *a2, size_t length);
+  static double computeInfNormErrorRel(const double *a1, const double *a2, size_t length);
+  static double computeL1NormErrorRel(const double *a1, const double *a2, size_t length);
+  static double computeL2NormErrorRel(const double *a1, const double *a2, size_t length);
 
-  bool isAdmissibleNumericalError(double *a1, double *a2, size_t length);
+  bool isAdmissibleNumericalError(const double *a1, const double *a2, size_t length);
 
   private:
   bool generateBitflipErrorInDoubleIfActive(double *array, size_t length);

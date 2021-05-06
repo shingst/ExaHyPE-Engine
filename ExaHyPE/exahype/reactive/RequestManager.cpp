@@ -105,7 +105,8 @@ exahype::reactive::RequestManager::~RequestManager() {
 
 void exahype::reactive::RequestManager::resetPostedRequests() {
   logDebug("resetPostedRequests","resetting posted requests statistics");
-  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
+  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes()
+               * exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams();
   std::fill(&_postedSendsPerRank[0], &_postedSendsPerRank[nnodes], 0);
   std::fill(&_postedReceivesPerRank[0], &_postedReceivesPerRank[nnodes], 0);
   std::fill(&_postedSendBacksPerRank[0], &_postedSendBacksPerRank[nnodes], 0);
@@ -117,7 +118,7 @@ void exahype::reactive::RequestManager::resetPostedRequests() {
 
 void exahype::reactive::RequestManager::printPostedRequests() {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
-  for(int i=0; i<nnodes; i++) {
+  for(int i=0; i< nnodes* exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams(); i++) {
     std::string str="for rank "+std::to_string(i)+":";
     if(_postedSendsPerRank[i]>0)
     str = str + "posted sends: "+std::to_string(_postedSendsPerRank[i]);
@@ -173,8 +174,10 @@ void exahype::reactive::RequestManager::submitRequests(
     RequestType type,
     exahype::solvers::Solver *solver,
     bool block ) {
-  
-  assertion(remoteRank>=0);
+
+  assertion(remoteRank>=0 || remoteRank==MULTIPLE_SOURCES);
+  assertion(remoteRank<=tarch::parallel::Node::getInstance().getNumberOfNodes()
+               * exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams());
 
   int ierr;
   //bug only appears when using scorep
@@ -184,20 +187,22 @@ void exahype::reactive::RequestManager::submitRequests(
   }
   #endif
 
-  switch(type) {
-    case RequestType::send:
-      _postedSendsPerRank[remoteRank]++; break;
-    case RequestType::receive:
-      _postedReceivesPerRank[remoteRank]++; break;
-    case RequestType::sendBack:
-      _postedSendBacksPerRank[remoteRank]++; break;
-    case RequestType::receiveBack:
-      _postedReceiveBacksPerRank[remoteRank]++; break;
-    case RequestType::receiveOutcome:
-      _postedReceiveOutcomesPerRank[remoteRank]++; break;
-    case RequestType::sendOutcome:
-      _postedSendOutcomesPerRank[remoteRank]++; break;
-  } 
+  if(remoteRank!=MULTIPLE_SOURCES) {
+    switch(type) {
+      case RequestType::send:
+        _postedSendsPerRank[remoteRank]++; break;
+      case RequestType::receive:
+        _postedReceivesPerRank[remoteRank]++; break;
+      case RequestType::sendBack:
+        _postedSendBacksPerRank[remoteRank]++; break;
+      case RequestType::receiveBack:
+        _postedReceiveBacksPerRank[remoteRank]++; break;
+      case RequestType::receiveOutcome:
+        _postedReceiveOutcomesPerRank[remoteRank]++; break;
+      case RequestType::sendOutcome:
+        _postedSendOutcomesPerRank[remoteRank]++; break;
+    }
+  }
 
   int finished = -1;
 

@@ -95,6 +95,7 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
       _isCorrupted(0),
       _currentState(State::INITIAL)
 {
+  assertion(element==0); //todo: Is element still used somewhere? Dominic's code seems to assume it to be zero...
 
   for (int i = 0; i < DIMENSIONS; i++) {
     _center[i] = center[i];
@@ -156,14 +157,9 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::setState(State new
   _currentState = newState;
 }
 
-void exahype::solvers::ADERDGSolver::MigratablePredictionJob::recoverWithOutcomes(MigratablePredictionJobData *outcomes[2], int availableOutcomes) {
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::recoverWithOutcome(MigratablePredictionJobData *outcome) {
   CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
         _element);
-
-  if(availableOutcomes==1 && outcomes[0]->_metadata._isPotSoftErrorTriggered) {
-    logError("recoverWithOutcome","Error: we have two potentially corrupted outcomes, cannot determine right one. Aborting...");
-    MPI_Abort(MPI_COMM_WORLD, -1);
-  }
 
   double *luh = static_cast<double*>(cellDescription.getSolution());
   double *lduh = static_cast<double*>(cellDescription.getUpdate());
@@ -172,12 +168,12 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::recoverWithOutcome
   double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
 
   logError("recoverWithOutcome", "recovering sane solution and correct STP");
-  std::memcpy(luh, &(outcomes[0]->_luh)[0], outcomes[0]->_luh.size() * sizeof(double));
-  std::memcpy(lduh, &(outcomes[0]->_lduh)[0], outcomes[0]->_lduh.size() * sizeof(double));
-  std::memcpy(lQhbnd, &(outcomes[0]->_lQhbnd)[0], outcomes[0]->_lQhbnd.size() * sizeof(double));
-  std::memcpy(lFhbnd, &(outcomes[0]->_lFhbnd)[0], outcomes[0]->_lFhbnd.size() * sizeof(double));
+  std::memcpy(luh, outcome->_luh.data(), outcome->_luh.size() * sizeof(double));
+  std::memcpy(lduh, outcome->_lduh.data(), outcome->_lduh.size() * sizeof(double));
+  std::memcpy(lQhbnd, outcome->_lQhbnd.data(), outcome->_lQhbnd.size() * sizeof(double));
+  std::memcpy(lFhbnd, outcome->_lFhbnd.data(), outcome->_lFhbnd.size() * sizeof(double));
 #if OffloadingGradQhbnd
-  std::memcpy(_lGradQhbnd, &outcomes[0]->_lGradQhbnd[0], outcomes[0]->_lGradQhbnd.size() * sizeof(double));
+  std::memcpy(_lGradQhbnd, &outcome->_lGradQhbnd.data(), outcome->_lGradQhbnd.size() * sizeof(double));
 #endif
   exahype::reactive::JobTableStatistics::getInstance().notifyHealedTask();
 }
@@ -198,7 +194,13 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryFindOutcomeAndH
   bool found = tryToFindAndExtractEquivalentSharedOutcomes(requiredOutcomes, status, outcomes);
 
   if(found) {
-    recoverWithOutcomes(outcomes, requiredOutcomes);
+    int saneIdx = -1;
+    if(!checkAgainstOutcomesAndFindSaneOne(outcomes, requiredOutcomes, saneIdx)) {
+      logInfo("tryFindOutcomeAndHeal", "Healing a cell!");
+      assert(saneIdx>=0 && saneIdx<=2); //otherwise, we have a problem
+      recoverWithOutcome(outcomes[saneIdx]);
+    }
+
     for(int i = 0; i<requiredOutcomes; i++)
       delete outcomes[i];
     cellDescription.setHasCompletedLastStep(true);
@@ -218,7 +220,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryFindOutcomeAndC
 #endif
 
   JobOutcomeStatus status;
-  MigratablePredictionJobData *outcomes[2];
+  MigratablePredictionJobData *outcomes[2]; //todo: avoid hardcoding
   int required = exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams()-1;
   bool found = tryToFindAndExtractEquivalentSharedOutcomes(required, status, outcomes);
   bool reschedule;
@@ -227,15 +229,19 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryFindOutcomeAndC
   tarch::la::Vector<DIMENSIONS, double> center;
   center = cellDescription.getOffset() + 0.5 * cellDescription.getSize();
 
+  int saneIdx = -1;
+
+  //todo: can we delete here already?
   if(found && status==JobOutcomeStatus::received) {
-    if(matchesOtherOutcome(outcomes[0])) {
+    if(checkAgainstOutcomesAndFindSaneOne(outcomes, required, saneIdx)) {
 	    cellDescription.setHasCompletedLastStep(true);
 	    reschedule = false;
     }
     else {
       //soft error detected
 #if defined(ResilienceHealing)
-      recoverWithOutcomes(outcomes);
+      assert(saneIdx>=0 && saneIdx<=2);
+      recoverWithOutcome(outcomes[saneIdx]);
       cellDescription.setHasCompletedLastStep(true);
       reschedule = false;
       logError("tryFindOutcomeAndCheck", "switch on healing mode now!");
@@ -255,6 +261,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryFindOutcomeAndC
       //MPI_Abort(MPI_COMM_WORLD, -1);
 #endif
     }
+    for(int i=0; i<required; i++)
+      delete outcomes[i];
   }
   else {
     logInfo("tryFindOutcomeAndCheck","Looking for cell "
@@ -334,7 +342,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 
   JobOutcomeStatus status;
   MigratablePredictionJobData *outcomes[2];
-  int required = exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams();
+  int required = exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams()-1;
   bool found = false;
 
 //#if defined(TaskSharing)
@@ -394,6 +402,22 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 #if defined FileTrace
     auto start = std::chrono::high_resolution_clock::now();
 #endif
+
+    tarch::la::Vector<DIMENSIONS, double> center;
+    center = cellDescription.getOffset() + 0.5 * cellDescription.getSize();
+    logInfo("handleLocalExecution","team "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()<<" computing STP for "
+          <<_cellDescriptionsIndex
+          <<" center[0] = "
+          << center[0]
+          <<" center[1] = "
+          << center[1]
+#if DIMENSIONS==3 //fixme: need a to string method for a migratable job!
+          <<" center[2] = "
+          << center[2]
+#endif
+          <<" time stamp = "
+          <<_predictorTimeStamp);
+
     int iterations = _solver.fusedSpaceTimePredictorVolumeIntegral(lduh,
        	lQhbnd,
         lGradQhbnd,
@@ -457,11 +481,12 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     if(needToCheck) {
       if(hasResult) {
 #if defined(ResilienceChecks)
-        bool hasNoError = matchesOtherOutcome(outcome);
+        int saneIdx = -1;
+        bool hasNoError = checkAgainstOutcomesAndFindSaneOne(outcomes, required, saneIdx);
         if(!hasNoError) {
 #if defined(ResilienceHealing)
           //logInfo("handleLocalExecution", "could switch on healing mode now!");
-          recoverWithOutcomes(outcome);
+          recoverWithOutcome(outcomes[saneIdx]);
           reschedule = false;
           //_solver.switchToHealingMode();
           //MPI_Abort(MPI_COMM_WORLD, -1);
@@ -485,6 +510,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 
     if(needToShare) {
       if(exahype::reactive::ResilienceTools::TriggerLimitedCellsOnly) {
+        logInfo("handleLocalExecution", "Delaying outcome");
         _solver.storePendingOutcomeToBeShared(this); //delay sharing until we can be sure that trigger hasn't been set
       }
       else {
@@ -502,6 +528,10 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
           << center[0]
           <<" center[1] = "
           << center[1]
+#if DIMENSIONS==3
+          <<" center[2] = "
+          << center[2]
+#endif
           <<" time stamp = "
           <<_predictorTimeStamp
           <<" _isPotSoftErrorTriggered "
@@ -604,7 +634,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleRemoteExecut
       <<" origin rank = "<<_originRank);
 #endif
 
-   int iterations=_solver.fusedSpaceTimePredictorVolumeIntegral(
+  int iterations=_solver.fusedSpaceTimePredictorVolumeIntegral(
       _lduh,
       _lQhbnd,
       _lGradQhbnd,
@@ -617,34 +647,35 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleRemoteExecut
       true);
 
 #if defined(GenerateSoftErrors)
-   exahype::reactive::SoftErrorInjector::getInstance().generateBitflipErrorInDoubleIfActive(_lduh, _solver.getUpdateSize());
+  exahype::reactive::SoftErrorInjector::getInstance().generateBitflipErrorInDoubleIfActive(_lduh, _solver.getUpdateSize());
 #endif
 
 #if DIMENSIONS==3
-   logDebug("handleRemoteExecution",
+  logDebug("handleRemoteExecution",
         " finished job: center[0] = "<<_center[0]
       <<" center[1] = "<<_center[1]
       <<" center[2] = "<<_center[2]
       <<" time stamp = "<<_predictorTimeStamp
       <<" origin rank = "<<_originRank);
 #else
-   logDebug("handleRemoteExecution",
+  logDebug("handleRemoteExecution",
         " finished job: center[0] = "<<_center[0]
       <<" center[1] = "<<_center[1]
       <<" time stamp = "<<_predictorTimeStamp
       <<" origin rank = "<<_originRank);
 #endif
    
-   hasComputed = true;
+  hasComputed = true;
 #if defined(USE_ITAC)
-    VT_end(event_stp_remote);
+  VT_end(event_stp_remote);
 #endif
 #if defined(FileTrace)
-    auto stop = std::chrono::high_resolution_clock::now(); 
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start); 
+  auto stop = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
 
-   // exahype::reactive::STPStatsTracer::getInstance().writeTracingEventIteration(iterations, exahype::reactive::STPTraceKey::ADERDGRemoteMigratable);
-    exahype::reactive::STPStatsTracer::getInstance().writeTracingEventRunIterations(duration.count(), iterations, exahype::reactive::STPTraceKey::ADERDGRemoteMigratable);
+  // exahype::reactive::STPStatsTracer::getInstance().writeTracingEventIteration(iterations, exahype::reactive::STPTraceKey::ADERDGRemoteMigratable);
+  exahype::reactive::STPStatsTracer::getInstance().writeTracingEventRunIterations(duration.count(), iterations,
+                                                     exahype::reactive::STPTraceKey::ADERDGRemoteMigratable);
 #endif
   return result;
 }
@@ -757,13 +788,15 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
   return result;
 }
 
-bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::matchesOtherOutcome(MigratablePredictionJobData *data) {
+bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::checkAgainstOutcome(MigratablePredictionJobData *data) {
 #if defined(USE_TMPI)
   logInfo("matchesOtherOutcome", "team "<<TMPI_GetTeamNumber()<<" comparing center[0]="<<_center[0]<<" center[1]="<<_center[1]<<" timestamp "<<_predictorTimeStamp<<" with received task outcome "<<data->_metadata.to_string());
 #endif
 
   CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
       _element);
+
+  //todo: check full metadata, too?
 
   double *lduh = static_cast<double*>(cellDescription.getUpdate());
   double *lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
@@ -774,6 +807,10 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::matchesOtherOutcom
 
   bool equal = true;
   bool tmp;
+
+  tmp = data->_metadata._predictorTimeStamp == _predictorTimeStamp; equal &= tmp;
+  tmp = data->_metadata._predictorTimeStepSize == _predictorTimeStepSize; equal &= tmp;
+
   tmp = exahype::reactive::ResilienceTools::getInstance().isAdmissibleNumericalError(data->_lQhbnd.data(), lQhbnd, data->_lQhbnd.size()); equal&=tmp;
   if(!tmp) {
     logError("matchesOtherOutcome", "lQhbnd is not (numerically) equal for cell "<<"center[0]="<<_center[0]<<" center[1]="<<_center[1]<<" timestamp "<<_predictorTimeStamp);
@@ -798,9 +835,47 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::matchesOtherOutcom
     logError("matchesOtherOutcome", "soft error detected: "<<data->_metadata.to_string());
     exahype::reactive::JobTableStatistics::getInstance().notifyDetectedError();
   }
+  return equal;
+}
 
-  logDebug("matchesOtherOutcome", "checked duplicate executions for soft errors, result = "<<equal);
-  exahype::reactive::JobTableStatistics::getInstance().notifyDoubleCheckedTask();
+bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::checkAgainstOutcomesAndFindSaneOne(MigratablePredictionJobData **data, int outcomes, int &idxSane) {
+
+  bool equal = true;
+  assertion(outcomes>0);
+
+  equal = checkAgainstOutcome(data[0]);
+  if(equal || !data[0]->_metadata._isPotSoftErrorTriggered) {
+    idxSane = 0;
+  }
+
+  if(outcomes==1 || equal) {
+    logDebug("checkAgainstOutcomesAndFindSaneOne", "checked duplicate executions for soft errors, result = "<<equal);
+    exahype::reactive::JobTableStatistics::getInstance().notifyDoubleCheckedTask();
+    return equal; //already found two matching outcomes or we only have a single one to check against
+  }
+
+  assertion(!equal);
+  //A!=B  -> there must be some error somewhere
+  //majority vote to find sane one
+  if(checkAgainstOutcome(data[1])) {
+    idxSane = 1;
+    logDebug("checkAgainstOutcomesAndFindSaneOne", "checked duplicate executions for soft errors, result = "<<equal);
+    exahype::reactive::JobTableStatistics::getInstance().notifyDoubleCheckedTask();
+    return true; // A != B && A==C -> C is correct
+  }
+  else { // A!=B && A!=C
+    if(data[0]->matches(*data[1])) {
+      //  A!=B && A!=C && B==C
+      idxSane = 1;
+      return false; //A is wrong
+    }
+    else {
+      logError("checkAgainstOutcomesAndFindSaneOne", "We have three different outcomes, there must be something wrong here!");
+      assertion(false);
+      MPI_Abort(MPI_COMM_WORLD, -1);
+      return false;
+    }
+  }
 
   return equal;
 }
@@ -1253,6 +1328,38 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJobData::~MigratablePredicti
   AllocatedSTPs--;
 }
 
+bool exahype::solvers::ADERDGSolver::MigratablePredictionJobData::matches(const MigratablePredictionJobData& a) const {
+  bool equal = true;
+  bool tmp;
+  assertion(a._lQhbnd.size()==_lQhbnd.size());
+  assertion(a._lFhbnd.size()==_lFhbnd.size());
+  assertion(a._lduh.size()==_lduh.size());
+  assertion(a._lGradQhbnd.size()==_lGradQhbnd.size());
+
+  tmp = _metadata == a._metadata;
+
+  tmp = exahype::reactive::ResilienceTools::getInstance().isAdmissibleNumericalError(a._lQhbnd.data(), _lQhbnd.data(), a._lQhbnd.size()); equal&=tmp;
+  if(!tmp) {
+    logError("matchesOtherOutcome", "lQhbnd is not (numerically) equal");
+  }
+
+#if defined(OffloadingGradQhbnd)
+  tmp = exahype::reactive::ResilienceTools::getInstance().isAdmissibleNumericalError(a._lGradQhbnd.data(), _lGradQhbnd, a._lGradQhbnd.size()); equal&=tmp;
+  if(!tmp) {
+    logError("matchesOtherOutcome", "lGradQhbnd is not (numerically) equal");
+  }
+#endif
+  tmp = exahype::reactive::ResilienceTools::getInstance().isAdmissibleNumericalError(a._lFhbnd.data(), _lFhbnd.data(), a._lFhbnd.size()); equal&=tmp;
+  if(!tmp) {
+    logError("matchesOtherOutcome", "lFhbnd is not  (numerically) equal");
+  }
+  tmp = exahype::reactive::ResilienceTools::getInstance().isAdmissibleNumericalError(a._lduh.data(), _lduh.data(), a._lduh.size()); equal&=tmp;
+  if(!tmp) {
+    logError("matchesOtherOutcome", "lduh is not  (numerically) equal");
+  }
+  return equal;
+}
+
 exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::MigratablePredictionJobMetaData()
 : _predictorTimeStamp(0),
   _predictorTimeStepSize(0),
@@ -1287,10 +1394,10 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::unpackCont
 std::string exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::to_string() const {
   std::string result;
 
-  result = " center[0]  = " + std::to_string(_center[0]);
+  result = " center[0] = " + std::to_string(_center[0]);
   result += " center[1] = " + std::to_string(_center[1]);
   #if DIMENSIONS==3
-  result += " center[1] = " + std::to_string(_center[2]);
+  result += " center[2] = " + std::to_string(_center[2]);
   #endif
 
   result += " time stamp = " + std::to_string(_predictorTimeStamp);

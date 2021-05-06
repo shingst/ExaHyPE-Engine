@@ -625,10 +625,11 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
                  isFirstTimeStepOfBatch/*addSurfaceIntegralContributionToUpdate*/);
   const bool isTroubled = checkIfCellIsTroubledAndDetermineMinAndMax(solverPatch,cellInfo);
 
-#if defined(TaskSharing)
-  //todo: set trigger for outcome
-  _solver.get()->releasePendingOutcomeAndShare(cellInfo._cellDescriptionsIndex, cellInfo.indexOfADERDGCellDescription(solverPatch.getSolverNumber()));
-#endif
+  if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
+      != exahype::reactive::OffloadingContext::ResilienceStrategy::None) {
+    //todo: set trigger for outcome
+    _solver.get()->releasePendingOutcomeAndShare(cellInfo._cellDescriptionsIndex, cellInfo.indexOfADERDGCellDescription(solverPatch.getSolverNumber()));
+  }
 
   UpdateResult result;
   result._timeStepSize    = startNewTimeStep(solverPatch,cellInfo,isFirstTimeStepOfBatch);

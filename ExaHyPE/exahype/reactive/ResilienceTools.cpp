@@ -64,7 +64,7 @@ bool exahype::reactive::ResilienceTools::generateBitflipErrorInDoubleIfActive(do
     ptr[idx_byte] = ptr[idx_byte] ^ mask;
     array[idx_array] = new_val;
 
-    logInfo("generateBitflipErrorInDoubleIfActive()","generating bitflip: pos = "<<idx_array<<" byte = "<<idx_byte<<" bit = "<<idx_bit<< " old ="<<old_val<<" new = "<<new_val);
+    logError("generateBitflipErrorInDoubleIfActive()","generating bitflip: pos = "<<idx_array<<" byte = "<<idx_byte<<" bit = "<<idx_bit<< " old ="<<old_val<<" new = "<<new_val);
     _cnt = 0;
     _numFlipped++;
 
@@ -121,7 +121,7 @@ void exahype::reactive::ResilienceTools::setSoftErrorGenerationStrategy(SoftErro
   GenerationStrategy = strat;
 }
 
-double exahype::reactive::ResilienceTools::computeInfNormError(double *a1, double *a2, size_t length) {
+double exahype::reactive::ResilienceTools::computeInfNormError(const double *a1, const double *a2, size_t length) {
   double result = 0.0;
   for(size_t i = 0; i<length; i++) {
     result = std::max(result, std::abs(a1[i]-a2[i]));
@@ -129,7 +129,7 @@ double exahype::reactive::ResilienceTools::computeInfNormError(double *a1, doubl
   return result;
 }
 
-double exahype::reactive::ResilienceTools::computeL1NormError(double *a1, double *a2, size_t length){
+double exahype::reactive::ResilienceTools::computeL1NormError(const double *a1, const double *a2, size_t length){
   double result = 0.0;
   for(size_t i = 0; i<length; i++) {
     result += std::abs(a1[i]-a2[i]);
@@ -137,7 +137,7 @@ double exahype::reactive::ResilienceTools::computeL1NormError(double *a1, double
   return result;
 }
 
-double exahype::reactive::ResilienceTools::computeL2NormError(double *a1, double *a2, size_t length){
+double exahype::reactive::ResilienceTools::computeL2NormError(const double *a1, const double *a2, size_t length){
   double result = 0.0;
   for(size_t i = 0; i<length; i++) {
     result += std::pow((a1[i]-a2[i]),2);
@@ -145,7 +145,7 @@ double exahype::reactive::ResilienceTools::computeL2NormError(double *a1, double
   return std::sqrt(result);
 }
 
-double exahype::reactive::ResilienceTools::computeInfNormErrorRel(double *a1, double *a2, size_t length) {
+double exahype::reactive::ResilienceTools::computeInfNormErrorRel(const double *a1, const double *a2, size_t length) {
   double result = 0.0;
   for(size_t i = 0; i<length; i++) {
     if(a1[i]+a2[i]!=0)
@@ -154,7 +154,7 @@ double exahype::reactive::ResilienceTools::computeInfNormErrorRel(double *a1, do
   return result;
 }
 
-double exahype::reactive::ResilienceTools::computeL1NormErrorRel(double *a1, double *a2, size_t length){
+double exahype::reactive::ResilienceTools::computeL1NormErrorRel(const double *a1, const double *a2, size_t length){
   double result = 0.0;
   for(size_t i = 0; i<length; i++) {
     if(a1[i]+a2[i]!=0)
@@ -163,7 +163,7 @@ double exahype::reactive::ResilienceTools::computeL1NormErrorRel(double *a1, dou
   return result;
 }
 
-double exahype::reactive::ResilienceTools::computeL2NormErrorRel(double *a1, double *a2, size_t length){
+double exahype::reactive::ResilienceTools::computeL2NormErrorRel(const double *a1, const double *a2, size_t length){
   double result = 0.0;
   for(size_t i = 0; i<length; i++) {
     if(a1[i]+a2[i]!=0)
@@ -172,7 +172,7 @@ double exahype::reactive::ResilienceTools::computeL2NormErrorRel(double *a1, dou
   return std::sqrt(result);
 }
 
-bool exahype::reactive::ResilienceTools::isAdmissibleNumericalError(double *a1, double *a2, size_t length) {
+bool exahype::reactive::ResilienceTools::isAdmissibleNumericalError(const double *a1, const double *a2, size_t length) {
   //double infnorm = computeInfNormErrorRel(a1, a2, length);
   //double l1norm = computeL1NormErrorRel(a1, a2, length);
   //double l2norm = computeL2NormErrorRel(a1, a2, length);

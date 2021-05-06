@@ -265,6 +265,7 @@ class exahype::reactive::RequestManager {
     static RequestManager* _static_managers[MAX_THREADS];
 
   public:
+    static constexpr int MULTIPLE_SOURCES = -1;
 
     int getNumberOfOutstandingRequests(RequestType type);
 

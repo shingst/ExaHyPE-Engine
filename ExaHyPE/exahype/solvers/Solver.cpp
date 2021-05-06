@@ -173,7 +173,7 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
   bool waitingForRemoteJobs = false;
 
   if ( !finishedWait ) {
-    std::cerr<<"waitUntilAllBackgroundTasksHaveTerminated()"<< "waiting for " << queuedJobs << " background job(s) to complete (type=" << toString(jobType) << ").";
+    //std::cerr<<"waitUntilAllBackgroundTasksHaveTerminated()"<< "waiting for " << queuedJobs << " background job(s) to complete (type=" << toString(jobType) << ").";
     #if defined(Asserts)
     logInfo("waitUntilAllBackgroundTasksHaveTerminated()",
       "waiting for " << queuedJobs << " background job(s) to complete (type=" << toString(jobType) << ").");

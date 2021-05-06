@@ -2742,7 +2742,7 @@ void exahype::solvers::ADERDGSolver::sendKeyOfTaskOutcomeToOtherTeams(Migratable
     }
 
      exahype::reactive::RequestManager::getInstance().submitRequests(
-                   sendRequests, teams-1, tag, -1,
+                   sendRequests, teams-1, tag, exahype::reactive::RequestManager::MULTIPLE_SOURCES,
                    MigratablePredictionJob::sendKeyHandlerTaskSharing,
                    exahype::reactive::RequestType::sendOutcome,
                    this, MPI_BLOCKING);
@@ -2880,7 +2880,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
     exahype::reactive::RequestManager::getInstance().submitRequests(sendRequests,
                                                                          (teams-1)*(NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME+1),
                                                                          tag,
-                                                                         0,  //hack: need a better rank number here
+                                                                         exahype::reactive::RequestManager::MULTIPLE_SOURCES,
                                                                          MigratablePredictionJob::sendHandlerTaskSharing,
                                                                          exahype::reactive::RequestType::sendOutcome,
                                                                          this, MPI_BLOCKING);
@@ -2933,6 +2933,7 @@ void exahype::solvers::ADERDGSolver::releasePendingOutcomeAndShare(int cellDescr
   bool found = _pendingOutcomesToBeShared.find(accessor, std::make_pair(cellDescriptionsIndex, element));
   if(found) {
     data = accessor->second;
+    assertion(data!=nullptr);
     _pendingOutcomesToBeShared.erase(accessor);
     accessor.release();
     logInfo("releasePendingOutcomeAndShare","releasing a pending outcome");
@@ -2984,7 +2985,7 @@ void exahype::solvers::ADERDGSolver::releasePendingOutcomeAndShare(int cellDescr
     exahype::reactive::RequestManager::getInstance().submitRequests(sendRequests,
                                                                          (teams-1)*(NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME+1),
                                                                          tag,
-                                                                         -1,
+                                                                         exahype::reactive::RequestManager::MULTIPLE_SOURCES,
                                                                          MigratablePredictionJob::sendHandlerTaskSharing,
                                                                          exahype::reactive::RequestType::sendOutcome,
                                                                          this, MPI_BLOCKING);

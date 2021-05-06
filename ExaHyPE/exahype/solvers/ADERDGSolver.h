@@ -16,6 +16,8 @@
 #ifndef _EXAHYPE_SOLVERS_ADERDG_SOLVER_H_
 #define _EXAHYPE_SOLVERS_ADERDG_SOLVER_H_
 
+#include "exahype/solvers/Solver.h"
+
 #include <iostream>
 #include <string>
 #include <vector>
@@ -23,8 +25,7 @@
 #include <tuple>
 #include <functional>
 #include <mutex>
-
-#include "exahype/solvers/Solver.h"
+#include <algorithm>
 
 #include "peano/heap/Heap.h"
 #include "peano/utils/Globals.h"
@@ -1045,6 +1046,19 @@ private:
       MigratablePredictionJobMetaData();
       ~MigratablePredictionJobMetaData();
 
+      bool operator==(const MigratablePredictionJobMetaData &other) const {
+         //todo: may not work with SmartMPI
+         bool equal = true;
+         equal &= std::equal(&(_center[0]), &(_center[DIMENSIONS]), &(other._center[0]));
+         equal &= std::equal(&(_dx[0]), &(_dx[DIMENSIONS]), &(other._dx[0]));
+         equal &= _predictorTimeStamp == other._predictorTimeStamp;
+         equal &= _predictorTimeStepSize == other._predictorTimeStepSize;
+         equal &= _element == other._element;
+         equal &= _originRank == other._originRank;
+         equal &= _isPotSoftErrorTriggered == other._isPotSoftErrorTriggered;
+         return true;
+      }
+
       std::string to_string() const;
       const double * getCenter() const;
       const double * getDx() const;
@@ -1066,7 +1080,7 @@ private:
       static MPI_Datatype _datatype;
 
   };
- 
+
   /**
    * This class encapsulates all the data that a victim rank
    * needs when a STP task is offloaded to this rank.
@@ -1091,6 +1105,8 @@ private:
 
     MigratablePredictionJobData(ADERDGSolver& solver);
     ~MigratablePredictionJobData();
+
+    bool matches(const MigratablePredictionJobData& a) const;
     //deleted copy constructor
     MigratablePredictionJobData(const MigratablePredictionJobData&) = delete;
     //deleted copy assignment operator
@@ -1103,10 +1119,8 @@ private:
    * and its data has been sent back.
    */
   tbb::concurrent_hash_map<std::pair<int,int>, MigratablePredictionJobData*> _mapTagRankToStolenData;
-//#if defined(TaskSharing)
   tbb::concurrent_hash_map<std::pair<int,int>, MigratablePredictionJobData*> _mapTagRankToReplicaData;
   tbb::concurrent_hash_map<std::pair<int,int>, double*> _mapTagRankToReplicaKey;
-//#endif
   tbb::concurrent_hash_map<int, CellDescription*> _mapTagToCellDesc;
   tbb::concurrent_hash_map<const CellDescription*, std::pair<int,int>> _mapCellDescToTagRank;
   tbb::concurrent_hash_map<const CellDescription*, tarch::multicore::jobs::Job*> _mapCellDescToRecompJob;
@@ -1180,12 +1194,15 @@ private:
       bool tryToFindAndExtractEquivalentSharedOutcomes(int required, ADERDGSolver::JobOutcomeStatus &status, MigratablePredictionJobData **outcome);
       bool tryFindOutcomeAndHeal();
       void sendBackOutcomeToOrigin();
-      bool matchesOtherOutcome(MigratablePredictionJobData *data);
+      bool checkAgainstOutcome(MigratablePredictionJobData *data);
+      bool checkAgainstOutcomesAndFindSaneOne(MigratablePredictionJobData **data, int outcomes, int& idxSane);
       void packMetaData(MigratablePredictionJobMetaData *buffer);
-      void recoverWithOutcomes(MigratablePredictionJobData *data[2], int availableOutcomes);
+      void recoverWithOutcome(MigratablePredictionJobData *outcome);
       //static size_t getSizeOfMetaData();
       void setState(State newState);
       void setTrigger(bool flipped);
+
+      MigratablePredictionJobMetaData getMetadata() const;
 
     public:
       // constructor for local jobs that can be stolen
