@@ -139,7 +139,7 @@ tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::CoarseGridSem
 
 tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::OffloadingSemaphore;
 
-//ToDo (Philipp): may no longer be necessary
+#if defined(SharedTBB)
 std::atomic<int> exahype::solvers::ADERDGSolver::MaxIprobesInOffloadingProgress (std::numeric_limits<int>::max());
 
 std::atomic<int> exahype::solvers::ADERDGSolver::MigratablePredictionJob::JobCounter (0);
@@ -159,6 +159,7 @@ tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::EmergencySema
 //todo(Philipp): probably, this should be moved somewhere else!
 int exahype::solvers::ADERDGSolver::REQUEST_JOB_CANCEL = 0;
 int exahype::solvers::ADERDGSolver::REQUEST_JOB_ACK = 1;
+#endif
 
 #ifdef OffloadingUseProgressTask
 std::unordered_set<int> exahype::solvers::ADERDGSolver::ActiveSenders;
@@ -270,8 +271,9 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
      _DMPObservables(DMPObservables),
      _minRefinementStatusForTroubledCell(_refineOrKeepOnFineGrid+3),
      _checkForNaNs(true),
-     _meshUpdateEvent(MeshUpdateEvent::None),
-     _lastReceiveTag(tarch::parallel::Node::getInstance().getNumberOfNodes()),
+     _meshUpdateEvent(MeshUpdateEvent::None)
+#if defined(SharedTBB)
+     ,_lastReceiveTag(tarch::parallel::Node::getInstance().getNumberOfNodes()),
      _lastReceiveBackTag(tarch::parallel::Node::getInstance().getNumberOfNodes()),
      _offloadingManagerJob(nullptr),
      _offloadingManagerJobTerminated(false),
@@ -283,18 +285,19 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
      _allocatedJobs(),
      _healingModeActive(false),
      _pendingOutcomesToBeShared()
+#endif
 {
   // register tags with profiler
   for (const char* tag : tags) {
     _profiler->registerTag(tag);
   }
 
-  #ifdef Parallel
-//#if defined(DistributedOffloading)
+#ifdef Parallel
+#if defined(SharedTBB)
   MigratablePredictionJobMetaData::initDatatype();
   //todo: may need to add support for multiple solvers
   exahype::reactive::OffloadingProgressService::getInstance().setSolver(this);
-//#endif
+#endif
 
 #ifdef OffloadingUseProfiler
   exahype::reactive::OffloadingProfiler::getInstance().beginPhase();
@@ -479,10 +482,12 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
   endTimeStep(_minTimeStamp,isLastTimeStepOfBatchOrNoBatch);
 
   //Todo(Philipp): do this also with local recomp!! OffloadingLocalRecompute
+#if defined(SharedTBB)
   if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()!=exahype::reactive::OffloadingContext::ResilienceStrategy::None) {
     exahype::reactive::JobTableStatistics::getInstance().printStatistics();
     cleanUpStaleTaskOutcomes();
   }
+#endif
 }
 
 void exahype::solvers::ADERDGSolver::updateTimeStepSize() {
@@ -829,12 +834,19 @@ void exahype::solvers::ADERDGSolver::fusedTimeStepBody(
 #ifdef USE_ITAC
      // VT_begin(event_spawn);
 #endif
+#if defined(SharedTBB)
       MigratablePredictionJob *migratablePredictionJob = new MigratablePredictionJob(*this,
           cellInfo._cellDescriptionsIndex, element,
           predictionTimeStamp,
           predictionTimeStepSize);
       submitOrSendMigratablePredictionJob(migratablePredictionJob);
-
+#else
+      peano::datatraversal::TaskSet( new PredictionJob(
+        *this, cellDescription, cellInfo._cellDescriptionsIndex, element,
+        predictionTimeStamp,  // corrector time step data is correct; see docu
+        predictionTimeStepSize,
+        false/*is uncompressed*/, isSkeletonCell, isLastTimeStepOfBatch ));
+#endif
       //peano::datatraversal::TaskSet spawnedSet( stealablePredictionJob, peano::datatraversal::TaskSet::TaskType::Background );
       exahype::reactive::OffloadingProfiler::getInstance().notifySpawnedTask();
 #ifdef USE_ITAC
@@ -1094,12 +1106,19 @@ void exahype::solvers::ADERDGSolver::predictionAndVolumeIntegral(
 #ifdef USE_ITAC
        // VT_begin(event_spawn);
 #endif
+#if defined(SharedTBB)
         MigratablePredictionJob *migratablePredictionJob = new MigratablePredictionJob(*this,
           cellInfo._cellDescriptionsIndex, element,
           predictorTimeStamp,
           predictorTimeStepSize);
         submitOrSendMigratablePredictionJob(migratablePredictionJob);
         exahype::reactive::OffloadingProfiler::getInstance().notifySpawnedTask();
+#else
+        peano::datatraversal::TaskSet( new PredictionJob(
+              *this, cellDescription, cellInfo._cellDescriptionsIndex, element,
+              predictorTimeStamp,predictorTimeStepSize,
+              uncompressBefore,isSkeletonCell,addVolumeIntegralResultToUpdate) );
+#endif
 #ifdef USE_ITAC
      // VT_end(event_spawn);
 #endif
@@ -1125,7 +1144,11 @@ void exahype::solvers::ADERDGSolver::predictionAndVolumeIntegral(
 
     const bool isAMRSkeletonCell = belongsToAMRSkeleton(cellDescription);
     const bool isSkeletonCell    = isAMRSkeletonCell || isAtRemoteBoundary;
+    double time = -MPI_Wtime();
     waitUntilCompletedLastStep(cellDescription,isSkeletonCell,false);
+    time += MPI_Wtime();
+    if(time>1) 
+      logError("predictionAndVolumeIntegral","waiting too long "<<time);
     if ( cellDescription.getType()==CellDescription::Type::Leaf ) {
       const auto predictionTimeStepData = getPredictionTimeStepData(cellDescription,false); // this is either the fused scheme or a predictor recomputation
 
@@ -1559,8 +1582,13 @@ void exahype::solvers::ADERDGSolver::prolongateFaceData(
         CellDescription& parentCellDescription = getCellDescription(
             subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
         assertion1(parentCellDescription.getType()==CellDescription::Type::Leaf,parentCellDescription.toString());
+        
+    double time = -MPI_Wtime();
+    waitUntilCompletedLastStep<CellDescription>(parentCellDescription,true,false); // TODO(Dominic): We wait for skeleton jobs here. It might make sense to receiveDanglingMessages here too
+    time += MPI_Wtime();
+    if(time>1) 
+      logError("predictionAndVolumeIntegral","waiting too long "<<time);
 
-        waitUntilCompletedLastStep<CellDescription>(parentCellDescription,true,false); // TODO(Dominic): We wait for skeleton jobs here. It might make sense to receiveDanglingMessages here too
         if (
             !SpawnProlongationAsBackgroundJob ||
             isAtRemoteBoundary
@@ -1829,8 +1857,14 @@ void exahype::solvers::ADERDGSolver::mergeNeighboursData(
       counter++;
       #endif
 
+      double time = -MPI_Wtime();
       waitUntilCompletedLastStep<CellDescription>(cellDescription1,false,false);  // must be done before any other operation on the patches
       waitUntilCompletedLastStep<CellDescription>(cellDescription2,false,false);
+      time += MPI_Wtime();
+
+      if(time>1) {
+        logError("mergeNeighboursData","waiting too long for neighboour data "<<time<<" cellDesc1: "<<cellDescription1.toString()<<" cellDescription2 "<<cellDescription2.toString());
+      }
 
       if ( CompressionAccuracy > 0.0 ) {
         peano::datatraversal::TaskSet uncompression(
@@ -2462,6 +2496,7 @@ void exahype::solvers::ADERDGSolver::toString (std::ostream& out) const {
 ///////////////////////////////////
 // DISTRIBUTED OFFLOADING
 ///////////////////////////////////
+#if defined(SharedTBB)
 int exahype::solvers::ADERDGSolver::getTaskPriorityLocalStealableJob(int cellDescriptionsIndex, int element, double timeStamp){
   if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
      !=exahype::reactive::OffloadingContext::ResilienceStrategy::None) {
@@ -2511,7 +2546,7 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
 #endif
 
   //Todo (Philipp): refactor and make nice
-  logInfo("cleanUpStaleTaskOutcomes()", "before cleanup there are "<<_allocatedJobs.unsafe_size()<<" allocated received jobs left, "
+  logDebug("cleanUpStaleTaskOutcomes()", "before cleanup there are "<<_allocatedJobs.unsafe_size()<<" allocated received jobs left, "
                                                                      <<_mapTagToSTPData.size()<<" jobs to send,"
                                                                      <<" allocated jobs send "<<AllocatedSTPsSend
                                                                      <<" allocated jobs receive "<<AllocatedSTPsReceive
@@ -2583,7 +2618,7 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
       }
   }
 
-  logInfo("cleanUpStaleTaskOutcomes()", " there are "<<_allocatedJobs.unsafe_size()<<" allocated received jobs left, "<<_mapTagToSTPData.size()<<" jobs to send,"
+  logDebug("cleanUpStaleTaskOutcomes()", " there are "<<_allocatedJobs.unsafe_size()<<" allocated received jobs left, "<<_mapTagToSTPData.size()<<" jobs to send,"
                                           <<" allocated jobs send "<<AllocatedSTPsSend<<" allocated jobs receive "<<AllocatedSTPsReceive<< " iterated through "<<i<<" keys");
 #if defined(OffloadingCheckForSlowOperations)
   timing += MPI_Wtime();
@@ -2842,6 +2877,8 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
 
     _mapTagToSTPData.insert(std::make_pair(tag, data));
 
+    double time = -MPI_Wtime();
+
     int j = 0;
     for(int i=0; i<teams; i++) {
       if(i!=interCommRank) {
@@ -2876,6 +2913,10 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
                                       j++;
       }
     }
+    
+    time += MPI_Wtime();
+    if(time>0.02)
+      logError("sendTaskOutcome","took too long "<<time<<" AllocatedSTPsSend "<<AllocatedSTPsSend);
     SentSTPs++;
     exahype::reactive::RequestManager::getInstance().submitRequests(sendRequests,
                                                                          (teams-1)*(NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME+1),
@@ -3630,6 +3671,9 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
 
   bool terminateImmediately = false;
 
+  bool warningPrinted = false;
+  double timing = -MPI_Wtime();
+
 //#if defined (TaskSharing)
   while(
       (receivedTask || receivedTaskBack || receivedReplicaTask || receivedReplicaAck || receivedReplicaKey)
@@ -3639,6 +3683,12 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
 //#else
 //  while( (receivedTask || receivedTaskBack) && iprobesCounter<MaxIprobesInOffloadingProgress && !terminateImmediately ) {
 //#endif
+    if((timing+MPI_Wtime()) >10 && !warningPrinted) {
+      logError("pollForOutstanding", " warning: polling very long ");
+      warningPrinted = true;
+    }
+
+
     iprobesCounter++;
     // RECEIVE TASK BACK
 #if defined(OffloadingNoEarlyReceiveBacks)
@@ -3822,17 +3872,18 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
      assertion( ierr==MPI_SUCCESS );
 
 #ifndef OffloadingUseProgressThread
-   //  tarch::multicore::RecursiveLock lock( tarch::services::Service::receiveDanglingMessagesSemaphore, false );
-   //  if(lock.tryLock()) {
-   //    tarch::parallel::Node::getInstance().receiveDanglingMessages();
-   //    lock.free();
-   //  }
+     tarch::multicore::RecursiveLock lock( tarch::services::Service::receiveDanglingMessagesSemaphore, false );
+     if(lock.tryLock()) {
+       tarch::parallel::Node::getInstance().receiveDanglingMessages();
+       lock.free();
+      }
 #endif
 //#endif
      exahype::reactive::RequestManager::getInstance().progressRequests();
    //  if(calledOnMaster) break;
 #endif
   }
+
 #if defined(OffloadingCheckForSlowOperations)
   timing += MPI_Wtime();
   if(timing > OFFLOADING_SLOW_OPERATION_THRESHOLD)
@@ -4262,9 +4313,12 @@ bool exahype::solvers::ADERDGSolver::OffloadingManagerJob::run( bool isCalledOnM
       //if(peano::utils::UserInterface::getMemoryUsageMB()>50000) {
       //    logInfo("run()", "WARNING: memory usage is quite high!");
       //}
-
+      //double time = -MPI_Wtime();
       exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, std::numeric_limits<int>::max());
-      
+      //time += MPI_Wtime();
+      //if(time>0.02)
+      //  logInfo("run","took too long"<<time);
+
       if(_solver._offloadingManagerJobTriggerTerminate) {
           _state = State::Terminate;
       }
@@ -5245,7 +5299,7 @@ bool exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOutcomeOffloa
 
 #endif
 
-//#endif
+#endif
 
 exahype::solvers::ADERDGSolver::CompressionJob::CompressionJob(
   const ADERDGSolver& solver,

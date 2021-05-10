@@ -1,3 +1,4 @@
+#if defined(Parallel) && defined(SharedTBB)
 #include "ADERDGSolver.h"
 
 #if defined(ScoreP)
@@ -17,11 +18,13 @@
 #include "exahype/reactive/ResilienceTools.h"
 #include "exahype/reactive/RequestManager.h"
 
+#include "tarch/multicore/Core.h"
+
 #if defined(USE_TMPI)
 #include "teaMPI.h"
 #endif
 
-#define MAX_PROGRESS_ITS 100
+#define MAX_PROGRESS_ITS 10000
 //#undef assertion
 //#define assertion assert
 
@@ -215,6 +218,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryFindOutcomeAndH
 
 bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryFindOutcomeAndCheck() {
 
+  //caution, this may delay setting the completed flag and cause slowdowns for the master!
 #if !defined(OffloadingUseProgressThread)
   exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, MAX_PROGRESS_ITS);
 #endif
@@ -349,7 +353,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
       != exahype::reactive::OffloadingContext::ResilienceStrategy::None) {
     needToShare = (AllocatedSTPsSend
-          <= exahype::reactive::PerformanceMonitor::getInstance().getTasksPerTimestep());
+          <= exahype::reactive::PerformanceMonitor::getInstance().getTasksPerTimestep()/tarch::multicore::Core::getInstance().getNumberOfThreads());
 
     found = tryToFindAndExtractEquivalentSharedOutcomes(required, status, outcomes);
 
@@ -554,6 +558,10 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryToFindAndExtractEquivalentSharedOutcomes(int required, JobOutcomeStatus &status, MigratablePredictionJobData **outcome) {
   CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
 	      _element);
+
+#if !defined(OffloadingUseProgressThread)
+  exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, MAX_PROGRESS_ITS);
+#endif
 
   tarch::la::Vector<DIMENSIONS, double> center;
   center = cellDescription.getOffset() + 0.5 * cellDescription.getSize();
@@ -764,13 +772,23 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
   //local treatment if this job belongs to the local rank
   if (_originRank == myRank) {
     result = handleLocalExecution(isRunOnMaster, hasComputed);
-#if !defined(OffloadingUseProgressThread)  //&& defined(TaskSharing)
+    if (!_isLocalReplica) NumberOfEnclaveJobs--;
+    assertion( NumberOfEnclaveJobs>=0 );
+#if !defined(OffloadingUseProgressThread)
+    //double time = -MPI_Wtime();
     if (!isRunOnMaster)
       exahype::solvers::ADERDGSolver::progressOffloading(&_solver,
           isRunOnMaster, std::numeric_limits<int>::max());
+      //exahype::solvers::ADERDGSolver::progressOffloading(&_solver,
+      //    isRunOnMaster, MAX_PROGRESS_ITS);
+   //time += MPI_Wtime();
+   //if(time>0.02) {
+   //  CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
+   //                                          _element);
+   //  logError("handleExecution","progress took too long "<<time<<" cellDesc "<<cellDescription.toString());
+
+   //}
 #endif
-    if (!_isLocalReplica) NumberOfEnclaveJobs--;
-    assertion( NumberOfEnclaveJobs>=0 );
   }
   //remote task, need to execute and send it back
   else {
@@ -1025,7 +1043,6 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
   exahype::reactive::JobTableStatistics::getInstance().notifyReceivedTask();
 
 }
-//#endif
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler(
     exahype::solvers::Solver* solver, int tag, int remoteRank) {
@@ -1037,7 +1054,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagToCellDesc.find(
           a_tagToCellDesc, tag);
   if(!found)
-    logError("receiveBackHandler", "Received back task but couldn't find cell, inconsistent maps!");
+    logError("receiveBackHandler", "Received back task but couldn't find cell, inconsistent maps! Tag = "<<tag<<" remote rank = "<<remoteRank);
   assertion(found);
   auto cellDescription = a_tagToCellDesc->second;
   static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagToCellDesc.erase(
@@ -1212,7 +1229,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackHandler(
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagRankToStolenData.find(
           a_tagRankToData, std::make_pair(remoteRank, tag));
   if(!found)
-    logError("sendBackHandler","Couldn't find sent back task data. Inconsistent maps!");
+    logError("sendBackHandler","Couldn't find sent back task data. Inconsistent maps! Tag = "<<tag<<" rank = "<<remoteRank);
   assertion(found);
   data = a_tagRankToData->second;
   a_tagRankToData.release();
@@ -1495,6 +1512,6 @@ int exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getElement(
 int exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getOrigin() const {
   return _originRank;
 }
-
+#endif
 //#undef assertion
 //#define assertion(expr) 

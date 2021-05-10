@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --account=pr48ma
+#SBATCH --account=pr83no
 
 # Job Name and Files (also --job-name)
 #SBATCH -J {{job_name}}

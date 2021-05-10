@@ -7,7 +7,7 @@
   },
   "computational_domain": {
     "dimension": 3,
-    "end_time": 1,
+    "end_time": 1000,
     "offset": [
       0.0,
       0.0,
@@ -19,7 +19,7 @@
       1000.0
     ]
   },
-  "architecture": "hsw",
+  "architecture": "skx",
   "shared_memory": {
     "cores": 3,
     "background_job_consumers": 2,
@@ -27,7 +27,8 @@
     "autotuning_strategy": "dummy"
   },
  "distributed_memory": {
-    "offloading_lb_strategy": "none",
+    "offloading_lb_strategy": "aggressiveHybrid",
+    "offloading_input_file" : "",
     "offloading_progress" : "none",
     "offloading_CCP_temperature" : 0,
     "offloading_diffusion_temperature" : 1,
@@ -35,7 +36,7 @@
     "offloading_CCP_steps" : 0,
     "offloading_update_temperature" : true,
     "offloading_increase_temp_threshold" : 1.0,
-    "task_sharing" : "task_sharing",
+    "task_sharing" : "no",
     "ranks_per_node": 1,
     "load_balancing_strategy": "hotspot",
     "load_balancing_type": "static",
@@ -65,7 +66,7 @@
       "type": "ADER-DG",
       "name": "NavierStokesSolver_ADERDG",
       "order": 5,
-      "maximum_mesh_size": 400,
+      "maximum_mesh_size": 200,
       "maximum_mesh_depth": 0,
       "time_stepping": "global",
       "halo_cells": 0,
@@ -82,7 +83,7 @@
         },
         "optimised_terms": [],
         "optimised_kernel_debugging": [],
-        "implementation": "generic"
+        "implementation": "optimised"
       },
       "point_sources": 0,
       "variables": [
@@ -126,16 +127,16 @@
           "type": "vtu::Cartesian::vertices::ascii",
           "name": "Plotter",
           "time": 0.0,
-          "repeat": 50.0,
-          "output": "./results/3D_new/solution_cartesian",
+          "repeat": 10.0,
+          "output": "/hppfs/work/pr83no/di57zoh3/NS_output_offloading/solution_cartesian",
           "variables": 6
         },
         {
           "type": "vtu::Legendre::vertices::ascii",
           "name": "Plotter",
           "time": 0.0,
-          "repeat": 50.0,
-          "output": "./results/3D_new/solution",
+          "repeat": 10.0,
+          "output": "/hppfs/work/pr83no/di57zoh3/NS_output_offloading/solution",
           "variables": 6
         }
       ]

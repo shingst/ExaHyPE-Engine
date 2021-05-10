@@ -667,12 +667,21 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
 #ifdef USE_ITAC
      // VT_begin(event_spawn);
 #endif
+#if defined(SharedTBB)
       ADERDGSolver::MigratablePredictionJob *migratablePredictionJob = new ADERDGSolver::MigratablePredictionJob(*_solver.get(),
           cellInfo._cellDescriptionsIndex, element,
           predictionTimeStamp,
           predictionTimeStepSize);
       _solver.get()->submitOrSendMigratablePredictionJob(migratablePredictionJob);
-
+#else
+      peano::datatraversal::TaskSet(
+          new ADERDGSolver::PredictionJob(
+              *_solver.get(),solverPatch/*the reductions are delegated to _solver anyway*/,
+              cellInfo._cellDescriptionsIndex,element,
+              predictionTimeStamp,
+              predictionTimeStepSize,
+              false/*is uncompressed*/,isSkeletonCell,isLastTimeStepOfBatch/*addVolumeIntegralResultToUpdate*/));
+#endif
       //peano::datatraversal::TaskSet spawnedSet( stealablePredictionJob, peano::datatraversal::TaskSet::TaskType::Background );
       exahype::reactive::OffloadingProfiler::getInstance().notifySpawnedTask();
 #ifdef USE_ITAC
@@ -1988,11 +1997,15 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithMasterData(
 }
 
 void exahype::solvers::LimitingADERDGSolver::startOffloadingManager() {
+#if defined(SharedTBB)
   _solver->startOffloadingManager();
+#endif
 }
 
 void exahype::solvers::LimitingADERDGSolver::stopOffloadingManager() {
+#if defined(SharedTBB)
   _solver->stopOffloadingManager();
+#endif
 }
 
 #endif

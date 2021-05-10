@@ -108,6 +108,7 @@ exahype::reactive::OffloadingContext::OffloadingContext(int threadId) :
 #endif
   MPI_Comm_set_errhandler(MPI_COMM_WORLD, MPI_ERRORS_RETURN);
 
+  //todo: should not be implicitly invoked
   initializeCommunicatorsAndTeamMetadata();
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes()*_numTeams;
@@ -151,18 +152,27 @@ bool exahype::reactive::OffloadingContext::isEnabled() {
   return _offloadingStrategy!=OffloadingStrategy::None || _resilienceStrategy!=ResilienceStrategy::None;
 }
 
+bool exahype::reactive::OffloadingContext::usesOffloading() {
+  return _offloadingStrategy!=OffloadingStrategy::None;
+}
+
 void exahype::reactive::OffloadingContext::initializeCommunicatorsAndTeamMetadata() {
   //exahype::reactive::OffloadingManager::getInstance().createMPICommunicator();
  static bool initialized = false;
-
+//Todo:  this collective routine should be exposed to the runner instead of being implicitly invoked by the constructor 
+// can cause deadlocks if only a single thread calls the first getInstance() for getting an OffloadingContext
+//#if defined(SharedTBB)
  if(!initialized)
   createMPICommunicators();
+//#endif
 
  initialized = true;
 }
 
 void exahype::reactive::OffloadingContext::destroy() {
+#if defined(SharedTBB)
   destroyMPICommunicators();
+#endif
 }
 
 MPI_Comm exahype::reactive::OffloadingContext::getTMPIInterTeamCommunicatorData() {
@@ -306,7 +316,7 @@ int exahype::reactive::OffloadingContext::getOffloadingTag() {
   static std::atomic<int> next_tag(1); //0 is reserved for status
 retry:
   int val =  next_tag.load();
-  int val_o = next_tag.load();
+  int val_o = val; 
 
   if(val>_maxTag-1) {
     logWarning("getOffloadingTag","MPI tag rollover for reactive communication!");
@@ -354,9 +364,9 @@ void exahype::reactive::OffloadingContext::triggerEmergencyForRank(int rank) {
 
   _localBlacklist[rank]++;
   exahype::reactive::PerformanceMonitor::getInstance().submitBlacklistValueForRank(_localBlacklist[rank], rank);
-  logInfo("triggerEmergencyForRank()","blacklist value for rank "<<rank<<":"<<_localBlacklist[rank]
-	                                 <<" NumberOfRemoteJobs"<<  exahype::solvers::ADERDGSolver::NumberOfRemoteJobs
-									                 <<" NumberOfEnclaveJobs"<<  exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs);
+  //logInfo("triggerEmergencyForRank()","blacklist value for rank "<<rank<<":"<<_localBlacklist[rank]
+	//                                 <<" NumberOfRemoteJobs"<<  exahype::solvers::ADERDGSolver::NumberOfRemoteJobs
+	//								                 <<" NumberOfEnclaveJobs"<<  exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs);
 }
 
 void exahype::reactive::OffloadingContext::recoverBlacklistedRanks() {
@@ -463,7 +473,7 @@ void exahype::reactive::OffloadingContext::receiveCompleted(int rank, int rail) 
 
 void exahype::reactive::OffloadingContext::notifyAllVictimsSendCompletedIfNotNotified() {
   if(!_hasNotifiedSendCompleted) {
-    logInfo("notifyAllVictimsSendCompleted","notifying that last job was sent to victims");
+    //logInfo("notifyAllVictimsSendCompleted","notifying that last job was sent to victims");
     _hasNotifiedSendCompleted = true;
     std::vector<int> victimRanks;
     if(_offloadingStrategy==OffloadingStrategy::AggressiveHybrid)

@@ -11,7 +11,7 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if  defined(Parallel)
+#if defined(Parallel) && defined(SharedTBB)
 
 #include "../reactive/RequestManager.h"
 
@@ -631,7 +631,10 @@ bool exahype::reactive::RequestManager::progressRequestsOfType( RequestType type
       _groupIdToRank[mapId].erase(groupId);
       _groupIdToTag[mapId].erase(groupId);
     }
-
+    //Currently deactivated per default because it makes things slower in some cases (additional work on master
+    //thread?)
+    //May be useful in the future, if we can move work away from the master thread or in ExaHyPE2
+#if defined(RequestManagerGrabNewRequests)
     //try to grab and add a new request to active requests (thanks to Joseph Schuchart for the suggestion)
     int mapId = requestTypeToMsgQueueIdx(type);
 
@@ -652,6 +655,7 @@ bool exahype::reactive::RequestManager::progressRequestsOfType( RequestType type
         logDebug("progressRequestsOfType","Inserted "<<request<<"  at reqIdx "<<reqIdx<<"  internal id "<<new_req_id);
       }
     }
+#endif
   }
 
   bool allFinished = true;

@@ -11,7 +11,7 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if defined(SharedTBB) && defined(Parallel)
+#if defined(Parallel)
 #include "exahype/reactive/AggressiveHybridDistributor.h"
 
 #include <algorithm>
@@ -333,9 +333,9 @@ void exahype::reactive::AggressiveHybridDistributor::printOffloadingStatistics()
     _tasksNotOffloaded[i] = 0;
     _tasksActuallyOffloaded[i] = 0;
   }
-  logInfo("printOffloadingStatistics()", "temperature value CCP "<<_temperatureCCP );
-  logInfo("printOffloadingStatistics()", "temperature value diffusion "<<_temperatureDiffusion );
-  logInfo("printOffloadingStatistics()", "time per STP  "<< exahype::reactive::OffloadingAnalyser::getInstance().getTimePerSTP());
+  logDebug("printOffloadingStatistics()", "temperature value CCP "<<_temperatureCCP );
+  logDebug("printOffloadingStatistics()", "temperature value diffusion "<<_temperatureDiffusion );
+  logDebug("printOffloadingStatistics()", "time per STP  "<< exahype::reactive::OffloadingAnalyser::getInstance().getTimePerSTP());
 }
 
 
@@ -372,8 +372,8 @@ void exahype::reactive::AggressiveHybridDistributor::updateLoadDistribution() {
   if(!_isEnabled) {
     return;
   }
-  logInfo("updateLoadDistribution()","total offloaded (target): "<<_totalTasksOffloaded<<" previous: "<<_oldTotalTasksOffloaded);
-  logInfo("updateLoadDistribution()","increment current "<<_incrementCurrent<<" previous: "<<_incrementPrevious);
+  logDebug("updateLoadDistribution()","total offloaded (target): "<<_totalTasksOffloaded<<" previous: "<<_oldTotalTasksOffloaded);
+  logDebug("updateLoadDistribution()","increment current "<<_incrementCurrent<<" previous: "<<_incrementPrevious);
 
 
   _oldTotalTasksOffloaded = _totalTasksOffloaded;
@@ -444,7 +444,7 @@ void exahype::reactive::AggressiveHybridDistributor::updateLoadDistributionCCP()
     if(_idealTasksToOffloadCCP[i]>0) {
       //we have a potential victim rank
 //     if(!exahype::reactive::OffloadingManager::getInstance().isBlacklisted(i)) {
-//      logInfo("updateLoadDistributionCCP", "offloading to "<<i<<" tasks "<<_temperatureCCP*_idealTasksToOffloadCCP[i]);
+      //logInfo("updateLoadDistributionCCP", "offloading to "<<i<<" tasks "<<_temperatureCCP*_idealTasksToOffloadCCP[i]);
       _optimalTasks[i] = _idealTasksToOffloadCCP[i];
       _tasksToOffload[i] = std::ceil(std::max((1.0-_temperatureCCP), 0.0)*_tasksToOffload[i] + _temperatureCCP*_idealTasksToOffloadCCP[i]);
 #ifdef DistributedOffloadingDisable
@@ -473,7 +473,7 @@ void exahype::reactive::AggressiveHybridDistributor::updateLoadDistributionDiffu
   double currentLongestWaitTimeVictim=-1;
   determineOptimalVictim(currentOptimalVictim, currentLongestWaitTimeVictim);
 
-  logInfo("updateLoadDistributionDiffusive()", "optimal victim: "<<currentOptimalVictim<<" critical rank:"<<currentCriticalRank);
+  logDebug("updateLoadDistributionDiffusive()", "optimal victim: "<<currentOptimalVictim<<" critical rank:"<<currentCriticalRank);
 
 #ifndef DistributedOffloadingDisable
 
@@ -555,10 +555,14 @@ bool exahype::reactive::AggressiveHybridDistributor::selectVictimRank(int& victi
     //exahype::reactive::OffloadingManager::getInstance().notifyAllVictimsSendCompletedIfNotNotified();
 #endif
 
+#if defined(SharedTBB) //_minimNumberOfJobsPerConsumerRun
   int threshold = (_localStarvationThreshold==-1) ? 1
 		         + std::max(1, tarch::multicore::Core::getInstance().getNumberOfThreads()-1)
                  * tarch::multicore::jobs::internal::_minimalNumberOfJobsPerConsumerRun
 		 : _localStarvationThreshold;
+#else
+  int threshold = 20;
+#endif 
             
   threshold = std::max(threshold, 20);
 

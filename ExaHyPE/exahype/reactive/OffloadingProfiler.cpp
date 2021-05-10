@@ -172,6 +172,8 @@ void exahype::reactive::OffloadingProfiler::notifyThresholdFail() {
 #endif
 }
 
+//Todo: begin could start a threadsafe timer here (which is an implementation difficulty as we don't really have unique
+//thread ids with TBB)
 void exahype::reactive::OffloadingProfiler::beginComputation() {
 #if defined(OffloadingUseProfiler)
 #endif

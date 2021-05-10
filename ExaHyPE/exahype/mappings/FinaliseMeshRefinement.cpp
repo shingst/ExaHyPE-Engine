@@ -242,7 +242,7 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
 
   NumberOfEnclaveCells = _numberOfEnclaveCells;
   NumberOfSkeletonCells = _numberOfSkeletonCells;
-//#if defined(DistributedOffloading)
+#if defined(SharedTBB)
   exahype::reactive::PerformanceMonitor::getInstance().setTasksPerTimestep(_numberOfEnclaveCells + _numberOfSkeletonCells);
 
   if(exahype::reactive::OffloadingContext::getInstance().isEnabled()) {
@@ -267,7 +267,7 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
 #if defined(TMPI_Heartbeats)
   exahype::reactive::HeartbeatJob::startHeartbeatJob();
 #endif
-
+#endif
   _backgroundJobsHaveTerminated = false;
 }
 

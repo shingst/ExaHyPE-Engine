@@ -16,8 +16,6 @@
 
 #include "tarch/logging/Log.h"
 #include "tarch/multicore/BooleanSemaphore.h"
-#include "tbb/concurrent_hash_map.h"
-#include "tbb/concurrent_queue.h"
 
 
 #include <mpi.h>
@@ -130,6 +128,8 @@ class exahype::reactive::OffloadingContext {
   public:
 
     bool isEnabled();
+    
+    bool usesOffloading();
 
     //Todo: with these two function, we can clean up the interface and make some more functions private
     void initializeCommunicatorsAndTeamMetadata();

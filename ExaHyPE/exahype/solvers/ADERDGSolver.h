@@ -57,10 +57,12 @@
 #include "exahype/reactive/OffloadingContext.h"
 #include "exahype/reactive/JobTableStatistics.h"
 
+#if defined(SharedTBB)
 #include <tbb/concurrent_hash_map.h>
 #include <tbb/concurrent_queue.h>
 #include <tbb/task.h>
 #include <tbb/task_group.h>
+#endif
 #include <unordered_set>
 #include "tarch/multicore/Jobs.h"
 
@@ -962,6 +964,8 @@ private:
 
   static int getTaskPriorityLocalStealableJob(int cellDescriptionsIndex, int element, double timeStamp);
 
+#if defined(SharedTBB)
+
 #ifdef OffloadingUseProgressTask
   /**
    * Used to track sending ranks from which my rank currently receives tasks.
@@ -1537,20 +1541,20 @@ private:
    */
   void mpiIrecvMigratablePredictionJob(
 	  double *luh,
-          int srcRank,
-          int tag,
+      int srcRank,
+   	  int tag,
 	  MPI_Comm comm,
-          MPI_Request *requests,
-          MigratablePredictionJobMetaData *metadata =nullptr);
+      MPI_Request *requests,
+      MigratablePredictionJobMetaData *metadata =nullptr);
   
   void mpiIrecvMigratablePredictionJobOffload(
 	  double *luh,
-          int srcRank,
+      int srcRank,
 	  int tag,
 	  MPI_Comm comm,
-          int rail,
-          MPI_Request *requests,
-          MigratablePredictionJobMetaData *metadata =nullptr);
+      int rail,
+      MPI_Request *requests,
+      MigratablePredictionJobMetaData *metadata =nullptr);
 
   /*
    * Receives task outcome of a MigratablePredictionJob from a destination rank.
@@ -1631,7 +1635,7 @@ private:
    */
   void submitOrSendMigratablePredictionJob(MigratablePredictionJob *job);
 
-//#endif
+#endif
 
 #endif
 
@@ -3087,6 +3091,7 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) override;
 
+#if defined(SharedTBB)
 //#ifdef DistributedOffloading
   /*
    * Makes progress on all offloading-related MPI communication.
@@ -3156,7 +3161,7 @@ public:
   void addRecomputeJobForCellDescription(tarch::multicore::jobs::Job* job, const CellDescription* cellDescription);
 #endif
 
-//#endif /*DistributedOffloading*/
+#endif /*SharedTBB*/
 
 #endif
 
@@ -3564,7 +3569,7 @@ public:
      return specifiedRelaxationParameter;
   }
 
-//#if defined(DistributedOffloading)
+#if defined(SharedTBB)
   virtual void waitUntilCompletedLastStepOffloading(
       const void* cellDescripPtr,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) {
  #ifdef USE_ITAC
@@ -3572,11 +3577,6 @@ public:
    //static int event_emergency = -1;
    //static const char *event_name_emergency = "trigger_emergency";
    //int ierr=VT_funcdef(event_name_emergency, VT_NOCLASS, &event_emergency ); assert(ierr==0);
- #endif
-
- #ifdef OffloadingUseProfiler
-   exahype::reactive::OffloadingProfiler::getInstance().beginWaitForTasks();
-   double time_background = -MPI_Wtime();
  #endif
 
    const CellDescription& cellDescription = *((const CellDescription*) cellDescripPtr);
@@ -3710,16 +3710,10 @@ public:
     exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressOffloading( std::numeric_limits<int>::max() );
  #endif
 
- #ifdef OffloadingUseProfiler
-   time_background += MPI_Wtime();
-   exahype::reactive::OffloadingProfiler::getInstance().endWaitForTasks(time_background);
- #endif
-
  #ifdef USE_ITAC
     VT_end(waitUntilCompletedLastStepHandle);
  #endif
   }
-//#endif
+#endif
 };
-
 #endif

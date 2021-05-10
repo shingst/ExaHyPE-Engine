@@ -14,7 +14,7 @@
  **/
  
 #ifdef OffloadingUseProfiler
-#include "exahype/offloading/OffloadingProfiler.h"
+#include "exahype/reactive/OffloadingProfiler.h"
 #endif
 #include "exahype/solvers/Solver.h"
 

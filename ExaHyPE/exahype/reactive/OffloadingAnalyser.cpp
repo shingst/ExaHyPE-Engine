@@ -232,7 +232,7 @@ void exahype::reactive::OffloadingAnalyser::endIteration(double numberOfInnerLea
       exahype::reactive::AggressiveHybridDistributor::getInstance().updateLoadDistribution();
       break;
   }
-  exahype::reactive::OffloadingContext::getInstance().printBlacklist();
+  //exahype::reactive::OffloadingContext::getInstance().printBlacklist();
   //exahype::reactive::OffloadingManager::getInstance().resetPostedRequests();
 
   _iterationCounter++;
