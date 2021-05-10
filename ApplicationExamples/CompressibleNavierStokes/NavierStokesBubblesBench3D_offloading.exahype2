@@ -65,8 +65,8 @@
     {
       "type": "ADER-DG",
       "name": "NavierStokesSolver_ADERDG",
-      "order": 5,
-      "maximum_mesh_size": 200,
+      "order": 3,
+      "maximum_mesh_size": 100,
       "maximum_mesh_depth": 0,
       "time_stepping": "global",
       "halo_cells": 0,
@@ -128,7 +128,7 @@
           "name": "Plotter",
           "time": 0.0,
           "repeat": 10.0,
-          "output": "/hppfs/work/pr83no/di57zoh3/NS_output_offloading/solution_cartesian",
+          "output": "/hppfs/work/pr83no/di57zoh3/NS_output_offloading_o3/solution_cartesian",
           "variables": 6
         },
         {
@@ -136,7 +136,7 @@
           "name": "Plotter",
           "time": 0.0,
           "repeat": 10.0,
-          "output": "/hppfs/work/pr83no/di57zoh3/NS_output_offloading/solution",
+          "output": "/hppfs/work/pr83no/di57zoh3/NS_output_offloading_o3/solution",
           "variables": 6
         }
       ]

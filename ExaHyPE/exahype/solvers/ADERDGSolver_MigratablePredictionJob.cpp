@@ -440,9 +440,23 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     hasFlipped = exahype::reactive::ResilienceTools::getInstance().corruptDataIfActive(lduh, _solver.getUpdateSize());
     setTrigger(hasFlipped);
 
-    if(hasFlipped)
-      _isCorrupted = 1; //indicates that this outcome has corrupt data!
+    if(hasFlipped)  {
+      logError("handleLocalExecution","team  "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()<<" has corrupted STP for "
+                                      <<_cellDescriptionsIndex
+                                      <<" center[0] = "
+                                      << center[0]
+                                      <<" center[1] = "
+                                      << center[1]
+                                      #if DIMENSIONS==3 //fixme: need a to string method for migratable job!
+                                      <<" center[2] = "
+                                      << center[2]
+                                      #endif
+                                      <<" time stamp = "
+                                      <<_predictorTimeStamp);
 
+      _isCorrupted = 1; //indicates that this outcome has corrupt data!
+    }
+  
     logDebug("handleLocalExecution", "celldesc ="<<_cellDescriptionsIndex<<" _isPotSoftErrorTriggered ="<<(int) _isPotSoftErrorTriggered);
 
 #if defined(ResilienceChecks)
@@ -518,6 +532,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
         _solver.storePendingOutcomeToBeShared(this); //delay sharing until we can be sure that trigger hasn't been set
       }
       else {
+        if(_isCorrupted)
+          logError("handleLocalExecution","Sharing corrupted outcome");
         _solver.sendTaskOutcomeToOtherTeams(this);
       }
     }
@@ -807,6 +823,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
 }
 
 bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::checkAgainstOutcome(MigratablePredictionJobData *data) {
+  if(_isCorrupted)
+    logError("checkAgainstOutcome", "checking against outcome");
 #if defined(USE_TMPI)
   logInfo("matchesOtherOutcome", "team "<<TMPI_GetTeamNumber()<<" comparing center[0]="<<_center[0]<<" center[1]="<<_center[1]<<" timestamp "<<_predictorTimeStamp<<" with received task outcome "<<data->_metadata.to_string());
 #endif

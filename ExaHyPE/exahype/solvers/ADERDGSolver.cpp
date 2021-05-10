@@ -2510,12 +2510,12 @@ int exahype::solvers::ADERDGSolver::getTaskPriorityLocalStealableJob(int cellDes
      center = (cellDescription.getOffset()+0.5*cellDescription.getSize());
 
      int prio_shuffle = 0;
-#if defined(ResilienceChecks) || defined(ResilienceHealing)
-     int tasks_per_team = (exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells/teamSize);
-     prio_shuffle = (LocalStealableSTPCounter/tasks_per_team)%teamSize;
-#else
+//#if defined(ResilienceChecks) || defined(ResilienceHealing)
+//     int tasks_per_team = (exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells/teamSize);
+//     prio_shuffle = (LocalStealableSTPCounter/tasks_per_team)%teamSize;
+//#else
      prio_shuffle = (LocalStealableSTPCounter+team)%teamSize;
-#endif
+//#endif
      int prio = getTaskPriority(false)+ prio_shuffle;
 
 /*    logDebug("getTaskPriorityLocalStealableJob()", "team = "<<team
@@ -2979,6 +2979,12 @@ void exahype::solvers::ADERDGSolver::releasePendingOutcomeAndShare(int cellDescr
     accessor.release();
     logInfo("releasePendingOutcomeAndShare","releasing a pending outcome");
 
+    auto& cellDescription = getCellDescription(cellDescriptionsIndex, element);
+    //set trigger -> need to reset limiter trigger, might wanna pull this out
+    logInfo("releasePendingOutcomeAndShare", " celldesc ="<<cellDescriptionsIndex<<" isTroubled "<<cellDescription.getIsTroubledInLastStep());
+      data->_metadata._isPotSoftErrorTriggered =  data->_metadata._isPotSoftErrorTriggered 
+                                                 || (exahype::reactive::ResilienceTools::TriggerLimitedCellsOnly && cellDescription.getIsTroubledInLastStep());
+
     //Share now
     int teams = exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams();
     int interCommRank = exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank();
@@ -2987,6 +2993,9 @@ void exahype::solvers::ADERDGSolver::releasePendingOutcomeAndShare(int cellDescr
     //int tag = job->_cellDescriptionsIndex; // exahype::reactive::OffloadingContext::getInstance().getOffloadingTag();
     int tag = exahype::reactive::OffloadingContext::getInstance().getOffloadingTag();
     _mapTagToSTPData.insert(std::make_pair(tag, data));
+
+    if(data->_metadata._isCorrupted)
+      logError("releasePendingOutcomeAndShare", "Warning: a corrupted outcome is shared/has not been detected by SDC mechanism, softErrorTriggered="<<data->_metadata._isPotSoftErrorTriggered);
 
     int j = 0;
     for(int i=0; i<teams; i++) {

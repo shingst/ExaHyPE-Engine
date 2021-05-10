@@ -50,7 +50,7 @@
     "ranks_per_node"         : 1
   },
   "resilience" : {
-    "generate_soft_errors" : "no",
+    "generate_soft_errors" : "migratable_stp_tasks_overwrite",
     "trigger_mechanism" : "trigger_limited"
   },
   "optimisation": {
