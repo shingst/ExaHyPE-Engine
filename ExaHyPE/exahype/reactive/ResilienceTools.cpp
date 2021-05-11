@@ -87,7 +87,7 @@ bool exahype::reactive::ResilienceTools::overwriteDoubleIfActive(double *array, 
     array[idx_array] = std::numeric_limits<double>::max();
     _numFlipped++;
 
-    logInfo("overwriteDoubleIfActive()", "overwrite double value, pos = "<<idx_array<<" old ="<<old_val<<" new = "<<array[idx_array]);
+    logError("overwriteDoubleIfActive()", "overwrite double value, pos = "<<idx_array<<" old ="<<old_val<<" new = "<<array[idx_array]);
     return true;
   }
   return false;

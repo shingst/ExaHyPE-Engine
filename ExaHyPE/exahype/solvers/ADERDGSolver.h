@@ -1043,9 +1043,9 @@ private:
       double _predictorTimeStepSize;
       int    _element;
       int    _originRank;
-      unsigned char   _isPotSoftErrorTriggered;
-      unsigned char _isCorrupted;
-      char *_contiguousBuffer;
+      bool   _isPotSoftErrorTriggered;
+      bool   _isCorrupted;
+      char * _contiguousBuffer;
 
       MigratablePredictionJobMetaData();
       ~MigratablePredictionJobMetaData();
@@ -1181,9 +1181,9 @@ private:
       double*                     _lGradQhbnd;
       double                      _center[DIMENSIONS];
       double                      _dx[DIMENSIONS];
-      bool 		                    _isLocalReplica;
-      unsigned char               _isPotSoftErrorTriggered;
-      unsigned char               _isCorrupted;
+      bool 		                  _isLocalReplica;
+      bool                        _isPotSoftErrorTriggered;
+      bool                        _isCorrupted;
       State                       _currentState;
 
       static std::atomic<int> JobCounter;

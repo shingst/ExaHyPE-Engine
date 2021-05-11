@@ -50,8 +50,8 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
       _lFhbnd(nullptr),
       _lGradQhbnd(nullptr),
       _isLocalReplica(false),
-      _isPotSoftErrorTriggered(0),
-      _isCorrupted(0),
+      _isPotSoftErrorTriggered(false),
+      _isCorrupted(false),
       _currentState(State::INITIAL)
 {
   LocalStealableSTPCounter++;
@@ -94,8 +94,8 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
       _lFhbnd(lFhbnd),
       _lGradQhbnd(lGradQhbnd),
       _isLocalReplica(false),
-      _isPotSoftErrorTriggered(0),
-      _isCorrupted(0),
+      _isPotSoftErrorTriggered(false),
+      _isCorrupted(false),
       _currentState(State::INITIAL)
 {
   assertion(element==0); //todo: Is element still used somewhere? Dominic's code seems to assume it to be zero...
@@ -454,7 +454,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
                                       <<" time stamp = "
                                       <<_predictorTimeStamp);
 
-      _isCorrupted = 1; //indicates that this outcome has corrupt data!
+      _isCorrupted = true; //indicates that this outcome has corrupt data!
     }
   
     logDebug("handleLocalExecution", "celldesc ="<<_cellDescriptionsIndex<<" _isPotSoftErrorTriggered ="<<(int) _isPotSoftErrorTriggered);
@@ -555,7 +555,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
           <<" time stamp = "
           <<_predictorTimeStamp
           <<" _isPotSoftErrorTriggered "
-          <<(int) _isPotSoftErrorTriggered
+          << _isPotSoftErrorTriggered
           << " hasResult "<<hasResult
           << " needToCheck "<<needToCheck
           << " needToShare "<<needToShare
@@ -1325,8 +1325,8 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::packMetaData(Migra
   std::memcpy(tmp, &_predictorTimeStepSize, sizeof(double)); tmp+= sizeof(double);
   std::memcpy(tmp, &_element, sizeof(int)); tmp+= sizeof(int);
   std::memcpy(tmp, &_originRank, sizeof(int)); tmp+= sizeof(int);
-  std::memcpy(tmp, &_isPotSoftErrorTriggered, sizeof(char)); tmp+= sizeof(char);
-  std::memcpy(tmp, &_isCorrupted, sizeof(char)); tmp+= sizeof(char);
+  std::memcpy(tmp, &_isPotSoftErrorTriggered, sizeof(bool)); tmp+= sizeof(bool);
+  std::memcpy(tmp, &_isCorrupted, sizeof(bool)); tmp+= sizeof(bool);
 #else
   metadata->_center[0] = _center[0];
   metadata->_center[1] = _center[1];
@@ -1400,8 +1400,8 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::MigratablePredi
   _predictorTimeStepSize(0),
   _element(0),
   _originRank(-1),
-  _isPotSoftErrorTriggered(0),
-  _isCorrupted(0),
+  _isPotSoftErrorTriggered(true),
+  _isCorrupted(false),
   _contiguousBuffer(nullptr) {
 #if defined(UseSmartMPI) || defined(OffloadingMetadataPacked)
   _contiguousBuffer = (char*) allocate_smartmpi(getMessageLen(),0); //todo: does Alignment help here?
@@ -1422,8 +1422,8 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::unpackCont
   std::memcpy(&_predictorTimeStepSize, tmp,  sizeof(double)); tmp+= sizeof(double);
   std::memcpy(&_element, tmp, sizeof(int)); tmp+= sizeof(int);
   std::memcpy(&_originRank, tmp, sizeof(int)); tmp+= sizeof(int);
-  std::memcpy(&_isPotSoftErrorTriggered, tmp, sizeof(char)); tmp+= sizeof(unsigned char);
-  std::memcpy(&_isCorrupted, tmp, sizeof(char)); tmp+= sizeof(unsigned char);
+  std::memcpy(&_isPotSoftErrorTriggered, tmp, sizeof(bool)); tmp+= sizeof(bool);
+  std::memcpy(&_isCorrupted, tmp, sizeof(bool)); tmp+= sizeof(bool);
 }
 
 std::string exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::to_string() const {
@@ -1451,8 +1451,8 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::initDataty
   int entries = 2+6;
   MigratablePredictionJobMetaData dummy;
 
-  int blocklengths[] = {DIMENSIONS, DIMENSIONS, 1, 1, 1, 1, 1, 1};
-  MPI_Datatype subtypes[] = {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INT, MPI_INT, MPI_CHAR, MPI_CHAR};
+  int blocklengths[] = {DIMENSIONS, DIMENSIONS, 1, 1, 1, 1, sizeof(bool), sizeof(bool)};
+  MPI_Datatype subtypes[] = {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INT, MPI_INT, MPI_BYTE, MPI_BYTE};
   MPI_Aint displs[] = {0, 0, 0, 0, 0, 0, 0, 0};
 
   MPI_Aint base;
@@ -1501,7 +1501,7 @@ MPI_Datatype exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::ge
 
 size_t exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getMessageLen() {
 #if defined(UseSmartMPI) || defined(OffloadingMetadataPacked)
-  return (2*DIMENSIONS+2)*sizeof(double)+2*sizeof(int)+2*sizeof(unsigned char);
+  return (2*DIMENSIONS+2)*sizeof(double)+2*sizeof(int)+2*sizeof(bool);
 #else
   return 1;
 #endif

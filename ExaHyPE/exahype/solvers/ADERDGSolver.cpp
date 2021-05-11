@@ -2994,8 +2994,12 @@ void exahype::solvers::ADERDGSolver::releasePendingOutcomeAndShare(int cellDescr
     int tag = exahype::reactive::OffloadingContext::getInstance().getOffloadingTag();
     _mapTagToSTPData.insert(std::make_pair(tag, data));
 
-    if(data->_metadata._isCorrupted)
-      logError("releasePendingOutcomeAndShare", "Warning: a corrupted outcome is shared/has not been detected by SDC mechanism, softErrorTriggered="<<data->_metadata._isPotSoftErrorTriggered);
+    if(data->_metadata._isCorrupted) {
+      logWarning("releasePendingOutcomeAndShare", "Caution: a corrupted outcome is shared. SDC should be detected...");
+      if(!data->_metadata._isPotSoftErrorTriggered)
+        logError("releasePendingOutcomeAndShare","has not been detected by SDC mechanism, softErrorTriggered="<<data->_metadata._isPotSoftErrorTriggered
+                                                                                            <<" isTroubled="<<cellDescription.getIsTroubledInLastStep());
+    }
 
     int j = 0;
     for(int i=0; i<teams; i++) {
