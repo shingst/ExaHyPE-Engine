@@ -57,6 +57,8 @@ class exahype::reactive::ResilienceTools {
   double _l1NormTol;
   double _l2NormTol;
 
+  bool _corruptionDetected;
+
   public:
 
   static SoftErrorGenerationStrategy GenerationStrategy;
@@ -80,6 +82,9 @@ class exahype::reactive::ResilienceTools {
   static double computeL2NormErrorRel(const double *a1, const double *a2, size_t length);
 
   bool isAdmissibleNumericalError(const double *a1, const double *a2, size_t length);
+
+  void setCorruptionDetected(bool corrupted);
+  bool getCorruptionDetected();
 
   private:
   bool generateBitflipErrorInDoubleIfActive(double *array, size_t length);

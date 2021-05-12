@@ -44,13 +44,13 @@
 #if defined(ResilienceHealing)
 #define NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME 5
 #else
-#define NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME 4
+#define NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME 5
 #endif
 #else
 #if defined(ResilienceHealing)
 #define NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME 4
 #else
-#define NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME 3
+#define NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME 4
 #endif
 #endif
 
@@ -1163,8 +1163,9 @@ private:
    */
   class MigratablePredictionJob : public tarch::multicore::jobs::Job {
     friend class exahype::solvers::ADERDGSolver;
+    friend class exahype::solvers::LimitingADERDGSolver;
 
-    enum class State { INITIAL, CHECK_REQUIRED, HEALING_REQUIRED};
+    enum class State { INITIAL, CHECK_REQUIRED, CHECK_PREVIOUS, HEALING_REQUIRED};
 
     private:
       ADERDGSolver&    			      _solver;
@@ -1181,7 +1182,7 @@ private:
       double*                     _lGradQhbnd;
       double                      _center[DIMENSIONS];
       double                      _dx[DIMENSIONS];
-      bool 		                  _isLocalReplica;
+      bool 		                    _isLocalReplica;
       bool                        _isPotSoftErrorTriggered;
       bool                        _isCorrupted;
       State                       _currentState;
@@ -1191,11 +1192,12 @@ private:
       // actual execution of a STP job
       bool runExecution(bool isCalledOnMaster);
       bool tryFindOutcomeAndCheck();
+      bool tryFindPreviousOutcomeAndCheck();
       bool handleExecution(bool isCalledOnMaster, bool& hasComputed);
       bool handleLocalExecution(bool isCalledOnMaster, bool& hasComputed);
       bool handleLocalExecutionOld(bool isCalledOnMaster, bool& hasComputed);
       bool handleRemoteExecution(bool& hasComputed);
-      bool tryToFindAndExtractEquivalentSharedOutcomes(int required, ADERDGSolver::JobOutcomeStatus &status, MigratablePredictionJobData **outcome);
+      bool tryToFindAndExtractEquivalentSharedOutcomes(bool previous, int required, ADERDGSolver::JobOutcomeStatus &status, MigratablePredictionJobData **outcome);
       bool tryFindOutcomeAndHeal();
       void sendBackOutcomeToOrigin();
       bool checkAgainstOutcome(MigratablePredictionJobData *data);
@@ -1215,7 +1217,8 @@ private:
 	  	  const int cellDescriptionsIndex,
 		    const int element,
 		    const double predictorTimeStamp,
-		    const double predictorTimeStepSize
+		    const double predictorTimeStepSize,
+		    const bool isPotSoftErrorTriggered
       );
       // constructor for remote jobs that were received from another rank
       MigratablePredictionJob(
@@ -1349,7 +1352,7 @@ private:
 
   std::vector<int> _lastReceiveReplicaTag;
 
-  tbb::concurrent_hash_map<JobTableKey, JobTableEntry> _jobDatabase;
+  tbb::concurrent_hash_map<JobTableKey, JobTableEntry> _outcomeDatabase;
 
   bool _healingModeActive;
 
@@ -1359,6 +1362,7 @@ private:
   tbb::concurrent_hash_map<std::pair<int,int> , MigratablePredictionJobData*> _pendingOutcomesToBeShared;
 
   void storePendingOutcomeToBeShared(MigratablePredictionJob *job);
+  void releaseDummyOutcomeAndShare(int cellDescriptionsIndex, int element, double timestamp, double timestep);
   void releasePendingOutcomeAndShare(int cellDescriptionsIndex, int element);
 
   class ConcurrentJobKeysList {
@@ -1398,7 +1402,7 @@ private:
       }
   };
 
-  ConcurrentJobKeysList _allocatedJobs;
+  ConcurrentJobKeysList _allocatedOutcomes;
   //tbb::concurrent_queue<JobTableKey> _allocatedJobs;
 //#endif
 

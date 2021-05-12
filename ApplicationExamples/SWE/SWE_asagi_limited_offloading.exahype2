@@ -10,12 +10,12 @@
     "dimension": 2,
     "time_steps": 1000,
     "offset": [
-      0.0,
-      0.0
+      -2.0,
+      -2.0
     ],
     "width": [
-      10.0,
-      10.0
+      4.0,
+      4.0
     ]
   },
   "shared_memory": {
@@ -32,7 +32,7 @@
   "distributed_memory": {
     "offloading_lb_strategy": "none",
     "offloading_input_file" : "",
-    "offloading_progress" : "progress_thread", 
+    "offloading_progress" : "none", 
     "offloading_CCP_temperature" : 0,
     "offloading_diffusion_temperature" : 1,
     "offloading_CCP_frequency" : 0,
@@ -67,7 +67,7 @@
     {
       "type": "Limiting-ADER-DG",
       "name": "MySWESolver",
-      "order": 3,
+      "order": 5,
       "maximum_mesh_size": 0.5,
       "maximum_mesh_depth": 0,
       "time_stepping": "global",
@@ -121,16 +121,16 @@
       "parameters": {
         "grav": 9.81,
         "epsilon": 0.0001,
-        "scenario": 2
+        "scenario": 11
       },
-      "plotters": [
+      "_plotters": [
         {
           "type": "vtu::Cartesian::cells::limited::ascii",
           "name": "ConservedWriter",
           "time": 0.0,
-          "repeat":10,
+          "repeat":0.1,
           "output": "results/conserved",
-          "variables": 5
+          "variables": 4
         },
         {
           "type": "probe::ascii",
@@ -138,7 +138,7 @@
           "time": 0.0,
           "repeat": 10.0,
           "output": "./buoy",
-          "variables": 5,
+          "variables": 4,
           "select": {
             "x": 545.735266126,
             "y": 62.7164740303

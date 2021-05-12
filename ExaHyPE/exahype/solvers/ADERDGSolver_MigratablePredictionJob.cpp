@@ -32,7 +32,7 @@ MPI_Datatype exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::_d
 
 exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob(
     ADERDGSolver& solver, const int cellDescriptionsIndex, const int element,
-    const double predictorTimeStamp, const double predictorTimeStepSize) :
+    const double predictorTimeStamp, const double predictorTimeStepSize, const bool isPotSoftErrorTriggered) :
       tarch::multicore::jobs::Job(
           tarch::multicore::jobs::JobType::BackgroundTask, 0,
           getTaskPriorityLocalStealableJob(cellDescriptionsIndex, element,
@@ -50,7 +50,7 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
       _lFhbnd(nullptr),
       _lGradQhbnd(nullptr),
       _isLocalReplica(false),
-      _isPotSoftErrorTriggered(false),
+      _isPotSoftErrorTriggered(isPotSoftErrorTriggered),
       _isCorrupted(false),
       _currentState(State::INITIAL)
 {
@@ -126,9 +126,9 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::setTrigger(bool fl
 
   logDebug("setTrigger", " celldesc ="<<_cellDescriptionsIndex<<" isTroubled "<<cellDescription.getIsTroubledInLastStep());
 
+  //trigger is set later if we are using limiter as a trigger
   _isPotSoftErrorTriggered =  (exahype::reactive::ResilienceTools::TriggerFlipped && flipped)
-                           || (exahype::reactive::ResilienceTools::TriggerLimitedCellsOnly && cellDescription.getIsTroubledInLastStep())
-                           ||  exahype::reactive::ResilienceTools::TriggerAllMigratableSTPs;
+                            ||  exahype::reactive::ResilienceTools::TriggerAllMigratableSTPs;
 }
 
 //Caution: Compression is not supported yet!
@@ -144,6 +144,9 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run(
       break;
     case State::CHECK_REQUIRED:
       reschedule = tryFindOutcomeAndCheck();
+      break;
+    case State::CHECK_PREVIOUS:
+      reschedule = tryFindPreviousOutcomeAndCheck();
       break;
     case State::HEALING_REQUIRED:
       reschedule = tryFindOutcomeAndHeal();
@@ -194,7 +197,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryFindOutcomeAndH
   MigratablePredictionJobData *outcomes[2];
   int requiredOutcomes = exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams()-1;
 
-  bool found = tryToFindAndExtractEquivalentSharedOutcomes(requiredOutcomes, status, outcomes);
+  bool found = tryToFindAndExtractEquivalentSharedOutcomes(false, requiredOutcomes, status, outcomes);
 
   if(found) {
     int saneIdx = -1;
@@ -216,6 +219,66 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryFindOutcomeAndH
   }
 }
 
+bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryFindPreviousOutcomeAndCheck() {
+  //caution, this may delay setting the completed flag and cause slowdowns for the master!
+#if !defined(OffloadingUseProgressThread)
+  exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, MAX_PROGRESS_ITS);
+#endif
+  CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
+            _element);
+
+  JobOutcomeStatus status;
+  MigratablePredictionJobData *outcomes[2]; //todo: avoid hardcoding
+  int required = exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams()-1;
+  bool found = tryToFindAndExtractEquivalentSharedOutcomes(true, required, status, outcomes);
+  //bool reschedule;
+
+  if(found) {
+    logInfo("tryFindPreviousOutcomeAndCheck", "Trying to check previously troubled solution..."
+            <<_cellDescriptionsIndex
+            <<" center[0] = "
+            << _center[0]
+            <<" center[1] = "
+            << _center[1]
+            <<" stamp "<<_predictorTimeStamp
+            <<" step "<<_predictorTimeStepSize
+            <<" previous stamp "<<cellDescription.getPreviousTimeStamp()
+            <<" previous step "<<cellDescription.getPreviousTimeStepSize());
+    //todo: check other data, too?
+    double *luh = static_cast<double*>(cellDescription.getSolution());
+    if(_isPotSoftErrorTriggered!=outcomes[0]->_metadata._isPotSoftErrorTriggered) {
+      logError("tryFindPreviousOutcomeAndCheck","Limiter was not active previously, we must have a soft error!"
+          <<_cellDescriptionsIndex
+          <<" center[0] = "
+          << _center[0]
+          <<" center[1] = "
+          << _center[1]
+          <<" stamp "<<_predictorTimeStamp
+          <<" step "<<_predictorTimeStepSize
+          <<" previous stamp "<<cellDescription.getPreviousTimeStamp()
+          <<" previous step "<<cellDescription.getPreviousTimeStepSize());
+      cellDescription.setHasCompletedLastStep(true); //let's use the limiter for now to correct on faulty team, the other one will continue as usual
+      //MPI_Abort(MPI_COMM_WORLD, -1);
+      return false; //run limiter next, todo: for the faulty outcome we could try to use sane solution from other team
+    }
+    else {
+      bool equalSolution = exahype::reactive::ResilienceTools::getInstance().isAdmissibleNumericalError(outcomes[0]->_luh.data(), luh, outcomes[0]->_luh.size());
+      if(!equalSolution)
+        logError("tryFindPreviousOutcomeAndCheck"," solutions to not match, we must have a soft error!");
+      cellDescription.setHasCompletedLastStep(true);
+      return false; //run limiter next for both
+      //MPI_Abort(MPI_COMM_WORLD, -1);
+    }
+
+    //limiter was activated for both cells correctly -> run limiter next
+    cellDescription.setHasCompletedLastStep(true);
+    return false;
+  }
+  else
+    return true;
+
+}
+
 bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryFindOutcomeAndCheck() {
 
   //caution, this may delay setting the completed flag and cause slowdowns for the master!
@@ -226,7 +289,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryFindOutcomeAndC
   JobOutcomeStatus status;
   MigratablePredictionJobData *outcomes[2]; //todo: avoid hardcoding
   int required = exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams()-1;
-  bool found = tryToFindAndExtractEquivalentSharedOutcomes(required, status, outcomes);
+  bool found = tryToFindAndExtractEquivalentSharedOutcomes(false, required, status, outcomes);
   bool reschedule;
   CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
         _element);
@@ -261,6 +324,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryFindOutcomeAndC
 #else
       reschedule = false;
       logError("tryFindOutcomeAndCheck", "soft error detected but we are ignoring it...");
+      exahype::reactive::ResilienceTools::getInstance().setCorruptionDetected(true);
       cellDescription.setHasCompletedLastStep(true);
       //MPI_Abort(MPI_COMM_WORLD, -1);
 #endif
@@ -275,8 +339,11 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryFindOutcomeAndC
              << center[0]
              <<" center[1] = "
              << center[1]
+#if DIMENSIONS==3 //fixme: need a to string method for a migratable job!
              <<" center[2] = "
-             << center[2]);
+             << center[2]
+#endif
+             );
     reschedule = true;
   }
 
@@ -353,9 +420,11 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
       != exahype::reactive::OffloadingContext::ResilienceStrategy::None) {
     needToShare = (AllocatedSTPsSend
-          <= exahype::reactive::PerformanceMonitor::getInstance().getTasksPerTimestep()/tarch::multicore::Core::getInstance().getNumberOfThreads());
+                   <= exahype::reactive::PerformanceMonitor::getInstance().getTasksPerTimestep()/tarch::multicore::Core::getInstance().getNumberOfThreads())
+             || (exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()==exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks
+                  && exahype::reactive::ResilienceTools::TriggerLimitedCellsOnly);
 
-    found = tryToFindAndExtractEquivalentSharedOutcomes(required, status, outcomes);
+    found = tryToFindAndExtractEquivalentSharedOutcomes(false, required, status, outcomes);
 
     if(found) {
       switch (status) {
@@ -364,7 +433,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 #if defined(ResilienceChecks)
           needToCompute = outcomes[0]->_metadata._isPotSoftErrorTriggered;
           copyResult = !outcomes[0]->_metadata._isPotSoftErrorTriggered;
-          needToCheck = outcomes[0]->_metadata._isPotSoftErrorTriggered;
+          //needToCheck = outcomes[0]->_metadata._isPotSoftErrorTriggered;
+          needToCheck = false;
           needToShare = outcomes[0]->_metadata._isPotSoftErrorTriggered;
 #else
       	  needToShare = false;
@@ -420,7 +490,9 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
           << center[2]
 #endif
           <<" time stamp = "
-          <<_predictorTimeStamp);
+          <<_predictorTimeStamp
+          <<" time step size = "
+          <<_predictorTimeStepSize);
 
     int iterations = _solver.fusedSpaceTimePredictorVolumeIntegral(lduh,
        	lQhbnd,
@@ -493,7 +565,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     != exahype::reactive::OffloadingContext::ResilienceStrategy::None)) {
 
     if(!hasResult) {
-      hasResult = tryToFindAndExtractEquivalentSharedOutcomes(required, status, outcomes);
+      hasResult = tryToFindAndExtractEquivalentSharedOutcomes(false, required, status, outcomes);
     }
 
     if(needToCheck) {
@@ -509,7 +581,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
           //_solver.switchToHealingMode();
           //MPI_Abort(MPI_COMM_WORLD, -1);
 #else
-          MPI_Abort(MPI_COMM_WORLD, -1); //for now, abort immediately
+          //MPI_Abort(MPI_COMM_WORLD, -1); //for now, abort immediately
+          exahype::reactive::ResilienceTools::getInstance().setCorruptionDetected(true);
           logError("handleLocalExecution", "soft error detected but we ignore it...");
           reschedule = false;
 #endif
@@ -518,7 +591,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
       }
       else {
         _currentState = State::CHECK_REQUIRED; //check later
-        reschedule = true;
+         reschedule = true;
       }
     }
     else {
@@ -528,8 +601,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 
     if(needToShare) {
       if(exahype::reactive::ResilienceTools::TriggerLimitedCellsOnly) {
-        logInfo("handleLocalExecution", "Delaying outcome");
-        _solver.storePendingOutcomeToBeShared(this); //delay sharing until we can be sure that trigger hasn't been set
+        logInfo("handleLocalExecution", "Delaying outcome, as we need to compute corrector first!");
+        _solver.storePendingOutcomeToBeShared(this); //delay sharing until we can be sure that trigger has been set (correction must happen first)
       }
       else {
         if(_isCorrupted)
@@ -571,7 +644,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   return reschedule;
 }
 
-bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryToFindAndExtractEquivalentSharedOutcomes(int required, JobOutcomeStatus &status, MigratablePredictionJobData **outcome) {
+bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryToFindAndExtractEquivalentSharedOutcomes(bool previous, int required, JobOutcomeStatus &status, MigratablePredictionJobData **outcome) {
   CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
 	      _element);
 
@@ -585,24 +658,33 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryToFindAndExtrac
   JobTableKey key;
   for (int i=0; i < DIMENSIONS; i++)
     key.center[i] = center[i];
-  key.timestamp = _predictorTimeStamp;
-  key.timestepSize = _predictorTimeStepSize;
+  if(!previous) {
+    key.timestamp = _predictorTimeStamp;
+    key.timestepSize = _predictorTimeStepSize;
+  }
+  else {
+    key.timestamp =  cellDescription.getPreviousTimeStamp(); //_solver.getPreviousMinTimeStamp();
+    key.timestepSize = cellDescription.getPreviousTimeStepSize();  //_solver.getPreviousMinTimeStepSize();
+  }
   key.element = _element;
 
   logInfo("tryToFindAndExtractEquivalentSharedOutcome","Looking for center[0]="<<key.center[0]<<" center[1]="<<key.center[1]
+#if DIMENSIONS==3
                                                   <<" center[2]="<<key.center[2]
+#endif
                                                   <<" timestamp="<<key.timestamp
+                                                  <<" timestep="<<key.timestepSize
                                                   <<"  element="<<key.element);
 
   tbb::concurrent_hash_map<JobTableKey, JobTableEntry>::accessor a_jobToData;
-  bool found = _solver._jobDatabase.find(a_jobToData, key);
+  bool found = _solver._outcomeDatabase.find(a_jobToData, key);
   bool ret = false;
 
   if(found && a_jobToData->second.receivedOutcomes==required) {
     int receivedOutcomes = a_jobToData->second.receivedOutcomes;
     *outcome = a_jobToData->second.data[receivedOutcomes-1];
     status = a_jobToData->second.status[receivedOutcomes-1];
-    _solver._jobDatabase.erase(a_jobToData);
+    _solver._outcomeDatabase.erase(a_jobToData);
 
     logInfo("tryToFindAndExtractEquivalentSharedOutcome()",
         "team "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
@@ -1009,7 +1091,9 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
   logInfo("receiveHandlerTaskSharing", "team "
       <<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
       <<" received task outcome: "
-      <<data->_metadata.to_string());
+      <<data->_metadata.to_string()
+      <<" timestamp "
+      <<data->_metadata.getPredictorTimeStamp());
 
   JobTableKey key; //{&data->_metadata[0], data->_metadata[2*DIMENSIONS], (int) data->_metadata[2*DIMENSIONS+2] };
   const double * center = data->_metadata.getCenter();
@@ -1022,7 +1106,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
   //bool criticalMemoryConsumption =  exahype::reactive::MemoryMonitor::getInstance().getFreeMemMB()<1000;
 
   if (key.timestamp
-      < static_cast<exahype::solvers::ADERDGSolver*>(solver)->getMinTimeStamp()) { // || criticalMemoryConsumption) {
+      < static_cast<exahype::solvers::ADERDGSolver*>(solver)->getPreviousMinTimeStamp()) { // || criticalMemoryConsumption) {
     exahype::reactive::JobTableStatistics::getInstance().notifyLateTask();
     delete data;
     AllocatedSTPsReceive--;
@@ -1030,7 +1114,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
   else {
     tbb::concurrent_hash_map<JobTableKey, JobTableEntry>::accessor a_jobToData;
     bool found =
-      static_cast<exahype::solvers::ADERDGSolver*>(solver)->_jobDatabase.find(
+      static_cast<exahype::solvers::ADERDGSolver*>(solver)->_outcomeDatabase.find(
             a_jobToData, key);
     if (found) {
       int currIdx = a_jobToData->second.receivedOutcomes;
@@ -1042,6 +1126,14 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
       a_jobToData.release();
       if(data->_metadata._isCorrupted)
         logError("receiveHandlerTaskSharing","Warning: inserting actually corrupted task outcome!");
+      logInfo("receiveHandlerTaskSharing", "team "
+          <<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
+          <<" inserted task outcome: "
+          <<data->_metadata.to_string()
+          <<" time stamp "
+          <<data->_metadata._predictorTimeStamp
+          <<" time step size "
+          <<data->_metadata._predictorTimeStepSize);
     }
     else {
       JobTableEntry entry;
@@ -1051,12 +1143,19 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
       entry.receivedOutcomes++;
       if(data->_metadata._isCorrupted)
         logError("receiveHandlerTaskSharing","Warning: inserting actually corrupted task outcome!");
-      static_cast<exahype::solvers::ADERDGSolver*>(solver)->_jobDatabase.insert(
+      static_cast<exahype::solvers::ADERDGSolver*>(solver)->_outcomeDatabase.insert(
           std::make_pair(key, entry));
-      static_cast<exahype::solvers::ADERDGSolver*>(solver)->_allocatedJobs.push_back(
+      static_cast<exahype::solvers::ADERDGSolver*>(solver)->_allocatedOutcomes.push_back(
           key);
+      logInfo("receiveHandlerTaskSharing", "team "
+          <<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
+          <<" inserted task outcome: "
+          <<data->_metadata.to_string()
+          <<" time stamp "
+          <<data->_metadata._predictorTimeStamp
+          <<" time step size "
+          <<data->_metadata._predictorTimeStepSize);
     }
-
   }
   exahype::reactive::JobTableStatistics::getInstance().notifyReceivedTask();
 

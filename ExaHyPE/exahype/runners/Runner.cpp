@@ -78,6 +78,7 @@
 
 #if defined(USE_TMPI)
 #include "teaMPI.h"
+#include "exahype/reactive/ResilienceTools.h"
 #endif
 
 #ifdef TBBInvade
@@ -1878,9 +1879,8 @@ void exahype::runners::Runner::printTimeStepInfo(int numberOfStepsRanSinceLastCa
     #endif
   }
 
-  #if defined(TMPI)
-  logInfo("printTimeStepInfo(...)",
-      "step " << n << "\tteam = " << TMPI_GetTeamNumber() <<  "\tt_min          =" << currentMinTimeStamp);
+  #if defined(USE_TMPI)
+  logInfo("printTimeStepInfo(...)",  "step " << n << "\tteam = " << TMPI_GetTeamNumber() <<  "\tt_min          =" << currentMinTimeStamp<<" corruption detected="<<exahype::reactive::ResilienceTools::getInstance().getCorruptionDetected());
   #else
   logInfo("printTimeStepInfo(...)",
       "step " << n << "\tt_min          =" << currentMinTimeStamp);

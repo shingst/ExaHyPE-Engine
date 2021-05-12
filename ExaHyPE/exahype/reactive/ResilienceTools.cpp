@@ -30,8 +30,16 @@ bool exahype::reactive::ResilienceTools::TriggerAllMigratableSTPs;
 bool exahype::reactive::ResilienceTools::TriggerLimitedCellsOnly;
 bool exahype::reactive::ResilienceTools::TriggerFlipped;
 
+
 exahype::reactive::ResilienceTools::ResilienceTools()
- : _injectionInterval(10000), _numFlips(1), _cnt(1), _numFlipped(0), _infNormTol(0.0000001), _l1NormTol(0.0000001), _l2NormTol(0.0000001)
+ : _injectionInterval(10000),
+   _numFlips(1),
+   _cnt(1),
+   _numFlipped(0),
+   _infNormTol(0.0000001),
+   _l1NormTol(0.0000001),
+   _l2NormTol(0.0000001),
+   _corruptionDetected(false)
 {}
 
 exahype::reactive::ResilienceTools::~ResilienceTools() {}
@@ -201,4 +209,11 @@ bool exahype::reactive::ResilienceTools::isAdmissibleNumericalError(const double
   return admissible;
 }
 
+void exahype::reactive::ResilienceTools::setCorruptionDetected(bool corrupted) {
+  _corruptionDetected = true;
+}
+
+bool exahype::reactive::ResilienceTools::getCorruptionDetected() {
+  return _corruptionDetected;
+}
 #endif

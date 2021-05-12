@@ -15,9 +15,9 @@
       0.0
     ],
     "width": [
-      1.0,
-      1.0,
-      1.0
+      10.0,
+      10.0,
+      10.0
     ]
   },
   "shared_memory": {
@@ -41,7 +41,7 @@
     "offloading_CCP_steps" : 0,
     "offloading_update_temperature" : true,
     "offloading_increase_temp_threshold" : 1.0,
-    "task_sharing" : "task_sharing_resilience_checks",
+    "task_sharing" : "no",
     "timeout": 12000,
     "load_balancing_type": "static",
     "buffer_size"            : 1600,
@@ -51,7 +51,7 @@
   },
   "resilience" : {
     "generate_soft_errors" : "no",
-    "trigger_mechanism" : "trigger_limited"
+    "trigger_mechanism" : "none"
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",
@@ -71,7 +71,7 @@
       "type": "Limiting-ADER-DG",
       "name": "EulerSolver",
       "order": 5,
-      "maximum_mesh_size": 0.5,
+      "maximum_mesh_size": 2.0,
       "maximum_mesh_depth": 0,
       "time_stepping": "global",
       "aderdg_kernel": {
@@ -127,7 +127,7 @@
         }
       ],
       "parameters": {
-        "reference": "entropywave"
+        "reference": "explosion"
       },
       "plotters": [
         {

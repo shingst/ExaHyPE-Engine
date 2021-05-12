@@ -627,8 +627,10 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
 
   if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
       != exahype::reactive::OffloadingContext::ResilienceStrategy::None) {
-    //todo: set trigger for outcome
-    _solver.get()->releasePendingOutcomeAndShare(cellInfo._cellDescriptionsIndex, cellInfo.indexOfADERDGCellDescription(solverPatch.getSolverNumber()));
+    if(!(solverPatch.getPreviousRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell))
+      _solver.get()->releasePendingOutcomeAndShare(cellInfo._cellDescriptionsIndex, cellInfo.indexOfADERDGCellDescription(solverPatch.getSolverNumber()));
+    else
+      _solver.get()->releaseDummyOutcomeAndShare(cellInfo._cellDescriptionsIndex, cellInfo.indexOfADERDGCellDescription(solverPatch.getSolverNumber()), _solver.get()->getMinTimeStamp(), _solver.get()->getMinTimeStepSize());
   }
 
   UpdateResult result;
@@ -640,10 +642,13 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
   //todo(Philipp): do we still need this?
   if (
       (solverPatch.getRefinementStatus()<_solver->_minRefinementStatusForTroubledCell
-	  || (exahype::reactive::OffloadingContext::getInstance().getInstance().getResilienceStrategy()
-	      == exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks)
-	  ||  (exahype::reactive::OffloadingContext::getInstance().getInstance().getResilienceStrategy()
-        == exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceCorrection)
+	  || (
+	        ((exahype::reactive::OffloadingContext::getInstance().getInstance().getResilienceStrategy()
+	         == exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks)
+	       ||  (exahype::reactive::OffloadingContext::getInstance().getInstance().getResilienceStrategy()
+          == exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceCorrection)
+          )
+       )
 	  )
 	  &&
       SpawnPredictionAsBackgroundJob &&
@@ -671,7 +676,18 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
       ADERDGSolver::MigratablePredictionJob *migratablePredictionJob = new ADERDGSolver::MigratablePredictionJob(*_solver.get(),
           cellInfo._cellDescriptionsIndex, element,
           predictionTimeStamp,
-          predictionTimeStepSize);
+          predictionTimeStepSize,
+          isTroubled);
+      logInfo("fusedTimeStepBody", "spawning migratable job for "<< cellInfo._cellDescriptionsIndex<< " predictionTimeStamp "<<predictionTimeStamp<<" predictionTimeStepSize "<<predictionTimeStepSize
+          << " troubled "<<isTroubled<<" previous stamp "<<_solver.get()->getMinTimeStamp());
+
+      if(isTroubled
+        && (exahype::reactive::OffloadingContext::getInstance().getInstance().getResilienceStrategy()
+        == exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks)) //need to check against other outcome
+      {
+         logInfo("fusedTimeStepBody", "spawning check job for "<< cellInfo._cellDescriptionsIndex<< " predictionTimeStamp "<<predictionTimeStamp<<" predictionTimeStepSize "<<predictionTimeStepSize);
+         migratablePredictionJob->setState(exahype::solvers::ADERDGSolver::MigratablePredictionJob::State::CHECK_PREVIOUS);
+      }
       _solver.get()->submitOrSendMigratablePredictionJob(migratablePredictionJob);
 #else
       peano::datatraversal::TaskSet(
