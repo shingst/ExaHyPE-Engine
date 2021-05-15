@@ -147,6 +147,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run(
       break;
     case State::CHECK_PREVIOUS:
       reschedule = tryFindPreviousOutcomeAndCheck();
+      if(!reschedule)
+        NumberOfEnclaveJobs--;
       break;
     case State::HEALING_REQUIRED:
       reschedule = tryFindOutcomeAndHeal();
@@ -227,27 +229,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryFindPreviousOut
   CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
             _element);
 
-  JobOutcomeStatus status;
-  MigratablePredictionJobData *outcomes[2]; //todo: avoid hardcoding
-  int required = exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams()-1;
-  bool found = tryToFindAndExtractEquivalentSharedOutcomes(true, required, status, outcomes);
-  //bool reschedule;
-
-  if(found) {
-    logInfo("tryFindPreviousOutcomeAndCheck", "Trying to check previously troubled solution..."
-            <<_cellDescriptionsIndex
-            <<" center[0] = "
-            << _center[0]
-            <<" center[1] = "
-            << _center[1]
-            <<" stamp "<<_predictorTimeStamp
-            <<" step "<<_predictorTimeStepSize
-            <<" previous stamp "<<cellDescription.getPreviousTimeStamp()
-            <<" previous step "<<cellDescription.getPreviousTimeStepSize());
-    //todo: check other data, too?
-    double *luh = static_cast<double*>(cellDescription.getSolution());
-    if(_isPotSoftErrorTriggered!=outcomes[0]->_metadata._isPotSoftErrorTriggered) {
-      logError("tryFindPreviousOutcomeAndCheck","Limiter was not active previously, we must have a soft error!"
+  logInfo("tryFindPreviousOutcomeAndCheck", "Trying to check previously troubled solution..."
           <<_cellDescriptionsIndex
           <<" center[0] = "
           << _center[0]
@@ -257,17 +239,57 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryFindPreviousOut
           <<" step "<<_predictorTimeStepSize
           <<" previous stamp "<<cellDescription.getPreviousTimeStamp()
           <<" previous step "<<cellDescription.getPreviousTimeStepSize());
+
+  JobOutcomeStatus status;
+  MigratablePredictionJobData *outcomes[2]; //todo: avoid hardcoding
+  int required = exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams()-1;
+  bool found = tryToFindAndExtractEquivalentSharedOutcomes(true, required, status, outcomes);
+  //bool reschedule;
+
+  if(found) {
+    //todo: check other data, too?
+    double *luh = static_cast<double*>(cellDescription.getSolution());
+    double *lduh = static_cast<double*>(cellDescription.getUpdate());
+    double *lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
+    double *lGradQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictorGradient());
+    double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
+
+    if(_isPotSoftErrorTriggered!=outcomes[0]->_metadata._isPotSoftErrorTriggered) {
+      logError("tryFindPreviousOutcomeAndCheck","Limiter was not active previously in other team, we must have a soft error!"
+          <<_cellDescriptionsIndex
+          <<" center[0] = "
+          << _center[0]
+          <<" center[1] = "
+          << _center[1]
+          <<" stamp "<<_predictorTimeStamp
+          <<" step "<<_predictorTimeStepSize
+          <<" previous stamp "<<cellDescription.getPreviousTimeStamp()
+          <<" previous step "<<cellDescription.getPreviousTimeStepSize());
+
+      //correct here
+      //std::memcpy(luh, &outcomes[0]->_luh[0], outcomes[0]->_luh.size() * sizeof(double));
+      //std::memcpy(lduh, &outcomes[0]->_lduh[0], outcomes[0]->_lduh.size() * sizeof(double));
+      //std::memcpy(lQhbnd, &outcomes[0]->_lQhbnd[0], outcomes[0]->_lQhbnd.size() * sizeof(double));
+      //std::memcpy(lFhbnd, &outcomes[0]->_lFhbnd[0], outcomes[0]->_lFhbnd.size() * sizeof(double));
+#if OffloadingGradQhbnd
+      //std::memcpy(lGradQhbnd, &outcomes[0]->_lGradQhbnd[0], outcomes[0]->_lGradQhbnd.size() * sizeof(double));
+#endif
+
+      //cellDescription.setRefinementStatus(Keep);
+      //cellDescription.setIsTroubledInLastStep(false);
+
       cellDescription.setHasCompletedLastStep(true); //let's use the limiter for now to correct on faulty team, the other one will continue as usual
       //MPI_Abort(MPI_COMM_WORLD, -1);
+
       return false; //run limiter next, todo: for the faulty outcome we could try to use sane solution from other team
     }
     else {
       bool equalSolution = exahype::reactive::ResilienceTools::getInstance().isAdmissibleNumericalError(outcomes[0]->_luh.data(), luh, outcomes[0]->_luh.size());
       if(!equalSolution)
-        logError("tryFindPreviousOutcomeAndCheck"," solutions to not match, we must have a soft error!");
+        logError("tryFindPreviousOutcomeAndCheck"," solutions to not match, we must have a soft error but we can't correct!");
       cellDescription.setHasCompletedLastStep(true);
-      return false; //run limiter next for both
-      //MPI_Abort(MPI_COMM_WORLD, -1);
+      //return false; //run limiter next for both
+      MPI_Abort(MPI_COMM_WORLD, -1);
     }
 
     //limiter was activated for both cells correctly -> run limiter next
@@ -424,7 +446,10 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
              || (exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()==exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks
                   && exahype::reactive::ResilienceTools::TriggerLimitedCellsOnly);
 
-    found = tryToFindAndExtractEquivalentSharedOutcomes(false, required, status, outcomes);
+    if(!exahype::reactive::ResilienceTools::TriggerLimitedCellsOnly)
+      found = tryToFindAndExtractEquivalentSharedOutcomes(false, required, status, outcomes);
+    else
+      found = false;
 
     if(found) {
       switch (status) {
@@ -564,7 +589,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   if((exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
     != exahype::reactive::OffloadingContext::ResilienceStrategy::None)) {
 
-    if(!hasResult) {
+    if(!hasResult && !exahype::reactive::ResilienceTools::TriggerLimitedCellsOnly) {
       hasResult = tryToFindAndExtractEquivalentSharedOutcomes(false, required, status, outcomes);
     }
 

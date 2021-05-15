@@ -20,6 +20,9 @@
 #include "LimitingADERDGSolver.h"
 
 #include "exahype/reactive/OffloadingProfiler.h"
+#include "exahype/reactive/ResilienceTools.h"
+#include "exahype/reactive/OffloadingContext.h"
+
 #include "exahype/VertexOperations.h"
 #include "exahype/amr/AdaptiveMeshRefinement.h"
 
@@ -626,7 +629,8 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
   const bool isTroubled = checkIfCellIsTroubledAndDetermineMinAndMax(solverPatch,cellInfo);
 
   if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
-      != exahype::reactive::OffloadingContext::ResilienceStrategy::None) {
+      == exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks
+      && exahype::reactive::ResilienceTools::TriggerLimitedCellsOnly) {
     if(!(solverPatch.getPreviousRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell))
       _solver.get()->releasePendingOutcomeAndShare(cellInfo._cellDescriptionsIndex, cellInfo.indexOfADERDGCellDescription(solverPatch.getSolverNumber()));
     else
@@ -648,6 +652,7 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
 	       ||  (exahype::reactive::OffloadingContext::getInstance().getInstance().getResilienceStrategy()
           == exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceCorrection)
           )
+          && exahype::reactive::ResilienceTools::TriggerLimitedCellsOnly
        )
 	  )
 	  &&

@@ -1056,8 +1056,8 @@ int exahype::solvers::ADERDGSolver::predictionAndVolumeIntegralBody(
       addVolumeIntegralResultToUpdate); // TODO(Dominic): fix 'false' case
 
   //Todo(Philipp): print also with local recomp
-  if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()==exahype::reactive::OffloadingContext::ResilienceStrategy::None)
-     exahype::reactive::ResilienceTools::getInstance().corruptDataIfActive(lduh, getUpdateSize());
+  //if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()==exahype::reactive::OffloadingContext::ResilienceStrategy::None)
+  //   exahype::reactive::ResilienceTools::getInstance().corruptDataIfActive(lduh, getUpdateSize());
 
   compress(cellDescription,isSkeletonCell);
 

@@ -32,7 +32,7 @@ bool exahype::reactive::ResilienceTools::TriggerFlipped;
 
 
 exahype::reactive::ResilienceTools::ResilienceTools()
- : _injectionInterval(10000),
+ : _injectionInterval(100),
    _numFlips(1),
    _cnt(1),
    _numFlipped(0),
@@ -83,7 +83,6 @@ bool exahype::reactive::ResilienceTools::generateBitflipErrorInDoubleIfActive(do
 
 bool exahype::reactive::ResilienceTools::overwriteDoubleIfActive(double *array, size_t size) {
   _cnt++;
-
   if(_cnt.load()%_injectionInterval==0 && _numFlipped<_numFlips) {
     std::random_device r;
     std::default_random_engine generator(r());
