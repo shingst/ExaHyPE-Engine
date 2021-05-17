@@ -28,8 +28,6 @@ JobTableStatistics::JobTableStatistics() :
   _savedTasks(0),
   _receivedTasks(0),
   _sentTasks(0),
-  _sentKeys(0),
-  _receivedKeys(0),
   _declinedTasks(0),
   _lateTasks(0),
   _recomputedTasks(0),
@@ -76,14 +74,6 @@ void JobTableStatistics::notifyExecutedTask(){
     _executedTasks++;
 }
 
-void JobTableStatistics::notifySentKey() {
-  _sentKeys++;
-}
-
-void JobTableStatistics::notifyReceivedKey() {
-  _receivedKeys++;
-}
-
 void JobTableStatistics::notifyRecomputedTask() {
   _recomputedTasks++;
 }
@@ -106,11 +96,8 @@ void JobTableStatistics::printStatistics() {
            <<" saved tasks =  "<<_savedTasks
            <<" sent tasks = "<<_sentTasks
            <<" received tasks = "<<_receivedTasks
-           <<" received keys= "<<_receivedKeys
-           <<" sent keys= "<<_sentKeys
            <<" declined tasks = "<<_declinedTasks
-           <<" late tasks = "<<_lateTasks
-		   <<" recomputed tasks = "<<_recomputedTasks);
+           <<" late tasks = "<<_lateTasks);
 }
 
 } /* namespace offloading */

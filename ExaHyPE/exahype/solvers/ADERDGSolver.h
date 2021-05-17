@@ -35,6 +35,8 @@
 #include "exahype/profilers/simple/NoOpProfiler.h"
 #include "exahype/records/ADERDGCellDescription.h"
 
+#include "exahype/solvers/OutcomeDatabase.h"
+
 #define OFFLOADING_SLOW_OPERATION_THRESHOLD 0.001
 
 #define NUM_REQUESTS_MIGRATABLE_COMM 1
@@ -999,6 +1001,8 @@ private:
    * all ranks have stopped their OffloadingManagerJob. The OffloadingManagerJob is
    * required in order to dynamically receive tasks and make progress on MPI
    * communication.
+   * If a progress thread should be used, the OffloadingManagerJob is directly spawned
+   * as a tbb::task that runs until the end of the program.
    */
 #ifdef OffloadingUseProgressThread
   class OffloadingManagerJob : public tbb::task{
@@ -1049,7 +1053,7 @@ private:
 
 
   /**
-   * stores metadata for an offloaded task or a task outcome
+   * Stores metadata for an offloaded task or a task outcome
    */
   class MigratablePredictionJobMetaData {
     public: //todo: should be private but there are some issues with MigratableJob not being able to access private data as a friend
@@ -1089,7 +1093,7 @@ private:
  
   /**
    * This class encapsulates all the data that a victim rank
-   * needs when a STP task is offloaded to this rank.
+   * needs to store when it receives a migratable prediction job.
    */
   class MigratablePredictionJobData {
     public:
@@ -1156,8 +1160,6 @@ private:
   // Todo(Philipp): probably outdated
   static std::atomic<int> MaxIprobesInOffloadingProgress;
 
-  enum class JobOutcomeStatus;
-
   /**
    * A MigratablePredictionJob represents a PredictionJob that can be
    * executed remotely on a different rank than the one where it
@@ -1169,7 +1171,7 @@ private:
     enum class State { INITIAL, CHECK_REQUIRED};
 
     private:
-      ADERDGSolver&    			  _solver;
+      ADERDGSolver&    		  _solver;
       const int                   _cellDescriptionsIndex;
       const int                   _element;
       const double                _predictorTimeStamp;
@@ -1183,7 +1185,7 @@ private:
       double*                     _lGradQhbnd;
       double                      _center[DIMENSIONS];
       double                      _dx[DIMENSIONS];
-      bool 					      _isLocalReplica;
+      bool                        _isLocalReplica; //todo: still used?
       unsigned char               _isPotSoftErrorTriggered;
       State                       _currentState;
 
@@ -1196,7 +1198,7 @@ private:
       bool handleLocalExecution(bool isCalledOnMaster, bool& hasComputed);
       bool handleLocalExecutionOld(bool isCalledOnMaster, bool& hasComputed);
       bool handleRemoteExecution(bool& hasComputed);
-      bool tryToFindAndExtractEquivalentSharedOutcome(ADERDGSolver::JobOutcomeStatus &status, MigratablePredictionJobData **outcome);
+      bool tryToFindAndExtractEquivalentSharedOutcome(exahype::solvers::DeliveryStatus &status, MigratablePredictionJobData **outcome);
       void sendBackOutcomeToOrigin();
       bool matchesOtherOutcome(MigratablePredictionJobData *data);
       void packMetaData(MigratablePredictionJobMetaData *buffer);
@@ -1241,22 +1243,11 @@ private:
     	  exahype::solvers::Solver* solver,
 		    int tag,
 		    int rank);
-//#if defined(TaskSharing)
-      static void sendKeyHandlerTaskSharing(
-    	  exahype::solvers::Solver* solver,
-		    int tag,
-		    int rank);
-
-      static void sendAckHandlerTaskSharing(
-    	  exahype::solvers::Solver* solver,
-		    int tag,
-		    int rank);
 
       static void sendHandlerTaskSharing(
     	  exahype::solvers::Solver* solver,
 		    int tag,
 		    int rank);
-//#endif
 
       // call-back method: called when a remotely executed job has been returned back
       static void receiveBackHandler(
@@ -1269,28 +1260,16 @@ private:
 		    int tag,
 		    int rank);
 
-//#if defined(TaskSharing)
-      static void receiveKeyHandlerTaskSharing(
-    	  exahype::solvers::Solver* solver,
-		    int tag,
-		    int rank);
       // call-back method: called when a job has been received from another rank
       static void receiveHandlerTaskSharing(
     	  exahype::solvers::Solver* solver,
 		    int tag,
 		    int rank);
-//#endif
+
       bool run(bool calledFromMaster) override;
   };
 
 //#if defined(TaskSharing) // || defined(OffloadingLocalRecompute) //Todo(Philipp): do we still need this for local recompute?
-
-  static int REQUEST_JOB_CANCEL;
-  static int REQUEST_JOB_ACK;
-
-  void sendRequestForJobAndReceive(int tag, int rank, double *key);
-
-  void sendKeyOfTaskOutcomeToOtherTeams(MigratablePredictionJob *job);
 
   void sendTaskOutcomeToOtherTeams(MigratablePredictionJob *job);
 
@@ -1335,26 +1314,68 @@ private:
 	  }
   };
 
-  enum class JobOutcomeStatus { received, transit };
-
-  struct JobTableEntry {
-	  MigratablePredictionJobData *data;
-	  JobOutcomeStatus status;
-  };
-
   std::vector<int> _lastReceiveReplicaTag;
 
-  tbb::concurrent_hash_map<JobTableKey, JobTableEntry> _jobDatabase;
+  class MigratablePredictionJobOutcomeKey {
+    friend class exahype::solvers::ADERDGSolver;
+    private:
+      double _center[DIMENSIONS];
+      double _timestamp;
+      double _timestepSize; //need this for optimistic time stepping with rollbacks!
+      int _element;
+
+    public:
+      MigratablePredictionJobOutcomeKey() {};
+      ~MigratablePredictionJobOutcomeKey() {};
+
+      MigratablePredictionJobOutcomeKey(const double *center, double timestamp, double timestepSize, int element)
+        : _timestamp(timestamp),
+          _timestepSize(timestepSize),
+          _element(element) {
+          for(int i = 0; i<DIMENSIONS; i++)
+            _center[i] = center[i];
+      }
+
+      bool operator==(const MigratablePredictionJobOutcomeKey &other) const {
+        bool result =  true;
+        for(int i=0; i<DIMENSIONS; i++)
+         result &= _center[i]==other._center[i];
+        result &= _timestamp == other._timestamp;
+        result &= _timestepSize == other._timestepSize;
+        result &= _element == other._element;
+        return result;
+      }
+
+      /**
+       * Unique hash function
+       */
+      operator std::size_t() const {
+        using std::hash;
+        std::size_t result = 0;
+        std::hash<double> hash_fn_db;
+        std::hash<int> hash_fn_int;
+
+        for( int i=0; i<DIMENSIONS; i++) {
+        result ^= hash_fn_db(_center[i]);
+        }
+        result ^= hash_fn_db(_timestamp);
+        result ^= hash_fn_db(_timestepSize);
+        result ^= hash_fn_int(_element);
+        return result;
+      }
+  };
+
+  OutcomeDatabase<MigratablePredictionJobOutcomeKey, MigratablePredictionJobData> _outcomeDatabase;
 
   class ConcurrentJobKeysList {
-     private:
-	  std::list<JobTableKey> _keys;
-	  std::mutex _mtx;
+    private:
+      std::list<MigratablePredictionJobOutcomeKey> _keys;
+      std::mutex _mtx;
 
-     public:
-	  ConcurrentJobKeysList() : _keys(), _mtx() {};
+    public:
+       ConcurrentJobKeysList() : _keys(), _mtx() {};
 
-      bool try_pop_front(JobTableKey *result) {
+       bool try_pop_front(MigratablePredictionJobOutcomeKey *result) {
     	bool found = false;
         _mtx.lock();
         if(!_keys.empty()) {
@@ -1366,13 +1387,13 @@ private:
         return found;
       }
 
-      void push_front(JobTableKey key) {
+      void push_front(MigratablePredictionJobOutcomeKey key) {
         _mtx.lock();
         _keys.push_front(key);
         _mtx.unlock();
       }
 
-      void push_back(JobTableKey key) {
+      void push_back(MigratablePredictionJobOutcomeKey key) {
         _mtx.lock();
        _keys.push_back(key);
        _mtx.unlock();
@@ -1384,30 +1405,6 @@ private:
   };
 
   ConcurrentJobKeysList _allocatedJobs;
-  //tbb::concurrent_queue<JobTableKey> _allocatedJobs;
-//#endif
-
-  /**
-   * If a task decides to send itself away, an offload entry is generated and submitted into
-   * a concurrent TBB queue. The offloading manager will take care of sending away
-   * the tasks in the concurrent TBB queue.
-   * Todo (Philipp): outdated, no longer necessary
-   */
- /* struct OffloadEntry {
-    int destRank;
-  	int cellDescriptionsIndex;
-	  int element;
-    double predictorTimeStamp;
-	  double predictorTimeStepSize;
-  };*/
-
-  /*
-   * Packs metadata into a contiguous buffer.
-   */
-  //void packMetadataToBuffer(
-  //    OffloadEntry& entry,
-	//  double *buf) const;
-
 
   /*
    * Creates a MigratablePredictionJob from MigratablePredictionJobData.
