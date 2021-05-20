@@ -2995,7 +2995,7 @@ void exahype::solvers::ADERDGSolver::releaseDummyOutcomeAndShare(int cellDescrip
   data->_metadata._predictorTimeStamp = timestamp;
   data->_metadata._predictorTimeStepSize = timestep;
   data->_metadata._isCorrupted = false;
-  if(exahype::reactive::ResilienceTools::TriggerLimitedCellsOnly)
+  if(exahype::reactive::ResilienceTools::CheckLimitedCellsOnly)
     data->_metadata._isPotSoftErrorTriggered = (cellDescription.getCorruptionStatus()==PotentiallyCorrupted);
 
   //Share now
@@ -3060,7 +3060,7 @@ void exahype::solvers::ADERDGSolver::releasePendingOutcomeAndShare(int cellDescr
     auto& cellDescription = getCellDescription(cellDescriptionsIndex, element);
     //set trigger -> need to reset limiter trigger, might wanna pull this out
     logInfo("releasePendingOutcomeAndShare", " celldesc ="<<cellDescriptionsIndex<<" isPotentiallyCorrupted "<<(cellDescription.getCorruptionStatus()==PotentiallyCorrupted));
-    if(exahype::reactive::ResilienceTools::TriggerLimitedCellsOnly)
+    if(exahype::reactive::ResilienceTools::CheckLimitedCellsOnly)
       data->_metadata._isPotSoftErrorTriggered = (cellDescription.getCorruptionStatus()==PotentiallyCorrupted);
 
     //update solution

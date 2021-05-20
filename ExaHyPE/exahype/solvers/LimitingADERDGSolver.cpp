@@ -280,9 +280,9 @@ exahype::solvers::Solver::MeshUpdateEvent exahype::solvers::LimitingADERDGSolver
   }
 }
 
-void exahype::solvers::LimitingADERDGSolver::updateCorruptionStatusDuringRefinementStatusSpreading( SolverPatch& solverPatch) const {
-  _solver->updateCorruptionStatus(solverPatch);
-}
+//void exahype::solvers::LimitingADERDGSolver::updateCorruptionStatusDuringRefinementStatusSpreading( SolverPatch& solverPatch) const {
+//  _solver->updateCorruptionStatus(solverPatch);
+//}
 
 bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInEnterCell(
     exahype::Cell& fineGridCell,
@@ -634,7 +634,7 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
 
   if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
       == exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks
-      && exahype::reactive::ResilienceTools::TriggerLimitedCellsOnly) {
+      && exahype::reactive::ResilienceTools::CheckLimitedCellsOnly) {
     if(!(solverPatch.getPreviousRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell))
       _solver.get()->releasePendingOutcomeAndShare(cellInfo._cellDescriptionsIndex, cellInfo.indexOfADERDGCellDescription(solverPatch.getSolverNumber()));
     else
@@ -660,7 +660,7 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
 	       ||  (exahype::reactive::OffloadingContext::getInstance().getInstance().getResilienceStrategy()
           == exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceCorrection)
           )
-          && exahype::reactive::ResilienceTools::TriggerLimitedCellsOnly
+          && exahype::reactive::ResilienceTools::CheckLimitedCellsOnly
        )
 	  )
 	  &&

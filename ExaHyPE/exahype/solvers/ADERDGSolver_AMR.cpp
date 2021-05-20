@@ -56,7 +56,7 @@ void exahype::solvers::ADERDGSolver::mergeWithRefinementStatus(
   cellDescription.setFacewiseRefinementStatus( faceIndex, otherRefinementStatus );
 }
 
-void exahype::solvers::ADERDGSolver::mergeWithCorruptionStatus(
+/*void exahype::solvers::ADERDGSolver::mergeWithCorruptionStatus(
     CellDescription& cellDescription,
     const int        faceIndex,
     const int        otherCorruptionStatus) {
@@ -64,7 +64,7 @@ void exahype::solvers::ADERDGSolver::mergeWithCorruptionStatus(
     logInfo("mergeWithCorruptionStatus","setting non-zero corruption status on facewise status");
 
   cellDescription.setFacewiseCorruptionStatus( faceIndex, otherCorruptionStatus );
-}
+}*/
 
 void
 exahype::solvers::ADERDGSolver::updateCommunicationStatus(
@@ -147,7 +147,7 @@ void exahype::solvers::ADERDGSolver::updateRefinementStatus(CellDescription& cel
   }
 }
 
-void exahype::solvers::ADERDGSolver::updateCorruptionStatus(CellDescription& cellDescription) const {
+/*void exahype::solvers::ADERDGSolver::updateCorruptionStatus(CellDescription& cellDescription) const {
   if ( cellDescription.getLevel()==getMaximumAdaptiveMeshLevel() ) {
     if(cellDescription.getCorruptionStatus()==CorruptedAndCorrected)
       logInfo("updateCorruptionStatus","cell desc is corrupted but corrected "<<cellDescription.toString());
@@ -160,7 +160,7 @@ void exahype::solvers::ADERDGSolver::updateCorruptionStatus(CellDescription& cel
        //todo treat other cases
     }
   }
-}
+}*/
 
 void exahype::solvers::ADERDGSolver::vetoParentCoarseningRequestIfNecessary(
     const CellDescription& fineGridCellDescription,

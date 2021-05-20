@@ -354,9 +354,9 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
           exahype::reactive::ResilienceTools::SoftErrorGenerationStrategy::None);
     }
 #endif
-    exahype::reactive::ResilienceTools::TriggerAllMigratableSTPs = _parser.getTriggerAllMigratableSTPs();
-    exahype::reactive::ResilienceTools::TriggerLimitedCellsOnly= _parser.getTriggerLimitedCellsOnly();
-    exahype::reactive::ResilienceTools::TriggerFlipped = _parser.getTriggerCorrupted();
+    exahype::reactive::ResilienceTools::CheckAllMigratableSTPs = _parser.getCheckAllMigratableSTPs();
+    exahype::reactive::ResilienceTools::CheckLimitedCellsOnly= _parser.getCheckLimitedCellsOnly();
+    exahype::reactive::ResilienceTools::CheckFlipped = _parser.getCheckCorrupted();
   }
 
   //Reactive load balancing configuration

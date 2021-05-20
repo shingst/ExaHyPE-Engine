@@ -105,7 +105,7 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
     _dx[i] = dx[i];
   }
 
-  if (_originRank != tarch::parallel::Node::getInstance().getRank()) {
+  if (isRemoteJob()) {
     NumberOfStolenJobs++;
   }
   else
@@ -127,8 +127,8 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::setTrigger(bool fl
   logDebug("setTrigger", " celldesc ="<<_cellDescriptionsIndex<<" isPotCorrupted "<<(cellDescription.getCorruptionStatus()==PotentiallyCorrupted));
 
   //trigger is set later if we are using limiter as a trigger
-  _isPotSoftErrorTriggered =  (exahype::reactive::ResilienceTools::TriggerFlipped && flipped)
-                            ||  exahype::reactive::ResilienceTools::TriggerAllMigratableSTPs;
+  _isPotSoftErrorTriggered =  (exahype::reactive::ResilienceTools::CheckFlipped && flipped)
+                            ||  exahype::reactive::ResilienceTools::CheckAllMigratableSTPs;
 }
 
 //Caution: Compression is not supported yet!
@@ -445,10 +445,10 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
       != exahype::reactive::OffloadingContext::ResilienceStrategy::None) {
     needToShare = (AllocatedSTPsSend
                    <= exahype::reactive::PerformanceMonitor::getInstance().getTasksPerTimestep()/tarch::multicore::Core::getInstance().getNumberOfThreads())
-             || (exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()==exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks
-                  && exahype::reactive::ResilienceTools::TriggerLimitedCellsOnly);
+             || (exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()>=exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks
+                  && exahype::reactive::ResilienceTools::CheckLimitedCellsOnly);
 
-    if(!exahype::reactive::ResilienceTools::TriggerLimitedCellsOnly)
+    if(!exahype::reactive::ResilienceTools::CheckLimitedCellsOnly)
       found = tryToFindAndExtractEquivalentSharedOutcomes(false, required, status, outcomes);
     else
       found = false;
@@ -591,7 +591,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   if((exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
     != exahype::reactive::OffloadingContext::ResilienceStrategy::None)) {
 
-    if(!hasResult && !exahype::reactive::ResilienceTools::TriggerLimitedCellsOnly) {
+    if(!hasResult && !exahype::reactive::ResilienceTools::CheckLimitedCellsOnly) {
       hasResult = tryToFindAndExtractEquivalentSharedOutcomes(false, required, status, outcomes);
     }
 
@@ -627,7 +627,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     }
 
     if(needToShare) {
-      if(exahype::reactive::ResilienceTools::TriggerLimitedCellsOnly) {
+      if(exahype::reactive::ResilienceTools::CheckLimitedCellsOnly) {
         logInfo("handleLocalExecution", "Delaying outcome, as we need to compute corrector first!");
         _solver.storePendingOutcomeToBeShared(this); //delay sharing until we can be sure that trigger has been set (correction must happen first)
       }
@@ -779,9 +779,6 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleRemoteExecut
       _predictorTimeStepSize,
       true);
 
-#if defined(GenerateSoftErrors)
-  exahype::reactive::SoftErrorInjector::getInstance().generateBitflipErrorInDoubleIfActive(_lduh, _solver.getUpdateSize());
-#endif
 
 #if DIMENSIONS==3
   logDebug("handleRemoteExecution",
@@ -895,7 +892,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
   double time = -MPI_Wtime();
 #endif
   //local treatment if this job belongs to the local rank
-  if (_originRank == myRank) {
+  if (!isRemoteJob()) {
     result = handleLocalExecution(isRunOnMaster, hasComputed);
     if (!_isLocalReplica) NumberOfEnclaveJobs--;
     assertion( NumberOfEnclaveJobs>=0 );
@@ -918,16 +915,12 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
   //remote task, need to execute and send it back
   else {
     result = handleRemoteExecution(hasComputed);
+    sendBackOutcomeToOrigin();
   }
 #if defined(OffloadingUseProfiler)
   time += MPI_Wtime();
   exahype::reactive::OffloadingProfiler::getInstance().endComputation(time);
 #endif
-
-  //send back
-  if (_originRank != myRank) {
-    sendBackOutcomeToOrigin();
-  }
   return result;
 }
 
@@ -1064,39 +1057,6 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandler(
   exahype::reactive::OffloadingProfiler::getInstance().notifyReceivedTask(data->_metadata.getOrigin()
       );
 }
-
-//#if defined(TaskSharing)
-/*void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveKeyHandlerTaskSharing(
-    exahype::solvers::Solver* solver, int tag, int remoteRank) {
-  logDebug("receiveKeyHandlerReplica","successful receive request");
-
-  tbb::concurrent_hash_map<std::pair<int, int>, double*>::accessor a_tagRankToData;
-  double *key;
-  static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagRankToReplicaKey.find(
-      a_tagRankToData, std::make_pair(remoteRank, tag));
-  key = a_tagRankToData->second;*/
-  //static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagRankToReplicaKey.erase(a_tagRankToData);
-  //a_tagRankToData.release();
-/*
-#if DIMENSIONS==3
-  logDebug("receiveKeyHandlerReplica", "team "
-      <<" received replica job key: center[0] = "<<key[0]
-      <<" center[1] = "<<key[1]
-      <<" center[2] = "<<key[2]
-      <<" time stamp = "<<key[2*DIMENSIONS]
-      <<" element = "<<(int) key[2*DIMENSIONS+2]);
-#else
-  logDebug("receiveKeyHandlerReplica", "team "
-      <<" received replica job key: center[0] = "<<key[0]
-      <<" center[1] = "<<key[1]
-      <<" time stamp = "<<key[2*DIMENSIONS]
-      <<" element = "<<(int) key[2*DIMENSIONS+2]);
-#endif
-
-  static_cast<exahype::solvers::ADERDGSolver*>(solver)->sendRequestForJobAndReceive(
-      tag, remoteRank, key);
-
-}*/
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTaskSharing(
     exahype::solvers::Solver* solver, int tag, int remoteRank) {

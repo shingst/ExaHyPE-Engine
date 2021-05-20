@@ -1442,15 +1442,15 @@ bool exahype::parser::Parser::compareSoftErrorGenerationStrategy(const std::stri
   return getStringFromPath("/resilience/generate_soft_errors", "no", isOptional).compare(strategy)==0;
 }
 
-bool exahype::parser::Parser::getTriggerAllMigratableSTPs() const {
-  return getStringFromPath("/resilience/trigger_mechanism", "none", isOptional).compare("trigger_all")==0;
+bool exahype::parser::Parser::getCheckAllMigratableSTPs() const {
+  return getStringFromPath("/resilience/check_mechanism", "none", isOptional).compare("check_all_stps")==0;
 }
 
-bool exahype::parser::Parser::getTriggerLimitedCellsOnly() const {
-  return getStringFromPath("/resilience/trigger_mechanism", "none", isOptional).compare("trigger_limited")==0;
+bool exahype::parser::Parser::getCheckLimitedCellsOnly() const {
+  return getStringFromPath("/resilience/check_mechanism", "none", isOptional).compare("check_limited_after_update")==0;
 }
 
-bool exahype::parser::Parser::getTriggerCorrupted() const {
-  return getStringFromPath("/resilience/trigger_mechanism", "none", isOptional).compare("trigger_corrupted")==0;
+bool exahype::parser::Parser::getCheckCorrupted() const {
+  return getStringFromPath("/resilience/check_mechanism", "none", isOptional).compare("check_corrupted_stps")==0;
 }
 

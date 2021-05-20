@@ -470,7 +470,7 @@ private:
     return
         solverPatch.getType()==SolverPatch::Type::Leaf &&
         solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
-        solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell-2 
+        solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell-2; 
         //solverPatch.getCorruptionStatus()!=ADERDGSolver::CorruptedAndCorrected &&
         //solverPatch.getCorruptionStatus()!=ADERDGSolver::CorruptedNeighbour;
   }

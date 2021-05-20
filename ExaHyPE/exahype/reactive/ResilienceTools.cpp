@@ -15,7 +15,7 @@
 #if  defined(Parallel)
 
 #include "exahype/reactive/ResilienceTools.h"
-
+#include "exahype/reactive/OffloadingContext.h"
 //#include "exahype/parser/Parser.h"
 
 #ifdef USE_TMPI
@@ -26,9 +26,9 @@
 tarch::logging::Log exahype::reactive::ResilienceTools::_log("exahype::reactive::ResilienceTools");
 
 exahype::reactive::ResilienceTools::SoftErrorGenerationStrategy exahype::reactive::ResilienceTools::GenerationStrategy;
-bool exahype::reactive::ResilienceTools::TriggerAllMigratableSTPs;
-bool exahype::reactive::ResilienceTools::TriggerLimitedCellsOnly;
-bool exahype::reactive::ResilienceTools::TriggerFlipped;
+bool exahype::reactive::ResilienceTools::CheckAllMigratableSTPs;
+bool exahype::reactive::ResilienceTools::CheckLimitedCellsOnly;
+bool exahype::reactive::ResilienceTools::CheckFlipped;
 
 
 exahype::reactive::ResilienceTools::ResilienceTools()
@@ -44,10 +44,15 @@ exahype::reactive::ResilienceTools::ResilienceTools()
 
 exahype::reactive::ResilienceTools::~ResilienceTools() {}
 
-
 exahype::reactive::ResilienceTools& exahype::reactive::ResilienceTools::getInstance() {
   static ResilienceTools singleton;
   return singleton;
+}
+
+bool exahype::reactive::ResilienceTools::checkSTPsImmediatelyAfterComputation() {
+  return (exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
+      >= exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks)
+      && (CheckAllMigratableSTPs || CheckFlipped);
 }
 
 bool exahype::reactive::ResilienceTools::generateBitflipErrorInDoubleIfActive(double *array, size_t size) {

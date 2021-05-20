@@ -811,15 +811,15 @@ class exahype::parser::Parser {
   /**
    * @return True if all migratable STPs should be checked (i.e. are considered as potentially having an error).
    */
-  bool getTriggerAllMigratableSTPs() const;
+  bool getCheckAllMigratableSTPs() const;
   /**
    * @return True if only migratable STPs for which the limiter was activated should be checked (i.e. are considered as potentially having an error).
    */
-  bool getTriggerLimitedCellsOnly() const;
+  bool getCheckLimitedCellsOnly() const;
   /**
    * @return True if only corrupted STPs (with artificially injected errors) should be triggered as suspicious.
    */
-  bool getTriggerCorrupted() const;
+  bool getCheckCorrupted() const;
 };
 
 #endif

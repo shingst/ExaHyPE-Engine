@@ -430,16 +430,22 @@
       "used-by" : "toolkit",
       "scope" : "run-time",
       "properties" : { 
+        "task_sharing": {
+          "type" : "string",
+          "title" : "Task sharing mode between teams (requires teaMPI): task outcomes can be merely shared or shared + checked for soft resilience (experimental) or ishared + heald from soft errors (experimental).",
+          "enum" : ["no","task_sharing","task_sharing_resilience_checks","task_sharing_resilience_correction"],
+          "default" : "no"
+        }, 
         "generate_soft_errors" : { 
           "type" : "string",
-          "title" : "Specifies whether and where soft-errors should be artifically generated.",
+          "title" : "Specifies whether and how soft-errors should be artifically generated.",
           "enum" : ["no","migratable_stp_tasks_bitflip", "migratable_stp_tasks_overwrite"],
           "default" : "no"
          },
-         "trigger_mechanism" : { 
+         "check_mechanism" : { 
           "type" : "string",
-          "title" : "Specifies whether and how potential soft-errors should be triggered (checking requires teaMPI+ tasksharing with resilience checks).",
-          "enum" : ["none", "trigger_limited", "trigger_all", "trigger_corrupted"],
+          "title" : "Specifies which results in ADER-DG should be checked for soft errors (checking requires teaMPI + tasksharing with resilience checks).",
+          "enum" : ["none", "check_limited_after_update", "check_all_stps", "check_corrupted_stps"],
           "default" : "none"
          }
       }
@@ -513,12 +519,6 @@
           "default" : 60,
           "old_format" : { "token_after" : "timeout" }
         },
-        "task_sharing": {
-          "type" : "string",
-          "title" : "Task sharing mode between teams (requires teaMPI): task outcomes can be merely shared or shared + checked for soft resilience (experimental) or ishared + heald from soft errors (experimental).",
-          "enum" : ["no","task_sharing","task_sharing_resilience_checks","task_sharing_resilience_correction"],
-          "default" : "no"
-        }, 
         "offloading_lb_strategy" : {
           "type" : "string", 
           "title" : "Offloading strategy for non-persistent task-based diffusive load balancing (runs only with TBB enabled).",  

@@ -62,9 +62,9 @@ class exahype::reactive::ResilienceTools {
   public:
 
   static SoftErrorGenerationStrategy GenerationStrategy;
-  static bool TriggerAllMigratableSTPs;
-  static bool TriggerLimitedCellsOnly;
-  static bool TriggerFlipped;
+  static bool CheckAllMigratableSTPs;
+  static bool CheckLimitedCellsOnly;
+  static bool CheckFlipped;
 
   ResilienceTools();
   static ResilienceTools& getInstance();
@@ -80,6 +80,8 @@ class exahype::reactive::ResilienceTools {
   static double computeInfNormErrorRel(const double *a1, const double *a2, size_t length);
   static double computeL1NormErrorRel(const double *a1, const double *a2, size_t length);
   static double computeL2NormErrorRel(const double *a1, const double *a2, size_t length);
+
+  static bool checkSTPsImmediatelyAfterComputation();
 
   bool isAdmissibleNumericalError(const double *a1, const double *a2, size_t length);
 

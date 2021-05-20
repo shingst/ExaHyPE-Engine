@@ -1207,6 +1207,9 @@ private:
       bool handleRemoteExecution(bool& hasComputed);
       bool tryToFindAndExtractEquivalentSharedOutcomes(bool previous, int required, ADERDGSolver::JobOutcomeStatus &status, MigratablePredictionJobData **outcome);
       bool tryFindOutcomeAndHeal();
+      bool isRemoteJob() {
+        return (_originRank!= tarch::parallel::Node::getInstance().getRank());
+      }
       void sendBackOutcomeToOrigin();
       bool checkAgainstOutcome(MigratablePredictionJobData *data);
       bool checkAgainstOutcomesAndFindSaneOne(MigratablePredictionJobData **data, int outcomes, int& idxSane);
