@@ -82,8 +82,6 @@ MPI_Comm exahype::reactive::OffloadingContext::_offloadingComms[MAX_THREADS];
 MPI_Comm exahype::reactive::OffloadingContext::_offloadingCommsMapped[MAX_THREADS];
 
 MPI_Comm exahype::reactive::OffloadingContext::_interTeamComms[MAX_THREADS];
-MPI_Comm exahype::reactive::OffloadingContext::_interTeamCommsKey[MAX_THREADS];
-MPI_Comm exahype::reactive::OffloadingContext::_interTeamCommsAck[MAX_THREADS];
 
 exahype::reactive::OffloadingContext::OffloadingStrategy exahype::reactive::OffloadingContext::_offloadingStrategy(exahype::reactive::OffloadingContext::OffloadingStrategy::None);
 exahype::reactive::OffloadingContext::ResilienceStrategy exahype::reactive::OffloadingContext::_resilienceStrategy(exahype::reactive::OffloadingContext::ResilienceStrategy::None);
@@ -179,14 +177,6 @@ MPI_Comm exahype::reactive::OffloadingContext::getTMPIInterTeamCommunicatorData(
   return _interTeamComms[_threadId];
 }
 
-MPI_Comm exahype::reactive::OffloadingContext::getTMPIInterTeamCommunicatorKey() {
-  return _interTeamCommsKey[_threadId];
-}
-
-MPI_Comm exahype::reactive::OffloadingContext::getTMPIInterTeamCommunicatorAck() {
-  return _interTeamCommsAck[_threadId];
-}
-
 void exahype::reactive::OffloadingContext::setTMPINumTeams(int nteams) {
   _numTeams = nteams;
 }
@@ -255,14 +245,6 @@ void exahype::reactive::OffloadingContext::createMPICommunicators() {
     MPI_CHECK("createMPICommunicators", MPI_Comm_set_info(_interTeamComms[i], info));
     assertion(ierr==MPI_SUCCESS);
 
-    MPI_CHECK("createMPICommunicators", MPI_Comm_dup(interTeamComm, &_interTeamCommsKey[i])); assertion(ierr==MPI_SUCCESS);
-    MPI_CHECK("createMPICommunicators", MPI_Comm_set_info(_interTeamCommsKey[i], info));
-    assertion(ierr==MPI_SUCCESS);
-
-    MPI_CHECK("createMPICommunicators", MPI_Comm_dup(interTeamComm, &_interTeamCommsAck[i])); assertion(ierr==MPI_SUCCESS);
-    MPI_CHECK("createMPICommunicators", MPI_Comm_set_info(_interTeamCommsAck[i], info));
-    assertion(ierr==MPI_SUCCESS);
-
     MPI_Info_free(&info);
   }
   MPI_CHECK("createMPICommunicators", MPI_Comm_free(&interTeamComm));
@@ -273,10 +255,7 @@ void exahype::reactive::OffloadingContext::destroyMPICommunicators() {
   for(int i=0; i<MAX_THREADS;i++) {
     MPI_CHECK("destroyMPICommunicators", MPI_Comm_free(&_offloadingComms[i])); assertion(ierr==MPI_SUCCESS);
     MPI_CHECK("destroyMPICommunicators", MPI_Comm_free(&_offloadingCommsMapped[i])); assertion(ierr==MPI_SUCCESS);
-
     MPI_CHECK("destroyMPICommunicators", MPI_Comm_free(&_interTeamComms[i])); assertion(ierr==MPI_SUCCESS);
-    MPI_CHECK("destroyMPICommunicators", MPI_Comm_free(&_interTeamCommsKey[i])); assertion(ierr==MPI_SUCCESS);
-    MPI_CHECK("destroyMPICommunicators", MPI_Comm_free(&_interTeamCommsAck[i])); assertion(ierr==MPI_SUCCESS);
   }
 }
 

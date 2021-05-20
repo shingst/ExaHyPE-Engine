@@ -151,12 +151,12 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryFindOutcomeAndC
   //exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, MAX_PROGRESS_ITS);
 #endif
 
-  JobOutcomeStatus status;
+  DeliveryStatus status;
   MigratablePredictionJobData *outcome;
   bool found = tryToFindAndExtractEquivalentSharedOutcome(status, &outcome);
   bool reschedule;
 
-  if(found && status==JobOutcomeStatus::received) {
+  if(found && status==DeliveryStatus::Received) {
     if(matchesOtherOutcome(outcome)) {
       CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,_element);
       cellDescription.setHasCompletedLastStep(true);
@@ -235,7 +235,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   double *lGradQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictorGradient());
   double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
 
-  JobOutcomeStatus status;
+  DeliveryStatus status;
   MigratablePredictionJobData *outcome = nullptr;
   bool found = false;
 
@@ -250,7 +250,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 
     if(found) {
       switch (status) {
-        case JobOutcomeStatus::received:
+        case DeliveryStatus::Received:
       	  hasResult = true;
 #if defined(ResilienceChecks)
           needToCompute = outcome->_metadata._isPotSoftErrorTriggered;
@@ -263,7 +263,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
           copyResult = true;
 #endif
           break;
-      case JobOutcomeStatus::transit:
+      case DeliveryStatus::Transit:
 #ifdef TaskSharingRescheduleIfInTransit
           reschedule = true;
           needToCompute = false;
@@ -394,7 +394,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   return reschedule;
 }
 
-bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryToFindAndExtractEquivalentSharedOutcome(JobOutcomeStatus &status, MigratablePredictionJobData **outcome) {
+bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryToFindAndExtractEquivalentSharedOutcome(exahype::solvers::DeliveryStatus &status, MigratablePredictionJobData **outcome) {
   CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
 	      _element);
 
@@ -406,34 +406,20 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryToFindAndExtrac
   tarch::la::Vector<DIMENSIONS, double> center;
   center = cellDescription.getOffset() + 0.5 * cellDescription.getSize();
 
-  JobTableKey key;
-  for (int i=0; i < DIMENSIONS; i++)
-    key.center[i] = center[i];
-  key.timestamp = _predictorTimeStamp;
-  key.timestepSize = _predictorTimeStepSize;
-  key.element = _element;
+  MigratablePredictionJobOutcomeKey key(center.data(), _predictorTimeStamp, _predictorTimeStepSize, _element);
+  bool found = _solver._outcomeDatabase.tryFindAndExtractOutcome(key, outcome, status);
 
-  tbb::concurrent_hash_map<JobTableKey, JobTableEntry>::accessor a_jobToData;
-  bool found = _solver._jobDatabase.find(a_jobToData, key);
-
-  if(found && a_jobToData->second.status == JobOutcomeStatus::received) {
-    *outcome = a_jobToData->second.data;
-    status = a_jobToData->second.status;
-    _solver._jobDatabase.erase(a_jobToData);
-
+  if(found && status==DeliveryStatus::Transit) {
+    _solver._outcomeDatabase.insertOutcome(key, *outcome, DeliveryStatus::Transit);
+    *outcome = nullptr;
+    found = false;
+  }
+  else {
     logDebug("tryToFindAndExtractEquivalentSharedOutcome()",
         "team "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
         <<" found STP in received jobs:"
         <<(*outcome)->_metadata.to_string());
   }
-  else if(found && a_jobToData->second.status == JobOutcomeStatus::transit) {
-	  *outcome = nullptr;
-	  status = a_jobToData->second.status;
-  }
-  else {
-	  *outcome = nullptr;
-  }
-  a_jobToData.release();
 
   return found;
 }
@@ -727,39 +713,6 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandler(
       );
 }
 
-//#if defined(TaskSharing)
-void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveKeyHandlerTaskSharing(
-    exahype::solvers::Solver* solver, int tag, int remoteRank) {
-  logDebug("receiveKeyHandlerReplica","successful receive request");
-
-  tbb::concurrent_hash_map<std::pair<int, int>, double*>::accessor a_tagRankToData;
-  double *key;
-  static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagRankToReplicaKey.find(
-      a_tagRankToData, std::make_pair(remoteRank, tag));
-  key = a_tagRankToData->second;
-  //static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagRankToReplicaKey.erase(a_tagRankToData);
-  //a_tagRankToData.release();
-
-#if DIMENSIONS==3
-  logDebug("receiveKeyHandlerReplica", "team "
-      <<" received replica job key: center[0] = "<<key[0]
-      <<" center[1] = "<<key[1]
-      <<" center[2] = "<<key[2]
-      <<" time stamp = "<<key[2*DIMENSIONS]
-      <<" element = "<<(int) key[2*DIMENSIONS+2]);
-#else
-  logDebug("receiveKeyHandlerReplica", "team "
-      <<" received replica job key: center[0] = "<<key[0]
-      <<" center[1] = "<<key[1]
-      <<" time stamp = "<<key[2*DIMENSIONS]
-      <<" element = "<<(int) key[2*DIMENSIONS+2]);
-#endif
-
-  static_cast<exahype::solvers::ADERDGSolver*>(solver)->sendRequestForJobAndReceive(
-      tag, remoteRank, key);
-
-}
-
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTaskSharing(
     exahype::solvers::Solver* solver, int tag, int remoteRank) {
   logDebug("receiveHandlerTaskSharing","successful receive request");
@@ -782,38 +735,27 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
       <<" received replica job: "
       <<data->_metadata.to_string());
 
-  JobTableKey key; //{&data->_metadata[0], data->_metadata[2*DIMENSIONS], (int) data->_metadata[2*DIMENSIONS+2] };
-  const double * center = data->_metadata.getCenter();
-  for (int i = 0; i < DIMENSIONS; i++)
-    key.center[i] = center[i];
-  key.timestamp = data->_metadata.getPredictorTimeStamp();
-  key.timestepSize = data->_metadata.getPredictorTimeStepSize();
-  key.element = data->_metadata.getElement();
+  MigratablePredictionJobOutcomeKey key(data->_metadata.getCenter(), data->_metadata.getPredictorTimeStamp(),
+                                         data->_metadata.getPredictorTimeStepSize(), data->_metadata.getElement());
 
-  //bool criticalMemoryConsumption =  exahype::reactive::MemoryMonitor::getInstance().getFreeMemMB()<1000;
-
-  if (key.timestamp
-      < static_cast<exahype::solvers::ADERDGSolver*>(solver)->getMinTimeStamp()) { // || criticalMemoryConsumption) {
+  if(key._timestamp
+      <static_cast<exahype::solvers::ADERDGSolver*>(solver)->getMinTimeStamp()) {
     exahype::reactive::JobTableStatistics::getInstance().notifyLateTask();
     delete data;
     AllocatedSTPsReceive--;
   }
   else {
-    JobTableEntry entry { data, JobOutcomeStatus::received };
-    tbb::concurrent_hash_map<JobTableKey, JobTableEntry>::accessor a_jobToData;
-    bool found =
-      static_cast<exahype::solvers::ADERDGSolver*>(solver)->_jobDatabase.find(
-            a_jobToData, key);
-    if (found) {
-      a_jobToData->second.status = JobOutcomeStatus::received;
-      a_jobToData.release();
+    MigratablePredictionJobData *data2 = nullptr;
+    DeliveryStatus status;
+    bool found = static_cast<exahype::solvers::ADERDGSolver*>(solver)->_outcomeDatabase.tryFindAndExtractOutcome(key, &data2, status);
+
+    if(found && status==DeliveryStatus::Transit) {
+      static_cast<exahype::solvers::ADERDGSolver*>(solver)->_outcomeDatabase.insertOutcome(key, data2, DeliveryStatus::Received);
     }
     else {
-      static_cast<exahype::solvers::ADERDGSolver*>(solver)->_jobDatabase.insert(
-          std::make_pair(key, entry));
+      static_cast<exahype::solvers::ADERDGSolver*>(solver)->_outcomeDatabase.insertOutcome(key, data, DeliveryStatus::Received);
     }
-    static_cast<exahype::solvers::ADERDGSolver*>(solver)->_allocatedJobs.push_back(
-        key);
+    static_cast<exahype::solvers::ADERDGSolver*>(solver)->_allocatedJobs.push_back(key);
   }
   exahype::reactive::JobTableStatistics::getInstance().notifyReceivedTask();
 
@@ -1014,29 +956,6 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackHandler(
 
   NumberOfStolenJobs--;
   assertion( NumberOfStolenJobs>=0 );
-}
-
-//#if defined(TaskSharing)
-void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendAckHandlerTaskSharing(
-    exahype::solvers::Solver* solver, int tag, int remoteRank) {
-
-  logDebug("sendAckHandlerReplication","successfully completed send ack to other team");
-
-}
-
-void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendKeyHandlerTaskSharing(
-    exahype::solvers::Solver* solver, int tag, int remoteRank) {
-
-  logDebug("sendKeyHandlerReplication","successfully completed send key to other teams");
-  //exahype::reactive::ReplicationStatistics::getInstance().notifySentTask();
-  //tbb::concurrent_hash_map<int, double*>::accessor a_tagToData;
-  //bool found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToReplicationSendKey.find(a_tagToData, tag);
-  //assert(found);
-  //double *data = a_tagToData->second;
-  //static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToReplicationSendKey.erase(a_tagToData);
-
-  //delete data;
-  //a_tagToData.release();
 }
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendHandlerTaskSharing(

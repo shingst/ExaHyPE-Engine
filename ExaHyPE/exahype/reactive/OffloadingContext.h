@@ -118,8 +118,6 @@ class exahype::reactive::OffloadingContext {
     static MPI_Comm  _offloadingCommsMapped[MAX_THREADS];
 
     static MPI_Comm  _interTeamComms[MAX_THREADS];
-    static MPI_Comm  _interTeamCommsKey[MAX_THREADS];
-    static MPI_Comm  _interTeamCommsAck[MAX_THREADS];
 
     static OffloadingStrategy _offloadingStrategy;
 
@@ -140,8 +138,6 @@ class exahype::reactive::OffloadingContext {
 
     void setTMPIInterTeamCommunicators(MPI_Comm comm, MPI_Comm commKey, MPI_Comm commAck);
     MPI_Comm getTMPIInterTeamCommunicatorData();
-    MPI_Comm getTMPIInterTeamCommunicatorKey();
-    MPI_Comm getTMPIInterTeamCommunicatorAck();
 
     void setTMPINumTeams(int team);
     int getTMPINumTeams();
