@@ -18,6 +18,10 @@
 #include "tarch/multicore/Core.h"
 #include "tarch/parallel/Node.h"
 
+#if defined(USE_TMPI)
+#include "exahype/reactive/OffloadingContext.h"
+#endif
+
 tarch::logging::Log exahype::reactive::OffloadingProfiler::_log( "exahype::reactive::OffloadingProfiler" );
 
 exahype::reactive::OffloadingProfiler::OffloadingProfiler():
@@ -36,12 +40,18 @@ exahype::reactive::OffloadingProfiler::OffloadingProfiler():
   _accWaitTasksPhaseTime(0),
   _accUsefulCommunicationPhaseTime(0),
   _accIdleCommunicationPhaseTime(0),
+  _accProgressPhaseTime(0),
+  _accProgressRequestsPhaseTime(0),
+  _accPollPhaseTime(0),
   _accComputationPhaseTime(0),
   _accHandlingPhaseTime(0),
   _accOffloadPhaseTime(0),
   _accWaitTasksTime(0),
   _accUsefulCommunicationTime(0),
   _accIdleCommunicationTime(0),
+  _accProgressTime(0),
+  _accProgressRequestsTime(0),
+  _accPollTime(0),
   _accComputationTime(0),
   _accHandlingTime(0),
   _accOffloadTime(0)
@@ -95,6 +105,7 @@ void exahype::reactive::OffloadingProfiler::beginPhase() {
   _accWaitTasksPhaseTime=0;
   _accUsefulCommunicationPhaseTime=0;
   _accIdleCommunicationPhaseTime=0;
+  _accProgressPhaseTime=0;
   _accComputationPhaseTime=0;
   _accOffloadPhaseTime=0;
 #endif
@@ -118,6 +129,9 @@ void exahype::reactive::OffloadingProfiler::endPhase() {
   _accWaitTasksTime+=_accWaitTasksPhaseTime;
   _accUsefulCommunicationTime+=_accUsefulCommunicationPhaseTime;
   _accIdleCommunicationTime+=_accIdleCommunicationPhaseTime;
+  _accProgressTime+=_accProgressPhaseTime;
+  _accProgressRequestsTime+=_accProgressRequestsPhaseTime;
+  _accPollTime+=_accPollPhaseTime;
   _accComputationTime+=_accComputationPhaseTime;
   _accHandlingTime+=_accHandlingPhaseTime;
   _accOffloadTime+=_accOffloadPhaseTime;
@@ -186,6 +200,42 @@ void exahype::reactive::OffloadingProfiler::endComputation(double elapsed) {
 #endif
 }
 
+void exahype::reactive::OffloadingProfiler::beginProgress() {
+#if defined(OffloadingUseProfiler)
+#endif
+}
+
+void exahype::reactive::OffloadingProfiler::endProgress(double elapsed) {
+#if defined(OffloadingUseProfiler)
+  const unsigned long long elapsedTime = elapsed*1E6;
+  _accProgressPhaseTime+=elapsedTime;
+#endif
+}
+
+void exahype::reactive::OffloadingProfiler::beginProgressRequests() {
+#if defined(OffloadingUseProfiler)
+#endif
+}
+
+void exahype::reactive::OffloadingProfiler::endProgressRequests(double elapsed) {
+#if defined(OffloadingUseProfiler)
+  const unsigned long long elapsedTime = elapsed*1E6;
+  _accProgressRequestsPhaseTime+=elapsedTime;
+#endif
+}
+
+void exahype::reactive::OffloadingProfiler::beginPolling() {
+#if defined(OffloadingUseProfiler)
+#endif
+}
+
+void exahype::reactive::OffloadingProfiler::endPolling(double elapsed) {
+#if defined(OffloadingUseProfiler)
+  const unsigned long long elapsedTime = elapsed*1E6;
+  _accPollPhaseTime+=elapsedTime;
+#endif
+}
+
 void exahype::reactive::OffloadingProfiler::beginCommunication() {
 #if defined(OffloadingUseProfiler)
 #endif
@@ -200,6 +250,7 @@ void exahype::reactive::OffloadingProfiler::endCommunication(bool successful, do
     _accIdleCommunicationPhaseTime+=elapsedTime;
 #endif
 }
+
 
 void exahype::reactive::OffloadingProfiler::beginHandling() {
 }
@@ -259,7 +310,15 @@ void exahype::reactive::OffloadingProfiler::printStatistics() {
   int rank = tarch::parallel::Node::getInstance().getRank();
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
-  std::string str="Offloading statistics for rank "+std::to_string(rank)+":\n";
+#if defined (USE_TMPI)
+  int team = exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank();
+#endif
+
+  std::string str="Offloading statistics for rank "+std::to_string(rank);
+#if defined (USE_TMPI)
+  str += " team = "+ std::to_string(team);
+#endif
+  str += ":\n";
   logInfo("printStatistics", str);
   str="  spawned tasks: "+std::to_string(_spawnedTasks)+"\n";
   logInfo("printStatistics", str);
@@ -273,9 +332,11 @@ void exahype::reactive::OffloadingProfiler::printStatistics() {
   logInfo("printStatistics", str);
   int totalTargetOffloaded=0;
   for(int i=0;i<nnodes;i++) {
-    str="    to rank: "+std::to_string(i)+" : "+std::to_string(_targetOffloadedTasksPerRank[i])+"\n";
-    logInfo("printStatistics", str);
-    totalTargetOffloaded+=_targetOffloadedTasksPerRank[i];
+    if(_targetOffloadedTasksPerRank[i]>0) {
+      str="    to rank: "+std::to_string(i)+" : "+std::to_string(_targetOffloadedTasksPerRank[i])+"\n";
+      logInfo("printStatistics", str);
+      totalTargetOffloaded+=_targetOffloadedTasksPerRank[i];
+    }
   }
   str="  total target offloaded tasks: "+std::to_string(totalTargetOffloaded)+"\n";
   logInfo("printStatistics", str);
@@ -283,8 +344,10 @@ void exahype::reactive::OffloadingProfiler::printStatistics() {
   logInfo("printStatistics", str);
   int totalOffloaded=0;
   for(int i=0;i<nnodes;i++) {
-    str="    to rank: "+std::to_string(i)+" : "+std::to_string(_offloadedTasksPerRank[i])+"\n";
-    logInfo("printStatistics", str);
+    if(_offloadedTasksPerRank[i]>0){
+      str="    to rank: "+std::to_string(i)+" : "+std::to_string(_offloadedTasksPerRank[i])+"\n";
+      logInfo("printStatistics", str);
+    }
     totalOffloaded+=_offloadedTasksPerRank[i];
   }
   str="  total offloaded tasks: "+std::to_string(totalOffloaded)+"\n";
@@ -295,8 +358,10 @@ void exahype::reactive::OffloadingProfiler::printStatistics() {
   logInfo("printStatistics", str);
   int totalReceived=0;
   for(int i=0;i<nnodes;i++) {
-    str="    from rank: "+std::to_string(i)+" : "+std::to_string(_receivedTasksPerRank[i])+"\n";
-    logInfo("printStatistics", str);
+    if(_receivedTasksPerRank[i]>0) {
+      str="    from rank: "+std::to_string(i)+" : "+std::to_string(_receivedTasksPerRank[i])+"\n";
+      logInfo("printStatistics", str);
+    }
     totalReceived+=_receivedTasksPerRank[i];
   }
   str="  total received tasks: "+std::to_string(totalReceived)+"\n";
@@ -308,6 +373,12 @@ void exahype::reactive::OffloadingProfiler::printStatistics() {
   str="  total useful communication time: "+std::to_string(static_cast<double>(_accUsefulCommunicationTime/1E06))+"\n";
   logInfo("printStatistics", str);
   str="  total idle communication time: "+std::to_string(static_cast<double>(_accIdleCommunicationTime/1E06))+"\n";
+  logInfo("printStatistics", str);
+  str="  total progress time: "+std::to_string(static_cast<double>(_accProgressTime/1E06))+"\n";
+  logInfo("printStatistics", str);
+  str="  total progressRequests time: "+std::to_string(static_cast<double>(_accProgressRequestsTime/1E06))+"\n";
+  logInfo("printStatistics", str);
+  str="  total poll time: "+std::to_string(static_cast<double>(_accPollTime/1E06))+"\n";
   logInfo("printStatistics", str);
   str="  total wait time for tasks: "+std::to_string(static_cast<double>(_accWaitTasksTime/1E06))+"\n";
   logInfo("printStatistics", str);

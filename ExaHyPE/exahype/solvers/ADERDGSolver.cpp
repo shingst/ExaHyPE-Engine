@@ -3485,8 +3485,8 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
 //#else
 //  while( (receivedTask || receivedTaskBack) && iprobesCounter<MaxIprobesInOffloadingProgress && !terminateImmediately ) {
 //#endif
-    if((timing+MPI_Wtime()) >10 && !warningPrinted) {
-      logError("pollForOutstanding", " warning: polling very long ");
+    if((timing+MPI_Wtime()) >2 && !warningPrinted) {
+      logError("pollForOutstanding", " warning: polling very long iprobes counter "<<iprobesCounter);
       warningPrinted = true;
     }
 
@@ -3701,12 +3701,17 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
 #if !defined(UseMPIThreadSplit) //skip spin lock when MPI thread split model is used
   bool canRun;
   tarch::multicore::Lock lock(OffloadingSemaphore, false);
+  
 #if defined(OffloadingUseProgressThread)
   if(runOnMaster)
     canRun = false;
   else
     canRun = lock.tryLock();
 #else
+  //assert(!runOnMaster);
+  //if(tarch::multicore::Core::getInstance().getThreadNum()==0) {
+  //  logError("progressOffloading", "Progress about to run on master thread!");
+ // }
   //assertion(!runOnMaster);
   // First, we ensure here that only one thread at a time progresses offloading
   // this avoids multithreaded MPI problems
@@ -3722,6 +3727,10 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
   //VT_begin(event_progress);
 #endif
 
+#ifdef OffloadingUseProfiler
+  double timing = -MPI_Wtime();
+  exahype::reactive::OffloadingProfiler::getInstance().beginProgress();
+#endif
 
   /*tarch::timing::Watch watch("ADERDGSolver","progress", false, false);
   if(tarch::multicore::Core::getInstance().getThreadNum()==0) {
@@ -3733,14 +3742,35 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
 
   // 2. make progress on any outstanding MPI communication
   //if(!runOnMaster)
+#ifdef OffloadingUseProfiler
+  double timing_requests = -MPI_Wtime();
+  exahype::reactive::OffloadingProfiler::getInstance().beginProgressRequests();
+#endif
   exahype::reactive::RequestManager::getInstance().progressRequests();
+#ifdef OffloadingUseProfiler
+  timing_requests += MPI_Wtime();
+  exahype::reactive::OffloadingProfiler::getInstance().endProgressRequests(timing_requests);
+#endif
 
   // 3. progress on performance monitor
   exahype::reactive::PerformanceMonitor::getInstance().run();
 
   // 4. detect whether local rank should receive anything
   //if(!runOnMaster)
+#ifdef OffloadingUseProfiler
+  double timing_poll = -MPI_Wtime();
+  exahype::reactive::OffloadingProfiler::getInstance().beginPolling();
+#endif
   pollForOutstandingCommunicationRequests(solver, runOnMaster, maxIts);
+#ifdef OffloadingUseProfiler
+  timing_poll += MPI_Wtime();
+  exahype::reactive::OffloadingProfiler::getInstance().endPolling(timing_poll);
+#endif
+
+#ifdef OffloadingUseProfiler
+  timing += MPI_Wtime();
+  exahype::reactive::OffloadingProfiler::getInstance().endProgress(timing);
+#endif
 
 #if !defined(UseMPIThreadSplit)
   lock.free();
@@ -4117,6 +4147,7 @@ bool exahype::solvers::ADERDGSolver::OffloadingManagerJob::run( bool isCalledOnM
       //}
       //double time = -MPI_Wtime();
       exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, std::numeric_limits<int>::max());
+      //exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, 1);
       //time += MPI_Wtime();
       //if(time>0.02)
       //  logInfo("run","took too long"<<time);

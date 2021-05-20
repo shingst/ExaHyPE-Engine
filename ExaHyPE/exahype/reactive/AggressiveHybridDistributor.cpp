@@ -152,7 +152,7 @@ void exahype::reactive::AggressiveHybridDistributor::computeIdealLoadDistributio
         if(input_r==myRank) {
           logInfo("computeIdealLoadDistribution()"," inc_l="<<inc_l);
           _idealTasksToOffloadCCP[output_r] = inc_l;
-          reactive::OffloadingProfiler::getInstance().notifyTargetOffloadedTask(inc_l, output_r);
+          //reactive::OffloadingProfiler::getInstance().notifyTargetOffloadedTask(inc_l, output_r);
           //_tasksToOffload[output_r]= std::min(inc_l,1);
           //offloading::OffloadingProfiler::getInstance().notifyTargetOffloadedTask(std::min(inc_l,1), output_r);
         }
@@ -348,6 +348,7 @@ void exahype::reactive::AggressiveHybridDistributor::resetRemainingTasksToOffloa
     if(i==myRank)
       continue;
     _remainingTasksToOffload[i] = _tasksToOffload[i];
+    reactive::OffloadingProfiler::getInstance().notifyTargetOffloadedTask(_tasksToOffload[i], i);
   }
 }
 
@@ -572,11 +573,14 @@ bool exahype::reactive::AggressiveHybridDistributor::selectVictimRank(int& victi
 	  		                       << " there are "<<exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs-exahype::solvers::ADERDGSolver::NumberOfRemoteJobs
 	                                       <<" jobs "<< " and "<<tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs());
 
+    reactive::OffloadingProfiler::getInstance().notifyThresholdFail();
     _tasksNotOffloaded[victim]++;
     victim = myRank;
   }
-  else if(victim!=myRank)
+  else if(victim!=myRank) {
     _tasksActuallyOffloaded[victim]++;
+    //task is tracked for profiling in ADERDGSolver
+  }
 
   logDebug("selectVictimRank", "chose victim "<<victim<<" _remainingTasksToOffload "<<_remainingTasksToOffload[victim]);
   

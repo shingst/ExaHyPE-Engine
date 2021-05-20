@@ -148,6 +148,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryFindOutcomeAndC
   //caution, this may delay setting the completed flag and cause slowdowns for the master!
 #if !defined(OffloadingUseProgressThread)
   exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, MAX_PROGRESS_ITS);
+  //exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, MAX_PROGRESS_ITS);
 #endif
 
   JobOutcomeStatus status;
@@ -240,9 +241,10 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 
 //#if defined(TaskSharing)
   if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
-      != exahype::reactive::OffloadingContext::ResilienceStrategy::None) {
+      != exahype::reactive::OffloadingContext::ResilienceStrategy::None
+      && exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams()>1) {
     needToShare = (AllocatedSTPsSend
-          <= exahype::reactive::PerformanceMonitor::getInstance().getTasksPerTimestep()/tarch::multicore::Core::getInstance().getNumberOfThreads());
+          <= exahype::reactive::PerformanceMonitor::getInstance().getTasksPerTimestep()/((exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams()-1)*tarch::multicore::Core::getInstance().getNumberOfThreads()));
 
     found = tryToFindAndExtractEquivalentSharedOutcome(status, &outcome);
 
@@ -398,6 +400,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryToFindAndExtrac
 
 #if !defined(OffloadingUseProgressThread)
   exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, MAX_PROGRESS_ITS);
+  //exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, MAX_PROGRESS_ITS);
 #endif
 
   tarch::la::Vector<DIMENSIONS, double> center;
@@ -587,13 +590,17 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
   int myRank = tarch::parallel::Node::getInstance().getRank();
   bool result = false;
 
+  //local treatment if this job belongs to the local rank
+  if (_originRank == myRank) {
 #if defined(OffloadingUseProfiler)
   exahype::reactive::OffloadingProfiler::getInstance().beginComputation();
   double time = -MPI_Wtime();
 #endif
-  //local treatment if this job belongs to the local rank
-  if (_originRank == myRank) {
     result = handleLocalExecution(isRunOnMaster, hasComputed);
+#if defined(OffloadingUseProfiler)
+  time += MPI_Wtime();
+  exahype::reactive::OffloadingProfiler::getInstance().endComputation(time);
+#endif
     if (!_isLocalReplica) NumberOfEnclaveJobs--;
     assertion( NumberOfEnclaveJobs>=0 );
 #if !defined(OffloadingUseProgressThread)
@@ -614,12 +621,16 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
   }
   //remote task, need to execute and send it back
   else {
+#if defined(OffloadingUseProfiler)
+  exahype::reactive::OffloadingProfiler::getInstance().beginComputation();
+  double time = -MPI_Wtime();
+#endif
     result = handleRemoteExecution(hasComputed);
-  }
 #if defined(OffloadingUseProfiler)
   time += MPI_Wtime();
   exahype::reactive::OffloadingProfiler::getInstance().endComputation(time);
 #endif
+  }
 
   //send back
   if (_originRank != myRank) {

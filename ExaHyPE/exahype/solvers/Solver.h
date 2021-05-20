@@ -1234,7 +1234,7 @@ public:
     //time_background += MPI_Wtime();
     //if(time_background>10) {
     //  logError("waitUntilCompletedLastStep"," took too  long "<<time_background<< "Encalves  "<<NumberOfEnclaveJobs<<" Skeleton "<<NumberOfSkeletonJobs<<" waitForHighPriority "<<waitForHighPriorityJob<< " cellDescription "<<cellDescription.toString()); 
-   // }
+    //}
   
   #ifdef OffloadingUseProfiler
     time_background += MPI_Wtime();

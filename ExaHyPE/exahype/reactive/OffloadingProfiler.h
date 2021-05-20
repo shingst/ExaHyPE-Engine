@@ -66,6 +66,9 @@ class exahype::reactive::OffloadingProfiler {
     std::atomic<unsigned long long> _accWaitTasksPhaseTime;
     std::atomic<unsigned long long> _accUsefulCommunicationPhaseTime;
     std::atomic<unsigned long long> _accIdleCommunicationPhaseTime;
+    std::atomic<unsigned long long> _accProgressPhaseTime;
+    std::atomic<unsigned long long> _accProgressRequestsPhaseTime;
+    std::atomic<unsigned long long> _accPollPhaseTime;
     std::atomic<unsigned long long> _accComputationPhaseTime;
     std::atomic<unsigned long long> _accHandlingPhaseTime;
     std::atomic<unsigned long long> _accOffloadPhaseTime;
@@ -74,6 +77,9 @@ class exahype::reactive::OffloadingProfiler {
     std::atomic<unsigned long long> _accWaitTasksTime;
     std::atomic<unsigned long long> _accUsefulCommunicationTime;
     std::atomic<unsigned long long> _accIdleCommunicationTime;
+    std::atomic<unsigned long long> _accProgressTime;
+    std::atomic<unsigned long long> _accProgressRequestsTime;
+    std::atomic<unsigned long long> _accPollTime;
     std::atomic<unsigned long long> _accComputationTime;
     std::atomic<unsigned long long> _accHandlingTime;
     std::atomic<unsigned long long> _accOffloadTime;
@@ -97,6 +103,15 @@ class exahype::reactive::OffloadingProfiler {
     void beginCommunication();
     void endCommunication(bool successful, double elapsed);
 
+    void beginProgress();
+    void endProgress(double elapsed);
+
+    void beginProgressRequests();
+    void endProgressRequests(double elapsed);
+    
+    void beginPolling();
+    void endPolling(double elapsed);
+    
     void beginHandling();
     void endHandling(double elapsed);
 
