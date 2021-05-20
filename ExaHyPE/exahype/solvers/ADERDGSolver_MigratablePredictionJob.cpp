@@ -124,7 +124,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::setTrigger(bool fl
   CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
       _element);
 
-  logDebug("setTrigger", " celldesc ="<<_cellDescriptionsIndex<<" isTroubled "<<cellDescription.getIsTroubledInLastStep());
+  logDebug("setTrigger", " celldesc ="<<_cellDescriptionsIndex<<" isPotCorrupted "<<(cellDescription.getCorruptionStatus()==PotentiallyCorrupted));
 
   //trigger is set later if we are using limiter as a trigger
   _isPotSoftErrorTriggered =  (exahype::reactive::ResilienceTools::TriggerFlipped && flipped)
@@ -267,16 +267,17 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryFindPreviousOut
           <<" previous step "<<cellDescription.getPreviousTimeStepSize());
 
       //correct here
-      //std::memcpy(luh, &outcomes[0]->_luh[0], outcomes[0]->_luh.size() * sizeof(double));
-      //std::memcpy(lduh, &outcomes[0]->_lduh[0], outcomes[0]->_lduh.size() * sizeof(double));
-      //std::memcpy(lQhbnd, &outcomes[0]->_lQhbnd[0], outcomes[0]->_lQhbnd.size() * sizeof(double));
-      //std::memcpy(lFhbnd, &outcomes[0]->_lFhbnd[0], outcomes[0]->_lFhbnd.size() * sizeof(double));
+      std::memcpy(luh, &outcomes[0]->_luh[0], outcomes[0]->_luh.size() * sizeof(double));
+      std::memcpy(lduh, &outcomes[0]->_lduh[0], outcomes[0]->_lduh.size() * sizeof(double));
+      std::memcpy(lQhbnd, &outcomes[0]->_lQhbnd[0], outcomes[0]->_lQhbnd.size() * sizeof(double));
+      std::memcpy(lFhbnd, &outcomes[0]->_lFhbnd[0], outcomes[0]->_lFhbnd.size() * sizeof(double));
 #if OffloadingGradQhbnd
-      //std::memcpy(lGradQhbnd, &outcomes[0]->_lGradQhbnd[0], outcomes[0]->_lGradQhbnd.size() * sizeof(double));
+      std::memcpy(lGradQhbnd, &outcomes[0]->_lGradQhbnd[0], outcomes[0]->_lGradQhbnd.size() * sizeof(double));
 #endif
 
-      //cellDescription.setRefinementStatus(Keep);
-      //cellDescription.setIsTroubledInLastStep(false);
+      cellDescription.setRefinementStatus(Keep);
+      cellDescription.setCorruptionStatus(CorruptedAndCorrected);
+      //logError("tryFindPreviousOutcomeAndCheck", " soft error corrected and detected, but we compute limiter next, as error has propagated!");
 
       cellDescription.setHasCompletedLastStep(true); //let's use the limiter for now to correct on faulty team, the other one will continue as usual
       //MPI_Abort(MPI_COMM_WORLD, -1);
@@ -288,6 +289,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryFindPreviousOut
       if(!equalSolution)
         logError("tryFindPreviousOutcomeAndCheck"," solutions to not match, we must have a soft error but we can't correct!");
       cellDescription.setHasCompletedLastStep(true);
+
       //return false; //run limiter next for both
       MPI_Abort(MPI_COMM_WORLD, -1);
     }
@@ -480,7 +482,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
       if(outcomes[0]->_metadata._isCorrupted)
         logError("handleLocalExecution","Error: we're using a corrupted outcome!");
 
-      assertion(outcome!=nullptr);
+      assertion(outcomes[0]!=nullptr);
       std::memcpy(lduh, &outcomes[0]->_lduh[0], outcomes[0]->_lduh.size() * sizeof(double));
       std::memcpy(lQhbnd, &outcomes[0]->_lQhbnd[0], outcomes[0]->_lQhbnd.size() * sizeof(double));
       std::memcpy(lFhbnd, &outcomes[0]->_lFhbnd[0], outcomes[0]->_lFhbnd.size() * sizeof(double));

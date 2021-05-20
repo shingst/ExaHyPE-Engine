@@ -1369,17 +1369,17 @@ exahype::parser::Parser::OffloadingStrategy exahype::parser::Parser::getOffloadi
 }
 
 exahype::parser::Parser::ResilienceStrategy exahype::parser::Parser::getResilienceStrategy() const{
-  if (stringFromPathEquals("/distributed_memory/task_sharing", "no", true, "no")) {
+  if (stringFromPathEquals("/resilience/task_sharing", "no", true, "no")) {
     return ResilienceStrategy::None;
   }
-  if (stringFromPathEquals("/distributed_memory/task_sharing", "no", true, "task_sharing")) {
+  if (stringFromPathEquals("/resilience/task_sharing", "no", true, "task_sharing")) {
     return ResilienceStrategy::TaskSharing;
   }
-  if (stringFromPathEquals("/distributed_memory/task_sharing", "no", true, "task_sharing_resilience_checks")) {
+  if (stringFromPathEquals("/resilience/task_sharing", "no", true, "task_sharing_resilience_checks")) {
     return ResilienceStrategy::TaskSharingResilienceChecks;
   }
   //todo: not implemented yet
-  if (stringFromPathEquals("/distributed_memory/task_sharing", "no", true, "task_sharing_resilience_correction")) {
+  if (stringFromPathEquals("/resilience/task_sharing", "no", true, "task_sharing_resilience_correction")) {
     return ResilienceStrategy::TaskSharingResilienceCorrection;
   }
   return ResilienceStrategy::None;

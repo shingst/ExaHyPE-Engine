@@ -280,6 +280,10 @@ exahype::solvers::Solver::MeshUpdateEvent exahype::solvers::LimitingADERDGSolver
   }
 }
 
+void exahype::solvers::LimitingADERDGSolver::updateCorruptionStatusDuringRefinementStatusSpreading( SolverPatch& solverPatch) const {
+  _solver->updateCorruptionStatus(solverPatch);
+}
+
 bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInEnterCell(
     exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
@@ -641,6 +645,10 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
   result._timeStepSize    = startNewTimeStep(solverPatch,cellInfo,isFirstTimeStepOfBatch);
   result._meshUpdateEvent = updateRefinementStatusAfterSolutionUpdate(solverPatch,cellInfo,isTroubled);
 
+  if(isTroubled)
+    solverPatch.setCorruptionStatus(ADERDGSolver::PotentiallyCorrupted);
+
+
   reduce(solverPatch,cellInfo,result);
 
   //todo(Philipp): do we still need this?
@@ -965,9 +973,6 @@ exahype::solvers::LimitingADERDGSolver::checkIfCellIsTroubledAndDetermineMinAndM
 
   if ( OnlyStaticLimiting ) {
     isTroubled =  solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell;
-#if defined(ResilienceChecks)
-    solverPatch.setIsTroubledInLastStep(isTroubled);
-#endif
     return isTroubled;
   }
 
@@ -983,10 +988,6 @@ exahype::solvers::LimitingADERDGSolver::checkIfCellIsTroubledAndDetermineMinAndM
     LimiterPatch& limiterPatch = getLimiterPatch(solverPatch,cellInfo);
     determineLimiterMinAndMax(solverPatch,limiterPatch);
   }
-#if defined(ResilienceChecks)
-    logDebug("checkIfCellIsTroubledAndDetermineMinAndMax", "celldesc ="<<cellInfo._cellDescriptionsIndex<<" troubled = "<<isTroubled);
-    solverPatch.setIsTroubledInLastStep(isTroubled);
-#endif
 
   return isTroubled;
 }
@@ -1042,6 +1043,11 @@ exahype::solvers::LimitingADERDGSolver::updateRefinementStatusAfterSolutionUpdat
   }
 
   return meshUpdateEvent;
+}
+
+void exahype::solvers::LimitingADERDGSolver::updateCorruptionStatusAfterSolutionUpdate(SolverPatch& solverPatch, bool isTroubled) {
+  if(isTroubled)
+    solverPatch.setCorruptionStatus(ADERDGSolver::PotentiallyCorrupted);
 }
 
 bool exahype::solvers::LimitingADERDGSolver::evaluateDiscreteMaximumPrincipleAndDetermineMinAndMax(SolverPatch& solverPatch) {

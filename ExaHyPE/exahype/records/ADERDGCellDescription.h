@@ -57,15 +57,42 @@ class exahype::records::ADERDGCellDescription {
         _hasCompletedLastStep.store(state);
       }
 
-      bool _isTroubledInLastStep{false};
+      int _corruptionStatus{0};
 
-      void setIsTroubledInLastStep(bool isTroubled) {
-        _isTroubledInLastStep = isTroubled;
+      void setCorruptionStatus(int corruptionStatus) {
+        _corruptionStatus = corruptionStatus;
       }
 
-      bool getIsTroubledInLastStep() {
-        return _isTroubledInLastStep;
+      int getCorruptionStatus() const {
+        return _corruptionStatus;
       }
+
+      /*tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseCorruptionStatus = {0};
+
+      inline tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& getFacewiseCorruptionStatus() {
+         return _facewiseCorruptionStatus;
+      }
+
+      inline int getFacewiseCorruptionStatus(int element) {
+         return _facewiseCorruptionStatus[element];
+      }
+
+      inline void setFacewiseCorruptionStatus(const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& facewiseCorruptionStatus)
+#ifdef UseManualInlining
+__attribute__((always_inline))
+#endif
+      {
+         _facewiseCorruptionStatus = (facewiseCorruptionStatus);
+      }
+
+      inline void setFacewiseCorruptionStatus(int elementIndex, const int status)
+ #ifdef UseManualInlining
+ __attribute__((always_inline))
+ #endif
+       {
+          _facewiseCorruptionStatus[elementIndex] = status;
+       }*/
+
       // MANUALLY ADDED
 
 

@@ -966,6 +966,14 @@ private:
 
 #if defined(SharedTBB)
 
+  /** Corruption Status values */
+  static constexpr int Uncorrupted    = 0;
+  static constexpr int PotentiallyCorrupted = 1;
+  static constexpr int Corrupted        = 2;
+  static constexpr int CorruptedAndCorrected  = 3;
+  static constexpr int CorruptedNeighbour = 3; // set during status spreading
+
+
 #ifdef OffloadingUseProgressTask
   /**
    * Used to track sending ranks from which my rank currently receives tasks.
@@ -2068,6 +2076,12 @@ public:
       const int        faceIndex,
       const int        neighbourLimiterStatus);
 
+  static void mergeWithCorruptionStatus(
+      CellDescription& cellDescription,
+      const int        faceIndex,
+      const int        corruptionStatus);
+
+
   /**
    * Determine the refinement status from the face
    * neighbour values.
@@ -2077,6 +2091,8 @@ public:
    * calling this function.
    */
   void updateRefinementStatus(CellDescription& cellDescription) const;
+
+  void updateCorruptionStatus(CellDescription& cellDescription) const;
 
   /**
    * Updates the status flags and sets the stability criterion to
@@ -2718,6 +2734,7 @@ public:
       const int                                    neighbourAugmentationStatus,
       const int                                    neighbourCommunicationStatus,
       const int                                    neighbourRefinementStatus,
+      //const int                                    neighbourCorruptionStatus,
       const tarch::la::Vector<DIMENSIONS, int>&    pos,
       const tarch::la::Vector<DIMENSIONS, int>&    posNeighbour,
       const tarch::la::Vector<DIMENSIONS, double>& barycentreFromVertex);

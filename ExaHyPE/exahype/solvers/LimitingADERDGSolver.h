@@ -290,6 +290,11 @@ private:
       CellInfo&    cellInfo,
       const bool   isTroubled);
 
+  //todo: docu
+  void updateCorruptionStatusAfterSolutionUpdate(
+      SolverPatch& solverPatch,
+      const bool   isTroubled);
+
   /**
    * Takes the FV solution from the limiter patch and projects it on the
    * DG space, overwrites the DG solution on the solver patch with the projected values.
@@ -465,7 +470,9 @@ private:
     return
         solverPatch.getType()==SolverPatch::Type::Leaf &&
         solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
-        solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell-2;
+        solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell-2 
+        //solverPatch.getCorruptionStatus()!=ADERDGSolver::CorruptedAndCorrected &&
+        //solverPatch.getCorruptionStatus()!=ADERDGSolver::CorruptedNeighbour;
   }
 
   /**
@@ -889,6 +896,9 @@ public:
    * returns true if a new limiter patch was allocated.
    */
   MeshUpdateEvent  updateRefinementStatusDuringRefinementStatusSpreading(SolverPatch& solverPatch) const;
+
+  void updateCorruptionStatusDuringRefinementStatusSpreading( SolverPatch& solverPatch) const;
+
 
   /**\copydoc exahype::solvers::Solver::progressMeshRefinementInEnterCell
    *

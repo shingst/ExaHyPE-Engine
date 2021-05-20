@@ -325,6 +325,10 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
         // order is important: set resilience strategy first before initialization
         //exahype::reactive::OffloadingManager::getInstance().initialize();
         exahype::reactive::OffloadingProgressService::getInstance().enable();
+        if(exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams()<=1) {
+          logError("initDistributedMemoryConfiguration", "You are trying to use some task sharing algorithm with less than two TMPI teams. Did you forget to set the TEAMS environment variable? Aborting...");
+          _parser.invalidate();
+        }
 #endif
    }
 

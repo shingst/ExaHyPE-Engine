@@ -1056,8 +1056,8 @@ int exahype::solvers::ADERDGSolver::predictionAndVolumeIntegralBody(
       addVolumeIntegralResultToUpdate); // TODO(Dominic): fix 'false' case
 
   //Todo(Philipp): print also with local recomp
-  //if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()==exahype::reactive::OffloadingContext::ResilienceStrategy::None)
-  //   exahype::reactive::ResilienceTools::getInstance().corruptDataIfActive(lduh, getUpdateSize());
+  if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()==exahype::reactive::OffloadingContext::ResilienceStrategy::None)
+    exahype::reactive::ResilienceTools::getInstance().corruptDataIfActive(lduh, getUpdateSize());
 
   compress(cellDescription,isSkeletonCell);
 
@@ -1753,6 +1753,7 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourMetadata(
     const int                                    neighbourAugmentationStatus,
     const int                                    neighbourCommunicationStatus,
     const int                                    neighbourRefinementStatus,
+    //const int                                    neighbourCorruptionStatus,
     const tarch::la::Vector<DIMENSIONS, int>&    pos,
     const tarch::la::Vector<DIMENSIONS, int>&    posNeighbour,
     const tarch::la::Vector<DIMENSIONS, double>& barycentreFromVertex) {
@@ -1770,6 +1771,7 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourMetadata(
       mergeWithAugmentationStatus (cellDescription,face._faceIndex,neighbourAugmentationStatus );
       mergeWithCommunicationStatus(cellDescription,face._faceIndex,neighbourCommunicationStatus);
       mergeWithRefinementStatus   (cellDescription,face._faceIndex,neighbourRefinementStatus   );
+      //mergeWithCorruptionStatus   (cellDescription,face._faceIndex,neighbourCorruptionStatus   );
 
       cellDescription.setNeighbourMergePerformed(face._faceIndex,true);
     }
@@ -1804,18 +1806,22 @@ void exahype::solvers::ADERDGSolver::mergeNeighboursMetadata(
       mergeWithCommunicationStatus(cellDescription1,face._faceIndex1,cellDescription2.getCommunicationStatus());
       mergeWithAugmentationStatus( cellDescription1,face._faceIndex1,cellDescription2.getAugmentationStatus());
       mergeWithRefinementStatus(   cellDescription1,face._faceIndex1,cellDescription2.getRefinementStatus());
+      //mergeWithCorruptionStatus(   cellDescription1,face._faceIndex1,cellDescription2.getCorruptionStatus());
 
       mergeWithCommunicationStatus(cellDescription2,face._faceIndex2,cellDescription1.getCommunicationStatus());
       mergeWithAugmentationStatus( cellDescription2,face._faceIndex2,cellDescription1.getAugmentationStatus());
       mergeWithRefinementStatus(   cellDescription2,face._faceIndex2,cellDescription1.getRefinementStatus());
+      //mergeWithCorruptionStatus(   cellDescription2,face._faceIndex2,cellDescription1.getCorruptionStatus());
     } else {
       mergeWithCommunicationStatus(cellDescription1,face._faceIndex1,EmptyStatus);
       mergeWithAugmentationStatus( cellDescription1,face._faceIndex1,EmptyStatus);
       mergeWithRefinementStatus(   cellDescription1,face._faceIndex1,EmptyStatus);
+      //mergeWithCorruptionStatus(   cellDescription1,face._faceIndex1, Uncorrupted); //todo no hardcoding
 
       mergeWithCommunicationStatus(cellDescription2,face._faceIndex2,EmptyStatus);
       mergeWithAugmentationStatus( cellDescription2,face._faceIndex2,EmptyStatus);
       mergeWithRefinementStatus(   cellDescription2,face._faceIndex2,EmptyStatus);
+      //mergeWithCorruptionStatus(   cellDescription2,face._faceIndex1, Uncorrupted); //todo no hardcoding
     }
 
     cellDescription1.setNeighbourMergePerformed(face._faceIndex1,true); // here we only set, doesn't matter if operation is done twice.
@@ -2105,10 +2111,13 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourMetadata(
   const int neighbourCommunicationStatus = neighbourMetadata[exahype::NeighbourCommunicationMetadataCommunicationStatus ];
   const int neighbourRefinementStatus    = neighbourMetadata[exahype::NeighbourCommunicationMetadataRefinementStatus    ];
 
+  //todo: Corruption status is not yet on metadata heap!
+
   logDebug("mergeWithNeighbourMetadata(...)", "received neighbour metadata="<<neighbourAugmentationStatus<<","<<neighbourCommunicationStatus<<","<<neighbourRefinementStatus);
 
   mergeWithNeighbourMetadata(solverNumber,cellInfo,
       neighbourAugmentationStatus,neighbourCommunicationStatus,neighbourRefinementStatus,
+      // Uncorrupted, //todo: corruption status needs to be distributed with MPI!
       pos,posNeighbour,barycentre);
 }
 
@@ -2971,8 +2980,7 @@ void exahype::solvers::ADERDGSolver::releaseDummyOutcomeAndShare(int cellDescrip
   logInfo("releaseDummyOutcomeAndShare","releasing initial dummy outcome");
 
   //set trigger -> need to reset limiter trigger, might wanna pull this out
-  logInfo("releaseDummyOutcomeAndShare", " celldesc ="<<cellDescriptionsIndex<<" isTroubled "<<cellDescription.getIsTroubledInLastStep()
-      <<" time stamp "<<timestamp<<" time step "<<timestep);
+  logInfo("releaseDummyOutcomeAndShare", " celldesc ="<<cellDescriptionsIndex<<" isPotCorrupted "<<(cellDescription.getCorruptionStatus()==PotentiallyCorrupted)<<" time stamp "<<timestamp<<" time step "<<timestep);
 
   tarch::la::Vector<DIMENSIONS, double> center;
   center = cellDescription.getOffset() + 0.5 * cellDescription.getSize();
@@ -2988,7 +2996,7 @@ void exahype::solvers::ADERDGSolver::releaseDummyOutcomeAndShare(int cellDescrip
   data->_metadata._predictorTimeStepSize = timestep;
   data->_metadata._isCorrupted = false;
   if(exahype::reactive::ResilienceTools::TriggerLimitedCellsOnly)
-    data->_metadata._isPotSoftErrorTriggered = cellDescription.getIsTroubledInLastStep();
+    data->_metadata._isPotSoftErrorTriggered = (cellDescription.getCorruptionStatus()==PotentiallyCorrupted);
 
   //Share now
   int teams = exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams();
@@ -3003,7 +3011,7 @@ void exahype::solvers::ADERDGSolver::releaseDummyOutcomeAndShare(int cellDescrip
     logWarning("releaseDummyOutcomeAndShare", "Caution: a corrupted outcome is shared. SDC should be detected...");
     if(!data->_metadata._isPotSoftErrorTriggered)
       logError("releaseDummyOutcomeAndShare","has not been detected by SDC mechanism, softErrorTriggered="<<data->_metadata._isPotSoftErrorTriggered
-                                                                                          <<" isTroubled="<<cellDescription.getIsTroubledInLastStep());
+                                                                                          <<" isPotentiallyCorrupted="<<(cellDescription.getCorruptionStatus()==PotentiallyCorrupted));
   }
 
   int j = 0;
@@ -3051,9 +3059,9 @@ void exahype::solvers::ADERDGSolver::releasePendingOutcomeAndShare(int cellDescr
 
     auto& cellDescription = getCellDescription(cellDescriptionsIndex, element);
     //set trigger -> need to reset limiter trigger, might wanna pull this out
-    logInfo("releasePendingOutcomeAndShare", " celldesc ="<<cellDescriptionsIndex<<" isTroubled "<<cellDescription.getIsTroubledInLastStep());
+    logInfo("releasePendingOutcomeAndShare", " celldesc ="<<cellDescriptionsIndex<<" isPotentiallyCorrupted "<<(cellDescription.getCorruptionStatus()==PotentiallyCorrupted));
     if(exahype::reactive::ResilienceTools::TriggerLimitedCellsOnly)
-      data->_metadata._isPotSoftErrorTriggered = cellDescription.getIsTroubledInLastStep();
+      data->_metadata._isPotSoftErrorTriggered = (cellDescription.getCorruptionStatus()==PotentiallyCorrupted);
 
     //update solution
     double *luh   = static_cast<double*>(cellDescription.getSolution());
@@ -3072,7 +3080,7 @@ void exahype::solvers::ADERDGSolver::releasePendingOutcomeAndShare(int cellDescr
       logWarning("releasePendingOutcomeAndShare", "Caution: a corrupted outcome is shared. SDC should be detected...");
       if(!data->_metadata._isPotSoftErrorTriggered)
         logError("releasePendingOutcomeAndShare","has not been detected by SDC mechanism, softErrorTriggered="<<data->_metadata._isPotSoftErrorTriggered
-                                                                                            <<" isTroubled="<<cellDescription.getIsTroubledInLastStep());
+                                                                                            <<" isPotentiallyCorrupted="<<(cellDescription.getCorruptionStatus()==PotentiallyCorrupted));
     }
 
     int j = 0;

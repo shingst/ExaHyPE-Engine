@@ -8,7 +8,7 @@
   "architecture": "hsw",
   "computational_domain": {
     "dimension": 3,
-    "time_steps": 1000,
+    "time_steps": 200,
     "offset": [
       0.0,
       0.0,
@@ -41,7 +41,7 @@
     "offloading_CCP_steps" : 0,
     "offloading_update_temperature" : true,
     "offloading_increase_temp_threshold" : 1.0,
-    "task_sharing" : "task_sharing_resilience_checks",
+    "task_sharing" : "no",
     "timeout": 12000,
     "load_balancing_type": "static",
     "buffer_size"            : 1600,
@@ -50,7 +50,7 @@
     "ranks_per_node"         : 1
   },
   "resilience" : {
-    "generate_soft_errors" : "migratable_stp_tasks_overwrite",
+    "generate_soft_errors" : "no",
     "trigger_mechanism" : "trigger_limited"
   },
   "optimisation": {
