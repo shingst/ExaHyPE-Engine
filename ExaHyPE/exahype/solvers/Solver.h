@@ -234,6 +234,13 @@ namespace exahype {
    * A semaphore for serialising heap access.
    */
   extern tarch::multicore::BooleanSemaphore HeapSemaphore;
+  
+  //todo: move somewhere else(?)
+  /**
+   * Semaphore that is used to guarantee mutual exclusion for
+   * offloading progress.
+   */
+  extern tarch::multicore::BooleanSemaphore OffloadingSemaphore;
 
 #ifdef Parallel
   /**
@@ -1191,14 +1198,13 @@ public:
       //bool gotLock = false;
       while ( !cellDescription.getHasCompletedLastStep() ) {
          //double time_process = -MPI_Wtime();
-         #ifdef Parallel
+         #if defined(Parallel) and !defined(noWaitsProgressMPI) 
          {
            tarch::multicore::RecursiveLock lock( tarch::services::Service::receiveDanglingMessagesSemaphore, false );
-           if(lock.tryLock()) {
-             //gotLock = true;
-             tarch::parallel::Node::getInstance().receiveDanglingMessages();
-             lock.free();
-           }
+            if(lock.tryLock()) {
+               tarch::parallel::Node::getInstance().receiveDanglingMessages();
+               lock.free();
+            } 
          }
          #endif
 

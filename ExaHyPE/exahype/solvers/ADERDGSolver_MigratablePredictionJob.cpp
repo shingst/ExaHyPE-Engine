@@ -981,10 +981,6 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendHandlerTaskSha
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendHandler(
     exahype::solvers::Solver* solver, int tag, int remoteRank) {
-#if defined(PerformanceAnalysisOffloadingDetailed)
-  static std::atomic<int> cnt=0;
-  cnt++;
-#endif
   logDebug("sendHandler","successful send request tag = "<<tag<<" remoteRank = "<<remoteRank);
 #if !defined(OffloadingNoEarlyReceiveBacks) || defined(OffloadingLocalRecompute)
   ADERDGSolver::receiveBackMigratableJob(tag, remoteRank,

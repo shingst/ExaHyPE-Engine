@@ -72,6 +72,8 @@ class exahype::reactive::OffloadingProfiler {
     std::atomic<unsigned long long> _accComputationPhaseTime;
     std::atomic<unsigned long long> _accHandlingPhaseTime;
     std::atomic<unsigned long long> _accOffloadPhaseTime;
+    std::atomic<unsigned long long> _accWaitForWorkersPhaseTime;
+    std::atomic<unsigned long long> _accWaitForGlobalMasterPhaseTime;
 
     //accumulated total (i.e. over all phases) times
     std::atomic<unsigned long long> _accWaitTasksTime;
@@ -83,6 +85,8 @@ class exahype::reactive::OffloadingProfiler {
     std::atomic<unsigned long long> _accComputationTime;
     std::atomic<unsigned long long> _accHandlingTime;
     std::atomic<unsigned long long> _accOffloadTime;
+    std::atomic<unsigned long long> _accWaitForWorkersTime;
+    std::atomic<unsigned long long> _accWaitForGlobalMasterTime;
 
   public:
     static OffloadingProfiler& getInstance();
@@ -117,6 +121,12 @@ class exahype::reactive::OffloadingProfiler {
 
     void beginWaitForTasks();
     void endWaitForTasks(double elapsed);
+
+    void beginWaitForWorker();
+    void endWaitForWorker(double elapsed);
+
+    void beginWaitForGlobalMaster();
+    void endWaitForGlobalMaster(double elapsed);
 
     void beginOffload();
     void endOffload(double elapsed);

@@ -7,7 +7,7 @@
   },
   "computational_domain": {
     "dimension": 3,
-    "time_steps": 100,
+    "time_steps": 1000,
     "offset": [
       0.0,
       0.0,
@@ -83,7 +83,7 @@
         },
         "optimised_terms": [],
         "optimised_kernel_debugging": [],
-        "implementation": "optimised"
+        "implementation": "generic"
       },
       "point_sources": 0,
       "variables": [
@@ -122,7 +122,7 @@
         "amr-factor-refine": 2.5,
         "amr-factor-erase": -1.5
       },
-      "plotters": [
+      "_plotters": [
         {
           "type": "vtu::Cartesian::vertices::ascii",
           "name": "Plotter",

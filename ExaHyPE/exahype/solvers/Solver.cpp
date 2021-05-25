@@ -48,6 +48,7 @@ exahype::DataHeap::HeapEntries exahype::EmptyDataHeapMessage(0);
 #endif
 
 tarch::multicore::BooleanSemaphore exahype::HeapSemaphore;
+tarch::multicore::BooleanSemaphore exahype::OffloadingSemaphore;
 
 exahype::DataHeap::HeapEntries& exahype::getDataHeapEntries(const int index) {
   assertion1(DataHeap::getInstance().isValidIndex(index),index);

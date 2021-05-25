@@ -25,6 +25,8 @@
 #include <thread>
 #include <limits>
 
+#include "exahype/reactive/OffloadingProfiler.h"
+
 #include "exahype/reactive/PerformanceMonitor.h"
 #include "exahype/reactive/DiffusiveDistributor.h"
 #include "exahype/reactive/AggressiveDistributor.h"
@@ -198,7 +200,7 @@ void exahype::reactive::OffloadingAnalyser::endIteration(double numberOfInnerLea
 
   //exahype::reactive::OffloadingContext::getInstance().printBlacklist();
 
-  if(_iterationCounter%2 !=0) {
+  if(_iterationCounter%2 !=0) { //2 mesh sweeps for fused time stepping, todo: avoid hardcoding in the future
     _iterationCounter++;
     return;
   }
@@ -287,6 +289,10 @@ void exahype::reactive::OffloadingAnalyser::endToReceiveDataFromWorker( int from
     double estimatedTimeForLateSTPs = _lateSTPJobs * getTimePerSTP()/ tarch::multicore::Core::getInstance().getNumberOfThreads();
     const double elapsedTime = std::max(0.000001,_waitForWorkerDataWatch.getCalendarTime()-_estimatedWtimeForPendingJobs
                                             -estimatedTimeForLateSTPs);
+
+#if defined(OffloadingUseProfiler)
+    exahype::reactive::OffloadingProfiler::getInstance().endWaitForWorker(elapsedTime);
+#endif
 
     if(elapsedTime>_currentZeroThreshold) {
       _currentAccumulatedWorkerTime += elapsedTime;
@@ -436,6 +442,10 @@ void exahype::reactive::OffloadingAnalyser::endToReceiveDataFromGlobalMaster() {
     _lateSTPJobs = 0;
     
     _waitForOtherRank[0].setValue(elapsedTime); //0 is global master
+
+#if defined(OffloadingUseProfiler)
+    exahype::reactive::OffloadingProfiler::getInstance().endWaitForGlobalMaster(elapsedTime);
+#endif
 
 #if defined(Debug)
     double currentAvg = _waitForOtherRank[0].getValue();

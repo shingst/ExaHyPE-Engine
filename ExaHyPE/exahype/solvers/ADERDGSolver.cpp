@@ -138,7 +138,6 @@ constexpr int exahype::solvers::ADERDGSolver::Keep;
 tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::RestrictionSemaphore;
 tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::CoarseGridSemaphore;
 
-tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::OffloadingSemaphore;
 
 #if defined(SharedTBB)
 template class exahype::solvers::OutcomeDatabase<exahype::solvers::ADERDGSolver::MigratablePredictionJobOutcomeKey, exahype::solvers::ADERDGSolver::MigratablePredictionJobData>;

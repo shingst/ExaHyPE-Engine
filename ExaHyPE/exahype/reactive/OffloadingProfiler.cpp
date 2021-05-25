@@ -46,6 +46,8 @@ exahype::reactive::OffloadingProfiler::OffloadingProfiler():
   _accComputationPhaseTime(0),
   _accHandlingPhaseTime(0),
   _accOffloadPhaseTime(0),
+  _accWaitForWorkersPhaseTime(0),
+  _accWaitForGlobalMasterPhaseTime(0),
   _accWaitTasksTime(0),
   _accUsefulCommunicationTime(0),
   _accIdleCommunicationTime(0),
@@ -54,9 +56,10 @@ exahype::reactive::OffloadingProfiler::OffloadingProfiler():
   _accPollTime(0),
   _accComputationTime(0),
   _accHandlingTime(0),
-  _accOffloadTime(0)
+  _accOffloadTime(0),
+  _accWaitForWorkersTime(0),
+  _accWaitForGlobalMasterTime(0)
 {
-//#if defined(OffloadingUseProfiler)
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   _offloadedTasksPerRankPhase = new std::atomic<int>[nnodes];
   _offloadedTasksPerRank = new std::atomic<int>[nnodes];
@@ -70,18 +73,15 @@ exahype::reactive::OffloadingProfiler::OffloadingProfiler():
   std::fill(_targetOffloadedTasksPerRank, _targetOffloadedTasksPerRank+nnodes, 0);
   std::fill(_receivedTasksPerRankPhase, _receivedTasksPerRankPhase+nnodes, 0);
   std::fill(_receivedTasksPerRank, _receivedTasksPerRank+nnodes, 0);
-//#endif
 }
 
 exahype::reactive::OffloadingProfiler::~OffloadingProfiler() {
-//#if defined(OffloadingUseProfiler)
   delete[] _offloadedTasksPerRank;
   delete[] _offloadedTasksPerRankPhase;
   delete[] _targetOffloadedTasksPerRank;
   delete[] _targetOffloadedTasksPerRankPhase;
   delete[] _receivedTasksPerRank;
   delete[] _receivedTasksPerRankPhase;
-//#endif
 }
 
 exahype::reactive::OffloadingProfiler& exahype::reactive::OffloadingProfiler::getInstance() {
@@ -108,6 +108,8 @@ void exahype::reactive::OffloadingProfiler::beginPhase() {
   _accProgressPhaseTime=0;
   _accComputationPhaseTime=0;
   _accOffloadPhaseTime=0;
+  _accWaitForWorkersPhaseTime=0;
+  _accWaitForGlobalMasterPhaseTime=0;
 #endif
 }
 
@@ -135,6 +137,8 @@ void exahype::reactive::OffloadingProfiler::endPhase() {
   _accComputationTime+=_accComputationPhaseTime;
   _accHandlingTime+=_accHandlingPhaseTime;
   _accOffloadTime+=_accOffloadPhaseTime;
+  _accWaitForWorkersTime+=_accWaitForWorkersPhaseTime;
+  _accWaitForGlobalMasterTime+=_accWaitForGlobalMasterPhaseTime;
 #endif
 }
 
@@ -293,6 +297,30 @@ void exahype::reactive::OffloadingProfiler::endWaitForTasks(double elapsed) {
 #endif
 }
 
+void exahype::reactive::OffloadingProfiler::beginWaitForWorker() {
+#if defined(OffloadingUseProfiler)
+#endif
+}
+    
+void exahype::reactive::OffloadingProfiler::endWaitForWorker(double elapsed){
+#if defined(OffloadingUseProfiler)
+  const unsigned long long elapsedTime = elapsed*1E6;
+  _accWaitForWorkersPhaseTime+=elapsedTime;
+#endif
+}
+
+void exahype::reactive::OffloadingProfiler::beginWaitForGlobalMaster() {
+#if defined(OffloadingUseProfiler)
+#endif
+}
+    
+void exahype::reactive::OffloadingProfiler::endWaitForGlobalMaster(double elapsed){
+#if defined(OffloadingUseProfiler)
+  const unsigned long long elapsedTime = elapsed*1E6;
+  _accWaitForGlobalMasterPhaseTime+=elapsedTime;
+#endif
+}
+
 void exahype::reactive::OffloadingProfiler::beginOffload() {
 #if defined(OffloadingUseProfiler)
 #endif
@@ -382,6 +410,11 @@ void exahype::reactive::OffloadingProfiler::printStatistics() {
   logInfo("printStatistics", str);
   str="  total wait time for tasks: "+std::to_string(static_cast<double>(_accWaitTasksTime/1E06))+"\n";
   logInfo("printStatistics", str);
+  str="  total wait time for workers: "+std::to_string(static_cast<double>(_accWaitForWorkersTime/1E06))+"\n";
+  logInfo("printStatistics", str);
+  str="  total wait time for global master: "+std::to_string(static_cast<double>(_accWaitForGlobalMasterTime/1E06))+"\n";
+  logInfo("printStatistics", str);
+  
 
 #endif
 }

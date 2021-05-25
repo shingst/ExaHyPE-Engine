@@ -328,6 +328,10 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
    }
 
     //always use offloading analyser
+    //Todo: this will disable the Peano default performance analyser, need to re-add it somehow
+    #if defined(PerformanceAnalysis)
+    logWarning("initDistributeMemoryConfiguration","The default Peano performance analyser is disabled, as the reactive extensions require their own analyser and Peano only supports one analyser!");
+    #endif
     peano::performanceanalysis::Analysis::getInstance().setDevice(&exahype::reactive::OffloadingAnalyser::getInstance());
 
     if(_parser.compareSoftErrorGenerationStrategy("no")){
