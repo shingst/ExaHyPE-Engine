@@ -300,6 +300,10 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     //Task sharing configuration
     exahype::parser::Parser::ResilienceStrategy selectedStrategy = _parser.getResilienceStrategy();
     if(selectedStrategy!=exahype::parser::Parser::ResilienceStrategy::None)  {
+        if(exahype::solvers::Solver::allSolversUseTimeSteppingScheme(exahype::solvers::Solver::TimeStepping::GlobalFixed)) {
+          logWarning("initDistributedMemoryConfiguration()", "You are using global fixed time stepping which is not interoperable with selected resilience strategy. This might not work as expected.");
+        }
+
 #if !defined(USE_TMPI)
         logError("initDistributedMemoryConfiguration()", "You must link against teaMPI in order to use resilience futures (USE_TMPI must be set)! Aborting, please re-run toolkit and recompile...");
         _parser.invalidate();
@@ -364,6 +368,9 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     exahype::parser::Parser::OffloadingStrategy selectedStrategy = _parser.getOffloadingStrategy();
     if(selectedStrategy!=exahype::parser::Parser::OffloadingStrategy::None)  {
 
+      if(exahype::solvers::Solver::allSolversUseTimeSteppingScheme(exahype::solvers::Solver::TimeStepping::GlobalFixed)) {
+        logWarning("initDistributedMemoryConfiguration()", "You are using global fixed time stepping which is not interoperable with reactive task offloading yet. This might not work as expected.");
+      }
 #if !defined(PerformanceAnalysis)
       logError("initDistributedMemoryConfiguration()","You've selected reactive task offloading but compiled without Peano's performance analysis (-DPerformanceAnalysis, MODE=PeanoProfile). Please re-run toolkit and re-compile.");
       std::abort();
@@ -378,7 +385,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
       // Create new MPI communicators + progress engine for offloading related MPI communication
       //exahype::reactive::OffloadingManager::getInstance().initialize();
 #if defined(SharedTBB)
-     exahype::reactive::OffloadingProgressService::getInstance().enable();
+      exahype::reactive::OffloadingProgressService::getInstance().enable();
 #endif
 
       if(selectedStrategy == exahype::parser::Parser::OffloadingStrategy::StaticHardcoded) {
@@ -1335,6 +1342,19 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
 
     bool communicatePeanoVertices =
         !exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps;
+
+/*#if defined(USE_TMPI)
+    //todo: shuffle differently for more than two teams
+   if(TMPI_IsLeadingRank()
+    && (exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
+           >=exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks)
+    && exahype::reactive::ResilienceTools::CheckLimitedCellsOnly) {
+     repository.switchToEmpty();
+     repository.iterate(1, false);
+   }
+   PMPI_Barrier(MPI_COMM_WORLD);
+#endif*/
+
     if ( !_parser.getProfileEmptyAdapter() ) {
       repository.switchToInitialPrediction();
       repository.iterate( exahype::solvers::Solver::PredictionSweeps, communicatePeanoVertices );

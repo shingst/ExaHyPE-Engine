@@ -628,12 +628,15 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
   }
   #endif
 
+  logInfo("fusedTimeStepBody", "team = "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
+      <<" updating "<<solverPatch.toString());
+
   updateSolution(solverPatch,cellInfo,isFirstTimeStepOfBatch,boundaryMarkers,
                  isFirstTimeStepOfBatch/*addSurfaceIntegralContributionToUpdate*/);
   const bool isTroubled = checkIfCellIsTroubledAndDetermineMinAndMax(solverPatch,cellInfo);
 
   if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
-      == exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks
+      >= exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks
       && exahype::reactive::ResilienceTools::CheckLimitedCellsOnly) {
     if(!(solverPatch.getPreviousRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell))
       _solver.get()->releasePendingOutcomeAndShare(cellInfo._cellDescriptionsIndex, cellInfo.indexOfADERDGCellDescription(solverPatch.getSolverNumber()));
@@ -641,28 +644,32 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
       _solver.get()->releaseDummyOutcomeAndShare(cellInfo._cellDescriptionsIndex, cellInfo.indexOfADERDGCellDescription(solverPatch.getSolverNumber()), _solver.get()->getMinTimeStamp(), _solver.get()->getMinTimeStepSize());
   }
 
+  if(isTroubled
+    && (exahype::reactive::OffloadingContext::getInstance().getInstance().getResilienceStrategy()
+        >= exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks)
+    && exahype::reactive::ResilienceTools::CheckLimitedCellsOnly) {
+    solverPatch.setCorruptionStatus(ADERDGSolver::PotentiallyCorrupted);
+    assert(isFirstTimeStepOfBatch); //something that we currently assume
+    logInfo("fusedTimeStepBody", "team = "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
+        <<" has corrupt patch "<<solverPatch.toString());
+    logInfo("fusedTimeStepBody", "team = "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
+              <<" will check patch "<<solverPatch.toString());
+    peano::datatraversal::TaskSet(
+          new LimitingADERDGSolver::CheckAndCorrectSolutionJob(*this, solverPatch, cellInfo,
+              predictionTimeStamp,
+              predictionTimeStepSize));
+    return; //early exit here, do other stuff later
+  }
+
   UpdateResult result;
   result._timeStepSize    = startNewTimeStep(solverPatch,cellInfo,isFirstTimeStepOfBatch);
   result._meshUpdateEvent = updateRefinementStatusAfterSolutionUpdate(solverPatch,cellInfo,isTroubled);
-
-  if(isTroubled)
-    solverPatch.setCorruptionStatus(ADERDGSolver::PotentiallyCorrupted);
-
 
   reduce(solverPatch,cellInfo,result);
 
   //todo(Philipp): do we still need this?
   if (
-      (solverPatch.getRefinementStatus()<_solver->_minRefinementStatusForTroubledCell
-	  || (
-	        ((exahype::reactive::OffloadingContext::getInstance().getInstance().getResilienceStrategy()
-	         == exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks)
-	       ||  (exahype::reactive::OffloadingContext::getInstance().getInstance().getResilienceStrategy()
-          == exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceCorrection)
-          )
-          && exahype::reactive::ResilienceTools::CheckLimitedCellsOnly
-       )
-	  )
+      (solverPatch.getRefinementStatus()<_solver->_minRefinementStatusForTroubledCell)
 	  &&
       SpawnPredictionAsBackgroundJob &&
       !mustBeDoneImmediately         &&
@@ -694,14 +701,7 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
       logInfo("fusedTimeStepBody", "spawning migratable job for "<< cellInfo._cellDescriptionsIndex<< " predictionTimeStamp "<<predictionTimeStamp<<" predictionTimeStepSize "<<predictionTimeStepSize
           << " troubled "<<isTroubled<<" previous stamp "<<_solver.get()->getMinTimeStamp());
 
-      if(isTroubled
-        && (exahype::reactive::OffloadingContext::getInstance().getInstance().getResilienceStrategy()
-        == exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks)) //need to check against other outcome
-      {
-         logInfo("fusedTimeStepBody", "spawning check job for "<< cellInfo._cellDescriptionsIndex<< " predictionTimeStamp "<<predictionTimeStamp<<" predictionTimeStepSize "<<predictionTimeStepSize);
-         migratablePredictionJob->setState(exahype::solvers::ADERDGSolver::MigratablePredictionJob::State::CHECK_PREVIOUS);
-      }
-      _solver.get()->submitOrSendMigratablePredictionJob(migratablePredictionJob);
+       _solver.get()->submitOrSendMigratablePredictionJob(migratablePredictionJob);
 #else
       peano::datatraversal::TaskSet(
           new ADERDGSolver::PredictionJob(
@@ -711,7 +711,6 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
               predictionTimeStepSize,
               false/*is uncompressed*/,isSkeletonCell,isLastTimeStepOfBatch/*addVolumeIntegralResultToUpdate*/));
 #endif
-      //peano::datatraversal::TaskSet spawnedSet( stealablePredictionJob, peano::datatraversal::TaskSet::TaskType::Background );
       exahype::reactive::OffloadingProfiler::getInstance().notifySpawnedTask();
 #ifdef USE_ITAC
       //VT_end(event_spawn);

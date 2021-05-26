@@ -13,6 +13,7 @@ info peano::utils::UserInterface -1 white
 info peano::performanceanalysis -1 white
 info exahype -1 white
 
+debug exahype -1 black
 # on first node
 info mpibalancing -1 black
 
@@ -21,7 +22,7 @@ info  peano::parallel::SendReceiveBufferAbstractImplementation::releaseSentMessa
 
 info  sharedmemoryoracles        -1  black
 
-info  Z4Solver                                -1  black
+#info  Z4Solver                                -1  black
 info  exahype::solvers::ADERDGSolver          -1  black
 #info  exahype::solvers::ADERDGSolver::tryFindOutcomeAndCheck          -1  white
 #info  exahype::solvers::ADERDGSolver::cleanUpStaleReplicatedSTPs          -1  white

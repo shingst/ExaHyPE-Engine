@@ -819,6 +819,8 @@ public:
      */
     None = 0,
 
+   // IrregularLimiterDomainChangeButMayCorrect = 1,
+
     /**
      * The limiter domain of this solver changed in an irregular
      * fashion, i.e. a troubled cell appeared suddenly.

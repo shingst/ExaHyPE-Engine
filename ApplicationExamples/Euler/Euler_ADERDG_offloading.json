@@ -43,9 +43,9 @@
     "ranks_per_node"         : 1
   },
   "resilience" : {
-    "task_sharing" : "task_sharing_resilience_checks",
-    "generate_soft_errors" : "no",
-    "check_mechanism" : "check_all_stps"
+    "task_sharing" : "no",
+    "generate_soft_errors" : "migratable_stp_tasks_overwrite",
+    "check_mechanism" : "none"
   },
   "_stp_stats_tracing" : {
     "stp_tracing_output_dir" : "./test"

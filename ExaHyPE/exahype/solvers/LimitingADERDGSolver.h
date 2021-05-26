@@ -711,6 +711,35 @@ private:
     bool run(bool runOnMasterThread) override;
   };
 
+  class CheckAndCorrectSolutionJob : public tarch::multicore::jobs::Job {
+    enum class SDCCheckResult {NoCorruption, OutcomeSaneAsLimiterNotActive, UncorrectableSoftError};
+
+    private:
+      LimitingADERDGSolver&               _solver;
+      SolverPatch&                _solverPatch;
+      CellInfo                    _cellInfo;
+      const double                _predictorTimeStamp;
+      const double                _predictorTimeStepSize;
+
+      // actual execution of a STP job
+      bool run(bool runOnMasterThread) override;
+      SDCCheckResult checkAgainstOutcome(ADERDGSolver::MigratablePredictionJobData *outcome);
+      void correctWithOutcomeAndDeleteLimiterStatus(ADERDGSolver::MigratablePredictionJobData *outcome);
+
+    public:
+      // constructor for local jobs that can be stolen
+      CheckAndCorrectSolutionJob(
+        LimitingADERDGSolver&     solver,
+        SolverPatch& solverPatch,
+        CellInfo& cellInfo,
+        const double predictorTimeStamp,
+        const double predictorTimeStepSize
+      );
+      ~CheckAndCorrectSolutionJob();
+
+      CheckAndCorrectSolutionJob(const CheckAndCorrectSolutionJob& stp) = delete;
+  };
+
 public:
   /**
    * Create a limiting ADER-DG solver.

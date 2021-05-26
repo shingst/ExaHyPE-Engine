@@ -24,7 +24,6 @@
 #include "teaMPI.h"
 #endif
 
-#define MAX_PROGRESS_ITS 10000
 //#undef assertion
 //#define assertion assert
 
@@ -60,6 +59,9 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
   exahype::reactive::PerformanceMonitor::getInstance().incCurrentTasks();
 
   auto& cellDescription = getCellDescription(cellDescriptionsIndex, element);
+  logInfo("MigratablePredictionJob","team "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()<<" spawning STP for "
+        <<cellDescription.toString());
+
 
   tarch::la::Vector<DIMENSIONS, double> center = cellDescription.getOffset()+0.5*cellDescription.getSize();
   tarch::la::Vector<DIMENSIONS, double> dx = cellDescription.getSize();
@@ -112,26 +114,13 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
     NumberOfEnclaveJobs++;
   exahype::reactive::PerformanceMonitor::getInstance().incCurrentTasks();
 
-  if(_solver.healingActivated())
-    _currentState = State::HEALING_REQUIRED;
+  //if(_solver.healingActivated())
+  //  _currentState = State::HEALING_REQUIRED;
 }
 
 exahype::solvers::ADERDGSolver::MigratablePredictionJob::~MigratablePredictionJob() {
 }
 
-void exahype::solvers::ADERDGSolver::MigratablePredictionJob::setTrigger(bool flipped) {
-
-  CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
-      _element);
-
-  logDebug("setTrigger", " celldesc ="<<_cellDescriptionsIndex<<" isPotCorrupted "<<(cellDescription.getCorruptionStatus()==PotentiallyCorrupted));
-
-  //trigger is set later if we are using limiter as a trigger
-  _isPotSoftErrorTriggered =  (exahype::reactive::ResilienceTools::CheckFlipped && flipped)
-                            ||  exahype::reactive::ResilienceTools::CheckAllMigratableSTPs;
-}
-
-//Caution: Compression is not supported yet!
 bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run(
     bool isCalledOnMaster) {
 
@@ -143,231 +132,48 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run(
       reschedule = runExecution(isCalledOnMaster);
       break;
     case State::CHECK_REQUIRED:
-      reschedule = tryFindOutcomeAndCheck();
+      reschedule = runCheck();
       break;
-    case State::CHECK_PREVIOUS:
+    /*case State::CHECK_PREVIOUS:
       reschedule = tryFindPreviousOutcomeAndCheck();
       if(!reschedule)
         NumberOfEnclaveJobs--;
-      break;
-    case State::HEALING_REQUIRED:
+      break;*/
+    /*case State::HEALING_REQUIRED:
       reschedule = tryFindOutcomeAndHeal();
       if(!reschedule)
         NumberOfEnclaveJobs--;
-      break;
+      break;*/
     default:
       logError("run","inconsistent state");
   }
   return reschedule;
 }
 
-void exahype::solvers::ADERDGSolver::MigratablePredictionJob::setState(State newState) {
-  _currentState = newState;
-}
-
-void exahype::solvers::ADERDGSolver::MigratablePredictionJob::recoverWithOutcome(MigratablePredictionJobData *outcome) {
-  CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
-        _element);
-
-  double *luh = static_cast<double*>(cellDescription.getSolution());
-  double *lduh = static_cast<double*>(cellDescription.getUpdate());
-  double *lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
-  double *lGradQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictorGradient());
-  double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
-
-  logError("recoverWithOutcome", "recovering sane solution and correct STP");
-  std::memcpy(luh, outcome->_luh.data(), outcome->_luh.size() * sizeof(double));
-  std::memcpy(lduh, outcome->_lduh.data(), outcome->_lduh.size() * sizeof(double));
-  std::memcpy(lQhbnd, outcome->_lQhbnd.data(), outcome->_lQhbnd.size() * sizeof(double));
-  std::memcpy(lFhbnd, outcome->_lFhbnd.data(), outcome->_lFhbnd.size() * sizeof(double));
-#if OffloadingGradQhbnd
-  std::memcpy(_lGradQhbnd, &outcome->_lGradQhbnd.data(), outcome->_lGradQhbnd.size() * sizeof(double));
-#endif
-  exahype::reactive::JobTableStatistics::getInstance().notifyHealedTask();
-}
-
-bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryFindOutcomeAndHeal() {
-#if !defined(OffloadingUseProgressThread)
-  exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, MAX_PROGRESS_ITS);
-#endif
-  CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
-        _element);
-
-  //std::cout<<"try to heal..."<<std::endl;
-
-  JobOutcomeStatus status;
-  MigratablePredictionJobData *outcomes[2];
-  int requiredOutcomes = exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams()-1;
-
-  bool found = tryToFindAndExtractEquivalentSharedOutcomes(false, requiredOutcomes, status, outcomes);
-
-  if(found) {
-    int saneIdx = -1;
-    if(!checkAgainstOutcomesAndFindSaneOne(outcomes, requiredOutcomes, saneIdx)) {
-      logInfo("tryFindOutcomeAndHeal", "Healing a cell!");
-      assert(saneIdx>=0 && saneIdx<=2); //otherwise, we have a problem
-      recoverWithOutcome(outcomes[saneIdx]);
-    }
-
-    for(int i = 0; i<requiredOutcomes; i++)
-      delete outcomes[i];
-    cellDescription.setHasCompletedLastStep(true);
-    logError("tryFindOutcomeAndHeal","has healed!");
-    return false;
-  }
-  else {
-    //std::cout<<"still waiting!"<<std::endl;
-    return true;
-  }
-}
-
-bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryFindPreviousOutcomeAndCheck() {
-  //caution, this may delay setting the completed flag and cause slowdowns for the master!
-#if !defined(OffloadingUseProgressThread)
-  exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, MAX_PROGRESS_ITS);
-#endif
-  CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
-            _element);
-
-  logInfo("tryFindPreviousOutcomeAndCheck", "Trying to check previously troubled solution..."
-          <<_cellDescriptionsIndex
-          <<" center[0] = "
-          << _center[0]
-          <<" center[1] = "
-          << _center[1]
-          <<" stamp "<<_predictorTimeStamp
-          <<" step "<<_predictorTimeStepSize
-          <<" previous stamp "<<cellDescription.getPreviousTimeStamp()
-          <<" previous step "<<cellDescription.getPreviousTimeStepSize());
-
-  JobOutcomeStatus status;
-  MigratablePredictionJobData *outcomes[2]; //todo: avoid hardcoding
-  int required = exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams()-1;
-  bool found = tryToFindAndExtractEquivalentSharedOutcomes(true, required, status, outcomes);
-  //bool reschedule;
-
-  if(found) {
-    //todo: check other data, too?
-    double *luh = static_cast<double*>(cellDescription.getSolution());
-    double *lduh = static_cast<double*>(cellDescription.getUpdate());
-    double *lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
-    double *lGradQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictorGradient());
-    double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
-
-    if(_isPotSoftErrorTriggered!=outcomes[0]->_metadata._isPotSoftErrorTriggered) {
-      logError("tryFindPreviousOutcomeAndCheck","Limiter was not active previously in other team, we must have a soft error!"
-          <<_cellDescriptionsIndex
-          <<" center[0] = "
-          << _center[0]
-          <<" center[1] = "
-          << _center[1]
-          <<" stamp "<<_predictorTimeStamp
-          <<" step "<<_predictorTimeStepSize
-          <<" previous stamp "<<cellDescription.getPreviousTimeStamp()
-          <<" previous step "<<cellDescription.getPreviousTimeStepSize());
-
-      //correct here
-      std::memcpy(luh, &outcomes[0]->_luh[0], outcomes[0]->_luh.size() * sizeof(double));
-      std::memcpy(lduh, &outcomes[0]->_lduh[0], outcomes[0]->_lduh.size() * sizeof(double));
-      std::memcpy(lQhbnd, &outcomes[0]->_lQhbnd[0], outcomes[0]->_lQhbnd.size() * sizeof(double));
-      std::memcpy(lFhbnd, &outcomes[0]->_lFhbnd[0], outcomes[0]->_lFhbnd.size() * sizeof(double));
-#if OffloadingGradQhbnd
-      std::memcpy(lGradQhbnd, &outcomes[0]->_lGradQhbnd[0], outcomes[0]->_lGradQhbnd.size() * sizeof(double));
-#endif
-
-      cellDescription.setRefinementStatus(Keep);
-      cellDescription.setCorruptionStatus(CorruptedAndCorrected);
-      //logError("tryFindPreviousOutcomeAndCheck", " soft error corrected and detected, but we compute limiter next, as error has propagated!");
-
-      cellDescription.setHasCompletedLastStep(true); //let's use the limiter for now to correct on faulty team, the other one will continue as usual
-      //MPI_Abort(MPI_COMM_WORLD, -1);
-
-      return false; //run limiter next, todo: for the faulty outcome we could try to use sane solution from other team
-    }
-    else {
-      bool equalSolution = exahype::reactive::ResilienceTools::getInstance().isAdmissibleNumericalError(outcomes[0]->_luh.data(), luh, outcomes[0]->_luh.size());
-      if(!equalSolution)
-        logError("tryFindPreviousOutcomeAndCheck"," solutions to not match, we must have a soft error but we can't correct!");
-      cellDescription.setHasCompletedLastStep(true);
-
-      //return false; //run limiter next for both
-      MPI_Abort(MPI_COMM_WORLD, -1);
-    }
-
-    //limiter was activated for both cells correctly -> run limiter next
-    cellDescription.setHasCompletedLastStep(true);
-    return false;
-  }
-  else
-    return true;
-
-}
-
-bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryFindOutcomeAndCheck() {
-
+bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::runCheck() {
   //caution, this may delay setting the completed flag and cause slowdowns for the master!
 #if !defined(OffloadingUseProgressThread)
   exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, MAX_PROGRESS_ITS);
 #endif
 
-  JobOutcomeStatus status;
-  MigratablePredictionJobData *outcomes[2]; //todo: avoid hardcoding
-  int required = exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams()-1;
-  bool found = tryToFindAndExtractEquivalentSharedOutcomes(false, required, status, outcomes);
+  DeliveryStatus status;
+  MigratablePredictionJobData *outcome;
+  bool found = tryToFindAndExtractEquivalentSharedOutcome(false, status, &outcome);
   bool reschedule;
-  CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
-        _element);
-  tarch::la::Vector<DIMENSIONS, double> center;
-  center = cellDescription.getOffset() + 0.5 * cellDescription.getSize();
 
-  int saneIdx = -1;
-
-  //todo: can we delete here already?
-  if(found && status==JobOutcomeStatus::received) {
-    if(checkAgainstOutcomesAndFindSaneOne(outcomes, required, saneIdx)) {
-	    cellDescription.setHasCompletedLastStep(true);
-	    reschedule = false;
-    }
-    else {
-      //soft error detected
-#if defined(ResilienceHealing)
-      assert(saneIdx>=0 && saneIdx<=2);
-      recoverWithOutcome(outcomes[saneIdx]);
+  if(found && status==DeliveryStatus::Received) {
+    if(matches(outcome)) {
+      CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,_element);
       cellDescription.setHasCompletedLastStep(true);
       reschedule = false;
-      logError("tryFindOutcomeAndCheck", "switch on healing mode now!");
-      //_solver.switchToHealingMode();
-      logInfo("tryFindOutcomeAndCheck","tried to recover cell "
-             <<_cellDescriptionsIndex
-             <<" center[0] = "
-             << center[0]
-             <<" center[1] = "
-             << center[1]
-             <<" center[2] = "
-             << center[2]);
-#else
-      reschedule = false;
-      logError("tryFindOutcomeAndCheck", "soft error detected but we are ignoring it...");
-      exahype::reactive::ResilienceTools::getInstance().setCorruptionDetected(true);
-      cellDescription.setHasCompletedLastStep(true);
-      //MPI_Abort(MPI_COMM_WORLD, -1);
-#endif
-    }
-    for(int i=0; i<required; i++)
-      delete outcomes[i];
+     }
+     else {
+       //soft error detected
+       reschedule = false;
+       MPI_Abort(MPI_COMM_WORLD, -1);
+     }
   }
   else {
-    logInfo("tryFindOutcomeAndCheck","Looking for cell "
-             <<_cellDescriptionsIndex
-             <<" center[0] = "
-             << center[0]
-             <<" center[1] = "
-             << center[1]
-#if DIMENSIONS==3 //fixme: need a to string method for a migratable job!
-             <<" center[2] = "
-             << center[2]
-#endif
-             );
     reschedule = true;
   }
 
@@ -402,7 +208,6 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::runExecution(bool 
   else
     result = handleExecution(isCalledOnMaster, hasComputed);
 
-
 #if defined(GenerateNoise)
     exahype::reactive::NoiseGenerator::getInstance().generateNoiseSTP();
 #endif
@@ -413,7 +218,241 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::runExecution(bool 
   return result;
 }
 
-bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecution(
+bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
+    bool isRunOnMaster, bool& hasComputed) {
+
+  bool result = false;
+#if defined(OffloadingUseProfiler)
+  exahype::reactive::OffloadingProfiler::getInstance().beginComputation();
+  double time = -MPI_Wtime();
+#endif
+  //local treatment if this job belongs to the local rank
+  if (!isRemoteJob()) {
+    result = handleLocalExecution(isRunOnMaster, hasComputed);
+    if (!_isLocalReplica) NumberOfEnclaveJobs--;
+    assertion( NumberOfEnclaveJobs>=0 );
+#if !defined(OffloadingUseProgressThread)
+    //double time = -MPI_Wtime();
+    if (!isRunOnMaster)
+      exahype::solvers::ADERDGSolver::progressOffloading(&_solver,
+          isRunOnMaster, std::numeric_limits<int>::max());
+      //exahype::solvers::ADERDGSolver::progressOffloading(&_solver,
+      //    isRunOnMaster, MAX_PROGRESS_ITS);
+   //time += MPI_Wtime();
+   //if(time>0.02) {
+   //  CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
+   //                                          _element);
+   //  logError("handleExecution","progress took too long "<<time<<" cellDesc "<<cellDescription.toString());
+
+   //}
+#endif
+  }
+  //remote task, need to execute and send it back
+  else {
+    result = handleRemoteExecution(hasComputed);
+    sendBackOutcomeToOrigin();
+  }
+#if defined(OffloadingUseProfiler)
+  time += MPI_Wtime();
+  exahype::reactive::OffloadingProfiler::getInstance().endComputation(time);
+#endif
+  return result;
+}
+
+bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecution(bool isRunOnMaster, bool& hasComputed) {
+  //fast path
+  if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
+      ==exahype::reactive::OffloadingContext::ResilienceStrategy::None) {
+    executeLocally();
+    hasComputed = true;
+    corruptIfActive();
+    setFinished();
+    return false;
+  }
+
+  //got some task sharing here
+  bool isEqual = false;
+  bool hasFlipped = false;
+  //check for outcome and get it + corruption status
+  MigratablePredictionJobData *outcome = nullptr;
+  DeliveryStatus status;
+  if(tryToFindAndExtractEquivalentSharedOutcome(false, status, &outcome)) {
+    executeOrCopySTPOutcome(outcome, hasComputed, hasFlipped); //corruption can also happen here if executed
+    setSTPPotCorrupted(hasFlipped);
+    if(needToCheckThisSTP(hasComputed)) {
+      isEqual = matches(outcome);
+      if(!isEqual) {
+        logError("handleLocalExecution", "Soft error detected in job execution: "<<to_string());
+        MPI_Abort(MPI_COMM_WORLD, -1);
+      }
+    }
+    if(needToShare(true /*hasOutcome*/, outcome->_metadata._isPotSoftErrorTriggered)) {
+      shareSTPImmediatelyOrLater();
+    }
+    setFinished(); //have already checked
+    return false;
+  }
+  //don't have an outcome
+  else {
+    executeLocally();
+    hasComputed = true;
+    hasFlipped = corruptIfActive();
+    setSTPPotCorrupted(hasFlipped);
+
+    if(needToShare(false, false)) {
+      shareSTPImmediatelyOrLater();
+    }
+
+    if(needToCheckThisSTP(hasComputed)) {
+      logInfo("handleLocalExecution","going into check mode "<<to_string());
+      setState(State::CHECK_REQUIRED);
+      return true; //re-enqueue
+    }
+
+    setFinished();
+    return false;
+  }
+}
+
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::shareSTPImmediatelyOrLater() {
+  if(exahype::reactive::ResilienceTools::CheckLimitedCellsOnly
+     && (exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
+        >=exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks)) {
+    logInfo("handleLocalExecution", "Delaying outcome, as we need to compute corrector first!");
+    _solver.storePendingOutcomeToBeShared(this); //delay sharing until we can be sure that trigger has been set (correction must happen first)
+  }
+  else {
+    if(_isCorrupted && !_isPotSoftErrorTriggered)
+      logWarning("handleLocalExecution","Sharing corrupted outcome but soft error has not been triggered!");
+    _solver.sendTaskOutcomeToOtherTeams(this);
+  }
+}
+
+bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::needToCheckThisSTP(bool hasComputed) {
+  return (exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
+        >=exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks)
+      &&  hasComputed
+      && _isPotSoftErrorTriggered;
+}
+
+bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::needToShare(bool hasOutcome, bool isOutcomePotCorrupt) {
+  if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
+      ==exahype::reactive::OffloadingContext::ResilienceStrategy::None) {
+    return false;
+  }
+  else if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
+          ==exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharing){
+    return !hasOutcome
+        && (AllocatedSTPsSend
+            <= exahype::reactive::PerformanceMonitor::getInstance().getTasksPerTimestep()/tarch::multicore::Core::getInstance().getNumberOfThreads());
+  }
+  else {
+    return !hasOutcome
+         || exahype::reactive::ResilienceTools::CheckLimitedCellsOnly
+         || isOutcomePotCorrupt;
+  }
+}
+
+bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::corruptIfActive() {
+  CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
+   _element);
+
+  double *lduh = static_cast<double*>(cellDescription.getUpdate());
+  bool hasFlipped = exahype::reactive::ResilienceTools::getInstance().corruptDataIfActive(lduh, _solver.getUpdateSize());
+
+  if(hasFlipped) {
+    logInfo("corruptIfActive","Has corrupted STP job "<<to_string());
+  }
+
+  return hasFlipped;
+}
+
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::copyOutcome(MigratablePredictionJobData *outcome) {
+  assert(outcome!=nullptr);
+  CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
+   _element);
+
+  double *lduh = static_cast<double*>(cellDescription.getUpdate());
+  double *lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
+#if OffloadingGradQhbnd
+  double *lGradQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictorGradient());
+#endif
+  double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
+
+  if(outcome->_metadata._isCorrupted)
+    logError("handleLocalExecution","Error: we're using a corrupted outcome!"); assertion(false);
+
+  assertion(outcome!=nullptr);
+  std::memcpy(lduh, &outcome->_lduh[0], outcome->_lduh.size() * sizeof(double));
+  std::memcpy(lQhbnd, &outcome->_lQhbnd[0], outcome->_lQhbnd.size() * sizeof(double));
+  std::memcpy(lFhbnd, &outcome->_lFhbnd[0], outcome->_lFhbnd.size() * sizeof(double));
+#if OffloadingGradQhbnd
+  std::memcpy(lGradQhbnd, &outcome->_lGradQhbnd[0], outcome->_lGradQhbnd.size() * sizeof(double));
+#endif
+  logInfo("handleLocalExecution","team "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()<<" copied STP outcome for "
+        <<to_string());
+
+  exahype::reactive::JobTableStatistics::getInstance().notifySavedTask();
+}
+
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::executeOrCopySTPOutcome(MigratablePredictionJobData *outcome, bool& hasComputed, bool& hasFlipped) {
+  if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()==exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharing) {
+    copyOutcome(outcome);
+    hasComputed = false;
+  }
+  else {
+    if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()>=exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks) {
+      if(outcome->_metadata._isPotSoftErrorTriggered) {
+        executeLocally();
+        hasFlipped = corruptIfActive();
+        hasComputed = true;
+      }
+      else {
+        copyOutcome(outcome);
+        hasComputed = false;
+      }
+    }
+  }
+}
+
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::executeLocally() {
+  CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
+   _element);
+
+  double *luh = static_cast<double*>(cellDescription.getSolution());
+  double *lduh = static_cast<double*>(cellDescription.getUpdate());
+  double *lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
+  double *lGradQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictorGradient());
+  double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
+
+  logInfo("handleLocalExecution","team "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()<<" computing STP for "
+        <<to_string());
+
+  int iterations = _solver.fusedSpaceTimePredictorVolumeIntegral(lduh,
+          lQhbnd,
+          lGradQhbnd,
+          lFhbnd,
+          luh,
+          cellDescription.getOffset() + 0.5 * cellDescription.getSize(),
+          cellDescription.getSize(),
+          _predictorTimeStamp,
+          _predictorTimeStepSize,
+          true);
+
+  exahype::reactive::JobTableStatistics::getInstance().notifyExecutedTask();
+
+}
+
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::setFinished() {
+  CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
+   _element);
+
+  cellDescription.setHasCompletedLastStep(true);
+  exahype::reactive::PerformanceMonitor::getInstance().decRemainingTasks();
+  exahype::reactive::PerformanceMonitor::getInstance().decCurrentTasks();
+}
+
+/*bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecution(
     bool isRunOnMaster, bool& hasComputed) {
 
   bool hasFlipped = false;
@@ -435,9 +474,11 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   double *lGradQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictorGradient());
   double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
 
-  JobOutcomeStatus status;
-  MigratablePredictionJobData *outcomes[2];
-  int required = exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams()-1;
+  //JobOutcomeStatus status;
+  //MigratablePredictionJobData *outcomes[2];
+  //int required = exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams()-1;
+  DeliveryStatus status;
+  MigratablePredictionJobData *outcome = nullptr;
   bool found = false;
 
 //#if defined(TaskSharing)
@@ -449,13 +490,13 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
                   && exahype::reactive::ResilienceTools::CheckLimitedCellsOnly);
 
     if(!exahype::reactive::ResilienceTools::CheckLimitedCellsOnly)
-      found = tryToFindAndExtractEquivalentSharedOutcomes(false, required, status, outcomes);
+      found = tryToFindAndExtractEquivalentSharedOutcome(false, status, outcome);
     else
       found = false;
 
     if(found) {
       switch (status) {
-        case JobOutcomeStatus::received:
+        case DeliveryStatus::Received:
       	  hasResult = true;
 #if defined(ResilienceChecks)
           needToCompute = outcomes[0]->_metadata._isPotSoftErrorTriggered;
@@ -468,8 +509,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
       	  needToCompute = false;
           copyResult = true;
 #endif
-        break;
-      case JobOutcomeStatus::transit:
+          break;
+      case DeliveryStatus::Transit:
 #ifdef TaskSharingRescheduleIfInTransit
         reschedule = true;
         needToCompute = false;
@@ -479,19 +520,19 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     }
 
     if(copyResult) {
-      if(outcomes[0]->_metadata._isCorrupted)
+      if(outcome->_metadata._isCorrupted)
         logError("handleLocalExecution","Error: we're using a corrupted outcome!");
 
-      assertion(outcomes[0]!=nullptr);
-      std::memcpy(lduh, &outcomes[0]->_lduh[0], outcomes[0]->_lduh.size() * sizeof(double));
-      std::memcpy(lQhbnd, &outcomes[0]->_lQhbnd[0], outcomes[0]->_lQhbnd.size() * sizeof(double));
-      std::memcpy(lFhbnd, &outcomes[0]->_lFhbnd[0], outcomes[0]->_lFhbnd.size() * sizeof(double));
+      assertion(outcome!=nullptr);
+      std::memcpy(lduh, &outcome->_lduh[0], outcome->_lduh.size() * sizeof(double));
+      std::memcpy(lQhbnd, &outcome->_lQhbnd[0], outcome->_lQhbnd.size() * sizeof(double));
+      std::memcpy(lFhbnd, &outcome->_lFhbnd[0], outcome->_lFhbnd.size() * sizeof(double));
 #if OffloadingGradQhbnd
-      std::memcpy(lGradQhbnd, &outcomes[0]->_lGradQhbnd[0], outcomes[0]->_lGradQhbnd.size() * sizeof(double));
+      std::memcpy(lGradQhbnd, &outcome->_lGradQhbnd[0], outcome->_lGradQhbnd.size() * sizeof(double));
 #endif
       exahype::reactive::JobTableStatistics::getInstance().notifySavedTask();
       AllocatedSTPsReceive--;
-      delete outcomes[0]; //todo: delete other one as well
+      delete outcome;
     }
   }
 
@@ -507,19 +548,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     tarch::la::Vector<DIMENSIONS, double> center;
     center = cellDescription.getOffset() + 0.5 * cellDescription.getSize();
     logInfo("handleLocalExecution","team "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()<<" computing STP for "
-          <<_cellDescriptionsIndex
-          <<" center[0] = "
-          << center[0]
-          <<" center[1] = "
-          << center[1]
-#if DIMENSIONS==3 //fixme: need a to string method for a migratable job!
-          <<" center[2] = "
-          << center[2]
-#endif
-          <<" time stamp = "
-          <<_predictorTimeStamp
-          <<" time step size = "
-          <<_predictorTimeStepSize);
+          <<to_string());
 
     int iterations = _solver.fusedSpaceTimePredictorVolumeIntegral(lduh,
        	lQhbnd,
@@ -541,17 +570,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 
     if(hasFlipped)  {
       logError("handleLocalExecution","team  "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()<<" has corrupted STP for "
-                                      <<_cellDescriptionsIndex
-                                      <<" center[0] = "
-                                      << center[0]
-                                      <<" center[1] = "
-                                      << center[1]
-                                      #if DIMENSIONS==3 //fixme: need a to string method for migratable job!
-                                      <<" center[2] = "
-                                      << center[2]
-                                      #endif
-                                      <<" time stamp = "
-                                      <<_predictorTimeStamp);
+                                      <<to_string());
 
       _isCorrupted = true; //indicates that this outcome has corrupt data!
     }
@@ -578,9 +597,9 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 
 #if defined(OffloadingLocalRecompute)
   if (_isLocalReplica) {
-      tbb::concurrent_hash_map<const CellDescription*, std::pair<int, int>>::accessor a_cellDescToTagRank;
-      //logInfo("handleExecution()", "cleaning up cell desc "<<&cellDescription);
-      bool found = _solver._mapCellDescToTagRank.find(a_cellDescToTagRank,
+    tbb::concurrent_hash_map<const CellDescription*, std::pair<int, int>>::accessor a_cellDescToTagRank;
+    //logInfo("handleExecution()", "cleaning up cell desc "<<&cellDescription);
+    bool found = _solver._mapCellDescToTagRank.find(a_cellDescToTagRank,
         &cellDescription);
     assert(found);
     _solver._mapCellDescToTagRank.erase(a_cellDescToTagRank);
@@ -642,20 +661,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   if(hasFlipped) {
     tarch::la::Vector<DIMENSIONS, double> center;
     center = cellDescription.getOffset() + 0.5 * cellDescription.getSize();
-    logInfo("handleLocalExecution","Corrupted data in cell index "
-          <<_cellDescriptionsIndex
-          <<" center[0] = "
-          << center[0]
-          <<" center[1] = "
-          << center[1]
-#if DIMENSIONS==3
-          <<" center[2] = "
-          << center[2]
-#endif
-          <<" time stamp = "
-          <<_predictorTimeStamp
-          <<" _isPotSoftErrorTriggered "
-          << _isPotSoftErrorTriggered
+    logInfo("handleLocalExecution","Corrupted data in "
+          << to_string()
           << " hasResult "<<hasResult
           << " needToCheck "<<needToCheck
           << " needToShare "<<needToShare
@@ -669,75 +676,9 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   }
 
   return reschedule;
-}
+}*/
 
-bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryToFindAndExtractEquivalentSharedOutcomes(bool previous, int required, JobOutcomeStatus &status, MigratablePredictionJobData **outcome) {
-  CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
-	      _element);
-
-#if !defined(OffloadingUseProgressThread)
-  exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, MAX_PROGRESS_ITS);
-#endif
-
-  tarch::la::Vector<DIMENSIONS, double> center;
-  center = cellDescription.getOffset() + 0.5 * cellDescription.getSize();
-
-  JobTableKey key;
-  for (int i=0; i < DIMENSIONS; i++)
-    key.center[i] = center[i];
-  if(!previous) {
-    key.timestamp = _predictorTimeStamp;
-    key.timestepSize = _predictorTimeStepSize;
-  }
-  else {
-    key.timestamp =  cellDescription.getPreviousTimeStamp(); //_solver.getPreviousMinTimeStamp();
-    key.timestepSize = cellDescription.getPreviousTimeStepSize();  //_solver.getPreviousMinTimeStepSize();
-  }
-  key.element = _element;
-
-  logInfo("tryToFindAndExtractEquivalentSharedOutcome","Looking for center[0]="<<key.center[0]<<" center[1]="<<key.center[1]
-#if DIMENSIONS==3
-                                                  <<" center[2]="<<key.center[2]
-#endif
-                                                  <<" timestamp="<<key.timestamp
-                                                  <<" timestep="<<key.timestepSize
-                                                  <<"  element="<<key.element);
-
-  tbb::concurrent_hash_map<JobTableKey, JobTableEntry>::accessor a_jobToData;
-  bool found = _solver._outcomeDatabase.find(a_jobToData, key);
-  bool ret = false;
-
-  if(found && a_jobToData->second.receivedOutcomes==required) {
-    int receivedOutcomes = a_jobToData->second.receivedOutcomes;
-    *outcome = a_jobToData->second.data[receivedOutcomes-1];
-    status = a_jobToData->second.status[receivedOutcomes-1];
-    _solver._outcomeDatabase.erase(a_jobToData);
-
-    logInfo("tryToFindAndExtractEquivalentSharedOutcome()",
-        "team "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
-        <<" found STP in received jobs:"
-        <<(*outcome)->_metadata.to_string());
-
-    if((*outcome)->_metadata._isCorrupted)
-      logError("tryToFindAndExtractEquivalentSharedOutcome()",
-            "team "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
-            <<" found corrupted STP in received jobs:"
-            <<(*outcome)->_metadata.to_string());
-    ret = true;
-  }
-  else if(found && a_jobToData->second.receivedOutcomes==0) {
-	  *outcome = nullptr;
-	  status = JobOutcomeStatus::transit;
-  }
-  else {
-	  *outcome = nullptr;
-  }
-  a_jobToData.release();
-
-  return ret;
-}
-
-bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleRemoteExecution( bool& hasComputed) {
+bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleRemoteExecution(bool& hasComputed) {
 #if defined(USE_ITAC)
   VT_begin(event_stp_remote);
 #endif
@@ -752,48 +693,23 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleRemoteExecut
   assertion(_lFhbnd!=nullptr);
   assertion(_luh!=nullptr);
 
-#if DIMENSIONS==3
   logDebug("handleRemoteExecution",
-        " processJob: center[0] = "<<_center[0]
-      <<" center[1] = "<<_center[1]
-      <<" center[2] = "<<_center[2]
-      <<" time stamp = "<<_predictorTimeStamp
-      <<" origin rank = "<<_originRank);
-#else
-  logDebug("handleRemoteExecution",
-        " processJob: center[0] = "<<_center[0]
-      <<" center[1] = "<<_center[1]
-      <<" time stamp = "<<_predictorTimeStamp
-      <<" origin rank = "<<_originRank);
-#endif
+        " processJob: "<<to_string());
 
   int iterations=_solver.fusedSpaceTimePredictorVolumeIntegral(
-      _lduh,
-      _lQhbnd,
-      _lGradQhbnd,
-      _lFhbnd,
-      _luh,
-      _center,
-      _dx,
-      _predictorTimeStamp,
-      _predictorTimeStepSize,
-      true);
+     _lduh,
+     _lQhbnd,
+     _lGradQhbnd,
+     _lFhbnd,
+     _luh,
+     _center,
+     _dx,
+     _predictorTimeStamp,
+     _predictorTimeStepSize,
+     true);
 
-
-#if DIMENSIONS==3
   logDebug("handleRemoteExecution",
-        " finished job: center[0] = "<<_center[0]
-      <<" center[1] = "<<_center[1]
-      <<" center[2] = "<<_center[2]
-      <<" time stamp = "<<_predictorTimeStamp
-      <<" origin rank = "<<_originRank);
-#else
-  logDebug("handleRemoteExecution",
-        " finished job: center[0] = "<<_center[0]
-      <<" center[1] = "<<_center[1]
-      <<" time stamp = "<<_predictorTimeStamp
-      <<" origin rank = "<<_originRank);
-#endif
+        " finished job: "<<to_string());
    
   hasComputed = true;
 #if defined(USE_ITAC)
@@ -804,29 +720,14 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleRemoteExecut
   auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
 
   // exahype::reactive::STPStatsTracer::getInstance().writeTracingEventIteration(iterations, exahype::reactive::STPTraceKey::ADERDGRemoteMigratable);
-  exahype::reactive::STPStatsTracer::getInstance().writeTracingEventRunIterations(duration.count(), iterations,
-                                                     exahype::reactive::STPTraceKey::ADERDGRemoteMigratable);
+  exahype::reactive::STPStatsTracer::getInstance().writeTracingEventRunIterations(duration.count(), iterations, exahype::reactive::STPTraceKey::ADERDGRemoteMigratable);
 #endif
   return result;
 }
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackOutcomeToOrigin() {
-#if DIMENSIONS==3
   logDebug("sendBackOutcomeToOrigin",
-        " send job outcome: center[0] = "<<_center[0]
-      <<" center[1] = "<<_center[1]
-      <<" center[2] = "<<_center[2]
-      <<" time stamp = "<<_predictorTimeStamp
-      <<" tag = "<<_tag
-      <<" origin = "<<_originRank);
-#else
-  logDebug("sendBackOutcomeToOrigin",
-        " send job outcome: center[0] = "<<_center[0]
-      <<" center[1] = "<<_center[1]
-      <<" time stamp = "<<_predictorTimeStamp      
-      <<" tag = "<<_tag
-      <<" origin = "<<_originRank);
-#endif
+        " send job outcome: "<<to_string());
     //logInfo("handleLocalExecution()", "postSendBack");
 #if defined(UseSmartMPI)
 #if defined(SmartMPINB)
@@ -882,53 +783,266 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackOutcomeToO
 #endif
 }
 
-bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
-    bool isRunOnMaster, bool& hasComputed) {
-  int myRank = tarch::parallel::Node::getInstance().getRank();
-  bool result = false;
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::setSTPPotCorrupted(bool flipped) {
 
-#if defined(OffloadingUseProfiler)
-  exahype::reactive::OffloadingProfiler::getInstance().beginComputation();
-  double time = -MPI_Wtime();
-#endif
-  //local treatment if this job belongs to the local rank
-  if (!isRemoteJob()) {
-    result = handleLocalExecution(isRunOnMaster, hasComputed);
-    if (!_isLocalReplica) NumberOfEnclaveJobs--;
-    assertion( NumberOfEnclaveJobs>=0 );
-#if !defined(OffloadingUseProgressThread)
-    //double time = -MPI_Wtime();
-    if (!isRunOnMaster)
-      exahype::solvers::ADERDGSolver::progressOffloading(&_solver,
-          isRunOnMaster, std::numeric_limits<int>::max());
-      //exahype::solvers::ADERDGSolver::progressOffloading(&_solver,
-      //    isRunOnMaster, MAX_PROGRESS_ITS);
-   //time += MPI_Wtime();
-   //if(time>0.02) {
-   //  CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
-   //                                          _element);
-   //  logError("handleExecution","progress took too long "<<time<<" cellDesc "<<cellDescription.toString());
+  CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
+                                                        _element);
 
-   //}
-#endif
-  }
-  //remote task, need to execute and send it back
-  else {
-    result = handleRemoteExecution(hasComputed);
-    sendBackOutcomeToOrigin();
-  }
-#if defined(OffloadingUseProfiler)
-  time += MPI_Wtime();
-  exahype::reactive::OffloadingProfiler::getInstance().endComputation(time);
-#endif
-  return result;
+  //trigger is set later if we are using limiter as a trigger
+  _isPotSoftErrorTriggered =  (exahype::reactive::ResilienceTools::CheckFlipped && flipped)
+                            ||  exahype::reactive::ResilienceTools::CheckAllMigratableSTPs;
+
+  logInfo("setSTPPotCorrupted", " celldesc ="<<_cellDescriptionsIndex<<" isPotCorrupted "<<_isPotSoftErrorTriggered);
 }
 
-bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::checkAgainstOutcome(MigratablePredictionJobData *data) {
+//Caution: Compression is not supported yet!
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::setState(State newState) {
+  _currentState = newState;
+}
+/*
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::recoverWithOutcome(MigratablePredictionJobData *outcome) {
+  CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
+        _element);
+
+  double *luh = static_cast<double*>(cellDescription.getSolution());
+  double *lduh = static_cast<double*>(cellDescription.getUpdate());
+  double *lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
+  double *lGradQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictorGradient());
+  double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
+
+  logError("recoverWithOutcome", "recovering sane solution and correct STP");
+  std::memcpy(luh, outcome->_luh.data(), outcome->_luh.size() * sizeof(double));
+  std::memcpy(lduh, outcome->_lduh.data(), outcome->_lduh.size() * sizeof(double));
+  std::memcpy(lQhbnd, outcome->_lQhbnd.data(), outcome->_lQhbnd.size() * sizeof(double));
+  std::memcpy(lFhbnd, outcome->_lFhbnd.data(), outcome->_lFhbnd.size() * sizeof(double));
+#if OffloadingGradQhbnd
+  std::memcpy(_lGradQhbnd, &outcome->_lGradQhbnd.data(), outcome->_lGradQhbnd.size() * sizeof(double));
+#endif
+  exahype::reactive::JobTableStatistics::getInstance().notifyHealedTask();
+}
+
+bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryFindOutcomeAndHeal() {
+#if !defined(OffloadingUseProgressThread)
+  exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, MAX_PROGRESS_ITS);
+#endif
+  CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
+        _element);
+
+  //std::cout<<"try to heal..."<<std::endl;
+
+  JobOutcomeStatus status;
+  MigratablePredictionJobData *outcomes[2];
+  int requiredOutcomes = exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams()-1;
+
+  bool found = tryToFindAndExtractEquivalentSharedOutcomes(false, requiredOutcomes, status, outcomes);
+
+  if(found) {
+    int saneIdx = -1;
+    if(!checkAgainstOutcomesAndFindSaneOne(outcomes, requiredOutcomes, saneIdx)) {
+      logInfo("tryFindOutcomeAndHeal", "Healing a cell!");
+      assert(saneIdx>=0 && saneIdx<=2); //otherwise, we have a problem
+      recoverWithOutcome(outcomes[saneIdx]);
+    }
+
+    for(int i = 0; i<requiredOutcomes; i++)
+      delete outcomes[i];
+    cellDescription.setHasCompletedLastStep(true);
+    logError("tryFindOutcomeAndHeal","has healed!");
+    return false;
+  }
+  else {
+    //std::cout<<"still waiting!"<<std::endl;
+    return true;
+  }
+}*/
+
+/*bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryFindPreviousOutcomeAndCheck() {
+  //caution, this may delay setting the completed flag and cause slowdowns for the master!
+#if !defined(OffloadingUseProgressThread)
+  exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, MAX_PROGRESS_ITS);
+#endif
+  CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
+            _element);
+
+  logInfo("tryFindPreviousOutcomeAndCheck", "Trying to check previously troubled solution..."
+          <<_cellDescriptionsIndex
+          <<" center[0] = "
+          << _center[0]
+          <<" center[1] = "
+          << _center[1]
+          <<" stamp "<<_predictorTimeStamp
+          <<" step "<<_predictorTimeStepSize
+          <<" previous stamp "<<cellDescription.getPreviousTimeStamp()
+          <<" previous step "<<cellDescription.getPreviousTimeStepSize());
+
+  DeliveryStatus status;
+  MigratablePredictionJobData *outcomes[2]; //todo: avoid hardcoding
+  int required = exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams()-1;
+  bool found = tryToFindAndExtractEquivalentSharedOutcomes(true, required, status, outcomes);
+  //bool reschedule;
+
+  if(found) {
+    //todo: check other data, too?
+    double *luh = static_cast<double*>(cellDescription.getSolution());
+    double *lduh = static_cast<double*>(cellDescription.getUpdate());
+    double *lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
+    double *lGradQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictorGradient());
+    double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
+
+    if(_isPotSoftErrorTriggered!=outcomes[0]->_metadata._isPotSoftErrorTriggered) {
+      logError("tryFindPreviousOutcomeAndCheck","Limiter was not active previously in other team, we must have a soft error!"
+          <<_cellDescriptionsIndex
+          <<" center[0] = "
+          << _center[0]
+          <<" center[1] = "
+          << _center[1]
+          <<" stamp "<<_predictorTimeStamp
+          <<" step "<<_predictorTimeStepSize
+          <<" previous stamp "<<cellDescription.getPreviousTimeStamp()
+          <<" previous step "<<cellDescription.getPreviousTimeStepSize());
+
+      //correct here
+      std::memcpy(luh, &outcomes[0]->_luh[0], outcomes[0]->_luh.size() * sizeof(double));
+      std::memcpy(lduh, &outcomes[0]->_lduh[0], outcomes[0]->_lduh.size() * sizeof(double));
+      std::memcpy(lQhbnd, &outcomes[0]->_lQhbnd[0], outcomes[0]->_lQhbnd.size() * sizeof(double));
+      std::memcpy(lFhbnd, &outcomes[0]->_lFhbnd[0], outcomes[0]->_lFhbnd.size() * sizeof(double));
+#if OffloadingGradQhbnd
+      std::memcpy(lGradQhbnd, &outcomes[0]->_lGradQhbnd[0], outcomes[0]->_lGradQhbnd.size() * sizeof(double));
+#endif
+
+      cellDescription.setRefinementStatus(Keep);
+      cellDescription.setCorruptionStatus(CorruptedAndCorrected);
+      //logError("tryFindPreviousOutcomeAndCheck", " soft error corrected and detected, but we compute limiter next, as error has propagated!");
+
+      cellDescription.setHasCompletedLastStep(true); //let's use the limiter for now to correct on faulty team, the other one will continue as usual
+      //MPI_Abort(MPI_COMM_WORLD, -1);
+
+      return false; //run limiter next, todo: for the faulty outcome we could try to use sane solution from other team
+    }
+    else {
+      bool equalSolution = exahype::reactive::ResilienceTools::getInstance().isAdmissibleNumericalError(outcomes[0]->_luh.data(), luh, outcomes[0]->_luh.size());
+      if(!equalSolution)
+        logError("tryFindPreviousOutcomeAndCheck"," solutions to not match, we must have a soft error but we can't correct!");
+      cellDescription.setHasCompletedLastStep(true);
+
+      //return false; //run limiter next for both
+      MPI_Abort(MPI_COMM_WORLD, -1);
+    }
+
+    //limiter was activated for both cells correctly -> run limiter next
+    cellDescription.setHasCompletedLastStep(true);
+    return false;
+  }
+  else
+    return true;
+
+}*/
+
+//bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryFindOutcomeAndCheck() {
+//
+//  //caution, this may delay setting the completed flag and cause slowdowns for the master!
+//#if !defined(OffloadingUseProgressThread)
+//  exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, MAX_PROGRESS_ITS);
+//#endif
+//
+//  DeliveryStatus status;
+//  MigratablePredictionJobData *outcome;
+//  bool found = tryToFindAndExtractEquivalentSharedOutcome(false, status, &outcome);
+//  bool reschedule;
+//
+//  if(found && status==DeliveryStatus::Received) {
+//    if(matches(outcome)) {
+//      CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,_element);
+//      cellDescription.setHasCompletedLastStep(true);
+//      reschedule = false;
+//     }
+//     else {
+//       //soft error detected
+//       reschedule = false;
+//       MPI_Abort(MPI_COMM_WORLD, -1);
+//     }
+//  }
+//  else {
+//    reschedule = true;
+//  }
+//
+//  return reschedule;
+//
+///*  CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
+//        _element);
+//  tarch::la::Vector<DIMENSIONS, double> center;
+//  center = cellDescription.getOffset() + 0.5 * cellDescription.getSize();
+//
+//  int saneIdx = -1;
+//
+//  //todo: can we delete here already?
+//  if(found && status==JobOutcomeStatus::received) {
+//    if(checkAgainstOutcomesAndFindSaneOne(outcomes, required, saneIdx)) {
+//	    cellDescription.setHasCompletedLastStep(true);
+//	    reschedule = false;
+//    }
+//    else {
+//      //soft error detected
+//#if defined(ResilienceHealing)
+//      assert(saneIdx>=0 && saneIdx<=2);
+//      recoverWithOutcome(outcomes[saneIdx]);
+//      cellDescription.setHasCompletedLastStep(true);
+//      reschedule = false;
+//      logError("tryFindOutcomeAndCheck", "switch on healing mode now!");
+//      //_solver.switchToHealingMode();
+//      logInfo("tryFindOutcomeAndCheck","tried to recover cell "
+//             <<_cellDescriptionsIndex
+//             <<" center[0] = "
+//             << center[0]
+//             <<" center[1] = "
+//             << center[1]
+//             <<" center[2] = "
+//             << center[2]);
+//#else
+//      reschedule = false;
+//      logError("tryFindOutcomeAndCheck", "soft error detected but we are ignoring it...");
+//      exahype::reactive::ResilienceTools::getInstance().setCorruptionDetected(true);
+//      cellDescription.setHasCompletedLastStep(true);
+//      //MPI_Abort(MPI_COMM_WORLD, -1);
+//#endif
+//    }
+//    for(int i=0; i<required; i++)
+//      delete outcomes[i];
+//  }
+//  else {
+//    logInfo("tryFindOutcomeAndCheck","Looking for cell "
+//             <<_cellDescriptionsIndex
+//             <<" center[0] = "
+//             << center[0]
+//             <<" center[1] = "
+//             << center[1]
+//#if DIMENSIONS==3 //fixme: need a to string method for a migratable job!
+//             <<" center[2] = "
+//             << center[2]
+//#endif
+//             );
+//    reschedule = true;
+//  }
+//  return reschedule;
+//*/
+//
+//}
+
+bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryToFindAndExtractEquivalentSharedOutcome(bool previous, DeliveryStatus &status, MigratablePredictionJobData **outcome) {
+  CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
+      _element);
+
+  logInfo("tryToFindAndExtractEquivalentSharedOutcome", "team = "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
+      <<" looking for "<<cellDescription.toString())
+
+  return _solver.tryToFindAndExtractOutcome(_cellDescriptionsIndex, _element, _predictorTimeStamp, _predictorTimeStepSize, status, outcome);
+}
+
+bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::matches(MigratablePredictionJobData *data) {
   if(_isCorrupted)
     logError("checkAgainstOutcome", "checking against outcome");
 #if defined(USE_TMPI)
-  logInfo("matchesOtherOutcome", "team "<<TMPI_GetTeamNumber()<<" comparing center[0]="<<_center[0]<<" center[1]="<<_center[1]<<" timestamp "<<_predictorTimeStamp<<" with received task outcome "<<data->_metadata.to_string());
+  logInfo("checkAgainstOutcome", "team "<<TMPI_GetTeamNumber()<<" comparing center[0]="<<_center[0]<<" center[1]="<<_center[1]<<" timestamp "<<_predictorTimeStamp<<" with received task outcome "<<data->_metadata.to_string());
 #endif
 
   CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
@@ -973,6 +1087,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::checkAgainstOutcom
     logError("matchesOtherOutcome", "soft error detected: "<<data->_metadata.to_string());
     exahype::reactive::JobTableStatistics::getInstance().notifyDetectedError();
   }
+
+  exahype::reactive::JobTableStatistics::getInstance().notifyDoubleCheckedTask();
   return equal;
 }
 
@@ -981,7 +1097,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::checkAgainstOutcom
   bool equal = true;
   assertion(outcomes>0);
 
-  equal = checkAgainstOutcome(data[0]);
+  equal = matches(data[0]);
   if(equal || !data[0]->_metadata._isPotSoftErrorTriggered) {
     idxSane = 0;
   }
@@ -995,7 +1111,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::checkAgainstOutcom
   assertion(!equal);
   //A!=B  -> there must be some error somewhere
   //majority vote to find sane one
-  if(checkAgainstOutcome(data[1])) {
+  if(matches(data[1])) {
     idxSane = 1;
     logDebug("checkAgainstOutcomesAndFindSaneOne", "checked duplicate executions for soft errors, result = "<<equal);
     exahype::reactive::JobTableStatistics::getInstance().notifyDoubleCheckedTask();
@@ -1016,6 +1132,19 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::checkAgainstOutcom
   }
 
   return equal;
+}
+
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendHandler(
+    exahype::solvers::Solver* solver, int tag, int remoteRank) {
+#if defined(PerformanceAnalysisOffloadingDetailed)
+  static std::atomic<int> cnt=0;
+  cnt++;
+#endif
+  logDebug("sendHandler","successful send request tag = "<<tag<<" remoteRank = "<<remoteRank);
+#if !defined(OffloadingNoEarlyReceiveBacks) || defined(OffloadingLocalRecompute)
+  ADERDGSolver::receiveBackMigratableJob(tag, remoteRank,
+      static_cast<exahype::solvers::ADERDGSolver*>(solver));
+#endif
 }
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandler(
@@ -1051,101 +1180,34 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandler(
           data->_metadata.getOrigin(), tag);
   peano::datatraversal::TaskSet spawnedSet(job);
 
-  logDebug("receiveHandler",
+  logInfo("receiveHandler",
       " received task : "<< data->_metadata.to_string()<<" from "<<data->_metadata.getOrigin()<<" tag = "<<tag);
 
-  exahype::reactive::OffloadingProfiler::getInstance().notifyReceivedTask(data->_metadata.getOrigin()
-      );
+  exahype::reactive::OffloadingProfiler::getInstance().notifyReceivedTask(data->_metadata.getOrigin());
 }
 
-void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTaskSharing(
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackHandler(
     exahype::solvers::Solver* solver, int tag, int remoteRank) {
-  logInfo("receiveHandlerTaskSharing","successful receive request");
-
+  //logInfo("sendBackHandler","successful sendBack request");
   tbb::concurrent_hash_map<std::pair<int, int>, MigratablePredictionJobData*>::accessor a_tagRankToData;
+
+  logDebug("sendBackHandler", "looking for tag = "<<tag<<" remoteRank = "<<remoteRank);
+
   MigratablePredictionJobData *data;
-  static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagRankToReplicaData.find(
-      a_tagRankToData, std::make_pair(remoteRank, tag));
+  bool found =
+      static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagRankToStolenData.find(
+          a_tagRankToData, std::make_pair(remoteRank, tag));
+  if(!found)
+    logError("sendBackHandler","Couldn't find sent back task data. Inconsistent maps! Tag = "<<tag<<" rank = "<<remoteRank);
+  assertion(found);
   data = a_tagRankToData->second;
-  static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagRankToReplicaData.erase(
-      a_tagRankToData);
   a_tagRankToData.release();
+  delete data;
+  static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagRankToStolenData.erase(
+      std::make_pair(remoteRank, tag));
 
-#if defined(UseSmartMPI) || defined(OffloadingMetadataPacked)
-  data->_metadata.unpackContiguousBuffer();
-#endif
-
-  logInfo("receiveHandlerTaskSharing", "team "
-      <<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
-      <<" received task outcome: "
-      <<data->_metadata.to_string()
-      <<" timestamp "
-      <<data->_metadata.getPredictorTimeStamp());
-
-  JobTableKey key; //{&data->_metadata[0], data->_metadata[2*DIMENSIONS], (int) data->_metadata[2*DIMENSIONS+2] };
-  const double * center = data->_metadata.getCenter();
-  for (int i = 0; i < DIMENSIONS; i++)
-    key.center[i] = center[i];
-  key.timestamp = data->_metadata.getPredictorTimeStamp();
-  key.timestepSize = data->_metadata.getPredictorTimeStepSize();
-  key.element = data->_metadata.getElement();
-
-  //bool criticalMemoryConsumption =  exahype::reactive::MemoryMonitor::getInstance().getFreeMemMB()<1000;
-
-  if (key.timestamp
-      < static_cast<exahype::solvers::ADERDGSolver*>(solver)->getPreviousMinTimeStamp()) { // || criticalMemoryConsumption) {
-    exahype::reactive::JobTableStatistics::getInstance().notifyLateTask();
-    delete data;
-    AllocatedSTPsReceive--;
-  }
-  else {
-    tbb::concurrent_hash_map<JobTableKey, JobTableEntry>::accessor a_jobToData;
-    bool found =
-      static_cast<exahype::solvers::ADERDGSolver*>(solver)->_outcomeDatabase.find(
-            a_jobToData, key);
-    if (found) {
-      int currIdx = a_jobToData->second.receivedOutcomes;
-      logInfo("receiveHandlerTaskSharing", "already got an entry, currIdx "<<currIdx);
-      assert(currIdx<=1);
-      a_jobToData->second.data[currIdx] = data;
-      a_jobToData->second.status[currIdx] = JobOutcomeStatus::received;
-      a_jobToData->second.receivedOutcomes++;
-      a_jobToData.release();
-      if(data->_metadata._isCorrupted)
-        logError("receiveHandlerTaskSharing","Warning: inserting actually corrupted task outcome!");
-      logInfo("receiveHandlerTaskSharing", "team "
-          <<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
-          <<" inserted task outcome: "
-          <<data->_metadata.to_string()
-          <<" time stamp "
-          <<data->_metadata._predictorTimeStamp
-          <<" time step size "
-          <<data->_metadata._predictorTimeStepSize);
-    }
-    else {
-      JobTableEntry entry;
-      entry.receivedOutcomes = 0;
-      entry.data[entry.receivedOutcomes] = data;
-      entry.status[entry.receivedOutcomes] = JobOutcomeStatus::received;
-      entry.receivedOutcomes++;
-      if(data->_metadata._isCorrupted)
-        logError("receiveHandlerTaskSharing","Warning: inserting actually corrupted task outcome!");
-      static_cast<exahype::solvers::ADERDGSolver*>(solver)->_outcomeDatabase.insert(
-          std::make_pair(key, entry));
-      static_cast<exahype::solvers::ADERDGSolver*>(solver)->_allocatedOutcomes.push_back(
-          key);
-      logInfo("receiveHandlerTaskSharing", "team "
-          <<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
-          <<" inserted task outcome: "
-          <<data->_metadata.to_string()
-          <<" time stamp "
-          <<data->_metadata._predictorTimeStamp
-          <<" time step size "
-          <<data->_metadata._predictorTimeStepSize);
-    }
-  }
-  exahype::reactive::JobTableStatistics::getInstance().notifyReceivedTask();
-
+  NumberOfStolenJobs--;
+  assertion( NumberOfStolenJobs>=0 );
 }
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler(
@@ -1321,51 +1383,52 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
   assertion( NumberOfEnclaveJobs>=0 ); assertion( NumberOfRemoteJobs>=0 );
 }
 
-void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackHandler(
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTaskSharing(
     exahype::solvers::Solver* solver, int tag, int remoteRank) {
-  //logInfo("sendBackHandler","successful sendBack request");
+  logDebug("receiveHandlerTaskSharing","successful receive request");
+
   tbb::concurrent_hash_map<std::pair<int, int>, MigratablePredictionJobData*>::accessor a_tagRankToData;
-
-  logDebug("sendBackHandler", "looking for tag = "<<tag<<" remoteRank = "<<remoteRank);
-
   MigratablePredictionJobData *data;
-  bool found =
-      static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagRankToStolenData.find(
-          a_tagRankToData, std::make_pair(remoteRank, tag));
-  if(!found)
-    logError("sendBackHandler","Couldn't find sent back task data. Inconsistent maps! Tag = "<<tag<<" rank = "<<remoteRank);
-  assertion(found);
+  static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagRankToReplicaData.find(
+      a_tagRankToData, std::make_pair(remoteRank, tag));
   data = a_tagRankToData->second;
+  static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagRankToReplicaData.erase(
+      a_tagRankToData);
   a_tagRankToData.release();
-  delete data;
-  static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagRankToStolenData.erase(
-      std::make_pair(remoteRank, tag));
 
-  NumberOfStolenJobs--;
-  assertion( NumberOfStolenJobs>=0 );
-}
+#if defined(UseSmartMPI) || defined(OffloadingMetadataPacked)
+  data->_metadata.unpackContiguousBuffer();
+#endif
 
-//#if defined(TaskSharing)
-void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendAckHandlerTaskSharing(
-    exahype::solvers::Solver* solver, int tag, int remoteRank) {
+  logInfo("receiveHandlerTaskSharing", "team "
+      <<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
+      <<" received replica job: "
+      <<data->_metadata.to_string());
 
-  logDebug("sendAckHandlerReplication","successfully completed send ack to other team");
+  MigratablePredictionJobOutcomeKey key(data->_metadata.getCenter(), data->_metadata.getPredictorTimeStamp(),
+                                         data->_metadata.getPredictorTimeStepSize(), data->_metadata.getElement());
 
-}
+  if(key._timestamp
+      <static_cast<exahype::solvers::ADERDGSolver*>(solver)->getMinTimeStamp()) {
+    exahype::reactive::JobTableStatistics::getInstance().notifyLateTask();
+    delete data;
+    AllocatedSTPsReceive--;
+  }
+  else {
+    MigratablePredictionJobData *data2 = nullptr;
+    DeliveryStatus status;
+    bool found = static_cast<exahype::solvers::ADERDGSolver*>(solver)->_outcomeDatabase.tryFindAndExtractOutcome(key, &data2, status);
 
-void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendKeyHandlerTaskSharing(
-    exahype::solvers::Solver* solver, int tag, int remoteRank) {
+    if(found && status==DeliveryStatus::Transit) {
+      static_cast<exahype::solvers::ADERDGSolver*>(solver)->_outcomeDatabase.insertOutcome(key, data2, DeliveryStatus::Received);
+    }
+    else {
+      static_cast<exahype::solvers::ADERDGSolver*>(solver)->_outcomeDatabase.insertOutcome(key, data, DeliveryStatus::Received);
+    }
+    static_cast<exahype::solvers::ADERDGSolver*>(solver)->_allocatedOutcomes.push_back(key);
+  }
+  exahype::reactive::JobTableStatistics::getInstance().notifyReceivedTask();
 
-  logDebug("sendKeyHandlerReplication","successfully completed send key to other teams");
-  //exahype::reactive::ReplicationStatistics::getInstance().notifySentTask();
-  //tbb::concurrent_hash_map<int, double*>::accessor a_tagToData;
-  //bool found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToReplicationSendKey.find(a_tagToData, tag);
-  //assert(found);
-  //double *data = a_tagToData->second;
-  //static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapTagToReplicationSendKey.erase(a_tagToData);
-
-  //delete data;
-  //a_tagToData.release();
 }
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendHandlerTaskSharing(
@@ -1386,20 +1449,6 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendHandlerTaskSha
   CompletedSentSTPs++;
   logDebug("sendHandlerReplication"," allocated stps send "<<AllocatedSTPsSend);
   a_tagToData.release();
-}
-//#endif
-
-void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendHandler(
-    exahype::solvers::Solver* solver, int tag, int remoteRank) {
-#if defined(PerformanceAnalysisOffloadingDetailed)
-  static std::atomic<int> cnt=0;
-  cnt++;
-#endif
-  logDebug("sendHandler","successful send request tag = "<<tag<<" remoteRank = "<<remoteRank);
-#if !defined(OffloadingNoEarlyReceiveBacks) || defined(OffloadingLocalRecompute)
-  ADERDGSolver::receiveBackMigratableJob(tag, remoteRank,
-      static_cast<exahype::solvers::ADERDGSolver*>(solver));
-#endif
 }
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::packMetaData(MigratablePredictionJobMetaData *metadata) {
@@ -1435,6 +1484,27 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::packMetaData(Migra
 #endif
 }
 
+std::string exahype::solvers::ADERDGSolver::MigratablePredictionJob::to_string() const {
+  std::string result;
+
+  result =  " cellDescriptionIndex = " + std::to_string(_cellDescriptionsIndex);
+  result += " center[0] = " + std::to_string(_center[0]);
+  result += " center[1] = " + std::to_string(_center[1]);
+  #if DIMENSIONS==3
+  result += " center[2] = " + std::to_string(_center[2]);
+  #endif
+
+  result += " time stamp = " + std::to_string(_predictorTimeStamp);
+  result += " time step = " + std::to_string(_predictorTimeStepSize);
+  result += " element = " + std::to_string(_element);
+  result += " origin = " + std::to_string(_originRank);
+  result += " isPotSoftErrorTriggered = " + std::to_string(_isPotSoftErrorTriggered);
+  result += " isCorrupted = " + std::to_string(_isCorrupted);
+
+  return result;
+}
+
+
 exahype::solvers::ADERDGSolver::MigratablePredictionJobData::MigratablePredictionJobData(
     ADERDGSolver& solver) :
       _luh(solver.getDataPerCell()),
@@ -1457,26 +1527,25 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJobData::matches(const 
   assertion(a._lduh.size()==_lduh.size());
   assertion(a._lGradQhbnd.size()==_lGradQhbnd.size());
 
-  tmp = _metadata == a._metadata;
+  tmp = _metadata == a._metadata; equal&=tmp;
 
   tmp = exahype::reactive::ResilienceTools::getInstance().isAdmissibleNumericalError(a._lQhbnd.data(), _lQhbnd.data(), a._lQhbnd.size()); equal&=tmp;
   if(!tmp) {
-    logError("matchesOtherOutcome", "lQhbnd is not (numerically) equal");
+    logError("matches", "lQhbnd is not (numerically) equal");
   }
-
 #if defined(OffloadingGradQhbnd)
   tmp = exahype::reactive::ResilienceTools::getInstance().isAdmissibleNumericalError(a._lGradQhbnd.data(), _lGradQhbnd, a._lGradQhbnd.size()); equal&=tmp;
   if(!tmp) {
-    logError("matchesOtherOutcome", "lGradQhbnd is not (numerically) equal");
+    logError("matches", "lGradQhbnd is not (numerically) equal");
   }
 #endif
   tmp = exahype::reactive::ResilienceTools::getInstance().isAdmissibleNumericalError(a._lFhbnd.data(), _lFhbnd.data(), a._lFhbnd.size()); equal&=tmp;
   if(!tmp) {
-    logError("matchesOtherOutcome", "lFhbnd is not  (numerically) equal");
+    logError("matches", "lFhbnd is not  (numerically) equal");
   }
   tmp = exahype::reactive::ResilienceTools::getInstance().isAdmissibleNumericalError(a._lduh.data(), _lduh.data(), a._lduh.size()); equal&=tmp;
   if(!tmp) {
-    logError("matchesOtherOutcome", "lduh is not  (numerically) equal");
+    logError("matches", "lduh is not  (numerically) equal");
   }
   return equal;
 }
@@ -1569,53 +1638,6 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::shutdownDa
 #endif
 }
 
-char* exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getContiguousBuffer() const {
-  return _contiguousBuffer;
-}
-
-void* exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getMPIBuffer() const {
-#if defined(UseSmartMPI) || defined(OffloadingMetadataPacked)
-  return _contiguousBuffer;
-#else
-  return (void*)this;
-#endif
-}
-
-MPI_Datatype exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getMPIDatatype() {
-  return _datatype;
-}
-
-size_t exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getMessageLen() {
-#if defined(UseSmartMPI) || defined(OffloadingMetadataPacked)
-  return (2*DIMENSIONS+2)*sizeof(double)+2*sizeof(int)+2*sizeof(bool);
-#else
-  return 1;
-#endif
-}
-
-const double * exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getCenter() const {
-  return _center;
-}
-
-const double * exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getDx() const {
-  return _dx;
-}
-
-double exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getPredictorTimeStamp() const {
-  return _predictorTimeStamp;
-}
-
-double exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getPredictorTimeStepSize() const {
-  return _predictorTimeStepSize;
-}
-
-int exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getElement() const {
-  return _element;
-}
-
-int exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::getOrigin() const {
-  return _originRank;
-}
 #endif
 //#undef assertion
 //#define assertion(expr) 

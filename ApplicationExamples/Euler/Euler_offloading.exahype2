@@ -8,7 +8,7 @@
   "architecture": "hsw",
   "computational_domain": {
     "dimension": 3,
-    "time_steps": 200,
+    "time_steps": 20,
     "offset": [
       0.0,
       0.0,
@@ -21,7 +21,7 @@
     ]
   },
   "shared_memory": {
-    "cores": 2,
+    "cores": 3,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy"
   },
@@ -34,14 +34,13 @@
     "ranks_per_node": 1,
     "offloading_lb_strategy": "none",
     "offloading_input_file" : "",
-    "offloading_progress" : "none",
+    "offloading_progress" : "progress_thread",
     "offloading_CCP_temperature" : 0,
     "offloading_diffusion_temperature" : 1,
     "offloading_CCP_frequency" : 0,
     "offloading_CCP_steps" : 0,
     "offloading_update_temperature" : true,
     "offloading_increase_temp_threshold" : 1.0,
-    "task_sharing" : "no",
     "timeout": 12000,
     "load_balancing_type": "static",
     "buffer_size"            : 1600,
@@ -50,8 +49,9 @@
     "ranks_per_node"         : 1
   },
   "resilience" : {
-    "generate_soft_errors" : "no",
-    "trigger_mechanism" : "trigger_limited"
+    "generate_soft_errors" : "migratable_stp_tasks_overwrite",
+    "check_mechanism" : "check_limited_after_update",
+    "task_sharing" : "task_sharing_resilience_checks"
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",
