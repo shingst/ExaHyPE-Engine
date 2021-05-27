@@ -34,6 +34,19 @@ extern double *FRCoeff;
 extern double ** fineGridProjector1d;
 extern double ** fineGridProjector1d_T_weighted; // [k][i*nDof+j] = fineGridProjector1d[k][j*nDof+i] * weight[j] / weight[i] / 3.0
 
+{% if useSinglePrecision %}
+//single precision version
+extern float *Kxi_SP;
+extern float *Kxi_T_SP;
+extern float *iK1_T_SP; //note: the generic version of iK1 is actually transposed
+extern float *dudx_SP;
+extern float *dudx_T_SP;
+extern float *FLCoeff_SP;
+extern float *FRCoeff_SP;
+extern float ** fineGridProjector1d_SP;
+extern float ** fineGridProjector1d_T_weighted_SP; // [k][i*nDof+j] = fineGridProjector1d[k][j*nDof+i] * weight[j] / weight[i] / 3.0
+{% endif %}
+
 {% for namespaceName in codeNamespaceList %}
 }
 {% endfor %}

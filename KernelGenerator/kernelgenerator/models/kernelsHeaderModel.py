@@ -29,5 +29,10 @@ class KernelsHeaderModel(AbstractModelBaseClass):
     def generateCode(self):
         self.context["solverNamespace"] = self.context["solverName"].split("::")[0]
         self.context["solverClass"] = self.context["solverName"].split("::")[1]
+        
+        if self.context["singlePrecisionSTP"]:
+            self.context["STP_Precision"] = "float"
+        else:
+            self.context["STP_Precision"] = "double"
 
         self.render((self.context["kernelType"], "Kernels_h.template"), "Kernels.h")

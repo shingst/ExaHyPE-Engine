@@ -66,6 +66,7 @@ class KernelgeneratorModel:
                 "predictorRecompute" : solverContext["predictorRecompute"],
                 "useVectPDE"         : solverContext["useVectPDE"],
                 "useAoSoA2"          : solverContext["useAoSoA2"],
+                "singlePrecisionSTP" : solverContext["singlePrecisionSTP"],
                 # Optional int parameters (may set redundant flags)
                 "usePointSources"    : solverContext["numberOfPointSources"] if solverContext["numberOfPointSources"] > 0 else -1,
                 "tempVarsOnStack"    : solverContext["tempVarsOnStack"]

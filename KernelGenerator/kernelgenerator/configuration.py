@@ -47,6 +47,9 @@ class Configuration:
 
     # path to markupsafe
     pathToMarkupsafe           = os.path.abspath(os.path.join(pathToExaHyPERoot, "Submodules", "markupsafe", "src"))
+    
+    # internal path to templates
+    pathToTemplate             = os.path.abspath(os.path.join(os.path.dirname(__file__), "templates"))
 
     # simd size of the accepted architectures
     simdWidth = { "noarch" : 1,
@@ -59,12 +62,28 @@ class Configuration:
                 }
 
     # choose the BLAS library for the matmul: "None" (= C++ loops), "Libxsmm" or "Eigen"
-    matmulLib = "Libxsmm";
-    #matmulLib = "Eigen";
-    #matmulLib = "None";
+    matmulLib = "Libxsmm"
+    #matmulLib = "Eigen"
+    #matmulLib = "None"
 
     # set to true to print models runtime
-    runtimeDebug = False;
+    runtimeDebug = False
+    
+    # prefetching settings
+    # Experimental, not supported by all kernel
+    # Will use prefetching to optimize tensor operations (prefetch the next slices of an LoG)
+    prefetchingLoG = "None" # "None" (disable the feature), "Inputs" (prefetch only the moving input slices of next LoG), "Outputs" (idem for outputs), "All" (Inputs and outputs)
+    prefetchingPDE = "None" # "None" (disable the feature), "Inputs" (prefetch only the next PDE input chunks), "Outputs" (idem for outputs), "All" (Inputs and outputs)
+    prefetchLevel  = "_MM_HINT_T0" # intrisic _mm_prefetch locality hint (_MM_HINT_T0 = all level of cache), see compiler header xmmintrin.h
+    cachelineSize  = {
+                  "noarch" : 8,
+                  "wsm"    : 8,
+                  "snb"    : 8,
+                  "hsw"    : 8,
+                  "knc"    : 8,
+                  "knl"    : 8,
+                  "skx"    : 8
+    } # size for double, CPUs usuallly have 64B L1 Cache line
 
 
 

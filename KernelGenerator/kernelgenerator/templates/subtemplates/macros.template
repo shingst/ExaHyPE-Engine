@@ -23,7 +23,7 @@
 std::memset({{name}}, 0, sizeof({{precision}})*{{size}});
 {% endif %}
 {% endif %}
-{% endmacro %} {##}
+{% endmacro %}{##}
 {#
 
 /**
@@ -34,7 +34,7 @@ std::memset({{name}}, 0, sizeof({{precision}})*{{size}});
 {% if not tempVarsOnStack %}
 _mm_free({{name}});
 {% endif %}
-{% endmacro %}
+{% endmacro %}{##}
 {#
 
 /**
@@ -44,7 +44,13 @@ _mm_free({{name}});
   The gemm config (fetched through matmulKey) contains M, N, K, LDA, LDB, LDC, alpha and beta
 */
 #}
-{% macro matmul(matmulKey, A, B, C, A_shift, B_shift, C_shift, trueAlpha="", trueB="", forceCoeffMatrix=False) %}
+{% macro matmul_legacy(matmulKey, A, B, C, A_shift, B_shift, C_shift, trueAlpha="", trueB="", forceCoeffMatrix=False) %}
+{% include "subtemplates/matmul_legacy.template" %}
+{% endmacro %}
+{% macro matmul(matmulKey, A, B, C, A_shift, B_shift, C_shift) %}
+{% include "subtemplates/matmul.template" %}
+{% endmacro %}
+{% macro matmul_prefetch(matmulKey, A, B, C, A_shift, B_shift, C_shift, A_next, B_next, C_next) %}
 {% include "subtemplates/matmul.template" %}
 {% endmacro %}
 {#
@@ -54,6 +60,10 @@ _mm_free({{name}});
 */
 #}
 {% macro matmulInclude() %}
+{% if prefetchLoGInputs or prefetchLoGOutputs or prefetchPDEInputs or prefetchPDEOutputs %}
+// intrisics for prefetching
+#include <xmmintrin.h>
+{% endif %}
 {% if useEigen %}
 // include Eigen for matmul
 #include <{{pathToOptKernel}}/Eigen/Dense>
@@ -62,6 +72,24 @@ _mm_free({{name}});
 // include libxsmms' gemms for matmul
 #include "{{pathToOptKernel}}/gemmsCPP.h"
 {% endif %}
+{% endmacro %}
+{#
+
+/**
+  Prefetching macros
+*/
+
+#}
+{% macro prefetchArray(array, size, offset) %}
+{% for offsetLine in range(0, size, cachelineSize)%}
+_mm_prefetch({{array}}+({{offset}}){% if offsetLine != 0 %}+{{offsetLine}}{% endif %}, {{prefetchLevel}});
+{% endfor%}
+{% endmacro %}
+{% macro prefetchPDEInput(array, size, offset) %}
+{% if prefetchPDEInputs %}{{prefetchArray(array, size, offset)}}{% endif %}
+{% endmacro %}
+{% macro prefetchPDEOutput(array, size, offset) %}
+{% if prefetchPDEOutputs %}{{prefetchArray(array, size, offset)}}{% endif %}
 {% endmacro %}
 {#
 
@@ -125,3 +153,38 @@ std::copy_n({{gradQY}}, {{incr}}, {{gradQ}}+{{1*incr}}); //y
 std::copy_n({{gradQZ}}, {{incr}}, {{gradQ}}+{{2*incr}}); //z
 {% endif %}
 {% endmacro %}
+{#
+
+/**
+  test transpose macro
+*/
+
+#}
+{% macro transpose(in, out, in_offset, out_offset, A, B) %}
+{# Transpose base, input is a [A][B] matrix #}
+for(int it_1=0; it_1<{{B}}; it_1++) {
+  #pragma omp simd aligned({{out}},{{in}}:ALIGNMENT)
+  for(int it_2=0; it_2<{{A}}; it_2++) {
+    {{out}}[it_1*{{A}}+it_2+{{out_offset}}] = {{in}}[it_2*{{B}}+it_1+{{in_offset}}];
+  }
+}
+{% endmacro %}
+{% macro transpose_rest(in, out, in_offset, out_offset, A, B, trueA, trueB, safe=False) %}
+{# Transpose base, input is a [trueA][trueB] matrix padded to [A][B] when transposing#}
+for(int it_1=0; it_1<{{trueB}}; it_1++) {
+  #pragma omp simd aligned({{out}},{{in}}:ALIGNMENT)
+  for(int it_2=0; it_2<{{trueA}}; it_2++) {
+    {{out}}[it_1*{{A}}+it_2+{{out_offset}}] = {{in}}[it_2*{{B}}+it_1+{{in_offset}}];
+  }
+{% if safe %}
+  #pragma omp simd aligned({{out}},{{in}}:ALIGNMENT)
+  for(int it_2={{trueA}}; it_2<{{A}}; it_2++) {
+    {{out}}[it_1*{{A}}+it_2+{{out_offset}}] = {{in}}[it_1+{{in_offset}}]; // copy first entry to fill output
+  }
+{% endif %}
+}
+{% endmacro %}
+{% macro callflux(inputQ, inputQ_dataSize, outputF, timeInterleaved, time_var) %}
+{% include 'subtemplates/flux_PDE_over_xyz.template' %}
+{% endmacro %}
+

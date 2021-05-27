@@ -1,0 +1,67 @@
+{# requires 
+
+Subtemplate to call flux 
+
+#}
+{% with %}
+{# /** Set up helper template values */ #}
+{% set chunkRest=((nDof**nDim)%chunkSize) %}
+{% set restStart=nDof**nDim-chunkRest %}
+{# /** Subtemplate */ #}
+{% if useFluxVect %}{# Vectorized flux, require transposition from AoS to SoA and back #}
+{ // Compute PDE fluxes in chunk
+  {{m.allocateArray('Fx', nVarPad*chunkSize, forceStack=True) | indent(2) }}{##}
+  {{m.allocateArray('Fy', nVarPad*chunkSize, forceStack=True) | indent(2) }}{##}
+  {{m.allocateArray('Fz', nVarPad*chunkSize, forceStack=True) | indent(2) }}{##}
+  {{m.allocateArray('lQiT', nVarPad*chunkSize, forceStack=True) | indent(2) }}{##}
+  double* F[3] = {Fx, Fy, Fz};
+  for (int xyz = 0; xyz < {{restStart}}; xyz+={{chunkSize}}) {
+    
+    {{m.transpose('lQi', 'lQiT', idxLQi(t,0,0,xyz,0), 0, chunkSize, nVarPad) | indent(4) }}{##}
+    #ifdef USE_IPO
+        #pragma forceinline recursive
+    #endif
+    solver.{{solverName}}::flux(lQiT, F);
+    {{m.transpose('Fx', 'lFi', 0, idxLFi(0,t,0,0,xyz,0), nVarPad, chunkSize) | indent(4) }}{##}
+    {{m.transpose('Fy', 'lFi', 0, idxLFi(1,t,0,0,xyz,0), nVarPad, chunkSize) | indent(4) }}{##}
+{% if nDim == 3 %}
+    {{m.transpose('Fz', 'lFi', 0, idxLFi(2,t,0,0,xyz,0), nVarPad, chunkSize) | indent(4) }}{##}
+{% endif %}
+  }
+{% if chunkRest > 0%}
+  { // process the last non complete chunk
+    {{m.transpose_rest('lQi', 'lQiT', idxLQi(t,0,0,restStart,0), 0, chunkSize, nVarPad, chunkRest, nVarpad, safe=True) | indent(4) }}{##}
+    #ifdef USE_IPO
+        #pragma forceinline recursive
+    #endif
+    solver.{{solverName}}::flux(lQiT, F);
+    {{m.transpose_rest('Fx', 'lFi', 0, idxLFi(0,t,0,0,restStart,0), nVarPad, chunkSize, nVarPad, chunkRest) | indent(4) }}{##}
+    {{m.transpose_rest('Fy', 'lFi', 0, idxLFi(1,t,0,0,restStart,0), nVarPad, chunkSize, nVarPad, chunkRest) | indent(4) }}{##}
+{% if nDim == 3 %}
+    {{m.transpose_rest('Fz', 'lFi', 0, idxLFi(2,t,0,0,restStart,0), nVarPad, chunkSize, nVarPad, chunkRest) | indent(4) }}{##}
+{% endif %}
+  }
+{% endif %}{# chunkRest > 0 #}
+}
+{% else %}{# useFluxVect #}
+{# 
+/** Default scalar case */
+#}
+{ // Compute the fluxes
+  double* F[{{nDim}}];
+  for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
+    // Call PDE fluxes
+    F[0] = lFi+{{idxLFi(0,t,0,0,xyz,0)}};
+    F[1] = lFi+{{idxLFi(1,t,0,0,xyz,0)}};
+{% if nDim == 3 %}
+    F[2] = lFi+{{idxLFi(2,t,0,0,xyz,0)}};
+{% endif %}
+    #ifdef USE_IPO
+        #pragma forceinline recursive
+    #endif
+    solver.{{solverName}}::flux(lQi+{{idxLQi(t,0,0,xyz,0)}}, F);
+
+  }
+}
+{% endif %}{# useFluxVect#}
+{% endwith %}

@@ -10,6 +10,8 @@
  * Released under the BSD 3 Open Source License.
  * For the full license text, see LICENSE.txt
  **/ #}
+{# format decimal numbers with 40 decimal places, exception for 0. in the padding to avoid getting 0.00...0e+40 from Python's Decimal #}
+{% macro formatDecimal(a)%}{{"{:.40e}".format(a) if a != 0.0 else "0.0"}}{% endmacro %}
 
 #include <mm_malloc.h> //g++
 
@@ -23,6 +25,18 @@ double* {{codeNamespace}}::weights4;
 double* {{codeNamespace}}::iweights1;
 double* {{codeNamespace}}::iweights3;
 double* {{codeNamespace}}::nodes;
+
+{% if useSinglePrecision %}
+//single precision version
+float* {{codeNamespace}}::weights1_SP;
+float* {{codeNamespace}}::weights2_SP;
+float* {{codeNamespace}}::weights3_SP;
+float* {{codeNamespace}}::weights4_SP;
+float* {{codeNamespace}}::iweights1_SP;
+float* {{codeNamespace}}::iweights3_SP;
+float* {{codeNamespace}}::nodes_SP;
+{% endif %}
+
 {% if kernelType=="limiter" %}
 double* {{codeNamespace}}::uh2lob;
 double* {{codeNamespace}}::dg2fv;
@@ -37,6 +51,17 @@ void {{codeNamespace}}::freeQuadratureNodesAndWeights() {
   _mm_free(iweights1);
   _mm_free(iweights3);
   _mm_free(nodes);
+  
+{% if useSinglePrecision %}
+  _mm_free(weights1_SP);
+  _mm_free(weights2_SP);
+  _mm_free(weights3_SP);
+  _mm_free(weights4_SP);
+  _mm_free(iweights1_SP);
+  _mm_free(iweights3_SP);
+  _mm_free(nodes_SP);
+{% endif %}
+  
 {% if kernelType=="limiter" %}
   _mm_free(uh2lob);
   _mm_free(dg2fv);
@@ -52,52 +77,97 @@ void {{codeNamespace}}::initQuadratureNodesAndWeights() {
   iweights1 = (double *) _mm_malloc(sizeof(double)*{{w1Size }}, ALIGNMENT); //nDofPad
   iweights3 = (double *) _mm_malloc(sizeof(double)*{{w3Size }}, ALIGNMENT); //2D: (nDof*nDof)Pad (== w1[i]*w1[j]), 3D: (nDof*nDof*nDof)Pad (== w1[i]*w1[j]*w1[k])
   nodes     = (double *) _mm_malloc(sizeof(double)*{{nDofPad}}, ALIGNMENT);
+  
+{% for i in w1_seq %}
+  weights1[{{i}}]  = {{formatDecimal(weights1[i])}};
+{% endfor %}
+
+{% for i in w2_seq %}
+  weights2[{{i}}]  = {{formatDecimal(weights2[i])}};
+{% endfor %}
+
+{% for i in w3_seq %}
+  weights3[{{i}}]  = {{formatDecimal(weights3[i])}};
+{% endfor %}
+
+{% for i in w4_seq %}
+  weights4[{{i}}]  = {{formatDecimal(weights4[i])}};
+{% endfor %}
+
+{% for i in w1_seq %}
+  iweights1[{{i}}] = {{formatDecimal(iweights1[i])}};
+{% endfor %}
+
+{% for i in w3_seq %}
+  iweights3[{{i}}] = {{formatDecimal(iweights3[i])}};
+{% endfor %}
+
+{% for i in quadrature_seq %}
+  nodes[{{i}}]     = {{formatDecimal(QuadratureNodes[i])}};
+{% endfor %}
+
+
+{% if useSinglePrecision %}
+  weights1_SP  = (float *) _mm_malloc(sizeof(float)*{{w1Size }}, ALIGNMENT); //nDofPad
+  weights2_SP  = (float *) _mm_malloc(sizeof(float)*{{w2Size }}, ALIGNMENT); //2D: nDofPad (==weight1), 3D: (nDof*nDof)Pad (== w1[i]*w1[j])
+  weights3_SP  = (float *) _mm_malloc(sizeof(float)*{{w3Size }}, ALIGNMENT); //2D: (nDof*nDof)Pad (== w1[i]*w1[j]), 3D: (nDof*nDof*nDof)Pad (== w1[i]*w1[j]*w1[k])
+  weights4_SP  = (float *) _mm_malloc(sizeof(float)*{{w4Size }}, ALIGNMENT); //2D: (nDof*nDof*nDof)Pad (== w1[i]*w1[j]*w1[k]), 3D: (nDof*nDof*nDof*nDof)Pad (== w1[i]*w1[j]*w1[k]*w1[l])
+  iweights1_SP = (float *) _mm_malloc(sizeof(float)*{{w1Size }}, ALIGNMENT); //nDofPad
+  iweights3_SP = (float *) _mm_malloc(sizeof(float)*{{w3Size }}, ALIGNMENT); //2D: (nDof*nDof)Pad (== w1[i]*w1[j]), 3D: (nDof*nDof*nDof)Pad (== w1[i]*w1[j]*w1[k])
+  nodes_SP     = (float *) _mm_malloc(sizeof(float)*{{nDofPad}}, ALIGNMENT);
+{% if kernelType=="limiter" %}
+  uh2lob_SP    = (float *) _mm_malloc(sizeof(float)*{{uh2lobSize}}, ALIGNMENT); //nDof*nDofPad
+  dg2fv_SP     = (float *) _mm_malloc(sizeof(float)*{{dg2fvSize }}, ALIGNMENT); //nDof*nDofLimPad
+  fv2dg_SP     = (float *) _mm_malloc(sizeof(float)*{{fv2dgSize }}, ALIGNMENT); //nDofLim*nDofPad
+{% endif %}
+  
+{% for i in w1_seq %}
+  weights1_SP[{{i}}]  = {{formatDecimal(weights1[i])}};
+{% endfor %}
+
+{% for i in w2_seq %}
+  weights2_SP[{{i}}]  = {{formatDecimal(weights2[i])}};
+{% endfor %}
+
+{% for i in w3_seq %}
+  weights3_SP[{{i}}]  = {{formatDecimal(weights3[i])}};
+{% endfor %}
+
+{% for i in w4_seq %}
+  weights4_SP[{{i}}]  = {{formatDecimal(weights4[i])}};
+{% endfor %}
+
+{% for i in w1_seq %}
+  iweights1_SP[{{i}}] = {{formatDecimal(iweights1[i])}};
+{% endfor %}
+
+{% for i in w3_seq %}
+  iweights3_SP[{{i}}] = {{formatDecimal(iweights3[i])}};
+{% endfor %}
+
+{% for i in quadrature_seq %}
+  nodes_SP[{{i}}]     = {{formatDecimal(QuadratureNodes[i])}};
+{% endfor %}
+{% endif %}{# useSinglePrecision #}
+
 {% if kernelType=="limiter" %}
   uh2lob    = (double *) _mm_malloc(sizeof(double)*{{uh2lobSize}}, ALIGNMENT); //nDof*nDofPad
   dg2fv     = (double *) _mm_malloc(sizeof(double)*{{dg2fvSize }}, ALIGNMENT); //nDof*nDofLimPad
   fv2dg     = (double *) _mm_malloc(sizeof(double)*{{fv2dgSize }}, ALIGNMENT); //nDofLim*nDofPad
 {% endif %}
-  
-{% for i in w1_seq %}
-  weights1[{{i}}]  = {{"{:.15e}".format(weights1[i])}};
-{% endfor %}
-
-{% for i in w2_seq %}
-  weights2[{{i}}]  = {{"{:.15e}".format(weights2[i])}};
-{% endfor %}
-
-{% for i in w3_seq %}
-  weights3[{{i}}]  = {{"{:.15e}".format(weights3[i])}};
-{% endfor %}
-
-{% for i in w4_seq %}
-  weights4[{{i}}]  = {{"{:.15e}".format(weights4[i])}};
-{% endfor %}
-
-{% for i in w1_seq %}
-  iweights1[{{i}}] = {{"{:.15e}".format(iweights1[i])}};
-{% endfor %}
-
-{% for i in w3_seq %}
-  iweights3[{{i}}] = {{"{:.15e}".format(iweights3[i])}};
-{% endfor %}
-
-{% for i in quadrature_seq %}
-  nodes[{{i}}]     = {{"{:.15e}".format(QuadratureNodes[i])}};
-{% endfor %}
 
 {% if kernelType=="limiter" %}
 {% for i in uh2lob_seq %}
-  uh2lob[{{i}}]    = {{"{:.15e}".format(uh2lob[i])}};
+  uh2lob[{{i}}]    = {{formatDecimal(uh2lob[i])}};
 {% endfor %}
 
 {% for i in dg2fv_seq %}
-  dg2fv[{{i}}]    = {{"{:.15e}".format(dg2fv[i])}};
+  dg2fv[{{i}}]    = {{formatDecimal(dg2fv[i])}};
 {% endfor %}
 
 {% for i in fv2dg_seq %}
-  fv2dg[{{i}}]    = {{"{:.15e}".format(fv2dg[i])}};
+  fv2dg[{{i}}]    = {{formatDecimal(fv2dg[i])}};
 {% endfor %}
-{% endif %}
+{% endif %}{# limiter #}
 
 }

@@ -41,9 +41,6 @@ class MatmulConfig:
     }
     """
 
-    # dgemm, dgemv, ....
-    operationType = ""
-
     baseroutinename = ""
     
     name = ""
@@ -64,16 +61,19 @@ class MatmulConfig:
     
     # alignment flags
     alignment_A = 0  # 1 aligned, 0 unaligned  
+    alignment_B = 0  # 1 aligned, 0 unaligned  
     alignment_C = 0  # 1 aligned, 0 unaligned
     
-    # prefetching
-    prefetchStrategy = ""
+    # prefetching, only if enabled by global config
+    prefetchInput = "" # "" = no input to prefetch, "A": only A_next, "B": only B_next, "AB": A and B
+    prefetchOutput = "" # "" = no output preftetch, "C": prefetch C
     
     # precision
     precision="DP" # "DP" = double, "SP" = float
     
+    
     # Constructor
-    def __init__(self, M, N, K, LDA, LDB, LDC, alpha, beta, alignment_A, alignment_C, name, prefetchStrategy, operationType="gemm", precision="DP"):
+    def __init__(self, M, N, K, LDA, LDB, LDC, alpha, beta, alignment_A, alignment_B, alignment_C, name, prefetchInput="", prefetchOutput="", precision="DP"):
         if precision not in ["DP", "SP"]:
             print("MatmulConfig: Unknown precision")
             exit()
@@ -97,13 +97,15 @@ class MatmulConfig:
         self.alpha = alpha
         self.beta = beta
         self.alignment_A = alignment_A
+        self.alignment_B = alignment_B
         self.alignment_C = alignment_C
         self.name = name
-        self.prefetchStrategy = prefetchStrategy
-        self.baseroutinename = operationType+"_"+str(M)+"_"+str(N)+"_"+str(K)+"_"+name
+        self.prefetchInput = prefetchInput
+        self.prefetchOutput = prefetchOutput
+        self.baseroutinename = "gemm"+"_"+str(M)+"_"+str(N)+"_"+str(K)+"_"+name
         self.precision = precision
         
 
     def __repr__(self):
-        return "<%s: %s LDA=%s, LDB=%s, LDC=%s, alpha=%s, beta=%s, alignment_A=%s, alignment_C=%s>" \
-             % (self.name, self.baseroutinename, self.LDA, self.LDB, self.LDC, self.alpha, self.beta, self.alignment_A, self.alignment_C)
+        return "<%s: %s LDA=%s, LDB=%s, LDC=%s, alpha=%s, beta=%s, alignment_A=%s, alignment_B=%s, alignment_C=%s>" \
+             % (self.name, self.baseroutinename, self.LDA, self.LDB, self.LDC, self.alpha, self.beta, self.alignment_A, self.alignment_B, self.alignment_C)

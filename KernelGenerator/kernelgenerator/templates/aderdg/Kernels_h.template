@@ -37,13 +37,13 @@ namespace {{namespaceName}} {
     double* restrict lQhbnd,
     double* restrict lFhbnd,
 {% if useSplitCK %}
-    double* restrict lQi,
-    double* restrict lQiNext,
-    double* restrict lPi,   // for NCP or Source
-    double* restrict lQhi,
-    double* restrict lFhi,
-    double* restrict gradQ, // for NCP or Source
-    double* restrict PSi,   // for pointSource
+    {{STP_Precision}}* restrict lQi,
+    {{STP_Precision}}* restrict lQiNext,
+    {{STP_Precision}}* restrict lPi,   // for NCP or Source
+    {{STP_Precision}}* restrict lQhi,
+    {{STP_Precision}}* restrict lFhi,
+    {{STP_Precision}}* restrict gradQ, // for NCP or Source
+    {{STP_Precision}}* restrict PSi,   // for pointSource
 {% else %}
     double* restrict lQi,
     double* restrict lFi,
@@ -69,13 +69,13 @@ namespace {{namespaceName}} {
     double* restrict lQhbnd,
     double* restrict lFhbnd,
 {% if useSplitCK %}
-    double* restrict lQi,
-    double* restrict lQiNext,
-    double* restrict lPi,   // for NCP or Source
-    double* restrict lQhi,
-    double* restrict lFhi,
-    double* restrict gradQ, // for NCP or Source
-    double* restrict PSi,   // for pointSource
+    {{STP_Precision}}* restrict lQi,
+    {{STP_Precision}}* restrict lQiNext,
+    {{STP_Precision}}* restrict lPi,   // for NCP or Source
+    {{STP_Precision}}* restrict lQhi,
+    {{STP_Precision}}* restrict lFhi,
+    {{STP_Precision}}* restrict gradQ, // for NCP or Source
+    {{STP_Precision}}* restrict PSi,   // for pointSource
 {% else %}
     double* restrict lQi,
     double* restrict lFi,

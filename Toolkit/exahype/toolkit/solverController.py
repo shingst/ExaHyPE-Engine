@@ -224,6 +224,8 @@ class SolverController:
         context["predictorRecompute"]      = kernel.get("space_time_predictor",{}).get("predictor_recompute",False)
         context["useVectPDE"]              = kernel.get("space_time_predictor",{}).get("vectorise_terms",False)
         context["useAoSoA2"]               = kernel.get("space_time_predictor",{}).get("AoSoA2_layout",False)
+        context["singlePrecisionSTP"]      = kernel.get("space_time_predictor",{}).get("SinglePrecision_STP",False)
+        context["STP_Precision"]           = "float" if kernel.get("space_time_predictor",{}).get("SinglePrecision_STP",False) else "double"
         context.update(self.buildKernelTermsContext(kernel["terms"]))
         return context
 

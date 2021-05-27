@@ -26,10 +26,15 @@ from .abstractModelBaseClass import AbstractModelBaseClass
 
 from ..utils import MathsUtils #matrix operation and build functions
 
+from decimal import Decimal
+
 
 class QuadratureModel(AbstractModelBaseClass):
 
     def generateCode(self):
+    
+        MathsUtils.setDecimalPrecision() # set Python's decimal precision to mathUtils value (default 50)
+        
         if self.context["quadratureType"] == "Gauss-Legendre":
             QuadratureWeights, QuadratureNodes = MathsUtils.getGaussLegendre(self.context["nDof"])
             OtherQuadratureWeights, OtherQuadratureNodes = MathsUtils.getGaussLobatto(self.context["nDof"])
@@ -46,25 +51,25 @@ class QuadratureModel(AbstractModelBaseClass):
         self.context["w1_seq"] = range(self.context["w1Size"])
 
         #inverse of weights1
-        self.context["iweights1"] = [1.0/self.context["weights1"][i] if self.context["weights1"][i] != 0. else 0. for i in self.context["w1_seq"]]
+        self.context["iweights1"] = [Decimal("1.0")/self.context["weights1"][i] if self.context["weights1"][i] != 0. else 0. for i in self.context["w1_seq"]]
 
         if(self.context["nDim"] == 2):
             # weightsVector is QuadratureWeights itself
-            weightsVector = MathsUtils.vectorPad(QuadratureWeights, self.controller.getPadSize(len(QuadratureWeights)))
+            weightsVector = MathsUtils.vectorPad(QuadratureWeights, self.context["function_utils"]["getPadSize"](len(QuadratureWeights)))
             self.context["weights2"] = weightsVector
             self.context["w2Size"] = len(self.context["weights2"])
             self.context["w2_seq"] = range(self.context["w2Size"])
 
             # all combinations of two weights, written as an 1D array
             weightsVector = [QuadratureWeights[i] * QuadratureWeights[j] for i in range(self.context["nDof"]) for j in range(self.context["nDof"])]
-            weightsVector = MathsUtils.vectorPad(weightsVector, self.controller.getPadSize(len(weightsVector)))
+            weightsVector = MathsUtils.vectorPad(weightsVector, self.context["function_utils"]["getPadSize"](len(weightsVector)))
             self.context["weights3"] = weightsVector
             self.context["w3Size"] = len(self.context["weights3"])
             self.context["w3_seq"] = range(self.context["w3Size"])
             
             # all combinations of three weights, written as an 1D array
             weightsVector = [QuadratureWeights[i] * QuadratureWeights[j] * QuadratureWeights[k] for i in range(self.context["nDof"]) for j in range(self.context["nDof"]) for k in range(self.context["nDof"])]
-            weightsVector = MathsUtils.vectorPad(weightsVector, self.controller.getPadSize(len(weightsVector)))
+            weightsVector = MathsUtils.vectorPad(weightsVector, self.context["function_utils"]["getPadSize"](len(weightsVector)))
             self.context["weights4"] = weightsVector
             self.context["w4Size"] = len(self.context["weights4"])
             self.context["w4_seq"] = range(self.context["w4Size"])
@@ -72,21 +77,21 @@ class QuadratureModel(AbstractModelBaseClass):
         elif(self.context["nDim"] == 3):
             # all combinations of two weights, written as an 1D array
             weightsVector = [QuadratureWeights[i] * QuadratureWeights[j] for i in range(self.context["nDof"]) for j in range(self.context["nDof"])]
-            weightsVector = MathsUtils.vectorPad(weightsVector, self.controller.getPadSize(len(weightsVector)))
+            weightsVector = MathsUtils.vectorPad(weightsVector, self.context["function_utils"]["getPadSize"](len(weightsVector)))
             self.context["weights2"] = weightsVector
             self.context["w2Size"] = len(self.context["weights2"])
             self.context["w2_seq"] = range(self.context["w2Size"])
 
             # all combination of three weights, written as an 1D array
             weightsVector = [QuadratureWeights[i] * QuadratureWeights[j] * QuadratureWeights[k] for i in range(self.context["nDof"]) for j in range(self.context["nDof"]) for k in range(self.context["nDof"])]
-            weightsVector = MathsUtils.vectorPad(weightsVector, self.controller.getPadSize(len(weightsVector)))
+            weightsVector = MathsUtils.vectorPad(weightsVector, self.context["function_utils"]["getPadSize"](len(weightsVector)))
             self.context["weights3"] = weightsVector
             self.context["w3Size"] = len(self.context["weights3"])
             self.context["w3_seq"] = range(self.context["w3Size"])
 
             # all combination of four weights, written as an 1D array
             weightsVector = [QuadratureWeights[i] * QuadratureWeights[j] * QuadratureWeights[k] * QuadratureWeights[l] for i in range(self.context["nDof"]) for j in range(self.context["nDof"]) for k in range(self.context["nDof"]) for l in range(self.context["nDof"])]
-            weightsVector = MathsUtils.vectorPad(weightsVector, self.controller.getPadSize(len(weightsVector)))
+            weightsVector = MathsUtils.vectorPad(weightsVector, self.context["function_utils"]["getPadSize"](len(weightsVector)))
             self.context["weights4"] = weightsVector
             self.context["w4Size"] = len(self.context["weights4"])
             self.context["w4_seq"] = range(self.context["w4Size"])
@@ -94,7 +99,7 @@ class QuadratureModel(AbstractModelBaseClass):
             print("QuadratureModel: nDim not supported")
 
         # inverse of weight3
-        self.context["iweights3"] = [1.0/self.context["weights3"][i] if self.context["weights3"][i] != 0. else 0. for i in self.context["w3_seq"]]
+        self.context["iweights3"] = [Decimal("1.0")/self.context["weights3"][i] if self.context["weights3"][i] != 0. else 0. for i in self.context["w3_seq"]]
 
         self.context["QuadratureWeights"], self.context["QuadratureNodes"] = QuadratureWeights, QuadratureNodes
         self.context["quadrature_seq"] = range(self.context["nDof"])
