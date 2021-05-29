@@ -36,6 +36,7 @@ def parseDir(dirname, ranks, threads, timestep, basename):
       filename =  dirname+"/"+basename+str(i)+"_"+str(j)+"_step_"+str(timestep)+".txt"
       print ("processing", filename)
       (its, run) = readFile(filename)
+      #print(its, run)
       accIterationsRank += its
       accTimeRank += run
 

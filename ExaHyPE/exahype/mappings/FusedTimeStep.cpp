@@ -231,7 +231,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
 #endif
 
   if ( sendOutRiemannDataInThisIteration() ) {
-     exahype::plotters::finishedPlotting();
+    exahype::plotters::finishedPlotting();
 
     if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
       // background threads
@@ -370,12 +370,12 @@ void exahype::mappings::FusedTimeStep::leaveCell(
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
 #if defined(USE_TMPI)
- // if(TMPI_IsLeadingRank()) {
+    if(TMPI_IsLeadingRank()) {
 #endif
       // this operates only on compute cells
       plotters::plotPatchIfAPlotterIsActive(solverNumber,cellInfo); // TODO(Dominic) potential for IO overlap?
 #if defined(USE_TMPI)
-  //}
+    }
 #endif
       switch ( solver->getType() ) {
         case solvers::Solver::Type::ADERDG:

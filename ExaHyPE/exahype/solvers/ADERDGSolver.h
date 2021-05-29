@@ -1251,6 +1251,7 @@ private:
       bool corruptIfActive();
       void shareSTPImmediatelyOrLater();
       bool needToCheckThisSTP(bool hasComputed);
+      bool needToPutBackOutcome();
       bool needToShare(bool hasOutcome, bool isOutcomePotCorrupt);
 
       bool handleExecution(bool isCalledOnMaster, bool& hasComputed);

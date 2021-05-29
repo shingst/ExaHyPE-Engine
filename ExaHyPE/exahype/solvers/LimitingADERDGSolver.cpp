@@ -648,16 +648,22 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
     && (exahype::reactive::OffloadingContext::getInstance().getInstance().getResilienceStrategy()
         >= exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks)
     && exahype::reactive::ResilienceTools::CheckLimitedCellsOnly) {
+
+    assert(!isSkeletonCell);
     solverPatch.setCorruptionStatus(ADERDGSolver::PotentiallyCorrupted);
     assert(isFirstTimeStepOfBatch); //something that we currently assume
     logInfo("fusedTimeStepBody", "team = "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
         <<" has corrupt patch "<<solverPatch.toString());
     logInfo("fusedTimeStepBody", "team = "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
-              <<" will check patch "<<solverPatch.toString());
+              <<" will check patch "<<solverPatch.toString()
+              <<" prediction time stamp "<<predictionTimeStamp
+              <<" prediction time step size"<<predictionTimeStepSize);
     peano::datatraversal::TaskSet(
           new LimitingADERDGSolver::CheckAndCorrectSolutionJob(*this, solverPatch, cellInfo,
               predictionTimeStamp,
               predictionTimeStepSize));
+              //solverPatch.getPreviousTimeStamp(),
+              //solverPatch.getPreviousTimeStepSize()));
     return; //early exit here, do other stuff later
   }
 

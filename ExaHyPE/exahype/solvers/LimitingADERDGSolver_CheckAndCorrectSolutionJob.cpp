@@ -43,11 +43,20 @@ bool exahype::solvers::LimitingADERDGSolver::CheckAndCorrectSolutionJob::run(boo
   DeliveryStatus status;
   ADERDGSolver::MigratablePredictionJobData *outcome = nullptr;
 
+  logInfo("run","CheckAndCorrectSolution looking for outcome time stamp= "<< _solverPatch.getTimeStamp()
+      <<" previous time step size = "<< _solverPatch.getPreviousTimeStepSize()
+      <<" time step size = "<< _solverPatch.getTimeStepSize()
+      <<" patch "<<_solverPatch.toString() );
+
   bool found = _solver._solver.get()->tryToFindAndExtractOutcome(_cellInfo._cellDescriptionsIndex, 0 /*is this always correct?*/,
-                         _predictorTimeStamp, _predictorTimeStepSize, status, &outcome);
+                         _solverPatch.getTimeStamp(), _solverPatch.getTimeStepSize(), status, &outcome);
 
   if(!found) return true; //reschedule
   else {
+    logInfo("run","CheckAndCorrectSolution found outcome time stamp= "<< _solverPatch.getTimeStamp()
+        <<" time step size = "<< _solverPatch.getTimeStepSize()
+        <<" patch "<<_solverPatch.toString() );
+
     SDCCheckResult corruption_result = checkAgainstOutcome(outcome);
     UpdateResult update_result;
     switch(corruption_result) {

@@ -22,6 +22,9 @@ int scenario_DG;
 
 tarch::logging::Log SWE::MySWESolver_ADERDG::_log( "SWE::MySWESolver_ADERDG" );
 
+#if defined USE_TMPI && defined(GenerateError)
+#include "teaMPI.h"
+#endif
 
 void SWE::MySWESolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   if (constants.isValueValidDouble( "grav" )) {
@@ -43,6 +46,19 @@ void SWE::MySWESolver_ADERDG::adjustPointSolution(const double* const x,const do
     initialData->getInitialData(x, Q); 
   }
 
+#if defined(GenerateError)
+  if (tarch::la::equals(t,0.927,0.01)
+     && tarch::la::equals(x[0],2.6319,0.01) 
+     && tarch::la::equals(x[1],5.428,0.01)
+     //2.6319 x[1]=5.42863
+#if defined USE_TMPI
+    && TMPI_IsLeadingRank()
+#endif	     
+    ) {
+    logError("adjustPointSolution", "Introducing error into solution x[0]="<<x[0]<<" x[1]="<<x[1]<<" t= "<<t);
+    Q[0]=Q[0]*1.2;
+  }
+#endif
 }
 
 void SWE::MySWESolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) {
@@ -253,6 +269,8 @@ void SWE::MySWESolver_ADERDG::riemannSolver(double* const FL,double* const FR,co
   double LR[numberOfVariables] = {0.0};
   eigenvalues(QavL, direction, LL);
   eigenvalues(QavR, direction, LR);
+
+  //std::cout<<"compute riemann "<<std::endl;
 
   // skip parameters
   std::transform(LL, LL + numberOfVariables, LL, std::abs<double>);

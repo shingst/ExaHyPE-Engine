@@ -289,6 +289,11 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     if(needToShare(true /*hasOutcome*/, outcome->_metadata._isPotSoftErrorTriggered)) {
       shareSTPImmediatelyOrLater();
     }
+    if(needToPutBackOutcome()) {
+      MigratablePredictionJobOutcomeKey key(outcome->_metadata.getCenter(), outcome->_metadata.getPredictorTimeStamp(),
+                                             outcome->_metadata.getPredictorTimeStepSize(), outcome->_metadata.getElement());
+      _solver._outcomeDatabase.insertOutcome(key, outcome, DeliveryStatus::Received);
+    }
     setFinished(); //have already checked
     return false;
   }
@@ -326,6 +331,12 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::shareSTPImmediatel
       logWarning("handleLocalExecution","Sharing corrupted outcome but soft error has not been triggered!");
     _solver.sendTaskOutcomeToOtherTeams(this);
   }
+}
+
+bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::needToPutBackOutcome() {
+  return (exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
+        >=exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks)
+      &&  exahype::reactive::ResilienceTools::CheckLimitedCellsOnly;
 }
 
 bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::needToCheckThisSTP(bool hasComputed) {
@@ -402,15 +413,15 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::executeOrCopySTPOu
   }
   else {
     if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()>=exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks) {
-      if(outcome->_metadata._isPotSoftErrorTriggered) {
+      //if(outcome->_metadata._isPotSoftErrorTriggered) {
         executeLocally();
         hasFlipped = corruptIfActive();
         hasComputed = true;
-      }
-      else {
-        copyOutcome(outcome);
-        hasComputed = false;
-      }
+      //}
+      //else {
+      //  copyOutcome(outcome);
+      //  hasComputed = false;
+       // }
     }
   }
 }
@@ -428,6 +439,10 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::executeLocally() {
   logInfo("handleLocalExecution","team "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()<<" computing STP for "
         <<to_string());
 
+#if defined FileTrace
+    auto start = std::chrono::high_resolution_clock::now();
+#endif
+
   int iterations = _solver.fusedSpaceTimePredictorVolumeIntegral(lduh,
           lQhbnd,
           lGradQhbnd,
@@ -438,6 +453,14 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::executeLocally() {
           _predictorTimeStamp,
           _predictorTimeStepSize,
           true);
+
+
+#if defined(FileTrace)
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+
+    exahype::reactive::STPStatsTracer::getInstance().writeTracingEventRunIterations(duration.count(), iterations, exahype::reactive::STPTraceKey::ADERDGOwnMigratable);
+#endif
 
   exahype::reactive::JobTableStatistics::getInstance().notifyExecutedTask();
 
@@ -1400,16 +1423,18 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
   data->_metadata.unpackContiguousBuffer();
 #endif
 
-  logInfo("receiveHandlerTaskSharing", "team "
-      <<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
-      <<" received replica job: "
-      <<data->_metadata.to_string());
 
   MigratablePredictionJobOutcomeKey key(data->_metadata.getCenter(), data->_metadata.getPredictorTimeStamp(),
                                          data->_metadata.getPredictorTimeStepSize(), data->_metadata.getElement());
+  logInfo("receiveHandlerTaskSharing", "team "
+      <<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
+      <<" received replica job: "
+      <<data->_metadata.to_string()
+      <<" throwing away = "<<(key._timestamp
+          <static_cast<exahype::solvers::ADERDGSolver*>(solver)->getMinTimeStamp()));
 
   if(key._timestamp
-      <static_cast<exahype::solvers::ADERDGSolver*>(solver)->getMinTimeStamp()) {
+      <static_cast<exahype::solvers::ADERDGSolver*>(solver)->getPreviousMinTimeStamp()) {
     exahype::reactive::JobTableStatistics::getInstance().notifyLateTask();
     delete data;
     AllocatedSTPsReceive--;
@@ -1421,9 +1446,17 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
 
     if(found && status==DeliveryStatus::Transit) {
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->_outcomeDatabase.insertOutcome(key, data2, DeliveryStatus::Received);
+      logInfo("receiveHandlerTaskSharing", "team "
+          <<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
+          <<" inserted replica job: "
+          <<data2->_metadata.to_string());
     }
     else {
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->_outcomeDatabase.insertOutcome(key, data, DeliveryStatus::Received);
+      logInfo("receiveHandlerTaskSharing", "team "
+          <<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
+          <<" inserted replica job: "
+          <<data->_metadata.to_string());
     }
     static_cast<exahype::solvers::ADERDGSolver*>(solver)->_allocatedOutcomes.push_back(key);
   }
@@ -1591,6 +1624,7 @@ std::string exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::to_
   #endif
 
   result += " time stamp = " + std::to_string(_predictorTimeStamp);
+  result += " time step = " + std::to_string(_predictorTimeStepSize);
   result += " element = " + std::to_string(_element);
   result += " origin = " + std::to_string(_originRank);
   result += " isPotSoftErrorTriggered = " + std::to_string(_isPotSoftErrorTriggered);

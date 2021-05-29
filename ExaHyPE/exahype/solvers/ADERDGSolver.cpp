@@ -461,7 +461,7 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
         if ( _estimatedTimeStepSize > _admissibleTimeStepSize ) { // rerun
           _minTimeStepSize       = FusedTimeSteppingRerunFactor * _admissibleTimeStepSize;
           _estimatedTimeStepSize = _minTimeStepSize;
-          _stabilityConditionWasViolated = true;
+          _stabilityConditionWasViolated = true; //todo: do we need to deactivate this?
         } else {
           _minTimeStepSize       = _estimatedTimeStepSize; // as we have computed the predictor with an estimate, we have to use the estimated time step size to perform the face integral
           _estimatedTimeStepSize = 0.5 * ( FusedTimeSteppingDiffusionFactor * _admissibleTimeStepSize + _estimatedTimeStepSize );
@@ -2595,7 +2595,7 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
     //                                       <<" center[2] = "<<key._center[2]
     //                                       <<" time stamp = "<<key._timestamp);
 
-    if(key._timestamp>=_minTimeStamp) {
+    if(key._timestamp>=_previousMinTimeStamp) {
       _allocatedOutcomes.push_front(key);
       logDebug("cleanUpStaleTaskOutcomes()", " breaking out of loop: time stamp of key ="<<key._timestamp)
       break;
@@ -2810,6 +2810,11 @@ bool exahype::solvers::ADERDGSolver::tryToFindAndExtractOutcome(
   tarch::la::Vector<DIMENSIONS, double> center;
   center = cellDescription.getOffset() + 0.5 * cellDescription.getSize();
 
+  logInfo("tryToFindAndExtractOutcome()", "looking for center[0] = "<<center[0]
+                                         <<" center[1] = "<<center[1]
+                                         <<" timestamp = "<<predictionTimeStamp
+                                         <<" time step = "<<predictorTimeStepSize);
+
   MigratablePredictionJobOutcomeKey key(center.data(), predictionTimeStamp, predictorTimeStepSize, element);
   bool found = _outcomeDatabase.tryFindAndExtractOutcome(key, outcome, status);
 
@@ -2819,7 +2824,7 @@ bool exahype::solvers::ADERDGSolver::tryToFindAndExtractOutcome(
     found = false;
   }
   else if(found){
-    logDebug("tryToFindAndExtractEquivalentSharedOutcome()",
+    logInfo("tryToFindAndExtractOutcome()",
         "team "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
         <<" found STP in received jobs:"
         <<(*outcome)->_metadata.to_string());

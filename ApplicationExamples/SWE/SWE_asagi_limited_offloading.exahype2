@@ -8,14 +8,14 @@
   "architecture": "hsw",
   "computational_domain": {
     "dimension": 2,
-    "time_steps": 1000,
+    "time_steps": 50,
     "offset": [
-      -2.0,
-      -2.0
+      0.0,
+      0.0
     ],
     "width": [
-      4.0,
-      4.0
+      6.0,
+      6.0
     ]
   },
   "shared_memory": {
@@ -39,7 +39,6 @@
     "offloading_CCP_steps" : 0,
     "offloading_update_temperature" : true,
     "offloading_increase_temp_threshold" : 1.0,
-    "task_sharing" : "task_sharing_resilience_checks",
     "timeout": 12000,
     "load_balancing_type": "static",
     "buffer_size"            : 1600,    
@@ -48,13 +47,14 @@
     "ranks_per_node"         : 1   
   },
   "resilience" : {
-    "generate_soft_errors" : "migratable_stp_tasks_overwrite",
-    "trigger_mechanism" : "trigger_limited"
+    "generate_soft_errors" : "no",
+    "check_mechanism" : "check_limited_after_update",
+    "task_sharing" : "task_sharing_resilience_checks"
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",
-    "fuse_algorithmic_steps_rerun_factor": 0.99,
-    "fuse_algorithmic_steps_diffusion_factor": 0.99,
+    "fuse_algorithmic_steps_rerun_factor": 1,
+    "fuse_algorithmic_steps_diffusion_factor": 1,
     "spawn_predictor_as_background_thread": true,
     "spawn_amr_background_threads": false,
     "disable_vertex_exchange_in_time_steps": true,
@@ -86,8 +86,8 @@
       "point_sources": 0,
       "limiter": {
         "dmp_observables": 4,
-        "dmp_relaxation_parameter": 100000000.0,
-        "dmp_difference_scaling": 100000000.0,
+        "dmp_relaxation_parameter": 101,
+        "dmp_difference_scaling": 101,
         "implementation": "generic"
       },
       "fv_kernel": {
@@ -121,14 +121,14 @@
       "parameters": {
         "grav": 9.81,
         "epsilon": 0.0001,
-        "scenario": 11
+        "scenario": 5
       },
-      "_plotters": [
+      "plotters": [
         {
           "type": "vtu::Cartesian::cells::limited::ascii",
           "name": "ConservedWriter",
           "time": 0.0,
-          "repeat":0.1,
+          "repeat":0.01,
           "output": "results/conserved",
           "variables": 4
         },
