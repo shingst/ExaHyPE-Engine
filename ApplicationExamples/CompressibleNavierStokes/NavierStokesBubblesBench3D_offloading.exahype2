@@ -7,7 +7,7 @@
   },
   "computational_domain": {
     "dimension": 3,
-    "time_steps": 1000,
+    "end_time": 400,
     "offset": [
       0.0,
       0.0,
@@ -27,7 +27,7 @@
     "autotuning_strategy": "dummy"
   },
  "distributed_memory": {
-    "offloading_lb_strategy": "aggressiveHybrid",
+    "offloading_lb_strategy": "none",
     "offloading_input_file" : "",
     "offloading_progress" : "none",
     "offloading_CCP_temperature" : 0,
@@ -65,8 +65,8 @@
     {
       "type": "ADER-DG",
       "name": "NavierStokesSolver_ADERDG",
-      "order": 5,
-      "maximum_mesh_size": 20,
+      "order": 3,
+      "maximum_mesh_size": 40,
       "maximum_mesh_depth": 0,
       "time_stepping": "global",
       "halo_cells": 0,
@@ -113,7 +113,7 @@
       "parameters": {
         "use-gravity": true,
         "use-background-state": true,
-        "viscosity": 0.01,
+        "viscosity": 0.005,
         "scenario": "cosine-bubble",
         "use-amr": false,
         "use-tv-amr": true,
@@ -122,13 +122,13 @@
         "amr-factor-refine": 2.5,
         "amr-factor-erase": -1.5
       },
-      "_plotters": [
+      "plotters": [
         {
           "type": "vtu::Cartesian::vertices::ascii",
           "name": "Plotter",
           "time": 0.0,
           "repeat": 10.0,
-          "output": "/hppfs/work/pr83no/di57zoh3/NS_output_offloading_o3/solution_cartesian",
+          "output": "/hppfs/work/pr83no/di57zoh3/NS_output_nooffloading_o3_new/solution_cartesian",
           "variables": 6
         },
         {
@@ -136,7 +136,7 @@
           "name": "Plotter",
           "time": 0.0,
           "repeat": 10.0,
-          "output": "/hppfs/work/pr83no/di57zoh3/NS_output_offloading_o3/solution",
+          "output": "/hppfs/work/pr83no/di57zoh3/NS_output_nooffloading_o3_new/solution",
           "variables": 6
         }
       ]
