@@ -63,7 +63,7 @@ bool exahype::solvers::LimitingADERDGSolver::CheckAndCorrectSolutionJob::run(boo
       case SDCCheckResult::NoCorruption: //run limiter
 
         update_result._timeStepSize    = _solver.startNewTimeStep(_solverPatch,_cellInfo,true /*isFirstTimeStepOfBatch*/);
-        update_result._meshUpdateEvent = _solver.updateRefinementStatusAfterSolutionUpdate(_solverPatch,_cellInfo,true /*troubled*/);
+        update_result._meshUpdateEvent = _solver.updateRefinementStatusAfterSolutionUpdate(_solverPatch,_cellInfo,true /*troubled*/, false);
         _solver.reduce(_solverPatch,_cellInfo,update_result);
 
         _solverPatch.setHasCompletedLastStep(true);
@@ -74,7 +74,7 @@ bool exahype::solvers::LimitingADERDGSolver::CheckAndCorrectSolutionJob::run(boo
         exahype::reactive::ResilienceTools::getInstance().setCorruptionDetected(true);
 
         update_result._timeStepSize    = _solver.startNewTimeStep(_solverPatch,_cellInfo,true /*isFirstTimeStepOfBatch*/);
-        update_result._meshUpdateEvent = _solver.updateRefinementStatusAfterSolutionUpdate(_solverPatch,_cellInfo,true /*troubled*/);
+        update_result._meshUpdateEvent = _solver.updateRefinementStatusAfterSolutionUpdate(_solverPatch,_cellInfo,true /*troubled*/, false);
         _solver.reduce(_solverPatch,_cellInfo,update_result);
 
         _solverPatch.setHasCompletedLastStep(true);
@@ -90,12 +90,12 @@ bool exahype::solvers::LimitingADERDGSolver::CheckAndCorrectSolutionJob::run(boo
               _solverPatch,
               _predictorTimeStamp,
               _predictorTimeStepSize,
-              false/*is uncompressed*/,true,true/*addVolumeIntegralResultToUpdate*/);
+              false/*is uncompressed*/,true,true/*addVolumeIntegralResultToUpdate*/);  //sets has completed!
         }
         else {
           logError("run()","Correction is not activated, so we let the limiter do the job.");
           update_result._timeStepSize    = _solver.startNewTimeStep(_solverPatch,_cellInfo,true /*isFirstTimeStepOfBatch*/);
-          update_result._meshUpdateEvent = _solver.updateRefinementStatusAfterSolutionUpdate(_solverPatch,_cellInfo,true /*troubled*/);
+          update_result._meshUpdateEvent = _solver.updateRefinementStatusAfterSolutionUpdate(_solverPatch,_cellInfo,true /*troubled*/, false);
           _solver.reduce(_solverPatch,_cellInfo,update_result);
 
           _solverPatch.setHasCompletedLastStep(true);
@@ -160,7 +160,9 @@ void exahype::solvers::LimitingADERDGSolver::CheckAndCorrectSolutionJob::correct
 
   UpdateResult result;
   result._timeStepSize    = _solver.startNewTimeStep(_solverPatch,_cellInfo,true /*isFirstTimeStepOfBatch*/);
-  result._meshUpdateEvent = _solver.updateRefinementStatusAfterSolutionUpdate(_solverPatch,_cellInfo,false /*troubled*/);
+  result._meshUpdateEvent = _solver.updateRefinementStatusAfterSolutionUpdate(_solverPatch,_cellInfo,false /*troubled*/, false);
+
+  logError("correctWithOutcomeAndDeleteLimiterStatus()","New time step size ="<<result._timeStepSize);
 
   _solver.reduce(_solverPatch,_cellInfo,result);
 

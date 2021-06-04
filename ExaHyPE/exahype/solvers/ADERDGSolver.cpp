@@ -21,6 +21,7 @@
 #include "exahype/reactive/OffloadingProgressService.h"
 #include "exahype/reactive/OffloadingProfiler.h"
 #include "exahype/reactive/JobTableStatistics.h"
+#include "exahype/reactive/TimeStampAndLimiterTeamHistory.h"
 #include "peano/utils/UserInterface.h"
 
 #include "exahype/Cell.h"
@@ -449,6 +450,11 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
     _previousMinTimeStepSize  = _minTimeStepSize;
     _previousMinTimeStamp     = _minTimeStamp;
   }
+
+  exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().trackTimeStepAndLimiterActive(exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank(),
+                                                    _minTimeStamp, _minTimeStepSize, false, _estimatedTimeStepSize);
+
+
   _minTimeStamp += _minTimeStepSize;
 
   _stabilityConditionWasViolated = false;
@@ -462,6 +468,7 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
           _minTimeStepSize       = FusedTimeSteppingRerunFactor * _admissibleTimeStepSize;
           _estimatedTimeStepSize = _minTimeStepSize;
           _stabilityConditionWasViolated = true; //todo: do we need to deactivate this?
+          logInfo("wrapUpTimeStep","rerun with "<<std::setprecision(30)<<_minTimeStepSize<<" at "<<_minTimeStamp);
         } else {
           _minTimeStepSize       = _estimatedTimeStepSize; // as we have computed the predictor with an estimate, we have to use the estimated time step size to perform the face integral
           _estimatedTimeStepSize = 0.5 * ( FusedTimeSteppingDiffusionFactor * _admissibleTimeStepSize + _estimatedTimeStepSize );
@@ -489,6 +496,23 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
     cleanUpStaleTaskOutcomes();
   }
 #endif
+
+  if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()>=exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks) {
+    bool isConsistent = exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().checkConsistency();
+    if(!isConsistent) {
+      logError("wrapUpTimeStep","team="<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()<<": Time stamps or limiter statuses are inconsistent between teams. We must have a soft error on at least one team but not sure on which one.");
+      exahype::reactive::ResilienceTools::getInstance().setCorruptionDetected(true);
+      //MPI_Abort(MPI_COMM_WORLD, -1);
+    }
+  }
+
+  if(getMeshUpdateEvent()==MeshUpdateEvent::RollbackToTeamSolution) {
+    logError("wrapUpTimeStep","Limiting solver needs to rollback to team solution of previous consistent time stamp");
+    exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().getLastConsistentTimeStepData(_minTimeStamp, _minTimeStepSize,_estimatedTimeStepSize);
+    //_estimatedTimeStepSize = _minTimeStepSize;
+    logError("wrapUpTimeStep","Trying to recover DG solution from other team next timeStamp="<<_minTimeStamp<<" time step size = "<<_minTimeStepSize);
+    exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().resetMyTeamToLastConsistentTimeStep();
+  }
 }
 
 void exahype::solvers::ADERDGSolver::updateTimeStepSize() {
@@ -2579,6 +2603,9 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
                                                                                             +exahype::reactive::RequestManager::getInstance().getNumberOfOutstandingRequests(exahype::reactive::RequestType::receiveOutcome)
                                                                                                       );
 
+  double lastconsistentTimeStamp, lastconsistentTimeStepSize, lastconsistentEstimatedSize;
+  exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().getLastConsistentTimeStepData(lastconsistentTimeStamp, lastconsistentTimeStepSize, lastconsistentEstimatedSize);
+
   while( (i< unsafe_size || isFinal) && gotOne) {
     MigratablePredictionJobOutcomeKey key;
     gotOne = _allocatedOutcomes.try_pop_front(&key);
@@ -2595,7 +2622,8 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
     //                                       <<" center[2] = "<<key._center[2]
     //                                       <<" time stamp = "<<key._timestamp);
 
-    if(key._timestamp>=_previousMinTimeStamp) {
+    //if(key._timestamp>=_previousMinTimeStamp) {
+    if(key._timestamp>=lastconsistentTimeStamp) {
       _allocatedOutcomes.push_front(key);
       logDebug("cleanUpStaleTaskOutcomes()", " breaking out of loop: time stamp of key ="<<key._timestamp)
       break;
@@ -2662,12 +2690,6 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
     int interCommRank = exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank();
     MPI_Comm teamInterComm = exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamCommunicatorData();
 
-/*    OffloadEntry entry = {-1,
-                          job->_cellDescriptionsIndex,
-                          job->_element,
-                          job->_predictorTimeStamp,
-                          job->_predictorTimeStepSize};*/
-
     auto& cellDescription = getCellDescription(job->_cellDescriptionsIndex, job->_element);
     double *luh   = static_cast<double*>(cellDescription.getSolution());
     double *lduh   = static_cast<double*>(cellDescription.getUpdate());
@@ -2696,9 +2718,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
                                                          <<metadata->to_string()
                                                          <<" time stamp = "<<job->_predictorTimeStamp
                                                          <<" to team "<<i);
-#if defined(ResilienceHealing)
-#error "Not implemented yet"
-#else
+
         hasSent |= mpiSendMigratablePredictionJobOutcomeOffload(&lduh[0],
                                            &lQhbnd[0],
                                            &lFhbnd[0],
@@ -2707,7 +2727,6 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
                                            tag,
                                            teamInterComm,
                                            metadata);
-#endif
         j++;
       } 
     }
@@ -2810,10 +2829,10 @@ bool exahype::solvers::ADERDGSolver::tryToFindAndExtractOutcome(
   tarch::la::Vector<DIMENSIONS, double> center;
   center = cellDescription.getOffset() + 0.5 * cellDescription.getSize();
 
-  logInfo("tryToFindAndExtractOutcome()", "looking for center[0] = "<<center[0]
-                                         <<" center[1] = "<<center[1]
-                                         <<" timestamp = "<<predictionTimeStamp
-                                         <<" time step = "<<predictorTimeStepSize);
+  //logInfo("tryToFindAndExtractOutcome()", "looking for center[0] = "<<center[0]
+  //                                       <<" center[1] = "<<center[1]
+  //                                       <<" timestamp = "<<predictionTimeStamp
+  //                                       <<" time step = "<<predictorTimeStepSize);
 
   MigratablePredictionJobOutcomeKey key(center.data(), predictionTimeStamp, predictorTimeStepSize, element);
   bool found = _outcomeDatabase.tryFindAndExtractOutcome(key, outcome, status);
@@ -2859,6 +2878,21 @@ void exahype::solvers::ADERDGSolver::storePendingOutcomeToBeShared(MigratablePre
   //double *metadata = new double[2*DIMENSIONS+2];
   job->packMetaData(&data->_metadata);
 
+  //may happen with predictor re-run -> replace old data
+  tbb::concurrent_hash_map<std::pair<int,int>, MigratablePredictionJobData*>::accessor accessor;
+  bool found = _pendingOutcomesToBeShared.find(accessor, std::make_pair(job->_cellDescriptionsIndex,job->_element));
+  //assert(!found);
+  if(found) {
+      MigratablePredictionJobData *data2;
+      data2 = accessor->second;
+      delete data2;
+      assertion(data2!=nullptr);
+      _pendingOutcomesToBeShared.erase(accessor);
+      accessor.release();
+      logInfo("storePendingOutcomeToBeShared", "replacing cellDesc ="<<job->_cellDescriptionsIndex
+                                                <<" time step size "<<std::setprecision(30)<<job->_predictorTimeStepSize);
+  }
+
   _pendingOutcomesToBeShared.insert(std::make_pair(std::make_pair(job->_cellDescriptionsIndex,job->_element), data));
 }
 
@@ -2880,7 +2914,7 @@ void exahype::solvers::ADERDGSolver::releaseDummyOutcomeAndShare(int cellDescrip
   logInfo("releaseDummyOutcomeAndShare","releasing initial dummy outcome");
 
   //set trigger -> need to reset limiter trigger, might wanna pull this out
-  logInfo("releaseDummyOutcomeAndShare", " celldesc ="<<cellDescriptionsIndex<<" isPotCorrupted "<<(cellDescription.getCorruptionStatus()==PotentiallyCorrupted)<<" time stamp "<<timestamp<<" time step "<<timestep);
+  logInfo("releaseDummyOutcomeAndShare", " celldesc ="<<cellDescriptionsIndex<<" isPotCorrupted "<<(cellDescription.getCorruptionStatus()==PotentiallyCorrupted)<<" time stamp "<<timestamp<<std::setprecision(30)<<" time step "<<timestep);
 
   tarch::la::Vector<DIMENSIONS, double> center;
   center = cellDescription.getOffset() + 0.5 * cellDescription.getSize();
@@ -2961,7 +2995,8 @@ void exahype::solvers::ADERDGSolver::releasePendingOutcomeAndShare(int cellDescr
     logInfo("releasePendingOutcomeAndShare", "team = "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
         <<" releasing cellDescriptionsIndex = "<<cellDescriptionsIndex<<" "<<cellDescription.toString())
 
-    logInfo("releasePendingOutcomeAndShare", " celldesc ="<<cellDescriptionsIndex<<" isPotentiallyCorrupted "<<(cellDescription.getCorruptionStatus()==PotentiallyCorrupted));
+    logInfo("releasePendingOutcomeAndShare", " celldesc ="<<cellDescriptionsIndex<<" isPotentiallyCorrupted "<<(cellDescription.getCorruptionStatus()==PotentiallyCorrupted)
+                                              <<" timestepsize "<<std::setprecision(30)<<data->_metadata._predictorTimeStepSize);
     if(exahype::reactive::ResilienceTools::CheckLimitedCellsOnly)
       data->_metadata._isPotSoftErrorTriggered = (cellDescription.getCorruptionStatus()==PotentiallyCorrupted);
 
@@ -2991,7 +3026,8 @@ void exahype::solvers::ADERDGSolver::releasePendingOutcomeAndShare(int cellDescr
         logInfo("releasePendingOutcomeAndShare"," team "<< interCommRank
                                                  <<" send replica job: "
                                                  << data->_metadata.to_string()
-                                                 <<" to team "<<i);
+                                                 <<" to team "<<i
+                                                 <<" timestepsize "<<std::setprecision(30)<<data->_metadata._predictorTimeStepSize);
         mpiIsendMigratablePredictionJobOutcomeSolution(
                                     &(data->_luh[0]),
                                     &(data->_lduh[0]),

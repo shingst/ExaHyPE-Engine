@@ -323,7 +323,7 @@ class Controller:
         if context["useDistributedMem"]:
             context["offloading"]  = self.spec["distributed_memory"]["offloading_lb_strategy"]
             context["offloadingProgress"] = self.spec["distributed_memory"]["offloading_progress"]
-            context["tasksharingMode"] = self.spec["resilience"]["task_sharing"]
+            context["useTasksharing"] = self.spec["resilience"]["task_sharing"]!="no"
             context["useLocalRecompute"] = self.spec["distributed_memory"]["offloading_local_recompute"]
         else:
             context["offloading"] = "none"

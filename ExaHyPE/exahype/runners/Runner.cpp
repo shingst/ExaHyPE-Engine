@@ -1984,22 +1984,29 @@ void exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps(
     repository.iterate( exahype::solvers::Solver::PredictionSweeps*numberOfStepsToRun,false/*Always disable during batching*/ );
   }
 
-  if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {
-    logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","local recomputation requested by at least one solver");
-  }
-  if (exahype::solvers::Solver::oneSolverRequestedMeshRefinement()) {
-    logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","mesh update requested by at least one solver");
-  }
+  if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedRollbackToTeamSolution())
+    logError("runTimeStepsWithFusedAlgorithmicSteps"," doing rollback to team solution in next time step");
 
-  if (exahype::solvers::Solver::oneSolverRequestedMeshRefinement() ||
-      exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {
-    updateMeshOrLimiterDomain(repository,true);
-  }
+  if (!exahype::solvers::LimitingADERDGSolver::oneSolverRequestedRollbackToTeamSolution()) {
 
-  if (exahype::solvers::Solver::oneSolverViolatedStabilityCondition()) {
-    logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)", "\t\t recompute space-time predictor");
-    repository.switchToPredictionRerun();
-    repository.iterate( exahype::solvers::Solver::PredictionSweeps, communicatePeanoVertices );
+    if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {
+      logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","local recomputation requested by at least one solver");
+    }
+    if (exahype::solvers::Solver::oneSolverRequestedMeshRefinement()) {
+      logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","mesh update requested by at least one solver");
+    }
+
+    if (exahype::solvers::Solver::oneSolverRequestedMeshRefinement() ||
+        exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {
+      updateMeshOrLimiterDomain(repository,true);
+    }
+
+    if (exahype::solvers::Solver::oneSolverViolatedStabilityCondition()) {
+      logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)", "\t\t recompute space-time predictor");
+      repository.switchToPredictionRerun();
+      repository.iterate( exahype::solvers::Solver::PredictionSweeps, communicatePeanoVertices );
+    }
+
   }
 
   updateStatistics();

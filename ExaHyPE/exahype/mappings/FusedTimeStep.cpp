@@ -38,6 +38,8 @@
 #include "exahype/reactive/NoiseGenerator.h"
 #include "exahype/reactive/STPStatsTracer.h"
 
+#include "exahype/reactive/TimeStampAndLimiterTeamHistory.h"
+
 #ifdef USE_ITAC
 #include "VT.h"
 #endif
@@ -246,6 +248,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
     for (auto* solver : solvers::RegisteredSolvers) {
       solver->wrapUpTimeStep(endOfFirstFusedTimeStepInBatch,state.isLastIterationOfBatchOrNoBatch());
     }
+    exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().printHistory();
    // #if defined(TMPI_HEARTBEATS) && defined(USE_TMPI)
    //  MPI_Sendrecv(MPI_IN_PLACE, 0, MPI_BYTE, MPI_PROC_NULL, -1, MPI_IN_PLACE, 0, MPI_BYTE, MPI_PROC_NULL, 0, MPI_COMM_SELF, MPI_STATUS_IGNORE);
    // #endif

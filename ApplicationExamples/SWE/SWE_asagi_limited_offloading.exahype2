@@ -49,7 +49,7 @@
   "resilience" : {
     "generate_soft_errors" : "no",
     "check_mechanism" : "check_limited_after_update",
-    "task_sharing" : "task_sharing_resilience_checks"
+    "task_sharing" : "task_sharing_resilience_correction"
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",
@@ -86,8 +86,8 @@
       "point_sources": 0,
       "limiter": {
         "dmp_observables": 4,
-        "dmp_relaxation_parameter": 101,
-        "dmp_difference_scaling": 101,
+        "dmp_relaxation_parameter": 100,
+        "dmp_difference_scaling": 100,
         "implementation": "generic"
       },
       "fv_kernel": {

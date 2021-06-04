@@ -56,7 +56,7 @@ void SWE::MySWESolver_ADERDG::adjustPointSolution(const double* const x,const do
 #endif	     
     ) {
     logError("adjustPointSolution", "Introducing error into solution x[0]="<<x[0]<<" x[1]="<<x[1]<<" t= "<<t);
-    Q[0]=Q[0]*1.2;
+    Q[0]=Q[0]*10;
   }
 #endif
 }

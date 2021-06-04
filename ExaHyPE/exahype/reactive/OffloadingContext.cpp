@@ -181,7 +181,7 @@ void exahype::reactive::OffloadingContext::setTMPINumTeams(int nteams) {
   _numTeams = nteams;
 }
 
-int exahype::reactive::OffloadingContext::getTMPINumTeams() {
+unsigned int exahype::reactive::OffloadingContext::getTMPINumTeams() {
   return _numTeams;
 }
 

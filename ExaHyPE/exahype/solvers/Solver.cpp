@@ -593,6 +593,14 @@ bool exahype::solvers::Solver::allSolversPerformOnlyUniformRefinement() {
   return result;
 }
 
+bool exahype::solvers::Solver::oneSolverRequestedRollbackToTeamSolution() {
+  bool result = false;
+  for (auto* solver : exahype::solvers::RegisteredSolvers) {
+    result |= solver->getMeshUpdateEvent()==MeshUpdateEvent::RollbackToTeamSolution;
+  }
+  return result;
+}
+
 bool exahype::solvers::Solver::oneSolverRequestedMeshRefinement() {
   bool result = false;
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
@@ -696,6 +704,11 @@ exahype::solvers::Solver::MeshUpdateEvent exahype::solvers::Solver::convertToMes
 exahype::solvers::Solver::MeshUpdateEvent exahype::solvers::Solver::mergeMeshUpdateEvents(
     const MeshUpdateEvent meshUpdateEvent1,
     const MeshUpdateEvent meshUpdateEvent2) {
+  if(meshUpdateEvent1==MeshUpdateEvent::RollbackToTeamSolution
+    || meshUpdateEvent2==MeshUpdateEvent::RollbackToTeamSolution) {
+    return MeshUpdateEvent::RollbackToTeamSolution;
+  }
+
   return static_cast<MeshUpdateEvent>(
       std::max( static_cast<int>(meshUpdateEvent1), static_cast<int>(meshUpdateEvent2) )
   );

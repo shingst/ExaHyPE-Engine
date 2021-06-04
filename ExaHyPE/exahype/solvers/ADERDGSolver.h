@@ -43,17 +43,9 @@
 #define NUM_REQUESTS_MIGRATABLE_COMM 1
 
 #if defined(OffloadingGradQhbnd)
-#if defined(ResilienceHealing)
 #define NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME 5
 #else
-#define NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME 5
-#endif
-#else
-#if defined(ResilienceHealing)
 #define NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME 4
-#else
-#define NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME 4
-#endif
 #endif
 
 //some routines need to make progress to poll the unexpected message queue, determines how many loop iterations are done

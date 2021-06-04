@@ -859,7 +859,9 @@ public:
     /**
      * The initial mesh will be created.
      */
-    InitialRefinementRequested = 3
+    InitialRefinementRequested = 3,
+
+    RollbackToTeamSolution = 4
   };
 
 
@@ -1063,6 +1065,7 @@ public:
    */
   static bool allSolversPerformOnlyUniformRefinement();
 
+  static bool oneSolverRequestedRollbackToTeamSolution();
 
   /**
    * Loop over the solver registry and check if one

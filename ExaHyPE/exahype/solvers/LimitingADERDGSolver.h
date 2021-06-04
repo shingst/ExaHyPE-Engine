@@ -288,7 +288,8 @@ private:
   MeshUpdateEvent updateRefinementStatusAfterSolutionUpdate(
       SolverPatch& solverPatch,
       CellInfo&    cellInfo,
-      const bool   isTroubled);
+      const bool   isTroubled,
+      const bool needToRollbackToTeamSolution);
 
   //todo: docu
   void updateCorruptionStatusAfterSolutionUpdate(
@@ -739,6 +740,12 @@ private:
 
       CheckAndCorrectSolutionJob(const CheckAndCorrectSolutionJob& stp) = delete;
   };
+
+  bool _healingActivated;
+
+  void activateHealing();
+  bool isHealingActivated() const;
+  void deactivateHealing();
 
 public:
   /**

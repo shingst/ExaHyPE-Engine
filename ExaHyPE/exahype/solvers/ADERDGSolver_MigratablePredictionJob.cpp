@@ -16,6 +16,7 @@
 #include "exahype/reactive/MemoryMonitor.h"
 #include "exahype/reactive/NoiseGenerator.h"
 #include "exahype/reactive/ResilienceTools.h"
+#include "exahype/reactive/TimeStampAndLimiterTeamHistory.h"
 #include "exahype/reactive/RequestManager.h"
 
 #include "tarch/multicore/Core.h"
@@ -391,7 +392,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::copyOutcome(Migrat
   double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
 
   if(outcome->_metadata._isCorrupted)
-    logError("handleLocalExecution","Error: we're using a corrupted outcome!"); assertion(false);
+    logError("copyOutcome","Error: we're using a corrupted outcome!"); assertion(false);
 
   assertion(outcome!=nullptr);
   std::memcpy(lduh, &outcome->_lduh[0], outcome->_lduh.size() * sizeof(double));
@@ -400,7 +401,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::copyOutcome(Migrat
 #if OffloadingGradQhbnd
   std::memcpy(lGradQhbnd, &outcome->_lGradQhbnd[0], outcome->_lGradQhbnd.size() * sizeof(double));
 #endif
-  logInfo("handleLocalExecution","team "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()<<" copied STP outcome for "
+  logInfo("copyOutcome","team "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()<<" copied STP outcome for "
         <<to_string());
 
   exahype::reactive::JobTableStatistics::getInstance().notifySavedTask();
@@ -437,7 +438,8 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::executeLocally() {
   double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
 
   logInfo("handleLocalExecution","team "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()<<" computing STP for "
-        <<to_string());
+        <<to_string()
+        <<std::setprecision(30)<<" time step size "<<_predictorTimeStepSize);
 
 #if defined FileTrace
     auto start = std::chrono::high_resolution_clock::now();
@@ -453,7 +455,6 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::executeLocally() {
           _predictorTimeStamp,
           _predictorTimeStepSize,
           true);
-
 
 #if defined(FileTrace)
     auto stop = std::chrono::high_resolution_clock::now();
@@ -1115,6 +1116,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::matches(Migratable
   return equal;
 }
 
+/*
 bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::checkAgainstOutcomesAndFindSaneOne(MigratablePredictionJobData **data, int outcomes, int &idxSane) {
 
   bool equal = true;
@@ -1155,7 +1157,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::checkAgainstOutcom
   }
 
   return equal;
-}
+}*/
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendHandler(
     exahype::solvers::Solver* solver, int tag, int remoteRank) {
@@ -1407,13 +1409,13 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
 }
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTaskSharing(
-    exahype::solvers::Solver* solver, int tag, int remoteRank) {
+    exahype::solvers::Solver* solver, int tag, int team) {
   logDebug("receiveHandlerTaskSharing","successful receive request");
 
   tbb::concurrent_hash_map<std::pair<int, int>, MigratablePredictionJobData*>::accessor a_tagRankToData;
   MigratablePredictionJobData *data;
   static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagRankToReplicaData.find(
-      a_tagRankToData, std::make_pair(remoteRank, tag));
+      a_tagRankToData, std::make_pair(team, tag));
   data = a_tagRankToData->second;
   static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagRankToReplicaData.erase(
       a_tagRankToData);
@@ -1430,11 +1432,17 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
       <<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
       <<" received replica job: "
       <<data->_metadata.to_string()
+      <<" time step size "<<std::setprecision(30)<< key._timestepSize
       <<" throwing away = "<<(key._timestamp
           <static_cast<exahype::solvers::ADERDGSolver*>(solver)->getMinTimeStamp()));
 
-  if(key._timestamp
-      <static_cast<exahype::solvers::ADERDGSolver*>(solver)->getPreviousMinTimeStamp()) {
+  exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().trackTimeStepAndLimiterActive(team, key._timestamp, key._timestepSize, data->_metadata._isPotSoftErrorTriggered);
+  double lastconsistentTimeStamp, lastconsistentTimeStepSize, lastconsistentEstimatedTimeStepSize;
+  exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().getLastConsistentTimeStepData(lastconsistentTimeStamp, lastconsistentTimeStepSize, lastconsistentEstimatedTimeStepSize);
+
+  if(key._timestamp<lastconsistentTimeStamp)
+   //   <static_cast<exahype::solvers::ADERDGSolver*>(solver)->getPreviousMinTimeStamp()) {
+  {
     exahype::reactive::JobTableStatistics::getInstance().notifyLateTask();
     delete data;
     AllocatedSTPsReceive--;

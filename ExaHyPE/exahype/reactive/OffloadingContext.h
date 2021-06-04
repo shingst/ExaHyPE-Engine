@@ -140,7 +140,7 @@ class exahype::reactive::OffloadingContext {
     MPI_Comm getTMPIInterTeamCommunicatorData();
 
     void setTMPINumTeams(int team);
-    int getTMPINumTeams();
+    unsigned int getTMPINumTeams();
 
     void setTMPIInterTeamRank(int interTeamRank);
     int getTMPIInterTeamRank();
