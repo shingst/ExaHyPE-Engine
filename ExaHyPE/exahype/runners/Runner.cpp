@@ -305,7 +305,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
         }
 
 #if !defined(USE_TMPI)
-        logError("initDistributedMemoryConfiguration()", "You must link against teaMPI in order to use resilience futures (USE_TMPI must be set)! Aborting, please re-run toolkit and recompile...");
+        logError("initDistributedMemoryConfiguration()", "You must link against teaMPI in order to use resilience features (USE_TMPI must be set)! Aborting, please re-run toolkit and recompile...");
         _parser.invalidate();
 #endif
 #if !defined(SharedTBB)

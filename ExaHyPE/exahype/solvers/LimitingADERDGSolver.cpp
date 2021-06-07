@@ -745,7 +745,11 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
     const int element = cellInfo.indexOfADERDGCellDescription(solverPatch.getSolverNumber());
     logDebug("fusedTimeStepBody", "spawning for "<< cellInfo._cellDescriptionsIndex<< " predictionTimeStamp "<<predictionTimeStamp<<" predictionTimeStepSize "<<predictionTimeStepSize);
     //skeleton cells are not considered for offloading
-    if (isSkeletonCell || !exahype::reactive::OffloadingContext::getInstance().isEnabled()) {
+    if (
+        (isSkeletonCell
+          && exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
+             < exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks)
+      || !exahype::reactive::OffloadingContext::getInstance().isEnabled()) {
       peano::datatraversal::TaskSet(
           new ADERDGSolver::PredictionJob(
               *_solver.get(),solverPatch/*the reductions are delegated to _solver anyway*/,
@@ -764,7 +768,8 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
           cellInfo._cellDescriptionsIndex, element,
           predictionTimeStamp,
           predictionTimeStepSize,
-          isTroubled);
+          isTroubled,
+          isSkeletonCell);
       logInfo("fusedTimeStepBody", "spawning migratable job for "<< cellInfo._cellDescriptionsIndex<< " predictionTimeStamp "<<predictionTimeStamp<<" predictionTimeStepSize "<<predictionTimeStepSize
           << " troubled "<<isTroubled<<" previous stamp "<<_solver.get()->getMinTimeStamp());
 

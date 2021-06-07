@@ -284,7 +284,6 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
      _lastReceiveReplicaTag(tarch::parallel::Node::getInstance().getNumberOfNodes()
                             *exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams()),
      _outcomeDatabase(),
-     _healingModeActive(false),
      _allocatedOutcomes(),
      _pendingOutcomesToBeShared()
 #endif
@@ -847,7 +846,12 @@ void exahype::solvers::ADERDGSolver::fusedTimeStepBody(
   ) {
     const int element = cellInfo.indexOfADERDGCellDescription(cellDescription.getSolverNumber());
     //skeleton cells are not considered for offloading
-    if (isSkeletonCell || !exahype::reactive::OffloadingContext::getInstance().isEnabled()) {
+    if (
+        (isSkeletonCell
+          &&
+        exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
+          < exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks)
+      || !exahype::reactive::OffloadingContext::getInstance().isEnabled()) {
       peano::datatraversal::TaskSet( new PredictionJob(
         *this, cellDescription, cellInfo._cellDescriptionsIndex, element,
         predictionTimeStamp,  // corrector time step data is correct; see docu
@@ -863,7 +867,7 @@ void exahype::solvers::ADERDGSolver::fusedTimeStepBody(
       MigratablePredictionJob *migratablePredictionJob = new MigratablePredictionJob(*this,
           cellInfo._cellDescriptionsIndex, element,
           predictionTimeStamp,
-          predictionTimeStepSize, false);
+          predictionTimeStepSize, false, isSkeletonCell);
       submitOrSendMigratablePredictionJob(migratablePredictionJob);
 #else
       peano::datatraversal::TaskSet( new PredictionJob(
@@ -1120,8 +1124,12 @@ void exahype::solvers::ADERDGSolver::predictionAndVolumeIntegral(
     const bool mustBeDoneImmediately = isSkeletonCell && PredictionSweeps==1;
 
     if ( SpawnPredictionAsBackgroundJob && !mustBeDoneImmediately ) {
-      //skeleton cells are not considered for offloading
-      if (isSkeletonCell || !exahype::reactive::OffloadingContext::getInstance().isEnabled()) {
+      //skeleton cells are not considered for offloading but for task sharing with resilience checks or correction
+      if (
+          (isSkeletonCell
+          && exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
+             < exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks)
+       || !exahype::reactive::OffloadingContext::getInstance().isEnabled()) {
         peano::datatraversal::TaskSet( new PredictionJob(
               *this, cellDescription, cellInfo._cellDescriptionsIndex, element,
               predictorTimeStamp,predictorTimeStepSize,
@@ -1136,7 +1144,8 @@ void exahype::solvers::ADERDGSolver::predictionAndVolumeIntegral(
           cellInfo._cellDescriptionsIndex, element,
           predictorTimeStamp,
           predictorTimeStepSize,
-          false);
+          false,
+          isSkeletonCell);
         submitOrSendMigratablePredictionJob(migratablePredictionJob);
         exahype::reactive::OffloadingProfiler::getInstance().notifySpawnedTask();
 #else
@@ -2532,19 +2541,20 @@ void exahype::solvers::ADERDGSolver::toString (std::ostream& out) const {
 // DISTRIBUTED OFFLOADING
 ///////////////////////////////////
 #if defined(SharedTBB)
-int exahype::solvers::ADERDGSolver::getTaskPriorityLocalStealableJob(int cellDescriptionsIndex, int element, double timeStamp){
+int exahype::solvers::ADERDGSolver::getTaskPriorityLocalMigratableJob(int cellDescriptionsIndex, int element, double timeStamp, bool isSkeleton){
   if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
-     !=exahype::reactive::OffloadingContext::ResilienceStrategy::None) {
+     !=exahype::reactive::OffloadingContext::ResilienceStrategy::None
+     && !isSkeleton) {
 
     int team = exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank();
     int teamSize = exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams();
 
     CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex, element);
 
-     tarch::la::Vector<DIMENSIONS, double> center;
-     center = (cellDescription.getOffset()+0.5*cellDescription.getSize());
+    tarch::la::Vector<DIMENSIONS, double> center;
+    center = (cellDescription.getOffset()+0.5*cellDescription.getSize());
 
-     int prio_shuffle = 0;
+    int prio_shuffle = 0;
 
     // if((exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
     //     >=exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks)
@@ -2555,7 +2565,7 @@ int exahype::solvers::ADERDGSolver::getTaskPriorityLocalStealableJob(int cellDes
 //     int tasks_per_team = (exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells/teamSize);
 //     prio_shuffle = (LocalStealableSTPCounter/tasks_per_team)%teamSize;
 //#else
-       prio_shuffle = (LocalStealableSTPCounter+team)%teamSize;
+     prio_shuffle = (LocalStealableSTPCounter+team)%teamSize;
      //}
 //#endif
      int prio = getTaskPriority(false)+ prio_shuffle;
@@ -2572,7 +2582,7 @@ int exahype::solvers::ADERDGSolver::getTaskPriorityLocalStealableJob(int cellDes
      return prio;
   }
   else {
-   return getTaskPriority(false);
+    return getTaskPriority(isSkeleton);
   }
 }
 
@@ -2802,14 +2812,14 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
 #endif
 }
 
-void exahype::solvers::ADERDGSolver::switchToHealingMode() {
-  _healingModeActive = true;
-  logError("switchToHealingMode", "switched on healing mode");
-}
-
-bool exahype::solvers::ADERDGSolver::healingActivated() {
-  return _healingModeActive;
-}
+//void exahype::solvers::ADERDGSolver::switchToHealingMode() {
+//  _healingModeActive = true;
+//  logError("switchToHealingMode", "switched on healing mode");
+//}
+//
+//bool exahype::solvers::ADERDGSolver::healingActivated() {
+//  return _healingModeActive;
+//}
 
 bool exahype::solvers::ADERDGSolver::tryToFindAndExtractOutcome(
     int cellDescriptionsIndex,
@@ -3063,8 +3073,10 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
    int destRank = myRank;
 
    bool lastSend = false;
-   exahype::reactive::OffloadingContext::getInstance().selectVictimRank(destRank, lastSend);
-   assertion(destRank>=0);
+   if(!job->_isSkeleton) {
+     exahype::reactive::OffloadingContext::getInstance().selectVictimRank(destRank, lastSend);
+     assertion(destRank>=0);
+   }
 
    logDebug("submitOrSendMigratablePredictionJob", "there are "<<NumberOfEnclaveJobs<<" Enclave Jobs and "<<NumberOfRemoteJobs<< " Remote Jobs");
 
@@ -3218,7 +3230,8 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
 //         exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler,
 //      exahype::reactive::RequestType::receiveBack, this);
 
-     //todo adapt later
+     assertion(!job->_isSkeleton); //skeleton jobs should never be sent away!
+
      NumberOfRemoteJobs++;
 #ifndef OffloadingLocalRecompute
      delete job;

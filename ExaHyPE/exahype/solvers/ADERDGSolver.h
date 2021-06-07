@@ -959,7 +959,10 @@ private:
   static void prepareWorkerCellDescriptionAtMasterWorkerBoundary(
       CellDescription& cellDescription);
 
-  static int getTaskPriorityLocalStealableJob(int cellDescriptionsIndex, int element, double timeStamp);
+  static int getTaskPriorityLocalMigratableJob(int cellDescriptionsIndex,
+                                               int element,
+                                               double timeStamp,
+                                               bool isSkeleton);
 
 #if defined(SharedTBB)
 
@@ -1208,7 +1211,7 @@ private:
     friend class exahype::solvers::ADERDGSolver;
     friend class exahype::solvers::LimitingADERDGSolver;
 
-    enum class State { INITIAL, CHECK_REQUIRED, CHECK_PREVIOUS, HEALING_REQUIRED};
+    enum class State { INITIAL, CHECK_REQUIRED, CHECK_PREVIOUS};
 
     private:
       ADERDGSolver&    		        _solver;
@@ -1218,6 +1221,7 @@ private:
       const double                _predictorTimeStepSize;
       const int                   _originRank;
       const int                   _tag;
+      const bool                  _isSkeleton;
       double*                     _luh; // ndata *ndof^DIM
       double*                     _lduh; // nvar *ndof^DIM
       double*                     _lQhbnd;
@@ -1280,7 +1284,8 @@ private:
 		    const int element,
 		    const double predictorTimeStamp,
 		    const double predictorTimeStepSize,
-		    const bool isPotSoftErrorTriggered
+		    const bool isPotSoftErrorTriggered,
+		    const bool isSkeletonJob //enables task outcome sharing for skeletons
       );
       // constructor for remote jobs that were received from another rank
       MigratablePredictionJob(
@@ -1434,10 +1439,10 @@ private:
 
   OutcomeDatabase<MigratablePredictionJobOutcomeKey, MigratablePredictionJobData> _outcomeDatabase;
 
-  bool _healingModeActive;
-
-  void switchToHealingMode();
-  bool healingActivated();
+//  bool _healingModeActive;
+//
+//  void switchToHealingMode();
+//  bool healingActivated();
 
   tbb::concurrent_hash_map<std::pair<int,int> , MigratablePredictionJobData*> _pendingOutcomesToBeShared;
 

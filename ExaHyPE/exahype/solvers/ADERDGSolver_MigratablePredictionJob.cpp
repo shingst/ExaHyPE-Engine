@@ -31,12 +31,17 @@
 MPI_Datatype exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::_datatype;
 
 exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob(
-    ADERDGSolver& solver, const int cellDescriptionsIndex, const int element,
-    const double predictorTimeStamp, const double predictorTimeStepSize, const bool isPotSoftErrorTriggered) :
+    ADERDGSolver& solver,
+    const int cellDescriptionsIndex,
+    const int element,
+    const double predictorTimeStamp,
+    const double predictorTimeStepSize,
+    const bool isPotSoftErrorTriggered,
+    const bool isSkeleton) :
       tarch::multicore::jobs::Job(
           tarch::multicore::jobs::JobType::BackgroundTask, 0,
-          getTaskPriorityLocalStealableJob(cellDescriptionsIndex, element,
-              predictorTimeStamp)),  //this is a locally executed job
+          getTaskPriorityLocalMigratableJob(cellDescriptionsIndex, element,
+              predictorTimeStamp, isSkeleton)),  //this is a locally executed job
       _solver(solver),
       _cellDescriptionsIndex(cellDescriptionsIndex),
       _element(element),
@@ -44,6 +49,7 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
       _predictorTimeStepSize(predictorTimeStepSize),
       _originRank(tarch::parallel::Node::getInstance().getRank()),
       _tag(-1),
+      _isSkeleton(isSkeleton),
       _luh(nullptr),
       _lduh(nullptr),
       _lQhbnd(nullptr),
@@ -55,14 +61,17 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
       _currentState(State::INITIAL)
 {
   LocalStealableSTPCounter++;
-  NumberOfEnclaveJobs++;
+  if (_isSkeleton) {
+    NumberOfSkeletonJobs.fetch_add(1);
+  } else {
+    NumberOfEnclaveJobs.fetch_add(1);
+  }
   exahype::reactive::JobTableStatistics::getInstance().notifySpawnedTask();
   exahype::reactive::PerformanceMonitor::getInstance().incCurrentTasks();
 
   auto& cellDescription = getCellDescription(cellDescriptionsIndex, element);
   logInfo("MigratablePredictionJob","team "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()<<" spawning STP for "
         <<cellDescription.toString());
-
 
   tarch::la::Vector<DIMENSIONS, double> center = cellDescription.getOffset()+0.5*cellDescription.getSize();
   tarch::la::Vector<DIMENSIONS, double> dx = cellDescription.getSize();
@@ -72,15 +81,21 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
     _dx[i] = dx[i];
   }
 
-  if(_solver.healingActivated())
-    _currentState = State::HEALING_REQUIRED;
+//  if(_solver.healingActivated())
+//    _currentState = State::HEALING_REQUIRED;
 }
 
 exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob(
-    ADERDGSolver& solver, const int cellDescriptionsIndex, const int element,
-    const double predictorTimeStamp, const double predictorTimeStepSize,
-    double *luh, double *lduh, double *lQhbnd, double *lFhbnd, double *lGradQhbnd, double *dx,
-    double *center, const int originRank, const int tag) :
+    ADERDGSolver& solver,
+    const int cellDescriptionsIndex,
+    const int element,
+    const double predictorTimeStamp,
+    const double predictorTimeStepSize,
+    double *luh, double *lduh,
+    double *lQhbnd, double *lFhbnd,
+    double *lGradQhbnd, double *dx,
+    double *center, const int originRank,
+    const int tag) :
       tarch::multicore::jobs::Job(
         tarch::multicore::jobs::JobType::BackgroundTask, 0,
         tarch::multicore::DefaultPriority * 4), //this is a remotely executed job -> high priority
@@ -90,6 +105,7 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
       _predictorTimeStamp(predictorTimeStamp),
       _predictorTimeStepSize(predictorTimeStepSize),
       _originRank(originRank),
+      _isSkeleton(false),  //this constructor should never be invoked for skeletons!
       _tag(tag),
       _luh(luh),
       _lduh(lduh),
@@ -101,6 +117,7 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
       _isCorrupted(false),
       _currentState(State::INITIAL)
 {
+  assertion(!isSkeleton);
   assertion(element==0); //todo: Is element still used somewhere? Dominic's code seems to assume it to be zero...
 
   for (int i = 0; i < DIMENSIONS; i++) {
@@ -230,8 +247,15 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleExecution(
   //local treatment if this job belongs to the local rank
   if (!isRemoteJob()) {
     result = handleLocalExecution(isRunOnMaster, hasComputed);
-    if (!_isLocalReplica) NumberOfEnclaveJobs--;
+    if (!_isLocalReplica) {
+      if (_isSkeleton) {
+        NumberOfSkeletonJobs.fetch_sub(1);
+      } else {
+        NumberOfEnclaveJobs.fetch_sub(1);
+      }
+    }
     assertion( NumberOfEnclaveJobs>=0 );
+    assertion( NumberOfSkeletonJobs>=0 );
 #if !defined(OffloadingUseProgressThread)
     //double time = -MPI_Wtime();
     if (!isRunOnMaster)
@@ -752,6 +776,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleRemoteExecut
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackOutcomeToOrigin() {
   logDebug("sendBackOutcomeToOrigin",
         " send job outcome: "<<to_string());
+
+  assertion(!_isSkeleton); //skeleton jobs should not be offloaded to a different rank
     //logInfo("handleLocalExecution()", "postSendBack");
 #if defined(UseSmartMPI)
 #if defined(SmartMPINB)
