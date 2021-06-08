@@ -1,4 +1,4 @@
-/**os
+/**
  * This file is part of the ExaHyPE project.
  * Copyright (c) 2016  http://exahype.eu
  * All rights reserved.
@@ -122,9 +122,9 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
     // background threads
     exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::ReductionJob);
     //Todo: is this safe to do here? Otherwise, the dt_min does not get updated
-    for (auto* solver : solvers::RegisteredSolvers) {
-      solver->updateTimeStepSize();
-    }
+    //for (auto* solver : solvers::RegisteredSolvers) {
+    //  solver->updateTimeStepSize();
+    //}
   }
 
   logTraceOutWith1Argument("endIteration(State)", state);

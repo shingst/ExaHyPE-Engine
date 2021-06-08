@@ -8,7 +8,7 @@
   "architecture": "hsw",
   "computational_domain": {
     "dimension": 2,
-    "end_time": 1.3,
+    "end_time": 6,
     "offset": [
       0.0,
       0.0
@@ -47,9 +47,9 @@
     "ranks_per_node"         : 1   
   },
   "resilience" : {
-    "generate_soft_errors" : "no",
+    "generate_soft_errors" : "migratable_stp_tasks_overwrite",
     "check_mechanism" : "check_limited_after_update",
-    "task_sharing" : "task_sharing_resilience_correction"
+    "task_sharing" : "no"
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",
@@ -86,8 +86,8 @@
       "point_sources": 0,
       "limiter": {
         "dmp_observables": 4,
-        "dmp_relaxation_parameter": 100,
-        "dmp_difference_scaling": 100,
+        "dmp_relaxation_parameter": 101,
+        "dmp_difference_scaling": 101,
         "implementation": "generic"
       },
       "fv_kernel": {

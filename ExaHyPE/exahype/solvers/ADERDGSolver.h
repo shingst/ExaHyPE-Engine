@@ -1439,10 +1439,6 @@ private:
 
   OutcomeDatabase<MigratablePredictionJobOutcomeKey, MigratablePredictionJobData> _outcomeDatabase;
 
-//  bool _healingModeActive;
-//
-//  void switchToHealingMode();
-//  bool healingActivated();
 
   tbb::concurrent_hash_map<std::pair<int,int> , MigratablePredictionJobData*> _pendingOutcomesToBeShared;
 

@@ -60,10 +60,10 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
       _isCorrupted(false),
       _currentState(State::INITIAL)
 {
-  LocalStealableSTPCounter++;
   if (_isSkeleton) {
     NumberOfSkeletonJobs.fetch_add(1);
   } else {
+    LocalStealableSTPCounter++;
     NumberOfEnclaveJobs.fetch_add(1);
   }
   exahype::reactive::JobTableStatistics::getInstance().notifySpawnedTask();
@@ -81,8 +81,6 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
     _dx[i] = dx[i];
   }
 
-//  if(_solver.healingActivated())
-//    _currentState = State::HEALING_REQUIRED;
 }
 
 exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob(
@@ -1457,17 +1455,20 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
   logInfo("receiveHandlerTaskSharing", "team "
       <<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
       <<" received replica job: "
-      <<data->_metadata.to_string()
-      <<" time step size "<<std::setprecision(30)<< key._timestepSize
-      <<" throwing away = "<<(key._timestamp
-          <static_cast<exahype::solvers::ADERDGSolver*>(solver)->getMinTimeStamp()));
+      <<data->_metadata.to_string());
+
+  double minTimeStampToKeep = static_cast<exahype::solvers::ADERDGSolver*>(solver)->getPreviousMinTimeStamp();
 
   exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().trackTimeStepAndLimiterActive(team, key._timestamp, key._timestepSize, data->_metadata._isPotSoftErrorTriggered);
   double lastconsistentTimeStamp, lastconsistentTimeStepSize, lastconsistentEstimatedTimeStepSize;
   exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().getLastConsistentTimeStepData(lastconsistentTimeStamp, lastconsistentTimeStepSize, lastconsistentEstimatedTimeStepSize);
 
-  if(key._timestamp<lastconsistentTimeStamp)
-   //   <static_cast<exahype::solvers::ADERDGSolver*>(solver)->getPreviousMinTimeStamp()) {
+  if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
+    >= exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks) {
+    minTimeStampToKeep = lastconsistentTimeStepSize;
+  }
+
+  if(key._timestamp<minTimeStampToKeep)
   {
     exahype::reactive::JobTableStatistics::getInstance().notifyLateTask();
     delete data;

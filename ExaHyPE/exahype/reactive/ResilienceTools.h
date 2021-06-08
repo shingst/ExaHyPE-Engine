@@ -59,6 +59,8 @@ class exahype::reactive::ResilienceTools {
 
   bool _corruptionDetected;
 
+  int _injectionRank;
+
   public:
 
   static SoftErrorGenerationStrategy GenerationStrategy;
@@ -90,7 +92,7 @@ class exahype::reactive::ResilienceTools {
 
   private:
   bool generateBitflipErrorInDoubleIfActive(double *array, size_t length);
-  bool overwriteDoubleIfActive(double *array, size_t size);
+  bool overwriteRandomValueInArrayIfActive(double *array, size_t size);
 
   virtual ~ResilienceTools();
 

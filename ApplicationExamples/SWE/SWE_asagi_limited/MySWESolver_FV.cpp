@@ -55,7 +55,6 @@ void SWE::MySWESolver_FV::eigenvalues(const double* const Q, const int dIndex, d
   if(tarch::la::equals(u_n,0.0) && tarch::la::equals(c,0.0)){
     eigs.h() = std::sqrt(grav * epsilon);
   }
-
 }
 
 void SWE::MySWESolver_FV::boundaryValues(

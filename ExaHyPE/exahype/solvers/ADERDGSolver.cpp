@@ -467,7 +467,6 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
           _minTimeStepSize       = FusedTimeSteppingRerunFactor * _admissibleTimeStepSize;
           _estimatedTimeStepSize = _minTimeStepSize;
           _stabilityConditionWasViolated = true; //todo: do we need to deactivate this?
-          logInfo("wrapUpTimeStep","rerun with "<<std::setprecision(30)<<_minTimeStepSize<<" at "<<_minTimeStamp);
         } else {
           _minTimeStepSize       = _estimatedTimeStepSize; // as we have computed the predictor with an estimate, we have to use the estimated time step size to perform the face integral
           _estimatedTimeStepSize = 0.5 * ( FusedTimeSteppingDiffusionFactor * _admissibleTimeStepSize + _estimatedTimeStepSize );
@@ -847,8 +846,8 @@ void exahype::solvers::ADERDGSolver::fusedTimeStepBody(
     const int element = cellInfo.indexOfADERDGCellDescription(cellDescription.getSolverNumber());
     //skeleton cells are not considered for offloading
     if (
-        (isSkeletonCell
-          &&
+       (isSkeletonCell
+        &&
         exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
           < exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks)
       || !exahype::reactive::OffloadingContext::getInstance().isEnabled()) {
@@ -2543,8 +2542,7 @@ void exahype::solvers::ADERDGSolver::toString (std::ostream& out) const {
 #if defined(SharedTBB)
 int exahype::solvers::ADERDGSolver::getTaskPriorityLocalMigratableJob(int cellDescriptionsIndex, int element, double timeStamp, bool isSkeleton){
   if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
-     !=exahype::reactive::OffloadingContext::ResilienceStrategy::None
-     && !isSkeleton) {
+     !=exahype::reactive::OffloadingContext::ResilienceStrategy::None  && !isSkeleton) {
 
     int team = exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank();
     int teamSize = exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams();
@@ -2610,11 +2608,16 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
                                                                      <<" sent STPs "<<SentSTPs
                                                                      <<" completed sends "<<CompletedSentSTPs
                                                                      <<" outstanding requests "<<exahype::reactive::RequestManager::getInstance().getNumberOfOutstandingRequests(exahype::reactive::RequestType::sendOutcome)
-                                                                                            +exahype::reactive::RequestManager::getInstance().getNumberOfOutstandingRequests(exahype::reactive::RequestType::receiveOutcome)
-                                                                                                      );
+                                                                                            +exahype::reactive::RequestManager::getInstance().getNumberOfOutstandingRequests(exahype::reactive::RequestType::receiveOutcome)); 
 
   double lastconsistentTimeStamp, lastconsistentTimeStepSize, lastconsistentEstimatedSize;
   exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().getLastConsistentTimeStepData(lastconsistentTimeStamp, lastconsistentTimeStepSize, lastconsistentEstimatedSize);
+
+  double minTimeStampToKeep = _previousMinTimeStamp;
+
+  if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
+    >= exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks)
+    minTimeStampToKeep = lastconsistentTimeStepSize; //keep even older outcomes to be able to rollback
 
   while( (i< unsafe_size || isFinal) && gotOne) {
     MigratablePredictionJobOutcomeKey key;
@@ -2632,8 +2635,7 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
     //                                       <<" center[2] = "<<key._center[2]
     //                                       <<" time stamp = "<<key._timestamp);
 
-    //if(key._timestamp>=_previousMinTimeStamp) {
-    if(key._timestamp>=lastconsistentTimeStamp) {
+    if(key._timestamp>=minTimeStampToKeep) {
       _allocatedOutcomes.push_front(key);
       logDebug("cleanUpStaleTaskOutcomes()", " breaking out of loop: time stamp of key ="<<key._timestamp)
       break;
@@ -2812,14 +2814,6 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
 #endif
 }
 
-//void exahype::solvers::ADERDGSolver::switchToHealingMode() {
-//  _healingModeActive = true;
-//  logError("switchToHealingMode", "switched on healing mode");
-//}
-//
-//bool exahype::solvers::ADERDGSolver::healingActivated() {
-//  return _healingModeActive;
-//}
 
 bool exahype::solvers::ADERDGSolver::tryToFindAndExtractOutcome(
     int cellDescriptionsIndex,

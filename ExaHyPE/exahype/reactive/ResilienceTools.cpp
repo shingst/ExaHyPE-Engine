@@ -18,6 +18,8 @@
 #include "exahype/reactive/OffloadingContext.h"
 //#include "exahype/parser/Parser.h"
 
+#include "tarch/parallel/Node.h"
+
 #ifdef USE_TMPI
 #include "teaMPI.h"
 #endif
@@ -32,15 +34,18 @@ bool exahype::reactive::ResilienceTools::CheckFlipped;
 
 
 exahype::reactive::ResilienceTools::ResilienceTools()
- : _injectionInterval(3000),
+ : _injectionInterval(1025),
    _numFlips(1),
    _cnt(1),
    _numFlipped(0),
    _infNormTol(0.0000001),
    _l1NormTol(0.0000001),
    _l2NormTol(0.0000001),
-   _corruptionDetected(false)
-{}
+   _corruptionDetected(false),
+   _injectionRank(2)
+{
+  assertion(_injectionRank<=tarch::parallel::Node::getInstance().getNumberOfNodes());
+}
 
 exahype::reactive::ResilienceTools::~ResilienceTools() {}
 
@@ -58,7 +63,9 @@ bool exahype::reactive::ResilienceTools::checkSTPsImmediatelyAfterComputation() 
 bool exahype::reactive::ResilienceTools::generateBitflipErrorInDoubleIfActive(double *array, size_t size) {
   _cnt++;
 
-  if(_cnt.load()%_injectionInterval==0 && _numFlipped<_numFlips) {
+  if(_cnt.load()%_injectionInterval==0
+      && _numFlipped<_numFlips
+      && tarch::parallel::Node::getInstance().getRank()==_injectionRank) {
     std::random_device r;
     std::default_random_engine generator(r());
     std::uniform_int_distribution<int> un_arr(0, size-1);
@@ -86,9 +93,10 @@ bool exahype::reactive::ResilienceTools::generateBitflipErrorInDoubleIfActive(do
   return false;
 }
 
-bool exahype::reactive::ResilienceTools::overwriteDoubleIfActive(double *array, size_t size) {
+bool exahype::reactive::ResilienceTools::overwriteRandomValueInArrayIfActive(double *array, size_t size) {
   _cnt++;
-  if(_cnt.load()%_injectionInterval==0 && _numFlipped<_numFlips) {
+  if(_cnt.load()%_injectionInterval==0 && _numFlipped<_numFlips
+      && tarch::parallel::Node::getInstance().getRank()==_injectionRank) {
     std::random_device r;
     std::default_random_engine generator(r());
     std::uniform_int_distribution<int> un_arr(0, size-1);
@@ -96,7 +104,8 @@ bool exahype::reactive::ResilienceTools::overwriteDoubleIfActive(double *array, 
     int idx_array = un_arr(generator);
 
     double old_val = array[idx_array];
-    array[idx_array] = std::numeric_limits<double>::max();
+    //overwrite with "random number"
+    array[idx_array] = 8192; //std::numeric_limits<double>::max();
     _numFlipped++;
 
     logError("overwriteDoubleIfActive()", "overwrite double value, pos = "<<idx_array<<" old ="<<old_val<<" new = "<<array[idx_array]);
@@ -118,7 +127,7 @@ if(TMPI_IsLeadingRank()) {
     result = generateBitflipErrorInDoubleIfActive(array, size);
     break;
   case SoftErrorGenerationStrategy::Overwrite:
-    result = overwriteDoubleIfActive(array, size);
+    result = overwriteRandomValueInArrayIfActive(array, size);
     break;
   default:
     result = false;

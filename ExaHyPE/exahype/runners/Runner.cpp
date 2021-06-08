@@ -1904,7 +1904,9 @@ void exahype::runners::Runner::printTimeStepInfo(int numberOfStepsRanSinceLastCa
   }
 
   #if defined(USE_TMPI)
-  logInfo("printTimeStepInfo(...)",  "step " << n << "\tteam = " << TMPI_GetTeamNumber() <<  "\tt_min          =" << currentMinTimeStamp<<" corruption detected="<<exahype::reactive::ResilienceTools::getInstance().getCorruptionDetected());
+  logInfo("printTimeStepInfo(...)",  "step " << n << "\tteam = " << TMPI_GetTeamNumber() <<  "\tt_min          =" << currentMinTimeStamp);
+  if(exahype::reactive::ResilienceTools::getInstance().getCorruptionDetected())
+    logWarning("printTimeStepInfo(...)",  "step " << n << "\tteam = " << TMPI_GetTeamNumber() <<  "\tt_min          =" <<currentMinTimeStamp<<" is corrupted!");
   #else
   logInfo("printTimeStepInfo(...)",
       "step " << n << "\tt_min          =" << currentMinTimeStamp);

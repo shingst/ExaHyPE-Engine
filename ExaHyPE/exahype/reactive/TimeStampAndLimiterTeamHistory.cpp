@@ -15,6 +15,7 @@
 #include "exahype/reactive/OffloadingContext.h"
 #include "tarch/multicore/BooleanSemaphore.h"
 #include "tarch/multicore/Lock.h"
+#include "tarch/parallel/Node.h"
 
 #include "tarch/logging/Log.h"
 
@@ -142,7 +143,7 @@ bool exahype::reactive::TimeStampAndLimiterTeamHistory::checkConsistency() {
     maxIdx = std::min(_timestamps[i].size(), maxIdx);
   }
 
-  logInfo("checkConsistency","checking arrays from " <<_lastConsistentTimeStepPtr<<" until "<<maxIdx);
+  logDebug("checkConsistency","checking arrays from " <<_lastConsistentTimeStepPtr<<" until "<<maxIdx);
 
   bool consistentTimeStamps = true;
   bool consistentTimeStepSizes = true;
@@ -161,20 +162,20 @@ bool exahype::reactive::TimeStampAndLimiterTeamHistory::checkConsistency() {
     consistentLimiterStatuses = consistentLimiterStatuses && std::all_of(tmp_statuses.begin(), tmp_statuses.end(), [tmp_statuses](double x){ return x==tmp_statuses[0]; });
     consistentTimeStepSizes = consistentTimeStepSizes && std::all_of(tmp_timestepsizes.begin(), tmp_timestepsizes.end(), [tmp_timestepsizes](double x){ return x==tmp_timestepsizes[0]; });
 
-    if(!consistentTimeStamps) {
-        logError("checkConsistency", std::setprecision(30)<<"time stamp "<<tmp_timestamps[0]<<", "<<tmp_timestamps[1]<<" equal = "<<(tmp_timestamps[0]==tmp_timestamps[1]));
+    /*if(!consistentTimeStamps) {
+        logDebug("checkConsistency", std::setprecision(30)<<"time stamp "<<tmp_timestamps[0]<<", "<<tmp_timestamps[1]<<" equal = "<<(tmp_timestamps[0]==tmp_timestamps[1]));
     }
-
 
     if(!consistentTimeStepSizes) {
-        logError("checkConsistency", "i = "<<i<<std::setprecision(30)<<" : time step sizes "<<tmp_timestepsizes[0]<<", "<<tmp_timestepsizes[1]<<" equal = "<<(tmp_timestepsizes[0]==tmp_timestepsizes[1]));
-    }
+        logDebug("checkConsistency", "i = "<<i<<std::setprecision(30)<<" : time step sizes "<<tmp_timestepsizes[0]<<", "<<tmp_timestepsizes[1]<<" equal = "<<(tmp_timestepsizes[0]==tmp_timestepsizes[1]));
+    }*/
   }
 
-  if(!consistentTimeStamps || !consistentLimiterStatuses || !consistentTimeStepSizes) {
-    logError("checkConsistency"," time stamps or limiter statuses are diverged between teams! Consistent stamps = "<<consistentTimeStamps
+  if(!consistentTimeStamps || !consistentLimiterStatuses || !consistentTimeStepSizes
+      && tarch::parallel::Node::getInstance().isGlobalMaster()) {
+    logError("checkConsistency"," Time stamps or limiter statuses are diverged between teams! Consistent stamps = "<<consistentTimeStamps
         <<" consistent limiter statuses = "<<consistentLimiterStatuses<<" consistent time step sizes="<<consistentTimeStepSizes);
-    printHistory();
+    //printHistory();
   }
   lock.free();
 
