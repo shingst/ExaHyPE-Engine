@@ -185,7 +185,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   }
 
 {% if usePointSources %}
-  // Add average PS to zero time derviative and lQh
+  // Add average PS to zero time derivative and lQh
   for (int t = 0; t < {{nDof}}; t++) {
     #pragma omp simd aligned(lQi,lQhi,PSi,weights1:ALIGNMENT)
     for (int it = 0; it < {{(nDof**nDim)*nVarPad}}; it++) {
@@ -200,7 +200,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 
   double dtavFac = 0.5 * dt;
   // 3. Cauchy-Kovalewski procedure
-  for (int t = 0; t < {{nDof}}; t++) {  // time DOFs
+  for (int t = 0; t < {{nDof-1}}; t++) {  // time DOFs, compute order derivatives
     //put source here
     
     // reset lQi_next

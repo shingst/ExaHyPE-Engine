@@ -227,7 +227,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   float dtavFac = 0.5 * dt_SP;
   // 3. Cauchy-Kovalewski procedure
   // use lFhi as tmpArray
-  for (int t = 0; t < {{nDof}}; t++) {  // time DOFs
+  for (int t = 0; t < {{nDof-1}}; t++) {  // time DOFs, compute order derivatives
     //put source here
     
     // reset lQi_next
