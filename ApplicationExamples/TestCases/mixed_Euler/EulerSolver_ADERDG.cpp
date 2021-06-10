@@ -175,6 +175,10 @@ Recompute Predictor vectorized PDEs
 void Euler::EulerSolver_ADERDG::flux_vect(const double* const Q,const double* const P,double** const F) {
 
   constexpr double gamma = 1.4;
+  #pragma omp simd
+#ifdef OPT_KERNELS  
+  #pragma vector aligned
+#endif 
   for(int i=0; i<VectLength; i++) {
     
     const double irho = 1./Q[0*VectStride+i];
@@ -228,6 +232,10 @@ void Euler::EulerSolver_ADERDG::nonConservativeProduct_vect(const double* const 
   constexpr double gamma = 1.4;
   const double* const Q_dy = gradQ[1];
   
+  #pragma omp simd
+#ifdef OPT_KERNELS  
+  #pragma vector aligned
+#endif 
   for(int i=0; i<VectLength; i++) {
     const double irho = 1./Q[0*VectStride+i];
 
