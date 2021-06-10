@@ -2372,6 +2372,13 @@ public:
   double getEstimatedTimeStepSize() const;
 
   /**
+   * Rolls back solver time stamp and time step size to the last 
+   * consistent time stamp and time step size. 
+   * To be only used with TeaMPI and Task Sharing.
+   */
+  void rollbackTimeStepMetadataToLastConsistentTimeStep();
+
+  /**
    * \return true if the CFL condition was violated
    * (by the last fused time step).
    */

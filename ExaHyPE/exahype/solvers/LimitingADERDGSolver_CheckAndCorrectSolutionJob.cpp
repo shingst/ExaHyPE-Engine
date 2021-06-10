@@ -43,9 +43,9 @@ bool exahype::solvers::LimitingADERDGSolver::CheckAndCorrectSolutionJob::run(boo
   DeliveryStatus status;
   ADERDGSolver::MigratablePredictionJobData *outcome = nullptr;
 
-  logInfo("run","CheckAndCorrectSolution looking for outcome time stamp= "<< _solverPatch.getTimeStamp()
+  logDebug("run","CheckAndCorrectSolution looking for outcome time stamp= "<< _solverPatch.getTimeStamp()
       <<" previous time step size = "<< _solverPatch.getPreviousTimeStepSize()
-      <<" time step size = "<< _solverPatch.getTimeStepSize()
+      <<" time step size = "<<std::setprecision(30)<< _solverPatch.getTimeStepSize()
       <<" patch "<<_solverPatch.toString() );
 
   bool found = _solver._solver.get()->tryToFindAndExtractOutcome(_cellInfo._cellDescriptionsIndex, 0 /*is this always correct?*/,
@@ -81,7 +81,6 @@ bool exahype::solvers::LimitingADERDGSolver::CheckAndCorrectSolutionJob::run(boo
         break;
       case SDCCheckResult::OutcomeSaneAsLimiterNotActive:
         logError("run()","Soft error detected in cell "<<_solverPatch.toString());
-        logError("run()","We could correct but the error might have spread into neighbouring cells which may have not been detected as corrupted by limiter! We try to disable limiter for this cell.");
         // might wanna start healing iterations with solution from sane team
         if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
             ==exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceCorrection) {

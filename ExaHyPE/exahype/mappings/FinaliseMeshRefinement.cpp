@@ -13,12 +13,12 @@
  
 #include "exahype/mappings/FinaliseMeshRefinement.h"
 
-#include "../reactive/AggressiveCCPDistributor.h"
-#include "../reactive/AggressiveDistributor.h"
-#include "../reactive/AggressiveHybridDistributor.h"
-#include "../reactive/OffloadingAnalyser.h"
-#include "../reactive/OffloadingContext.h"
-#include "../reactive/PerformanceMonitor.h"
+#include "exahype/reactive/AggressiveCCPDistributor.h"
+#include "exahype/reactive/AggressiveDistributor.h"
+#include "exahype/reactive/AggressiveHybridDistributor.h"
+#include "exahype/reactive/OffloadingAnalyser.h"
+#include "exahype/reactive/OffloadingContext.h"
+#include "exahype/reactive/PerformanceMonitor.h"
 #include "tarch/multicore/Loop.h"
 
 #include "peano/datatraversal/autotuning/Oracle.h"

@@ -146,18 +146,6 @@ void exahype::mappings::FusedTimeStep::beginIteration(
     exahype::State& solverState) {
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
-  static int itcount = 0;
-  itcount++;
-
-#ifdef USE_ITAC
-  int timestep = itcount % 2;
-/*  if (timestep>18 && timestep<21) {
-         VT_traceon();
-  }
-  else
-       VT_traceoff(); */
-#endif
-
   if (
       tarch::parallel::Node::getInstance().isGlobalMaster() &&
       tarch::parallel::Node::getInstance().getNumberOfNodes()>1
@@ -184,7 +172,7 @@ void exahype::mappings::FusedTimeStep::beginIteration(
         static_cast<exahype::solvers::ADERDGSolver*>(solver)->resumeOffloadingManager();
 #endif
       }
-    // Todo:
+    // Todo?:
     //  if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
     //    static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->OffloadingManager();
     //  }
@@ -239,7 +227,6 @@ void exahype::mappings::FusedTimeStep::endIteration(
       // background threads
       exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::ReductionJob);
     }
-    
 
     const bool endOfFirstFusedTimeStepInBatch =
         ( exahype::solvers::Solver::PredictionSweeps == 1 ) ?
@@ -248,10 +235,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
     for (auto* solver : solvers::RegisteredSolvers) {
       solver->wrapUpTimeStep(endOfFirstFusedTimeStepInBatch,state.isLastIterationOfBatchOrNoBatch());
     }
-    exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().printHistory();
-   // #if defined(TMPI_HEARTBEATS) && defined(USE_TMPI)
-   //  MPI_Sendrecv(MPI_IN_PLACE, 0, MPI_BYTE, MPI_PROC_NULL, -1, MPI_IN_PLACE, 0, MPI_BYTE, MPI_PROC_NULL, 0, MPI_COMM_SELF, MPI_STATUS_IGNORE);
-   // #endif
+    //exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().printHistory();
   }
 
 #if defined(Parallel) && defined(SharedTBB)
@@ -272,7 +256,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
         static_cast<exahype::solvers::ADERDGSolver*>(solver)->pauseOffloadingManager();
 #endif
       }
-    // Todo:
+    // Todo?:
     //  if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
     //    static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->pauseOffloadingManager();
     //  }

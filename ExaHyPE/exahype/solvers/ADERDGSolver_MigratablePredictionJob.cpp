@@ -1449,10 +1449,9 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
   data->_metadata.unpackContiguousBuffer();
 #endif
 
-
   MigratablePredictionJobOutcomeKey key(data->_metadata.getCenter(), data->_metadata.getPredictorTimeStamp(),
                                          data->_metadata.getPredictorTimeStepSize(), data->_metadata.getElement());
-  logInfo("receiveHandlerTaskSharing", "team "
+  logDebug("receiveHandlerTaskSharing", "team "
       <<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
       <<" received replica job: "
       <<data->_metadata.to_string());
@@ -1481,17 +1480,19 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
 
     if(found && status==DeliveryStatus::Transit) {
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->_outcomeDatabase.insertOutcome(key, data2, DeliveryStatus::Received);
-      logInfo("receiveHandlerTaskSharing", "team "
+      logDebug("receiveHandlerTaskSharing", "team "
           <<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
           <<" inserted replica job: "
           <<data2->_metadata.to_string());
+          //<<std::setprecision(30)<<"timestep "<<data->_metadata.getPredictorTimeStepSize());
     }
     else {
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->_outcomeDatabase.insertOutcome(key, data, DeliveryStatus::Received);
-      logInfo("receiveHandlerTaskSharing", "team "
+      logDebug("receiveHandlerTaskSharing", "team "
           <<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
           <<" inserted replica job: "
           <<data->_metadata.to_string());
+          //<<std::setprecision(30)<<"timestep "<<data->_metadata.getPredictorTimeStepSize());
     }
     static_cast<exahype::solvers::ADERDGSolver*>(solver)->_allocatedOutcomes.push_back(key);
   }

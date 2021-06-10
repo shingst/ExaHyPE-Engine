@@ -170,6 +170,11 @@ void exahype::solvers::LimitingADERDGSolver::kickOffTimeStep(const bool isFirstT
               _limiter->_globalObservables.begin());
   }
 
+  if(isHealingActivated()) {
+    logDebug("kickOffTimeStep","kick off: healing next t_min="<<_solver->getMinTimeStamp()<<
+                                                    "dt_min="<<_solver->getMinTimeStepSize());
+  }
+
   _solver->kickOffTimeStep(isFirstTimeStepOfBatchOrNoBatch);
   ensureLimiterTimeStepDataIsConsistent();
   _limiter->kickOffTimeStep(isFirstTimeStepOfBatchOrNoBatch);
@@ -177,21 +182,28 @@ void exahype::solvers::LimitingADERDGSolver::kickOffTimeStep(const bool isFirstT
 
 void exahype::solvers::LimitingADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch,const bool isLastTimeStepOfBatchOrNoBatch) {
   _solver->wrapUpTimeStep(isFirstTimeStepOfBatchOrNoBatch,isLastTimeStepOfBatchOrNoBatch);
+
+  //deactivate from previous timestep
+  if(isHealingActivated()){
+    deactivateHealing();
+  }
+
+  if(getMeshUpdateEvent()==MeshUpdateEvent::RollbackToTeamSolution) {
+    logDebug("wrapUpTimeStep","Limiting solver needs to rollback to team solution from ADER-DG solver of previous consistent time stamp");
+    if(!tarch::parallel::Node::getInstance().isGlobalMaster()
+      || tarch::parallel::Node::getInstance().getNumberOfNodes()==1) {
+      _solver->rollbackTimeStepMetadataToLastConsistentTimeStep();
+      exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().resetMyTeamToLastConsistentTimeStep();
+      activateHealing();
+    }
+  }
+
   if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) { // have consistent data when limiter's wrap up routine is called.
     std::copy(_solver->_globalObservables.begin(),_solver->_globalObservables.end(),
               _limiter->_globalObservables.begin());
   }
   _limiter->wrapUpTimeStep(isFirstTimeStepOfBatchOrNoBatch,isLastTimeStepOfBatchOrNoBatch);
   ensureLimiterTimeStepDataIsConsistent();
-
-  //deactivate from previous timestep
-  if(isHealingActivated())
-    deactivateHealing();
-
-  if(getMeshUpdateEvent()==MeshUpdateEvent::RollbackToTeamSolution) {
-    logError("wrapUpTimeStep","Limiting solver needs to rollback to team solution of previous consistent time stamp");
-    activateHealing();
-  }
 
 }
 
@@ -576,8 +588,10 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepOrRestrict(
       const bool mustBeDoneImmediately = isSkeletonCell && PredictionSweeps==1;
 
       if(isHealingActivated()) {
-        logError("fusedTimeStepOrRestrict", "trying to take over solution from other team "
-                                           <<" patch "<<solverPatch.toString());
+        logDebug("fusedTimeStepOrRestrict", "Trying to take over solution from other team "
+                                            <<" patch "<<solverPatch.toString());
+                                           //<<" solver stamp "<<_solver.get()->getMinTimeStamp()
+                                           //<<" solver time step size "<<_solver.get()->getMinTimeStepSize());
         const auto predictionTimeStepData = _solver->getPredictionTimeStepData(solverPatch,true/*duringFusedTimeStep*/);
         peano::datatraversal::TaskSet( new LimitingADERDGSolver::CheckAndCorrectSolutionJob(
                     *this,solverPatch,cellInfo,
@@ -655,13 +669,15 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
                  isFirstTimeStepOfBatch/*addSurfaceIntegralContributionToUpdate*/);
   const bool isTroubled = checkIfCellIsTroubledAndDetermineMinAndMax(solverPatch,cellInfo);
   exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().trackTimeStepAndLimiterActive(exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank(),
-                                                                                                         solverPatch.getTimeStamp(),solverPatch.getTimeStepSize(),isTroubled);
+                                                                                                         solverPatch.getTimeStamp(),solverPatch.getTimeStepSize(),isTroubled, _solver.get()->getEstimatedTimeStepSize());
+
+  if(isTroubled)
+    solverPatch.setCorruptionStatus(ADERDGSolver::PotentiallyCorrupted);
 
   bool needToRollbackToTeamSolution = false;
   if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
       >= exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks
       && exahype::reactive::ResilienceTools::CheckLimitedCellsOnly) {
-    //assert(!isSkeletonCell); //won't work with skeleton cells so far
     if(!(solverPatch.getPreviousRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell)) {
       logInfo("fusedTimeStepBody", "team = "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
             <<" releasing outcome "<<solverPatch.toString()
@@ -677,9 +693,7 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
         >= exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks)
     && exahype::reactive::ResilienceTools::CheckLimitedCellsOnly) {
 
-    //assert(!isSkeletonCell); //won't work with skeleton cells so far -> only a single rank
-    solverPatch.setCorruptionStatus(ADERDGSolver::PotentiallyCorrupted);
-    assert(isFirstTimeStepOfBatch); //something that we currently assume -> global time stepping!
+    assertion(isFirstTimeStepOfBatch); //something that we currently assume -> global time stepping!
     logInfo("fusedTimeStepBody", "team = "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
         <<" has corrupt patch "<<solverPatch.toString());
     logInfo("fusedTimeStepBody", "team = "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()

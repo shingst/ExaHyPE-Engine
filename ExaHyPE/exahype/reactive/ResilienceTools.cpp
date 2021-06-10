@@ -34,7 +34,7 @@ bool exahype::reactive::ResilienceTools::CheckFlipped;
 
 
 exahype::reactive::ResilienceTools::ResilienceTools()
- : _injectionInterval(1025),
+ : _injectionInterval(1000),
    _numFlips(1),
    _cnt(1),
    _numFlipped(0),

@@ -44,8 +44,9 @@ info  exahype::solvers::ADERDGSolver   -1 black
 #info  exahype::solvers::ADERDGSolver::tryToFindAndExtractOutcome   -1 white
 #info  exahype::solvers::ADERDGSolver::receiveHandlerTaskSharing   -1 white
 ##info  exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes -1 white
+info  exahype::reactive::TimeStampAndLimiterHistory::printHistory -1 black
 info  exahype::solvers::LimitingADERDGSolver   -1 black
-info  exahype::solvers::LimitingADERDGSolver::run   -1 white 
+#info  exahype::solvers::LimitingADERDGSolver::run   -1 white 
 #info  exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody -1 white 
 #info  exahype::solvers::LimitingADERDGSolver::ADERDGSolver::predictionAndVolumeIntegral -1 white
 info  exahype::offloading::AggressiveHybridDistributor::selectVictimRank -1 black

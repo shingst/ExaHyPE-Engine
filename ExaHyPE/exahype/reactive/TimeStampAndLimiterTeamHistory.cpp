@@ -26,7 +26,7 @@
 #include <sstream>
 #include <limits>
 
-tarch::logging::Log exahype::reactive::TimeStampAndLimiterTeamHistory::_log("exahype::mappings::TimeStampAndLimiterHistory");
+tarch::logging::Log exahype::reactive::TimeStampAndLimiterTeamHistory::_log("exahype::reactive::TimeStampAndLimiterHistory");
 
 
 exahype::reactive::TimeStampAndLimiterTeamHistory::TimeStampAndLimiterTeamHistory() :
@@ -61,8 +61,7 @@ void exahype::reactive::TimeStampAndLimiterTeamHistory::forwardLastConsistentTim
 
   int i = std::max(0, _lastConsistentTimeStepPtr);
   while(i<maxIdx && _timestamps[otherTeam][i]==_timestamps[myTeam][i]
-                 && _limiterStatuses[otherTeam][i]==0
-                 && _limiterStatuses[myTeam][i]==0
+                 && _limiterStatuses[otherTeam][i]== _limiterStatuses[myTeam][i]  //we may only want to consider a time step consistent if limiter status is both zero (for linear applications)
                  && _timestepSizes[otherTeam][i]==_timestepSizes[myTeam][i]) {
     i++;
   }
@@ -97,6 +96,8 @@ void exahype::reactive::TimeStampAndLimiterTeamHistory::forwardLastConsistentTim
 
 void exahype::reactive::TimeStampAndLimiterTeamHistory::trackTimeStepAndLimiterActive(int team, double timeStamp, double timeStepSize, bool limiterActive, double estimatedTimeStepSize) {
   tarch::multicore::Lock lock(_semaphore, true);
+  logDebug("trackTimeStepAndLimiterActive", "Tracking time stamp="<<timeStamp<<" for team "<<team);
+
   int myTeam = exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank();
   int size = _timestamps[team].size();
   if(size>0 && _timestamps[team][size-1]==timeStamp) {
@@ -110,14 +111,21 @@ void exahype::reactive::TimeStampAndLimiterTeamHistory::trackTimeStepAndLimiterA
   }
   else if (size>0 && _timestamps[team][size-1]>timeStamp) {
     int idx = size-2;
-    while(_timestamps[team][idx]!=timeStamp) {
+    while(idx>=0 && _timestamps[team][idx]!=timeStamp) {
       idx--;
     }
-    assert(idx>=0);
-    _limiterStatuses[team][idx] = _limiterStatuses[team][idx] || limiterActive;
-    _timestepSizes[team][idx] = std::min(_timestepSizes[team][idx], timeStepSize);
-    if(team==myTeam) {
-      _estimatedTimestepSizes[idx]= std::min(_estimatedTimestepSizes[idx], estimatedTimeStepSize);
+    if(idx<0) {
+      logError("trackTimeStepAndLimiterActive", "Have received timestamp from another team which seems to be old but has not been observed. This is expected if the other team has done a rollback. Appending new time stamp..");
+      _limiterStatuses[team].push_back(limiterActive);
+      _timestamps[team].push_back(timeStamp);
+      _timestepSizes[team].push_back(timeStepSize);
+    }
+    else {
+      _limiterStatuses[team][idx] = _limiterStatuses[team][idx] || limiterActive;
+      _timestepSizes[team][idx] = std::min(_timestepSizes[team][idx], timeStepSize);
+      if(team==myTeam) {
+        _estimatedTimestepSizes[idx]= std::min(_estimatedTimestepSizes[idx], estimatedTimeStepSize);
+      }
     }
   }
   else if (size==0 || _timestamps[team][size-1]<timeStamp){
@@ -128,11 +136,15 @@ void exahype::reactive::TimeStampAndLimiterTeamHistory::trackTimeStepAndLimiterA
       _estimatedTimestepSizes.push_back(estimatedTimeStepSize);
     }
   }
+  //printHistory();
   lock.free();
 }
 
 //todo: doesn't scale well with increasing numbers of timesteps -> can check more efficiently in principle
 bool exahype::reactive::TimeStampAndLimiterTeamHistory::checkConsistency() {
+
+  int myTeam = exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank();
+  int otherTeam = (myTeam + 1) % 2; //todo: support if more than 2 teams are used
 
   forwardLastConsistentTimeStepPtr();
 
@@ -171,10 +183,21 @@ bool exahype::reactive::TimeStampAndLimiterTeamHistory::checkConsistency() {
     }*/
   }
 
-  if(!consistentTimeStamps || !consistentLimiterStatuses || !consistentTimeStepSizes
-      && tarch::parallel::Node::getInstance().isGlobalMaster()) {
+  if((!consistentTimeStamps || !consistentLimiterStatuses || !consistentTimeStepSizes)) {
     logError("checkConsistency"," Time stamps or limiter statuses are diverged between teams! Consistent stamps = "<<consistentTimeStamps
         <<" consistent limiter statuses = "<<consistentLimiterStatuses<<" consistent time step sizes="<<consistentTimeStepSizes);
+    logError("checkConsistency","team="<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()<<": Time stamps or limiter statuses are inconsistent between teams! There must have been a soft error on at least one team.");
+    if((long int)_limiterStatuses[myTeam].size()> _lastConsistentTimeStepPtr && (long int) _limiterStatuses[otherTeam].size()>_lastConsistentTimeStepPtr) {
+      if(_limiterStatuses[myTeam][_lastConsistentTimeStepPtr+1]==1
+         &&_limiterStatuses[otherTeam][_lastConsistentTimeStepPtr+1]==0) {
+        logError("checkConsistency","team="<<myTeam<<" should be the faulty one, as the limiter was activated there.");
+      }
+      else if(_limiterStatuses[otherTeam][_lastConsistentTimeStepPtr+1]==1
+          &&_limiterStatuses[myTeam][_lastConsistentTimeStepPtr+1]==0) {
+         logError("checkConsistency","team="<<otherTeam<<" should be the faulty one, as the limiter was activated there.");
+      }
+    }
+
     //printHistory();
   }
   lock.free();
@@ -274,6 +297,11 @@ void exahype::reactive::TimeStampAndLimiterTeamHistory::resetMyTeamToLastConsist
 
 void exahype::reactive::TimeStampAndLimiterTeamHistory::printHistory() const {
   for(unsigned int i=0; i<exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams(); i++) {
+    if(tarch::parallel::Node::getInstance().getNumberOfNodes()>0
+      && tarch::parallel::Node::getInstance().isGlobalMaster()) {
+      logWarning("printHistory", "Caution: when using more than one rank, history on rank 0 only contains local information!");
+    }
+
     std::ostringstream stream;
     stream <<" Timestamps ";
     for(unsigned int j=0; j<_timestamps[i].size(); j++) {

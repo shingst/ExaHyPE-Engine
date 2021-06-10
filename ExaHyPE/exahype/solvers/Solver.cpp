@@ -686,6 +686,8 @@ std::string exahype::solvers::Solver::toString(const MeshUpdateEvent& meshUpdate
     return "InitialRefinementRequested";
   case MeshUpdateEvent::RefinementRequested:
     return "RefinementRequested";
+  case MeshUpdateEvent::RollbackToTeamSolution:
+    return "RollbackToTeamSolution";
   default:
     return "undefined";
   }

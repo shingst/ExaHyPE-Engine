@@ -47,9 +47,9 @@
     "ranks_per_node"         : 1   
   },
   "resilience" : {
-    "generate_soft_errors" : "migratable_stp_tasks_overwrite",
+    "generate_soft_errors" : "no",
     "check_mechanism" : "check_limited_after_update",
-    "task_sharing" : "no"
+    "task_sharing" : "task_sharing_resilience_correction"
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",

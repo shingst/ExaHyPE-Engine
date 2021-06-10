@@ -27,8 +27,8 @@
     "autotuning_strategy": "dummy"
   },
   "distributed_memory": {
-    "stealing": "{{stealing}}",
-    "stealing_input_file": "{{stealingInputFile}}",
+    "offloading_lb_strategy": "{{stealing}}",
+    "offloading_input_file": "{{stealingInputFile}}",
     "timeout": 6000,
     "load_balancing_type": "static",
     "buffer_size": 1600,
