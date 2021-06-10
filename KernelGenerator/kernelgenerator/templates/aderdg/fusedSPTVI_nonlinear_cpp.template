@@ -108,7 +108,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   {{m.vectPDEsArrays('St', nVar, False) | indent(2)}}{##}
 {% endif %}
 
-  double new_lQi_slice[{{nDof*nVarPad}}] __attribute__((aligned(ALIGNMENT))); //for step 4 (computing new lQi value), doesn't update parameters
   const double dtBydx = inverseDx * dt; //Assume dx[0] == dx[1] == dx[2]
 {% if useNCP or (useFlux and useCERKGuess)  or useViscousFlux %}
   double dudxT_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
@@ -322,15 +321,16 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
     double machine_precision = max_approx*1e-10; // used to avoid rounding error relative error to prevent convergence, assume all variables are correlated (and thus value below avg variable * 10^-10 is a rounding error)
 {% endif %}
     for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
-      {{ m.matmul_legacy('lqi', 'rhs', 's_m_QSlice', 'new_lQi_slice',nVarPad~'*xyz', '0', '0', trueB='iK1_T', trueAlpha='iweights3[xyz]') | indent(6) }}{##}
+      // use lduh as scratch to store new slice
+      {{ m.matmul_legacy('lqi', 'rhs', 's_m_QSlice', 'lduh', nVarPad~'*xyz', '0', '0', trueB='iK1_T', trueAlpha='iweights3[xyz]') | indent(6) }}{##}
       for(int t = 0; t < {{nDof}}; t++) {
         for(int n=0; n<{{nVar}}; n++) { //only copy and change the variables, skip parameters
 {% if advancedStopCriterion %}
-          sq_res += ((new_lQi_slice[n+{{nVarPad}}*t] - lQi[n+{{nDataPad}}*(xyz+{{nDof**nDim}}*t)]) * (new_lQi_slice[n+{{nVarPad}}*t] - lQi[n+{{nDataPad}}*(xyz+{{nDof**nDim}}*t)]))/((lQi[n+{{nDataPad}}*(xyz+{{nDof**nDim}}*t)]*lQi[n+{{nDataPad}}*(xyz+{{nDof**nDim}}*t)])+machine_precision);
+          sq_res += ((lduh[n+{{nVarPad}}*t] - lQi[n+{{nDataPad}}*(xyz+{{nDof**nDim}}*t)]) * (lduh[n+{{nVarPad}}*t] - lQi[n+{{nDataPad}}*(xyz+{{nDof**nDim}}*t)]))/((lQi[n+{{nDataPad}}*(xyz+{{nDof**nDim}}*t)]*lQi[n+{{nDataPad}}*(xyz+{{nDof**nDim}}*t)])+machine_precision);
 {% else %}
-          sq_res += (new_lQi_slice[n+{{nVarPad}}*t] - lQi[n+{{nDataPad}}*(xyz+{{nDof**nDim}}*t)]) * (new_lQi_slice[n+{{nVarPad}}*t] - lQi[n+{{nDataPad}}*(xyz+{{nDof**nDim}}*t)]);
+          sq_res += (lduh[n+{{nVarPad}}*t] - lQi[n+{{nDataPad}}*(xyz+{{nDof**nDim}}*t)]) * (lduh[n+{{nVarPad}}*t] - lQi[n+{{nDataPad}}*(xyz+{{nDof**nDim}}*t)]);
 {% endif %}
-          lQi[n+{{nDataPad}}*(xyz+{{nDof**nDim}}*t)] = new_lQi_slice[n+{{nVarPad}}*t];
+          lQi[n+{{nDataPad}}*(xyz+{{nDof**nDim}}*t)] = lduh[n+{{nVarPad}}*t];
         }
       }
     }

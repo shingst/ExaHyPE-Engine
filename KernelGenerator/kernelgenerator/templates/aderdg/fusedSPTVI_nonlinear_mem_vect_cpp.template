@@ -103,7 +103,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 
   // 0. Allocate local variable
   constexpr int MaxIterations = {{2*nDof+1}};
-  double new_lQi_slice[{{nDof*nVar*nDofPad}}] __attribute__((aligned(ALIGNMENT))) = {0.}; //for step 4 (computing new lQi value), doesn't update parameters
   const double inverseDt = 1.0 / dt;
   const double dtBydx = inverseDx * dt; //Assume dx[0] == dx[1] == dx[2]
 {% if useNCP or (useFlux and useCERKGuess)  or useViscousFlux %}
@@ -381,11 +380,12 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
     // 3. Multiply with (K1)^(-1) to get the discrete time integral of the discrete Picard iteration. Rhs missing weight and dt included in coeff matrix
     double sq_res = 0.0;
     for (int zy = 0; zy < {{nDof3D*nDof}}; zy++) {
-      {{ m.matmul('lqi', 'rhs', 'iK1_T_wt_dt', 'new_lQi_slice',idxRhs(0,0,zy,0,0), '0', '0') | indent(6) }}{##}
+      // use lduh as scratch to store new slice
+      {{ m.matmul('lqi', 'rhs', 'iK1_T_wt_dt', 'lduh',idxRhs(0,0,zy,0,0), '0', '0') | indent(6) }}{##}
       for(int t = 0; t < {{nDof}}; t++) {
         for(int nx=0; nx<{{nVar*nDofPad}}; nx++) { //only copy and change the variables, skip parameters
-          sq_res += (new_lQi_slice[nx+{{nVar*nDofPad}}*t] - lQi[{{idxLQi(t,0,zy,0,nx)}}]) * (new_lQi_slice[nx+{{nVar*nDofPad}}*t] - lQi[{{idxLQi(t,0,zy,0,nx)}}]);
-          lQi[{{idxLQi(t,0,zy,0,nx)}}] = new_lQi_slice[nx+{{nVar*nDofPad}}*t];
+          sq_res += (lduh[nx+{{nVar*nDofPad}}*t] - lQi[{{idxLQi(t,0,zy,0,nx)}}]) * (lduh[nx+{{nVar*nDofPad}}*t] - lQi[{{idxLQi(t,0,zy,0,nx)}}]);
+          lQi[{{idxLQi(t,0,zy,0,nx)}}] = lduh[nx+{{nVar*nDofPad}}*t];
         }
       }
     }
