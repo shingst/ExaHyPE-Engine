@@ -1,9 +1,9 @@
+#include "exahype/reactive/ResilienceStatistics.h"
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
 #include "exahype/solvers/OutcomeDatabase.h"
 
 #include "exahype/reactive/ResilienceTools.h"
-#include "exahype/reactive/JobTableStatistics.h"
 
 #if defined(FileTrace)
 #include "exahype/reactive/STPStatsTracer.h"
@@ -43,7 +43,7 @@ bool exahype::solvers::LimitingADERDGSolver::CheckAndCorrectSolutionJob::run(boo
   DeliveryStatus status;
   ADERDGSolver::MigratablePredictionJobData *outcome = nullptr;
 
-  logDebug("run","CheckAndCorrectSolution looking for outcome time stamp= "<< _solverPatch.getTimeStamp()
+  logInfo("run","CheckAndCorrectSolution looking for outcome time stamp= "<< _solverPatch.getTimeStamp()
       <<" previous time step size = "<< _solverPatch.getPreviousTimeStepSize()
       <<" time step size = "<<std::setprecision(30)<< _solverPatch.getTimeStepSize()
       <<" patch "<<_solverPatch.toString() );
@@ -112,6 +112,8 @@ exahype::solvers::LimitingADERDGSolver::CheckAndCorrectSolutionJob::SDCCheckResu
   double *luh = static_cast<double*>(_solverPatch.getSolution());
   assertion(outcome!=nullptr);
 
+  exahype::reactive::ResilienceStatistics::getInstance().notifyDoubleCheckedTask();
+
   if(!outcome->_metadata._isPotSoftErrorTriggered)
      // && _solver.getMeshUpdateEvent()==MeshUpdateEvent::IrregularLimiterDomainChangeButMayCorrect) //correct only if we don't require limiter anyway
   {
@@ -121,13 +123,13 @@ exahype::solvers::LimitingADERDGSolver::CheckAndCorrectSolutionJob::SDCCheckResu
         <<" step "<<_predictorTimeStepSize
         <<" previous stamp "<<_solverPatch.getPreviousTimeStamp()
         <<" previous step "<<_solverPatch.getPreviousTimeStepSize());
-     exahype::reactive::JobTableStatistics::getInstance().notifyDetectedError();
+     exahype::reactive::ResilienceStatistics::getInstance().notifyDetectedError();
      return SDCCheckResult::OutcomeSaneAsLimiterNotActive;
   }
   else {
     bool equalSolution = exahype::reactive::ResilienceTools::getInstance().isAdmissibleNumericalError(outcome->_luh.data(), luh, outcome->_luh.size());
     if(!equalSolution) {
-      exahype::reactive::JobTableStatistics::getInstance().notifyDetectedError();
+      exahype::reactive::ResilienceStatistics::getInstance().notifyDetectedError();
       return SDCCheckResult::UncorrectableSoftError;
     }
     else
@@ -171,7 +173,7 @@ void exahype::solvers::LimitingADERDGSolver::CheckAndCorrectSolutionJob::correct
           <<" corrected patch "<<_solverPatch.toString());
   }*/
 
-  exahype::reactive::JobTableStatistics::getInstance().notifyHealedTask();
+  exahype::reactive::ResilienceStatistics::getInstance().notifyHealedTask();
   //cellDescription.setCorruptionStatus(CorruptedAndCorrected);
   //logError("tryFindPreviousOutcomeAndCheck", " soft error corrected and detected, but we compute limiter next, as error has propagated!");
   //todo: for the neighbours of the faulty outcome we could try to use sane solution from other team, too

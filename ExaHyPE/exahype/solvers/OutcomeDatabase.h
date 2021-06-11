@@ -23,44 +23,84 @@
 namespace exahype {
 namespace solvers {
 
+/**
+ * Status flag that indicates whether an outcome is still in transit or has already been received.
+ */
 enum class DeliveryStatus{Received, Transit};
 
-/*class OutcomeKey {
-public:
-  OutcomeKey();
-  virtual ~OutcomeKey() = 0;
-  virtual bool operator==(const OutcomeKey &other) const = 0;
-  virtual operator std::size_t() const = 0;
-};*/
-
+/**
+ * Template class for storing an outcome entry of type T.
+ * Each outcome has a flag that indicates whether it has fully been received.
+ */
 template <typename T>
 class OutcomeEntry {
 
 private:
+  /**
+   * The actual data.
+   */
   T* _data;
+
+  /**
+   * The delivery status.
+   */
   DeliveryStatus _status;
 public:
+  /**
+   * Creates an outcome entry.
+   */
   OutcomeEntry(T* data, DeliveryStatus status);
 
+  /**
+   * Returns a pointer to the data.
+   */
   T* getData() const;
+
+  /**
+   * Returns the delivery status of this entry.
+   */
   DeliveryStatus getStatus() const;
 
   virtual ~OutcomeEntry();
 };
 
+/**
+ * Outcome database.
+ * The template argument K is a key used to search for an outcome.
+ * The template argument T is the type of the outcome.
+ */
 template <typename K, typename T>
 class OutcomeDatabase {
 
 private:
+  /**
+   * Outcomes are currently stored in a concurrent hash map.
+   * We need TBB.
+   */
   tbb::concurrent_hash_map<K, OutcomeEntry<T>> _database;
 public:
   OutcomeDatabase();
   virtual ~OutcomeDatabase();
 
+  /**
+   * Inserts an outcome with key K into the database.
+   * @param key A unique identifier that is hashable.
+   * @param data The data to be inserted.
+   * @param status The status of the outcome entry.
+   *
+   */
   void insertOutcome(const K& key, T* data, const DeliveryStatus status);
+
+  /**
+   * Searches for an outcome and extracts it if possible (calling function may want to re-insert).
+   * @return Returns true if the outcome was found.
+   */
   bool tryFindAndExtractOutcome(K key, T **data, DeliveryStatus& status);
 
-  int size();
+  /**
+   * Returns the unsafe size of the job outcome database.
+   */
+  int size() const;
 };
 
 } /* namespace solvers */

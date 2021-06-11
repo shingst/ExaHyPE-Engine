@@ -157,9 +157,14 @@ void exahype::mappings::FusedTimeStep::beginIteration(
     //if ( issuePredictionJobsInThisIteration() ) {
     //  MPI_Sendrecv(MPI_IN_PLACE, 0, MPI_BYTE, MPI_PROC_NULL, 1, MPI_IN_PLACE, 0, MPI_BYTE, MPI_PROC_NULL, 0, MPI_COMM_SELF, MPI_STATUS_IGNORE);
    // }
-
-    exahype::plotters::startPlottingIfAPlotterIsActive(
+#if defined(USE_TMPI)
+    if(exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()==0) {
+#endif
+      exahype::plotters::startPlottingIfAPlotterIsActive(
         solvers::Solver::getMinTimeStampOfAllSolvers());
+#if defined(USE_TMPI)
+    }
+#endif
   }
 
 #if defined(Parallel) && defined(SharedTBB)
@@ -221,7 +226,13 @@ void exahype::mappings::FusedTimeStep::endIteration(
 #endif
 
   if ( sendOutRiemannDataInThisIteration() ) {
-    exahype::plotters::finishedPlotting();
+#if defined(USE_TMPI)
+    if(exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()==0) {
+#endif
+      exahype::plotters::finishedPlotting();
+#if defined(USE_TMPI)
+    }
+#endif
 
     if ( exahype::State::isLastIterationOfBatchOrNoBatch() ) {
       // background threads
@@ -357,12 +368,12 @@ void exahype::mappings::FusedTimeStep::leaveCell(
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
 #if defined(USE_TMPI)
-    if(TMPI_IsLeadingRank()) {
+      if(exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()==0) {
 #endif
-      // this operates only on compute cells
-      plotters::plotPatchIfAPlotterIsActive(solverNumber,cellInfo); // TODO(Dominic) potential for IO overlap?
+        // this operates only on compute cells
+        plotters::plotPatchIfAPlotterIsActive(solverNumber,cellInfo); // TODO(Dominic) potential for IO overlap?
 #if defined(USE_TMPI)
-    }
+      }
 #endif
       switch ( solver->getType() ) {
         case solvers::Solver::Type::ADERDG:

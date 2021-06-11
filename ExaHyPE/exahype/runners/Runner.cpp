@@ -98,7 +98,7 @@
 
 #include "exahype/reactive/OffloadingAnalyser.h"
 #include "exahype/reactive/ResilienceTools.h"
-#include "exahype/reactive/JobTableStatistics.h"
+#include "exahype/reactive/ResilienceStatistics.h"
 #include "exahype/reactive/PerformanceMonitor.h"
 #include "exahype/reactive/OffloadingProgressService.h"
 #include "exahype/reactive/StaticDistributor.h"
@@ -1146,7 +1146,7 @@ int exahype::runners::Runner::run() {
     logInfo("shutdownDistributedMemoryConfiguration()","stopped offloading manager");
     //Todo(Philipp): print also with local recomp
     if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()!=exahype::reactive::OffloadingContext::ResilienceStrategy::None)
-      exahype::reactive::JobTableStatistics::getInstance().printStatistics();
+      exahype::reactive::ResilienceStatistics::getInstance().printStatistics();
   }
 
 #if defined(MemoryMonitoring) && defined(MemoryMonitoringTrack)

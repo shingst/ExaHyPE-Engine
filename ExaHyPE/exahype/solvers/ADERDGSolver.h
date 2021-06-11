@@ -53,7 +53,7 @@
 #define MAX_PROGRESS_ITS 10000
 
 #include "exahype/reactive/OffloadingContext.h"
-#include "exahype/reactive/JobTableStatistics.h"
+#include "exahype/reactive/ResilienceStatistics.h"
 
 #if defined(SharedTBB)
 #include <tbb/concurrent_hash_map.h>

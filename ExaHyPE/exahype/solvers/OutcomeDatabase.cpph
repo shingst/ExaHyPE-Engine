@@ -76,7 +76,7 @@ bool OutcomeDatabase<K,T>::tryFindAndExtractOutcome(K key, T **data, DeliverySta
 }
 
 template<typename K,typename T>
-int OutcomeDatabase<K,T>::size() {
+int OutcomeDatabase<K,T>::size() const {
   return _database.size();
 }
 

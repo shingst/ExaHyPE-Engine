@@ -1348,7 +1348,7 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithNeighbourData(
     assert(DataHeap::getInstance().isValidIndex(cellDescription.getSolutionIndex()));
     assert(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolutionIndex()));
 
-    logError("mergeWithNeighbourData(...)", "receive "<<DataMessagesPerNeighbourCommunication<<" arrays from rank="<<fromRank<<",x="<<barycentre<<",level="<<level
+    logDebug("mergeWithNeighbourData(...)", "receive "<<DataMessagesPerNeighbourCommunication<<" arrays from rank="<<fromRank<<",x="<<barycentre<<",level="<<level
                           <<cellDescription.toString());
 
     // TODO(Dominic): If anarchic time stepping, receive the time step too.

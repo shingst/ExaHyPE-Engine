@@ -12,7 +12,7 @@
 #include "exahype/reactive/PerformanceMonitor.h"
 #include "exahype/reactive/OffloadingAnalyser.h"
 #include "exahype/reactive/OffloadingProfiler.h"
-#include "exahype/reactive/JobTableStatistics.h"
+#include "exahype/reactive/ResilienceStatistics.h"
 #include "exahype/reactive/MemoryMonitor.h"
 #include "exahype/reactive/NoiseGenerator.h"
 #include "exahype/reactive/ResilienceTools.h"
@@ -66,11 +66,11 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
     LocalStealableSTPCounter++;
     NumberOfEnclaveJobs.fetch_add(1);
   }
-  exahype::reactive::JobTableStatistics::getInstance().notifySpawnedTask();
+  exahype::reactive::ResilienceStatistics::getInstance().notifySpawnedTask();
   exahype::reactive::PerformanceMonitor::getInstance().incCurrentTasks();
 
   auto& cellDescription = getCellDescription(cellDescriptionsIndex, element);
-  logInfo("MigratablePredictionJob","team "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()<<" spawning STP for "
+  logInfo("MigratablePredictionJob","team "<<exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()<<" spawning STP for "
         <<cellDescription.toString());
 
   tarch::la::Vector<DIMENSIONS, double> center = cellDescription.getOffset()+0.5*cellDescription.getSize();
@@ -115,7 +115,7 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
       _isCorrupted(false),
       _currentState(State::INITIAL)
 {
-  assertion(!isSkeleton);
+  assertion(!_isSkeleton);
   assertion(element==0); //todo: Is element still used somewhere? Dominic's code seems to assume it to be zero...
 
   for (int i = 0; i < DIMENSIONS; i++) {
@@ -423,10 +423,10 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::copyOutcome(Migrat
 #if OffloadingGradQhbnd
   std::memcpy(lGradQhbnd, &outcome->_lGradQhbnd[0], outcome->_lGradQhbnd.size() * sizeof(double));
 #endif
-  logInfo("copyOutcome","team "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()<<" copied STP outcome for "
+  logInfo("copyOutcome","team "<<exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()<<" copied STP outcome for "
         <<to_string());
 
-  exahype::reactive::JobTableStatistics::getInstance().notifySavedTask();
+  exahype::reactive::ResilienceStatistics::getInstance().notifySavedTask();
 }
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::executeOrCopySTPOutcome(MigratablePredictionJobData *outcome, bool& hasComputed, bool& hasFlipped) {
@@ -459,7 +459,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::executeLocally() {
   double *lGradQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictorGradient());
   double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
 
-  logInfo("handleLocalExecution","team "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()<<" computing STP for "
+  logInfo("handleLocalExecution","team "<<exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()<<" computing STP for "
         <<to_string()
         <<std::setprecision(30)<<" time step size "<<_predictorTimeStepSize);
 
@@ -485,7 +485,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::executeLocally() {
     exahype::reactive::STPStatsTracer::getInstance().writeTracingEventRunIterations(duration.count(), iterations, exahype::reactive::STPTraceKey::ADERDGOwnMigratable);
 #endif
 
-  exahype::reactive::JobTableStatistics::getInstance().notifyExecutedTask();
+  exahype::reactive::ResilienceStatistics::getInstance().notifyExecutedTask();
 
 }
 
@@ -1080,7 +1080,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryToFindAndExtrac
   CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
       _element);
 
-  logInfo("tryToFindAndExtractEquivalentSharedOutcome", "team = "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
+  logInfo("tryToFindAndExtractEquivalentSharedOutcome", "team = "<<exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()
       <<" looking for "<<cellDescription.toString())
 
   return _solver.tryToFindAndExtractOutcome(_cellDescriptionsIndex, _element, _predictorTimeStamp, _predictorTimeStepSize, status, outcome);
@@ -1133,10 +1133,10 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::matches(Migratable
 
   if(!equal) {
     logError("matchesOtherOutcome", "soft error detected: "<<data->_metadata.to_string());
-    exahype::reactive::JobTableStatistics::getInstance().notifyDetectedError();
+    exahype::reactive::ResilienceStatistics::getInstance().notifyDetectedError();
   }
 
-  exahype::reactive::JobTableStatistics::getInstance().notifyDoubleCheckedTask();
+  exahype::reactive::ResilienceStatistics::getInstance().notifyDoubleCheckedTask();
   return equal;
 }
 
@@ -1340,12 +1340,12 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
 #endif
       <<" time stamp = "<<metadata[2*DIMENSIONS] <<" element = "<<(int) metadata[2*DIMENSIONS+2]);
 
-  exahype::reactive::JobTableStatistics::getInstance().notifyReceivedTask();
+  exahype::reactive::ResilienceStatistics::getInstance().notifyReceivedTask();
   //timestamp
   if (metadata[2 * DIMENSIONS]
       < static_cast<exahype::solvers::ADERDGSolver*>(solver)->getMinTimeStamp()) {
     // if(true) {
-    exahype::reactive::JobTableStatistics::getInstance().notifyLateTask();
+    exahype::reactive::ResilienceStatistics::getInstance().notifyLateTask();
     delete data;
     AllocatedSTPsReceive--;
   }
@@ -1393,7 +1393,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
       std::memcpy(lGradQhbnd, &data->_lGradQhbnd[0],
           data->_lGradQhbnd.size() * sizeof(double));
 #endif
-      exahype::reactive::JobTableStatistics::getInstance().notifySavedTask();
+      exahype::reactive::ResilienceStatistics::getInstance().notifySavedTask();
 
       delete data;
       AllocatedSTPsReceive--;
@@ -1420,7 +1420,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
         LastEmergencyCell = nullptr;
       }
 
-      exahype::reactive::JobTableStatistics::getInstance().notifyLateTask();
+      exahype::reactive::ResilienceStatistics::getInstance().notifyLateTask();
       //delete data; //probably not safe to do here
       // AllocatedSTPsReceive--; //probably not safe to do here, race with job
     }
@@ -1452,7 +1452,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
   MigratablePredictionJobOutcomeKey key(data->_metadata.getCenter(), data->_metadata.getPredictorTimeStamp(),
                                          data->_metadata.getPredictorTimeStepSize(), data->_metadata.getElement());
   logDebug("receiveHandlerTaskSharing", "team "
-      <<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
+      <<exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()
       <<" received replica job: "
       <<data->_metadata.to_string());
 
@@ -1464,12 +1464,12 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
 
   if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
     >= exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks) {
-    minTimeStampToKeep = lastconsistentTimeStepSize;
+    minTimeStampToKeep = std::min(minTimeStampToKeep, lastconsistentTimeStepSize);
   }
 
   if(key._timestamp<minTimeStampToKeep)
   {
-    exahype::reactive::JobTableStatistics::getInstance().notifyLateTask();
+    exahype::reactive::ResilienceStatistics::getInstance().notifyLateTask();
     delete data;
     AllocatedSTPsReceive--;
   }
@@ -1481,7 +1481,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
     if(found && status==DeliveryStatus::Transit) {
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->_outcomeDatabase.insertOutcome(key, data2, DeliveryStatus::Received);
       logDebug("receiveHandlerTaskSharing", "team "
-          <<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
+          <<exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()
           <<" inserted replica job: "
           <<data2->_metadata.to_string());
           //<<std::setprecision(30)<<"timestep "<<data->_metadata.getPredictorTimeStepSize());
@@ -1489,14 +1489,14 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
     else {
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->_outcomeDatabase.insertOutcome(key, data, DeliveryStatus::Received);
       logDebug("receiveHandlerTaskSharing", "team "
-          <<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
+          <<exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()
           <<" inserted replica job: "
           <<data->_metadata.to_string());
           //<<std::setprecision(30)<<"timestep "<<data->_metadata.getPredictorTimeStepSize());
     }
     static_cast<exahype::solvers::ADERDGSolver*>(solver)->_allocatedOutcomes.push_back(key);
   }
-  exahype::reactive::JobTableStatistics::getInstance().notifyReceivedTask();
+  exahype::reactive::ResilienceStatistics::getInstance().notifyReceivedTask();
 
 }
 
@@ -1504,7 +1504,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendHandlerTaskSha
     exahype::solvers::Solver* solver, int tag, int remoteRank) {
 
   logDebug("sendHandlerReplication","successfully completed send to other teams");
-  exahype::reactive::JobTableStatistics::getInstance().notifySentTask();
+  exahype::reactive::ResilienceStatistics::getInstance().notifySentTask();
   tbb::concurrent_hash_map<int, MigratablePredictionJobData*>::accessor a_tagToData;
   bool found =
       static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagToSTPData.find(

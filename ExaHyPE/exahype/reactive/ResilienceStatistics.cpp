@@ -11,7 +11,7 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#include "../reactive/JobTableStatistics.h"
+#include "../reactive/ResilienceStatistics.h"
 
 #include "OffloadingContext.h"
 
@@ -19,10 +19,10 @@ namespace exahype {
 namespace reactive {
 
 
-tarch::logging::Log JobTableStatistics::_log( "exahype::reactive::JobTableStatistics" );
+tarch::logging::Log ResilienceStatistics::_log( "exahype::reactive::JobTableStatistics" );
 
 
-JobTableStatistics::JobTableStatistics() :
+ResilienceStatistics::ResilienceStatistics() :
   _spawnedTasks(0),
   _executedTasks(0),
   _savedTasks(0),
@@ -37,62 +37,62 @@ JobTableStatistics::JobTableStatistics() :
 
 }
 
-JobTableStatistics::~JobTableStatistics() {
+ResilienceStatistics::~ResilienceStatistics() {
   // TODO Auto-generated destructor stub
 }
 
-JobTableStatistics& JobTableStatistics::getInstance() {
-  static JobTableStatistics replicationStats;
+ResilienceStatistics& ResilienceStatistics::getInstance() {
+  static ResilienceStatistics replicationStats;
   return replicationStats;
 }
 
-void JobTableStatistics::notifyLateTask() {
+void ResilienceStatistics::notifyLateTask() {
   _lateTasks++;
 }
 
-void JobTableStatistics::notifyDeclinedTask() {
+void ResilienceStatistics::notifyDeclinedTask() {
   _declinedTasks++;
 }
 
-void JobTableStatistics::notifyReceivedTask(){
+void ResilienceStatistics::notifyReceivedTask(){
   _receivedTasks++;
 }
 
-void JobTableStatistics::notifySentTask(){
+void ResilienceStatistics::notifySentTask(){
   _sentTasks++;
 }
 
-void JobTableStatistics::notifySavedTask(){
+void ResilienceStatistics::notifySavedTask(){
   _savedTasks++;
 }
 
-void JobTableStatistics::notifySpawnedTask(){
+void ResilienceStatistics::notifySpawnedTask(){
     _spawnedTasks++;
 }
 
-void JobTableStatistics::notifyExecutedTask(){
+void ResilienceStatistics::notifyExecutedTask(){
     _executedTasks++;
 }
 
-void JobTableStatistics::notifyRecomputedTask() {
+void ResilienceStatistics::notifyRecomputedTask() {
   _recomputedTasks++;
 }
 
-void JobTableStatistics::notifyDoubleCheckedTask() {
+void ResilienceStatistics::notifyDoubleCheckedTask() {
   _doubleCheckedTasks++;
 }
 
-void JobTableStatistics::notifyDetectedError() {
+void ResilienceStatistics::notifyDetectedError() {
   _softErrorsDetected++;
 }
 
-void JobTableStatistics::notifyHealedTask() {
+void ResilienceStatistics::notifyHealedTask() {
   _healedTasks++;
 }
 
 
-void JobTableStatistics::printStatistics() {
-     int team = exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank();
+void ResilienceStatistics::printStatistics() {
+     int team = exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber();
      logInfo("printStatistics", " team "<<team
            <<" spawned tasks = "<<_spawnedTasks
            <<" executed tasks = "<<_executedTasks

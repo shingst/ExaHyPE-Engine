@@ -26,6 +26,13 @@ namespace exahype {
  }
 }
 
+/**
+ * The time stamp and limiter history keeps track of the history of time stamps and time step sizes.
+ * It is currently only used with the LimitingADERDGSolver and makes only sense if multiple teams
+ * are used.
+ * The history of time stamps and time step sizes can be checked for consistency between the teams in
+ * order to find potential soft errors.
+ */
 class exahype::reactive::TimeStampAndLimiterTeamHistory {
 
   private:

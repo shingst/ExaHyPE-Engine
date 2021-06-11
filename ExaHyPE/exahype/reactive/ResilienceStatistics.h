@@ -23,7 +23,7 @@ namespace reactive {
 /**
  * Gathers statistics about job execution and job migration at runtime (only with local recompute or task sharing).
  */
-class JobTableStatistics {
+class ResilienceStatistics {
 
 private:
 
@@ -43,11 +43,11 @@ private:
   std::atomic<int> _softErrorsDetected;
   std::atomic<int> _healedTasks;
 
-  JobTableStatistics();
-  virtual ~JobTableStatistics();
+  ResilienceStatistics();
+  virtual ~ResilienceStatistics();
 public:
 
-  static JobTableStatistics& getInstance();
+  static ResilienceStatistics& getInstance();
 
   void printStatistics();
 

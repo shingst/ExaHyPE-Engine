@@ -44,7 +44,11 @@ exahype::reactive::ResilienceTools::ResilienceTools()
    _corruptionDetected(false),
    _injectionRank(2)
 {
-  assertion(_injectionRank<=tarch::parallel::Node::getInstance().getNumberOfNodes());
+  if(_injectionRank<=tarch::parallel::Node::getInstance().getNumberOfNodes()
+     && GenerationStrategy!=SoftErrorGenerationStrategy::None) {
+    logWarning("ResilienceTools","The error injection rank is currently hardcoded to a rank bigger than the total number of ranks, no error will be injected...");
+  }
+   	//assertion(_injectionRank<=tarch::parallel::Node::getInstance().getNumberOfNodes());
 }
 
 exahype::reactive::ResilienceTools::~ResilienceTools() {}

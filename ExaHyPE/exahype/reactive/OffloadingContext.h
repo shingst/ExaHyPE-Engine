@@ -142,8 +142,8 @@ class exahype::reactive::OffloadingContext {
     void setTMPINumTeams(int team);
     unsigned int getTMPINumTeams();
 
-    void setTMPIInterTeamRank(int interTeamRank);
-    int getTMPIInterTeamRank();
+    void setTMPITeamNumber(int interTeamRank);
+    int getTMPITeamNumber();
 
     /**
      * Creates offloading MPI communicators.

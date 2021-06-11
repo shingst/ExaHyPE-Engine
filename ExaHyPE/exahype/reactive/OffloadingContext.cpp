@@ -185,11 +185,11 @@ unsigned int exahype::reactive::OffloadingContext::getTMPINumTeams() {
   return _numTeams;
 }
 
-void exahype::reactive::OffloadingContext::setTMPIInterTeamRank(int interTeamRank) {
+void exahype::reactive::OffloadingContext::setTMPITeamNumber(int interTeamRank) {
   _interTeamRank = interTeamRank;
 }
 
-int exahype::reactive::OffloadingContext::getTMPIInterTeamRank(){
+int exahype::reactive::OffloadingContext::getTMPITeamNumber(){
   return _interTeamRank;
 }
 

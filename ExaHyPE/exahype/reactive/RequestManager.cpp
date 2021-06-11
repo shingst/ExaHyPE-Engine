@@ -177,7 +177,8 @@ void exahype::reactive::RequestManager::submitRequests(
 
   assertion(remoteRank>=0 || remoteRank==MULTIPLE_SOURCES);
   assertion(remoteRank<=tarch::parallel::Node::getInstance().getNumberOfNodes()
-               * exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams());
+               * exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams()
+            || remoteRank==MULTIPLE_SOURCES);
 
   int ierr;
   //bug only appears when using scorep

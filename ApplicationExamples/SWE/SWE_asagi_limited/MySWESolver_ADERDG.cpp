@@ -242,6 +242,9 @@ bool SWE::MySWESolver_ADERDG::isPhysicallyAdmissible(
     }*/
   //  //std::cout <<center[0] << "," << center[1] <<": true" << std::endl;
 
+  //if(center[0]>5)
+    return false;
+   
   return true;
 
 }
