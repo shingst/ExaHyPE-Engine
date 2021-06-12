@@ -174,6 +174,12 @@ Recompute Predictor vectorized PDEs
 
 void Euler::EulerSolver_ADERDG::flux_vect(const double* const Q,const double* const P,double** const F) {
 
+
+  std::memset(F[0], 0, VectStride*NumberOfVariables*sizeof(double));
+  std::memset(F[1], 0, VectStride*NumberOfVariables*sizeof(double));
+#if DIMENSIONS==3
+  std::memset(F[2], 0, VectStride*NumberOfVariables*sizeof(double));
+#endif
   constexpr double gamma = 1.4;
   #pragma omp simd
 #ifdef OPT_KERNELS  
@@ -206,11 +212,11 @@ void Euler::EulerSolver_ADERDG::flux_vect(const double* const Q,const double* co
     */
     
     // done in ncp
-    F[1][0*VectStride+i] = 0.;//Q[2];
-    F[1][1*VectStride+i] = 0.;//irho*Q[1]*Q[2];
-    F[1][2*VectStride+i] = 0.;//irho*Q[2]*Q[2] + p;
-    F[1][3*VectStride+i] = 0.;//irho*Q[3]*Q[2];
-    F[1][4*VectStride+i] = 0.;//irho*Q[4]*Q[2]+irho*p*Q[2];
+    //F[1][0*VectStride+i] = 0.;//Q[2];
+    //F[1][1*VectStride+i] = 0.;//irho*Q[1]*Q[2];
+    //F[1][2*VectStride+i] = 0.;//irho*Q[2]*Q[2] + p;
+    //F[1][3*VectStride+i] = 0.;//irho*Q[3]*Q[2];
+    //F[1][4*VectStride+i] = 0.;//irho*Q[4]*Q[2]+irho*p*Q[2];
 
     #if DIMENSIONS==3
     // col 3
