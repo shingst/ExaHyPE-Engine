@@ -223,11 +223,6 @@ public:
   typedef exahype::records::ADERDGCellDescription CellDescription;
   typedef peano::heap::RLEHeap<CellDescription> Heap;
 
-  /**
-   * Semaphore that is used to guarantee mutual exclusion for
-   * offloading progress.
-   */
-  static tarch::multicore::BooleanSemaphore OffloadingSemaphore;
 
   static std::atomic<int> NumberOfReceiveJobs;
   static std::atomic<int> NumberOfReceiveBackJobs;
@@ -1444,7 +1439,7 @@ private:
 
   void storePendingOutcomeToBeShared(MigratablePredictionJob *job);
   void releaseDummyOutcomeAndShare(int cellDescriptionsIndex, int element, double timestamp, double timestep);
-  void releasePendingOutcomeAndShare(int cellDescriptionsIndex, int element);
+  void releasePendingOutcomeAndShare(int cellDescriptionsIndex, int element, double timestamp, double timestepSize);
   bool tryToFindAndExtractOutcome(int cellDescriptionsIndex,
                                   int element,
                                   double predictionTimeStamp,
@@ -3699,13 +3694,15 @@ public:
         //solver->spawnReceiveBackJob();
       }
  #endif
-      #ifdef Parallel
+      //for task sharing without progression thread, it makes sense to not receive dangling messages here as there seems to
+      //be some contention for internal MPI locks or other resources
+      #if defined(Parallel) and !defined(noWaitsProgressMPI)
       {
-        tarch::multicore::RecursiveLock lock( tarch::services::Service::receiveDanglingMessagesSemaphore, false );
-        if(lock.tryLock()) {
-          tarch::parallel::Node::getInstance().receiveDanglingMessages();
-          lock.free();
-        }
+         tarch::multicore::RecursiveLock lock( tarch::services::Service::receiveDanglingMessagesSemaphore,  false );
+         if(lock.tryLock()) {
+             tarch::parallel::Node::getInstance().receiveDanglingMessages();
+           lock.free();
+         } 
       }
       #endif
 

@@ -19,6 +19,10 @@
 
 #include "exahype/solvers/ADERDGSolver.h"
 
+#ifndef noMPIWaitsProgressOffloading
+#define MPIWaitsProgressOffloading
+#endif
+
 namespace exahype {
   namespace reactive {
     class OffloadingProgressService;

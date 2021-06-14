@@ -18,10 +18,12 @@
 #include "tarch/multicore/Jobs.h"
 
 //#ifndef TaskSharing
+
+#ifdef MPIWaitsProgressOffloading
 #ifndef OffloadingUseProgressThread
 registerService(exahype::reactive::OffloadingProgressService)
 #endif
-//#endif
+#endif
 
 tarch::logging::Log exahype::reactive::OffloadingProgressService::_log("exahype::reactive::OffloadingProgressService");
 
@@ -49,6 +51,5 @@ void exahype::reactive::OffloadingProgressService::setSolver(exahype::solvers::A
   _solver = solver;
   _isSet = true;
 }
-
 #endif
 

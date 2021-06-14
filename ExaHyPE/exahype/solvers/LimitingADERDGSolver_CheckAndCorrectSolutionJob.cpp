@@ -3,6 +3,7 @@
 
 #include "exahype/solvers/OutcomeDatabase.h"
 
+#include "exahype/reactive/TimeStampAndLimiterTeamHistory.h"
 #include "exahype/reactive/ResilienceTools.h"
 
 #if defined(FileTrace)
@@ -47,6 +48,9 @@ bool exahype::solvers::LimitingADERDGSolver::CheckAndCorrectSolutionJob::run(boo
       <<" previous time step size = "<< _solverPatch.getPreviousTimeStepSize()
       <<" time step size = "<<std::setprecision(30)<< _solverPatch.getTimeStepSize()
       <<" patch "<<_solverPatch.toString() );
+
+  assert(exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().otherTeamHasTimeStepData( _solverPatch.getTimeStamp(),
+                                                                                                    _solverPatch.getTimeStepSize()));
 
   bool found = _solver._solver.get()->tryToFindAndExtractOutcome(_cellInfo._cellDescriptionsIndex, 0 /*is this always correct?*/,
                          _solverPatch.getTimeStamp(), _solverPatch.getTimeStepSize(), status, &outcome);

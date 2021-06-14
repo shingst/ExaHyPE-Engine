@@ -682,13 +682,13 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
       logDebug("fusedTimeStepBody", "team = "<<exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()
             <<" releasing outcome "<<solverPatch.toString()
             <<std::setprecision(30)<<" time step size "<<solverPatch.getTimeStepSize());
-      _solver.get()->releasePendingOutcomeAndShare(cellInfo._cellDescriptionsIndex, cellInfo.indexOfADERDGCellDescription(solverPatch.getSolverNumber()));
+      _solver.get()->releasePendingOutcomeAndShare(cellInfo._cellDescriptionsIndex, cellInfo.indexOfADERDGCellDescription(solverPatch.getSolverNumber()), solverPatch.getTimeStamp(), solverPatch.getTimeStepSize());
     }
     else {
       logDebug("fusedTimeStepBody", "team = "<<exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()
             <<" releasing dummy outcome "<<solverPatch.toString()
             <<std::setprecision(30)<<" time step size "<<solverPatch.getTimeStepSize());
-      _solver.get()->releaseDummyOutcomeAndShare(cellInfo._cellDescriptionsIndex, cellInfo.indexOfADERDGCellDescription(solverPatch.getSolverNumber()), _solver.get()->getMinTimeStamp(), _solver.get()->getMinTimeStepSize());
+      _solver.get()->releaseDummyOutcomeAndShare(cellInfo._cellDescriptionsIndex, cellInfo.indexOfADERDGCellDescription(solverPatch.getSolverNumber()), solverPatch.getTimeStamp(), solverPatch.getTimeStepSize());
     }
   }
 
@@ -702,8 +702,8 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
         <<" has corrupt patch "<<solverPatch.toString());
     logDebug("fusedTimeStepBody", "team = "<<exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()
               <<" want to check patch "<<solverPatch.toString()
-              <<" prediction time stamp "<<predictionTimeStamp
-              <<" prediction time step size"<<predictionTimeStepSize);
+              <<" prediction time stamp "<<solverPatch.getTimeStamp()
+              <<" prediction time step size"<<predictionTsolverPatch.getTimeStepSize());
 
     bool otherTeamHasTimestamp = exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().otherTeamHasTimeStamp(solverPatch.getTimeStamp());
     bool otherTeamHasLargerTimestamp =  exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().otherTeamHasLargerTimeStamp(solverPatch.getTimeStamp());
@@ -712,35 +712,54 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
       ADERDGSolver::progressOffloading(_solver.get(), false, 1); //do some progress and receive task outcomes/time stamps
       otherTeamHasTimestamp = exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().otherTeamHasTimeStamp(solverPatch.getTimeStamp());
       otherTeamHasLargerTimestamp =  exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().otherTeamHasLargerTimeStamp(solverPatch.getTimeStamp());
+      exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().printHistory();
+      logInfo("fusedTimeStepBody"," waiting for timestamp="<<solverPatch.getTimeStamp()
+                                     <<" time step size "<<solverPatch.getTimeStepSize()
+                                     <<" other has larger "<<otherTeamHasLargerTimestamp
+                                     <<" other has time stamp "<<otherTeamHasTimestamp);
     }
 
+    /*while(!exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().otherTeamHasTimeStepData( predictionTimeStamp, predictionTimeStepSize)
+        && !otherTeamHasLargerTimestamp) {
+      ADERDGSolver::progressOffloading(_solver.get(), false, 1); //do some progress and receive task outcomes/time stamps
+      otherTeamHasLargerTimestamp =  exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().otherTeamHasLargerTimeStamp(solverPatch.getTimeStamp());
+    }*/
+
     //we can be sure now that we will be able to check the result
-    if(otherTeamHasTimestamp) {
+    if(otherTeamHasTimestamp
+      && exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().otherTeamHasTimeStepData( solverPatch.getTimeStamp(), solverPatch.getTimeStepSize())) {
+
       logDebug("fusedTimeStepBody", "team = "<<exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()
                 <<" will check patch "<<solverPatch.toString()
-                <<" prediction time stamp "<<predictionTimeStamp
-                <<" prediction time step size"<<predictionTimeStepSize);
+                <<" time stamp "<<solverPatch.getTimeStamp()
+                <<" time step size"<<solverPatch.getTimeStepSize());
 
       peano::datatraversal::TaskSet(
           new LimitingADERDGSolver::CheckAndCorrectSolutionJob(*this, solverPatch, cellInfo,
-              predictionTimeStamp,
-              predictionTimeStepSize));
+              solverPatch.getTimeStamp(),
+              solverPatch.getTimeStepSize()));
               //solverPatch.getPreviousTimeStamp(),
               //solverPatch.getPreviousTimeStepSize()));
       return; //early exit here, do other stuff later
     }
-    else if (otherTeamHasLargerTimestamp) {
+    else  { //if (otherTeamHasLargerTimestamp) {
       if( exahype::reactive::OffloadingContext::getInstance().getInstance().getResilienceStrategy()
             == exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceCorrection) {
         needToRollbackToTeamSolution = true;
+        logError("fusedTimeStepBody", "Time stamps/time step sizes have become inconsistent. Trying to correct by rolling back DG solution to previous time step."
+                                      <<"This won't work if there are FV cells that would have to be rolled back (rollback of FV cells is currently not implemented).");
       }
       else {
         double lastConsistentTimeStamp, lastConsistentTimeStepSize, lastConsistentEstimatedTimeStepSize;
         exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().getLastConsistentTimeStepData(lastConsistentTimeStamp, lastConsistentTimeStepSize, lastConsistentEstimatedTimeStepSize);
-        logError("fusedTimeStepBody", "team = "<<exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()
-                                   <<" is trying to check and outcome that it won't be able to find as the other team is ahead. There must be a soft error somewhere."
-                                   <<" We abort as we currently can't treat this case without correction."
+        logError("fusedTimeStepBody", "Team = "<<exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()
+                                   <<" is trying to check an outcome that it won't be able to find as the other team is ahead or doesn't have the time step size."
+                                   << " There must be a soft error somewhere."
+                                   <<" I was looking for timestamp="<<std::setprecision(30)<<predictionTimeStamp
+                                   <<" and for timestep="<<predictionTimeStepSize
+                                   <<" . Abort due to soft error! This case currently can't be treated without correction."
                                    <<" Last consistent timestamp = "<<lastConsistentTimeStamp);
+        //exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().printHistory();
         MPI_Abort(MPI_COMM_WORLD, -1);
       }
     }
@@ -1492,10 +1511,8 @@ void exahype::solvers::LimitingADERDGSolver::localRecomputation(
     _limiter->rollbackToPreviousTimeStep(limiterPatch);
     assertion(std::isfinite(limiterPatch.getTimeStepSize()));
     _limiter->updateSolution(limiterPatch,cellInfo._cellDescriptionsIndex,boundaryMarkers,true);
-    logError("localRecomputation","is involved "<<limiterPatch.toString());
     assertion(std::isfinite(limiterPatch.getTimeStepSize()));
     copyTimeStepDataFromSolverPatch(solverPatch,limiterPatch); // restore pre-rollback limiter patch time stamp and step size
-    logError("localRecomputation","is involved after copy timestep data "<<limiterPatch.toString());
     projectFVSolutionOnDGSpace(solverPatch,limiterPatch);
   }
   else {

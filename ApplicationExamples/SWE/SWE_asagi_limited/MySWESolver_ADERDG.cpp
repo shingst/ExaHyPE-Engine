@@ -46,9 +46,9 @@ void SWE::MySWESolver_ADERDG::adjustPointSolution(const double* const x,const do
     initialData->getInitialData(x, Q); 
   }
   static bool flipped = false;
-   //logError("adjustPointSolution", "Could introduce error into solution x[0]="<<x[0]<<" x[1]="<<x[1]<<" t= "<<t);
+  logError("adjustPointSolution", "Could introduce error into solution x[0]="<<x[0]<<" x[1]="<<x[1]<<" t= "<<t);
 #if defined(GenerateError)
-  if (tarch::la::equals(t,0.927,0.01)
+  if (tarch::la::equals(t,0.138785,0.01)
      && tarch::la::equals(x[0],5.0319,0.01) 
      && tarch::la::equals(x[1],4.51935,0.01)
 #if defined USE_TMPI
@@ -242,8 +242,8 @@ bool SWE::MySWESolver_ADERDG::isPhysicallyAdmissible(
     }*/
   //  //std::cout <<center[0] << "," << center[1] <<": true" << std::endl;
 
-  //if(center[0]>5)
-    return false;
+  //if(center[0]<2)
+  //  return false;
    
   return true;
 

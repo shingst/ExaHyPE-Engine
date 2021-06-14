@@ -28,7 +28,7 @@ tarch::logging::Log Elastic::MyElasticWaveSolver::_log( "Elastic::MyElasticWaveS
 void Elastic::MyElasticWaveSolver::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   // @todo Please implement/augment if required
   initPointSourceLocations(cmdlineargs,constants);
-  amr_regularization = false; //constants.getValueAsBool ("amr_regularization");
+  amr_regularization = constants.getValueAsBool ("amr_regularization");
 }
 
 void Elastic::MyElasticWaveSolver::adjustSolution(double* const luh, const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {

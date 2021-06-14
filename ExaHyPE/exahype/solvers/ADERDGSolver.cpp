@@ -138,7 +138,6 @@ constexpr int exahype::solvers::ADERDGSolver::Keep;
 tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::RestrictionSemaphore;
 tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::CoarseGridSemaphore;
 
-tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::OffloadingSemaphore;
 
 #if defined(SharedTBB)
 template class exahype::solvers::OutcomeDatabase<exahype::solvers::ADERDGSolver::MigratablePredictionJobOutcomeKey, exahype::solvers::ADERDGSolver::MigratablePredictionJobData>;
@@ -283,8 +282,8 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
      _lastReceiveReplicaTag(tarch::parallel::Node::getInstance().getNumberOfNodes()
                             *exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams()),
      _outcomeDatabase(),
-     _allocatedOutcomes(),
-     _pendingOutcomesToBeShared()
+     _pendingOutcomesToBeShared(),
+     _allocatedOutcomes()
 #endif
 {
   // register tags with profiler
@@ -476,6 +475,7 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
             _minTimeStepSize       = FusedTimeSteppingRerunFactor * _admissibleTimeStepSize;
             _estimatedTimeStepSize = _minTimeStepSize;
             _stabilityConditionWasViolated = true; //todo: do we need to deactivate this?
+            logDebug("wrapUpTimeStep","recompute dt_min"<<std::setprecision(30)<<_minTimeStepSize);
           } else {
             _minTimeStepSize       = _estimatedTimeStepSize; // as we have computed the predictor with an estimate, we have to use the estimated time step size to perform the face integral
             _estimatedTimeStepSize = 0.5 * ( FusedTimeSteppingDiffusionFactor * _admissibleTimeStepSize + _estimatedTimeStepSize );
@@ -3022,7 +3022,7 @@ void exahype::solvers::ADERDGSolver::releaseDummyOutcomeAndShare(int cellDescrip
   delete[] sendRequests;
 }
 
-void exahype::solvers::ADERDGSolver::releasePendingOutcomeAndShare(int cellDescriptionsIndex, int element) {
+void exahype::solvers::ADERDGSolver::releasePendingOutcomeAndShare(int cellDescriptionsIndex, int element, double timeStamp, double timeStepSize) {
   MigratablePredictionJobData *data = nullptr;
   tbb::concurrent_hash_map<std::pair<int,int>, MigratablePredictionJobData*>::accessor accessor;
   bool found = _pendingOutcomesToBeShared.find(accessor, std::make_pair(cellDescriptionsIndex, element));
@@ -3037,6 +3037,11 @@ void exahype::solvers::ADERDGSolver::releasePendingOutcomeAndShare(int cellDescr
     logInfo("releasePendingOutcomeAndShare", "team = "<<exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()
         <<" releasing cellDescriptionsIndex = "<<cellDescriptionsIndex<<" "<<cellDescription.toString())
 
+    //need to reset this: with predictor re-runs, the solution belongs to a different time step size
+    assert(data->_metadata._predictorTimeStamp == timeStamp);
+    assert(data->_metadata._predictorTimeStepSize == timeStepSize);
+    //data->_metadata._predictorTimeStamp = timeStamp;
+    //data->_metadata._predictorTimeStepSize = timeStepSize;
     logInfo("releasePendingOutcomeAndShare", " celldesc ="<<cellDescriptionsIndex<<" isPotentiallyCorrupted "<<(cellDescription.getCorruptionStatus()==PotentiallyCorrupted)
                                               <<" timestepsize "<<std::setprecision(30)<<data->_metadata._predictorTimeStepSize);
     if(exahype::reactive::ResilienceTools::CheckLimitedCellsOnly)
@@ -3708,9 +3713,8 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
       && !terminateImmediately
       && iprobesCounter<maxIts)
   {
-
-    if((timing+MPI_Wtime()) >10 && !warningPrinted) {
-      logError("pollForOutstanding", " warning: polling very long ");
+    if((timing+MPI_Wtime()) >2 && !warningPrinted) {
+      logError("pollForOutstanding", " warning: polling very long iprobes counter "<<iprobesCounter);
       warningPrinted = true;
     }
 
@@ -3845,12 +3849,17 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
 #if !defined(UseMPIThreadSplit) //skip spin lock when MPI thread split model is used
   bool canRun;
   tarch::multicore::Lock lock(OffloadingSemaphore, false);
+  
 #if defined(OffloadingUseProgressThread)
   if(runOnMaster)
     canRun = false;
   else
     canRun = lock.tryLock();
 #else
+  //assert(!runOnMaster);
+  //if(tarch::multicore::Core::getInstance().getThreadNum()==0) {
+  //  logError("progressOffloading", "Progress about to run on master thread!");
+ // }
   //assertion(!runOnMaster);
   // First, we ensure here that only one thread at a time progresses offloading
   // this avoids multithreaded MPI problems
@@ -3866,6 +3875,10 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
   //VT_begin(event_progress);
 #endif
 
+#ifdef OffloadingUseProfiler
+  double timing = -MPI_Wtime();
+  exahype::reactive::OffloadingProfiler::getInstance().beginProgress();
+#endif
 
   /*tarch::timing::Watch watch("ADERDGSolver","progress", false, false);
   if(tarch::multicore::Core::getInstance().getThreadNum()==0) {
@@ -3877,14 +3890,35 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
 
   // 2. make progress on any outstanding MPI communication
   //if(!runOnMaster)
+#ifdef OffloadingUseProfiler
+  double timing_requests = -MPI_Wtime();
+  exahype::reactive::OffloadingProfiler::getInstance().beginProgressRequests();
+#endif
   exahype::reactive::RequestManager::getInstance().progressRequests();
+#ifdef OffloadingUseProfiler
+  timing_requests += MPI_Wtime();
+  exahype::reactive::OffloadingProfiler::getInstance().endProgressRequests(timing_requests);
+#endif
 
   // 3. progress on performance monitor
   exahype::reactive::PerformanceMonitor::getInstance().run();
 
   // 4. detect whether local rank should receive anything
   //if(!runOnMaster)
+#ifdef OffloadingUseProfiler
+  double timing_poll = -MPI_Wtime();
+  exahype::reactive::OffloadingProfiler::getInstance().beginPolling();
+#endif
   pollForOutstandingCommunicationRequests(solver, runOnMaster, maxIts);
+#ifdef OffloadingUseProfiler
+  timing_poll += MPI_Wtime();
+  exahype::reactive::OffloadingProfiler::getInstance().endPolling(timing_poll);
+#endif
+
+#ifdef OffloadingUseProfiler
+  timing += MPI_Wtime();
+  exahype::reactive::OffloadingProfiler::getInstance().endProgress(timing);
+#endif
 
 #if !defined(UseMPIThreadSplit)
   lock.free();
@@ -4261,6 +4295,7 @@ bool exahype::solvers::ADERDGSolver::OffloadingManagerJob::run( bool isCalledOnM
       //}
       //double time = -MPI_Wtime();
       exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, std::numeric_limits<int>::max());
+      //exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, 1);
       //time += MPI_Wtime();
       //if(time>0.02)
       //  logInfo("run","took too long"<<time);

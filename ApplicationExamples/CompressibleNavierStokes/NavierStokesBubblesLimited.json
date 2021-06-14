@@ -103,16 +103,25 @@
 		"amr-factor-refine": 3.5,
 		"amr-factor-erase": -0.5
 	    },
-	   "plotters": [
-               {
-                    "type": "vtu::Cartesian::vertices::ascii",
-                    "name": "Plotter_Limiter",
-                    "time": 1e-06,
-                    "repeat": 0.1,
-                    "output": "./results/solution",
-                    "variables": 5
-                }
-          ]
+	    "plotters": [
+		{
+		    "type": "vtu::Cartesian::vertices::limited::ascii",
+		    "name": "Plotter_Limiting",
+		    "time": 0.0,
+		    "repeat": 30,
+		    "output": "/work_fast/krenz/bubble_limited/solution",
+		    "variables": 5
+		},
+		{
+		    "type": "vtk::Cartesian::subcells::limited::ascii",
+		    "name": "Plotter_Limiting",
+		    "time": 10000.0001,
+		    "repeat": 10.0,
+		    "output": "/work_fast/krenz/bubble_limited/subcell_solution",
+		    "variables": 5
+		}
+
+	    ]
 	}
     ]
 }

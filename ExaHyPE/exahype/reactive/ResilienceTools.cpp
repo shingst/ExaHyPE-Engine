@@ -34,7 +34,7 @@ bool exahype::reactive::ResilienceTools::CheckFlipped;
 
 
 exahype::reactive::ResilienceTools::ResilienceTools()
- : _injectionInterval(1000),
+ : _injectionInterval(1500),
    _numFlips(1),
    _cnt(1),
    _numFlipped(0),
@@ -42,9 +42,9 @@ exahype::reactive::ResilienceTools::ResilienceTools()
    _l1NormTol(0.0000001),
    _l2NormTol(0.0000001),
    _corruptionDetected(false),
-   _injectionRank(2)
+   _injectionRank(1)
 {
-  if(_injectionRank<=tarch::parallel::Node::getInstance().getNumberOfNodes()
+  if(_injectionRank>=tarch::parallel::Node::getInstance().getNumberOfNodes()
      && GenerationStrategy!=SoftErrorGenerationStrategy::None) {
     logWarning("ResilienceTools","The error injection rank is currently hardcoded to a rank bigger than the total number of ranks, no error will be injected...");
   }

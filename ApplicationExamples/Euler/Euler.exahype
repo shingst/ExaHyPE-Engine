@@ -17,21 +17,21 @@ exahype-project Euler
   architecture const               = hsw
 
   computational-domain
-    dimension const         = 3
-    width                   = 1.0, 1.0, 1.0
-    offset                  = 0.0, 0.0, 0.0
-    end-time                = 1.0
+    dimension const         = 2
+    width                   = 10.0, 3.3, 1.0
+    offset                  = -5.0, 0.0, 0.0
+    end-time                = 1.81
     outside_cells_left      = 0
     outside_cells_right     = 0
   end computational-domain
   
-  /*shared-memory
+  shared-memory
     identifier      = dummy
     configure       = {}
-    cores           = 5
+    cores           = 4
     properties-file = sharedmemory.properties
     thread-stack-size = 16000000
-  end shared-memory*/  
+  end shared-memory  
   
   distributed-memory
     identifier               = static_load_balancing
@@ -45,7 +45,7 @@ exahype-project Euler
     fuse-algorithmic-steps-rerun-factor             = 0.99
     fuse-algorithmic-steps-diffusion-factor         = 0.99
     spawn-predictor-as-background-thread            = on
-    spawn-amr-background-threads                    = off
+    spawn-amr-background-threads                    = on
     /* 0.0 und 0.8 sind schon mal zwei Faktoren */
     disable-vertex-exchange-in-time-steps           = on
     time-step-batch-factor                          = 0.8
@@ -58,12 +58,12 @@ exahype-project Euler
     variables const             = rho:1,j:3,E:1
     global_observables const    = dgcells:1,fvcells:1
     order const                 = 5
-    maximum-mesh-size           = 0.1
-    maximum-mesh-depth          = 0
+    maximum-mesh-size           = 1.2
+    maximum-mesh-depth          = 2
     time-stepping               = global
     type const                  = nonlinear
     terms const                 = flux
-    optimisation const          = generic, usestack
+    optimisation const          = optimised, usestack
     language const              = C
     limiter-type const          = musclhancock
     limiter-optimisation const  = generic
@@ -73,17 +73,18 @@ exahype-project Euler
     dmp-relaxation-parameter    = 1e-3
     dmp-difference-scaling      = 1e-2
     // reference either: sod,entropywave,explosion,rarefactionwave
-    constants                   = reference:entropywave
+    constants                   = reference:shuosher
     
     // works only properly for single-node runs
+    /*
     plot user::defined ErrorWriter
       variables const = 5
       time            = 0.0
       repeat          = 1e-1
       output          = not-available
     end plot
-   
-    /* 
+    */
+    
     plot vtu::Cartesian::cells::limited::ascii ErrorPlotter
       // absErrorL1perCell[nvar],Q[nvar],QAnalytical[nvar]
       variables const = 15 
@@ -91,6 +92,6 @@ exahype-project Euler
       repeat          = 1e-1
       output          = ./errors
     end plot
-    */
+
   end solver
 end exahype-project

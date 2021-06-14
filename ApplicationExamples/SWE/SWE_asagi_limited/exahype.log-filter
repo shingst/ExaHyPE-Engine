@@ -37,7 +37,7 @@ info  exahype::offloading::OffloadingManager::run -1 black
 #info  exahype::offloading::OffloadingManager::getInstance -1 black
 info  exahype::offloading::OffloadingManager::printBlacklist -1 black
 info  exahype::solvers::ADERDGSolver   -1 black
-#info  exahype::solvers::ADERDGSolver::wrapUpTimeStep   -1 white
+info  exahype::solvers::ADERDGSolver::wrapUpTimeStep   -1 white
 #info  exahype::solvers::ADERDGSolver::predictionAndVolumeIntegral -1 white
 #info  exahype::solvers::ADERDGSolver::handleLocalExecution -1 white
 #info  exahype::solvers::ADERDGSolver::releasePendingOutcomeAndShare -1 white
@@ -45,6 +45,7 @@ info  exahype::solvers::ADERDGSolver   -1 black
 #info  exahype::solvers::ADERDGSolver::tryToFindAndExtractOutcome   -1 white
 debug  exahype::solvers::ADERDGSolver::receiveHandlerTaskSharing   -1 white
 ##info  exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes -1 white
+
 info  exahype::reactive::TimeStampAndLimiterHistory::printHistory -1 black
 info  exahype::solvers::LimitingADERDGSolver   -1 black
 #info  exahype::solvers::LimitingADERDGSolver::run   -1 white 

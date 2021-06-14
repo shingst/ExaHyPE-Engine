@@ -66,6 +66,7 @@ class exahype::reactive::TimeStampAndLimiterTeamHistory {
     void getLastConsistentTimeStepData(double& timestamp, double& timestepSize, double& estimatedTimeStepSize);
     void resetMyTeamToLastConsistentTimeStep();
 
+    bool otherTeamHasTimeStepData(double timeStamp, double timeStepSize);
     bool otherTeamHasTimeStamp(double timeStamp);
     bool otherTeamHasLargerTimeStamp(double timeStamp);
 

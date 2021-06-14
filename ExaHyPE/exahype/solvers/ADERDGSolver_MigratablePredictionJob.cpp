@@ -70,7 +70,7 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
   exahype::reactive::PerformanceMonitor::getInstance().incCurrentTasks();
 
   auto& cellDescription = getCellDescription(cellDescriptionsIndex, element);
-  logInfo("MigratablePredictionJob","team "<<exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()<<" spawning STP for "
+  logDebug("MigratablePredictionJob","team "<<exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()<<" spawning STP for "
         <<cellDescription.toString());
 
   tarch::la::Vector<DIMENSIONS, double> center = cellDescription.getOffset()+0.5*cellDescription.getSize();
@@ -103,8 +103,8 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
       _predictorTimeStamp(predictorTimeStamp),
       _predictorTimeStepSize(predictorTimeStepSize),
       _originRank(originRank),
-      _isSkeleton(false),  //this constructor should never be invoked for skeletons!
       _tag(tag),
+      _isSkeleton(false),  //this constructor should never be invoked for skeletons!
       _luh(luh),
       _lduh(lduh),
       _lQhbnd(lQhbnd),
@@ -129,14 +129,12 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
   else
     NumberOfEnclaveJobs++;
   exahype::reactive::PerformanceMonitor::getInstance().incCurrentTasks();
-
-  //if(_solver.healingActivated())
-  //  _currentState = State::HEALING_REQUIRED;
 }
 
 exahype::solvers::ADERDGSolver::MigratablePredictionJob::~MigratablePredictionJob() {
 }
 
+//Caution: Compression is not supported yet!
 bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run(
     bool isCalledOnMaster) {
 
@@ -378,7 +376,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::needToShare(bool h
           ==exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharing){
     return !hasOutcome
         && (AllocatedSTPsSend
-            <= exahype::reactive::PerformanceMonitor::getInstance().getTasksPerTimestep()/tarch::multicore::Core::getInstance().getNumberOfThreads());
+            <= exahype::reactive::PerformanceMonitor::getInstance().getTasksPerTimestep()/((exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams()-1)*tarch::multicore::Core::getInstance().getNumberOfThreads()));
   }
   else {
     return !hasOutcome
@@ -1090,7 +1088,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::matches(Migratable
   if(_isCorrupted)
     logError("checkAgainstOutcome", "checking against outcome");
 #if defined(USE_TMPI)
-  logInfo("checkAgainstOutcome", "team "<<TMPI_GetTeamNumber()<<" comparing center[0]="<<_center[0]<<" center[1]="<<_center[1]<<" timestamp "<<_predictorTimeStamp<<" with received task outcome "<<data->_metadata.to_string());
+  logInfo("matches", "team "<<TMPI_GetTeamNumber()<<" comparing center[0]="<<_center[0]<<" center[1]="<<_center[1]<<" timestamp "<<_predictorTimeStamp<<" with received task outcome "<<data->_metadata.to_string());
 #endif
 
   CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
@@ -1229,7 +1227,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandler(
           data->_metadata.getOrigin(), tag);
   peano::datatraversal::TaskSet spawnedSet(job);
 
-  logInfo("receiveHandler",
+  logDebug("receiveHandler",
       " received task : "<< data->_metadata.to_string()<<" from "<<data->_metadata.getOrigin()<<" tag = "<<tag);
 
   exahype::reactive::OffloadingProfiler::getInstance().notifyReceivedTask(data->_metadata.getOrigin());
