@@ -11,8 +11,8 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#ifndef EXAHYPE_EXAHYPE_REACTIVE_TIMESTAMPANDLIMITERTEAMHISTORY_H_
-#define EXAHYPE_EXAHYPE_REACTIVE_TIMESTAMPANDLIMITERTEAMHISTORY_H_
+#ifndef EXAHYPE_EXAHYPE_REACTIVE_TIMESTAMPANDTRIGGERTEAMHISTORY_H_
+#define EXAHYPE_EXAHYPE_REACTIVE_TIMESTAMPANDTRIGGERTEAMHISTORY_H_
 
 #include "tarch/logging/Log.h"
 #include "tarch/multicore/BooleanSemaphore.h"
@@ -22,18 +22,19 @@
 
 namespace exahype {
  namespace reactive {
-   class TimeStampAndLimiterTeamHistory;
+   class TimeStampAndTriggerTeamHistory;
  }
 }
 
 /**
- * The time stamp and limiter history keeps track of the history of time stamps and time step sizes.
- * It is currently only used with the LimitingADERDGSolver and makes only sense if multiple teams
+ * The time stamp and trigger history keeps track of the history of time stamps and time step sizes
+ * and the trigger (indicating whether there was a potential soft error) history.
+ * It makes only sense if multiple teams
  * are used.
- * The history of time stamps and time step sizes can be checked for consistency between the teams in
+ * The history of time stamps, time step sizes and trigger values (per time step) can be checked for consistency between the teams in
  * order to find potential soft errors.
  */
-class exahype::reactive::TimeStampAndLimiterTeamHistory {
+class exahype::reactive::TimeStampAndTriggerTeamHistory {
 
   private:
     /**
@@ -45,7 +46,7 @@ class exahype::reactive::TimeStampAndLimiterTeamHistory {
     std::vector<double> *_timestamps;
     std::vector<double> *_timestepSizes;
     std::vector<double> _estimatedTimestepSizes;
-    std::vector<bool> *_limiterStatuses;
+    std::vector<bool> *_triggerStatuses;
 
     int _lastConsistentTimeStepPtr;
 
@@ -54,17 +55,17 @@ class exahype::reactive::TimeStampAndLimiterTeamHistory {
     void forwardLastConsistentTimeStepPtr();
 
   public:
-    TimeStampAndLimiterTeamHistory();
-    ~TimeStampAndLimiterTeamHistory();
+    TimeStampAndTriggerTeamHistory();
+    ~TimeStampAndTriggerTeamHistory();
 
-    static TimeStampAndLimiterTeamHistory& getInstance();
+    static TimeStampAndTriggerTeamHistory& getInstance();
 
-    void trackTimeStepAndLimiterActive(int team, double timeStamp, double timeStepSize, bool limiterActive, double estimated = std::numeric_limits<double>::infinity());
+    void trackTimeStepAndTriggerActive(int team, double timeStamp, double timeStepSize, bool limiterActive, double estimated = std::numeric_limits<double>::infinity());
     void trackEstimatedTimeStepSizeLocally(double timeStamp, double estTimeStepSize);
 
     bool checkConsistency();
     void getLastConsistentTimeStepData(double& timestamp, double& timestepSize, double& estimatedTimeStepSize);
-    void resetMyTeamToLastConsistentTimeStep();
+    void resetMyTeamHistoryToLastConsistentTimeStep();
 
     bool otherTeamHasTimeStepData(double timeStamp, double timeStepSize);
     bool otherTeamHasTimeStamp(double timeStamp);
@@ -73,4 +74,4 @@ class exahype::reactive::TimeStampAndLimiterTeamHistory {
     void printHistory() const;
 };
 
-#endif /* EXAHYPE_EXAHYPE_REACTIVE_TIMESTAMPANDLIMITERTEAMHISTORY_H_ */
+#endif /* EXAHYPE_EXAHYPE_REACTIVE_TIMESTAMPANDTRIGGERTEAMHISTORY_H_ */

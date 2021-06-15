@@ -38,7 +38,7 @@
 #include "exahype/reactive/NoiseGenerator.h"
 #include "exahype/reactive/STPStatsTracer.h"
 
-#include "exahype/reactive/TimeStampAndLimiterTeamHistory.h"
+#include "exahype/reactive/TimeStampAndTriggerTeamHistory.h"
 
 #ifdef USE_ITAC
 #include "VT.h"

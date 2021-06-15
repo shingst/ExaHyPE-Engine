@@ -3,7 +3,7 @@
 
 #include "exahype/solvers/OutcomeDatabase.h"
 
-#include "exahype/reactive/TimeStampAndLimiterTeamHistory.h"
+#include "exahype/reactive/TimeStampAndTriggerTeamHistory.h"
 #include "exahype/reactive/ResilienceTools.h"
 
 #if defined(FileTrace)
@@ -49,7 +49,7 @@ bool exahype::solvers::LimitingADERDGSolver::CheckAndCorrectSolutionJob::run(boo
       <<" time step size = "<<std::setprecision(30)<< _solverPatch.getTimeStepSize()
       <<" patch "<<_solverPatch.toString() );
 
-  assert(exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().otherTeamHasTimeStepData( _solverPatch.getTimeStamp(),
+  assert(exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().otherTeamHasTimeStepData( _solverPatch.getTimeStamp(),
                                                                                                     _solverPatch.getTimeStepSize()));
 
   bool found = _solver._solver.get()->tryToFindAndExtractOutcome(_cellInfo._cellDescriptionsIndex, 0 /*is this always correct?*/,
@@ -88,12 +88,14 @@ bool exahype::solvers::LimitingADERDGSolver::CheckAndCorrectSolutionJob::run(boo
         // might wanna start healing iterations with solution from sane team
         if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
             ==exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceCorrection) {
-            correctWithOutcomeAndDeleteLimiterStatus(outcome);
+           correctWithOutcomeAndDeleteLimiterStatus(outcome);
            _solver._solver.get()->predictionAndVolumeIntegralBody(
               _solverPatch,
               _predictorTimeStamp,
               _predictorTimeStepSize,
               false/*is uncompressed*/,true,true/*addVolumeIntegralResultToUpdate*/);  //sets has completed!
+           //need to insert new prediction outcome for follow-up time step
+           _solver._solver.get()->storePendingOutcomeToBeShared(_cellInfo._cellDescriptionsIndex, 0, _predictorTimeStamp, _predictorTimeStepSize);
         }
         else {
           logError("run()","Correction is not activated, so we let the limiter do the job.");
@@ -121,12 +123,12 @@ exahype::solvers::LimitingADERDGSolver::CheckAndCorrectSolutionJob::SDCCheckResu
   if(!outcome->_metadata._isPotSoftErrorTriggered)
      // && _solver.getMeshUpdateEvent()==MeshUpdateEvent::IrregularLimiterDomainChangeButMayCorrect) //correct only if we don't require limiter anyway
   {
-    logError("checkAgainstOutcome","Limiter was not active previously in other team, we must have a soft error!"
+    /*logError("checkAgainstOutcome","Limiter was not active previously in other team, we must have a soft error!"
         <<_cellInfo._cellDescriptionsIndex
         <<" stamp "<<_predictorTimeStamp
         <<" step "<<_predictorTimeStepSize
         <<" previous stamp "<<_solverPatch.getPreviousTimeStamp()
-        <<" previous step "<<_solverPatch.getPreviousTimeStepSize());
+        <<" previous step "<<_solverPatch.getPreviousTimeStepSize());*/
      exahype::reactive::ResilienceStatistics::getInstance().notifyDetectedError();
      return SDCCheckResult::OutcomeSaneAsLimiterNotActive;
   }

@@ -804,7 +804,7 @@ class exahype::parser::Parser {
 
   /**
    * @return `true` if the parsed strategy matches the argument.
-   * @param strategy one of "no","migratable_stp_tasks_bitflip", "migratable_stp_tasks_overwrite"
+   * @param strategy one of "no","migratable_stp_tasks_bitflip", "migratable_stp_tasks_overwrite", "migratable_stp_tasks_overwrite_hardcoded"
    */
   bool compareSoftErrorGenerationStrategy(const std::string& strategy) const;
 

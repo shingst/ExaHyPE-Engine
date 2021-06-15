@@ -16,6 +16,7 @@
 
 #include "exahype/reactive/ResilienceTools.h"
 #include "exahype/reactive/OffloadingContext.h"
+#include "exahype/reactive/ResilienceStatistics.h"
 //#include "exahype/parser/Parser.h"
 
 #include "tarch/parallel/Node.h"
@@ -91,7 +92,7 @@ bool exahype::reactive::ResilienceTools::generateBitflipErrorInDoubleIfActive(do
     logError("generateBitflipErrorInDoubleIfActive()","generating bitflip: pos = "<<idx_array<<" byte = "<<idx_byte<<" bit = "<<idx_bit<< " old ="<<old_val<<" new = "<<new_val);
     _cnt = 0;
     _numFlipped++;
-
+    exahype::reactive::ResilienceStatistics::getInstance().notifyInjectedError();
     return true;
   }
   return false;
@@ -113,12 +114,48 @@ bool exahype::reactive::ResilienceTools::overwriteRandomValueInArrayIfActive(dou
     _numFlipped++;
 
     logError("overwriteDoubleIfActive()", "overwrite double value, pos = "<<idx_array<<" old ="<<old_val<<" new = "<<array[idx_array]);
+    exahype::reactive::ResilienceStatistics::getInstance().notifyInjectedError();
     return true;
   }
   return false;
 }
 
-bool exahype::reactive::ResilienceTools::corruptDataIfActive(double *array, size_t size) {
+bool exahype::reactive::ResilienceTools::overwriteHardcodedIfActive(double *center, int dim, double t, double *array, size_t size) {
+
+  //logError("overwriteHardcodedIfActive", "center[0]="<<center[0]<<", center[1]="<<center[1]<<" t "<<t);
+  //center[0]=3.96, center[1]=0.36 t 0.0427902
+
+  //without limiter
+  /*bool isActive = tarch::la::equals(center[0],3.00,0.001)
+                 && tarch::la::equals(center[1],3.00,0.001)
+                 && tarch::la::equals(t, 0.0197496,0.0001);*/
+
+  //exahype::reactive::ResilienceTools::overwriteHardcodedIfActive center[0]=1.8, center[1]=0.12 t 0.138786
+  bool isActive = tarch::la::equals(center[0],3.00,0.001)
+                 && tarch::la::equals(center[1],3.00,0.001)
+                 && tarch::la::equals(t, 0.138786,0.0001);
+
+
+  if(isActive) {
+    int idx_array = 0;
+
+    double old_val = array[idx_array];
+    //array[idx_array] = 0.1 //ADER-DG only
+    //array[idx_array] = 20; //limiter SWE immediately
+    array[idx_array] = 2; //limiter SWE later
+    _numFlipped++;
+
+    logError("overwriteDoubleIfActive()", "overwrite double value, pos = "<<idx_array<<" old ="<<old_val<<" new = "<<array[idx_array]
+                                                                         <<"center[0]="<<center[0]<<" center[1]="<<center[1]
+                                                                         <<" t ="<<t);
+    exahype::reactive::ResilienceStatistics::getInstance().notifyInjectedError();
+    return true;
+  }
+  return false;
+}
+
+
+bool exahype::reactive::ResilienceTools::corruptDataIfActive(double *center, int dim, double t, double *array, size_t size) {
   bool result = false;
 #ifdef USE_TMPI
 if(TMPI_IsLeadingRank()) {
@@ -132,6 +169,9 @@ if(TMPI_IsLeadingRank()) {
     break;
   case SoftErrorGenerationStrategy::Overwrite:
     result = overwriteRandomValueInArrayIfActive(array, size);
+    break;
+  case SoftErrorGenerationStrategy::OverwriteHardcoded:
+    result = overwriteHardcodedIfActive(center, dim, t, array, size);
     break;
   default:
     result = false;

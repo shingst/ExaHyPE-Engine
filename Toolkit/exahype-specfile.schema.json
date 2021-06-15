@@ -439,7 +439,7 @@
         "generate_soft_errors" : { 
           "type" : "string",
           "title" : "Specifies whether and how soft-errors should be artifically generated.",
-          "enum" : ["no","migratable_stp_tasks_bitflip", "migratable_stp_tasks_overwrite"],
+          "enum" : ["no","migratable_stp_tasks_bitflip", "migratable_stp_tasks_overwrite", "migratable_stp_tasks_overwrite_hardcoded"],
           "default" : "no"
          },
          "check_mechanism" : { 

@@ -42,6 +42,8 @@ private:
   std::atomic<int> _doubleCheckedTasks;
   std::atomic<int> _softErrorsDetected;
   std::atomic<int> _healedTasks;
+  std::atomic<int> _softErrorsInjected;
+  std::atomic<int> _limitedTasks;
 
   ResilienceStatistics();
   virtual ~ResilienceStatistics();
@@ -63,7 +65,9 @@ public:
   void notifyRecomputedTask();
   void notifyDoubleCheckedTask();
   void notifyDetectedError();
+  void notifyInjectedError();
   void notifyHealedTask();
+  void notifyLimitedTask();
 };
 
 } /* namespace offloading */

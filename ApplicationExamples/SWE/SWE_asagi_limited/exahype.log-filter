@@ -45,8 +45,9 @@ info  exahype::solvers::ADERDGSolver::wrapUpTimeStep   -1 white
 #info  exahype::solvers::ADERDGSolver::tryToFindAndExtractOutcome   -1 white
 debug  exahype::solvers::ADERDGSolver::receiveHandlerTaskSharing   -1 white
 ##info  exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes -1 white
+info exahype::solvers::LimitingADERDGSolver::checkAgainstOutcome -1 black
 
-info  exahype::reactive::TimeStampAndLimiterHistory::printHistory -1 black
+#info  exahype::reactive::TimeStampAndLimiterHistory::printHistory -1 black
 info  exahype::solvers::LimitingADERDGSolver   -1 black
 #info  exahype::solvers::LimitingADERDGSolver::run   -1 white 
 #info  exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody -1 white 

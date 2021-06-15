@@ -31,7 +31,11 @@ ResilienceStatistics::ResilienceStatistics() :
   _declinedTasks(0),
   _lateTasks(0),
   _recomputedTasks(0),
-  _doubleCheckedTasks(0)
+  _doubleCheckedTasks(0),
+  _softErrorsDetected(0),
+  _healedTasks(0),
+  _softErrorsInjected(0),
+  _limitedTasks(0)
 {
   // TODO Auto-generated constructor stub
 
@@ -90,6 +94,13 @@ void ResilienceStatistics::notifyHealedTask() {
   _healedTasks++;
 }
 
+void ResilienceStatistics::notifyInjectedError() {
+  _softErrorsInjected++;
+}
+
+void ResilienceStatistics::notifyLimitedTask() {
+  _limitedTasks++;
+}
 
 void ResilienceStatistics::printStatistics() {
      int team = exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber();
@@ -97,7 +108,9 @@ void ResilienceStatistics::printStatistics() {
            <<" spawned tasks = "<<_spawnedTasks
            <<" executed tasks = "<<_executedTasks
            <<" double checked tasks = "<<_doubleCheckedTasks
+           <<" soft errors injected = "<<_softErrorsInjected
            <<" detected soft errors = "<<_softErrorsDetected
+           <<" limited tasks = "<<_limitedTasks
            <<" healed tasks = "<<_healedTasks
            <<" saved tasks =  "<<_savedTasks
            <<" sent tasks = "<<_sentTasks

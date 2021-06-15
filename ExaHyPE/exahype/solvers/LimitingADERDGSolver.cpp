@@ -22,8 +22,7 @@
 #include "exahype/reactive/OffloadingProfiler.h"
 #include "exahype/reactive/ResilienceTools.h"
 #include "exahype/reactive/OffloadingContext.h"
-#include "exahype/reactive/TimeStampAndLimiterTeamHistory.h"
-
+#include "exahype/reactive/TimeStampAndTriggerTeamHistory.h"
 #include "exahype/VertexOperations.h"
 #include "exahype/amr/AdaptiveMeshRefinement.h"
 
@@ -189,11 +188,11 @@ void exahype::solvers::LimitingADERDGSolver::wrapUpTimeStep(const bool isFirstTi
   }
 
   if(getMeshUpdateEvent()==MeshUpdateEvent::RollbackToTeamSolution) {
-    logDebug("wrapUpTimeStep","Limiting solver needs to rollback to team solution from ADER-DG solver of previous consistent time stamp");
+    logDebug("wrapUpTimeStep","Limiting solver needs to rollback to team DG solution from ADER-DG solver of previous consistent time stamp.");
     if(!tarch::parallel::Node::getInstance().isGlobalMaster()
       || tarch::parallel::Node::getInstance().getNumberOfNodes()==1) {
       _solver->rollbackTimeStepMetadataToLastConsistentTimeStep();
-      exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().resetMyTeamToLastConsistentTimeStep();
+      exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().resetMyTeamHistoryToLastConsistentTimeStep();
       activateHealing();
     }
   }
@@ -668,11 +667,13 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
   updateSolution(solverPatch,cellInfo,isFirstTimeStepOfBatch,boundaryMarkers,
                  isFirstTimeStepOfBatch/*addSurfaceIntegralContributionToUpdate*/);
   const bool isTroubled = checkIfCellIsTroubledAndDetermineMinAndMax(solverPatch,cellInfo);
-  exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().trackTimeStepAndLimiterActive(exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber(),
+  exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().trackTimeStepAndTriggerActive(exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber(),
                                                                                                          solverPatch.getTimeStamp(),solverPatch.getTimeStepSize(),isTroubled, _solver.get()->getEstimatedTimeStepSize());
 
-  if(isTroubled)
+  if(isTroubled) {
+    exahype::reactive::ResilienceStatistics::getInstance().notifyLimitedTask();
     solverPatch.setCorruptionStatus(ADERDGSolver::PotentiallyCorrupted);
+  }
 
   bool needToRollbackToTeamSolution = false;
   if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
@@ -705,14 +706,14 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
               <<" prediction time stamp "<<solverPatch.getTimeStamp()
               <<" prediction time step size"<<predictionTsolverPatch.getTimeStepSize());
 
-    bool otherTeamHasTimestamp = exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().otherTeamHasTimeStamp(solverPatch.getTimeStamp());
-    bool otherTeamHasLargerTimestamp =  exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().otherTeamHasLargerTimeStamp(solverPatch.getTimeStamp());
+    bool otherTeamHasTimestamp = exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().otherTeamHasTimeStamp(solverPatch.getTimeStamp());
+    bool otherTeamHasLargerTimestamp =  exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().otherTeamHasLargerTimeStamp(solverPatch.getTimeStamp());
 
     while(!otherTeamHasTimestamp && !otherTeamHasLargerTimestamp) {
       ADERDGSolver::progressOffloading(_solver.get(), false, 1); //do some progress and receive task outcomes/time stamps
-      otherTeamHasTimestamp = exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().otherTeamHasTimeStamp(solverPatch.getTimeStamp());
-      otherTeamHasLargerTimestamp =  exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().otherTeamHasLargerTimeStamp(solverPatch.getTimeStamp());
-      exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().printHistory();
+      otherTeamHasTimestamp = exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().otherTeamHasTimeStamp(solverPatch.getTimeStamp());
+      otherTeamHasLargerTimestamp =  exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().otherTeamHasLargerTimeStamp(solverPatch.getTimeStamp());
+      exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().printHistory();
       logInfo("fusedTimeStepBody"," waiting for timestamp="<<solverPatch.getTimeStamp()
                                      <<" time step size "<<solverPatch.getTimeStepSize()
                                      <<" other has larger "<<otherTeamHasLargerTimestamp
@@ -727,7 +728,7 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
 
     //we can be sure now that we will be able to check the result
     if(otherTeamHasTimestamp
-      && exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().otherTeamHasTimeStepData( solverPatch.getTimeStamp(), solverPatch.getTimeStepSize())) {
+      && exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().otherTeamHasTimeStepData( solverPatch.getTimeStamp(), solverPatch.getTimeStepSize())) {
 
       logDebug("fusedTimeStepBody", "team = "<<exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()
                 <<" will check patch "<<solverPatch.toString()
@@ -751,7 +752,7 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
       }
       else {
         double lastConsistentTimeStamp, lastConsistentTimeStepSize, lastConsistentEstimatedTimeStepSize;
-        exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().getLastConsistentTimeStepData(lastConsistentTimeStamp, lastConsistentTimeStepSize, lastConsistentEstimatedTimeStepSize);
+        exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().getLastConsistentTimeStepData(lastConsistentTimeStamp, lastConsistentTimeStepSize, lastConsistentEstimatedTimeStepSize);
         logError("fusedTimeStepBody", "Team = "<<exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()
                                    <<" is trying to check an outcome that it won't be able to find as the other team is ahead or doesn't have the time step size."
                                    << " There must be a soft error somewhere."
@@ -2158,7 +2159,7 @@ void exahype::solvers::LimitingADERDGSolver::stopOffloadingManager() {
 }
 
 void exahype::solvers::LimitingADERDGSolver::activateHealing() {
-  logError("activateHealing"," from now on, next time step will be recovered from outcome database!");
+  logError("activateHealing","From now on, next time step will be recovered from outcome database using the task outcomes from the other team!");
   //assertion(false);
   _healingActivated = true;
 }

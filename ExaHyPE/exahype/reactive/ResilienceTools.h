@@ -28,7 +28,7 @@ namespace exahype {
 
 class exahype::reactive::ResilienceTools {
   public:
-  enum class SoftErrorGenerationStrategy { None, Bitflips, Overwrite };
+  enum class SoftErrorGenerationStrategy { None, Bitflips, Overwrite, OverwriteHardcoded };
   private:
 
   /**
@@ -71,7 +71,7 @@ class exahype::reactive::ResilienceTools {
   ResilienceTools();
   static ResilienceTools& getInstance();
 
-  bool corruptDataIfActive(double *array, size_t length);
+  bool corruptDataIfActive(double *center, int dim, double t, double *array, size_t length);
 
   static void setSoftErrorGenerationStrategy(SoftErrorGenerationStrategy strat);
 
@@ -93,6 +93,7 @@ class exahype::reactive::ResilienceTools {
   private:
   bool generateBitflipErrorInDoubleIfActive(double *array, size_t length);
   bool overwriteRandomValueInArrayIfActive(double *array, size_t size);
+  bool overwriteHardcodedIfActive(double *center, int dim, double t,  double *array, size_t size);
 
   virtual ~ResilienceTools();
 

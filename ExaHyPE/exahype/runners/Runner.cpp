@@ -352,6 +352,9 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     else if (_parser.compareSoftErrorGenerationStrategy("migratable_stp_tasks_overwrite")) {
       exahype::reactive::ResilienceTools::setSoftErrorGenerationStrategy(exahype::reactive::ResilienceTools::SoftErrorGenerationStrategy::Overwrite);
     }
+    else if (_parser.compareSoftErrorGenerationStrategy("migratable_stp_tasks_overwrite_hardcoded")) {
+      exahype::reactive::ResilienceTools::setSoftErrorGenerationStrategy(exahype::reactive::ResilienceTools::SoftErrorGenerationStrategy::OverwriteHardcoded);
+    }
     else{
       logError("initDistributedMemoryConfiguration()", "no valid soft error generation strategy specified");
       _parser.invalidate();
@@ -1918,7 +1921,7 @@ void exahype::runners::Runner::printTimeStepInfo(int numberOfStepsRanSinceLastCa
  
 
   logInfo("printTimeStepInfo(...)",
-      "\tdt_min         =" << currentMinTimeStepSize);
+      "\tdt_min         =" << std::setprecision(30)<< currentMinTimeStepSize);
 
   #if !defined(Parallel)
   // memory consumption on rank 0 would not make any sense

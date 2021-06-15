@@ -1434,12 +1434,13 @@ private:
 
   OutcomeDatabase<MigratablePredictionJobOutcomeKey, MigratablePredictionJobData> _outcomeDatabase;
 
-
   tbb::concurrent_hash_map<std::pair<int,int> , MigratablePredictionJobData*> _pendingOutcomesToBeShared;
 
   void storePendingOutcomeToBeShared(MigratablePredictionJob *job);
+  void storePendingOutcomeToBeShared(int cellDescriptionsIndex, int element, double timestamp, double timestep);
   void releaseDummyOutcomeAndShare(int cellDescriptionsIndex, int element, double timestamp, double timestep);
   void releasePendingOutcomeAndShare(int cellDescriptionsIndex, int element, double timestamp, double timestepSize);
+
   bool tryToFindAndExtractOutcome(int cellDescriptionsIndex,
                                   int element,
                                   double predictionTimeStamp,
@@ -1453,9 +1454,9 @@ private:
       std::mutex _mtx;
 
     public:
-       ConcurrentJobKeysList() : _keys(), _mtx() {};
+      ConcurrentJobKeysList() : _keys(), _mtx() {};
 
-       bool try_pop_front(MigratablePredictionJobOutcomeKey *result) {
+      bool try_pop_front(MigratablePredictionJobOutcomeKey *result) {
     	bool found = false;
         _mtx.lock();
         if(!_keys.empty()) {

@@ -328,7 +328,7 @@ class Controller:
         else:
             context["offloading"] = "none"
             context["offloadingProgress"] = "none"
-            context["tasksharingMode"] = "no"
+            context["useTasksharing"] = "no"
             context["useLocalRecompute"] = False
       
         context["useViscousFlux"] = False
