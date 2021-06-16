@@ -102,7 +102,7 @@ bool exahype::solvers::LimitingADERDGSolver::CheckAndCorrectSolutionJob::run(boo
           update_result._timeStepSize    = _solver.startNewTimeStep(_solverPatch,_cellInfo,true /*isFirstTimeStepOfBatch*/);
           update_result._meshUpdateEvent = _solver.updateRefinementStatusAfterSolutionUpdate(_solverPatch,_cellInfo,true /*troubled*/, false);
           _solver.reduce(_solverPatch,_cellInfo,update_result);
-
+          //skip STP computation
           _solverPatch.setHasCompletedLastStep(true);
         }
 

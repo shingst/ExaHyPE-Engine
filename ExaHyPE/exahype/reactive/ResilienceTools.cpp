@@ -141,8 +141,9 @@ bool exahype::reactive::ResilienceTools::overwriteHardcodedIfActive(double *cent
 
     double old_val = array[idx_array];
     //array[idx_array] = 0.1 //ADER-DG only
-    //array[idx_array] = 20; //limiter SWE immediately
-    array[idx_array] = 2; //limiter SWE later
+
+    array[idx_array] = 20; //limiter SWE immediately
+    //array[idx_array] = 2; //limiter SWE later
     _numFlipped++;
 
     logError("overwriteDoubleIfActive()", "overwrite double value, pos = "<<idx_array<<" old ="<<old_val<<" new = "<<array[idx_array]

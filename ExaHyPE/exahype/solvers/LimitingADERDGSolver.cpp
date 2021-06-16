@@ -704,7 +704,7 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
     logDebug("fusedTimeStepBody", "team = "<<exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()
               <<" want to check patch "<<solverPatch.toString()
               <<" prediction time stamp "<<solverPatch.getTimeStamp()
-              <<" prediction time step size"<<predictionTsolverPatch.getTimeStepSize());
+              <<" prediction time step size"<<solverPatch.getTimeStepSize());
 
     bool otherTeamHasTimestamp = exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().otherTeamHasTimeStamp(solverPatch.getTimeStamp());
     bool otherTeamHasLargerTimestamp =  exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().otherTeamHasLargerTimeStamp(solverPatch.getTimeStamp());
@@ -732,13 +732,13 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
 
       logDebug("fusedTimeStepBody", "team = "<<exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()
                 <<" will check patch "<<solverPatch.toString()
-                <<" time stamp "<<solverPatch.getTimeStamp()
-                <<" time step size"<<solverPatch.getTimeStepSize());
+                <<" time stamp "<<predictionTimeStamp
+                <<" time step size"<<predictionTimeStepSize);
 
       peano::datatraversal::TaskSet(
           new LimitingADERDGSolver::CheckAndCorrectSolutionJob(*this, solverPatch, cellInfo,
-              solverPatch.getTimeStamp(),
-              solverPatch.getTimeStepSize()));
+              predictionTimeStamp,
+              predictionTimeStepSize));
               //solverPatch.getPreviousTimeStamp(),
               //solverPatch.getPreviousTimeStepSize()));
       return; //early exit here, do other stuff later
@@ -762,6 +762,15 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
                                    <<" Last consistent timestamp = "<<lastConsistentTimeStamp);
         //exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().printHistory();
         MPI_Abort(MPI_COMM_WORLD, -1);
+
+        /*logError("fusedTimeStepBody", "Team = "<<exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()
+                                   <<" is trying to check an outcome that it won't be able to find as the other team is ahead or doesn't have the time step size."
+                                   << " There must be a soft error somewhere."
+                                   <<" I was looking for timestamp="<<std::setprecision(30)<<predictionTimeStamp
+                                   <<" and for timestep="<<predictionTimeStepSize<<"."<<
+                                   <<" Detect this as an error and continue."
+                                   <<" Last consistent timestamp = "<<lastConsistentTimeStamp);*/
+        //exahype::reactive::ResilienceStatistics::getInstance().notifyDetectedError();
       }
     }
   }
