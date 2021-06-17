@@ -30,9 +30,9 @@ class {{project}}::{{solver}}: public exahype::solvers::LimitingADERDGSolver {
     static constexpr int GhostLayerWidth           = {{project}}::{{FVAbstractSolver}}::GhostLayerWidth;
       
     // limiter projection matrices
-    double dg2fv[(Order+1)*PatchSize];
-    double fv2dg[(Order+1)*PatchSize];
-    double leg2lob[(Order+1)*(Order+1)];
+    double dg2fv[(Order+1)*PatchSize] = {0}; //dg2fv is directly overwritten in generic kernels -> needs to be initialized with zero!
+    double fv2dg[(Order+1)*PatchSize] = {0};
+    double leg2lob[(Order+1)*(Order+1)] = {0};
       
     {{solver}}(
         const double maximumMeshSize,
