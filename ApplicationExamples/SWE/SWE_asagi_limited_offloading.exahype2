@@ -49,6 +49,7 @@
   "resilience" : {
     "generate_soft_errors" : "migratable_stp_tasks_overwrite_hardcoded",
     "check_mechanism" : "check_limited_after_update",
+    "save_redundant_computations" : true,
     "task_sharing" : "task_sharing_resilience_correction"
   },
   "optimisation": {

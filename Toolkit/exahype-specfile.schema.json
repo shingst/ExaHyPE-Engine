@@ -439,7 +439,7 @@
         "save_redundant_computation": { 
           "type" : "boolean",
           "title": "Specifies whether ExaHyPE attempts to save redundant computations by reusing shared outcomes (requires task sharing). This can make undetected silent errors propagate to other teams.",
-          "default" : false
+          "default" : true
         },
         "generate_soft_errors" : { 
           "type" : "string",

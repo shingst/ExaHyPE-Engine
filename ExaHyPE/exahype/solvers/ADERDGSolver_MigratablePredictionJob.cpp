@@ -474,6 +474,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::executeOrCopySTPOu
    && exahype::reactive::ReactiveContext::getSaveRedundantComputations()
    && !outcome->_metadata._isPotSoftErrorTriggered) {
     copyOutcome(outcome);
+    hasFlipped = corruptIfActive();
     hasComputed = false;
   }
   else {

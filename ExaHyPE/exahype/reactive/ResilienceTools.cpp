@@ -126,23 +126,23 @@ bool exahype::reactive::ResilienceTools::overwriteHardcodedIfActive(double *cent
   //center[0]=3.96, center[1]=0.36 t 0.0427902
 
   //without limiter
-  bool isActive = tarch::la::equals(center[0],3.00,0.001)
+  /*bool isActive = tarch::la::equals(center[0],3.00,0.001)
                  && tarch::la::equals(center[1],3.00,0.001)
-                 && tarch::la::equals(t, 0.0197496,0.0001);
+                 && tarch::la::equals(t, 0.0197496,0.0001);*/
 
   //with limiter
   //exahype::reactive::ResilienceTools::overwriteHardcodedIfActive center[0]=1.8, center[1]=0.12 t 0.138786
-  /*bool isActive = tarch::la::equals(center[0],3.00,0.001)
+  bool isActive = tarch::la::equals(center[0],3.00,0.001)
                  && tarch::la::equals(center[1],3.00,0.001)
-                 && tarch::la::equals(t, 0.138786,0.0001);*/
+                 && tarch::la::equals(t, 0.138786,0.0001);
 
   if(isActive) {
     int idx_array = 0;
 
     double old_val = array[idx_array];
-    array[idx_array] = 0.1; //ADER-DG only
+    //array[idx_array] = 0.1; //ADER-DG only
 
-    //array[idx_array] = 20; //limiter SWE immediately
+    array[idx_array] = 20; //limiter SWE immediately
     //array[idx_array] = 2; //limiter SWE later
     _numFlipped++;
 
