@@ -97,12 +97,7 @@ peano::MappingSpecification   exahype::mappings::LoadBalancing::leaveCellSpecifi
   return peano::MappingSpecification(peano::MappingSpecification::Nop,peano::MappingSpecification::RunConcurrentlyOnFineGrid,true);
 }
 
-
 tarch::logging::Log                exahype::mappings::LoadBalancing::_log( "exahype::mappings::LoadBalancing" ); 
-
-
-
-
 
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::LoadBalancing::LoadBalancing(const LoadBalancing&  masterThread) {

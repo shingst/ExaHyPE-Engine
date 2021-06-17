@@ -11,9 +11,9 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#include "../reactive/ResilienceStatistics.h"
+#include "exahype/reactive/ResilienceStatistics.h"
 
-#include "OffloadingContext.h"
+#include "exahype/reactive/ReactiveContext.h"
 
 namespace exahype {
 namespace reactive {
@@ -103,7 +103,7 @@ void ResilienceStatistics::notifyLimitedTask() {
 }
 
 void ResilienceStatistics::printStatistics() {
-     int team = exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber();
+     int team = exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber();
      logInfo("printStatistics", " team "<<team
            <<" spawned tasks = "<<_spawnedTasks
            <<" executed tasks = "<<_executedTasks

@@ -149,8 +149,9 @@ void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverSt
       exit(-1);
   }
   
-  if(exahype::reactive::OffloadingContext::getInstance().getOffloadingStrategy()
-     == exahype::reactive::OffloadingContext::OffloadingStrategy::AggressiveHybrid)
+  // for mesh refinement, disable the task distributor
+  if(exahype::reactive::ReactiveContext::getInstance().getOffloadingStrategy()
+     == exahype::reactive::ReactiveContext::OffloadingStrategy::AggressiveHybrid)
     exahype::reactive::AggressiveHybridDistributor::getInstance().disable();  
   #endif
 }
@@ -177,7 +178,6 @@ void exahype::mappings::MeshRefinement::endIteration(exahype::State& solverState
   exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::AMRJob);
 
   logTraceOutWith1Argument("endIteration(State)", solverState);
-
 }
 
 void exahype::mappings::MeshRefinement::refineSafely(

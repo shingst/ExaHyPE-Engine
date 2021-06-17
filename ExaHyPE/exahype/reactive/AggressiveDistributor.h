@@ -17,7 +17,7 @@
 #include "tarch/logging/Log.h"
 #include "tarch/multicore/BooleanSemaphore.h"
 
-#include "exahype/reactive/OffloadingContext.h"
+#include "exahype/reactive/ReactiveContext.h"
 
 #include <atomic>
 

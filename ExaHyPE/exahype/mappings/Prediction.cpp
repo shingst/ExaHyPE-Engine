@@ -32,7 +32,6 @@
 #include "VT.h"
 #endif
 
-
 peano::MappingSpecification exahype::mappings::Prediction::determineEnterLeaveCellSpecification(int level) {
   const int coarsestSolverLevel = solvers::Solver::getCoarsestMeshLevelOfAllSolvers();
   if ( std::abs(level)>=coarsestSolverLevel-1 ) {
@@ -101,7 +100,6 @@ exahype::mappings::Prediction::~Prediction() {
 
 void exahype::mappings::Prediction::beginIteration(
     exahype::State& solverState) {
-
   logTraceInWith1Argument("beginIteration(State)", solverState);
 
   #ifdef USE_ITAC
@@ -109,7 +107,7 @@ void exahype::mappings::Prediction::beginIteration(
   #endif
 
   #ifdef Parallel
-//  MPI_Pcontrol(1); 
+  MPI_Pcontrol(1);  //Todo(Philipp): this seems to cause some trouble with Vtune, which deadlocks. You may want to deactivate this.
   #endif
 
   if (

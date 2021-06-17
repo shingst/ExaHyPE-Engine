@@ -21,7 +21,7 @@
 #include "exahype/reactive/OffloadingProfiler.h"
 #include "exahype/reactive/PerformanceMonitor.h"
 #include "exahype/reactive/OffloadingAnalyser.h"
-#include "exahype/reactive/OffloadingContext.h"
+#include "exahype/reactive/ReactiveContext.h"
 
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/tbb/Jobs.h"
@@ -275,12 +275,12 @@ void exahype::reactive::AggressiveCCPDistributor::updateLoadDistribution() {
 
   logInfo("updateLoadDistribution()", " critical rank:"<<criticalRank);
   
-  bool isVictim = exahype::reactive::OffloadingContext::getInstance().isVictim();
+  bool isVictim = exahype::reactive::ReactiveContext::getInstance().isVictim();
   if(myRank == criticalRank && !isVictim) {
      for(int i=0; i<nnodes; i++) {
        if(_idealTasksToOffload[i]>0) {
          //we have a potential victim rank
-         if(!exahype::reactive::OffloadingContext::getInstance().isBlacklisted(i)) {
+         if(!exahype::reactive::ReactiveContext::getInstance().isBlacklisted(i)) {
           //logInfo("updateLoadDistribution", "tasks for victim "<<i<<" before recomputation:"<<_tasksToOffload[i]<< " ideal: "<<_idealTasksToOffload[i]<< " temp "<<_temperature);
           //logInfo("updateLoadDistribution", "first : "<<(1.0-_temperature)*_tasksToOffload[i]<<" second:"<<_temperature*_idealTasksToOffload[i]);
           _tasksToOffload[i] = std::ceil(std::max((1.0-_temperature), 0.0)*_tasksToOffload[i] + _temperature*_idealTasksToOffload[i]);

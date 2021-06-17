@@ -13,12 +13,11 @@
  
 #include "exahype/mappings/FinaliseMeshRefinement.h"
 
-#include "exahype/reactive/AggressiveCCPDistributor.h"
-#include "exahype/reactive/AggressiveDistributor.h"
+#include "exahype/reactive/ReactiveContext.h"
 #include "exahype/reactive/AggressiveHybridDistributor.h"
 #include "exahype/reactive/OffloadingAnalyser.h"
-#include "exahype/reactive/OffloadingContext.h"
 #include "exahype/reactive/PerformanceMonitor.h"
+
 #include "tarch/multicore/Loop.h"
 
 #include "peano/datatraversal/autotuning/Oracle.h"
@@ -32,9 +31,8 @@
 #include "exahype/mappings/RefinementStatusSpreading.h"
 
 
-
 #if defined(TMPI_Heartbeats)
-#include "exahype/offloading/HeartbeatJob.h"
+#include "exahype/reactive/HeartbeatJob.h"
 #endif
 
 int exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells = 0;
@@ -245,7 +243,8 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
 #if defined(SharedTBB)
   exahype::reactive::PerformanceMonitor::getInstance().setTasksPerTimestep(_numberOfEnclaveCells + _numberOfSkeletonCells);
 
-  if(exahype::reactive::OffloadingContext::getInstance().isEnabled()) {
+  //start offloading manager background job
+  if(exahype::reactive::ReactiveContext::getInstance().isEnabled()) {
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
       if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
         static_cast<exahype::solvers::ADERDGSolver*>(solver)->startOffloadingManager();
@@ -256,15 +255,15 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
     }
   }
 
-  if(exahype::reactive::OffloadingContext::getInstance().getOffloadingStrategy()
-     ==
-     exahype::reactive::OffloadingContext::OffloadingStrategy::AggressiveHybrid) {
+  if(exahype::reactive::ReactiveContext::getInstance().getOffloadingStrategy()
+   ==  exahype::reactive::ReactiveContext::OffloadingStrategy::AggressiveHybrid) {
     exahype::reactive::AggressiveHybridDistributor::getInstance().resetTasksToOffload();
-    exahype::reactive::OffloadingAnalyser::getInstance().resetMeasurements();
+    exahype::reactive::OffloadingAnalyser::getInstance().resetMeasurements(); //makes sure that grid refinement does not influence diffusion
     exahype::reactive::AggressiveHybridDistributor::getInstance().enable();
   }
 
 #if defined(TMPI_Heartbeats)
+  //start heartbeat job after mesh refinement
   exahype::reactive::HeartbeatJob::startHeartbeatJob();
 #endif
 #endif

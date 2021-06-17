@@ -52,7 +52,7 @@
 //this effectively constrains the work we're willing to spend in MPI for one progress call
 #define MAX_PROGRESS_ITS 10000
 
-#include "exahype/reactive/OffloadingContext.h"
+#include "exahype/reactive/ReactiveContext.h"
 #include "exahype/reactive/ResilienceStatistics.h"
 
 #if defined(SharedTBB)
@@ -3744,7 +3744,7 @@ public:
               logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank);
               exahype::solvers::ADERDGSolver::VetoEmergency = true;
               exahype::solvers::ADERDGSolver::LastEmergencyCell = &cellDescription;
-              exahype::reactive::OffloadingContext::getInstance().triggerEmergencyForRank(responsibleRank);
+              exahype::reactive::ReactiveContext::getInstance().triggerEmergencyForRank(responsibleRank);
     	    }
       	}
   	    lock.free();
@@ -3752,7 +3752,7 @@ public:
       	if(!hasTriggeredEmergency) {
     	    hasTriggeredEmergency = true;
           logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank);
-          exahype::reactive::OffloadingContext::getInstance().triggerEmergencyForRank(responsibleRank);
+          exahype::reactive::ReactiveContext::getInstance().triggerEmergencyForRank(responsibleRank);
       	}
 #endif
       }
@@ -3777,7 +3777,7 @@ public:
  #endif
           hasTriggeredEmergency = true;
           logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank);
-          exahype::reactive::OffloadingContext::getInstance().triggerEmergencyForRank(responsibleRank);
+          exahype::reactive::ReactiveContext::getInstance().triggerEmergencyForRank(responsibleRank);
  #ifdef USE_ITAC
    // VT_end(event_emergency);
  #endif

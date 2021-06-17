@@ -21,7 +21,7 @@
 #include "tarch/parallel/Node.h"
 
 #include "../reactive/OffloadingProfiler.h"
-#include "OffloadingContext.h"
+#include "exahype/reactive/ReactiveContext.h"
 #include "../reactive/PerformanceMonitor.h"
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/Jobs.h"
@@ -60,8 +60,8 @@ void exahype::reactive::DiffusiveDistributor::updateLoadDistribution() {
 
   //waitingTimesSnapshot[myRank] = waitingTime;
 
-  bool isVictim = exahype::reactive::OffloadingContext::getInstance().isVictim();
-  bool emergencyTriggered = exahype::reactive::OffloadingContext::getInstance().isEmergencyTriggered();
+  bool isVictim = exahype::reactive::ReactiveContext::getInstance().isVictim();
+  bool emergencyTriggered = exahype::reactive::ReactiveContext::getInstance().isEmergencyTriggered();
 
   logInfo("updateLoadDistribution()", " isVictim: "<<isVictim<<" emergency event: "<<emergencyTriggered);
 
@@ -78,7 +78,7 @@ void exahype::reactive::DiffusiveDistributor::updateLoadDistribution() {
     bool waitingForSomeone = false;
     for(int j=0; j<nnodes; j++) {
       //logInfo("updateLoadDistribution()","rank "<<i<<" waiting for "<<waitingTimesSnapshot[k+j]<<" for rank "<<j);
-      if(waitingTimesSnapshot[k+j]>currentLongestWaitTime && !exahype::reactive::OffloadingContext::getInstance().isBlacklisted(i)) {
+      if(waitingTimesSnapshot[k+j]>currentLongestWaitTime && !exahype::reactive::ReactiveContext::getInstance().isBlacklisted(i)) {
         currentLongestWaitTime = waitingTimesSnapshot[k+j];
         currentOptimalVictim = i;
       }

@@ -154,11 +154,9 @@ void exahype::mappings::FusedTimeStep::beginIteration(
   }
 
   if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
-    //if ( issuePredictionJobsInThisIteration() ) {
-    //  MPI_Sendrecv(MPI_IN_PLACE, 0, MPI_BYTE, MPI_PROC_NULL, 1, MPI_IN_PLACE, 0, MPI_BYTE, MPI_PROC_NULL, 0, MPI_COMM_SELF, MPI_STATUS_IGNORE);
-   // }
+    //only plot on team 0
 #if defined(USE_TMPI)
-    if(exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()==0) {
+    if(exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber()==0) {
 #endif
       exahype::plotters::startPlottingIfAPlotterIsActive(
         solvers::Solver::getMinTimeStampOfAllSolvers());
@@ -168,7 +166,7 @@ void exahype::mappings::FusedTimeStep::beginIteration(
   }
 
 #if defined(Parallel) && defined(SharedTBB)
-  if ( exahype::reactive::OffloadingContext::getInstance().isEnabled()
+  if ( exahype::reactive::ReactiveContext::getInstance().isEnabled()
      && !tarch::parallel::Node::getInstance().isGlobalMaster())
   {
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
@@ -177,19 +175,20 @@ void exahype::mappings::FusedTimeStep::beginIteration(
         static_cast<exahype::solvers::ADERDGSolver*>(solver)->resumeOffloadingManager();
 #endif
       }
-    // Todo?:
-    //  if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-    //    static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->OffloadingManager();
-    //  }
+      if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+#if !defined(OffloadingUseProgressThread)
+        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->resumeOffloadingManager();
+#endif
+      }
     } 
   }
 
   if( (
-        (exahype::reactive::OffloadingContext::getInstance().getOffloadingStrategy()
-         ==exahype::reactive::OffloadingContext::OffloadingStrategy::StaticHardcoded)
-        ||
-        (exahype::reactive::OffloadingContext::getInstance().getOffloadingStrategy()
-         ==exahype::reactive::OffloadingContext::OffloadingStrategy::Static)
+        (exahype::reactive::ReactiveContext::getInstance().getOffloadingStrategy()
+         ==exahype::reactive::ReactiveContext::OffloadingStrategy::StaticHardcoded)
+     ||
+        (exahype::reactive::ReactiveContext::getInstance().getOffloadingStrategy()
+         ==exahype::reactive::ReactiveContext::OffloadingStrategy::Static)
      )
      &&  issuePredictionJobsInThisIteration()
      ) {
@@ -212,6 +211,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
 #ifdef USE_ITAC
     VT_begin(noiseHandle);
 #endif
+    //generate noise after prediction jobs have been issued
     exahype::reactive::NoiseGenerator::getInstance().generateNoise();
 #ifdef USE_ITAC
     VT_end(noiseHandle);
@@ -219,17 +219,14 @@ void exahype::mappings::FusedTimeStep::endIteration(
   }
 #endif
 
-#if defined(FileTrace)
-  if ( sendOutRiemannDataInThisIteration() ) {
-    exahype::reactive::STPStatsTracer::getInstance().dumpAndResetTraceIfActive();
-  }
-#endif
-
   if ( sendOutRiemannDataInThisIteration() ) {
 #if defined(USE_TMPI)
-    if(exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()==0) {
+    if(exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber()==0) {
 #endif
       exahype::plotters::finishedPlotting();
+#if defined(FileTrace)
+      exahype::reactive::STPStatsTracer::getInstance().dumpAndResetTraceIfActive();
+#endif
 #if defined(USE_TMPI)
     }
 #endif
@@ -252,9 +249,9 @@ void exahype::mappings::FusedTimeStep::endIteration(
 #if defined(Parallel) && defined(SharedTBB)
 #ifdef OffloadingUseProgressTask
   if( issuePredictionJobsInThisIteration()
-     && exahype::reactive::OffloadingContext::getInstance().isEnabled()) {
-    exahype::reactive::OffloadingContext::getInstance().notifyAllVictimsSendCompletedIfNotNotified();
-    exahype::reactive::OffloadingContext::getInstance().resetHasNotifiedSendCompleted();
+     && exahype::reactive::ReactiveContext::getInstance().isEnabled()) {
+    exahype::reactive::ReactiveContext::getInstance().notifyAllVictimsSendCompletedIfNotNotified();
+    exahype::reactive::ReactiveContext::getInstance().resetHasNotifiedSendCompleted();
   }
 #endif 
 
@@ -267,13 +264,11 @@ void exahype::mappings::FusedTimeStep::endIteration(
         static_cast<exahype::solvers::ADERDGSolver*>(solver)->pauseOffloadingManager();
 #endif
       }
-    // Todo?:
-    //  if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-    //    static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->pauseOffloadingManager();
-    //  }
+      if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->pauseOffloadingManager();
+      }
     } 
   }
-
 #endif
 
   logTraceOutWith1Argument("endIteration(State)", state);
@@ -368,7 +363,7 @@ void exahype::mappings::FusedTimeStep::leaveCell(
       auto* solver = exahype::solvers::RegisteredSolvers[solverNumber];
 
 #if defined(USE_TMPI)
-      if(exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()==0) {
+      if(exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber()==0) {
 #endif
         // this operates only on compute cells
         plotters::plotPatchIfAPlotterIsActive(solverNumber,cellInfo); // TODO(Dominic) potential for IO overlap?

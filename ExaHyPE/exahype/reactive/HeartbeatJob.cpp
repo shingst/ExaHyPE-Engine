@@ -11,7 +11,7 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if  defined(SharedTBB)  && defined(Parallel)
+#if defined(SharedTBB)  && defined(Parallel)
 
 #include "exahype/reactive/HeartbeatJob.h"
 

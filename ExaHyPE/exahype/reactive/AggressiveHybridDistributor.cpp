@@ -262,7 +262,7 @@ void exahype::reactive::AggressiveHybridDistributor::determineOptimalVictim(
     for(int j=0; j<nnodes; j++) {
       if(waitingTimesSnapshot[k+j]> exahype::reactive::OffloadingAnalyser::getInstance().getZeroThreshold()) {
          if(waitingTimesSnapshot[k+j]>currentLongestWaitTimeVictim 
-           && !exahype::reactive::OffloadingContext::getInstance().isBlacklisted(i)
+           && !exahype::reactive::ReactiveContext::getInstance().isBlacklisted(i)
            && waitingRanks[i]==0) {
       //     && i!=0) { //exclude rank 0 as optimal victim
              currentOptimalVictim = i;
@@ -478,7 +478,7 @@ void exahype::reactive::AggressiveHybridDistributor::updateLoadDistributionDiffu
 
 #ifndef DistributedOffloadingDisable
 
-  bool isVictim = exahype::reactive::OffloadingContext::getInstance().isVictim();
+  bool isVictim = exahype::reactive::ReactiveContext::getInstance().isVictim();
   if(currentOptimalVictim>=0 && myRank == currentCriticalRank && currentCriticalRank!=currentOptimalVictim) {
     if(!isVictim) {
       int currentTasksCritical = _initialLoad[currentCriticalRank];

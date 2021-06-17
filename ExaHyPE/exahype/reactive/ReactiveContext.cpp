@@ -13,7 +13,7 @@
 
 #if defined(Parallel)
 
-#include "OffloadingContext.h"
+#include "exahype/reactive/ReactiveContext.h"
 
 #include <unordered_set>
 #include <vector>
@@ -72,21 +72,22 @@ static int event_progress_receiveBack;
 //#undef assertion
 //#define assertion assert
 
-tarch::logging::Log exahype::reactive::OffloadingContext::_log( "exahype::reactive::OffloadingManager" );
+tarch::logging::Log exahype::reactive::ReactiveContext::_log( "exahype::reactive::OffloadingManager" );
 
-int exahype::reactive::OffloadingContext::_numTeams(-1);
-int exahype::reactive::OffloadingContext::_interTeamRank(-1);
+int exahype::reactive::ReactiveContext::_numTeams(-1);
+int exahype::reactive::ReactiveContext::_interTeamRank(-1);
 
-exahype::reactive::OffloadingContext* exahype::reactive::OffloadingContext::_static_managers[MAX_THREADS];
-MPI_Comm exahype::reactive::OffloadingContext::_offloadingComms[MAX_THREADS];
-MPI_Comm exahype::reactive::OffloadingContext::_offloadingCommsMapped[MAX_THREADS];
+exahype::reactive::ReactiveContext* exahype::reactive::ReactiveContext::_static_managers[MAX_THREADS];
+MPI_Comm exahype::reactive::ReactiveContext::_offloadingComms[MAX_THREADS];
+MPI_Comm exahype::reactive::ReactiveContext::_offloadingCommsMapped[MAX_THREADS];
 
-MPI_Comm exahype::reactive::OffloadingContext::_interTeamComms[MAX_THREADS];
+MPI_Comm exahype::reactive::ReactiveContext::_interTeamComms[MAX_THREADS];
 
-exahype::reactive::OffloadingContext::OffloadingStrategy exahype::reactive::OffloadingContext::_offloadingStrategy(exahype::reactive::OffloadingContext::OffloadingStrategy::None);
-exahype::reactive::OffloadingContext::ResilienceStrategy exahype::reactive::OffloadingContext::_resilienceStrategy(exahype::reactive::OffloadingContext::ResilienceStrategy::None);
+exahype::reactive::ReactiveContext::OffloadingStrategy exahype::reactive::ReactiveContext::ChosenOffloadingStrategy(exahype::reactive::ReactiveContext::OffloadingStrategy::None);
+exahype::reactive::ReactiveContext::ResilienceStrategy exahype::reactive::ReactiveContext::ChosenResilienceStrategy(exahype::reactive::ReactiveContext::ResilienceStrategy::None);
+bool exahype::reactive::ReactiveContext::SaveRedundantComputations;
 
-exahype::reactive::OffloadingContext::OffloadingContext(int threadId) :
+exahype::reactive::ReactiveContext::ReactiveContext(int threadId) :
     _threadId(threadId),
     _emergencyTriggered(false),
     _hasNotifiedSendCompleted(false) {
@@ -125,36 +126,44 @@ exahype::reactive::OffloadingContext::OffloadingContext(int threadId) :
 
 }
 
-exahype::reactive::OffloadingContext::~OffloadingContext() {
+exahype::reactive::ReactiveContext::~ReactiveContext() {
   destroy();
   delete[] _localBlacklist;
 }
 
-void exahype::reactive::OffloadingContext::setOffloadingStrategy(OffloadingStrategy strategy) {
-  _offloadingStrategy = strategy;
+void exahype::reactive::ReactiveContext::setOffloadingStrategy(OffloadingStrategy strategy) {
+  ChosenOffloadingStrategy = strategy;
 }
 
-exahype::reactive::OffloadingContext::OffloadingStrategy exahype::reactive::OffloadingContext::getOffloadingStrategy() {
-  return _offloadingStrategy;
+exahype::reactive::ReactiveContext::OffloadingStrategy exahype::reactive::ReactiveContext::getOffloadingStrategy() {
+  return ChosenOffloadingStrategy;
 }
 
-void exahype::reactive::OffloadingContext::setResilienceStrategy(ResilienceStrategy strategy) {
-  _resilienceStrategy = strategy;
+void exahype::reactive::ReactiveContext::setResilienceStrategy(ResilienceStrategy strategy) {
+  ChosenResilienceStrategy = strategy;
 }
 
-exahype::reactive::OffloadingContext::ResilienceStrategy exahype::reactive::OffloadingContext::getResilienceStrategy() {
-  return _resilienceStrategy;
+exahype::reactive::ReactiveContext::ResilienceStrategy exahype::reactive::ReactiveContext::getResilienceStrategy() {
+  return ChosenResilienceStrategy;
 }
 
-bool exahype::reactive::OffloadingContext::isEnabled() {
-  return _offloadingStrategy!=OffloadingStrategy::None || _resilienceStrategy!=ResilienceStrategy::None;
+void exahype::reactive::ReactiveContext::setSaveRedundantComputations(bool saveRedundantComputations){
+  SaveRedundantComputations = saveRedundantComputations;
 }
 
-bool exahype::reactive::OffloadingContext::usesOffloading() {
-  return _offloadingStrategy!=OffloadingStrategy::None;
+bool exahype::reactive::ReactiveContext::getSaveRedundantComputations() {
+  return SaveRedundantComputations;
 }
 
-void exahype::reactive::OffloadingContext::initializeCommunicatorsAndTeamMetadata() {
+bool exahype::reactive::ReactiveContext::isEnabled() {
+  return (ChosenOffloadingStrategy!=OffloadingStrategy::None) || (ChosenResilienceStrategy!=ResilienceStrategy::None);
+}
+
+bool exahype::reactive::ReactiveContext::usesOffloading() {
+  return ChosenOffloadingStrategy!=OffloadingStrategy::None;
+}
+
+void exahype::reactive::ReactiveContext::initializeCommunicatorsAndTeamMetadata() {
   //exahype::reactive::OffloadingManager::getInstance().createMPICommunicator();
  static bool initialized = false;
 //Todo:  this collective routine should be exposed to the runner instead of being implicitly invoked by the constructor 
@@ -167,33 +176,33 @@ void exahype::reactive::OffloadingContext::initializeCommunicatorsAndTeamMetadat
  initialized = true;
 }
 
-void exahype::reactive::OffloadingContext::destroy() {
+void exahype::reactive::ReactiveContext::destroy() {
 #if defined(SharedTBB)
   destroyMPICommunicators();
 #endif
 }
 
-MPI_Comm exahype::reactive::OffloadingContext::getTMPIInterTeamCommunicatorData() {
+MPI_Comm exahype::reactive::ReactiveContext::getTMPIInterTeamCommunicatorData() {
   return _interTeamComms[_threadId];
 }
 
-void exahype::reactive::OffloadingContext::setTMPINumTeams(int nteams) {
+void exahype::reactive::ReactiveContext::setTMPINumTeams(int nteams) {
   _numTeams = nteams;
 }
 
-unsigned int exahype::reactive::OffloadingContext::getTMPINumTeams() {
+unsigned int exahype::reactive::ReactiveContext::getTMPINumTeams() {
   return _numTeams;
 }
 
-void exahype::reactive::OffloadingContext::setTMPITeamNumber(int interTeamRank) {
+void exahype::reactive::ReactiveContext::setTMPITeamNumber(int interTeamRank) {
   _interTeamRank = interTeamRank;
 }
 
-int exahype::reactive::OffloadingContext::getTMPITeamNumber(){
+int exahype::reactive::ReactiveContext::getTMPITeamNumber(){
   return _interTeamRank;
 }
 
-void exahype::reactive::OffloadingContext::createMPICommunicators() {
+void exahype::reactive::ReactiveContext::createMPICommunicators() {
   int rank;
   int ierr;
   MPI_CHECK("createMPICommunicators", MPI_Comm_rank(MPI_COMM_WORLD, &rank));
@@ -250,7 +259,7 @@ void exahype::reactive::OffloadingContext::createMPICommunicators() {
   MPI_CHECK("createMPICommunicators", MPI_Comm_free(&interTeamComm));
 }
 
-void exahype::reactive::OffloadingContext::destroyMPICommunicators() {
+void exahype::reactive::ReactiveContext::destroyMPICommunicators() {
   int ierr;
   for(int i=0; i<MAX_THREADS;i++) {
     MPI_CHECK("destroyMPICommunicators", MPI_Comm_free(&_offloadingComms[i])); assertion(ierr==MPI_SUCCESS);
@@ -259,15 +268,15 @@ void exahype::reactive::OffloadingContext::destroyMPICommunicators() {
   }
 }
 
-MPI_Comm exahype::reactive::OffloadingContext::getMPICommunicator() {
+MPI_Comm exahype::reactive::ReactiveContext::getMPICommunicator() {
   return _offloadingComms[_threadId];
 }
 
-MPI_Comm exahype::reactive::OffloadingContext::getMPICommunicatorMapped() {
+MPI_Comm exahype::reactive::ReactiveContext::getMPICommunicatorMapped() {
   return _offloadingCommsMapped[_threadId];
 }
 
-exahype::reactive::OffloadingContext& exahype::reactive::OffloadingContext::getInstance() {
+exahype::reactive::ReactiveContext& exahype::reactive::ReactiveContext::getInstance() {
   //static OffloadingManager offloadingManager;
   int threadID; // tarch::multicore::Core::getInstance().getThreadNum();
 #if defined(UseMPIThreadSplit)
@@ -285,13 +294,13 @@ exahype::reactive::OffloadingContext& exahype::reactive::OffloadingContext::getI
   }
 
   if(_static_managers[threadID]==nullptr) {
-    _static_managers[threadID] = new OffloadingContext(threadID);
+    _static_managers[threadID] = new ReactiveContext(threadID);
   }
   return *_static_managers[threadID];
 }
 
 
-int exahype::reactive::OffloadingContext::getOffloadingTag() {
+int exahype::reactive::ReactiveContext::getOffloadingTag() {
   static std::atomic<int> next_tag(1); //0 is reserved for status
 retry:
   int val =  next_tag.load();
@@ -310,31 +319,31 @@ retry:
   return val;
 }
 
-void exahype::reactive::OffloadingContext::triggerVictimFlag() {
+void exahype::reactive::ReactiveContext::triggerVictimFlag() {
   _isVictim = true;
 }
 
-void exahype::reactive::OffloadingContext::resetVictimFlag() {
+void exahype::reactive::ReactiveContext::resetVictimFlag() {
   _isVictim = false;
 }
 
-bool exahype::reactive::OffloadingContext::isVictim() {
+bool exahype::reactive::ReactiveContext::isVictim() {
   return _isVictim;
 }
 
-void exahype::reactive::OffloadingContext::triggerEmergencyForRank(int rank) {
+void exahype::reactive::ReactiveContext::triggerEmergencyForRank(int rank) {
 //  if(!_emergencyTriggered) {
 //    logInfo("triggerEmergency()","emergency event triggered");
 //    _emergencyTriggered = true;
 //  }
-  switch(exahype::reactive::OffloadingContext::getInstance().getOffloadingStrategy()){
-    case OffloadingContext::OffloadingStrategy::Aggressive:
+  switch(exahype::reactive::ReactiveContext::getInstance().getOffloadingStrategy()){
+    case ReactiveContext::OffloadingStrategy::Aggressive:
       exahype::reactive::AggressiveDistributor::getInstance().handleEmergencyOnRank(rank); break;
-    case OffloadingContext::OffloadingStrategy::AggressiveCCP:
+    case ReactiveContext::OffloadingStrategy::AggressiveCCP:
       exahype::reactive::AggressiveCCPDistributor::getInstance().handleEmergencyOnRank(rank); break;
-    case OffloadingContext::OffloadingStrategy::AggressiveHybrid:
+    case ReactiveContext::OffloadingStrategy::AggressiveHybrid:
       exahype::reactive::AggressiveHybridDistributor::getInstance().handleEmergencyOnRank(rank); break;
-    case OffloadingContext::OffloadingStrategy::Diffusive:
+    case ReactiveContext::OffloadingStrategy::Diffusive:
       exahype::reactive::DiffusiveDistributor::getInstance().handleEmergencyOnRank(rank); break;
     default:
       //do nothing, not implemented yet
@@ -348,7 +357,7 @@ void exahype::reactive::OffloadingContext::triggerEmergencyForRank(int rank) {
 	//								                 <<" NumberOfEnclaveJobs"<<  exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs);
 }
 
-void exahype::reactive::OffloadingContext::recoverBlacklistedRanks() {
+void exahype::reactive::ReactiveContext::recoverBlacklistedRanks() {
   logDebug("decreaseHeat()","decrease heat of emergency heat map");
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   for(int i=0; i<nnodes;i++) {
@@ -361,13 +370,13 @@ void exahype::reactive::OffloadingContext::recoverBlacklistedRanks() {
   }
 }
 
-bool exahype::reactive::OffloadingContext::isBlacklisted(int rank) {
+bool exahype::reactive::ReactiveContext::isBlacklisted(int rank) {
   //return _emergencyHeatMap[rank]>0.5;
   const double* globalHeatMap = exahype::reactive::PerformanceMonitor::getInstance().getBlacklistSnapshot();
   return (globalHeatMap[rank]>0.5) || (_localBlacklist[rank]>0.5);
 }
 
-void exahype::reactive::OffloadingContext::printBlacklist() {
+void exahype::reactive::ReactiveContext::printBlacklist() {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   const double* globalHeatMap = exahype::reactive::PerformanceMonitor::getInstance().getBlacklistSnapshot();
 
@@ -377,26 +386,26 @@ void exahype::reactive::OffloadingContext::printBlacklist() {
   }
 }
 
-bool exahype::reactive::OffloadingContext::isEmergencyTriggered() {
+bool exahype::reactive::ReactiveContext::isEmergencyTriggered() {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   return !std::all_of(&_localBlacklist[0], &_localBlacklist[nnodes], [](double d) {return d<0.5;});
 }
 
-bool exahype::reactive::OffloadingContext::isEmergencyTriggeredOnRank(int rank) {
+bool exahype::reactive::ReactiveContext::isEmergencyTriggeredOnRank(int rank) {
   return !(_localBlacklist[rank]<0.5);
 }
 
-bool exahype::reactive::OffloadingContext::selectVictimRank(int& victim, bool& last) {
+bool exahype::reactive::ReactiveContext::selectVictimRank(int& victim, bool& last) {
   last = false;
-  if(_offloadingStrategy==OffloadingStrategy::StaticHardcoded)
+  if(ChosenOffloadingStrategy==OffloadingStrategy::StaticHardcoded)
     return exahype::reactive::StaticDistributor::getInstance().selectVictimRank(victim);
-  if(_offloadingStrategy==OffloadingStrategy::Diffusive)
+  if(ChosenOffloadingStrategy==OffloadingStrategy::Diffusive)
     return exahype::reactive::DiffusiveDistributor::getInstance().selectVictimRank(victim);
-  if(_offloadingStrategy==OffloadingStrategy::Aggressive)
+  if(ChosenOffloadingStrategy==OffloadingStrategy::Aggressive)
     return exahype::reactive::AggressiveDistributor::getInstance().selectVictimRank(victim);
-  if(_offloadingStrategy==OffloadingStrategy::AggressiveCCP)
+  if(ChosenOffloadingStrategy==OffloadingStrategy::AggressiveCCP)
     return exahype::reactive::AggressiveCCPDistributor::getInstance().selectVictimRank(victim);
-  if(_offloadingStrategy==OffloadingStrategy::AggressiveHybrid)
+  if(ChosenOffloadingStrategy==OffloadingStrategy::AggressiveHybrid)
     return exahype::reactive::AggressiveHybridDistributor::getInstance().selectVictimRank(victim, last);
 
   return false;
@@ -428,18 +437,18 @@ bool exahype::reactive::OffloadingContext::selectVictimRank(int& victim, bool& l
 }
 
 #ifdef OffloadingUseProgressTask
-void exahype::reactive::OffloadingContext::resetHasNotifiedSendCompleted() {
+void exahype::reactive::ReactiveContext::resetHasNotifiedSendCompleted() {
   _hasNotifiedSendCompleted = false;
   logDebug("resetHasNotifiedSendCompleted","resetting flag");
 }
 
-void exahype::reactive::OffloadingContext::notifySendCompleted(int rank) {
+void exahype::reactive::ReactiveContext::notifySendCompleted(int rank) {
   char send = 1;
   MPI_Send(&send, 1, MPI_CHAR, rank, 0, getMPICommunicator());
   //logInfo("notifySendCompleted()","sent status message to "<<rank);
 }
 
-void exahype::reactive::OffloadingContext::receiveCompleted(int rank, int rail) {
+void exahype::reactive::ReactiveContext::receiveCompleted(int rank, int rail) {
   char receive = 0;
 #if defined (UseSmartMPI)
   MPI_Status_Offload stat;
@@ -450,14 +459,14 @@ void exahype::reactive::OffloadingContext::receiveCompleted(int rank, int rail) 
   //logInfo("receiveCompleted()","received status message from "<<rank);
 }
 
-void exahype::reactive::OffloadingContext::notifyAllVictimsSendCompletedIfNotNotified() {
+void exahype::reactive::ReactiveContext::notifyAllVictimsSendCompletedIfNotNotified() {
   if(!_hasNotifiedSendCompleted) {
     //logInfo("notifyAllVictimsSendCompleted","notifying that last job was sent to victims");
     _hasNotifiedSendCompleted = true;
     std::vector<int> victimRanks;
-    if(_offloadingStrategy==OffloadingStrategy::AggressiveHybrid)
+    if(OffloadingStrategy==OffloadingStrategy::AggressiveHybrid)
       exahype::reactive::AggressiveHybridDistributor::getInstance().getAllVictimRanks(victimRanks);
-    if(_offloadingStrategy==OffloadingStrategy::Static)
+    if(OffloadingStrategy==OffloadingStrategy::Static)
       exahype::reactive::StaticDistributor::getInstance().getAllVictimRanks(victimRanks);
 
     for(auto victim : victimRanks)

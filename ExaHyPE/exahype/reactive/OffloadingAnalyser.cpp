@@ -32,7 +32,7 @@
 #include "exahype/reactive/AggressiveDistributor.h"
 #include "exahype/reactive/AggressiveCCPDistributor.h"
 #include "exahype/reactive/AggressiveHybridDistributor.h"
-#include "OffloadingContext.h"
+#include "exahype/reactive/ReactiveContext.h"
 
 tarch::logging::Log  exahype::reactive::OffloadingAnalyser::_log( "exahype::reactive::OffloadingAnalyser" );
 
@@ -189,8 +189,8 @@ void exahype::reactive::OffloadingAnalyser::beginIteration() {
     }
     _timeStepWatch.startTimer();
 
-    exahype::reactive::OffloadingContext::getInstance().resetVictimFlag(); //TODO: correct position here?
-    exahype::reactive::OffloadingContext::getInstance().recoverBlacklistedRanks();
+    exahype::reactive::ReactiveContext::getInstance().resetVictimFlag(); //TODO: correct position here?
+    exahype::reactive::ReactiveContext::getInstance().recoverBlacklistedRanks();
   }
 }
 
@@ -218,18 +218,18 @@ void exahype::reactive::OffloadingAnalyser::endIteration(double numberOfInnerLea
   updateZeroTresholdAndFilteredSnapshot();
   //printWaitingTimes();
 
-  switch(exahype::reactive::OffloadingContext::getInstance().getOffloadingStrategy()){
-    case exahype::reactive::OffloadingContext::OffloadingStrategy::Diffusive:
+  switch(exahype::reactive::ReactiveContext::getInstance().getOffloadingStrategy()){
+    case exahype::reactive::ReactiveContext::OffloadingStrategy::Diffusive:
       exahype::reactive::DiffusiveDistributor::getInstance().updateLoadDistribution(); break;
-    case exahype::reactive::OffloadingContext::OffloadingStrategy::Aggressive:
+    case exahype::reactive::ReactiveContext::OffloadingStrategy::Aggressive:
       exahype::reactive::AggressiveDistributor::getInstance().printOffloadingStatistics();
       exahype::reactive::AggressiveDistributor::getInstance().updateLoadDistribution();
       break;
-    case exahype::reactive::OffloadingContext::OffloadingStrategy::AggressiveCCP:
+    case exahype::reactive::ReactiveContext::OffloadingStrategy::AggressiveCCP:
       exahype::reactive::AggressiveCCPDistributor::getInstance().printOffloadingStatistics();
       exahype::reactive::AggressiveCCPDistributor::getInstance().updateLoadDistribution();
       break;
-    case exahype::reactive::OffloadingContext::OffloadingStrategy::AggressiveHybrid:
+    case exahype::reactive::ReactiveContext::OffloadingStrategy::AggressiveHybrid:
       exahype::reactive::AggressiveHybridDistributor::getInstance().printOffloadingStatistics();
       exahype::reactive::AggressiveHybridDistributor::getInstance().updateLoadDistribution();
       break;

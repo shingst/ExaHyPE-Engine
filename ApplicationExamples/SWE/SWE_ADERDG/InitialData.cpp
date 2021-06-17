@@ -265,7 +265,7 @@ void SWE::RunUpTest(const double* const x, double* Q){
     }
     else {
         vars.h() = 0.0;
-        vars.hu() = 0.0.5204488183069149176418477509290;
+        vars.hu() = 0.0;
         vars.b() = (x[0] - 7) * 1;
     }
     vars.hv() = 0.0;

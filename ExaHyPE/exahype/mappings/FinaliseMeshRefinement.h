@@ -59,7 +59,13 @@ class exahype::mappings::FinaliseMeshRefinement {
    */
   static bool OneSolverRequestedMeshUpdate;
 
+  /**
+   * Used for counting number of enclave cells after mesh refinement.
+   */
   int _numberOfEnclaveCells;
+  /**
+   * Used for counting the number of skeleton cells after mesh refinement.
+   */
   int _numberOfSkeletonCells;
 
   /**
@@ -96,8 +102,14 @@ class exahype::mappings::FinaliseMeshRefinement {
   void initialiseLocalVariables();
 
  public:
-
+  /**
+   * Contains the number of enclave cells (accessed in runGlobalStep).
+   */
   static int NumberOfEnclaveCells;
+
+  /**
+   * Contains the number of skeleton cells (accessed in runGlobalStep).
+   */
   static int NumberOfSkeletonCells;
   /**
    * Reduce data from the worker to the master.

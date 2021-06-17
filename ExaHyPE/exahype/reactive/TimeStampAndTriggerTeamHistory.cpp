@@ -13,7 +13,6 @@
 
 #include "TimeStampAndTriggerTeamHistory.h"
 
-#include "exahype/reactive/OffloadingContext.h"
 #include "tarch/multicore/BooleanSemaphore.h"
 #include "tarch/multicore/Lock.h"
 #include "tarch/parallel/Node.h"
@@ -26,6 +25,7 @@
 #include <iomanip>
 #include <sstream>
 #include <limits>
+#include "exahype/reactive/ReactiveContext.h"
 
 tarch::logging::Log exahype::reactive::TimeStampAndTriggerTeamHistory::_log("exahype::reactive::TimeStampAndLimiterHistory");
 
@@ -33,9 +33,9 @@ tarch::logging::Log exahype::reactive::TimeStampAndTriggerTeamHistory::_log("exa
 exahype::reactive::TimeStampAndTriggerTeamHistory::TimeStampAndTriggerTeamHistory() :
   _lastConsistentTimeStepPtr(-1)
 {
-  _timestamps = new std::vector<double> [exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams()];
-  _timestepSizes = new std::vector<double> [exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams()];
-  _triggerStatuses = new std::vector<bool> [exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams()];
+  _timestamps = new std::vector<double> [exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams()];
+  _timestepSizes = new std::vector<double> [exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams()];
+  _triggerStatuses = new std::vector<bool> [exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams()];
 }
 
 exahype::reactive::TimeStampAndTriggerTeamHistory::~TimeStampAndTriggerTeamHistory() {
@@ -51,12 +51,12 @@ exahype::reactive::TimeStampAndTriggerTeamHistory& exahype::reactive::TimeStampA
 
 void exahype::reactive::TimeStampAndTriggerTeamHistory::forwardLastConsistentTimeStepPtr() {
   tarch::multicore::Lock lock(_semaphore, true);
-  int myTeam = exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber();
+  int myTeam = exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber();
   int otherTeam = (myTeam + 1) % 2; //todo: support if more than 2 teams are used
 
   size_t maxIdx = std::numeric_limits<int>::max();
 
-  for(size_t i=0; i<exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams(); i++) {
+  for(size_t i=0; i<exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams(); i++) {
     maxIdx = std::min(_timestamps[i].size(), maxIdx);
   }
 
@@ -99,21 +99,22 @@ void exahype::reactive::TimeStampAndTriggerTeamHistory::trackTimeStepAndTriggerA
   tarch::multicore::Lock lock(_semaphore, true);
   logDebug("trackTimeStepAndLimiterActive", "Tracking time stamp="<<timeStamp<<" for team "<<team);
 
-  int myTeam = exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber();
+  int myTeam = exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber();
   int size = _timestamps[team].size();
   if(size>0 && _timestamps[team][size-1]==timeStamp) {
-    /**if(_timestepSizes[team][size-1]==timeStepSize) {
+    /*if(_timestepSizes[team][size-1]==timeStepSize) {
       //only update limiter
-      _triggerStatuses[team][size-1] = _triggerStatuses[team][size-1] || limiterActive;
+      _triggerStatuses[team][size-1] = _triggerStatuses[team][size-1] || triggerActive;
 
       if(team==myTeam) {
         _estimatedTimestepSizes[size-1]= std::min(_estimatedTimestepSizes[size-1], estimatedTimeStepSize);
       }
     }
-    else {
+    //for predictor recompute append new timestep extra
+    else if (size>1 && _timestepSizes[team][size-2]!=timeStamp){
       _timestamps[team].push_back(timeStamp);
       _timestepSizes[team].push_back(timeStepSize);
-      _triggerStatuses[team].push_back(limiterActive);
+      _triggerStatuses[team].push_back(triggerActive);
       if(team==myTeam) {
         _estimatedTimestepSizes.push_back(estimatedTimeStepSize);
       }
@@ -160,7 +161,7 @@ void exahype::reactive::TimeStampAndTriggerTeamHistory::trackTimeStepAndTriggerA
 //todo: doesn't scale well with increasing numbers of timesteps -> can check more efficiently in principle
 bool exahype::reactive::TimeStampAndTriggerTeamHistory::checkConsistency() {
 
-  int myTeam = exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber();
+  int myTeam = exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber();
   int otherTeam = (myTeam + 1) % 2; //todo: support if more than 2 teams are used
 
   forwardLastConsistentTimeStepPtr();
@@ -168,7 +169,7 @@ bool exahype::reactive::TimeStampAndTriggerTeamHistory::checkConsistency() {
   tarch::multicore::Lock lock(_semaphore, true);
   size_t maxIdx = std::numeric_limits<int>::max();
 
-  for(int i=0; i<exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams(); i++) {
+  for(int i=0; i<exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams(); i++) {
     maxIdx = std::min(_timestamps[i].size(), maxIdx);
   }
 
@@ -182,7 +183,7 @@ bool exahype::reactive::TimeStampAndTriggerTeamHistory::checkConsistency() {
     std::vector<double> tmp_timestamps;
     std::vector<double> tmp_timestepsizes;
     std::vector<bool> tmp_statuses;
-    for(int t=0; t<exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams(); t++) {
+    for(int t=0; t<exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams(); t++) {
       tmp_timestamps.push_back(_timestamps[t][i]);
       tmp_statuses.push_back(_triggerStatuses[t][i]);
       tmp_timestepsizes.push_back(_timestepSizes[t][i]);
@@ -223,7 +224,7 @@ bool exahype::reactive::TimeStampAndTriggerTeamHistory::checkConsistency() {
 }
 
 bool exahype::reactive::TimeStampAndTriggerTeamHistory::otherTeamHasTimeStepData(double timeStamp, double timeStep) {
-  int myTeam = exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber();
+  int myTeam = exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber();
   int otherTeam = (myTeam + 1) % 2; //todo: support if more than 2 teams are used
 
   forwardLastConsistentTimeStepPtr();
@@ -238,7 +239,7 @@ bool exahype::reactive::TimeStampAndTriggerTeamHistory::otherTeamHasTimeStepData
 }
 
 bool exahype::reactive::TimeStampAndTriggerTeamHistory::otherTeamHasTimeStamp(double timeStamp) {
-  int myTeam = exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber();
+  int myTeam = exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber();
   int otherTeam = (myTeam + 1) % 2; //todo: support if more than 2 teams are used
 
   forwardLastConsistentTimeStepPtr();
@@ -253,7 +254,7 @@ bool exahype::reactive::TimeStampAndTriggerTeamHistory::otherTeamHasTimeStamp(do
 }
 
 bool exahype::reactive::TimeStampAndTriggerTeamHistory::otherTeamHasLargerTimeStamp(double timeStamp) {
-  int myTeam = exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber();
+  int myTeam = exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber();
   int otherTeam = (myTeam + 1) % 2; //todo: support if more than 2 teams are used
 
   forwardLastConsistentTimeStepPtr();
@@ -269,7 +270,7 @@ bool exahype::reactive::TimeStampAndTriggerTeamHistory::otherTeamHasLargerTimeSt
 }
 
 void exahype::reactive::TimeStampAndTriggerTeamHistory::getLastConsistentTimeStepData(double& timestamp, double& timestepSize, double& estimated) {
-  int myTeam = exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber();
+  int myTeam = exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber();
   int otherTeam = (myTeam + 1) % 2; //todo: support if more than 2 teams are used
 
 //  size_t maxIdx = std::numeric_limits<int>::max();
@@ -312,7 +313,7 @@ void exahype::reactive::TimeStampAndTriggerTeamHistory::getLastConsistentTimeSte
 void exahype::reactive::TimeStampAndTriggerTeamHistory::resetMyTeamHistoryToLastConsistentTimeStep() {
   tarch::multicore::Lock lock(_semaphore, true);
 
-  int myTeam = exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber();
+  int myTeam = exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber();
   int otherTeam = (myTeam + 1) % 2; //todo: support if more than 2 teams are used
 
   if(_lastConsistentTimeStepPtr>=0 && _lastConsistentTimeStepPtr<_timestamps[myTeam].size()) {
@@ -329,7 +330,7 @@ void exahype::reactive::TimeStampAndTriggerTeamHistory::resetMyTeamHistoryToLast
 
 
 void exahype::reactive::TimeStampAndTriggerTeamHistory::printHistory() const {
-  for(unsigned int i=0; i<exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams(); i++) {
+  for(unsigned int i=0; i<exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams(); i++) {
     /*if(tarch::parallel::Node::getInstance().getNumberOfNodes()>0
       && tarch::parallel::Node::getInstance().isGlobalMaster()) {
       logWarning("printHistory", "Caution: when using more than one rank, history on rank 0 only contains local information!");
@@ -340,20 +341,20 @@ void exahype::reactive::TimeStampAndTriggerTeamHistory::printHistory() const {
     for(unsigned int j=0; j<_timestamps[i].size(); j++) {
       stream << _timestamps[i][j] << " , ";
     }
-    logInfo("printHistory","TimeStampAndLimiterHistory for team "<<i<<" on team "<<exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()<<":"<<stream.str());
+    logInfo("printHistory","TimeStampAndLimiterHistory for team "<<i<<" on team "<<exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber()<<":"<<stream.str());
 
     std::ostringstream stream2;
     stream2 << " TimeStepSizes: "<< std::setprecision(30);
     for(unsigned int j=0; j<_timestepSizes[i].size(); j++) {
       stream2 << _timestepSizes[i][j] << " , ";
     }
-    logInfo("printHistory", "TimeStampAndLimiterHistory for team "<<i<<" on team "<<exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()<<":"<<stream2.str());
+    logInfo("printHistory", "TimeStampAndLimiterHistory for team "<<i<<" on team "<<exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber()<<":"<<stream2.str());
 
     std::ostringstream stream3;
     stream3 << " Limiter statuses ";
     for(unsigned int j=0; j<_triggerStatuses[i].size(); j++) {
       stream3 << std::to_string(_triggerStatuses[i][j]) + " , ";
     }
-    logInfo("printHistory","TimeStampAndLimiterHistory for team "<<i<<" on team "<<exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()<<":"<<stream3.str());
+    logInfo("printHistory","TimeStampAndLimiterHistory for team "<<i<<" on team "<<exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber()<<":"<<stream3.str());
   }
 }

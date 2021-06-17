@@ -169,12 +169,12 @@ if __name__=="__main__":
   #ax2.set_ylabel('Limited Tasks')
   #ax2.set_ylim([0,1e-05])
 
-  ax.text(3.5, 1.5,'divergence')
-  ax.text(3.5, 1.3,'+ propagation')
-  ax.text(13, 2.5,'after rollback of team 0')
+  #ax.text(3.5, 1.5,'divergence')
+  #ax.text(3.5, 1.3,'+ propagation')
+  #ax.text(13, 2.5,'after rollback of team 0')
 
-  ax2 = ax.twinx()
-  ax2.set_ylabel('Number of Corrected Tasks')
+  #ax2 = ax.twinx()
+  #ax2.set_ylabel('Number of Corrected Tasks')
   #ax2.set_ylim([0,1e-05])
 
   #handle_healed_t0 = plotHealedTasks(ax2, range(0, len(result[0]['healed_tasks_delta'])), result[0]['healed_tasks_delta'], "with injected error - corrected tasks on team 0", "x", "r") 

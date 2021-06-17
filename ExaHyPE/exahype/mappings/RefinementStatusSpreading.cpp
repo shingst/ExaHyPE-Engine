@@ -152,8 +152,6 @@ void exahype::mappings::RefinementStatusSpreading::enterCell(
             solvers::Solver::MeshUpdateEvent meshUpdateEvent =
                 static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
                 updateRefinementStatusDuringRefinementStatusSpreading(cellDescription);
-                //static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->
-                //updateCorruptionStatusDuringRefinementStatusSpreading(cellDescription);
 
             solver->updateMeshUpdateEvent(meshUpdateEvent);
           } break;

@@ -109,17 +109,17 @@
 #endif
 
 #if defined(TMPI_Heartbeats)
-#include "exahype/offloading/HeartbeatJob.h"
+#include "exahype/reactive/HeartbeatJob.h"
 #endif
 
 #if defined(MemoryMonitoring)
-#include "exahype/offloading/MemoryMonitor.h"
+#include "exahype/reactive/MemoryMonitor.h"
 #endif
 
 #if defined(GenerateNoise)
-#include "exahype/offloading/NoiseGenerator.h"
-#include "exahype/offloading/NoiseGenerationStrategyRoundRobin.h"
-#include "exahype/offloading/NoiseGenerationStrategyChaseVictim.h"
+#include "exahype/reactive/NoiseGenerator.h"
+#include "exahype/reactive/NoiseGenerationStrategyRoundRobin.h"
+#include "exahype/reactive/NoiseGenerationStrategyChaseVictim.h"
 #endif
 
 
@@ -288,7 +288,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     _parser.invalidate();
   }
 
-  exahype::reactive::OffloadingContext::getInstance(); //fixme: always collectively (all MPI procs) call getInstance in order
+  exahype::reactive::ReactiveContext::getInstance(); //fixme: always collectively (all MPI procs) call getInstance in order
                                                        // init communicators!
 
   ///
@@ -316,20 +316,22 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
         logWarning("initDistributedMemoryConfiguration()", "Tasksharing with prefetching can lead to degraded performance at high core counts! You may want to recompile with -DnoTBBPrefetchesJobData!")
 #endif
         if(selectedStrategy == exahype::parser::Parser::ResilienceStrategy::TaskSharing) {
-          exahype::reactive::OffloadingContext::getInstance().setResilienceStrategy(exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharing);
+          exahype::reactive::ReactiveContext::setResilienceStrategy(exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharing);
         }
         if(selectedStrategy == exahype::parser::Parser::ResilienceStrategy::TaskSharingResilienceChecks) {
-          exahype::reactive::OffloadingContext::getInstance().setResilienceStrategy(exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks);
+          exahype::reactive::ReactiveContext::setResilienceStrategy(exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceChecks);
         }
         if(selectedStrategy == exahype::parser::Parser::ResilienceStrategy::TaskSharingResilienceCorrection) {
-          //Todo: this is not implemented yet!
-          exahype::reactive::OffloadingContext::getInstance().setResilienceStrategy(exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceCorrection);
+          exahype::reactive::ReactiveContext::setResilienceStrategy(exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceCorrection);
+        }
+
+        if(selectedStrategy != exahype::parser::Parser::ResilienceStrategy::None) {
+          exahype::reactive::ReactiveContext::setSaveRedundantComputations(_parser.getTryToSaveRedundantComputations());
         }
 #if defined(SharedTBB)
-        // order is important: set resilience strategy first before initialization
-        //exahype::reactive::OffloadingManager::getInstance().initialize();
+        // order is important: set resilience strategy first before starting offloading service
         exahype::reactive::OffloadingProgressService::getInstance().enable();
-        if(exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams()<=1) {
+        if(exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams()<=1) {
           logError("initDistributedMemoryConfiguration", "You are trying to use some task sharing algorithm with less than two TMPI teams. Did you forget to set the TEAMS environment variable? Aborting...");
           _parser.invalidate();
         }
@@ -397,10 +399,10 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
 
       if(selectedStrategy == exahype::parser::Parser::OffloadingStrategy::StaticHardcoded) {
         exahype::reactive::StaticDistributor::getInstance().loadDistributionFromFile(_parser.getOffloadingInputFile());
-        exahype::reactive::OffloadingContext::getInstance().setOffloadingStrategy(exahype::reactive::OffloadingContext::OffloadingStrategy::StaticHardcoded);
+        exahype::reactive::ReactiveContext::getInstance().setOffloadingStrategy(exahype::reactive::ReactiveContext::OffloadingStrategy::StaticHardcoded);
       }
       if(selectedStrategy == exahype::parser::Parser::OffloadingStrategy::AggressiveHybrid) {
-        exahype::reactive::OffloadingContext::getInstance().setOffloadingStrategy(exahype::reactive::OffloadingContext::OffloadingStrategy::AggressiveHybrid);
+        exahype::reactive::ReactiveContext::getInstance().setOffloadingStrategy(exahype::reactive::ReactiveContext::OffloadingStrategy::AggressiveHybrid);
         exahype::reactive::AggressiveHybridDistributor::getInstance().configure(
            _parser.getCCPTemperatureOffloading(),
            _parser.getDiffusionTemperatureOffloading(),
@@ -699,7 +701,7 @@ void exahype::runners::Runner::shutdownSharedMemoryConfiguration() {
   SCOREP_USER_REGION( (std::string("exahype::runners::Runner::shutdownSharedMemoryConfiguration")).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
   #ifdef SharedMemoryParallelisation
 
-  if(exahype::reactive::OffloadingContext::getInstance().isEnabled()) {
+  if(exahype::reactive::ReactiveContext::getInstance().isEnabled()) {
    while(  tarch::multicore::jobs::finishToProcessBackgroundJobs() ) {};
   }
 
@@ -1132,13 +1134,13 @@ int exahype::runners::Runner::run() {
 #endif
 
 #if defined(SharedTBB)
-  if(exahype::reactive::OffloadingContext::getInstance().isEnabled()){
+  if(exahype::reactive::ReactiveContext::getInstance().isEnabled()){
     exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
       if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
       //static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopOffloadingManager();
 #if !defined(DirtyCleanUp)
-        if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()!=exahype::reactive::OffloadingContext::ResilienceStrategy::None) {
+        if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()!=exahype::reactive::ReactiveContext::ResilienceStrategy::None) {
           static_cast<exahype::solvers::ADERDGSolver*>(solver)->finishOutstandingInterTeamCommunication();
           static_cast<exahype::solvers::ADERDGSolver*>(solver)->cleanUpStaleTaskOutcomes(true);
         }
@@ -1152,7 +1154,7 @@ int exahype::runners::Runner::run() {
 
     logInfo("shutdownDistributedMemoryConfiguration()","stopped offloading manager");
     //Todo(Philipp): print also with local recomp
-    if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()!=exahype::reactive::OffloadingContext::ResilienceStrategy::None)
+    if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()!=exahype::reactive::ReactiveContext::ResilienceStrategy::None)
       exahype::reactive::ResilienceStatistics::getInstance().printStatistics();
   }
 

@@ -59,9 +59,6 @@
 #include <tbb/cache_aligned_allocator.h> // prevents false sharing
 #endif
 
-//#include <tbb/concurrent_queue.h>
-//#include "exahype/offloading/DiffusiveDistributor.h"
-#include "../reactive/OffloadingContext.h"
 
 namespace exahype {
   namespace solvers{
@@ -70,9 +67,8 @@ namespace exahype {
   }
 }
 
-//#include "tarch/multicore/Core.h"
-//#endif
 
+#include "exahype/reactive/ReactiveContext.h"
 #ifdef OffloadingUseProfiler
 #include "exahype/reactive/OffloadingProfiler.h"
 #endif
@@ -1190,7 +1186,7 @@ public:
  #endif
  
    if ( this->getType() == solvers::Solver::Type::ADERDG 
-        && exahype::reactive::OffloadingContext::getInstance().usesOffloading()) {
+        && exahype::reactive::ReactiveContext::getInstance().usesOffloading()) {
       waitUntilCompletedLastStepOffloading((const void*) &cellDescription, waitForHighPriorityJob, receiveDanglingMessages);
     }
     else

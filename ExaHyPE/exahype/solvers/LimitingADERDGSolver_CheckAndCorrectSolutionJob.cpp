@@ -86,8 +86,8 @@ bool exahype::solvers::LimitingADERDGSolver::CheckAndCorrectSolutionJob::run(boo
       case SDCCheckResult::OutcomeSaneAsLimiterNotActive:
         logError("run()","Soft error detected in cell "<<_solverPatch.toString());
         // might wanna start healing iterations with solution from sane team
-        if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
-            ==exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceCorrection) {
+        if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()
+            ==exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceCorrection) {
            correctWithOutcomeAndDeleteLimiterStatus(outcome);
            _solver._solver.get()->predictionAndVolumeIntegralBody(
               _solverPatch,

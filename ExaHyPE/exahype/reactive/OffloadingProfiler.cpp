@@ -19,7 +19,7 @@
 #include "tarch/parallel/Node.h"
 
 #if defined(USE_TMPI)
-#include "exahype/reactive/OffloadingContext.h"
+#include "exahype/reactive/ReactiveContext.h"
 #endif
 
 tarch::logging::Log exahype::reactive::OffloadingProfiler::_log( "exahype::reactive::OffloadingProfiler" );

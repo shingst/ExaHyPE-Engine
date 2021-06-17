@@ -596,18 +596,23 @@ class exahype::parser::Parser {
   std::string getProfilerIdentifier() const;
   std::string getMetricsIdentifierList() const;
   std::string getProfilingOutputFilename() const;
-
+  
+  /**
+   * @return The output directory where memory statistics should be written to (for task sharing).
+   */
   std::string getMemoryStatsOutputDir() const;
 
   /**
-   * Returns number of steps between switching to next noisy rank for round-robin noise generation
+   * @return Number of steps between switching to next noisy rank for round-robin noise generation
    * strategy.
    */
   int getNoiseGenerationRRFrequency() const;
+
   /**
-   * Returns a factor that determines the strength of the noise.
+   * @returns A factor that determines the strength of the noise.
    */
   double getNoiseGenerationFactor() const;
+
   /**
    * Base time a rank is sleeping for "chase victim" noise generation strategy.
    */
@@ -720,7 +725,7 @@ class exahype::parser::Parser {
 
   TBBInvadeStrategy getTBBInvadeStrategy() const;
 
-  //todo: Add support for other strategies again if needed
+  //todo(Philipp(: Add support for other strategies again if needed
   /**
    * The offloading strategy for lightweight distributed task offloading.
    */
@@ -751,14 +756,12 @@ class exahype::parser::Parser {
   ResilienceStrategy getResilienceStrategy() const;
 
   /**
-   * Input filename for offloading rules (to be used with StaticHardcoded strategy).
-   * Can be empty if not specified.
+   * @return Input filename for offloading rules (to be used with StaticHardcoded strategy). Can be empty if not specified.
    */
   std::string getOffloadingInputFile() const;
 
   /**
-   * @return initial temperature that steers how aggressively task offloading
-   * will converge towards the CCP guess.
+   * @return Initial "temperature" that steers how aggressively task offloading  will converge towards the CCP guess.
    */
   double getCCPTemperatureOffloading() const;
 
@@ -804,9 +807,11 @@ class exahype::parser::Parser {
 
   /**
    * @return `true` if the parsed strategy matches the argument.
-   * @param strategy one of "no","migratable_stp_tasks_bitflip", "migratable_stp_tasks_overwrite", "migratable_stp_tasks_overwrite_hardcoded"
+   * @param strategy one of "no", "migratable_stp_tasks_bitflip", "migratable_stp_tasks_overwrite", "migratable_stp_tasks_overwrite_hardcoded"
    */
   bool compareSoftErrorGenerationStrategy(const std::string& strategy) const;
+
+  bool getTryToSaveRedundantComputations() const;
 
   /**
    * @return True if all migratable STPs should be checked (i.e. are considered as potentially having an error).

@@ -1385,7 +1385,6 @@ exahype::parser::Parser::ResilienceStrategy exahype::parser::Parser::getResilien
   return ResilienceStrategy::None;
 }
 
-
 double exahype::parser::Parser::getCCPTemperatureOffloading() const {
   double result = getDoubleFromPath("/distributed_memory/offloading_CCP_temperature", 0, isOptional); 
   return result;
@@ -1421,7 +1420,6 @@ int exahype::parser::Parser::getLocalStarvationThreshold() const{
   return result;
 }
 
-
 std::string exahype::parser::Parser::getOffloadingInputFile() const {
   std::string result = getStringFromPath("/distributed_memory/offloading_input_file","",isOptional);
   logDebug("getOffloadingInputFile()", "found " << result);
@@ -1440,6 +1438,10 @@ int exahype::parser::Parser::getSTPTracingDumpInterval() const {
 
 bool exahype::parser::Parser::compareSoftErrorGenerationStrategy(const std::string& strategy) const  {
   return getStringFromPath("/resilience/generate_soft_errors", "no", isOptional).compare(strategy)==0;
+}
+
+bool exahype::parser::Parser::getTryToSaveRedundantComputations() const {
+  return getBoolFromPath("/resilience/save_redundant_computations", false, isOptional);
 }
 
 bool exahype::parser::Parser::getCheckAllMigratableSTPs() const {

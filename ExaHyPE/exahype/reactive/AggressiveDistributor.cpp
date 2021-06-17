@@ -224,7 +224,7 @@ void exahype::reactive::AggressiveDistributor::updateLoadDistribution() {
     for(int j=0; j<nnodes; j++) {
       if(waitingTimesSnapshot[k+j]>0)
         logInfo("updateLoadDistribution()","rank "<<i<<" waiting for "<<waitingTimesSnapshot[k+j]<<" for rank "<<j);
-      if(waitingTimesSnapshot[k+j]>currentLongestWaitTime && !exahype::reactive::OffloadingContext::getInstance().isBlacklisted(i)) {
+      if(waitingTimesSnapshot[k+j]>currentLongestWaitTime && !exahype::reactive::ReactiveContext::getInstance().isBlacklisted(i)) {
         currentLongestWaitTime = waitingTimesSnapshot[k+j];
         currentOptimalVictim = i;
       }
@@ -247,7 +247,7 @@ void exahype::reactive::AggressiveDistributor::updateLoadDistribution() {
 
   logInfo("updateLoadDistribution()", "optimal victim: "<<currentOptimalVictim<<" critical rank:"<<criticalRank);
 
-  bool isVictim = exahype::reactive::OffloadingContext::getInstance().isVictim();
+  bool isVictim = exahype::reactive::ReactiveContext::getInstance().isVictim();
   if(myRank == criticalRank && criticalRank!=currentOptimalVictim) {
     if(!isVictim) {
       int currentTasksCritical = _initialLoadPerRank[criticalRank];

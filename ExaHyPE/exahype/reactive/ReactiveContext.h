@@ -34,7 +34,7 @@
 
 namespace exahype {
   namespace reactive {
-    class OffloadingContext;
+    class ReactiveContext;
   }
 }
 
@@ -43,7 +43,7 @@ namespace exahype {
  * It further manages MPI communicators for offloading- or tasksharing-related communication and the blacklist
  * for potentially overloaded ranks.
  */
-class exahype::reactive::OffloadingContext {
+class exahype::reactive::ReactiveContext {
   public:
     enum class OffloadingStrategy {
       None,
@@ -69,6 +69,8 @@ class exahype::reactive::OffloadingContext {
     static void setResilienceStrategy(ResilienceStrategy strategy);
     static ResilienceStrategy getResilienceStrategy();
 
+    static void setSaveRedundantComputations(bool saveRedundantComputations);
+    static bool getSaveRedundantComputations();
   private:
     /**
      * The logging device.
@@ -102,7 +104,7 @@ class exahype::reactive::OffloadingContext {
      */
     bool _hasNotifiedSendCompleted;
 
-    OffloadingContext(int threadId);
+    ReactiveContext(int threadId);
 
     /**
      * Communicator for communication between replicating ranks.
@@ -112,17 +114,18 @@ class exahype::reactive::OffloadingContext {
     static int _interTeamRank;
 
 
-    static OffloadingContext* _static_managers[MAX_THREADS];
+    static ReactiveContext* _static_managers[MAX_THREADS];
 
     static MPI_Comm  _offloadingComms[MAX_THREADS];
     static MPI_Comm  _offloadingCommsMapped[MAX_THREADS];
 
     static MPI_Comm  _interTeamComms[MAX_THREADS];
 
-    static OffloadingStrategy _offloadingStrategy;
+    static OffloadingStrategy ChosenOffloadingStrategy;
 
-    static ResilienceStrategy _resilienceStrategy;
+    static ResilienceStrategy ChosenResilienceStrategy;
 
+    static bool SaveRedundantComputations;
   public:
 
     bool isEnabled();
@@ -195,8 +198,8 @@ class exahype::reactive::OffloadingContext {
     void recoverBlacklistedRanks();
     void printBlacklist();
 
-    static OffloadingContext& getInstance();
-    virtual ~OffloadingContext();
+    static ReactiveContext& getInstance();
+    virtual ~ReactiveContext();
 };
 
 #endif

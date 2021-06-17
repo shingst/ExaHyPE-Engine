@@ -24,8 +24,8 @@
 #include "tarch/multicore/Core.h"
 #include "tarch/parallel/Node.h"
 
-#include "../reactive/OffloadingContext.h"
-#include "../reactive/OffloadingProfiler.h"
+#include "exahype/reactive/ReactiveContext.h"
+#include "exahype/reactive/OffloadingProfiler.h"
 
 
 #if defined(UseSmartMPI)
@@ -61,8 +61,8 @@ exahype::reactive::RequestManager::RequestManager(int threadId) :
     _nextGroupId(0),
     _numProgressJobs(0) {
 
-  int ierr;
 #ifdef USE_ITAC
+  int ierr;
   static const char *event_name_handle = "handleRequest";
   ierr = VT_funcdef(event_name_handle, VT_NOCLASS, &event_handling); assertion(ierr==0);
   static const char *event_name_send = "progressSends";
@@ -77,7 +77,7 @@ exahype::reactive::RequestManager::RequestManager(int threadId) :
   MPI_Comm_set_errhandler(MPI_COMM_WORLD, MPI_ERRORS_RETURN);
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes()
-      * exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams();
+      * exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams();
 
   _postedSendsPerRank = new std::atomic<int>[nnodes];
   std::fill(&_postedSendsPerRank[0], &_postedSendsPerRank[nnodes], 0);
@@ -106,7 +106,7 @@ exahype::reactive::RequestManager::~RequestManager() {
 void exahype::reactive::RequestManager::resetPostedRequests() {
   logDebug("resetPostedRequests","resetting posted requests statistics");
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes()
-               * exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams();
+               * exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams();
   std::fill(&_postedSendsPerRank[0], &_postedSendsPerRank[nnodes], 0);
   std::fill(&_postedReceivesPerRank[0], &_postedReceivesPerRank[nnodes], 0);
   std::fill(&_postedSendBacksPerRank[0], &_postedSendBacksPerRank[nnodes], 0);
@@ -118,7 +118,7 @@ void exahype::reactive::RequestManager::resetPostedRequests() {
 
 void exahype::reactive::RequestManager::printPostedRequests() {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
-  for(int i=0; i< nnodes* exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams(); i++) {
+  for(unsigned int i=0; i< nnodes* exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams(); i++) {
     std::string str="for rank "+std::to_string(i)+":";
     if(_postedSendsPerRank[i]>0)
     str = str + "posted sends: "+std::to_string(_postedSendsPerRank[i]);
@@ -177,7 +177,7 @@ void exahype::reactive::RequestManager::submitRequests(
 
   assertion(remoteRank>=0 || remoteRank==MULTIPLE_SOURCES);
   assertion(remoteRank<=tarch::parallel::Node::getInstance().getNumberOfNodes()
-               * exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams()
+               * exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams()
             || remoteRank==MULTIPLE_SOURCES);
 
   int ierr;
@@ -723,8 +723,8 @@ bool exahype::reactive::RequestManager::ProgressJob::run( bool calledFromMaster 
   {
     //getInstance().progressAnyRequests();
     getInstance().progressRequestsOfType(RequestType::send);
-    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, OffloadingContext::getInstance().getMPICommunicator(), &flag, MPI_STATUS_IGNORE);
-    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, OffloadingContext::getInstance().getMPICommunicatorMapped(), &flag, MPI_STATUS_IGNORE);
+    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, ReactiveContext::getInstance().getMPICommunicator(), &flag, MPI_STATUS_IGNORE);
+    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, ReactiveContext::getInstance().getMPICommunicatorMapped(), &flag, MPI_STATUS_IGNORE);
   }
   //logInfo("submitRequests()", "terminated progress job (high priority)");
 

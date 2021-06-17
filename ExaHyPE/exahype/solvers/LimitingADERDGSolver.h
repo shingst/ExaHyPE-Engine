@@ -1500,11 +1500,10 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) final override;
 
-
-//#if defined DistributedOffloading
    void startOffloadingManager();
    void stopOffloadingManager();
-//#endif
+   void resumeOffloadingManager();
+   void pauseOffloadingManager();
 
 #endif
 
