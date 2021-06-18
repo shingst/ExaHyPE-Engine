@@ -3039,8 +3039,7 @@ void exahype::solvers::ADERDGSolver::releaseDummyOutcomeAndShare(int cellDescrip
   if(data->_metadata._isCorrupted) {
     logWarning("releaseDummyOutcomeAndShare", "Caution: a corrupted outcome is shared. SDC should be detected...");
     if(!data->_metadata._isPotSoftErrorTriggered)
-      logError("releaseDummyOutcomeAndShare","has not been detected by SDC mechanism, softErrorTriggered="<<data->_metadata._isPotSoftErrorTriggered
-                                                                                          <<" isPotentiallyCorrupted="<<(cellDescription.getCorruptionStatus()==PotentiallyCorrupted));
+      logError("releaseDummyOutcomeAndShare","has not been detected by SDC mechanism, softErrorTriggered="<<data->_metadata._isPotSoftErrorTriggered);
   }
 
   int j = 0;
@@ -3119,8 +3118,7 @@ void exahype::solvers::ADERDGSolver::releasePendingOutcomeAndShare(int cellDescr
     if(data->_metadata._isCorrupted) {
       logWarning("releasePendingOutcomeAndShare", "Caution: a corrupted outcome is shared. SDC should be detected...");
       if(!data->_metadata._isPotSoftErrorTriggered)
-        logError("releasePendingOutcomeAndShare","has not been detected by SDC mechanism, softErrorTriggered="<<data->_metadata._isPotSoftErrorTriggered
-                                                                                            <<" isPotentiallyCorrupted="<<(cellDescription.getCorruptionStatus()==PotentiallyCorrupted));
+        logError("releasePendingOutcomeAndShare","has not been detected by SDC mechanism, softErrorTriggered="<<data->_metadata._isPotSoftErrorTriggered);
     }
 
     int j = 0;

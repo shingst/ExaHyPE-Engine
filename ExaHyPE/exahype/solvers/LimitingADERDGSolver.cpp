@@ -598,8 +598,8 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepOrRestrict(
         peano::datatraversal::TaskSet( new LimitingADERDGSolver::CheckAndCorrectSolutionJob(
                     *this,solverPatch,cellInfo,
                     std::get<0>(predictionTimeStepData),std::get<1>(predictionTimeStepData)));
+        return;
       }
-      return;
 #endif
       if (
           (SpawnUpdateAsBackgroundJob || (SpawnPredictionAsBackgroundJob && !isLastTimeStepOfBatch)) &&
