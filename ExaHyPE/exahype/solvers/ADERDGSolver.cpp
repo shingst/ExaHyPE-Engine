@@ -4390,7 +4390,6 @@ void exahype::solvers::ADERDGSolver::OffloadingManagerJob::terminate() {
   lock.free();
 }
 
-#ifndef OffloadingUseProgressThread
 void exahype::solvers::ADERDGSolver::OffloadingManagerJob::pause() {
   _state = State::Paused;
 }
@@ -4398,7 +4397,6 @@ void exahype::solvers::ADERDGSolver::OffloadingManagerJob::pause() {
 void exahype::solvers::ADERDGSolver::OffloadingManagerJob::resume() {
   _state = State::Resume;
 }
-#endif
 
 void exahype::solvers::ADERDGSolver::startOffloadingManager(bool spawn) {
   logDebug("startOffloadingManager", " starting ");

@@ -1504,9 +1504,10 @@ public:
 
    void startOffloadingManager();
    void stopOffloadingManager();
+#ifndef OffloadingUseProgressThread
    void resumeOffloadingManager();
    void pauseOffloadingManager();
-
+#endif
 #endif
 
   std::string toString() const final override;

@@ -2196,6 +2196,7 @@ void exahype::solvers::LimitingADERDGSolver::stopOffloadingManager() {
 #endif
 }
 
+#ifndef OffloadingUseProgressThread
 void exahype::solvers::LimitingADERDGSolver::pauseOffloadingManager() {
 #if defined(SharedTBB)
   _solver->pauseOffloadingManager();
@@ -2207,6 +2208,7 @@ void exahype::solvers::LimitingADERDGSolver::resumeOffloadingManager() {
   _solver->resumeOffloadingManager();
 #endif
 }
+#endif
 
 void exahype::solvers::LimitingADERDGSolver::activateHealing() {
   logError("activateHealing","From now on, next time step will be recovered from outcome database using the task outcomes from the other team!");

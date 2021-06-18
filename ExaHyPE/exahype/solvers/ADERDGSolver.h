@@ -1008,11 +1008,9 @@ private:
 #ifdef OffloadingUseProgressThread
       tbb::task* execute();
 #endif
-#ifndef OffloadingUseProgressThread
       void pause();
       void resume();
-#endif
-	  void terminate();
+      void terminate();
     public:
 	      State 	_state;
     private:
@@ -3229,6 +3227,7 @@ public:
   void pauseOffloadingManager();
   void resumeOffloadingManager();
 #endif
+
   /*
    * Tells the offloading manager job that it's time for termination.
    */
