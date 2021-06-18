@@ -258,7 +258,9 @@ class Controller:
         useOffloading = False
         #check if offloading is used together with multiple solvers -> abort as currently not supported
         if "distributed_memory" in spec:
-           useOffloading = spec["distributed_memory"]["offloading_lb_strategy"]!="none" or spec["resilience"]["task_sharing"] or spec["resilience"]["task_sharing_resilience_checks"] or spec["resilience"]["task_sharing_resilience_correction"]
+           useOffloading = spec["distributed_memory"]["offloading_lb_strategy"]!="none" 
+        if "resilience" in spec:
+           useOffloading = useOffloading or spec["resilience"]["task_sharing"] or spec["resilience"]["task_sharing_resilience_checks"] or spec["resilience"]["task_sharing_resilience_correction"]
         
         numADERDGSolvers = 0
         for solver in spec["solvers"]: 
@@ -323,12 +325,12 @@ class Controller:
         if context["useDistributedMem"]:
             context["offloading"]  = self.spec["distributed_memory"]["offloading_lb_strategy"]
             context["offloadingProgress"] = self.spec["distributed_memory"]["offloading_progress"]
-            context["useTasksharing"] = self.spec["resilience"]["task_sharing"]!="no"
+            context["useTasksharing"] = "resilience" in self.spec and self.spec["resilience"]["task_sharing"]!="no"
             context["useLocalRecompute"] = self.spec["distributed_memory"]["offloading_local_recompute"]
         else:
             context["offloading"] = "none"
             context["offloadingProgress"] = "none"
-            context["useTasksharing"] = "no"
+            context["useTasksharing"] = False
             context["useLocalRecompute"] = False
       
         context["useViscousFlux"] = False

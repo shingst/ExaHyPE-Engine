@@ -959,14 +959,14 @@ private:
                                                double timeStamp,
                                                bool isSkeleton);
 
-#if defined(SharedTBB)
+//#if defined(SharedTBB)
 
   /** Corruption Status values */
-  static constexpr int Uncorrupted    = 0;
+  /*static constexpr int Uncorrupted    = 0;
   static constexpr int PotentiallyCorrupted = 1;
   static constexpr int Corrupted        = 2;
   static constexpr int CorruptedAndCorrected  = 3;
-  static constexpr int CorruptedNeighbour = 3; // set during status spreading
+  static constexpr int CorruptedNeighbour = 3; // set during status spreading*/
 
 
 #ifdef OffloadingUseProgressTask
@@ -989,7 +989,7 @@ private:
    * If a progress thread should be used, the OffloadingManagerJob is directly spawned
    * as a tbb::task that runs until the end of the program.
    */
-#ifdef OffloadingUseProgressThread
+#if defined(OffloadingUseProgressThread) && defined (SharedTBB)
   class OffloadingManagerJob : public tbb::task{
 #else
   class OffloadingManagerJob : public tarch::multicore::jobs::Job {
@@ -1160,6 +1160,8 @@ private:
     MigratablePredictionJobData& operator = (const MigratablePredictionJobData &) = delete;
   };
 
+//todo: reactive extensions won't work without TBB
+#if defined(SharedTBB)
   /**
    * These maps are needed for deallocating data that belongs to offloaded tasks
    * and triggering a finished event on the cell description when a STP has finished
@@ -1175,6 +1177,7 @@ private:
   tbb::concurrent_hash_map<int, MigratablePredictionJobData*> _mapTagToSTPData;
   // Used in order to time offloaded tasks.
   tbb::concurrent_hash_map<int, double> _mapTagToOffloadTime;
+#endif
   
   /**
    * These vectors are used to avoid duplicate
@@ -1187,8 +1190,12 @@ private:
    */
   std::vector<int> _lastReceiveBackTag;
 
-  // offloading manager job associated to the solver
+  /**
+   * Offloading manager job associated to the solver.
+   */
   OffloadingManagerJob *_offloadingManagerJob;
+
+  // Status flags for coordinating termination/start of OffloadingManagerJob.
   std::atomic<bool> _offloadingManagerJobTerminated;
   std::atomic<bool> _offloadingManagerJobStarted;
   std::atomic<bool> _offloadingManagerJobTriggerTerminate;
@@ -1431,15 +1438,15 @@ private:
         return result;
       }
   };
-
   OutcomeDatabase<MigratablePredictionJobOutcomeKey, MigratablePredictionJobData> _outcomeDatabase;
-
+#if defined(SharedTBB)
   tbb::concurrent_hash_map<std::pair<int,int> , MigratablePredictionJobData*> _pendingOutcomesToBeShared;
+#endif
 
   void storePendingOutcomeToBeShared(MigratablePredictionJob *job);
   void storePendingOutcomeToBeShared(int cellDescriptionsIndex, int element, double timestamp, double timestep);
-  void releaseDummyOutcomeAndShare(int cellDescriptionsIndex, int element, double timestamp, double timestep);
-  void releasePendingOutcomeAndShare(int cellDescriptionsIndex, int element, double timestamp, double timestepSize);
+  void releaseDummyOutcomeAndShare(int cellDescriptionsIndex, int element, double timestamp, double timestep, bool isTroubled);
+  void releasePendingOutcomeAndShare(int cellDescriptionsIndex, int element, double timestamp, double timestepSize, bool isTroubled);
 
   bool tryToFindAndExtractOutcome(int cellDescriptionsIndex,
                                   int element,
@@ -1698,7 +1705,7 @@ private:
    */
   void submitOrSendMigratablePredictionJob(MigratablePredictionJob *job);
 
-#endif
+//#endif
 
 #endif
 
@@ -2143,7 +2150,7 @@ public:
    */
   void updateRefinementStatus(CellDescription& cellDescription) const;
 
-  void updateCorruptionStatus(CellDescription& cellDescription) const;
+  //void updateCorruptionStatus(CellDescription& cellDescription) const;
 
   /**
    * Updates the status flags and sets the stability criterion to
@@ -3648,14 +3655,11 @@ public:
      return specifiedRelaxationParameter;
   }
 
-#if defined(SharedTBB)
+#if defined(SharedTBB) && defined(Parallel)
   virtual void waitUntilCompletedLastStepOffloading(
       const void* cellDescripPtr,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) {
  #ifdef USE_ITAC
    VT_begin(waitUntilCompletedLastStepHandle);
-   //static int event_emergency = -1;
-   //static const char *event_name_emergency = "trigger_emergency";
-   //int ierr=VT_funcdef(event_name_emergency, VT_NOCLASS, &event_emergency ); assert(ierr==0);
  #endif
 
    const CellDescription& cellDescription = *((const CellDescription*) cellDescripPtr);
@@ -3759,35 +3763,23 @@ public:
 #endif
 
 #if !defined(OffloadingLocalRecompute)
-// #if !defined(OffloadingUseProgressThread)
         if( !cellDescription.getHasCompletedLastStep()
           && !hasTriggeredEmergency
           && myRank!=responsibleRank
           && ( exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs
               -exahype::solvers::ADERDGSolver::NumberOfRemoteJobs)==0
         )
-// #else
-//        if( !cellDescription.getHasCompletedLastStep()
-//          && !hasTriggeredEmergency
-//          && myRank!=responsibleRank)
-// #endif
+
         {
- #ifdef USE_ITAC
-   // VT_begin(event_emergency);
- #endif
+
           hasTriggeredEmergency = true;
           logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank);
           exahype::reactive::ReactiveContext::getInstance().triggerEmergencyForRank(responsibleRank);
- #ifdef USE_ITAC
-   // VT_end(event_emergency);
- #endif
+
         }
 #endif
     }
  #if !defined(OffloadingUseProgressThread)
-    //if ( responsibleRank!=myRank) {
-    //  resumeOffloadingManager();
-    //}
     exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressOffloading( std::numeric_limits<int>::max() );
  #endif
 

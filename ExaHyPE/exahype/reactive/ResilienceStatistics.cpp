@@ -103,7 +103,11 @@ void ResilienceStatistics::notifyLimitedTask() {
 }
 
 void ResilienceStatistics::printStatistics() {
+#if defined(Parallel)
      int team = exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber();
+#else
+     int team = 0;
+#endif
      logInfo("printStatistics", " team "<<team
            <<" spawned tasks = "<<_spawnedTasks
            <<" executed tasks = "<<_executedTasks

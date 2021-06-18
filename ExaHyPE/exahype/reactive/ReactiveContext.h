@@ -39,7 +39,7 @@ namespace exahype {
 }
 
 /**
- * The OffloadingContext singleton stores the configuration of the reactive mechanisms in ExaHyPE.
+ * The ReactiveContext singleton stores the configuration of the reactive mechanisms in ExaHyPE.
  * It further manages MPI communicators for offloading- or tasksharing-related communication and the blacklist
  * for potentially overloaded ranks.
  */

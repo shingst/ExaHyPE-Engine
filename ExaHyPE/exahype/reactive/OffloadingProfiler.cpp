@@ -11,7 +11,6 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if defined(Parallel)
 
 #include "../reactive/OffloadingProfiler.h"
 
@@ -419,4 +418,3 @@ void exahype::reactive::OffloadingProfiler::printStatistics() {
 #endif
 }
 
-#endif

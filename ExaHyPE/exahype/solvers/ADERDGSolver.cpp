@@ -137,11 +137,12 @@ constexpr int exahype::solvers::ADERDGSolver::Keep;
 tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::RestrictionSemaphore;
 tarch::multicore::BooleanSemaphore exahype::solvers::ADERDGSolver::CoarseGridSemaphore;
 
-
-#if defined(SharedTBB)
+#if defined(Parallel)
 template class exahype::solvers::OutcomeDatabase<exahype::solvers::ADERDGSolver::MigratablePredictionJobOutcomeKey, exahype::solvers::ADERDGSolver::MigratablePredictionJobData>;
 #include "exahype/solvers/OutcomeDatabase.cpph"
+#endif
 
+#if defined(SharedTBB) && defined(Parallel)
 std::atomic<int> exahype::solvers::ADERDGSolver::MaxIprobesInOffloadingProgress (std::numeric_limits<int>::max());
 
 std::atomic<int> exahype::solvers::ADERDGSolver::MigratablePredictionJob::JobCounter (0);
@@ -271,7 +272,7 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
      _minRefinementStatusForTroubledCell(_refineOrKeepOnFineGrid+3),
      _checkForNaNs(true),
      _meshUpdateEvent(MeshUpdateEvent::None)
-#if defined(SharedTBB)
+#if defined(Parallel) // this is not nice at all -> maybe move into constructor body
      ,_lastReceiveTag(tarch::parallel::Node::getInstance().getNumberOfNodes()),
      _lastReceiveBackTag(tarch::parallel::Node::getInstance().getNumberOfNodes()),
      _offloadingManagerJob(nullptr),
@@ -280,9 +281,11 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
      _offloadingManagerJobTriggerTerminate(false),
      _lastReceiveReplicaTag(tarch::parallel::Node::getInstance().getNumberOfNodes()
                             *exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams()),
-     _outcomeDatabase(),
-     _pendingOutcomesToBeShared(),
+     _outcomeDatabase()
+#if defined(SharedTBB) //todo(Philipp): this is super ugly, should avoid TBB defines, make design better!
+     ,_pendingOutcomesToBeShared(),
      _allocatedOutcomes()
+#endif
 #endif
 {
   // register tags with profiler
@@ -459,9 +462,15 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
     _previousMinTimeStamp     = _minTimeStamp;
   }
 
-  exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().trackTimeStepAndTriggerActive(exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber(),
-                                                                                         _minTimeStamp, _minTimeStepSize,
-                                                                                         exahype::reactive::ResilienceTools::CheckAllMigratableSTPs);
+#if defined(Parallel)
+  int team = exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber();
+#else
+  int team = 0;
+#endif
+  exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().trackTimeStepAndTriggerActive(team,
+                                                                                          _minTimeStamp,
+                                                                                          _minTimeStepSize,
+                                                                                          exahype::reactive::ResilienceTools::CheckAllMigratableSTPs);
 
 
   // with rollback, timestamps should not be adapted, they are set in LimitingADERDGSolver::wrapUpTimeStep and in ADERDGSolver::mergeWithWorkerData
@@ -517,13 +526,12 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
   endTimeStep(_minTimeStamp,isLastTimeStepOfBatchOrNoBatch);
 
   //Todo(Philipp): do this also with local recomp!! OffloadingLocalRecompute
-#if defined(SharedTBB)
+#if defined(SharedTBB) && defined(Parallel)
   exahype::reactive::ResilienceStatistics::getInstance().printStatistics();
   if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()!=exahype::reactive::ReactiveContext::ResilienceStrategy::None) {
     //exahype::reactive::ResilienceStatistics::getInstance().printStatistics();
     cleanUpStaleTaskOutcomes();
   }
-#endif
 
   if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()>=exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceChecks) {
     bool isConsistent = exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().checkConsistency();
@@ -532,7 +540,7 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
       //MPI_Abort(MPI_COMM_WORLD, -1);
     }
   }
-
+#endif
 }
 
 void exahype::solvers::ADERDGSolver::updateTimeStepSize() {
@@ -863,16 +871,22 @@ void exahype::solvers::ADERDGSolver::fusedTimeStepBody(
   if (
       SpawnPredictionAsBackgroundJob &&
       !mustBeDoneImmediately 
-      && (isLastTimeStepOfBatch || exahype::reactive::ReactiveContext::getInstance().isEnabled()) // only spawned in last iteration if a FusedTimeStepJob was spawned before
+      && isLastTimeStepOfBatch // only spawned in last iteration if a FusedTimeStepJob was spawned before
   ) {
     const int element = cellInfo.indexOfADERDGCellDescription(cellDescription.getSolverNumber());
     //skeleton cells are not considered for offloading
     if (
        (isSkeletonCell
+#if defined(Parallel)
         &&
         exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()
-          < exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceChecks)
-      || !exahype::reactive::ReactiveContext::getInstance().isEnabled()) {
+          < exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceChecks
+#endif
+       )
+#if defined(Parallel)
+      || !exahype::reactive::ReactiveContext::getInstance().isEnabled()
+#endif
+    ) {
       peano::datatraversal::TaskSet( new PredictionJob(
         *this, cellDescription, cellInfo._cellDescriptionsIndex, element,
         predictionTimeStamp,  // corrector time step data is correct; see docu
@@ -881,10 +895,7 @@ void exahype::solvers::ADERDGSolver::fusedTimeStepBody(
       exahype::reactive::OffloadingProfiler::getInstance().notifySpawnedTask();
     }
     else {
-#ifdef USE_ITAC
-     // VT_begin(event_spawn);
-#endif
-#if defined(SharedTBB)
+#if defined(SharedTBB) && defined(Parallel)
       MigratablePredictionJob *migratablePredictionJob = new MigratablePredictionJob(*this,
           cellInfo._cellDescriptionsIndex, element,
           predictionTimeStamp,
@@ -897,11 +908,7 @@ void exahype::solvers::ADERDGSolver::fusedTimeStepBody(
         predictionTimeStepSize,
         false/*is uncompressed*/, isSkeletonCell, isLastTimeStepOfBatch ));
 #endif
-      //peano::datatraversal::TaskSet spawnedSet( stealablePredictionJob, peano::datatraversal::TaskSet::TaskType::Background );
       exahype::reactive::OffloadingProfiler::getInstance().notifySpawnedTask();
-#ifdef USE_ITAC
-      //VT_end(event_spawn);
-#endif
     }
   }
   else {
@@ -941,7 +948,6 @@ void exahype::solvers::ADERDGSolver::fusedTimeStepOrRestrict(
       if (
           (SpawnUpdateAsBackgroundJob || (SpawnPredictionAsBackgroundJob && !isLastTimeStepOfBatch)) &&
           !mustBeDoneImmediately
-          && !exahype::reactive::ReactiveContext::getInstance().isEnabled()
       ) {
         const auto predictionTimeStepData = getPredictionTimeStepData(cellDescription,true);
         peano::datatraversal::TaskSet( new FusedTimeStepJob(
@@ -1105,9 +1111,9 @@ int exahype::solvers::ADERDGSolver::predictionAndVolumeIntegralBody(
       predictorTimeStepSize,
       addVolumeIntegralResultToUpdate); // TODO(Dominic): fix 'false' case
 
-  //Todo(Philipp): print also with local recomp
-  if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()==exahype::reactive::ReactiveContext::ResilienceStrategy::None)
-    exahype::reactive::ResilienceTools::getInstance().corruptDataIfActive(
+
+  //if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()==exahype::reactive::ReactiveContext::ResilienceStrategy::None)
+  exahype::reactive::ResilienceTools::getInstance().corruptDataIfActive(
                                     (cellDescription.getOffset()+0.5*cellDescription.getSize()).data(),
                                     DIMENSIONS, 
                                     predictorTimeStamp,
@@ -1153,19 +1159,22 @@ void exahype::solvers::ADERDGSolver::predictionAndVolumeIntegral(
       //skeleton cells are not considered for offloading but for task sharing with resilience checks or correction
       if (
           (isSkeletonCell
+#if defined(Parallel)
           && exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()
-             < exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceChecks)
-       || !exahype::reactive::ReactiveContext::getInstance().isEnabled()) {
+             < exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceChecks
+#endif
+          )
+#if defined(Parallel)
+       || !exahype::reactive::ReactiveContext::getInstance().isEnabled()
+#endif
+       ) {
         peano::datatraversal::TaskSet( new PredictionJob(
               *this, cellDescription, cellInfo._cellDescriptionsIndex, element,
               predictorTimeStamp,predictorTimeStepSize,
               uncompressBefore,isSkeletonCell,addVolumeIntegralResultToUpdate) );
       }
       else {
-#ifdef USE_ITAC
-       // VT_begin(event_spawn);
-#endif
-#if defined(SharedTBB)
+#if defined(SharedTBB) && defined(Parallel)
         MigratablePredictionJob *migratablePredictionJob = new MigratablePredictionJob(*this,
           cellInfo._cellDescriptionsIndex, element,
           predictorTimeStamp,
@@ -1179,9 +1188,6 @@ void exahype::solvers::ADERDGSolver::predictionAndVolumeIntegral(
               *this, cellDescription, cellInfo._cellDescriptionsIndex, element,
               predictorTimeStamp,predictorTimeStepSize,
               uncompressBefore,isSkeletonCell,addVolumeIntegralResultToUpdate) );
-#endif
-#ifdef USE_ITAC
-     // VT_end(event_spawn);
 #endif
       }
     }
@@ -1205,11 +1211,9 @@ void exahype::solvers::ADERDGSolver::predictionAndVolumeIntegral(
 
     const bool isAMRSkeletonCell = belongsToAMRSkeleton(cellDescription);
     const bool isSkeletonCell    = isAMRSkeletonCell || isAtRemoteBoundary;
-    double time = -MPI_Wtime();
+
     waitUntilCompletedLastStep(cellDescription,isSkeletonCell,false);
-    time += MPI_Wtime();
-    if(time>1) 
-      logError("predictionAndVolumeIntegral","waiting too long "<<time);
+
     if ( cellDescription.getType()==CellDescription::Type::Leaf ) {
       const auto predictionTimeStepData = getPredictionTimeStepData(cellDescription,false); // this is either the fused scheme or a predictor recomputation
 
@@ -1644,11 +1648,7 @@ void exahype::solvers::ADERDGSolver::prolongateFaceData(
             subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
         assertion1(parentCellDescription.getType()==CellDescription::Type::Leaf,parentCellDescription.toString());
         
-    double time = -MPI_Wtime();
-    waitUntilCompletedLastStep<CellDescription>(parentCellDescription,true,false); // TODO(Dominic): We wait for skeleton jobs here. It might make sense to receiveDanglingMessages here too
-    time += MPI_Wtime();
-    if(time>1) 
-      logError("predictionAndVolumeIntegral","waiting too long "<<time);
+        waitUntilCompletedLastStep<CellDescription>(parentCellDescription,true,false); // TODO(Dominic): We wait for skeleton jobs here. It might make sense to receiveDanglingMessages here too
 
         if (
             !SpawnProlongationAsBackgroundJob ||
@@ -1924,11 +1924,8 @@ void exahype::solvers::ADERDGSolver::mergeNeighboursData(
       counter++;
       #endif
 
-      double time = -MPI_Wtime();
       waitUntilCompletedLastStep<CellDescription>(cellDescription1,false,false);  // must be done before any other operation on the patches
       waitUntilCompletedLastStep<CellDescription>(cellDescription2,false,false);
-      time += MPI_Wtime();
-
 
       if ( CompressionAccuracy > 0.0 ) {
         peano::datatraversal::TaskSet uncompression(
@@ -2585,7 +2582,7 @@ void exahype::solvers::ADERDGSolver::toString (std::ostream& out) const {
 ///////////////////////////////////
 // DISTRIBUTED OFFLOADING
 ///////////////////////////////////
-#if defined(SharedTBB)
+#if defined(SharedTBB) && defined(Parallel)
 int exahype::solvers::ADERDGSolver::getTaskPriorityLocalMigratableJob(int cellDescriptionsIndex, int element, double timeStamp, bool isSkeleton){
   if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()
      !=exahype::reactive::ReactiveContext::ResilienceStrategy::None  && !isSkeleton) {
@@ -2973,8 +2970,7 @@ void exahype::solvers::ADERDGSolver::storePendingOutcomeToBeShared(int cellDescr
   data->_metadata._predictorTimeStamp = timestamp;
   data->_metadata._predictorTimeStepSize = timestep;
   data->_metadata._isCorrupted = false;
-  if(exahype::reactive::ResilienceTools::CheckLimitedCellsOnly)
-    data->_metadata._isPotSoftErrorTriggered = (cellDescription.getCorruptionStatus()==PotentiallyCorrupted);
+  data->_metadata._isPotSoftErrorTriggered = true; //will be re-set once limiter status is known
 
   //outcome may already be available due to predictor re-run -> replace old data
   tbb::concurrent_hash_map<std::pair<int,int>, MigratablePredictionJobData*>::accessor accessor;
@@ -2995,7 +2991,7 @@ void exahype::solvers::ADERDGSolver::storePendingOutcomeToBeShared(int cellDescr
 
 }
 
-void exahype::solvers::ADERDGSolver::releaseDummyOutcomeAndShare(int cellDescriptionsIndex, int element, double timestamp, double timestep) {
+void exahype::solvers::ADERDGSolver::releaseDummyOutcomeAndShare(int cellDescriptionsIndex, int element, double timestamp, double timestep, bool isTroubled) {
   MigratablePredictionJobData *data = new MigratablePredictionJobData(*this);
 
   AllocatedSTPsSend++;
@@ -3013,7 +3009,7 @@ void exahype::solvers::ADERDGSolver::releaseDummyOutcomeAndShare(int cellDescrip
   logDebug("releaseDummyOutcomeAndShare","releasing initial dummy outcome");
 
   //set trigger -> need to reset limiter trigger, might wanna pull this out
-  logDebug("releaseDummyOutcomeAndShare", " celldesc ="<<cellDescriptionsIndex<<" isPotCorrupted "<<(cellDescription.getCorruptionStatus()==PotentiallyCorrupted)<<" time stamp "<<timestamp<<std::setprecision(30)<<" time step "<<timestep);
+  logDebug("releaseDummyOutcomeAndShare", " celldesc ="<<cellDescriptionsIndex<<" isPotCorrupted "<<isTroubled<<" time stamp "<<timestamp<<std::setprecision(30)<<" time step "<<timestep);
 
   tarch::la::Vector<DIMENSIONS, double> center;
   center = cellDescription.getOffset() + 0.5 * cellDescription.getSize();
@@ -3029,7 +3025,7 @@ void exahype::solvers::ADERDGSolver::releaseDummyOutcomeAndShare(int cellDescrip
   data->_metadata._predictorTimeStepSize = timestep;
   data->_metadata._isCorrupted = false;
   if(exahype::reactive::ResilienceTools::CheckLimitedCellsOnly)
-    data->_metadata._isPotSoftErrorTriggered = (cellDescription.getCorruptionStatus()==PotentiallyCorrupted);
+    data->_metadata._isPotSoftErrorTriggered = isTroubled;
 
   //Share now
   int teams = exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams();
@@ -3079,7 +3075,7 @@ void exahype::solvers::ADERDGSolver::releaseDummyOutcomeAndShare(int cellDescrip
   delete[] sendRequests;
 }
 
-void exahype::solvers::ADERDGSolver::releasePendingOutcomeAndShare(int cellDescriptionsIndex, int element, double timeStamp, double timeStepSize) {
+void exahype::solvers::ADERDGSolver::releasePendingOutcomeAndShare(int cellDescriptionsIndex, int element, double timeStamp, double timeStepSize, bool isTroubled) {
   MigratablePredictionJobData *data = nullptr;
   tbb::concurrent_hash_map<std::pair<int,int>, MigratablePredictionJobData*>::accessor accessor;
   bool found = _pendingOutcomesToBeShared.find(accessor, std::make_pair(cellDescriptionsIndex, element));
@@ -3102,10 +3098,10 @@ void exahype::solvers::ADERDGSolver::releasePendingOutcomeAndShare(int cellDescr
     assert(data->_metadata._predictorTimeStepSize == timeStepSize);
     //data->_metadata._predictorTimeStamp = timeStamp;
     //data->_metadata._predictorTimeStepSize = timeStepSize;
-    logDebug("releasePendingOutcomeAndShare", " celldesc ="<<cellDescriptionsIndex<<" isPotentiallyCorrupted "<<(cellDescription.getCorruptionStatus()==PotentiallyCorrupted)
+    logDebug("releasePendingOutcomeAndShare", " celldesc ="<<cellDescriptionsIndex<<" isPotentiallyCorrupted "<<isTroubled
                                               <<" timestepsize "<<std::setprecision(30)<<data->_metadata._predictorTimeStepSize);
     if(exahype::reactive::ResilienceTools::CheckLimitedCellsOnly)
-      data->_metadata._isPotSoftErrorTriggered = (cellDescription.getCorruptionStatus()==PotentiallyCorrupted);
+      data->_metadata._isPotSoftErrorTriggered = isTroubled;
 
     //update solution
     double *luh   = static_cast<double*>(cellDescription.getSolution());

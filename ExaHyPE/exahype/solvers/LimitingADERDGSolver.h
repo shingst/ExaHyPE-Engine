@@ -712,6 +712,7 @@ private:
     bool run(bool runOnMasterThread) override;
   };
 
+#if defined(Parallel)
   class CheckAndCorrectSolutionJob : public tarch::multicore::jobs::Job {
     enum class SDCCheckResult {NoCorruption, OutcomeSaneAsLimiterNotActive, UncorrectableSoftError};
 
@@ -746,6 +747,7 @@ private:
   void activateHealing();
   bool isHealingActivated() const;
   void deactivateHealing();
+#endif
 
 public:
   /**

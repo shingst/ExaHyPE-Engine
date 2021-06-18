@@ -1,3 +1,4 @@
+#if defined(Parallel)
 #include "exahype/reactive/ResilienceStatistics.h"
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
@@ -9,11 +10,6 @@
 #if defined(FileTrace)
 #include "exahype/reactive/STPStatsTracer.h"
 #include <chrono>
-#endif
-
-
-#if defined(SharedTBB) && !defined(noTBBPrefetchesJobData)
-#include <immintrin.h>
 #endif
 
 
@@ -40,7 +36,7 @@ exahype::solvers::LimitingADERDGSolver::CheckAndCorrectSolutionJob::~CheckAndCor
 }
 
 bool exahype::solvers::LimitingADERDGSolver::CheckAndCorrectSolutionJob::run(bool runOnMasterThread) {
-
+#if defined(SharedTBB)
   DeliveryStatus status;
   ADERDGSolver::MigratablePredictionJobData *outcome = nullptr;
 
@@ -111,6 +107,9 @@ bool exahype::solvers::LimitingADERDGSolver::CheckAndCorrectSolutionJob::run(boo
     }
     return false;
   }
+#else
+  assert(false); //todo(Philipp): make it work without TBB, this should not be called
+#endif
 }
 
 exahype::solvers::LimitingADERDGSolver::CheckAndCorrectSolutionJob::SDCCheckResult exahype::solvers::LimitingADERDGSolver::CheckAndCorrectSolutionJob::checkAgainstOutcome(ADERDGSolver::MigratablePredictionJobData *outcome) {
@@ -184,5 +183,4 @@ void exahype::solvers::LimitingADERDGSolver::CheckAndCorrectSolutionJob::correct
   //logError("tryFindPreviousOutcomeAndCheck", " soft error corrected and detected, but we compute limiter next, as error has propagated!");
   //todo: for the neighbours of the faulty outcome we could try to use sane solution from other team, too
 }
-
-
+#endif

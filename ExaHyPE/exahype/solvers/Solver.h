@@ -1156,13 +1156,6 @@ public:
   * Tries to receive dangling MPI messages while waiting if this
   * is specified by the user.
   *
-  * Reactive Offloading
-  * -------------
-  *
-  * Assume this rank has stolen jobs from another rank.
-  * If this routine actually waits, this indicates it has to wait for a local job
-  * and not for a stolen one.
-  * Therefore, we exclude stolen jobs from being processed by this routine.
   *
   * @note Only use receiveDanglingMessages=true if the routine
   * is called from a serial context.
@@ -1179,44 +1172,33 @@ public:
     VT_begin(waitUntilCompletedLastStepHandle);
   #endif
  
-   //double time_background = -MPI_Wtime();
+
  #ifdef OffloadingUseProfiler
    exahype::reactive::OffloadingProfiler::getInstance().beginWaitForTasks();
    double time_background = -MPI_Wtime();
  #endif
  
+#if defined(Parallel)
    if ( this->getType() == solvers::Solver::Type::ADERDG 
         && exahype::reactive::ReactiveContext::getInstance().usesOffloading()) {
       waitUntilCompletedLastStepOffloading((const void*) &cellDescription, waitForHighPriorityJob, receiveDanglingMessages);
-    }
-    else
-    {
-      //bool wasIdle = true;
-      if ( !cellDescription.getHasCompletedLastStep() ) {
-        peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
-      }
-      //double time_waiting = -MPI_Wtime();
-      //bool gotLock = false;
+   }
+   else {
+#endif
+     if ( !cellDescription.getHasCompletedLastStep() ) {
+       peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
+     }
       while ( !cellDescription.getHasCompletedLastStep() ) {
-         //double time_process = -MPI_Wtime();
-         #if defined(Parallel) and !defined(noWaitsProgressMPI) 
-         {
-           tarch::multicore::RecursiveLock lock( tarch::services::Service::receiveDanglingMessagesSemaphore, false );
-            if(lock.tryLock()) {
-               tarch::parallel::Node::getInstance().receiveDanglingMessages();
-               lock.free();
-            } 
-         }
-         #endif
+        #if defined(Parallel) and !defined(noWaitsProgressMPI)
+        {
+          tarch::multicore::RecursiveLock lock( tarch::services::Service::receiveDanglingMessagesSemaphore, false );
+          if(lock.tryLock()) {
+             tarch::parallel::Node::getInstance().receiveDanglingMessages();
+             lock.free();
+          }
+        }
+        #endif
 
-         //double time_receive = time_process + MPI_Wtime();
-        //if(time_receive>0.02)
-        //  logError("waitUntilCompletedLastStep","dangling took too long "<<time_receive);
- 
-        //if(time_background+MPI_Wtime()>5) {
-        //    logError("waitUntilCompletedLastStep","taking quite long...");
-       // }
-        //int EnclaveBefore = NumberOfEnclaveJobs;
         switch ( JobSystemWaitBehaviour ) {
           case JobSystemWaitBehaviourType::ProcessJobsWithSamePriority:
             //wasIdle = !tarch::multicore::jobs::processBackgroundJobs( 1, -1, true );
@@ -1227,22 +1209,12 @@ public:
             break;
           default:
             break;
-         }
-         //time_process += MPI_Wtime();
-         //int EnclaveAfter = NumberOfEnclaveJobs;
-         //if(time_process>0.02) 
-         //  logError("waitUntilCompletedLastStep","process took too  long "<<time_process<< " before "<<EnclaveBefore <<" after "<<EnclaveAfter<<" waitForHighPriority "<<waitForHighPriorityJob<< " cell description "<<cellDescription.toString()<<" wasIdle "<<wasIdle); 
-     }
-     //time_waiting += MPI_Wtime();
-     //if(time_waiting>10) 
-     //  logError("waitUntilCompletedLastStep","waiting took too  long "<<time_waiting<< " waitForHighPriority "<<waitForHighPriorityJob<<" got lock "<<gotLock); 
+        }
+      }
+#if defined(Parallel)
    }
- 
-    //time_background += MPI_Wtime();
-    //if(time_background>10) {
-    //  logError("waitUntilCompletedLastStep"," took too  long "<<time_background<< "Encalves  "<<NumberOfEnclaveJobs<<" Skeleton "<<NumberOfSkeletonJobs<<" waitForHighPriority "<<waitForHighPriorityJob<< " cellDescription "<<cellDescription.toString()); 
-    //}
-  
+#endif
+
   #ifdef OffloadingUseProfiler
     time_background += MPI_Wtime();
     exahype::reactive::OffloadingProfiler::getInstance().endWaitForTasks(time_background);
@@ -2200,7 +2172,10 @@ public:
    */
 
  protected:
+  #if defined(Parallel)
   virtual void waitUntilCompletedLastStepOffloading(const void *cellDescription, const bool waitForHighPriorityJob,const bool receiveDanglingMessages);
+  #endif
+
   /**
    * On coarser grids, the solver can hint on the eventual load or memory distribution
    * with this function.

@@ -240,7 +240,7 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
 
   NumberOfEnclaveCells = _numberOfEnclaveCells;
   NumberOfSkeletonCells = _numberOfSkeletonCells;
-#if defined(SharedTBB)
+#if defined(SharedTBB) && defined(Parallel)
   exahype::reactive::PerformanceMonitor::getInstance().setTasksPerTimestep(_numberOfEnclaveCells + _numberOfSkeletonCells);
 
   //start offloading manager background job

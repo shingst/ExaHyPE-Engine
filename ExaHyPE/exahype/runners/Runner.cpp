@@ -701,9 +701,11 @@ void exahype::runners::Runner::shutdownSharedMemoryConfiguration() {
   SCOREP_USER_REGION( (std::string("exahype::runners::Runner::shutdownSharedMemoryConfiguration")).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
   #ifdef SharedMemoryParallelisation
 
+  #ifdef Parallel
   if(exahype::reactive::ReactiveContext::getInstance().isEnabled()) {
    while(  tarch::multicore::jobs::finishToProcessBackgroundJobs() ) {};
   }
+  #endif
 
   tarch::multicore::jobs::plotStatistics();
 
@@ -1133,7 +1135,7 @@ int exahype::runners::Runner::run() {
     exahype::reactive::HeartbeatJob::stopHeartbeatJob();
 #endif
 
-#if defined(SharedTBB)
+#if defined(SharedTBB)  && defined(Parallel)
   if(exahype::reactive::ReactiveContext::getInstance().isEnabled()){
     exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
     for (auto* solver : exahype::solvers::RegisteredSolvers) {

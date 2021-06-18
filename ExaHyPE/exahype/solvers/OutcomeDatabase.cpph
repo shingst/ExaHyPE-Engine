@@ -11,10 +11,11 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if defined(SharedTBB)
 #include "OutcomeDatabase.h"
 
+#if defined(SharedTBB)
 #include <tbb/concurrent_queue.h>
+#endif
 
 namespace exahype {
 namespace solvers {
@@ -43,7 +44,10 @@ T* OutcomeEntry<T>::getData() const
 
 template<typename K,typename T>
 OutcomeDatabase<K,T>::OutcomeDatabase()
- : _database() {
+#if defined(SharedTBB) //todo: this is not nice, should provide a stdlib hash map without TBB in the future
+  : _database()
+#endif
+{
   // TODO Auto-generated constructor stub
 
 }
@@ -59,11 +63,16 @@ void OutcomeDatabase<K,T>::insertOutcome(const K& key, T* data, const DeliverySt
   //tbb::concurrent_hash_map<OutcomeKey, OutcomeEntry<T>>::accessor a_jobToData;
  // bool found = _database.find(a_jobToData, key);
  // assert(!found);
+#if defined(SharedTBB)
   _database.insert(std::make_pair(key,entry));
+#else
+  assert(false); //should not be called!
+#endif  
 }
 
 template<typename K,typename T>
 bool OutcomeDatabase<K,T>::tryFindAndExtractOutcome(K key, T **data, DeliveryStatus& status) {
+#if defined(SharedTBB)
   typename tbb::concurrent_hash_map<K, OutcomeEntry<T>>::accessor a_jobToData;
   bool found = _database.find(a_jobToData, key);
   if (found) {
@@ -73,14 +82,20 @@ bool OutcomeDatabase<K,T>::tryFindAndExtractOutcome(K key, T **data, DeliverySta
     a_jobToData.release();
   }
   return found;
+#else
+  assert(false); //should not be called!
+#endif  
 }
 
 template<typename K,typename T>
 int OutcomeDatabase<K,T>::size() const {
+#if defined(SharedTBB)
   return _database.size();
+#else
+  assert(false);
+#endif
 }
 
 
 } /* namespace solvers */
 } /* namespace exahype */
-#endif

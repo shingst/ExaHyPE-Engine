@@ -38,6 +38,8 @@ NoiseGenerationStrategyChaseVictim::~NoiseGenerationStrategyChaseVictim() {
 }
 
 void NoiseGenerationStrategyChaseVictim::generateNoise(int rank, std::chrono::system_clock::time_point timestamp) {
+//does not make sense without parallelism
+#if defined(Parallel)
   pid_t pid = getpid();
   static int cnt = 0;
 
@@ -72,6 +74,7 @@ void NoiseGenerationStrategyChaseVictim::generateNoise(int rank, std::chrono::sy
   }
 
   cnt++;
+#endif
 }
 
 } /* namespace offloading */

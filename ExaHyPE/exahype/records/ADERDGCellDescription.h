@@ -57,7 +57,7 @@ class exahype::records::ADERDGCellDescription {
         _hasCompletedLastStep.store(state);
       }
 
-      int _corruptionStatus{0};
+      /*int _corruptionStatus{0};
 
       void setCorruptionStatus(int corruptionStatus) {
         _corruptionStatus = corruptionStatus;
@@ -65,7 +65,7 @@ class exahype::records::ADERDGCellDescription {
 
       int getCorruptionStatus() const {
         return _corruptionStatus;
-      }
+      }*/
 
       /*tarch::la::Vector<DIMENSIONS_TIMES_TWO,int> _facewiseCorruptionStatus = {0};
 

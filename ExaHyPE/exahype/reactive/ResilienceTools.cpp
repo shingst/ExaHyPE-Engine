@@ -11,8 +11,6 @@
  * For the full license text, see LICENSE.txt
  **/
 
-//#if defined(SharedTBB)  && defined(Parallel)
-#if  defined(Parallel)
 
 #include "exahype/reactive/ResilienceTools.h"
 #include "exahype/reactive/ReactiveContext.h"
@@ -43,7 +41,7 @@ exahype::reactive::ResilienceTools::ResilienceTools()
    _l1NormTol(0.0000001),
    _l2NormTol(0.0000001),
    _corruptionDetected(false),
-   _injectionRank(1)
+   _injectionRank(0)
 {
   if(_injectionRank>=tarch::parallel::Node::getInstance().getNumberOfNodes()
      && GenerationStrategy!=SoftErrorGenerationStrategy::None) {
@@ -60,9 +58,13 @@ exahype::reactive::ResilienceTools& exahype::reactive::ResilienceTools::getInsta
 }
 
 bool exahype::reactive::ResilienceTools::checkSTPsImmediatelyAfterComputation() {
+#if defined(Parallel)
   return (exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()
       >= exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceChecks)
       && (CheckAllMigratableSTPs || CheckFlipped);
+#else
+  return false;
+#endif
 }
 
 bool exahype::reactive::ResilienceTools::generateBitflipErrorInDoubleIfActive(double *array, size_t size) {
@@ -274,4 +276,3 @@ void exahype::reactive::ResilienceTools::setCorruptionDetected(bool corrupted) {
 bool exahype::reactive::ResilienceTools::getCorruptionDetected() {
   return _corruptionDetected;
 }
-#endif

@@ -17,6 +17,7 @@
 #if defined(SharedTBB)
 #include <tbb/concurrent_hash_map.h>
 #include <tbb/concurrent_queue.h>
+#endif
 
 #include <cstdio>
 
@@ -77,10 +78,12 @@ private:
    * Outcomes are currently stored in a concurrent hash map.
    * We need TBB.
    */
+#if defined(SharedTBB)
   tbb::concurrent_hash_map<K, OutcomeEntry<T>> _database;
+#endif
 public:
   OutcomeDatabase();
-  virtual ~OutcomeDatabase();
+  ~OutcomeDatabase();
 
   /**
    * Inserts an outcome with key K into the database.
@@ -106,5 +109,4 @@ public:
 } /* namespace solvers */
 } /* namespace exahype */
 
-#endif /* SharedTBB*/
 #endif /* EXAHYPE_EXAHYPE_SOLVERS_OUTCOMEDATABASE_H_ */
