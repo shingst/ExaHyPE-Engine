@@ -483,7 +483,7 @@ void Euler::EulerSolver_ADERDG::adjustPointSolution(const double* const x,const 
        && tarch::la::equals(x[1],0.9758,0.001))
   {
     if(TMPI_IsLeadingRank()) {
-       std::cerr<<"Corrupting: t "<<t<<" x[0] "<<x[0]<<" , x[1] "<<x[1]<<std::endl;
+      std::cerr<<"Corrupting: t "<<t<<" x[0] "<<x[0]<<" , x[1] "<<x[1]<<std::endl;
       Q[0]=1.0; 
     }
   }

@@ -450,7 +450,7 @@
          "check_mechanism" : { 
           "type" : "string",
           "title" : "Specifies which results in ADER-DG should be checked for soft errors (checking requires teaMPI + tasksharing with resilience checks).",
-          "enum" : ["none", "check_limited_after_update", "check_all_stps", "check_corrupted_stps"],
+          "enum" : ["none", "check_limited_after_update", "check_all_stps", "check_stps_with_violated_admissibility", "check_corrupted_stps"],
           "default" : "none"
          }
       }

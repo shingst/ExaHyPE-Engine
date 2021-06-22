@@ -30,7 +30,7 @@ exahype::reactive::ResilienceTools::SoftErrorGenerationStrategy exahype::reactiv
 bool exahype::reactive::ResilienceTools::CheckAllMigratableSTPs;
 bool exahype::reactive::ResilienceTools::CheckLimitedCellsOnly;
 bool exahype::reactive::ResilienceTools::CheckFlipped;
-
+bool exahype::reactive::ResilienceTools::CheckSTPsWithViolatedAdmissibility;
 
 exahype::reactive::ResilienceTools::ResilienceTools()
  : _injectionInterval(1500),

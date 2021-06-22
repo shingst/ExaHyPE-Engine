@@ -1456,3 +1456,6 @@ bool exahype::parser::Parser::getCheckCorrupted() const {
   return getStringFromPath("/resilience/check_mechanism", "none", isOptional).compare("check_corrupted_stps")==0;
 }
 
+bool exahype::parser::Parser::getCheckSTPsWithViolatedAdmissibility() const {
+  return getStringFromPath("/resilience/check_mechanism", "none", isOptional).compare("check_stps_with_violated_admissibility")==0;
+}

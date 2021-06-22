@@ -32,8 +32,16 @@ void Euler::PrimitivesWriter::mapQuantities(
     double* const outputQuantities,
     double timeStamp
 ) {
-  const int writtenUnknowns = 5;
-  for (int i=0; i<writtenUnknowns; i++){ 
-    outputQuantities[i] = Q[i];
-  }
+
+/**
+ * This is the Primitive Variable plotter
+ **/
+  //double V[Euler::MyEulerSolver::NumberOfVariables];
+  cons2prim(outputQuantities, Q);
+
+  //for (int i=0; i<0; i++){ 
+  //  outputQuantities[i] = V[i];
+  //}
 }
+
+

@@ -1197,11 +1197,6 @@ exahype::solvers::LimitingADERDGSolver::updateRefinementStatusAfterSolutionUpdat
   return meshUpdateEvent;
 }
 
-/*void exahype::solvers::LimitingADERDGSolver::updateCorruptionStatusAfterSolutionUpdate(SolverPatch& solverPatch, bool isTroubled) {
-  if(isTroubled)
-    solverPatch.setCorruptionStatus(ADERDGSolver::PotentiallyCorrupted);
-}*/
-
 bool exahype::solvers::LimitingADERDGSolver::evaluateDiscreteMaximumPrincipleAndDetermineMinAndMax(SolverPatch& solverPatch) {
   double* solution = static_cast<double*>(solverPatch.getSolution());
 

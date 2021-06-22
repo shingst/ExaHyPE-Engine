@@ -65,6 +65,7 @@ class exahype::reactive::ResilienceTools {
 
   static SoftErrorGenerationStrategy GenerationStrategy;
   static bool CheckAllMigratableSTPs;
+  static bool CheckSTPsWithViolatedAdmissibility;
   static bool CheckLimitedCellsOnly;
   static bool CheckFlipped;
 

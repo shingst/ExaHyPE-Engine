@@ -47,10 +47,10 @@
     "ranks_per_node"         : 1   
   },
   "resilience" : {
-    "generate_soft_errors" : "migratable_stp_tasks_overwrite_hardcoded",
-    "check_mechanism" : "check_limited_after_update",
-    "save_redundant_computations" : true,
-    "task_sharing" : "no"
+    "generate_soft_errors" : "no",
+    "check_mechanism" : "check_all_stps",
+    "save_redundant_computations" : false,
+    "task_sharing" : "task_sharing_resilience_checks"
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",
@@ -86,7 +86,7 @@
       },
       "point_sources": 0,
       "limiter": {
-        "dmp_observables": 4,
+        "dmp_observables": 0,
         "dmp_relaxation_parameter": 101.0,
         "dmp_difference_scaling": 101.0,
         "implementation": "generic"

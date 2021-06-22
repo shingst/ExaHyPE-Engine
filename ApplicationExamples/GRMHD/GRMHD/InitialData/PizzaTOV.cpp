@@ -1,4 +1,3 @@
-
 #include "tarch/logging/Log.h"
 #include "AbstractGRMHDSolver_ADERDG.h"
 #include "GRMHDSolver_ADERDG_Variables.h"
@@ -8,14 +7,14 @@
 #include <stdio.h>
 
 #ifndef PIZZATOV_AVAILABLE
-/*
+
 pizzatov::pizzatov() {
 	printf("Cannot call Pizza as not compiled with -DPIZZATOV_AVAILABLE");
 	abort();
 }
 void pizzatov::Interpolate(const double* x, double t, double* Q) {}
 
-#else
+#else /* PIZZATOV_AVAILABLE */
 
 #include "pizza_tovfront/pointwise_tov.h"
 
@@ -103,5 +102,5 @@ void pizzatov::Interpolate(const double* x, double t, double* Q) {
 	
 	pdeprim2cons_(Q, V);
 }
-*/
+
 #endif  /* PIZZATOV_AVAILABLE */

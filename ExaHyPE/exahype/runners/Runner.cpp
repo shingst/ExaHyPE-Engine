@@ -370,6 +370,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     exahype::reactive::ResilienceTools::CheckAllMigratableSTPs = _parser.getCheckAllMigratableSTPs();
     exahype::reactive::ResilienceTools::CheckLimitedCellsOnly= _parser.getCheckLimitedCellsOnly();
     exahype::reactive::ResilienceTools::CheckFlipped = _parser.getCheckCorrupted();
+    exahype::reactive::ResilienceTools::CheckSTPsWithViolatedAdmissibility = _parser.getCheckSTPsWithViolatedAdmissibility();
   }
 
   //Reactive load balancing configuration
