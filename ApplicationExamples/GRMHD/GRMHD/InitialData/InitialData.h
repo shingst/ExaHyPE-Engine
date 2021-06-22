@@ -25,9 +25,9 @@ extern idobj *id; // a global accessible pointer
 bool prepare_id(std::string idname);
 
 // C ID:
-//#include "InitialData/PizzaTOV.h"
-//#include "InitialData/RNSID.h"
-//#include "InitialData/TovSolverAdapter.h"
+#include "InitialData/PizzaTOV.h"
+#include "InitialData/RNSID.h"
+#include "InitialData/TovSolverAdapter.h"
 
 // FORTRAN ID:
 extern "C" {

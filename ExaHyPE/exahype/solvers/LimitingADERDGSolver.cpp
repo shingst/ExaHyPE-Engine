@@ -598,8 +598,8 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepOrRestrict(
         peano::datatraversal::TaskSet( new LimitingADERDGSolver::CheckAndCorrectSolutionJob(
                     *this,solverPatch,cellInfo,
                     std::get<0>(predictionTimeStepData),std::get<1>(predictionTimeStepData)));
+        return;
       }
-      return;
 #endif
       if (
           (SpawnUpdateAsBackgroundJob || (SpawnPredictionAsBackgroundJob && !isLastTimeStepOfBatch)) &&
@@ -1196,11 +1196,6 @@ exahype::solvers::LimitingADERDGSolver::updateRefinementStatusAfterSolutionUpdat
 
   return meshUpdateEvent;
 }
-
-/*void exahype::solvers::LimitingADERDGSolver::updateCorruptionStatusAfterSolutionUpdate(SolverPatch& solverPatch, bool isTroubled) {
-  if(isTroubled)
-    solverPatch.setCorruptionStatus(ADERDGSolver::PotentiallyCorrupted);
-}*/
 
 bool exahype::solvers::LimitingADERDGSolver::evaluateDiscreteMaximumPrincipleAndDetermineMinAndMax(SolverPatch& solverPatch) {
   double* solution = static_cast<double*>(solverPatch.getSolution());

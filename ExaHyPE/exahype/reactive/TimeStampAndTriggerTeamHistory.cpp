@@ -67,7 +67,7 @@ void exahype::reactive::TimeStampAndTriggerTeamHistory::forwardLastConsistentTim
     maxIdx = std::min(_timestamps[i].size(), maxIdx);
   }
 
-  int i = std::max(0, _lastConsistentTimeStepPtr);
+  unsigned int i = std::max(0, _lastConsistentTimeStepPtr);
   while(i<maxIdx && _timestamps[otherTeam][i]==_timestamps[myTeam][i]
                  && _triggerStatuses[otherTeam][i]== _triggerStatuses[myTeam][i]  //we may only want to consider a time step consistent if limiter status is both zero (for linear applications)
                  && _timestepSizes[otherTeam][i]==_timestepSizes[myTeam][i]) {
@@ -184,7 +184,7 @@ bool exahype::reactive::TimeStampAndTriggerTeamHistory::checkConsistency() {
   tarch::multicore::Lock lock(_semaphore, true);
   size_t maxIdx = std::numeric_limits<int>::max();
 
-  for(int i=0; i<exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams(); i++) {
+  for(unsigned int i=0; i<exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams(); i++) {
     maxIdx = std::min(_timestamps[i].size(), maxIdx);
   }
 
@@ -198,7 +198,7 @@ bool exahype::reactive::TimeStampAndTriggerTeamHistory::checkConsistency() {
     std::vector<double> tmp_timestamps;
     std::vector<double> tmp_timestepsizes;
     std::vector<bool> tmp_statuses;
-    for(int t=0; t<exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams(); t++) {
+    for(unsigned int t=0; t<exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams(); t++) {
       tmp_timestamps.push_back(_timestamps[t][i]);
       tmp_statuses.push_back(_triggerStatuses[t][i]);
       tmp_timestepsizes.push_back(_timestepSizes[t][i]);
@@ -288,7 +288,7 @@ bool exahype::reactive::TimeStampAndTriggerTeamHistory::otherTeamHasLargerTimeSt
 
   int startIndex = std::max(0, _lastConsistentTimeStepPtr);
 
-  for(int i=startIndex; i<_timestamps[otherTeam].size(); i++) {
+  for(unsigned int i=startIndex; i<_timestamps[otherTeam].size(); i++) {
     if(_timestamps[otherTeam][i]>timeStamp)
       return true;
   }

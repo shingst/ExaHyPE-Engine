@@ -203,14 +203,14 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::runCheck() {
       if(matches(outcome)) {
         cellDescription.setHasCompletedLastStep(true);
         reschedule = false;
-       }
-       else {
+      }
+      else {
         //soft error detected
         reschedule = false;
         cellDescription.setHasCompletedLastStep(true);
         logError("runCheck"," Detected a soft error but I am continuing...");
         //MPI_Abort(MPI_COMM_WORLD, -1);
-       }
+      }
     }
     else {
       logDebug("runCheck"," Not found "<<to_string()<<std::setprecision(30)<<"time stamp ="<<_predictorTimeStamp<<" timestep "<<_predictorTimeStepSize);
@@ -873,7 +873,10 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::setSTPPotCorrupted
 
   //trigger is set later if we are using limiter as a trigger
   _isPotSoftErrorTriggered =  ((exahype::reactive::ResilienceTools::CheckFlipped && flipped)
-                            ||  exahype::reactive::ResilienceTools::CheckAllMigratableSTPs)
+                            ||  exahype::reactive::ResilienceTools::CheckAllMigratableSTPs
+                            //|| (exahype::reactive::ResilienceTools::CheckSTPsWithViolatedAdmissibility
+                           //     && !_solver.updateYieldsPhysicallyAdmissibleSolution(cellDescription))
+                            )
                             && (exahype::reactive::ReactiveContext::getResilienceStrategy()>=exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceChecks);
 
   logDebug("setSTPPotCorrupted", "Celldesc ="<<_cellDescriptionsIndex<<" isPotCorrupted "<<_isPotSoftErrorTriggered);

@@ -7,14 +7,14 @@
     "log_file": "whatever.log",
     "plotter_subdirectory": "Writers"
   },
-  "architecture": "skx",
+  "architecture": "hsw",
   "computational_domain": {
     "dimension": 3,
-    "time_steps": 10,
+    "end_time": 10.01,
     "offset": [
-      3.0,
-      3.0,
-      3.0
+      -5.0,
+      -5.0,
+      -5.0
     ],
     "width": [
       10.0,
@@ -56,7 +56,7 @@
       "type": "ADER-DG",
       "name": "GRMHDSolver_ADERDG",
       "order": 3,
-      "maximum_mesh_size": 3,
+      "maximum_mesh_size": 0.373738,
       "maximum_mesh_depth": 0,
       "time_stepping": "global",
       "aderdg_kernel": {
@@ -68,7 +68,7 @@
         "space_time_predictor": {},
         "optimised_terms": [],
         "optimised_kernel_debugging": [],
-        "implementation": "generic"
+        "implementation": "optimised"
       },
       "point_sources": 0,
       "variables": [
@@ -105,7 +105,7 @@
           "multiplicity": 6
         }
       ],
-      "_plotters": [
+      "plotters": [
         {
           "type": "vtk::Cartesian::cells::ascii",
           "name": "IntegralsWriter",

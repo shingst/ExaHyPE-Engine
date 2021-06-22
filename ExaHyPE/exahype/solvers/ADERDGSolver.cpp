@@ -1807,6 +1807,33 @@ void exahype::solvers::ADERDGSolver::rollbackSolutionGlobally(const int solverNu
   }
 }
 
+bool exahype::solvers::ADERDGSolver::updateYieldsPhysicallyAdmissibleSolution(CellDescription& cellDescription) {
+  double *tmp_sol = new double[getUnknownsPerCell()];
+  double *update = static_cast<double *> (cellDescription.getUpdate());
+
+  double* observablesMin = nullptr;
+  double* observablesMax = nullptr;
+
+  const int numberOfObservables = getDMPObservables();
+  if (numberOfObservables > 0) {
+    observablesMin = static_cast<double*>(cellDescription.getSolutionMin());
+    observablesMax = static_cast<double*>(cellDescription.getSolutionMax());
+  }
+
+  std::memcpy(tmp_sol, cellDescription.getSolution(), getUnknownsPerCell());
+  addUpdateToSolution(tmp_sol, tmp_sol, update, cellDescription.getTimeStepSize());
+
+  bool isAdmissible = isPhysicallyAdmissible(
+          tmp_sol,
+          observablesMin,observablesMax,
+          cellDescription.getRefinementStatus()>=_minRefinementStatusForTroubledCell,
+          cellDescription.getOffset()+0.5*cellDescription.getSize(),cellDescription.getSize(),
+          cellDescription.getTimeStamp());
+
+  delete[] tmp_sol;
+  return isAdmissible;
+}
+
 void exahype::solvers::ADERDGSolver::mergeWithNeighbourMetadata(
     const int                                    solverNumber,
     Solver::CellInfo&                            cellInfo, // corresponds to dest
@@ -3039,8 +3066,7 @@ void exahype::solvers::ADERDGSolver::releaseDummyOutcomeAndShare(int cellDescrip
   if(data->_metadata._isCorrupted) {
     logWarning("releaseDummyOutcomeAndShare", "Caution: a corrupted outcome is shared. SDC should be detected...");
     if(!data->_metadata._isPotSoftErrorTriggered)
-      logError("releaseDummyOutcomeAndShare","has not been detected by SDC mechanism, softErrorTriggered="<<data->_metadata._isPotSoftErrorTriggered
-                                                                                          <<" isPotentiallyCorrupted="<<(cellDescription.getCorruptionStatus()==PotentiallyCorrupted));
+      logError("releaseDummyOutcomeAndShare","has not been detected by SDC mechanism, softErrorTriggered="<<data->_metadata._isPotSoftErrorTriggered);
   }
 
   int j = 0;
@@ -3119,8 +3145,7 @@ void exahype::solvers::ADERDGSolver::releasePendingOutcomeAndShare(int cellDescr
     if(data->_metadata._isCorrupted) {
       logWarning("releasePendingOutcomeAndShare", "Caution: a corrupted outcome is shared. SDC should be detected...");
       if(!data->_metadata._isPotSoftErrorTriggered)
-        logError("releasePendingOutcomeAndShare","has not been detected by SDC mechanism, softErrorTriggered="<<data->_metadata._isPotSoftErrorTriggered
-                                                                                            <<" isPotentiallyCorrupted="<<(cellDescription.getCorruptionStatus()==PotentiallyCorrupted));
+        logError("releasePendingOutcomeAndShare","has not been detected by SDC mechanism, softErrorTriggered="<<data->_metadata._isPotSoftErrorTriggered);
     }
 
     int j = 0;
@@ -3721,10 +3746,12 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
   //int lastSrc = -1;
   int lastRecvTag = -1;
   int lastRecvSrc = -1;
+#if defined(OffloadingNoEarlyReceiveBacks)
   int lastRecvBackTag = -1;
   int lastRecvBackSrc = -1;
-  MPI_Comm comm = exahype::reactive::ReactiveContext::getInstance().getMPICommunicator();
   MPI_Comm commMapped = exahype::reactive::ReactiveContext::getInstance().getMPICommunicatorMapped();
+#endif
+  MPI_Comm comm = exahype::reactive::ReactiveContext::getInstance().getMPICommunicator();
   int iprobesCounter = 0;
   int ierr;
 
@@ -3799,6 +3826,7 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
 #endif
 
 #ifdef OffloadingUseProgressTask
+    // special termination signal
     if(receivedTask && stat.MPI_TAG==0) {
        int terminatedSender = stat.MPI_SOURCE;
        //logInfo("progressOffloading()","active sender "<<terminatedSender<<" has sent termination signal ");
@@ -4392,7 +4420,6 @@ void exahype::solvers::ADERDGSolver::OffloadingManagerJob::terminate() {
   lock.free();
 }
 
-#ifndef OffloadingUseProgressThread
 void exahype::solvers::ADERDGSolver::OffloadingManagerJob::pause() {
   _state = State::Paused;
 }
@@ -4400,7 +4427,6 @@ void exahype::solvers::ADERDGSolver::OffloadingManagerJob::pause() {
 void exahype::solvers::ADERDGSolver::OffloadingManagerJob::resume() {
   _state = State::Resume;
 }
-#endif
 
 void exahype::solvers::ADERDGSolver::startOffloadingManager(bool spawn) {
   logDebug("startOffloadingManager", " starting ");

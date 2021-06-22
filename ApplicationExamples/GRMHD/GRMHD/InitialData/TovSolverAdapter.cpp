@@ -1,4 +1,3 @@
-/*
 #include "TovSolverAdapter.h"
 #include "Fortran/PDE.h" // P2C
 
@@ -67,4 +66,4 @@ void TovSolverAdapter::Interpolate(const double* const x, double t, double* cons
 	
 	pdeprim2cons_(Q, V); 
 
-}*/
+}

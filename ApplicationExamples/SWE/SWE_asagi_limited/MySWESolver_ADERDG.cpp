@@ -233,6 +233,7 @@ bool SWE::MySWESolver_ADERDG::isPhysicallyAdmissible(
   }*/
 
   if(hMin < epsilon_DG * 10.0){
+    std::cout <<center[0] << "," << center[1] <<": false" << " hMin " << hMin << std::endl;
     return false;
   }
   

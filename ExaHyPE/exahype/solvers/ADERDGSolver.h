@@ -1005,13 +1005,11 @@ private:
 	  OffloadingManagerJob(ADERDGSolver& solver);
 	  ~OffloadingManagerJob();
 	  bool run( bool isCalledOnMaster );
-#ifdef OffloadingUseProgressThread
+#if defined(OffloadingUseProgressThread) && defined(SharedTBB)
       tbb::task* execute();
 #endif
-#ifndef OffloadingUseProgressThread
       void pause();
       void resume();
-#endif
 	  void terminate();
     public:
 	      State 	_state;
@@ -2769,6 +2767,9 @@ public:
    */
   void rollbackSolutionGlobally(const int solverNumber,CellInfo& cellInfo) const final override;
 
+  bool updateYieldsPhysicallyAdmissibleSolution(CellDescription& cellDescription);
+
+
   ///////////////////////////////////
   // NEIGHBOUR
   ///////////////////////////////////
@@ -3225,10 +3226,8 @@ public:
    * Spawns a offloading manager job and submits it as a TBB task.
    */
   void startOffloadingManager(bool spawn=false);
-#ifndef OffloadingUseProgressThread
   void pauseOffloadingManager();
   void resumeOffloadingManager();
-#endif
   /*
    * Tells the offloading manager job that it's time for termination.
    */

@@ -825,6 +825,11 @@ class exahype::parser::Parser {
    * @return True if only corrupted STPs (with artificially injected errors) should be triggered as suspicious.
    */
   bool getCheckCorrupted() const;
+
+  /**
+   * @return True if only STPs should be checked which -- if applied to the solution -- would violate the physical admissibility checks.
+   */
+  bool getCheckSTPsWithViolatedAdmissibility() const;
 };
 
 #endif
