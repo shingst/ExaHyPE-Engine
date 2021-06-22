@@ -1341,6 +1341,34 @@ private:
       bool run(bool calledFromMaster) override;
   };
 
+  class CheckAndCorrectSolutionJob : public tarch::multicore::jobs::Job {
+    enum class SDCCheckResult {NoCorruption, OutcomeSaneAsTriggerNotActive, UncorrectableSoftError};
+
+    private:
+      ADERDGSolver&               _solver;
+      CellDescription&            _solverPatch;
+      const double                _predictorTimeStamp;
+      const double                _predictorTimeStepSize;
+
+
+      bool run(bool runOnMasterThread) override;
+      SDCCheckResult checkAgainstOutcome(ADERDGSolver::MigratablePredictionJobData *outcome);
+
+      bool tryToFindAndExtractEquivalentSharedOutcome(DeliveryStatus &status, MigratablePredictionJobData **outcome);
+
+    public:
+      // constructor for local jobs that can be stolen
+      CheckAndCorrectSolutionJob(
+        ADERDGSolver&     solver,
+        CellDescription& solverPatch,
+        const double predictorTimeStamp,
+        const double predictorTimeStepSize
+      );
+      ~CheckAndCorrectSolutionJob();
+
+      CheckAndCorrectSolutionJob(const CheckAndCorrectSolutionJob& stp) = delete;
+  };
+
 //#if defined(TaskSharing) // || defined(OffloadingLocalRecompute) //Todo(Philipp): do we still need this for local recompute?
 
   void sendTaskOutcomeToOtherTeams(MigratablePredictionJob *job);
@@ -1452,6 +1480,13 @@ private:
                                   double predictorTimeStepSize,
                                   DeliveryStatus &status,
                                   MigratablePredictionJobData **outcome);
+
+  bool tryToFindAndExtractOutcome(CellDescription& cellDescription,
+                                  double predictionTimeStamp,
+                                  double predictorTimeStepSize,
+                                  DeliveryStatus &status,
+                                  MigratablePredictionJobData **outcome);
+
 
   class ConcurrentJobKeysList {
     private:

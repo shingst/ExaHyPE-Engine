@@ -145,9 +145,9 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::run(
     case State::INITIAL:
       reschedule = runExecution(isCalledOnMaster);
       break;
-    case State::CHECK_REQUIRED:
+    /*case State::CHECK_REQUIRED:
       reschedule = runCheck();
-      break;
+      break;*/
     /*case State::CHECK_PREVIOUS:
       reschedule = tryFindPreviousOutcomeAndCheck();
       if(!reschedule)
@@ -362,8 +362,13 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
          || !exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().otherTeamHasLargerTimeStamp(_predictorTimeStamp))
          && exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().checkConsistency()) {
         logDebug("handleLocalExecution","going into check mode "<<to_string());
-        setState(State::CHECK_REQUIRED);
-        return true; //re-enqueue
+
+        CheckAndCorrectSolutionJob *job = new CheckAndCorrectSolutionJob(_solver,
+                                           getCellDescription(_cellDescriptionsIndex,_element),
+                                           _predictorTimeStamp,
+                                           _predictorTimeStepSize);
+        peano::datatraversal::TaskSet spawnedSet(job);
+        return false; //check job will take care next
       }
       else {
         logDebug("handleLocalExecution","Won't be able to find STP anymore as timestamps/timestep sizes have diverged. Timestamp ="
