@@ -2884,16 +2884,13 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
 #endif
 }
 
-
 bool exahype::solvers::ADERDGSolver::tryToFindAndExtractOutcome(
-    int cellDescriptionsIndex,
-    int element,
+    CellDescription& cellDescription,
     double predictionTimeStamp,
     double predictorTimeStepSize,
     DeliveryStatus &status,
     MigratablePredictionJobData **outcome) {
-  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,
-      element);
+
 
   //Caution: calls progress and may delay calling thread significantly
 #if !defined(OffloadingUseProgressThread)
@@ -2908,7 +2905,7 @@ bool exahype::solvers::ADERDGSolver::tryToFindAndExtractOutcome(
   //                                       <<" timestamp = "<<predictionTimeStamp
   //                                       <<" time step = "<<predictorTimeStepSize);
 
-  MigratablePredictionJobOutcomeKey key(center.data(), predictionTimeStamp, predictorTimeStepSize, element);
+  MigratablePredictionJobOutcomeKey key(center.data(), predictionTimeStamp, predictorTimeStepSize, 0); //todo: verify that element is always 0
   bool found = _outcomeDatabase.tryFindAndExtractOutcome(key, outcome, status);
 
   if(found && status==DeliveryStatus::Transit) {
@@ -2923,6 +2920,20 @@ bool exahype::solvers::ADERDGSolver::tryToFindAndExtractOutcome(
         <<(*outcome)->_metadata.to_string());
   }
   return found;
+}
+
+
+bool exahype::solvers::ADERDGSolver::tryToFindAndExtractOutcome(
+    int cellDescriptionsIndex,
+    int element,
+    double predictionTimeStamp,
+    double predictorTimeStepSize,
+    DeliveryStatus &status,
+    MigratablePredictionJobData **outcome) {
+  CellDescription& cellDescription = getCellDescription(cellDescriptionsIndex,
+      element);
+
+  return tryToFindAndExtractOutcome(cellDescription, predictionTimeStamp, predictorTimeStepSize, status, outcome);
 }
 
 void exahype::solvers::ADERDGSolver::storePendingOutcomeToBeShared(MigratablePredictionJob *job) {
