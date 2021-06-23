@@ -1111,16 +1111,18 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
 
   MigratablePredictionJobOutcomeKey key(data->_metadata.getCenter(), data->_metadata.getPredictorTimeStamp(),
                                          data->_metadata.getPredictorTimeStepSize(), data->_metadata.getElement());
-  logDebug("receiveHandlerTaskSharing", "team "
-      <<exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber()
-      <<" received replica job: "
-      <<data->_metadata.to_string());
 
   double minTimeStampToKeep = static_cast<exahype::solvers::ADERDGSolver*>(solver)->getPreviousMinTimeStamp();
 
   exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().trackTimeStepAndTriggerActive(team, key._timestamp, key._timestepSize, data->_metadata._isPotSoftErrorTriggered);
   double lastconsistentTimeStamp, lastconsistentTimeStepSize, lastconsistentEstimatedTimeStepSize;
   exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().getLastConsistentTimeStepData(lastconsistentTimeStamp, lastconsistentTimeStepSize, lastconsistentEstimatedTimeStepSize);
+  
+  logDebug("receiveHandlerTaskSharing", "team "
+      <<exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber()
+      <<" received replica job: "
+      <<data->_metadata.to_string()
+      <<" min timestamp to keep "<<minTimeStampToKeep);
 
   if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()
     >= exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceChecks) {

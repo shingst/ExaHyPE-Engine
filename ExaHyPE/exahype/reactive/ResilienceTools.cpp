@@ -108,11 +108,12 @@ bool exahype::reactive::ResilienceTools::overwriteRandomValueInArrayIfActive(dou
     std::default_random_engine generator(r());
     std::uniform_int_distribution<int> un_arr(0, size-1);
 
-    int idx_array = un_arr(generator);
+    //int idx_array = un_arr(generator);
+    int idx_array = 0;
 
     double old_val = array[idx_array];
     //overwrite with "random number"
-    array[idx_array] = -8192; //std::numeric_limits<double>::max();
+    array[idx_array] = 8192; //std::numeric_limits<double>::max();
     _numFlipped++;
 
     logError("overwriteDoubleIfActive()", "overwrite double value, pos = "<<idx_array<<" old ="<<old_val<<" new = "<<array[idx_array]);

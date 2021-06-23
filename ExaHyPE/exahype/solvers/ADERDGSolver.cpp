@@ -527,9 +527,8 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
 
   //Todo(Philipp): do this also with local recomp!! OffloadingLocalRecompute
 #if defined(SharedTBB) && defined(Parallel)
-  exahype::reactive::ResilienceStatistics::getInstance().printStatistics();
   if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()!=exahype::reactive::ReactiveContext::ResilienceStrategy::None) {
-    //exahype::reactive::ResilienceStatistics::getInstance().printStatistics();
+    exahype::reactive::ResilienceStatistics::getInstance().printStatistics();
     cleanUpStaleTaskOutcomes();
   }
 

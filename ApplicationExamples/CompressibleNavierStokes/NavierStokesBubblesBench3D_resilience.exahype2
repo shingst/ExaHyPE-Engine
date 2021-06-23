@@ -29,7 +29,7 @@
  "distributed_memory": {
     "offloading_lb_strategy": "none",
     "offloading_input_file" : "",
-    "offloading_progress" : "none",
+    "offloading_progress" : "progress_thread",
     "offloading_CCP_temperature" : 0,
     "offloading_diffusion_temperature" : 1,
     "offloading_CCP_frequency" : 0,
@@ -143,7 +143,7 @@
         "amr-factor-refine": 2.5,
         "amr-factor-erase": -1.5
       },
-      "plotters": [
+      "_plotters": [
         {
           "type": "vtu::Legendre::vertices::ascii",
           "name": "Plotter_Limiting",
