@@ -812,12 +812,17 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::setSTPPotCorrupted
 
   CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
                                                         _element);
+    
+  bool violatedAdmCheck = false;                                                    
+  if(exahype::reactive::ResilienceTools::CheckSTPsWithViolatedAdmissibility) {
+    violatedAdmCheck = !_solver.updateYieldsPhysicallyAdmissibleSolution(cellDescription);
+  }
 
   //trigger is set later if we are using limiter as a trigger
   _isPotSoftErrorTriggered =  ((exahype::reactive::ResilienceTools::CheckFlipped && flipped)
                             ||  exahype::reactive::ResilienceTools::CheckAllMigratableSTPs
                             || (exahype::reactive::ResilienceTools::CheckSTPsWithViolatedAdmissibility
-                                && !_solver.updateYieldsPhysicallyAdmissibleSolution(cellDescription))
+                                && violatedAdmCheck)
                             )
                             && (exahype::reactive::ReactiveContext::getResilienceStrategy()>=exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceChecks);
 

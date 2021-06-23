@@ -1,0 +1,158 @@
+{
+  "project_name": "NavierStokes",
+  "paths": {
+    "peano_kernel_path": "./Peano/",
+    "exahype_path": "./ExaHyPE",
+    "output_directory": "./ApplicationExamples/CompressibleNavierStokes"
+  },
+  "computational_domain": {
+    "dimension": 3,
+    "time_steps": 40,
+    "offset": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "width": [
+      1000.0,
+      1000.0,
+      1000.0
+    ]
+  },
+  "architecture": "noarch",
+  "shared_memory": {
+    "cores": 2,
+    "background_job_consumers": 1,
+    "properties_file": "sharedmemory.properties",
+    "autotuning_strategy": "dummy"
+  },
+ "distributed_memory": {
+    "offloading_lb_strategy": "none",
+    "offloading_input_file" : "",
+    "offloading_progress" : "none",
+    "offloading_CCP_temperature" : 0,
+    "offloading_diffusion_temperature" : 1,
+    "offloading_CCP_frequency" : 0,
+    "offloading_CCP_steps" : 0,
+    "offloading_update_temperature" : true,
+    "offloading_increase_temp_threshold" : 1.0,
+    "ranks_per_node": 1,
+    "load_balancing_strategy": "hotspot",
+    "load_balancing_type": "static",
+    "node_pool_strategy": "fair",
+    "timeout": 60000,
+    "buffer_size": 64
+  },
+  "_stp_stats_tracing" : {
+    "stp_tracing_output_dir" : "test_trace",
+    "stp_tracing_frequency" : 10
+  },
+  "resilience" : {
+    "generate_soft_errors" : "no",
+    "check_mechanism" : "check_stps_with_violated_admissibility",
+    "save_redundant_computations" : true,
+    "task_sharing" : "task_sharing"
+  },
+  "optimisation": {
+    "fuse_algorithmic_steps": "all",
+    "fuse_algorithmic_steps_diffusion_factor": 0.99,
+    "fuse_algorithmic_steps_rerun_factor": 0.99,
+    "spawn_predictor_as_background_thread": true,
+    "spawn_amr_background_threads": true,
+    "spawn_update_as_background_thread": false,
+    "time_step_batch_factor": 1.0,
+    "disable_metadata_exchange_in_batched_time_steps": true,
+    "disable_vertex_exchange_in_time_steps": true,
+    "double_compression": 0.0,
+    "spawn_double_compression_as_background_thread": false
+  },
+  "solvers": [
+    {
+      "type": "Limiting-ADER-DG",
+      "name": "NavierStokesSolver",
+      "order": 5,
+      "maximum_mesh_size": 400,
+      "maximum_mesh_depth": 0,
+      "time_stepping": "global",
+      "halo_cells": 0,
+      "aderdg_kernel": {
+        "language": "C",
+       "nonlinear": true,
+        "terms": [
+          "flux",
+          "viscous_flux",
+          "source"
+        ],
+        "space_time_predictor": {
+                "fix_picard_iterations": false
+        },
+        "optimised_terms": [],
+        "optimised_kernel_debugging": [],
+        "implementation": "generic"
+      },
+      "limiter": {
+        "dmp_observables": 0,
+        "dmp_relaxation_parameter": 1e-8,
+        "dmp_difference_scaling": 1e-5
+      },
+      "fv_kernel": {
+        "language": "C",
+        "slope_limiter": "mclim",
+        "scheme": "musclhancock",
+        "terms": [
+                   "flux",
+                   "viscous_flux",
+                   "source"
+         ],
+         "implementation" : "generic"
+      },
+      "point_sources": 0,
+      "variables": [
+        {
+          "name": "rho",
+          "multiplicity": 1
+        },
+        {
+          "name": "j",
+          "multiplicity": 3
+        },
+        {
+          "name": "E",
+          "multiplicity": 1
+        }
+      ],
+      "material_parameters": [
+        {
+          "name": "height",
+          "multiplicity": 1
+        },
+         {
+          "name": "backgroundstate",
+          "multiplicity": 2
+        }
+      ],
+      "parameters": {
+        "use-gravity": true,
+        "use-background-state": true,
+        "viscosity": 0.01,
+        "scenario": "cosine-bubble",
+        "use-amr": false,
+        "use-tv-amr": true,
+        "use-tv-volume-correction": false,
+        "amr-indicator": "potential-temperature",
+        "amr-factor-refine": 2.5,
+        "amr-factor-erase": -1.5
+      },
+      "plotters": [
+        {
+          "type": "vtu::Legendre::vertices::ascii",
+          "name": "Plotter",
+          "time": 0.0,
+          "repeat": 10.0,
+          "output": "results/solution",
+          "variables": 6
+        }
+      ]
+    }
+  ]
+}
