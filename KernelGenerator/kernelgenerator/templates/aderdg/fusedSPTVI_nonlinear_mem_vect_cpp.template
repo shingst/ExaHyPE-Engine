@@ -384,9 +384,11 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       // use lduh as scratch to store new slice
       {{ m.matmul('lqi', 'rhs', 'iK1_T_wt_dt', 'lduh',idxRhs(0,0,zy,0,0), '0', '0') | indent(6) }}{##}
       for(int t = 0; t < {{nDof}}; t++) {
-        for(int nx=0; nx<{{nVar*nDofPad}}; nx++) { //only copy and change the variables, skip parameters
-          sq_res += (lduh[nx+{{nVar*nDofPad}}*t] - lQi[{{idxLQi(t,0,zy,0,nx)}}]) * (lduh[nx+{{nVar*nDofPad}}*t] - lQi[{{idxLQi(t,0,zy,0,nx)}}]);
-          lQi[{{idxLQi(t,0,zy,0,nx)}}] = lduh[nx+{{nVar*nDofPad}}*t];
+        for(int n = 0 ; n < {{nVar}}; n++) {
+          for(int x = 0; x < {{nDof}}; x++) { // skip padding
+            sq_res += (lduh[(n*{{nDofPad}}+x)+{{nVar*nDofPad}}*t] - lQi[{{idxLQi(t,0,zy,n,x)}}]) * (lduh[(n*{{nDofPad}}+x)+{{nVar*nDofPad}}*t] - lQi[{{idxLQi(t,0,zy,n,x)}}]);
+            lQi[{{idxLQi(t,0,zy,n,x)}}] = lduh[(n*{{nDofPad}}+x)+{{nVar*nDofPad}}*t];
+          }
         }
       }
     }

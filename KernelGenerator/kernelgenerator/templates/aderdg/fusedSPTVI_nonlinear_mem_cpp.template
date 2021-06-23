@@ -143,9 +143,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 #endif   
 {% endif %}
 
-
-//TODO JMG Inital guess template
-{% if not useCERKGuess or True %}{# fallback trivial guess #}
   // 1. Trivial initial guess
   std::memset(lQi, 0, sizeof(double)*{{nVarPad*(nDof**nDim)*nDof}});
 {% if nPar > 0 %}
@@ -161,67 +158,10 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   for (int t = 1; t < {{nDof}}; t++) {
     std::copy_n(lQi, {{(nDof**nDim)*nVarPad}}, lQi+{{idxLQi(t,0,0,0,0)}});
   }
-{% else %}{# useCERKGuess #}
-/*
-  //1. Optimized initial guess, Continuous Extension Runga-Kutta.
-  {
-{% if useFlux %}{# use lFi as temp array, lFi total size = nVarPad*(nDof**(nDim+1))*nDim #}
-    // use lFi as temporary storage for CERK's temporary arrays
-    double* const lF_guess = lFi; // lF[0-2][z?][y][x][n]
-    double* const K1 = lFi+{{nDim*(nDof**nDim)*nVarPad}}; // K1[z?][y][x][n]
-    double* const K2 = lFi+{{(nDim+1)*(nDof**nDim)*nVarPad}}; // K2[z?][y][x][n]
-    double* const lwh = lFi+{{(nDim+2)*(nDof**nDim)*nDataPad}}; // lwh[z?][y][x][n] (nData)
-    std::memset(lFi+{{nDim*(nDof**nDim)*nVarPad}}, 0, {{2*(nDof**nDim)*nVarPad}} * sizeof(double)); //K1 and K2 must be set to 0
-{% else %}{# no flux so use lSi instead, lSi total size = nVarPad*(nDof**(nDim+1)) #}
-    // use lSi as temporary storage for CERK's temporary arrays
-    double* const K1 = lSi; // K1[z?][y][x][n]
-    double* const K2 = lSi+{{(nDof**nDim)*nVarPad}}; // K2[z?][y][x][n]
-    double* const lwh = lSi+{{2*(nDof**nDim)*nDataPad}}; // lwh[z?][y][x][n] (nData)
-    std::memset(lSi, 0, {{2*(nDof**nDim)*nVarPad}} * sizeof(double)); //K1 and K2 must be set to 0
-{% endif %}
-    //Note: temporary storage will be overwritten by user functions later, no need to reset them to 0
-
-    // K1
-{% with inputLuh='luh', outputKi='K1', inputLuh_dataSize=nData %}
-{% filter indent(width=2, first=True) %}{% include 'subtemplates/RK_loop.template' %}{% endfilter %}
-{% endwith %}
-    
-    // K2
-    for (int zyx = 0; zyx < {{nDof**nDim}}; zyx++) {
-      for (int n = 0; n < {{nVar}}; n++) {
-        lwh[n+{{nData}}*zyx] = luh[n+{{nData}}*zyx] - dt * K1[n+{{nVarPad}}*zyx];
-      }
-{% if nPar != 0 %}
-      for (int n = {{nVar}}; n < {{nData}}; n++) { //copy parameters
-        lwh[n+{{nData}}*zyx] = luh[n+{{nData}}*zyx];
-      }
-{% endif %}
-    }
-{% with inputLuh='lwh', outputKi='K2', inputLuh_dataSize=nData %}
-{% filter indent(width=2, first=True) %}{% include 'subtemplates/RK_loop.template' %}{% endfilter %}
-{% endwith %}
-
-    // Set initial guess using CERK
-    for (int zyx = 0; zyx < {{nDof**nDim}}; zyx++) {
-      for (int t = 0; t < {{nDof}}; t++) {
-        for (int n = 0; n < {{nVar}}; n++) {
-          lQi[n+{{nDataPad}}*(zyx+{{nDof**nDim}}*t)] = luh[n+{{nData}}*zyx] - (dt * nodes[t] * K1[n+{{nVarPad}}*zyx]) - (0.5*dt*nodes[t]*nodes[t]* (K2[n+{{nVarPad}}*zyx]-K1[n+{{nVarPad}}*zyx]));
-        }
-{% if nPar != 0 %}
-        for (int n = {{nVar}}; n < {{nData}}; n++) { // copy parameters
-          lQi[n+{{nDataPad}}*(zyx+{{nDof**nDim}}*t)] = luh[n+{{nData}}*zyx];
-        }
-{% endif %}
-      }
-    } 
-    
-  } // end initial guess
-*/
-{% endif %}{# useCERKGuess #}
 
 
   // 2. Discrete Picard iterations
-  constexpr int MaxIterations = {% if useCERKGuess %}{% if nDof-3 <= 1 %}1; //cannot be lower than 1{% else %}{{nDof-3}}; //nDof-3{% endif %}{% else %}{{2*nDof+1}};{% endif %}
+  constexpr int MaxIterations = {{2*nDof+1}};
 
   int iter = 0;
   for (; iter < MaxIterations; iter++) {
@@ -367,7 +307,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       // use lduh as scratch to store new slice
       {{ m.matmul('lqi', 'rhs', 'iK1_T_wt_dt', 'lduh',idxRhs(0,0,0,zyx,0), '0', '0') | indent(6) }}{##}
       for(int t = 0; t < {{nDof}}; t++) {
-        for(int n=0; n<{{nVar}}; n++) { //only copy and change the variables, skip parameters
+        for(int n = 0; n < {{nVar}}; n++) { //only copy and change the variables, skip padding
           sq_res += (lduh[n+{{nVarPad}}*t] - lQi[{{idxLQi(t,0,0,zyx,n)}}]) * (lduh[n+{{nVarPad}}*t] - lQi[{{idxLQi(t,0,0,zyx,n)}}]);
           lQi[{{idxLQi(t,0,0,zyx,n)}}] = lduh[n+{{nVarPad}}*t];
         }
