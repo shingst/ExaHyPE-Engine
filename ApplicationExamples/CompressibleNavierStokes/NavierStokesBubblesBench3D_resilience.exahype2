@@ -148,7 +148,7 @@
           "type": "vtu::Legendre::vertices::ascii",
           "name": "Plotter_Limiting",
           "time": 0.0,
-          "repeat": 0.001,
+          "repeat": 0.0001,
           "output": "results/solution",
           "variables": 6
         }

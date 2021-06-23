@@ -240,7 +240,7 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
   // return false;
 #if DIMENSIONS == 2
     constexpr auto basisSize = Order + 1;
-    kernels::idx3 idx(basisSize,basisSize,NumberOfVariables);
+    kernels::idx3 idx(basisSize,basisSize,NumberOfVariables+NumberOfParameters);
     for (int i = 0; i < basisSize; ++i) {
       for (int j = 0; j < basisSize; ++j) {
         const double* const Q = solution + idx(i,j,0);
@@ -292,8 +292,12 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
       return false;
     }
 #else  
+
+    const auto rho = NavierStokesSolver_ADERDG_Variables::shortcuts::rho;
+    const auto j = NavierStokesSolver_ADERDG_Variables::shortcuts::j;
+    
     constexpr auto basisSize = Order + 1;
-    kernels::idx4 idx(basisSize,basisSize,basisSize,NumberOfVariables);
+    kernels::idx4 idx(basisSize,basisSize,basisSize,NumberOfVariables+NumberOfParameters);
     for (int i = 0; i < basisSize; ++i) {
       for (int j = 0; j < basisSize; ++j) {
         for (int k = 0; k < basisSize; ++k) {
@@ -309,16 +313,17 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
                 height
                 );
           bool isAdvectionTroubled = ns.useAdvection && (Z < 0.0);
-          if (vars.rho() <= 0.0) { // || pressure < 0.0 || isAdvectionTroubled) {
-            return false;
+          if (Q[rho] <= 0.0 || pressure < 0.0 || isAdvectionTroubled) {
+            //std::cout<<Q[rho]<<std::endl;
+            return true;
           }
 
          //Surprisingly, this is necessary.
-         /*for (int v = 0; v < NumberOfVariables; v++) {
+         for (int v = 0; v < NumberOfVariables; v++) {
             if (!std::isfinite(solution[v])) {
                    return false;
             }
-         }*/
+         }
        }
      }
    } 
