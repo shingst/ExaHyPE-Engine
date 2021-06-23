@@ -48,6 +48,7 @@ void NavierStokes::NavierStokesSolver_ADERDG::adjustPointSolution(const double* 
     scenario->initialValues(x, ns, vars);
     for (int i = 0; i < vars.variables(); ++i) {
       assertion2(std::isfinite(Q[i]), i, Q[i]);
+      assert(Q[0]>0);
     }
   }
 
@@ -232,7 +233,7 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
       const tarch::la::Vector<DIMENSIONS,double>& center,
       const tarch::la::Vector<DIMENSIONS,double>& dx,
       const double t) const {
-  return true;
+  //return true;
     // We now need to do a pointwise check for the primitive variables
     // pressure and Z.
     // TODO(Lukas) At least refactor this. And 3D!
@@ -266,9 +267,61 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
         }
       }
     }
-#else
-    // TODO(Lukas) Limiting in 3D!
-    std::abort();
+    // Now also check if TV is too high!
+    double data[NumberOfGlobalObservables];
+    GlobalObservables curObs(data);
+    mapGlobalObservables(curObs,solution,center,dx,t,0); // center/dt unused
+    const auto *curObsRaw = curObs.data();
+  
+    const auto curTv = curObsRaw[0];
+
+    auto gobs = ReadOnlyGlobalObservables(_globalObservables.data());
+    const auto *gobsRaw = gobs.data();
+
+    const auto countGlobal = gobsRaw[2];
+    const auto meanGlobal  = gobsRaw[0];
+    // Merging computes sample variance (Bessel's correction), we need population variance.
+    const auto varianceGlobal = ((countGlobal - 1)/countGlobal) * gobsRaw[1];
+    const auto stdGlobal = std::sqrt(varianceGlobal);
+
+    const auto factorLimit = 4.0; // TODO: Remove or make configurable.
+
+    const auto hi = meanGlobal + factorLimit * stdGlobal;
+
+    if (curTv > hi) {
+      return false;
+    }
+#else  
+    constexpr auto basisSize = Order + 1;
+    kernels::idx4 idx(basisSize,basisSize,basisSize,NumberOfVariables);
+    for (int i = 0; i < basisSize; ++i) {
+      for (int j = 0; j < basisSize; ++j) {
+        for (int k = 0; k < basisSize; ++k) {
+          const double* const Q = solution + idx(i,j,k,0);
+          auto vars = ReadOnlyVariables{Q};
+          const auto Zrho = ns.getZ(Q);
+          const auto Z = Zrho / vars.rho();
+          const auto height = ns.getHeight(Q);
+          const auto pressure = ns.evaluatePressure(vars.E(),
+                vars.rho(),
+                vars.j(),
+                Zrho,
+                height
+                );
+          bool isAdvectionTroubled = ns.useAdvection && (Z < 0.0);
+          if (vars.rho() <= 0.0) { // || pressure < 0.0 || isAdvectionTroubled) {
+            return false;
+          }
+
+         //Surprisingly, this is necessary.
+         /*for (int v = 0; v < NumberOfVariables; v++) {
+            if (!std::isfinite(solution[v])) {
+                   return false;
+            }
+         }*/
+       }
+     }
+   } 
 #endif
 
   if (scenarioName != "two-bubbles" ||
@@ -276,30 +329,6 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
     return true;
   }
 
-  // Now also check if TV is too high!
-  double data[NumberOfGlobalObservables];
-  GlobalObservables curObs(data);
-  mapGlobalObservables(curObs,solution,center,dx,t,0); // center/dt unused
-  const auto *curObsRaw = curObs.data();
-  
-  const auto curTv = curObsRaw[0];
-
-  auto gobs = ReadOnlyGlobalObservables(_globalObservables.data());
-  const auto *gobsRaw = gobs.data();
-
-  const auto countGlobal = gobsRaw[2];
-  const auto meanGlobal  = gobsRaw[0];
-  // Merging computes sample variance (Bessel's correction), we need population variance.
-  const auto varianceGlobal = ((countGlobal - 1)/countGlobal) * gobsRaw[1];
-  const auto stdGlobal = std::sqrt(varianceGlobal);
-
-  const auto factorLimit = 4.0; // TODO: Remove or make configurable.
-
-  const auto hi = meanGlobal + factorLimit * stdGlobal;
-
-  if (curTv > hi) {
-    return false;
-  }
 
   return true;
 }

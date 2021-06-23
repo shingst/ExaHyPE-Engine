@@ -278,6 +278,9 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
                                              outcome->_metadata.getPredictorTimeStepSize(), outcome->_metadata.getElement());
       _solver._outcomeDatabase.insertOutcome(key, outcome, DeliveryStatus::Received);
     }
+    else {
+      delete outcome;
+    }
     setFinished(); //have already checked if necessary
     return false;
   }
@@ -405,7 +408,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::copyOutcome(Migrat
 #if OffloadingGradQhbnd
   std::memcpy(lGradQhbnd, &outcome->_lGradQhbnd[0], outcome->_lGradQhbnd.size() * sizeof(double));
 #endif
-  logInfo("copyOutcome","team "<<exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber()<<" copied STP outcome for "
+  logDebug("copyOutcome","team "<<exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber()<<" copied STP outcome for "
         <<to_string());
 
   exahype::reactive::ResilienceStatistics::getInstance().notifySavedTask();

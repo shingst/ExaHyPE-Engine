@@ -1808,7 +1808,7 @@ void exahype::solvers::ADERDGSolver::rollbackSolutionGlobally(const int solverNu
 }
 
 bool exahype::solvers::ADERDGSolver::updateYieldsPhysicallyAdmissibleSolution(CellDescription& cellDescription) {
-  double *tmp_sol = new double[getUnknownsPerCell()];
+  double *tmp_sol = new double[getDataPerCell()];
   double *update = static_cast<double *> (cellDescription.getUpdate());
 
   double* observablesMin = nullptr;
@@ -1820,7 +1820,7 @@ bool exahype::solvers::ADERDGSolver::updateYieldsPhysicallyAdmissibleSolution(Ce
     observablesMax = static_cast<double*>(cellDescription.getSolutionMax());
   }
 
-  std::memcpy(tmp_sol, cellDescription.getSolution(), getUnknownsPerCell()*sizeof(double));
+  std::memcpy(tmp_sol, cellDescription.getSolution(), getDataPerCell()*sizeof(double));
   addUpdateToSolution(tmp_sol, tmp_sol, update, cellDescription.getTimeStepSize());
 
   bool isAdmissible = isPhysicallyAdmissible(

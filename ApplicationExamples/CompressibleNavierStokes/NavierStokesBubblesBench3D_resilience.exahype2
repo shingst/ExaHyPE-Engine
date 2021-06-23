@@ -51,7 +51,7 @@
     "generate_soft_errors" : "no",
     "check_mechanism" : "check_stps_with_violated_admissibility",
     "save_redundant_computations" : true,
-    "task_sharing" : "task_sharing"
+    "task_sharing" : "task_sharing_resilience_correction"
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",
@@ -146,9 +146,9 @@
       "plotters": [
         {
           "type": "vtu::Legendre::vertices::ascii",
-          "name": "Plotter",
+          "name": "Plotter_Limiting",
           "time": 0.0,
-          "repeat": 10.0,
+          "repeat": 0.001,
           "output": "results/solution",
           "variables": 6
         }
