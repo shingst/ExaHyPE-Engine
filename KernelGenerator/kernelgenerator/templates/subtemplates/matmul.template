@@ -79,16 +79,10 @@ _mm_prefetch({{array}}+{{offset}}{% if offsetLine != 0 %}+{{offsetLine}}{% endif
 {% if prefetchC %}
 {{prefetchMatrix(C, conf.M, conf.LDC, conf.N, C_next)}}{##}
 {% endif %}{# prefetch C #}
-#ifdef USE_IPO
-#pragma forceinline
-#endif
 {{conf.baseroutinename}}({{A}}{% if A_shift != '0' %}+{{A_shift}}{% endif %}, {{B}}{% if B_shift != '0' %}+{{B_shift}}{% endif %}, {{C}}{% if C_shift != '0' %}+{{C_shift}}{% endif %});
 {% if false %}{# prefetch in gemm, disabled #}
 
 
-#ifdef USE_IPO
-#pragma forceinline
-#endif
 {% if prefetchGemm %}
 {{conf.baseroutinename}}({{A}}{% if A_shift != '0' %}+{{A_shift}}{% endif %}, {{B}}{% if B_shift != '0' %}+{{B_shift}}{% endif %}, {{C}}{% if C_shift != '0' %}+{{C_shift}}{% endif %}, {{A}}{% if A_next != '0' %}+{{A_next}}{% endif %}, {{B}}{% if B_next != '0' %}+{{B_next}}{% endif %}, {{C}}{% if C_next != '0' %}+{{C_next}}{% endif %});
 {% else %}

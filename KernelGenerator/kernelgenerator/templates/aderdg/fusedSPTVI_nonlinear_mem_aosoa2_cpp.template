@@ -115,12 +115,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
     dudx_T_by_dx[it] = inverseDx * dudx_T[it];
     dudx_by_dx[it]  = inverseDx * dudx[it];
   }
-{% if useLibxsmm %}
-#if defined(USE_IPO) && ! defined(UNSAFE_IPO)
-  volatile double doNotOptimizeAway_dudx_T_by_dt = dudx_T_by_dx[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-  volatile double doNotOptimizeAway_dudx_by_dt  = dudx_by_dx[0];  //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-#endif   
-{% endif %}
 {% endif %}
 {% if useFlux%}
 // Set rhs matmul coef matrix
@@ -138,12 +132,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       rhsCoeff_T[i*{{nDofPad}}+j] = -inverseDx * Kxi_T[i*{{nDofPad}}+j] * iweights1[j];
     }
   }
-{% if useLibxsmm %}
-#if defined(USE_IPO) && ! defined(UNSAFE_IPO)
-  volatile double doNotOptimizeAway_rhsCoeff   = rhsCoeff[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-  volatile double doNotOptimizeAway_rhsCoeff_T = rhsCoeff_T[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-#endif   
-{% endif %}
 {% endif %}
   // used at the end of the picard loop, integrate coefficient for rhs
   double iK1_T_wt_dt[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
@@ -153,11 +141,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       iK1_T_wt_dt[i*{{nDofPad}}+j] = dt * iK1_T[i*{{nDofPad}}+j] * weights1[j];
     }
   }
-{% if useLibxsmm %}
-#if defined(USE_IPO) && ! defined(UNSAFE_IPO)
-  volatile double doNotOptimizeAway_iK1_T_wt_dt = iK1_T_wt_dt[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-#endif   
-{% endif %}
 
 
 //TODO JMG Inital guess template
@@ -766,11 +749,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       coeffVolume_T[i*{{nDofPad}}+j] = Kxi[i*{{nDofPad}}+j] * iweights1[j] * inverseDx;
     }
   }
-{% if useLibxsmm %}
-#if defined(USE_IPO) && ! defined(UNSAFE_IPO)
-  volatile double doNotOptimizeAway_coeffVolume_T = coeffVolume_T[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-#endif   
-{% endif %}
   
   // Assume equispaced mesh, dx[0] == dx[1] == dx[2]
   //x
@@ -785,11 +763,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       coeffVolume[i*{{nDofPad}}+j] = Kxi_T[i*{{nDofPad}}+j] * iweights1[i] * inverseDx;
     }
   }
-{% if useLibxsmm %}
-#if defined(USE_IPO) && ! defined(UNSAFE_IPO)
-  volatile double doNotOptimizeAway_coeffVolume = coeffVolume[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-#endif   
-{% endif %}
 
   //y
   for (int zn = 0; zn < {{nDof3D*nVar}}; zn++) {

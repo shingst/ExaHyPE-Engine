@@ -94,11 +94,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% endif %}
   double tmpArray[{{tmpArraySize}}] __attribute__((aligned(ALIGNMENT))); //used by flux (nDof*nVarPad) and ncp (nVarPad*nDim)
   double dudxT_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
-{% if useLibxsmm %}
-#if defined(USE_IPO) && ! defined(UNSAFE_IPO)
-  double doNotOptimizeAway = dudxT_by_dx[0]; // used to prevent the compiler from optimizing dudxT_by_dx away
-#endif
-{% endif %}
 {% if useVectPDE %}
  // todo allocate tmp array
 {% endif %}

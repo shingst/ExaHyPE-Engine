@@ -103,14 +103,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   double dudx_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
   double negativeDudxT_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
   double negativeDudx_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
-{% if useLibxsmm %}
-#if defined(USE_IPO) && ! defined(UNSAFE_IPO)
-  volatile double doNotOptimizeAway1 = dudxT_by_dx[0]; // used to prevent the compiler from optimizing dudxT_by_dx away
-  volatile double doNotOptimizeAway2 = dudx_by_dx[0]; // used to prevent the compiler from optimizing dudx_by_dx away
-  volatile double doNotOptimizeAway3 = negativeDudxT_by_dx[0]; // used to prevent the compiler from optimizing dudxT_by_dx away
-  volatile double doNotOptimizeAway4 = negativeDudx_by_dx[0]; // used to prevent the compiler from optimizing dudx_by_dx away
-#endif
-{% endif %}
 
 {% if usePointSources %}
   { // 0. compute point source contribution

@@ -117,11 +117,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   for(int it=0;it<{{nDof*nDofPad}};it++) {
     dudxT_by_dx[it] = inverseDx * dudx_T[it];
   }
-{% if useLibxsmm %}
-#if defined(USE_IPO) && ! defined(UNSAFE_IPO)
-  volatile double doNotOptimizeAway_dudx_by_dt = dudxT_by_dx[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-#endif   
-{% endif %}
 {% endif %}
 
 {% if not useCERKGuess %}{# fallback trivial guess #}

@@ -20,7 +20,7 @@
 # DISTRIBUTEDMEM      None              MPI                          Distributed-memory parallelisation
 {% endif %}
 # BOUNDARYCONDITIONS  None              Periodic                     Type of boundary conditions
-# USE_IPO             Off               On, Unsafe                   IPO during compilation (intel only)
+# USE_IPO             Off               On                           IPO during compilation (intel only)
 # ******************************************************************************************************
 
 # Helper
