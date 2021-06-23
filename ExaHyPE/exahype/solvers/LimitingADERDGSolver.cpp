@@ -2179,9 +2179,9 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithMasterData(
 /////////////////////////////////
 // Reactive extensions
 /////////////////////////////////
-void exahype::solvers::LimitingADERDGSolver::startOffloadingManager() {
+void exahype::solvers::LimitingADERDGSolver::initOffloadingManager() {
 #if defined(SharedTBB)
-  _solver->startOffloadingManager();
+  _solver->initOffloadingManager();
 #endif
 }
 

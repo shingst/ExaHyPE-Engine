@@ -34,8 +34,8 @@ exahype-project  SWE
 
   shared-memory
       identifier = dummy
-      configure = {background-tasks:4}
-      cores = 3
+      configure = {background-tasks:8}
+      cores = 7
       properties-file = sharedmemory.properties
   end shared-memory
 
@@ -50,7 +50,7 @@ exahype-project  SWE
         fuse-algorithmic-steps          = all
         fuse-algorithmic-steps-rerun-factor   = 0.99
         fuse-algorithmic-steps-diffusion-factor   = 0.99
-        spawn-predictor-as-background-thread = on
+        spawn-predictor-as-background-thread = off
         spawn-amr-background-threads         = off
         /* 0.0 und 0.8 sind schon mal zwei Faktoren */
         disable-vertex-exchange-in-time-steps = on
@@ -77,7 +77,7 @@ exahype-project  SWE
     dmp-observables const = 0
     dmp-relaxation-parameter = 100000000.0
     dmp-difference-scaling = 100000000.0
-    constants = grav:9.81, epsilon:0.001, scenario:13
+    constants = grav:9.81, epsilon: 0.001, scenario:14
     plot vtu::Cartesian::cells::limited::ascii ConservedWriter
       variables const = 5
       time            = 0.0

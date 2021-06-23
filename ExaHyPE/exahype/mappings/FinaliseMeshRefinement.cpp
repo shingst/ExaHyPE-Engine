@@ -247,10 +247,10 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
   if(exahype::reactive::ReactiveContext::getInstance().isEnabled()) {
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
       if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
-        static_cast<exahype::solvers::ADERDGSolver*>(solver)->startOffloadingManager();
+        static_cast<exahype::solvers::ADERDGSolver*>(solver)->initOffloadingManager();
       }
       if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
-        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->startOffloadingManager();
+        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->initOffloadingManager();
       }
     }
   }

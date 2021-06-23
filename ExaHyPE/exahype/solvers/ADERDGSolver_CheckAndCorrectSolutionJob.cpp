@@ -56,9 +56,21 @@ bool exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::run(bool isRunO
         //soft error detected
         reschedule = false;
         _solverPatch.setHasCompletedLastStep(true);
-        logError("runCheck"," Detected a soft error but I am continuing...");
+        logError("runCheck"," Detected a soft error and I don't know which outcome is correct. Continuing...");
         break;
-        //MPI_Abort(MPI_COMM_WORLD, -1);
+      case SDCCheckResult::OutcomeSaneAsTriggerNotActive:
+        if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()
+          ==exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceCorrection) {
+          correctWithOutcome(outcome);
+          logError("runCheck","Corrected soft error with outcome from other team. Continuing...");
+          reschedule = false;
+          _solverPatch.setHasCompletedLastStep(true);
+        }
+        else {
+          logError("runCheck","I could probably correct an error, but correction has not been activated. Continuing...");
+          reschedule = false;
+          _solverPatch.setHasCompletedLastStep(true);
+        }
       }
     }
     else {
@@ -78,57 +90,13 @@ bool exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::tryToFindAndExt
   return _solver.tryToFindAndExtractOutcome(_solverPatch, _predictorTimeStamp, _predictorTimeStepSize, status, outcome);
 }
 
-exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::SDCCheckResult exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::checkAgainstOutcome(ADERDGSolver::MigratablePredictionJobData *data) {
-
-  double *lduh = static_cast<double*>(_solverPatch.getUpdate());
-  double *lQhbnd = static_cast<double*>(_solverPatch.getExtrapolatedPredictor());
-#if defined(OffloadingGradQhbnd)
-  double *lGradQhbnd = static_cast<double*>(_solverPatch.getExtrapolatedPredictorGradient());
-#endif
-  double *lFhbnd = static_cast<double*>(_solverPatch.getFluctuation());
-
-  tarch::la::Vector<DIMENSIONS, double> center = _solverPatch.getOffset()+0.5*_solverPatch.getSize();
-
-  bool equal = true;
-  bool tmp;
-
-  tmp = data->_metadata._predictorTimeStamp == _predictorTimeStamp; equal &= tmp;
-  tmp = data->_metadata._predictorTimeStepSize == _predictorTimeStepSize; equal &= tmp;
-
-  tmp = exahype::reactive::ResilienceTools::getInstance().isAdmissibleNumericalError(data->_lQhbnd.data(), lQhbnd, data->_lQhbnd.size()); equal&=tmp;
-  if(!tmp) {
-    logError("checkAgainstOutcome", "lQhbnd is not (numerically) equal for cell "<<"center[0]="<<center[0]<<" center[1]="<<center[1]<<" timestamp "<<_predictorTimeStamp);
-  }
-
-#if defined(OffloadingGradQhbnd)
-  tmp = exahype::reactive::ResilienceTools::getInstance().isAdmissibleNumericalError(data->_lGradQhbnd.data(), lGradQhbnd, data->_lGradQhbnd.size()); equal&=tmp;
-  if(!tmp) {
-    logError("checkAgainstOutcome", "lGradQhbnd is not (numerically) equal for cell "<<"center[0]="<<center[0]<<" center[1]="<<center[1]<<" timestamp "<<_predictorTimeStamp);
-  }
-#endif
-  tmp = exahype::reactive::ResilienceTools::getInstance().isAdmissibleNumericalError(data->_lFhbnd.data(), lFhbnd, data->_lFhbnd.size()); equal&=tmp;
-  if(!tmp) {
-    logError("checkAgainstOutcome", "lFhbnd is not  (numerically) equal for cell "<<"center[0]="<<center[0]<<" center[1]="<<center[1]<<" timestamp "<<_predictorTimeStamp);
-  }
-  tmp = exahype::reactive::ResilienceTools::getInstance().isAdmissibleNumericalError(data->_lduh.data(), lduh, data->_lduh.size()); equal&=tmp;
-  if(!tmp) {
-    logError("checkAgainstOutcome", "lduh is not  (numerically) equal for cell "<<"center[0]="<<center[0]<<" center[1]="<<center[1]<<" timestamp "<<_predictorTimeStamp);
-  }
-
-  if(!equal) {
-    logError("checkAgainstOutcome", "soft error detected: "<<data->_metadata.to_string());
-    exahype::reactive::ResilienceStatistics::getInstance().notifyDetectedError();
-  }
-
-  exahype::reactive::ResilienceStatistics::getInstance().notifyDoubleCheckedTask();
-
-  if(!equal) {
-    return SDCCheckResult::UncorrectableSoftError;
-  }
-  else
-    return SDCCheckResult::NoCorruption;
+exahype::solvers::ADERDGSolver::SDCCheckResult exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::checkAgainstOutcome(ADERDGSolver::MigratablePredictionJobData *data) {
+  return _solver.checkCellDescriptionAgainstOutcome(_solverPatch, data);
 }
 
+void exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::correctWithOutcome(ADERDGSolver::MigratablePredictionJobData *outcome){
 
+   _solver.correctCellDescriptionWithOutcome(_solverPatch, outcome);
+}
 #endif
 

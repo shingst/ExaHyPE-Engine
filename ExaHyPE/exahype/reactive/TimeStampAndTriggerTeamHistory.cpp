@@ -192,7 +192,7 @@ bool exahype::reactive::TimeStampAndTriggerTeamHistory::checkConsistency() {
 
   bool consistentTimeStamps = true;
   bool consistentTimeStepSizes = true;
-  bool consistentLimiterStatuses = true;
+  bool consistentTriggerStatuses = true;
 
   for(size_t i=_lastConsistentTimeStepPtr; i<maxIdx; i++) {
     std::vector<double> tmp_timestamps;
@@ -204,7 +204,7 @@ bool exahype::reactive::TimeStampAndTriggerTeamHistory::checkConsistency() {
       tmp_timestepsizes.push_back(_timestepSizes[t][i]);
     }
     consistentTimeStamps = consistentTimeStamps && std::all_of(tmp_timestamps.begin(), tmp_timestamps.end(), [tmp_timestamps](double x){ return x==tmp_timestamps[0]; });
-    consistentLimiterStatuses = consistentLimiterStatuses && std::all_of(tmp_statuses.begin(), tmp_statuses.end(), [tmp_statuses](double x){ return x==tmp_statuses[0]; });
+    consistentTriggerStatuses = consistentTriggerStatuses && std::all_of(tmp_statuses.begin(), tmp_statuses.end(), [tmp_statuses](double x){ return x==tmp_statuses[0]; });
     consistentTimeStepSizes = consistentTimeStepSizes && std::all_of(tmp_timestepsizes.begin(), tmp_timestepsizes.end(), [tmp_timestepsizes](double x){ return x==tmp_timestepsizes[0]; });
 
     /*if(!consistentTimeStamps) {
@@ -216,18 +216,18 @@ bool exahype::reactive::TimeStampAndTriggerTeamHistory::checkConsistency() {
     }*/
   }
 
-  if((!consistentTimeStamps || !consistentLimiterStatuses || !consistentTimeStepSizes)) {
+  if((!consistentTimeStamps || !consistentTriggerStatuses || !consistentTimeStepSizes)) {
     //logError("checkConsistency"," Time stamps or limiter statuses are diverged between teams! Consistent stamps = "<<consistentTimeStamps
     //    <<" consistent limiter statuses = "<<consistentLimiterStatuses<<" consistent time step sizes="<<consistentTimeStepSizes);
     //logError("checkConsistency","team="<<exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()<<": Time stamps or trigger statuses are inconsistent between teams! There must have been a soft error on at least one team.");
     if((long int)_triggerStatuses[myTeam].size()> _lastConsistentTimeStepPtr && (long int) _triggerStatuses[otherTeam].size()>_lastConsistentTimeStepPtr) {
       if(_triggerStatuses[myTeam][_lastConsistentTimeStepPtr+1]==1
          &&_triggerStatuses[otherTeam][_lastConsistentTimeStepPtr+1]==0) {
-        logError("checkConsistency","team="<<myTeam<<" should be the faulty one, as the limiter was activated there.");
+        logError("checkConsistency","team="<<myTeam<<" should be the faulty one, as the trigger was activated there.");
       }
       else if(_triggerStatuses[otherTeam][_lastConsistentTimeStepPtr+1]==1
           &&_triggerStatuses[myTeam][_lastConsistentTimeStepPtr+1]==0) {
-         logError("checkConsistency","team="<<otherTeam<<" should be the faulty one, as the limiter was activated there.");
+         logError("checkConsistency","team="<<otherTeam<<" should be the faulty one, as the trigger was activated there.");
       }
     }
 
@@ -235,7 +235,7 @@ bool exahype::reactive::TimeStampAndTriggerTeamHistory::checkConsistency() {
   }
   lock.free();
 
-  return consistentTimeStamps && consistentLimiterStatuses && consistentTimeStepSizes;
+  return consistentTimeStamps && consistentTriggerStatuses && consistentTimeStepSizes;
 #else
   return true;
 #endif 
@@ -394,7 +394,7 @@ void exahype::reactive::TimeStampAndTriggerTeamHistory::printHistory() const {
     logInfo("printHistory", "TimeStampAndLimiterHistory for team "<<i<<" on team "<<myTeam<<":"<<stream2.str());
 
     std::ostringstream stream3;
-    stream3 << " Limiter statuses ";
+    stream3 << " Trigger statuses ";
     for(unsigned int j=0; j<_triggerStatuses[i].size(); j++) {
       stream3 << std::to_string(_triggerStatuses[i][j]) + " , ";
     }

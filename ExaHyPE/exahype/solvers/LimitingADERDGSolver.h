@@ -1502,7 +1502,7 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) final override;
 
-   void startOffloadingManager();
+   void initOffloadingManager();
    void stopOffloadingManager();
 #ifndef OffloadingUseProgressThread
    void resumeOffloadingManager();

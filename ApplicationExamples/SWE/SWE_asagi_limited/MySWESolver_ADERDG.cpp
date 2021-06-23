@@ -57,7 +57,6 @@ void SWE::MySWESolver_ADERDG::adjustPointSolution(const double* const x,const do
      && TMPI_IsLeadingRank()
 #endif	     
      && !flipped)
-     //2.6319 x[1]=5.42863
    {
     logError("adjustPointSolution", "Introducing error into solution x[0]="<<x[0]<<" x[1]="<<x[1]<<" t= "<<t
 		     <<"Q[0]="<<Q[0]);
@@ -246,9 +245,6 @@ bool SWE::MySWESolver_ADERDG::isPhysicallyAdmissible(
     }*/
   //  //std::cout <<center[0] << "," << center[1] <<": true" << std::endl;
 
-  //if(center[0]<2)
-  //  return false;
-   
   return true;
 
 }
@@ -279,8 +275,6 @@ void SWE::MySWESolver_ADERDG::riemannSolver(double* const FL,double* const FR,co
   double LR[numberOfVariables] = {0.0};
   eigenvalues(QavL, direction, LL);
   eigenvalues(QavR, direction, LR);
-
-  //std::cout<<"compute riemann "<<std::endl;
 
   // skip parameters
   std::transform(LL, LL + numberOfVariables, LL, std::abs<double>);
