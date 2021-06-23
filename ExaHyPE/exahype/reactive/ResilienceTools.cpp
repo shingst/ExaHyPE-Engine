@@ -112,7 +112,7 @@ bool exahype::reactive::ResilienceTools::overwriteRandomValueInArrayIfActive(dou
 
     double old_val = array[idx_array];
     //overwrite with "random number"
-    array[idx_array] = 8192; //std::numeric_limits<double>::max();
+    array[idx_array] = -8192; //std::numeric_limits<double>::max();
     _numFlipped++;
 
     logError("overwriteDoubleIfActive()", "overwrite double value, pos = "<<idx_array<<" old ="<<old_val<<" new = "<<array[idx_array]);

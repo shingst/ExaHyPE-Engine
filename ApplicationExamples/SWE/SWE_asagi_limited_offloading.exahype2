@@ -47,8 +47,8 @@
     "ranks_per_node"         : 1   
   },
   "resilience" : {
-    "generate_soft_errors" : "no",
-    "check_mechanism" : "check_all_stps",
+    "generate_soft_errors" : "migratable_stp_tasks_overwrite",
+    "check_mechanism" : "check_stps_with_violated_admissibility",
     "save_redundant_computations" : false,
     "task_sharing" : "task_sharing_resilience_checks"
   },
@@ -124,7 +124,7 @@
         "epsilon": 0.0001,
         "scenario": 5
       },
-      "plotters": [
+      "_plotters": [
         {
           "type": "vtu::Cartesian::cells::limited::ascii",
           "name": "ConservedWriter",

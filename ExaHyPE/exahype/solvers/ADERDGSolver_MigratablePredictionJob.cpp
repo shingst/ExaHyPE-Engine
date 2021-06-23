@@ -359,8 +359,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
 
     if(needToCheckThisSTP(hasComputed)) {
       if((exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().otherTeamHasTimeStepData(_predictorTimeStamp, _predictorTimeStepSize)
-         || !exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().otherTeamHasLargerTimeStamp(_predictorTimeStamp))
-         && exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().checkConsistency()) {
+         || !exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().otherTeamHasLargerTimeStamp(_predictorTimeStamp))) {
+        // && exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().checkConsistency()) {
         logDebug("handleLocalExecution","going into check mode "<<to_string());
 
         CheckAndCorrectSolutionJob *job = new CheckAndCorrectSolutionJob(_solver,
@@ -371,10 +371,10 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
         return false; //check job will take care next
       }
       else {
-        logDebug("handleLocalExecution","Won't be able to find STP anymore as timestamps/timestep sizes have diverged. Timestamp ="
+        logInfo("handleLocalExecution","Won't be able to find STP anymore as timestamps/timestep sizes have diverged. Timestamp ="
             <<std::setprecision(30)<<_predictorTimeStamp
             <<" time step "<<_predictorTimeStepSize);
-        //exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().printHistory();
+        exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().printHistory();
         exahype::reactive::ResilienceStatistics::getInstance().notifyDetectedError();
         setFinished();
         return false;
@@ -440,7 +440,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::corruptIfActive() 
                                                               _predictorTimeStamp, lduh, _solver.getUpdateSize());
 
   if(hasFlipped) {
-    logInfo("corruptIfActive","Has corrupted STP job "<<to_string());
+    _isCorrupted = true;
+    logError("corruptIfActive","Has corrupted STP job "<<to_string());
   }
 
   return hasFlipped;
@@ -458,8 +459,9 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::copyOutcome(Migrat
 #endif
   double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
 
-  if(outcome->_metadata._isCorrupted)
-    logError("copyOutcome","Error: we're using a corrupted outcome!"); assertion(false);
+  if(outcome->_metadata._isCorrupted) {
+    logError("copyOutcome","Error: we're using a corrupted outcome! Outcome"<<outcome->_metadata.to_string()); assert(false);
+  }
 
   assertion(outcome!=nullptr);
   std::memcpy(lduh, &outcome->_lduh[0], outcome->_lduh.size() * sizeof(double));
@@ -879,8 +881,8 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::setSTPPotCorrupted
   //trigger is set later if we are using limiter as a trigger
   _isPotSoftErrorTriggered =  ((exahype::reactive::ResilienceTools::CheckFlipped && flipped)
                             ||  exahype::reactive::ResilienceTools::CheckAllMigratableSTPs
-                            //|| (exahype::reactive::ResilienceTools::CheckSTPsWithViolatedAdmissibility
-                           //     && !_solver.updateYieldsPhysicallyAdmissibleSolution(cellDescription))
+                            || (exahype::reactive::ResilienceTools::CheckSTPsWithViolatedAdmissibility
+                                && !_solver.updateYieldsPhysicallyAdmissibleSolution(cellDescription))
                             )
                             && (exahype::reactive::ReactiveContext::getResilienceStrategy()>=exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceChecks);
 

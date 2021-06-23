@@ -1364,7 +1364,6 @@ private:
         const double predictorTimeStamp,
         const double predictorTimeStepSize
       );
-      ~CheckAndCorrectSolutionJob();
 
       CheckAndCorrectSolutionJob(const CheckAndCorrectSolutionJob& stp) = delete;
   };
