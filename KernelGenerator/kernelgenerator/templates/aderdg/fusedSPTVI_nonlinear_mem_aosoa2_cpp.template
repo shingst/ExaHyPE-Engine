@@ -174,8 +174,8 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         lQi[{{idxLQi(0,z,n,0,yx)}}] = luh[{{idxLuh(z,0,yx,n)}}];
       }
 {% if nPar > 0 %}
-      for (int n = {{nVar}}; n < {{nData}}; n++) {
-        lPi[{{idxLPi(z,n,0,yx)}}] = luh[{{idxLuh(z,0,yx,n)}}];
+      for (int n = 0; n < {{nPar}}; n++) {
+        lPi[{{idxLPi(z,n,0,yx)}}] = luh[{{idxLuh(z,0,yx,"n+"~nVar)}}];
       }
 {% endif %}
     }
@@ -623,7 +623,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   
   // Compute the "derivatives" (contributions of the stiffness matrix)      
   // x direction (independent from the y and z derivatives)
-  for (int zy = 0; zn < {{nDof3D*nVar}}; zn++) {
+  for (int zn = 0; zn < {{nDof3D*nVar}}; zn++) {
     {{ m.matmul('gradQ_x', 'dudx_by_dx', 'lQhi', 'gradQ', '0', idxLQhi(0,zn,0,0), idxGradQ(0,0,zn,0,0)) | indent(4) }}{##}
   }
   

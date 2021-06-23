@@ -37,8 +37,18 @@ class GemmsGeneratorModel(AbstractModelBaseClass):
         return {"gemmList": gemmList}
             
     def generateLIBXSMMgemm(self, outputFileName,  matmul):
-        prefecthing = "nopf" # No native prefetching supported!
         type = "dense" # for plain assembly code (rather than inline assembly) choose dense_asm
+        
+        # if matmul.prefetchInput == "A":
+            # prefetching = "AL2"
+        # elif matmul.prefetchInput == "B":
+            # prefetching = "BL2viaC"
+        # elif matmul.prefetchInput == "AB":
+            # prefetching = "AL2_BL2viaC"
+        # else:
+            # prefetching = "nopf"
+        
+        prefetching = "nopf"
         commandLineArguments = " " + type  + \
             " " + os.path.join(self.context["pathToOutputDirectory"], outputFileName) + \
             " " + self.context["codeNamespace"] + "::" + matmul.baseroutinename + \
@@ -53,10 +63,10 @@ class GemmsGeneratorModel(AbstractModelBaseClass):
             " " + str(matmul.alignment_A) + \
             " " + str(matmul.alignment_C) + \
             " " + self.context["architecture"] + \
-            " " + prefecthing + \
+            " " + prefetching + \
             " " + matmul.precision
         
         bashCommand = self.context["pathToLibxsmmGemmGenerator"] + commandLineArguments
         subprocess.call(bashCommand.split())
         
-        return (matmul.baseroutinename, matmul.precision)
+        return (matmul.baseroutinename, matmul.precision, prefetching != "nopf")

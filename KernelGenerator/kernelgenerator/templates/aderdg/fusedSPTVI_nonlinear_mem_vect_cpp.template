@@ -174,8 +174,8 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         lQi[{{idxLQi(0,0,zy,n,x)}}] = luh[{{idxLuh(0,zy,x,n)}}];
       }
 {% if nPar > 0 %}
-      for (int n = {{nVar}}; n < {{nData}}; n++) {
-        lPi[{{idxLPi(0,zy,n,x)}}] = luh[{{idxLuh(0,zy,x,n)}}];
+      for (int n = 0; n < {{nPar}}; n++) {
+        lPi[{{idxLPi(0,zy,n,x)}}] = luh[{{idxLuh(0,zy,x,"n+"~nVar)}}];
       }
 {% endif %}
     }
@@ -313,7 +313,8 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       
       // y direction (independent from the x and z derivatives), fuse nx
       for (int z = 0; z < {{nDof3D}}; z++) {
-        {{ m.matmul_prefetch('rhs_y', 'lFhi', 'rhsCoeff', 'rhs', idxLFhi(1,z,0,0,0), '0', idxRhs(t,z,0,0,0), idxLFhi(1,'(z+1)',0,0,0), '0', idxRhs(t,'(z+1)',0,0,0)) | indent(8) }}{##}
+        {#{{ m.matmul_prefetch('rhs_y', 'lFhi', 'rhsCoeff', 'rhs', idxLFhi(1,z,0,0,0), '0', idxRhs(t,z,0,0,0), idxLFhi(1,'(z+1)',0,0,0), '0', idxRhs(t,'(z+1)',0,0,0)) | indent(8) }}{##}
+        {{ m.matmul('rhs_y', 'lFhi', 'rhsCoeff', 'rhs', idxLFhi(1,z,0,0,0), '0', idxRhs(t,z,0,0,0)) | indent(8) }}{##}
       }
        
 {% if nDim==3 %}
@@ -845,7 +846,8 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 
   //y, fuse nx
   for (int z = 0; z < {{nDof3D}}; z++) {
-    {{ m.matmul_prefetch('lduh_y', 'lFhi', 'coeffVolume', 'lQi', idxLFhi(1,z,0,0,0), '0', idxLQhi(z,0,0,0), idxLFhi(1,'(z+1)',0,0,0), '0', idxLQhi('(z+1)',0,0,0)) | indent(4) }}{##}
+    {#{{ m.matmul_prefetch('lduh_y', 'lFhi', 'coeffVolume', 'lQi', idxLFhi(1,z,0,0,0), '0', idxLQhi(z,0,0,0), idxLFhi(1,'(z+1)',0,0,0), '0', idxLQhi('(z+1)',0,0,0)) | indent(4) }}{##}
+    {{ m.matmul('lduh_y', 'lFhi', 'coeffVolume', 'lQi', idxLFhi(1,z,0,0,0), '0', idxLQhi(z,0,0,0)) | indent(4) }}{##}
   }
 
 {% if nDim == 3 %}
