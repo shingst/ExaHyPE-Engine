@@ -97,15 +97,6 @@ exahype::mappings::FinaliseMeshRefinement::descendSpecification(int level) const
 }
 
 void exahype::mappings::FinaliseMeshRefinement::initialiseLocalVariables(){
-  /*const unsigned int numberOfSolvers = exahype::solvers::RegisteredSolvers.size();
-  _minTimeStepSizes.resize(numberOfSolvers);
-  _maxLevels.resize(numberOfSolvers);
-
-  for (unsigned int solverNumber=0; solverNumber < exahype::solvers::RegisteredSolvers.size(); ++solverNumber) {
-    _minTimeStepSizes[solverNumber] = std::numeric_limits<double>::max();
-    _maxLevels    [solverNumber]    = -std::numeric_limits<int>::max(); // "-", min
-  }*/
-
   _numberOfEnclaveCells = 0;
   _numberOfSkeletonCells = 0;
 }
@@ -128,12 +119,7 @@ exahype::mappings::FinaliseMeshRefinement::FinaliseMeshRefinement(const Finalise
 // Merge over threads
 void exahype::mappings::FinaliseMeshRefinement::mergeWithWorkerThread(
     const FinaliseMeshRefinement& workerThread) {
- /* for (int i = 0; i < static_cast<int>(exahype::solvers::RegisteredSolvers.size()); i++) {
-    _minTimeStepSizes[i] =
-        std::min(_minTimeStepSizes[i], workerThread._minTimeStepSizes[i]);
-    _maxLevels[i] =
-        std::max(_maxLevels[i], workerThread._maxLevels[i]);
-  }*/
+  //count number of enclave and skeleton cells
   _numberOfEnclaveCells += workerThread._numberOfEnclaveCells;
   _numberOfSkeletonCells += workerThread._numberOfSkeletonCells;
 }
@@ -204,7 +190,7 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
           assertion(limitingADERDGSolver->getMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::IrregularLimiterDomainChange);
         }
         
-        // determine numbers of enclave and skeleton cells
+        // determine numbers of enclave and skeleton cells, each leaf cell has a uniform weight
         if (solver->getType()==exahype::solvers::Solver::Type::ADERDG || solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
           //auto* ADERDGSolver = static_cast<exahype::solvers::ADERDGSolver*>(solver);
           if( !exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator))

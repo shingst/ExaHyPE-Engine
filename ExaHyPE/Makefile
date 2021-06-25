@@ -201,12 +201,11 @@ ifeq ($(call tolower,$(COMPILER)),intel)
 	else ifeq ($(call tolower,$(MODE)),profile)
 		#COMPILER_CFLAGS += -p -pg -g3 -fast -ip
 		COMPILER_CFLAGS += -p -pg -g3 -O3 -ip
-		COMPILER_LFLAGS += -p -pg 
+		COMPILER_LFLAGS += -p -pg
 	else
 		FCOMPILER_CFLAGS  += -O2
 		#COMPILER_CFLAGS   += -fast -ip
 		COMPILER_CFLAGS   += -O3 -ip
-		#COMPILER_CFLAGS   += -O1
 	endif
 
 	ifeq ($(call tolower,$(SHAREDMEM)),tbb)
@@ -385,7 +384,7 @@ endif
 ifeq ($(call tolower,$(DISTRIBUTEDMEM)),mpi)
 	COMPILER_CFLAGS += -DParallel
 	COMPILER_CFLAGS += -DnoPackedRecords -DnoPersistentRegularSubtrees 
-	COMPILER_CFLAGS += -DIprobeEveryKIterations=0 
+	COMPILER_CFLAGS += -DIprobeEveryKIterations=0 -DUsePeanosRLEBoundaryExchanger -DUsePeanosRLEBoundaryExchangerForMetaData
 endif
 
 

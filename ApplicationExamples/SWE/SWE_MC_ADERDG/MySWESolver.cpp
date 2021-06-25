@@ -11,7 +11,6 @@
 #include "MySWESolver.h"
 
 #include "kernels/limiter/generic/Limiter.h"
-#include "kernels/LimiterProjectionMatrices.h"
 
 SWE::MySWESolver::MySWESolver(
         const double maximumMeshSize,
@@ -32,31 +31,23 @@ SWE::MySWESolver::MySWESolver(
     new SWE::MySWESolver_FV(
       maximumMeshSize, timeStepping),
     DMPRelaxationParameter,
-    DMPDifferenceScaling) {
-  kernels::computeDG2FVProjector<Order,PatchSize>(dg2fv);    
-  kernels::computeFV2DGProjector<Order,PatchSize>(fv2dg,dg2fv);
-  kernels::computeLegendre2LobattoProjector<Order>(leg2lob);  
-}
+    DMPDifferenceScaling) {}
 
 void SWE::MySWESolver::projectOnFVLimiterSpace(const double* const luh, double* const lim) const {
-  kernels::limiter::generic::c::projectOnFVLimiterSpace<NumberOfVariables+NumberOfParameters, Order+1, PatchSize, GhostLayerWidth>(luh, dg2fv, lim);
+  kernels::limiter::generic::c::projectOnFVLimiterSpace<Order+1,NumberOfVariables+NumberOfParameters,GhostLayerWidth>(luh, lim);
 }
 
 void SWE::MySWESolver::projectOnDGSpace(const double* const lim, double* const luh) const {
-  kernels::limiter::generic::c::projectOnDGSpace<NumberOfVariables+NumberOfParameters, Order+1, PatchSize, GhostLayerWidth>(lim, fv2dg, luh);
+  kernels::limiter::generic::c::projectOnDGSpace<Order+1,NumberOfVariables+NumberOfParameters,GhostLayerWidth>(lim, luh);
 }
 
 bool SWE::MySWESolver::discreteMaximumPrincipleAndMinAndMaxSearch(const double* const luh, double* const boundaryMinPerVariables, double* const boundaryMaxPerVariables) {
-  return kernels::limiter::generic::c::discreteMaximumPrincipleAndMinAndMaxSearch<AbstractMySWESolver_ADERDG, NumberOfDMPObservables, Order+1, PatchSize, GhostLayerWidth>(
-    luh, *static_cast<AbstractMySWESolver_ADERDG*>(_solver.get()), dg2fv, fv2dg, leg2lob, _DMPMaximumRelaxationParameter, _DMPDifferenceScaling, boundaryMinPerVariables, boundaryMaxPerVariables);
+  return kernels::limiter::generic::c::discreteMaximumPrincipleAndMinAndMaxSearch<AbstractMySWESolver_ADERDG, NumberOfDMPObservables, GhostLayerWidth>(luh, *static_cast<AbstractMySWESolver_ADERDG*>(_solver.get()), _DMPMaximumRelaxationParameter, _DMPDifferenceScaling, boundaryMinPerVariables, boundaryMaxPerVariables);
 }
 
 void SWE::MySWESolver::findCellLocalMinAndMax(const double* const luh, double* const localMinPerVariables, double* const localMaxPerVariable) {
-  kernels::limiter::generic::c::findCellLocalMinAndMax<AbstractMySWESolver_ADERDG, NumberOfDMPObservables, Order+1, PatchSize>(
-    luh, *static_cast<AbstractMySWESolver_ADERDG*>(_solver.get()), dg2fv, fv2dg, leg2lob, localMinPerVariables, localMaxPerVariable);
+  kernels::limiter::generic::c::findCellLocalMinAndMax<AbstractMySWESolver_ADERDG, NumberOfDMPObservables>(luh, *static_cast<AbstractMySWESolver_ADERDG*>(_solver.get()), localMinPerVariables, localMaxPerVariable);
 }
-
 void SWE::MySWESolver::findCellLocalLimiterMinAndMax(const double* const lim, double* const localMinPerObservable, double* const localMaxPerObservable) {
-  kernels::limiter::generic::c::findCellLocalLimiterMinAndMax<AbstractMySWESolver_ADERDG, NumberOfDMPObservables, Order+1, PatchSize, GhostLayerWidth>(
-    lim, *static_cast<AbstractMySWESolver_ADERDG*>(_solver.get()), localMinPerObservable, localMaxPerObservable);
+  kernels::limiter::generic::c::findCellLocalLimiterMinAndMax<AbstractMySWESolver_ADERDG, NumberOfDMPObservables, GhostLayerWidth>(lim, *static_cast<AbstractMySWESolver_ADERDG*>(_solver.get()), localMinPerObservable,localMaxPerObservable);
 }

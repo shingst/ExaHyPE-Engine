@@ -155,9 +155,7 @@ def parseResultFile(filePath):
     '''
     environmentDict = {}
     parameterDict   = {}
-   
-    print(filePath)
- 
+    
     stats = {}
     stats["run_time_steps"]  = 0
     stats["inner_cells_min"] = 10**20
@@ -188,7 +186,6 @@ def parseResultFile(filePath):
     try:
         fileHandle=codecs.open(filePath,'r','UTF_8')
         for line in fileHandle:
-            
             if line.startswith("sweep/environment"):
                 value = line.replace("sweep/environment=","")
                 environmentDict=json.loads(value)
@@ -228,8 +225,7 @@ def parseResultFile(filePath):
  
             anchor = '|'
             header = '||'
-            if anchor in line and header not in line and "MODULES" not in line :
-                print (line)
+            if anchor in line and header not in line and "MODULES" not in line : #fixes a problem on SuperMUC-NG where anchor is part of some other output lines
                 segments = line.split('|')
                 adapter = segments[1].strip();
                 adapters[adapter]                   = {}
@@ -291,7 +287,7 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
 
                 # derived
                 totalCores = str(int(ranks)*int(cores)) # total used CPU cores
-               
+                
                 environmentDict,parameterDict,adapters,stats = parseResultFile(resultsFolderPath + "/" + fileName)
                 if len(environmentDict):
                     # write header
@@ -367,7 +363,6 @@ def parseAdapterTimes(resultsFolderPath,projectName,compressTable):
                         else:
                             print("WARNING: Found neither 'order' nor 'patchSize' key in parameter list="+str(parameterDict),file=sys.stderr)
 
-                        print (base, parameterDict["dimension"], stats["unrefined_inner_cells_max"])
                         normalisationPerCells =  base**int(parameterDict["dimension"]) * float(stats["unrefined_inner_cells_max"])
                         if normalisationPerCells > 0:
                           row.append(str( float(adapters[adapter]["total_cputime"])  / normalisationPerCells ))
@@ -493,6 +488,7 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
         normalisedCPUTimeColumn  = header.index("normalised_cputime")
         normalisedUserTimeColumn = header.index("normalised_realtime")
         runTimeStepsColumn       = header.index("run_time_steps")
+        
         if runColumn >= adapterColumn:
             print ("ERROR: order of columns not suitable. Column 'run' must come before column 'adapter'!")
         
@@ -523,8 +519,8 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
                 normalization_factor = float(line[runTimeStepsColumn])
                 if (fused and adapter in fusedAdapters and int(line[iterationsColumn])/2!=normalization_factor):
                   print("WARNING: number of time steps run does not match iterations count. Using adapted normalization_factor. You should only see this warning if you have used -DKSkipFirstTimeSteps!")
-                  normalization_factor = float(line[iterationsColumn])/2
-                  print("WARNING: I assume you tracked "+str(normalization_factor)+" fused time steps")
+                  normalization_factor = float(line[iterationsColumn])/2  # assumes two iterations per time step!
+                  print("WARNING: Assuming you tracked "+str(normalization_factor)+" fused time steps")
                 summedCPUTimes[-1]            += float(line[cpuTimeColumn]) / normalization_factor
                 summedUserTimes[-1]           += float(line[userTimeColumn])/ normalization_factor
                 summedNormalisedCPUTimes[-1]  += float(line[normalisedCPUTimeColumn]) / normalization_factor

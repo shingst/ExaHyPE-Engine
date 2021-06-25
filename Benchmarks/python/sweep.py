@@ -262,12 +262,6 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                 for compileTimeParameterDict in dictProduct(compileTimeParameterSpace):
                     executable = getExecutableName(environmentDictHash,architecture,dimension,compileTimeParameterDict)
                     
-                    command = "make clean"
-                    print(command)
-                    process = subprocess.Popen([command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-                    (output, err) = process.communicate()
-                    process.wait()
-                    
                     if not os.path.exists(executable) or not buildOnlyMissing:
                         buildParameterDict["architecture"] = architecture
                         buildParameterDict["dimension"]    = dimension
@@ -394,8 +388,8 @@ def renderJobScript(jobScriptTemplate,jobScriptBody,jobs,
     context["time"]         = jobs["time"]
     context["class"]        = jobClass
     context["islands"]      = islands
-    print(cores)
-    context["coresPerRank"] = cores #str( int ( int(jobs["num_cpus"]) / int(ranksPerNode) ) )
+    context["coresPerRank"] = cores #really use specified number of cores
+    #str( int ( int(jobs["num_cpus"]) / int(ranksPerNode) ) )
     
     # now verify template parameters are defined in options file
     if not createdFirstJobScript:
@@ -981,9 +975,7 @@ It must further contain at least one of the following sections:
     compressTable = parseArgument(sys.argv,3)=="--compress"
 
     options = sweep_options.parseOptionsFile(optionsFile)
-        
-    print ("parsed options file") 
-
+    
     general                   = options.general
     jobs                      = options.jobs
     environmentSpace          = options.environmentSpace

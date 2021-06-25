@@ -121,10 +121,6 @@ void exahype::mappings::PredictionOrLocalRecomputation::endIteration(
   if ( state.isLastIterationOfBatchOrNoBatch() ) {
     // background threads
     exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::ReductionJob);
-    //Todo (Philipp): is this safe to do here? Otherwise, the dt_min does not get updated in some cases
-    //for (auto* solver : solvers::RegisteredSolvers) {
-    //  solver->updateTimeStepSize();
-    //}
   }
 
   logTraceOutWith1Argument("endIteration(State)", state);

@@ -141,19 +141,15 @@ if __name__ == "__main__":
     
     import math
         
-    args = parseArgs()  
-
-    print (args)
-
+    args = parseArgs()
+  
     # read table
     columnNames = next(args.table)
-    print ("filtering")  
     columnNames = columnNames.strip()
     columnNames = columnNames.split(",")
     tableData   = list(csv.reader(args.table,delimiter=args.inputDelim))
     args.table.close()
-
- 
+   
     ##
     # filter the rows
     ##

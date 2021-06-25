@@ -251,8 +251,9 @@ int exahype::main(int argc, char** argv) {
   } else {
     logInfo("main()", "quit with error code " << programExitCode);
   }
-  peano::shutdownSharedMemoryEnvironment();
-#if  defined(OffloadingUseProfiler)
+ 
+#if defined(OffloadingUseProfiler)
+  //prints useful statistics about offloading on every rank
   exahype::reactive::OffloadingProfiler::getInstance().endPhase();
   exahype::reactive::OffloadingProfiler::getInstance().printStatistics();
 #endif
@@ -262,8 +263,9 @@ int exahype::main(int argc, char** argv) {
   exahype::reactive::OffloadingManager::getInstance().cancelOutstandingRequests();
 #endif
   peano::shutdownParallelEnvironment();
-
+  peano::shutdownSharedMemoryEnvironment();
   peano::releaseCachedData();
+
   kernels::finalise();  
 
 

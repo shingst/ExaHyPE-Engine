@@ -1378,7 +1378,6 @@ exahype::parser::Parser::ResilienceStrategy exahype::parser::Parser::getResilien
   if (stringFromPathEquals("/resilience/task_sharing", "no", true, "task_sharing_resilience_checks")) {
     return ResilienceStrategy::TaskSharingResilienceChecks;
   }
-  //todo: not implemented yet
   if (stringFromPathEquals("/resilience/task_sharing", "no", true, "task_sharing_resilience_correction")) {
     return ResilienceStrategy::TaskSharingResilienceCorrection;
   }

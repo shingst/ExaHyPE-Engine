@@ -154,7 +154,7 @@ void exahype::mappings::FusedTimeStep::beginIteration(
   }
 
   if ( exahype::State::isFirstIterationOfBatchOrNoBatch() ) {
-    //only plot on team 0
+    //only plot on team 0 with teaMPI
 #if defined(USE_TMPI)
     if(exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber()==0) {
 #endif
@@ -166,6 +166,7 @@ void exahype::mappings::FusedTimeStep::beginIteration(
   }
 
 #if defined(Parallel) && defined(SharedTBB)
+   // offloading manager job is paused after each iteration to not disturb other communication -> need to restart
   if ( exahype::reactive::ReactiveContext::getInstance().isEnabled()
      && !tarch::parallel::Node::getInstance().isGlobalMaster())
   {
@@ -195,7 +196,7 @@ void exahype::mappings::FusedTimeStep::beginIteration(
     exahype::reactive::StaticDistributor::getInstance().resetRemainingTasksToOffload();
   }
 
-  // ensure reductions are inititated from worker side
+  // ensure reductions are initiated from worker side
   solverState.setReduceStateAndCell( exahype::State::isLastIterationOfBatchOrNoBatch() );
 
 #endif
@@ -288,9 +289,6 @@ void exahype::mappings::FusedTimeStep::touchVertexFirstTime(
                            coarseGridCell, fineGridPositionOfVertex);
 
   if ( issuePredictionJobsInThisIteration() ) {
-
-    //MPI_Sendrecv(MPI_IN_PLACE, 0, MPI_BYTE, MPI_PROC_NULL, 1, MPI_IN_PLACE, 0, MPI_BYTE, MPI_PROC_NULL, 0, MPI_COMM_SELF, MPI_STATUS_IGNORE);
-
     fineGridVertex.mergeNeighbours(fineGridX,fineGridH);
   }
 
@@ -403,9 +401,6 @@ void exahype::mappings::FusedTimeStep::mergeWithNeighbour(
   logTraceInWith6Arguments( "mergeWithNeighbour(...)", vertex, neighbour, fromRank, fineGridX, fineGridH, level );
 
   if ( issuePredictionJobsInThisIteration() ) {
- 
-    //MPI_Sendrecv(MPI_IN_PLACE, 0, MPI_BYTE, MPI_PROC_NULL, 1, MPI_IN_PLACE, 0, MPI_BYTE, MPI_PROC_NULL, 0, MPI_COMM_SELF, MPI_STATUS_IGNORE);
-
     vertex.receiveNeighbourData(
         fromRank, true/*merge with data*/,exahype::State::isFirstIterationOfBatchOrNoBatch(),
         fineGridX,fineGridH,level);

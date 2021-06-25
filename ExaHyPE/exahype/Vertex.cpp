@@ -161,7 +161,7 @@ void exahype::Vertex::mergeOnlyNeighboursMetadataLoopBodyHelper(
     if ( solver1->isMergingMetadata(section) ) {
       for ( auto& patch2 : cellInfo2._ADERDGCellDescriptions ) {
         solvers::ADERDGSolver::mergeWithNeighbourMetadata(patch1.getSolverNumber(),cellInfo1,
-            patch2.getAugmentationStatus(),patch2.getCommunicationStatus(),patch2.getRefinementStatus(), // patch2.getCorruptionStatus(), // patch2 values
+            patch2.getAugmentationStatus(),patch2.getCommunicationStatus(),patch2.getRefinementStatus(), // patch2 values
             pos1,pos2,barycentre);
       }
     }

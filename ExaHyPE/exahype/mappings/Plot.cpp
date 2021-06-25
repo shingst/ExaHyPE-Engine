@@ -90,6 +90,7 @@ void exahype::mappings::Plot::enterCell(
     exahype::Cell& coarseGridCell,
     const tarch::la::Vector<DIMENSIONS, int>& fineGridPositionOfCell) {
 
+  //only leading team plots something
 #if defined(USE_TMPI)
   if ( TMPI_IsLeadingRank() ) {
 #endif

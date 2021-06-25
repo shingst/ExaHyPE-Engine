@@ -25,7 +25,7 @@
 #include "tarch/parallel/NodePool.h"
 
 #include <limits>
-#include "reactive/OffloadingAnalyser.h"
+#include "exahype/reactive/OffloadingAnalyser.h"
 
 tarch::logging::Log exahype::State::_log("exahype::State");
 
@@ -269,9 +269,6 @@ void exahype::State::kickOffIteration(const exahype::records::RepositoryState::A
   case exahype::records::RepositoryState::UseAdapterFusedTimeStep: {
     const bool beginFusedTimeStep = exahype::solvers::Solver::PredictionSweeps==1 || (currentBatchIteration % 2 == 0);
     if ( beginFusedTimeStep ) {
-      //#if defined(USE_TMPI) && defined(TMPI_HEARTBEATS)
-      //  MPI_Sendrecv(MPI_IN_PLACE, 0, MPI_BYTE, MPI_PROC_NULL, 1, MPI_IN_PLACE, 0, MPI_BYTE, MPI_PROC_NULL, 0, MPI_COMM_SELF, MPI_STATUS_IGNORE);
-      //#endif
       for (auto* solver : exahype::solvers::RegisteredSolvers) {
         solver->kickOffTimeStep(currentBatchIteration==0);
       }
@@ -373,35 +370,30 @@ void exahype::State::broadcastGlobalDataToWorker(
     const int                                   worker,
     const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
     const int                                   level) {
-
   for (auto& solver : exahype::solvers::RegisteredSolvers) {
     solver->sendDataToWorker(worker,cellCentre,level);
   }
   for (auto& plotter : exahype::plotters::RegisteredPlotters) {
     plotter->sendDataToWorker(worker,cellCentre,level);
   }
-
 }
 
 void exahype::State::mergeWithGlobalDataFromMaster(
     const int                                   master,
     const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
     const int                                   level) {
-
   for (auto& solver : exahype::solvers::RegisteredSolvers) {
     solver->mergeWithMasterData(master,cellCentre,level);
   }
   for (auto& plotter : exahype::plotters::RegisteredPlotters) {
     plotter->mergeWithMasterData(master,cellCentre,level);
   }
-
 }
 
 void exahype::State::reduceGlobalDataToMaster(
     const int                                   master,
     const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
     const int                                   level) {
-
   for (auto* solver : exahype::solvers::RegisteredSolvers) {
     solver->sendDataToMaster(master,cellCentre,level);
   }
@@ -412,10 +404,8 @@ void exahype::State::mergeWithGlobalDataFromWorker(
     const int                                   worker,
     const tarch::la::Vector<DIMENSIONS,double>& cellCentre,
     const int                                   level) {
-
   for (auto& solver : exahype::solvers::RegisteredSolvers) {
     solver->mergeWithWorkerData(worker,cellCentre,level);
   }
-
 }
 #endif

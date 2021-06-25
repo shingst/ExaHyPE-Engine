@@ -149,7 +149,7 @@ void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverSt
       exit(-1);
   }
   
-  // for mesh refinement, disable the task distributor
+  // for mesh refinement, disable the task distributor, todo: still needed?
   if(exahype::reactive::ReactiveContext::getInstance().getOffloadingStrategy()
      == exahype::reactive::ReactiveContext::OffloadingStrategy::AggressiveHybrid)
     exahype::reactive::AggressiveHybridDistributor::getInstance().disable();  
