@@ -22,7 +22,6 @@
 #include "tarch/timing/Watch.h"
 
 #include "exahype/reactive/OffloadingProfiler.h"
-#include "exahype/reactive/DynamicDistributor.h"
 #include "exahype/reactive/StaticDistributor.h"
 #include "exahype/reactive/ReactiveContext.h"
 

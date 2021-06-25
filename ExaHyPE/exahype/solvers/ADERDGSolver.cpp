@@ -97,20 +97,6 @@ int exahype::solvers::ADERDGSolver::updateBodyHandle                      = 0;
 int exahype::solvers::ADERDGSolver::mergeNeighboursHandle                 = 0;
 int exahype::solvers::ADERDGSolver::prolongateFaceDataToVirtualCellHandle = 0;
 int exahype::solvers::ADERDGSolver::restrictToTopMostParentHandle         = 0;
-
-//Todo(Philipp) : remove unused
-int exahype::solvers::ADERDGSolver::event_stp = 0;
-int exahype::solvers::ADERDGSolver::event_stp_remote = 0;
-int exahype::solvers::ADERDGSolver::event_stp_local_replica = 0;
-int exahype::solvers::ADERDGSolver::event_offloadingManager = 0;
-int exahype::solvers::ADERDGSolver::event_spawn = 0;
-int exahype::solvers::ADERDGSolver::event_initial = 0;
-int exahype::solvers::ADERDGSolver::event_memory = 0;
-int exahype::solvers::ADERDGSolver::event_lock = 0;
-int exahype::solvers::ADERDGSolver::event_pack = 0;
-int exahype::solvers::ADERDGSolver::event_progress = 0;
-int exahype::solvers::ADERDGSolver::event_offload = 0;
-
 #endif
 
 tarch::logging::Log exahype::solvers::ADERDGSolver::_log( "exahype::solvers::ADERDGSolver");

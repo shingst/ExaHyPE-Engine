@@ -150,18 +150,6 @@ public:
   static int prolongateFaceDataToVirtualCellHandle;
   static int restrictToTopMostParentHandle;
 
-  //Todo(Philipp): are these still used?
-  static int event_stp;
-  static int event_stp_local_replica;
-  static int event_stp_remote;
-  static int event_offloadingManager;
-  static int event_spawn;
-  static int event_initial;
-  static int event_memory;
-  static int event_lock;
-  static int event_pack;
-  static int event_progress;
-  static int event_offload;
   #endif
 
   /**

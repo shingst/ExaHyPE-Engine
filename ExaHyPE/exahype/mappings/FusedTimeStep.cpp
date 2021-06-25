@@ -32,7 +32,6 @@
 
 #include "exahype/reactive/PerformanceMonitor.h"
 #include "exahype/reactive/StaticDistributor.h"
-#include "exahype/reactive/DiffusiveDistributor.h"
 #include "exahype/reactive/OffloadingAnalyser.h"
 
 #include "exahype/reactive/NoiseGenerator.h"

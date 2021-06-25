@@ -28,9 +28,6 @@
 #include "exahype/reactive/OffloadingProfiler.h"
 
 #include "exahype/reactive/PerformanceMonitor.h"
-#include "exahype/reactive/DiffusiveDistributor.h"
-#include "exahype/reactive/AggressiveDistributor.h"
-#include "exahype/reactive/AggressiveCCPDistributor.h"
 #include "exahype/reactive/AggressiveHybridDistributor.h"
 #include "exahype/reactive/ReactiveContext.h"
 
@@ -219,19 +216,12 @@ void exahype::reactive::OffloadingAnalyser::endIteration(double numberOfInnerLea
   //printWaitingTimes();
 
   switch(exahype::reactive::ReactiveContext::getInstance().getOffloadingStrategy()){
-    case exahype::reactive::ReactiveContext::OffloadingStrategy::Diffusive:
-      exahype::reactive::DiffusiveDistributor::getInstance().updateLoadDistribution(); break;
-    case exahype::reactive::ReactiveContext::OffloadingStrategy::Aggressive:
-      exahype::reactive::AggressiveDistributor::getInstance().printOffloadingStatistics();
-      exahype::reactive::AggressiveDistributor::getInstance().updateLoadDistribution();
-      break;
-    case exahype::reactive::ReactiveContext::OffloadingStrategy::AggressiveCCP:
-      exahype::reactive::AggressiveCCPDistributor::getInstance().printOffloadingStatistics();
-      exahype::reactive::AggressiveCCPDistributor::getInstance().updateLoadDistribution();
-      break;
     case exahype::reactive::ReactiveContext::OffloadingStrategy::AggressiveHybrid:
       exahype::reactive::AggressiveHybridDistributor::getInstance().printOffloadingStatistics();
       exahype::reactive::AggressiveHybridDistributor::getInstance().updateLoadDistribution();
+      break;
+    default:
+      //do nothing for now
       break;
   }
   //exahype::reactive::OffloadingContext::getInstance().printBlacklist();

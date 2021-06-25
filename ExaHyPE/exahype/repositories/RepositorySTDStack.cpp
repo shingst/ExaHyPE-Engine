@@ -211,7 +211,9 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
 
   tarch::timing::Watch watch( "exahype::repositories::RepositorySTDStack", "iterate(bool)", false);
 
+#if defined(KSkipFirstFusedIterations)
   static int skip_cnt = 0; //skip measurements first K iterations of FusedTimeStep adapter (useful for excluding first timesteps where offloading has not converged yet)
+#endif
 
   #ifdef Parallel
   // Start receiving from global master
@@ -293,6 +295,8 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
       case exahype::records::RepositoryState::UseAdapterInitialPrediction: watch.startTimer(); _gridWithInitialPrediction.iterate(); watch.stopTimer(); _measureInitialPredictionCPUTime.setValue( watch.getCPUTime() ); _measureInitialPredictionCalendarTime.setValue( watch.getCalendarTime() ); break;
       case exahype::records::RepositoryState::UseAdapterFusedTimeStep:
 #if defined(KSkipFirstFusedIterations)
+      //skip first iterations in timining -> useful for measuring performance
+      //with reactive offloading where the load balancing takes a while to converge
       if(skip_cnt<KSkipFirstFusedIterations) {
         skip_cnt++;
         _gridWithFusedTimeStep.iterate(); break;

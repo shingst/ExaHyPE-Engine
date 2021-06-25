@@ -28,8 +28,6 @@
 #include "exahype/Vertex.h"
 
 #include "exahype/reactive/StaticDistributor.h"
-#include "exahype/reactive/AggressiveDistributor.h"
-#include "exahype/reactive/AggressiveCCPDistributor.h"
 #include "exahype/reactive/AggressiveHybridDistributor.h"
 #include "exahype/reactive/ReactiveContext.h"
 
@@ -136,24 +134,6 @@ void exahype::runners::Runner::runGlobalStep() {
     exahype::reactive::StaticDistributor::getInstance().computeNewLoadDistribution(
       exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells,
 	    exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells);
-    break;
-  case exahype::reactive::ReactiveContext::OffloadingStrategy::Aggressive:
-    logInfo("runner(...)",
-          "running global step "<<exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells<<
-		      ", "<<exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells );
-    exahype::reactive::AggressiveDistributor::getInstance().computeIdealLoadDistribution(
-      exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells,
-	    exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells);
-    exahype::reactive::AggressiveDistributor::getInstance().enable();
-    break;
-  case exahype::reactive::ReactiveContext::OffloadingStrategy::AggressiveCCP:
-    logInfo("runner(...)",
-          "running global step "<<exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells<<
-          ", "<<exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells );
-    exahype::reactive::AggressiveCCPDistributor::getInstance().computeIdealLoadDistribution(
-      exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells,
-      exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells);
-    exahype::reactive::AggressiveCCPDistributor::getInstance().enable();
     break;
   case exahype::reactive::ReactiveContext::OffloadingStrategy::AggressiveHybrid:
     logInfo("runner(...)",

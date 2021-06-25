@@ -609,12 +609,12 @@ class exahype::parser::Parser {
   int getNoiseGenerationRRFrequency() const;
 
   /**
-   * @returns A factor that determines the strength of the noise.
+   * @return A factor that determines the strength of the noise.
    */
   double getNoiseGenerationFactor() const;
 
   /**
-   * Base time a rank is sleeping for "chase victim" noise generation strategy.
+   * @return Base time a rank is sleeping for "chase victim" noise generation strategy.
    */
   double getNoiseBaseTime() const;
 
@@ -725,7 +725,6 @@ class exahype::parser::Parser {
 
   TBBInvadeStrategy getTBBInvadeStrategy() const;
 
-  //todo(Philipp(: Add support for other strategies again if needed
   /**
    * The offloading strategy for lightweight distributed task offloading.
    */
@@ -806,21 +805,27 @@ class exahype::parser::Parser {
   int getSTPTracingDumpInterval() const;
 
   /**
-   * @return `true` if the parsed strategy matches the argument.
+   * @return True if the parsed strategy matches the argument.
    * @param strategy one of "no", "migratable_stp_tasks_bitflip", "migratable_stp_tasks_overwrite", "migratable_stp_tasks_overwrite_hardcoded"
    */
   bool compareSoftErrorGenerationStrategy(const std::string& strategy) const;
 
+  /**
+   * @return True if ExaHyPE should try so save redundant computations sharing task outcomes between team.
+   * @note Makes only sense if task sharing is activated and more than one team is run.
+   */
   bool getTryToSaveRedundantComputations() const;
 
   /**
-   * @return True if all migratable STPs should be checked (i.e. are considered as potentially having an error).
+   * @return True if all migratable STPs should be checked for soft errors (i.e., if they are considered as potentially having an error).
    */
   bool getCheckAllMigratableSTPs() const;
+
   /**
-   * @return True if only migratable STPs for which the limiter was activated should be checked (i.e. are considered as potentially having an error).
+   * @return True if only STP+solution of cells for which the limiter was activated should be checked (i.e., if they should be considered as potentially having an error).
    */
   bool getCheckLimitedCellsOnly() const;
+
   /**
    * @return True if only corrupted STPs (with artificially injected errors) should be triggered as suspicious.
    */

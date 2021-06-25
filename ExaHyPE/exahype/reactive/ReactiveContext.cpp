@@ -26,10 +26,6 @@
 
 #include "../reactive/OffloadingProfiler.h"
 #include "../reactive/StaticDistributor.h"
-#include "../reactive/DynamicDistributor.h"
-#include "../reactive/DiffusiveDistributor.h"
-#include "../reactive/AggressiveDistributor.h"
-#include "../reactive/AggressiveCCPDistributor.h"
 #include "../reactive/AggressiveHybridDistributor.h"
 #include "../reactive/PerformanceMonitor.h"
 #include "exahype/solvers/LimitingADERDGSolver.h"
@@ -337,16 +333,10 @@ void exahype::reactive::ReactiveContext::triggerEmergencyForRank(int rank) {
 //    _emergencyTriggered = true;
 //  }
   switch(exahype::reactive::ReactiveContext::getInstance().getOffloadingStrategy()){
-    case ReactiveContext::OffloadingStrategy::Aggressive:
-      exahype::reactive::AggressiveDistributor::getInstance().handleEmergencyOnRank(rank); break;
-    case ReactiveContext::OffloadingStrategy::AggressiveCCP:
-      exahype::reactive::AggressiveCCPDistributor::getInstance().handleEmergencyOnRank(rank); break;
     case ReactiveContext::OffloadingStrategy::AggressiveHybrid:
       exahype::reactive::AggressiveHybridDistributor::getInstance().handleEmergencyOnRank(rank); break;
-    case ReactiveContext::OffloadingStrategy::Diffusive:
-      exahype::reactive::DiffusiveDistributor::getInstance().handleEmergencyOnRank(rank); break;
     default:
-      //do nothing, not implemented yet
+      //do nothing, no emergencies for other offloading strategies
       break;
   }
 
@@ -399,41 +389,10 @@ bool exahype::reactive::ReactiveContext::selectVictimRank(int& victim, bool& las
   last = false;
   if(ChosenOffloadingStrategy==OffloadingStrategy::StaticHardcoded)
     return exahype::reactive::StaticDistributor::getInstance().selectVictimRank(victim);
-  if(ChosenOffloadingStrategy==OffloadingStrategy::Diffusive)
-    return exahype::reactive::DiffusiveDistributor::getInstance().selectVictimRank(victim);
-  if(ChosenOffloadingStrategy==OffloadingStrategy::Aggressive)
-    return exahype::reactive::AggressiveDistributor::getInstance().selectVictimRank(victim);
-  if(ChosenOffloadingStrategy==OffloadingStrategy::AggressiveCCP)
-    return exahype::reactive::AggressiveCCPDistributor::getInstance().selectVictimRank(victim);
   if(ChosenOffloadingStrategy==OffloadingStrategy::AggressiveHybrid)
     return exahype::reactive::AggressiveHybridDistributor::getInstance().selectVictimRank(victim, last);
 
   return false;
-/*  double remainingLoadRatio = static_cast<double> (exahype::reactive::PerformanceMonitor::getInstance().getRemainingTasks())
-  /
-  exahype::reactive::PerformanceMonitor::getInstance().getTasksPerTimestep();
-  // this is currently hardcoded: the goal is to refrain from giving tasks away if there is not enough work left
-  // for overlap of communication and computation
-  if(remainingLoadRatio>0.1) {
-#if defined(OffloadingStrategyStatic)
-    return exahype::reactive::StaticDistributor::getInstance().selectVictimRank(victim);
-#elif defined(OffloadingStrategyDynamic)
-    return exahype::reactive::DynamicDistributor::getInstance().selectVictimRank(victim);
-#elif defined(OffloadingStrategyHybrid)
-    bool staticDistribution = exahype::reactive::StaticDistributor::getInstance().selectVictimRank(victim);
-    if(staticDistribution) return true;
-    else {
-      return exahype::reactive::DynamicDistributor::getInstance().selectVictimRank(victim);
-    }
-    return false;
-#else
-    return false;
-#endif
-  }
-  else {
-    logDebug("offloadingManager", "could not select victim remaining load ratio "<<remainingLoadRatio);
-    return false;
-  }*/
 }
 
 #ifdef OffloadingUseProgressTask
