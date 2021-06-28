@@ -812,6 +812,8 @@ class exahype::parser::Parser {
 
   double getAbsErrorForHardcodedInjection() const;
 
+  double getConfidenceForTrustworthiness() const;
+
   /**
    * @return True if ExaHyPE should try so save redundant computations sharing task outcomes between team.
    * @note Makes only sense if task sharing is activated and more than one team is run.

@@ -458,6 +458,12 @@
             "title" : "Absolute error that should be introduced with error injection (overwrite + hardcoded) into the STP update.",
             "scope" : "run-time",
             "default" : 0
+         },
+         "confidence_required" : {
+            "type" : "number",
+            "title" : "Specifies the confidence value required for a task outcome to be considered as being trustworthy.",
+            "scope" : "run-time",
+            "default" : 1
          }
       }
     },

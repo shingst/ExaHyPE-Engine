@@ -42,7 +42,8 @@ exahype::reactive::ResilienceTools::ResilienceTools()
    _l2NormTol(0.0000001),
    _corruptionDetected(false),
    _injectionRank(0),
-   _absError(0)
+   _absError(0),
+   _confidenceRequired(1)
 {
   if(_injectionRank>=tarch::parallel::Node::getInstance().getNumberOfNodes()
      && GenerationStrategy!=SoftErrorGenerationStrategy::None) {
@@ -53,8 +54,13 @@ exahype::reactive::ResilienceTools::ResilienceTools()
 
 exahype::reactive::ResilienceTools::~ResilienceTools() {}
 
-void exahype::reactive::ResilienceTools::configure(double absError) {
+void exahype::reactive::ResilienceTools::configure(double absError, double confidenceRequired) {
   _absError = absError;
+  _confidenceRequired = confidenceRequired;
+}
+
+bool exahype::reactive::ResilienceTools::isTrustworthy(double confidence) {
+  return confidence>=_confidenceRequired;
 }
 
 exahype::reactive::ResilienceTools& exahype::reactive::ResilienceTools::getInstance() {

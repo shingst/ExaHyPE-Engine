@@ -36,7 +36,7 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
     const int element,
     const double predictorTimeStamp,
     const double predictorTimeStepSize,
-    const bool isPotSoftErrorTriggered,
+    const double confidence,
     const bool isSkeleton) :
       tarch::multicore::jobs::Job(
           tarch::multicore::jobs::JobType::BackgroundTask, 0,
@@ -56,7 +56,7 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
       _lFhbnd(nullptr),
       _lGradQhbnd(nullptr),
       _isLocalReplica(false),
-      _isPotSoftErrorTriggered(isPotSoftErrorTriggered),
+      _confidence(confidence),
       _isCorrupted(false)
 {
   if (_isSkeleton) {
@@ -110,7 +110,7 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
       _lFhbnd(lFhbnd),
       _lGradQhbnd(lGradQhbnd),
       _isLocalReplica(false),
-      _isPotSoftErrorTriggered(false),
+      _confidence(1),
       _isCorrupted(false)
 {
   assertion(!_isSkeleton);
@@ -237,22 +237,16 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   }
 
   //got some task sharing here
-  bool isEqual = false;
   bool hasFlipped = false;
   //check for outcome and get it + corruption status
   MigratablePredictionJobData *outcome = nullptr;
   DeliveryStatus status;
   if(tryToFindAndExtractEquivalentSharedOutcome(false, status, &outcome)) {
     executeOrCopySTPOutcome(outcome, hasComputed, hasFlipped); //corruption can also happen here if executed
-    setSTPPotCorrupted(hasFlipped);
-
-    /*if(hasFlipped) {
-      assert(_isPotSoftErrorTriggered);
-      assert(needToCheckThisSTP(hasComputed));
-    }*/
+    setConfidence(hasFlipped);
 
     if(needToCheckThisSTP(hasComputed)) {
-      switch(_solver.checkCellDescriptionAgainstOutcome(getCellDescription(_cellDescriptionsIndex,_element), outcome)) {
+      switch(_solver.checkCellDescriptionAgainstOutcome(getCellDescription(_cellDescriptionsIndex,_element), outcome, _predictorTimeStamp, _predictorTimeStepSize)) {
         case SDCCheckResult::NoCorruption:
           break;
         case SDCCheckResult::UncorrectableSoftError:
@@ -270,7 +264,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
           }
       }
     }
-    if(needToShare(true /*hasOutcome*/, outcome->_metadata._isPotSoftErrorTriggered)) {
+    if(needToShare(true /*hasOutcome*/, outcome->_metadata._confidence)) {
       shareSTPImmediatelyOrLater();
     }
     if(needToPutBackOutcome()) {
@@ -289,7 +283,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     executeLocally();
     hasComputed = true;
     hasFlipped = corruptIfActive();
-    setSTPPotCorrupted(hasFlipped);
+    setConfidence(hasFlipped);
 
     if(needToShare(false, false)) {
       shareSTPImmediatelyOrLater();
@@ -332,7 +326,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::shareSTPImmediatel
     _solver.storePendingOutcomeToBeShared(this); //delay sharing until we can be sure that trigger has been set (correction must happen first)
   }
   else {
-    if(_isCorrupted && !_isPotSoftErrorTriggered)
+    if(_isCorrupted && exahype::reactive::ResilienceTools::getInstance().isTrustworthy(_confidence))
       logWarning("handleLocalExecution","Sharing corrupted outcome but soft error has not been triggered!");
     _solver.sendTaskOutcomeToOtherTeams(this);
   }
@@ -348,10 +342,10 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::needToCheckThisSTP
   return (exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()
         >=exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceChecks)
       &&  hasComputed
-      && _isPotSoftErrorTriggered;
+      && !exahype::reactive::ResilienceTools::getInstance().isTrustworthy(_confidence);
 }
 
-bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::needToShare(bool hasOutcome, bool isOutcomePotCorrupt) {
+bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::needToShare(bool hasOutcome, double confidence) {
   if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()
       ==exahype::reactive::ReactiveContext::ResilienceStrategy::None) {
     return false;
@@ -365,7 +359,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::needToShare(bool h
   else {
     return !hasOutcome
          || exahype::reactive::ResilienceTools::CheckLimitedCellsOnly
-         || isOutcomePotCorrupt;
+         || !exahype::reactive::ResilienceTools::getInstance().isTrustworthy(confidence);
   }
 }
 
@@ -374,8 +368,11 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::corruptIfActive() 
    _element);
 
   double *lduh = static_cast<double*>(cellDescription.getUpdate());
-  bool hasFlipped = exahype::reactive::ResilienceTools::getInstance().corruptDataIfActive(_center, DIMENSIONS,
-                                                              _predictorTimeStamp, lduh, _solver.getUpdateSize());
+  bool hasFlipped = exahype::reactive::ResilienceTools::getInstance().corruptDataIfActive(
+                                                              _center, DIMENSIONS,
+                                                              _predictorTimeStamp,
+                                                              lduh,
+                                                              _solver.getUpdateSize());
 
   if(hasFlipped) {
     _isCorrupted = true;
@@ -417,7 +414,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::copyOutcome(Migrat
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::executeOrCopySTPOutcome(MigratablePredictionJobData *outcome, bool& hasComputed, bool& hasFlipped) {
   if( (exahype::reactive::ReactiveContext::getResilienceStrategy()>=exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharing)
    && exahype::reactive::ReactiveContext::getSaveRedundantComputations()
-   && !outcome->_metadata._isPotSoftErrorTriggered) {
+   && exahype::reactive::ResilienceTools::getInstance().isTrustworthy(outcome->_metadata._confidence)) {
     copyOutcome(outcome);
     hasFlipped = false; //we don't assume any corruption after copying an outcome for now
     hasComputed = false;
@@ -444,29 +441,38 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::executeLocally() {
         <<std::setprecision(30)<<" time step size "<<_predictorTimeStepSize);
 
 #if defined FileTrace
-    auto start = std::chrono::high_resolution_clock::now();
+  auto start = std::chrono::high_resolution_clock::now();
+  int iterations = _solver.fusedSpaceTimePredictorVolumeIntegral(lduh,
+           lQhbnd,
+           lGradQhbnd,
+           lFhbnd,
+           luh,
+           cellDescription.getOffset() + 0.5 * cellDescription.getSize(),
+           cellDescription.getSize(),
+           _predictorTimeStamp,
+           _predictorTimeStepSize,
+           true);
+#else
+  _solver.fusedSpaceTimePredictorVolumeIntegral(lduh,
+              lQhbnd,
+              lGradQhbnd,
+              lFhbnd,
+              luh,
+              cellDescription.getOffset() + 0.5 * cellDescription.getSize(),
+              cellDescription.getSize(),
+              _predictorTimeStamp,
+               _predictorTimeStepSize,
+               true);
 #endif
 
-  int iterations = _solver.fusedSpaceTimePredictorVolumeIntegral(lduh,
-          lQhbnd,
-          lGradQhbnd,
-          lFhbnd,
-          luh,
-          cellDescription.getOffset() + 0.5 * cellDescription.getSize(),
-          cellDescription.getSize(),
-          _predictorTimeStamp,
-          _predictorTimeStepSize,
-          true);
-
 #if defined(FileTrace)
-    auto stop = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+  auto stop = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
 
-    exahype::reactive::STPStatsTracer::getInstance().writeTracingEventRunIterations(duration.count(), iterations, exahype::reactive::STPTraceKey::ADERDGOwnMigratable);
+  exahype::reactive::STPStatsTracer::getInstance().writeTracingEventRunIterations(duration.count(), iterations, exahype::reactive::STPTraceKey::ADERDGOwnMigratable);
 #endif
 
   exahype::reactive::ResilienceStatistics::getInstance().notifyExecutedTask();
-
 }
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::setFinished() {
@@ -477,232 +483,6 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::setFinished() {
   exahype::reactive::PerformanceMonitor::getInstance().decRemainingTasks();
   exahype::reactive::PerformanceMonitor::getInstance().decCurrentTasks();
 }
-
-/*bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecution(
-    bool isRunOnMaster, bool& hasComputed) {
-
-  bool hasFlipped = false;
-  bool reschedule = false;
-  bool needToCompute = true;
-//#if defined(TaskSharing)
-  bool needToCheck = false;
-  bool copyResult = false;
-  bool hasResult = false;
-  bool needToShare = false;
-//#endif
-
-  CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
-	   _element);
-
-  double *luh = static_cast<double*>(cellDescription.getSolution());
-  double *lduh = static_cast<double*>(cellDescription.getUpdate());
-  double *lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
-  double *lGradQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictorGradient());
-  double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
-
-  //JobOutcomeStatus status;
-  //MigratablePredictionJobData *outcomes[2];
-  //int required = exahype::reactive::OffloadingContext::getInstance().getTMPINumTeams()-1;
-  DeliveryStatus status;
-  MigratablePredictionJobData *outcome = nullptr;
-  bool found = false;
-
-//#if defined(TaskSharing)
-  if(exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
-      != exahype::reactive::OffloadingContext::ResilienceStrategy::None) {
-    needToShare = (AllocatedSTPsSend
-                   <= exahype::reactive::PerformanceMonitor::getInstance().getTasksPerTimestep()/tarch::multicore::Core::getInstance().getNumberOfThreads())
-             || (exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()>=exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks
-                  && exahype::reactive::ResilienceTools::CheckLimitedCellsOnly);
-
-    if(!exahype::reactive::ResilienceTools::CheckLimitedCellsOnly)
-      found = tryToFindAndExtractEquivalentSharedOutcome(false, status, outcome);
-    else
-      found = false;
-
-    if(found) {
-      switch (status) {
-        case DeliveryStatus::Received:
-      	  hasResult = true;
-#if defined(ResilienceChecks)
-          needToCompute = outcomes[0]->_metadata._isPotSoftErrorTriggered;
-          copyResult = !outcomes[0]->_metadata._isPotSoftErrorTriggered;
-          //needToCheck = outcomes[0]->_metadata._isPotSoftErrorTriggered;
-          needToCheck = false;
-          needToShare = outcomes[0]->_metadata._isPotSoftErrorTriggered;
-#else
-      	  needToShare = false;
-      	  needToCompute = false;
-          copyResult = true;
-#endif
-          break;
-      case DeliveryStatus::Transit:
-#ifdef TaskSharingRescheduleIfInTransit
-        reschedule = true;
-        needToCompute = false;
-#endif
-        break;
-      }
-    }
-
-    if(copyResult) {
-      if(outcome->_metadata._isCorrupted)
-        logError("handleLocalExecution","Error: we're using a corrupted outcome!");
-
-      assertion(outcome!=nullptr);
-      std::memcpy(lduh, &outcome->_lduh[0], outcome->_lduh.size() * sizeof(double));
-      std::memcpy(lQhbnd, &outcome->_lQhbnd[0], outcome->_lQhbnd.size() * sizeof(double));
-      std::memcpy(lFhbnd, &outcome->_lFhbnd[0], outcome->_lFhbnd.size() * sizeof(double));
-#if OffloadingGradQhbnd
-      std::memcpy(lGradQhbnd, &outcome->_lGradQhbnd[0], outcome->_lGradQhbnd.size() * sizeof(double));
-#endif
-      exahype::reactive::JobTableStatistics::getInstance().notifySavedTask();
-      AllocatedSTPsReceive--;
-      delete outcome;
-    }
-  }
-
-  if(needToCompute) {
-#if defined(USE_ITAC)
-    if(_isLocalReplica)
-      VT_begin(event_stp_local_replica);
-#endif
-#if defined FileTrace
-    auto start = std::chrono::high_resolution_clock::now();
-#endif
-
-    tarch::la::Vector<DIMENSIONS, double> center;
-    center = cellDescription.getOffset() + 0.5 * cellDescription.getSize();
-    logInfo("handleLocalExecution","team "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()<<" computing STP for "
-          <<to_string());
-
-    int iterations = _solver.fusedSpaceTimePredictorVolumeIntegral(lduh,
-       	lQhbnd,
-        lGradQhbnd,
-        lFhbnd,
-        luh,
-        cellDescription.getOffset() + 0.5 * cellDescription.getSize(),
-        cellDescription.getSize(),
-        _predictorTimeStamp,
-        _predictorTimeStepSize,
-        true);
-
-    hasComputed = true;
-
-    exahype::reactive::JobTableStatistics::getInstance().notifyExecutedTask();
-
-    hasFlipped = exahype::reactive::ResilienceTools::getInstance().corruptDataIfActive(lduh, _solver.getUpdateSize());
-    setTrigger(hasFlipped);
-
-    if(hasFlipped)  {
-      logError("handleLocalExecution","team  "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()<<" has corrupted STP for "
-                                      <<to_string());
-
-      _isCorrupted = true; //indicates that this outcome has corrupt data!
-    }
-  
-    logDebug("handleLocalExecution", "celldesc ="<<_cellDescriptionsIndex<<" _isPotSoftErrorTriggered ="<<(int) _isPotSoftErrorTriggered);
-
-#if defined(ResilienceChecks)
-    needToCheck = needToCheck || _isPotSoftErrorTriggered;
-    needToShare = needToShare || _isPotSoftErrorTriggered;
-#endif
-
-#if defined(FileTrace)
-    auto stop = std::chrono::high_resolution_clock::now();
-    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-
-    exahype::reactive::STPStatsTracer::getInstance().writeTracingEventRunIterations(duration.count(), iterations, exahype::reactive::STPTraceKey::ADERDGOwnMigratable);
-#endif
-
-#if defined(USE_ITAC)
-      if(_isLocalReplica)
-        VT_end(event_stp_local_replica);
-#endif
-  }
-
-#if defined(OffloadingLocalRecompute)
-  if (_isLocalReplica) {
-    tbb::concurrent_hash_map<const CellDescription*, std::pair<int, int>>::accessor a_cellDescToTagRank;
-    //logInfo("handleExecution()", "cleaning up cell desc "<<&cellDescription);
-    bool found = _solver._mapCellDescToTagRank.find(a_cellDescToTagRank,
-        &cellDescription);
-    assert(found);
-    _solver._mapCellDescToTagRank.erase(a_cellDescToTagRank);
-    a_cellDescToTagRank.release();
-  }
-#endif
-
-  if((exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
-    != exahype::reactive::OffloadingContext::ResilienceStrategy::None)) {
-
-    if(!hasResult && !exahype::reactive::ResilienceTools::CheckLimitedCellsOnly) {
-      hasResult = tryToFindAndExtractEquivalentSharedOutcomes(false, required, status, outcomes);
-    }
-
-    if(needToCheck) {
-      if(hasResult) {
-#if defined(ResilienceChecks)
-        int saneIdx = -1;
-        bool hasNoError = checkAgainstOutcomesAndFindSaneOne(outcomes, required, saneIdx);
-        if(!hasNoError) {
-#if defined(ResilienceHealing)
-          //logInfo("handleLocalExecution", "could switch on healing mode now!");
-          recoverWithOutcome(outcomes[saneIdx]);
-          reschedule = false;
-          //_solver.switchToHealingMode();
-          //MPI_Abort(MPI_COMM_WORLD, -1);
-#else
-          //MPI_Abort(MPI_COMM_WORLD, -1); //for now, abort immediately
-          exahype::reactive::ResilienceTools::getInstance().setCorruptionDetected(true);
-          logError("handleLocalExecution", "soft error detected but we ignore it...");
-          reschedule = false;
-#endif
-        }
-#endif
-      }
-      else {
-        _currentState = State::CHECK_REQUIRED; //check later
-         reschedule = true;
-      }
-    }
-    else {
-     if(hasResult)
-      needToShare = false;
-    }
-
-    if(needToShare) {
-      if(exahype::reactive::ResilienceTools::CheckLimitedCellsOnly) {
-        logInfo("handleLocalExecution", "Delaying outcome, as we need to compute corrector first!");
-        _solver.storePendingOutcomeToBeShared(this); //delay sharing until we can be sure that trigger has been set (correction must happen first)
-      }
-      else {
-        if(_isCorrupted)
-          logError("handleLocalExecution","Sharing corrupted outcome");
-        _solver.sendTaskOutcomeToOtherTeams(this);
-      }
-    }
-  }
-
-  if(hasFlipped) {
-    tarch::la::Vector<DIMENSIONS, double> center;
-    center = cellDescription.getOffset() + 0.5 * cellDescription.getSize();
-    logInfo("handleLocalExecution","Corrupted data in "
-          << to_string()
-          << " hasResult "<<hasResult
-          << " needToCheck "<<needToCheck
-          << " needToShare "<<needToShare
-          << " reschedule  "<<reschedule);
-  }
-
-  if (!reschedule) {
-    cellDescription.setHasCompletedLastStep(true);
-    exahype::reactive::PerformanceMonitor::getInstance().decRemainingTasks();
-    exahype::reactive::PerformanceMonitor::getInstance().decCurrentTasks();
-  }
-
-  return reschedule;
-}*/
 
 bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleRemoteExecution(bool& hasComputed) {
 #if defined(USE_ITAC)
@@ -811,26 +591,28 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackOutcomeToO
 #endif
 }
 
-void exahype::solvers::ADERDGSolver::MigratablePredictionJob::setSTPPotCorrupted(bool flipped) {
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::setConfidence(bool flipped) {
 
   CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
                                                         _element);
     
-  bool violatedAdmCheck = false;                                                    
-  if(exahype::reactive::ResilienceTools::CheckSTPsWithViolatedAdmissibility) {
-    violatedAdmCheck = !_solver.isPredictorAdmissible(cellDescription);
+  //confidence is set later if we are using the limiter checks!
+  _confidence = 1;
+
+  if(exahype::reactive::ReactiveContext::getResilienceStrategy()
+    >=exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceChecks) {
+
+    if( (exahype::reactive::ResilienceTools::CheckFlipped && flipped)
+      || exahype::reactive::ResilienceTools::CheckAllMigratableSTPs) {
+      _confidence = 0;
+    }
+    else if(exahype::reactive::ResilienceTools::CheckSTPsWithViolatedAdmissibility) {
+      _confidence = _solver.computePredictorConfidence(cellDescription);
+    }
   }
 
-  //trigger is set later if we are using limiter as a trigger
-  _isPotSoftErrorTriggered =  ((exahype::reactive::ResilienceTools::CheckFlipped && flipped)
-                            ||  exahype::reactive::ResilienceTools::CheckAllMigratableSTPs
-                            || (exahype::reactive::ResilienceTools::CheckSTPsWithViolatedAdmissibility
-                                && violatedAdmCheck)
-                            )
-                            && (exahype::reactive::ReactiveContext::getResilienceStrategy()>=exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceChecks);
-
-  if(_isPotSoftErrorTriggered)
-    logError("setSTPPotCorrupted", "Celldesc ="<<_cellDescriptionsIndex<<" isPotCorrupted "<<_isPotSoftErrorTriggered);
+  if(flipped)
+    logError("setConfidence", "Celldesc ="<<_cellDescriptionsIndex<<" confidence "<<_confidence);
 }
 
 bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryToFindAndExtractEquivalentSharedOutcome(bool previous, DeliveryStatus &status, MigratablePredictionJobData **outcome) {
@@ -955,16 +737,6 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapCellDescToTagRank.erase(a_cellDescToTagRank);
   a_cellDescToTagRank.release();
 #endif
-
-  /*tbb::concurrent_hash_map<int, double>::accessor a_tagToOffloadTime;
-  found =
-      static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagToOffloadTime.find(
-          a_tagToOffloadTime, tag);
-  double elapsed = MPI_Wtime() + a_tagToOffloadTime->second;
-  assertion(found);
-  static_cast<exahype::solvers::ADERDGSolver*>(solver)->_mapTagToOffloadTime.erase(
-      a_tagToOffloadTime);
-  a_tagToOffloadTime.release();*/
 
   NumberOfRemoteJobs--;
   NumberOfEnclaveJobs--;
@@ -1114,7 +886,10 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
 
   double minTimeStampToKeep = static_cast<exahype::solvers::ADERDGSolver*>(solver)->getPreviousMinTimeStamp();
 
-  exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().trackTimeStepAndTriggerActive(team, key._timestamp, key._timestepSize, data->_metadata._isPotSoftErrorTriggered);
+  exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().trackTimeStepAndTriggerActive(team, 
+		                                              key._timestamp,
+							      key._timestepSize,
+							      !exahype::reactive::ResilienceTools::getInstance().isTrustworthy(data->_metadata.getConfidence()));
   double lastconsistentTimeStamp, lastconsistentTimeStepSize, lastconsistentEstimatedTimeStepSize;
   exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().getLastConsistentTimeStepData(lastconsistentTimeStamp, lastconsistentTimeStepSize, lastconsistentEstimatedTimeStepSize);
   
@@ -1191,7 +966,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::packMetaData(Migra
   std::memcpy(tmp, &_predictorTimeStepSize, sizeof(double)); tmp+= sizeof(double);
   std::memcpy(tmp, &_element, sizeof(int)); tmp+= sizeof(int);
   std::memcpy(tmp, &_originRank, sizeof(int)); tmp+= sizeof(int);
-  std::memcpy(tmp, &_isPotSoftErrorTriggered, sizeof(bool)); tmp+= sizeof(bool);
+  std::memcpy(tmp, &_confidence, sizeof(double)); tmp+= sizeof(double);
   std::memcpy(tmp, &_isCorrupted, sizeof(bool)); tmp+= sizeof(bool);
 #else
   metadata->_center[0] = _center[0];
@@ -1210,7 +985,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::packMetaData(Migra
   metadata->_predictorTimeStepSize = _predictorTimeStepSize;
   metadata->_element = _element;
   metadata->_originRank = _originRank;
-  metadata->_isPotSoftErrorTriggered = _isPotSoftErrorTriggered;
+  metadata->_confidence = _confidence;
   metadata->_isCorrupted = _isCorrupted;
 #endif
 }
@@ -1229,7 +1004,7 @@ std::string exahype::solvers::ADERDGSolver::MigratablePredictionJob::to_string()
   result += " time step = " + std::to_string(_predictorTimeStepSize);
   result += " element = " + std::to_string(_element);
   result += " origin = " + std::to_string(_originRank);
-  result += " isPotSoftErrorTriggered = " + std::to_string(_isPotSoftErrorTriggered);
+  result += " confidence = " + std::to_string(_confidence);
   result += " isCorrupted = " + std::to_string(_isCorrupted);
 
   return result;
@@ -1285,7 +1060,7 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::MigratablePredi
   _predictorTimeStepSize(0),
   _element(0),
   _originRank(-1),
-  _isPotSoftErrorTriggered(true),
+  _confidence(0),
   _isCorrupted(false),
   _contiguousBuffer(nullptr) {
 #if defined(UseSmartMPI) || defined(OffloadingMetadataPacked)
@@ -1307,7 +1082,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::unpackCont
   std::memcpy(&_predictorTimeStepSize, tmp,  sizeof(double)); tmp+= sizeof(double);
   std::memcpy(&_element, tmp, sizeof(int)); tmp+= sizeof(int);
   std::memcpy(&_originRank, tmp, sizeof(int)); tmp+= sizeof(int);
-  std::memcpy(&_isPotSoftErrorTriggered, tmp, sizeof(bool)); tmp+= sizeof(bool);
+  std::memcpy(&_confidence, tmp, sizeof(double)); tmp+= sizeof(double);
   std::memcpy(&_isCorrupted, tmp, sizeof(bool)); tmp+= sizeof(bool);
 }
 
@@ -1324,7 +1099,7 @@ std::string exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::to_
   result += " time step = " + std::to_string(_predictorTimeStepSize);
   result += " element = " + std::to_string(_element);
   result += " origin = " + std::to_string(_originRank);
-  result += " isPotSoftErrorTriggered = " + std::to_string(_isPotSoftErrorTriggered);
+  result += " confidence = " + std::to_string(_confidence);
   result += " isCorrupted = " + std::to_string(_isCorrupted);
 
   return result;
@@ -1338,7 +1113,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::initDataty
   MigratablePredictionJobMetaData dummy;
 
   int blocklengths[] = {DIMENSIONS, DIMENSIONS, 1, 1, 1, 1, sizeof(bool), sizeof(bool)};
-  MPI_Datatype subtypes[] = {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INT, MPI_INT, MPI_BYTE, MPI_BYTE};
+  MPI_Datatype subtypes[] = {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INT, MPI_INT, MPI_DOUBLE, MPI_BYTE};
   MPI_Aint displs[] = {0, 0, 0, 0, 0, 0, 0, 0};
 
   MPI_Aint base;
@@ -1350,7 +1125,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::initDataty
   MPI_Get_address(&(dummy._predictorTimeStepSize), &(displs[3]));
   MPI_Get_address(&(dummy._element), &(displs[4]));
   MPI_Get_address(&(dummy._originRank), &(displs[5]));
-  MPI_Get_address(&(dummy._isPotSoftErrorTriggered), &(displs[6]));
+  MPI_Get_address(&(dummy._confidence), &(displs[6]));
   MPI_Get_address(&(dummy._isCorrupted), &(displs[7]));
 
   for(int i=0; i<entries; i++) {

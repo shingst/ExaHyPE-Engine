@@ -1800,40 +1800,32 @@ void exahype::solvers::ADERDGSolver::computeTemporarySolutionWithPredictor(CellD
 
 }
 
-bool exahype::solvers::ADERDGSolver::isPredictorAdmissible(CellDescription& cellDescription) {
+double exahype::solvers::ADERDGSolver::computePredictorConfidence(CellDescription& cellDescription) {
   double *luhtemp = new double[getDataPerCell()];
 
   computeTemporarySolutionWithPredictor(cellDescription, luhtemp);
-  bool admissibleTimeStep =  predictorUpdateYieldsAdmissibleTimeStep(luhtemp, cellDescription);
-  bool admissibleUpdate = predictorUpdateYieldsPhysicallyAdmissibleSolution(luhtemp, cellDescription);
+  double confTimeStep =  computePredictorUpdateConfidenceTimeStep(luhtemp, cellDescription);
+  double confAdm = computePredictorUpdateConfAdmissibility(luhtemp, cellDescription);
 
-  if(!admissibleTimeStep) {
-    logError("isPredictorAdmissible","Predictor would result in inadmissible time step size!");
+  if(!exahype::reactive::ResilienceTools::getInstance().isTrustworthy(confTimeStep)) {
+    logError("computePredictorConfidence","Predictor would result in inadmissible time step size! ConfTimeStep = "<<confTimeStep);
   }
 
-  if(!admissibleUpdate) {
-    logError("isPredictorAdmissible","Predictor would result in inadmissible update!");
+  if(!exahype::reactive::ResilienceTools::getInstance().isTrustworthy(confAdm)) {
+    logError("computePredictorConfidence","Predictor would result in inadmissible update!");
   }
 
   delete[] luhtemp;
-  return admissibleTimeStep && admissibleUpdate;
+  return std::min(confTimeStep, confAdm);
 }
 
-bool exahype::solvers::ADERDGSolver::predictorUpdateYieldsAdmissibleTimeStep(double *luhWithPredictor, CellDescription& cellDescription, double maxToleratedRelativeChange) {
+double exahype::solvers::ADERDGSolver::computePredictorUpdateConfidenceTimeStep(double *luhWithPredictor, CellDescription& cellDescription) {
   double admissibleTimeStepSize = stableTimeStepSize(luhWithPredictor, cellDescription.getSize());
 
-  if(
-      (std::abs(admissibleTimeStepSize-cellDescription.getTimeStepSize())/cellDescription.getTimeStepSize())
-      >maxToleratedRelativeChange
-  ) {
-    return false;
-  }
-  else {
-    return true;
-  }
+  return 1.0-std::min(1.0, std::abs(admissibleTimeStepSize-cellDescription.getTimeStepSize())/cellDescription.getTimeStepSize());
 }
 
-bool exahype::solvers::ADERDGSolver::predictorUpdateYieldsPhysicallyAdmissibleSolution(double *luhWithPredictor, CellDescription& cellDescription) {
+double exahype::solvers::ADERDGSolver::computePredictorUpdateConfAdmissibility(double *luhWithPredictor, CellDescription& cellDescription) {
 
   double* observablesMin = nullptr;
   double* observablesMax = nullptr;
@@ -1851,7 +1843,7 @@ bool exahype::solvers::ADERDGSolver::predictorUpdateYieldsPhysicallyAdmissibleSo
           cellDescription.getOffset()+0.5*cellDescription.getSize(),cellDescription.getSize(),
           cellDescription.getTimeStamp());
 
-  return isAdmissible;
+  return isAdmissible ? 1 : 0;
 }
 
 void exahype::solvers::ADERDGSolver::mergeWithNeighbourMetadata(
@@ -2865,8 +2857,10 @@ exahype::solvers::ADERDGSolver::OffloadingManagerJob::OffloadingManagerJob(ADERD
 #ifndef OffloadingUseProgressThread
  tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask, 0, tarch::multicore::DefaultPriority-1),
 #endif
+  _state(State::Running),
   _solver(solver),
-  _state(State::Running) {}
+  _started(false)
+ {}
 
 exahype::solvers::ADERDGSolver::OffloadingManagerJob::~OffloadingManagerJob() {}
 
@@ -3539,7 +3533,7 @@ void exahype::solvers::ADERDGSolver::storePendingOutcomeToBeShared(int cellDescr
   data->_metadata._predictorTimeStamp = timestamp;
   data->_metadata._predictorTimeStepSize = timestep;
   data->_metadata._isCorrupted = false;
-  data->_metadata._isPotSoftErrorTriggered = true; //will be re-set once limiter status is known
+  data->_metadata._confidence = 0; //will be re-set once limiter status is known
 
   //outcome may already be available due to predictor re-run -> replace old data
   tbb::concurrent_hash_map<std::pair<int,int>, MigratablePredictionJobData*>::accessor accessor;
@@ -3594,7 +3588,7 @@ void exahype::solvers::ADERDGSolver::releaseDummyOutcomeAndShare(int cellDescrip
   data->_metadata._predictorTimeStepSize = timestep;
   data->_metadata._isCorrupted = false;
   if(exahype::reactive::ResilienceTools::CheckLimitedCellsOnly)
-    data->_metadata._isPotSoftErrorTriggered = isTroubled;
+    data->_metadata._confidence = isTroubled ? 0 : 1;
 
   //Share now
   int teams = exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams();
@@ -3607,8 +3601,8 @@ void exahype::solvers::ADERDGSolver::releaseDummyOutcomeAndShare(int cellDescrip
 
   if(data->_metadata._isCorrupted) {
     logWarning("releaseDummyOutcomeAndShare", "Caution: a corrupted outcome is shared. SDC should be detected...");
-    if(!data->_metadata._isPotSoftErrorTriggered)
-      logError("releaseDummyOutcomeAndShare","has not been detected by SDC mechanism, softErrorTriggered="<<data->_metadata._isPotSoftErrorTriggered);
+    if(!exahype::reactive::ResilienceTools::getInstance().isTrustworthy(data->_metadata._confidence))
+      logError("releaseDummyOutcomeAndShare","has not been detected by SDC mechanism, confidence="<<data->_metadata._confidence);
   }
 
   int j = 0;
@@ -3669,7 +3663,7 @@ void exahype::solvers::ADERDGSolver::releasePendingOutcomeAndShare(int cellDescr
     logDebug("releasePendingOutcomeAndShare", " celldesc ="<<cellDescriptionsIndex<<" isPotentiallyCorrupted "<<isTroubled
                                               <<" timestepsize "<<std::setprecision(30)<<data->_metadata._predictorTimeStepSize);
     if(exahype::reactive::ResilienceTools::CheckLimitedCellsOnly)
-      data->_metadata._isPotSoftErrorTriggered = isTroubled;
+      data->_metadata._confidence = isTroubled ? 0 : 1.0;
 
     //update solution
     double *luh   = static_cast<double*>(cellDescription.getSolution());
@@ -3686,8 +3680,8 @@ void exahype::solvers::ADERDGSolver::releasePendingOutcomeAndShare(int cellDescr
 
     if(data->_metadata._isCorrupted) {
       logWarning("releasePendingOutcomeAndShare", "Caution: a corrupted outcome is shared. SDC should be detected...");
-      if(!data->_metadata._isPotSoftErrorTriggered)
-        logError("releasePendingOutcomeAndShare","has not been detected by SDC mechanism, softErrorTriggered="<<data->_metadata._isPotSoftErrorTriggered);
+      if(!exahype::reactive::ResilienceTools::getInstance().isTrustworthy(data->_metadata._confidence))
+        logError("releasePendingOutcomeAndShare","has not been detected by SDC mechanism, confidence="<<data->_metadata._confidence);
     }
 
     int j = 0;
@@ -3744,7 +3738,10 @@ void exahype::solvers::ADERDGSolver::correctCellDescriptionWithOutcome(CellDescr
   exahype::reactive::ResilienceStatistics::getInstance().notifyHealedTask();
 }
 
-exahype::solvers::ADERDGSolver::SDCCheckResult exahype::solvers::ADERDGSolver::checkCellDescriptionAgainstOutcome(CellDescription& cellDescription, MigratablePredictionJobData *data){
+exahype::solvers::ADERDGSolver::SDCCheckResult exahype::solvers::ADERDGSolver::checkCellDescriptionAgainstOutcome(CellDescription& cellDescription,
+     MigratablePredictionJobData *data,
+     double predictorTimeStamp,
+     double predictorTimeStepSize){
   double *lduh = static_cast<double*>(cellDescription.getUpdate());
   double *lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
 #if defined(OffloadingGradQhbnd)
@@ -3757,38 +3754,43 @@ exahype::solvers::ADERDGSolver::SDCCheckResult exahype::solvers::ADERDGSolver::c
   bool equal = true;
   bool tmp;
 
-  tmp = data->_metadata._predictorTimeStamp == cellDescription.getTimeStamp(); equal &= tmp;
-  tmp = data->_metadata._predictorTimeStepSize == cellDescription.getTimeStepSize(); equal &= tmp;
+  tmp = data->_metadata._predictorTimeStamp == predictorTimeStamp; equal &= tmp; assert(tmp);
+  tmp = data->_metadata._predictorTimeStepSize == predictorTimeStepSize; equal &= tmp;
+  if(!tmp) {
+     logError("checkCellDescriptionAgainstOutcome", std::setprecision(30)<<"data->_metadata._predictorTimeStepSize"<<data->_metadata._predictorTimeStepSize
+                                                    <<" , cellDescription.getTimeStepSize()="<<cellDescription.getTimeStepSize());
+     assert(tmp);
+  }
 
   tmp = exahype::reactive::ResilienceTools::getInstance().isAdmissibleNumericalError(data->_lQhbnd.data(), lQhbnd, data->_lQhbnd.size()); equal&=tmp;
   if(!tmp) {
-    logError("checkAgainstOutcome", "lQhbnd is not (numerically) equal for cell "<<"center[0]="<<center[0]<<" center[1]="<<center[1]<<" timestamp "<<cellDescription.getTimeStamp());
+    logError("checkCellDescriptionAgainstOutcome", "lQhbnd is not (numerically) equal for cell "<<"center[0]="<<center[0]<<" center[1]="<<center[1]<<" timestamp "<<cellDescription.getTimeStamp());
   }
 
 #if defined(OffloadingGradQhbnd)
   tmp = exahype::reactive::ResilienceTools::getInstance().isAdmissibleNumericalError(data->_lGradQhbnd.data(), lGradQhbnd, data->_lGradQhbnd.size()); equal&=tmp;
   if(!tmp) {
-    logError("checkAgainstOutcome", "lGradQhbnd is not (numerically) equal for cell "<<"center[0]="<<center[0]<<" center[1]="<<center[1]<<" timestamp "<<cellDescription.getTimeStamp());
+    logError("checkCellDescriptionAgainstOutcome", "lGradQhbnd is not (numerically) equal for cell "<<"center[0]="<<center[0]<<" center[1]="<<center[1]<<" timestamp "<<cellDescription.getTimeStamp());
   }
 #endif
   tmp = exahype::reactive::ResilienceTools::getInstance().isAdmissibleNumericalError(data->_lFhbnd.data(), lFhbnd, data->_lFhbnd.size()); equal&=tmp;
   if(!tmp) {
-    logError("checkAgainstOutcome", "lFhbnd is not  (numerically) equal for cell "<<"center[0]="<<center[0]<<" center[1]="<<center[1]<<" timestamp "<<cellDescription.getTimeStamp());
+    logError("checkCellDescriptionAgainstOutcome", "lFhbnd is not  (numerically) equal for cell "<<"center[0]="<<center[0]<<" center[1]="<<center[1]<<" timestamp "<<cellDescription.getTimeStamp());
   }
   tmp = exahype::reactive::ResilienceTools::getInstance().isAdmissibleNumericalError(data->_lduh.data(), lduh, data->_lduh.size()); equal&=tmp;
   if(!tmp) {
-    logError("checkAgainstOutcome", "lduh is not  (numerically) equal for cell "<<"center[0]="<<center[0]<<" center[1]="<<center[1]<<" timestamp "<<cellDescription.getTimeStamp());
+    logError("checkCellDescriptionAgainstOutcome", "lduh is not  (numerically) equal for cell "<<"center[0]="<<center[0]<<" center[1]="<<center[1]<<" timestamp "<<cellDescription.getTimeStamp());
   }
 
   if(!equal) {
-    logError("checkAgainstOutcome", "soft error detected: "<<data->_metadata.to_string());
+    logError("checkCellDescriptionAgainstOutcome", "soft error detected: "<<data->_metadata.to_string());
     exahype::reactive::ResilienceStatistics::getInstance().notifyDetectedError();
   }
 
   exahype::reactive::ResilienceStatistics::getInstance().notifyDoubleCheckedTask();
 
   if(!equal) {
-    if(data->_metadata._isPotSoftErrorTriggered)
+    if(!exahype::reactive::ResilienceTools::getInstance().isTrustworthy(data->_metadata._confidence))
       return SDCCheckResult::UncorrectableSoftError; //don't know which outcome is sane
     else {
       return SDCCheckResult::OutcomeSaneAsTriggerNotActive; //we assume that the trigger is good enough to tell us that the outcome is ok

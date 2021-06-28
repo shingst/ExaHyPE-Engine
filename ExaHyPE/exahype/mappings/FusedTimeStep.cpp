@@ -243,7 +243,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
     for (auto* solver : solvers::RegisteredSolvers) {
       solver->wrapUpTimeStep(endOfFirstFusedTimeStepInBatch,state.isLastIterationOfBatchOrNoBatch());
     }
-    //exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().printHistory();
+    //exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().printHistory();
   }
 
 #if defined(Parallel) && defined(SharedTBB)

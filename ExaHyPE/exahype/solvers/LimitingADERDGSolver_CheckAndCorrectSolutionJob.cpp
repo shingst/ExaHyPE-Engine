@@ -119,8 +119,7 @@ exahype::solvers::LimitingADERDGSolver::CheckAndCorrectSolutionJob::SDCCheckResu
 
   exahype::reactive::ResilienceStatistics::getInstance().notifyDoubleCheckedTask();
 
-  if(!outcome->_metadata._isPotSoftErrorTriggered)
-     // && _solver.getMeshUpdateEvent()==MeshUpdateEvent::IrregularLimiterDomainChangeButMayCorrect) //correct only if we don't require limiter anyway
+  if(exahype::reactive::ResilienceTools::getInstance().isTrustworthy(outcome->_metadata._confidence))
   {
     /*logError("checkAgainstOutcome","Limiter was not active previously in other team, we must have a soft error!"
         <<_cellInfo._cellDescriptionsIndex

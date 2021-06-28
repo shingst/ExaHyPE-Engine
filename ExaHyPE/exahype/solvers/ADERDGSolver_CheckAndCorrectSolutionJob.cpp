@@ -91,7 +91,7 @@ bool exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::tryToFindAndExt
 }
 
 exahype::solvers::ADERDGSolver::SDCCheckResult exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::checkAgainstOutcome(ADERDGSolver::MigratablePredictionJobData *data) {
-  return _solver.checkCellDescriptionAgainstOutcome(_solverPatch, data);
+  return _solver.checkCellDescriptionAgainstOutcome(_solverPatch, data, _predictorTimeStamp, _predictorTimeStepSize);
 }
 
 void exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::correctWithOutcome(ADERDGSolver::MigratablePredictionJobData *outcome){

@@ -1442,6 +1442,10 @@ double exahype::parser::Parser::getAbsErrorForHardcodedInjection() const {
   return getDoubleFromPath("/resilience/abs_error", 0, isOptional);
 }
 
+double exahype::parser::Parser::getConfidenceForTrustworthiness() const {
+  return getDoubleFromPath("/resilience/confidence_required", 0.90, isOptional);
+}
+
 bool exahype::parser::Parser::getTryToSaveRedundantComputations() const {
   return getBoolFromPath("/resilience/save_redundant_computations", false, isOptional);
 }

@@ -1028,7 +1028,7 @@ private:
       double _predictorTimeStepSize;
       int    _element;
       int    _originRank;
-      bool   _isPotSoftErrorTriggered;
+      double  _confidence;
       bool   _isCorrupted;
       char * _contiguousBuffer;
 
@@ -1044,7 +1044,7 @@ private:
          equal &= _predictorTimeStepSize == other._predictorTimeStepSize;
          equal &= _element == other._element;
          equal &= _originRank == other._originRank;
-         equal &= _isPotSoftErrorTriggered == other._isPotSoftErrorTriggered;
+         equal &= _confidence == other._confidence;
          return true;
       }
 
@@ -1068,7 +1068,7 @@ private:
 
       static size_t getMessageLen() {
       #if defined(UseSmartMPI) || defined(OffloadingMetadataPacked)
-        return (2*DIMENSIONS+2)*sizeof(double)+2*sizeof(int)+2*sizeof(bool);
+        return (2*DIMENSIONS+3)*sizeof(double)+2*sizeof(int)+1*sizeof(bool);
       #else
         return 1;
       #endif
@@ -1096,6 +1096,10 @@ private:
 
       int getOrigin() const {
         return _originRank;
+      }
+
+      double getConfidence() const {
+        return _confidence;
       }
 
       void unpackContiguousBuffer();
@@ -1166,7 +1170,7 @@ private:
       double                      _center[DIMENSIONS];
       double                      _dx[DIMENSIONS];
       bool                        _isLocalReplica;
-      bool                        _isPotSoftErrorTriggered;
+      double                      _confidence;
       bool                        _isCorrupted;
 
       static std::atomic<int> JobCounter;
@@ -1182,7 +1186,7 @@ private:
       void shareSTPImmediatelyOrLater();
       bool needToCheckThisSTP(bool hasComputed);
       bool needToPutBackOutcome();
-      bool needToShare(bool hasOutcome, bool isOutcomePotCorrupt);
+      bool needToShare(bool hasOutcome, double confidence);
 
       bool handleExecution(bool isCalledOnMaster, bool& hasComputed);
       bool handleLocalExecution(bool isCalledOnMaster, bool& hasComputed);
@@ -1191,7 +1195,7 @@ private:
 
       bool tryToFindAndExtractEquivalentSharedOutcome(bool previous, DeliveryStatus &status, MigratablePredictionJobData **outcome);
 
-      void setSTPPotCorrupted(bool flipped);
+      void setConfidence(bool flipped);
 
       bool isRemoteJob() {
         return (_originRank!= tarch::parallel::Node::getInstance().getRank());
@@ -1211,7 +1215,7 @@ private:
         const int element,
         const double predictorTimeStamp,
         const double predictorTimeStepSize,
-        const bool isPotSoftErrorTriggered,
+        const double confidence,
         const bool isSkeletonJob //enables task outcome sharing for skeletons
       );
       // constructor for remote jobs that were received from another rank
@@ -1270,7 +1274,9 @@ private:
 
   enum class SDCCheckResult {NoCorruption, OutcomeSaneAsTriggerNotActive, UncorrectableSoftError};
   void correctCellDescriptionWithOutcome(CellDescription& cellDescription, MigratablePredictionJobData *outcome);
-  SDCCheckResult checkCellDescriptionAgainstOutcome(CellDescription& cellDescription, MigratablePredictionJobData *outcome);
+  SDCCheckResult checkCellDescriptionAgainstOutcome(CellDescription& cellDescription, MigratablePredictionJobData *outcome,
+                                                    double predictorTimeStamp,
+                                                    double predictorTimeStepSize);
 
   class CheckAndCorrectSolutionJob : public tarch::multicore::jobs::Job {
 
@@ -2793,11 +2799,11 @@ public:
 
   void computeTemporarySolutionWithPredictor(CellDescription& cellDescription, double *luhWithPredictor);
 
-  bool predictorUpdateYieldsPhysicallyAdmissibleSolution(double *luhWithPredictor, CellDescription& cellDescription);
+  double computePredictorUpdateConfAdmissibility(double *luhWithPredictor, CellDescription& cellDescription);
 
-  bool predictorUpdateYieldsAdmissibleTimeStep(double *luhWithPredictor, CellDescription& cellDescription, double maxToleratedRelativeFactor=0.1);
+  double computePredictorUpdateConfidenceTimeStep(double *luhWithPredictor, CellDescription& cellDescription);
 
-  bool isPredictorAdmissible(CellDescription& cellDescription);
+  double computePredictorConfidence(CellDescription& cellDescription);
 
   ///////////////////////////////////
   // NEIGHBOUR
