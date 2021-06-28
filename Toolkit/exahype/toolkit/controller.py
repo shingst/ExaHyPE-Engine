@@ -310,7 +310,6 @@ class Controller:
         context["linkerFlags"]       = self.spec["linker_flags"]
         context["useSharedMem"]      = "shared_memory" in self.spec;
         context["useDistributedMem"] = "distributed_memory" in self.spec;
-
         context["useNoiseGenerator"] = False
         if "noise_generator" in self.spec:
             context["useNoiseGenerator"] = self.spec["noise_generator"]["enable"]
@@ -338,8 +337,7 @@ class Controller:
             if(solver["type"]=="ADER-DG" and "viscous_flux" in solver["aderdg_kernel"]["terms"]):
                 context["useViscousFlux"] = True
         context["useViscousFlux"] = False
-        #todo: multiple solvers are not supported with offloading
-           
+
         # kernels
         useOptKernel = False
         useFortran   = False

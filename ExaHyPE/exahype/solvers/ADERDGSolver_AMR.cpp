@@ -39,12 +39,10 @@ void exahype::solvers::ADERDGSolver::mergeWithEmptyNeighbourDuringMeshRefinement
   if ( isAtBoundary ) {
     mergeWithNeighbourMetadata(solverNumber,cellInfo,
           BoundaryStatus,BoundaryStatus,BoundaryStatus,
-          //Uncorrupted,  //todo: need to adapt for corruption detection?
           pos,posNeighbour,barycentreFromVertex);
   } else {
     mergeWithNeighbourMetadata(solverNumber,cellInfo,
         EmptyStatus,EmptyStatus,EmptyStatus,
-        //Uncorrupted,
         pos,posNeighbour,barycentreFromVertex);
   }
 }
@@ -55,16 +53,6 @@ void exahype::solvers::ADERDGSolver::mergeWithRefinementStatus(
     const int        otherRefinementStatus) {
   cellDescription.setFacewiseRefinementStatus( faceIndex, otherRefinementStatus );
 }
-
-/*void exahype::solvers::ADERDGSolver::mergeWithCorruptionStatus(
-    CellDescription& cellDescription,
-    const int        faceIndex,
-    const int        otherCorruptionStatus) {
-  if(otherCorruptionStatus>0)
-    logInfo("mergeWithCorruptionStatus","setting non-zero corruption status on facewise status");
-
-  cellDescription.setFacewiseCorruptionStatus( faceIndex, otherCorruptionStatus );
-}*/
 
 void
 exahype::solvers::ADERDGSolver::updateCommunicationStatus(
@@ -147,20 +135,6 @@ void exahype::solvers::ADERDGSolver::updateRefinementStatus(CellDescription& cel
   }
 }
 
-/*void exahype::solvers::ADERDGSolver::updateCorruptionStatus(CellDescription& cellDescription) const {
-  if ( cellDescription.getLevel()==getMaximumAdaptiveMeshLevel() ) {
-    if(cellDescription.getCorruptionStatus()==CorruptedAndCorrected)
-      logInfo("updateCorruptionStatus","cell desc is corrupted but corrected "<<cellDescription.toString());
-
-    for (unsigned int i=0; i<DIMENSIONS_TIMES_TWO; i++) {
-       if(cellDescription.getFacewiseCorruptionStatus(i)==CorruptedAndCorrected) {
-         logInfo("updateCorruptionStatus","we have a neighbour of a corrupted and corrected cell "<<cellDescription.toString());
-         cellDescription.setCorruptionStatus(CorruptedNeighbour);
-       }
-       //todo treat other cases
-    }
-  }
-}*/
 
 void exahype::solvers::ADERDGSolver::vetoParentCoarseningRequestIfNecessary(
     const CellDescription& fineGridCellDescription,

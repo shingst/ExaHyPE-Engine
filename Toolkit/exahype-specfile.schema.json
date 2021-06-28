@@ -452,6 +452,12 @@
           "title" : "Specifies which results in ADER-DG should be checked for soft errors (checking requires teaMPI + tasksharing with resilience checks).",
           "enum" : ["none", "check_limited_after_update", "check_all_stps", "check_stps_with_violated_admissibility", "check_corrupted_stps"],
           "default" : "none"
+         },
+         "abs_error" : {
+            "type" : "number",
+            "title" : "Absolute error that should be introduced with error injection (overwrite + hardcoded) into the STP update.",
+            "scope" : "run-time",
+            "default" : 0
          }
       }
     },

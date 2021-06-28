@@ -617,7 +617,6 @@ void exahype::solvers::FiniteVolumesSolver::updateTimeStepSize(const int solverN
     if ( cellDescription.getType()==CellDescription::Type::Leaf ) {
       double* solution = static_cast<double*>(cellDescription.getSolution());
       double admissibleTimeStepSize = stableTimeStepSize(solution, cellDescription.getSize());
-      assert(std::isfinite(admissibleTimeStepSize));
       assertion1(std::isfinite(admissibleTimeStepSize),cellDescription.toString());
       cellDescription.setTimeStepSize(admissibleTimeStepSize);
       updateAdmissibleTimeStepSize(admissibleTimeStepSize);
@@ -716,11 +715,11 @@ void exahype::solvers::FiniteVolumesSolver::updateBody(
     const tarch::la::Vector<DIMENSIONS_TIMES_TWO,int>& boundaryMarkers,
     const bool                                         uncompressBefore) {
   #ifdef USE_ITAC
-  //if ( isAtRemoteBoundary ) {
-  //  VT_begin(updateBodyHandleSkeleton);
-  //} else {
+  if ( isAtRemoteBoundary ) {
+    VT_begin(updateBodyHandleSkeleton);
+  } else {
     VT_begin(updateBodyHandle);
-  //}
+  }
   #endif
 
   if ( uncompressBefore ) { uncompress(cellDescription); }
@@ -728,8 +727,7 @@ void exahype::solvers::FiniteVolumesSolver::updateBody(
   updateSolution(cellDescription,cellInfo._cellDescriptionsIndex,boundaryMarkers,isFirstTimeStepOfBatch);
   UpdateResult result;
   result._timeStepSize = startNewTimeStep(cellDescription,isFirstTimeStepOfBatch);
-  assert(result._timeStepSize!=std::numeric_limits<double>::infinity());
-  
+
   reduce(cellDescription,result);
 
   const bool isAtRemoteBoundary = tarch::la::oneEquals(boundaryMarkers,exahype::mappings::LevelwiseAdjacencyBookkeeping::RemoteAdjacencyIndex);
@@ -763,8 +761,6 @@ void exahype::solvers::FiniteVolumesSolver::fusedTimeStepOrRestrict(
     synchroniseTimeStepping(cellDescription);
     cellDescription.setHasCompletedLastStep(false);
 
-    assert(std::isfinite(cellDescription.getTimeStepSize()));
-
     const bool isSkeletonCell = isAtRemoteBoundary;
     peano::datatraversal::TaskSet( new FusedTimeStepJob(
         *this, cellDescription, cellInfo,
@@ -774,8 +770,6 @@ void exahype::solvers::FiniteVolumesSolver::fusedTimeStepOrRestrict(
   else if ( element != NotFound ) {
     CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
     synchroniseTimeStepping(cellDescription);
-    assert(std::isfinite(cellDescription.getTimeStepSize()));
-
     cellDescription.setHasCompletedLastStep(false);
     updateBody(
         cellDescription,cellInfo,
@@ -843,9 +837,6 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
     const bool                                         backupPreviousSolution) {
   // boundary conditions
   double* solution       = static_cast<double*>(cellDescription.getSolution());
-  assert(std::isfinite(cellDescription.getTimeStepSize()));
-
-
   for (int direction=0; direction<DIMENSIONS; direction++) {
     for (int orientation=0; orientation<2; orientation++) {
       const int faceIndex=2*direction+orientation;
@@ -866,8 +857,6 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
       }
     }
   }
-
-  assert(std::isfinite(cellDescription.getTimeStepSize()));
 
   if ( !tarch::la::equals(cellDescription.getNeighbourMergePerformed(),static_cast<signed char>(true)) && !ProfileUpdate ) {
     logError("updateSolution(...)","Not all ghost layers were copied to cell="<<cellDescription.toString());
@@ -897,8 +886,6 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
 
   double admissibleTimeStepSize=std::numeric_limits<double>::infinity();
 
-  assert(std::isfinite(cellDescription.getTimeStepSize()));
-
   // update
   solutionUpdate(solution,
 		 cellDescription.getOffset() + 0.5*cellDescription.getSize(),
@@ -906,8 +893,6 @@ void exahype::solvers::FiniteVolumesSolver::updateSolution(
 		 cellDescription.getTimeStamp(),
 		 cellDescription.getTimeStepSize(),
 		 admissibleTimeStepSize);
-
-  assert(std::isfinite(cellDescription.getTimeStepSize()));
 
   if ( !tarch::la::equals(cellDescription.getTimeStepSize(), 0.0) && tarch::la::smaller(admissibleTimeStepSize,cellDescription.getTimeStepSize()) ) {
     logWarning("updateSolution(...)","Finite volumes solver time step size harmed CFL condition. dt="<<
@@ -1345,11 +1330,10 @@ void exahype::solvers::FiniteVolumesSolver::mergeWithNeighbourData(
     Solver::BoundaryFaceInfo face(dest,src);
     CellDescription& cellDescription = cellInfo._FiniteVolumesCellDescriptions[element];
 
-    assert(DataHeap::getInstance().isValidIndex(cellDescription.getSolutionIndex()));
-    assert(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolutionIndex()));
+    assertion(DataHeap::getInstance().isValidIndex(cellDescription.getSolutionIndex()));
+    assertion(DataHeap::getInstance().isValidIndex(cellDescription.getPreviousSolutionIndex()));
 
-    logDebug("mergeWithNeighbourData(...)", "receive "<<DataMessagesPerNeighbourCommunication<<" arrays from rank="<<fromRank<<",x="<<barycentre<<",level="<<level
-                          <<cellDescription.toString());
+    logDebug("mergeWithNeighbourData(...)", "receive "<<DataMessagesPerNeighbourCommunication<<" arrays from rank="<<fromRank<<",x="<<barycentre<<",level="<<level);
 
     // TODO(Dominic): If anarchic time stepping, receive the time step too.
     //

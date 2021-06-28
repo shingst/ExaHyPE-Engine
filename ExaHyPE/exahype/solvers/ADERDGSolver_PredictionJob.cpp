@@ -73,43 +73,12 @@ bool exahype::solvers::ADERDGSolver::PredictionJob::run(bool runOnMasterThread) 
   auto stop = std::chrono::high_resolution_clock::now();
   auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
 
-  //std::stringstream stream;
   #if defined Picard
   exahype::reactive::STPStatsTracer::getInstance().writeTracingEventRunIterations(duration.count(), numberIterations, exahype::reactive::STPTraceKey::ADERDGPrediction);
   #else
   exahype::reactive::STPStatsTracer::getInstance().writeTracingEventRun(duration.count(), exahype::reactive::STPTraceKey::ADERDGPrediction);
   exahype::reactive::STPStatsTracer::getInstance().writeTracingEventIterations(numberIterations, exahype::reactive::STPTraceKey::ADERDGPrediction);
   #endif 
-//  int rank=tarch::parallel::Node::getInstance().getRank();
-//  #if defined SharedTBB
-//  stream<<rank<<"_";
-//  int threadId=tarch::multicore::Core::getInstance().getThreadNum();
-//  stream<<threadId;
-//  #endif
-//  stream<<".txt";
-//  std::string path=stream.str();
-//
-//  std::ofstream file;
-//  file.open(path,std::fstream::app);
-//  #if defined Picard
-//  file << duration.count() <<":"<<(numberIterations+1)<< std::endl;
-//  file.close();
-//  return false;
-//  #else
-//  file << duration.count() << std::endl;
-//  #endif
-//  file.close();
-//
-//  stream.str(std::string());
-//  stream<<"./TraceOutput/exahype_solvers_ADERDGSolver_PredictionJob_iterations_rank_";
-//  stream<<rank<<"_";
-//  stream<<threadId<<".txt";
-//  path=stream.str();
-//
-//  std::ofstream fileIter;
-//  fileIter.open(path,std::fstream::app);
-//  fileIter << (numberIterations+1) << std::endl;
-//  fileIter.close();
   #endif
 
   #if defined(OffloadingUseProfiler)

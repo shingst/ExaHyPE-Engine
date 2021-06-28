@@ -30,7 +30,7 @@
     "manual_pinning": false
   },
   "distributed_memory": {
-    "offloading_lb_strategy": "aggressiveHybrid",
+    "offloading_lb_strategy": "none",
     "offloading_input_file" : "",
     "offloading_progress" : "none", 
     "offloading_CCP_temperature" : 0,
@@ -50,7 +50,8 @@
     "generate_soft_errors" : "migratable_stp_tasks_overwrite",
     "check_mechanism" : "check_stps_with_violated_admissibility",
     "save_redundant_computations" : true,
-    "task_sharing" : "task_sharing_resilience_correction"
+    "task_sharing" : "task_sharing_resilience_correction",
+    "abs_error" : 0.001
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",

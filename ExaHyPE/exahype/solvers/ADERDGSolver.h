@@ -2791,8 +2791,13 @@ public:
    */
   void rollbackSolutionGlobally(const int solverNumber,CellInfo& cellInfo) const final override;
 
-  bool updateYieldsPhysicallyAdmissibleSolution(CellDescription& cellDescription);
+  void computeTemporarySolutionWithPredictor(CellDescription& cellDescription, double *luhWithPredictor);
 
+  bool predictorUpdateYieldsPhysicallyAdmissibleSolution(double *luhWithPredictor, CellDescription& cellDescription);
+
+  bool predictorUpdateYieldsAdmissibleTimeStep(double *luhWithPredictor, CellDescription& cellDescription, double maxToleratedRelativeFactor=0.1);
+
+  bool isPredictorAdmissible(CellDescription& cellDescription);
 
   ///////////////////////////////////
   // NEIGHBOUR

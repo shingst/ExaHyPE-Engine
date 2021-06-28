@@ -61,6 +61,8 @@ class exahype::reactive::ResilienceTools {
 
   int _injectionRank;
 
+  double _absError;
+
   public:
 
   static SoftErrorGenerationStrategy GenerationStrategy;
@@ -71,6 +73,8 @@ class exahype::reactive::ResilienceTools {
 
   ResilienceTools();
   static ResilienceTools& getInstance();
+
+  void configure(double absError);
 
   bool corruptDataIfActive(double *center, int dim, double t, double *array, size_t length);
 

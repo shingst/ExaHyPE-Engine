@@ -1792,9 +1792,48 @@ void exahype::solvers::ADERDGSolver::rollbackSolutionGlobally(const int solverNu
   }
 }
 
-bool exahype::solvers::ADERDGSolver::updateYieldsPhysicallyAdmissibleSolution(CellDescription& cellDescription) {
-  double *tmp_sol = new double[getDataPerCell()];
+void exahype::solvers::ADERDGSolver::computeTemporarySolutionWithPredictor(CellDescription& cellDescription, double *luhWithPredictor) {
   double *update = static_cast<double *> (cellDescription.getUpdate());
+
+  std::memcpy(luhWithPredictor, cellDescription.getSolution(), getDataPerCell()*sizeof(double));
+  addUpdateToSolution(luhWithPredictor, luhWithPredictor, update, cellDescription.getTimeStepSize());
+
+}
+
+bool exahype::solvers::ADERDGSolver::isPredictorAdmissible(CellDescription& cellDescription) {
+  double *luhtemp = new double[getDataPerCell()];
+
+  computeTemporarySolutionWithPredictor(cellDescription, luhtemp);
+  bool admissibleTimeStep =  predictorUpdateYieldsAdmissibleTimeStep(luhtemp, cellDescription);
+  bool admissibleUpdate = predictorUpdateYieldsPhysicallyAdmissibleSolution(luhtemp, cellDescription);
+
+  if(!admissibleTimeStep) {
+    logError("isPredictorAdmissible","Predictor would result in inadmissible time step size!");
+  }
+
+  if(!admissibleUpdate) {
+    logError("isPredictorAdmissible","Predictor would result in inadmissible update!");
+  }
+
+  delete[] luhtemp;
+  return admissibleTimeStep && admissibleUpdate;
+}
+
+bool exahype::solvers::ADERDGSolver::predictorUpdateYieldsAdmissibleTimeStep(double *luhWithPredictor, CellDescription& cellDescription, double maxToleratedRelativeChange) {
+  double admissibleTimeStepSize = stableTimeStepSize(luhWithPredictor, cellDescription.getSize());
+
+  if(
+      (std::abs(admissibleTimeStepSize-cellDescription.getTimeStepSize())/cellDescription.getTimeStepSize())
+      >maxToleratedRelativeChange
+  ) {
+    return false;
+  }
+  else {
+    return true;
+  }
+}
+
+bool exahype::solvers::ADERDGSolver::predictorUpdateYieldsPhysicallyAdmissibleSolution(double *luhWithPredictor, CellDescription& cellDescription) {
 
   double* observablesMin = nullptr;
   double* observablesMax = nullptr;
@@ -1805,17 +1844,13 @@ bool exahype::solvers::ADERDGSolver::updateYieldsPhysicallyAdmissibleSolution(Ce
     observablesMax = static_cast<double*>(cellDescription.getSolutionMax());
   }
 
-  std::memcpy(tmp_sol, cellDescription.getSolution(), getDataPerCell()*sizeof(double));
-  addUpdateToSolution(tmp_sol, tmp_sol, update, cellDescription.getTimeStepSize());
-
   bool isAdmissible = isPhysicallyAdmissible(
-          tmp_sol,
+          luhWithPredictor,
           observablesMin,observablesMax,
           cellDescription.getRefinementStatus()>=_minRefinementStatusForTroubledCell,
           cellDescription.getOffset()+0.5*cellDescription.getSize(),cellDescription.getSize(),
           cellDescription.getTimeStamp());
 
-  delete[] tmp_sol;
   return isAdmissible;
 }
 

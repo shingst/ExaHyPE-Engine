@@ -15,7 +15,7 @@
 
 #include <cmath>
 
-#include "../../../Peano/mpibalancing/HotspotBalancing.h"
+#include "mpibalancing/HotspotBalancing.h"
 
 #include "exahype/records/RepositoryState.h"
 #include "exahype/repositories/Repository.h"
@@ -288,8 +288,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     _parser.invalidate();
   }
 
-  exahype::reactive::ReactiveContext::getInstance(); //fixme: always collectively (all MPI procs) call getInstance in order
-                                                       // init communicators!
+  exahype::reactive::ReactiveContext::getInstance(); //fixme: always collectively (all MPI procs) call getInstance in order to init communicators!
 
   ///
   /// Configuration of reactive load balancing + task sharing
@@ -338,13 +337,6 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
 #endif
    }
 
-    //always use offloading analyser
-    //Todo: this will disable the Peano default performance analyser, need to re-add it somehow
-    #if defined(PerformanceAnalysis)
-    logWarning("initDistributeMemoryConfiguration","The default Peano performance analyser is disabled, as the reactive extensions require their own analyser and Peano only supports one analyser!");
-    #endif
-    peano::performanceanalysis::Analysis::getInstance().setDevice(&exahype::reactive::OffloadingAnalyser::getInstance());
-
     if(_parser.compareSoftErrorGenerationStrategy("no")){
       exahype::reactive::ResilienceTools::setSoftErrorGenerationStrategy(exahype::reactive::ResilienceTools::SoftErrorGenerationStrategy::None);
     }
@@ -353,9 +345,11 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     }
     else if (_parser.compareSoftErrorGenerationStrategy("migratable_stp_tasks_overwrite")) {
       exahype::reactive::ResilienceTools::setSoftErrorGenerationStrategy(exahype::reactive::ResilienceTools::SoftErrorGenerationStrategy::Overwrite);
+      exahype::reactive::ResilienceTools::getInstance().configure(_parser.getAbsErrorForHardcodedInjection());
     }
     else if (_parser.compareSoftErrorGenerationStrategy("migratable_stp_tasks_overwrite_hardcoded")) {
       exahype::reactive::ResilienceTools::setSoftErrorGenerationStrategy(exahype::reactive::ResilienceTools::SoftErrorGenerationStrategy::OverwriteHardcoded);
+      exahype::reactive::ResilienceTools::getInstance().configure(_parser.getAbsErrorForHardcodedInjection());
     }
     else{
       logError("initDistributedMemoryConfiguration()", "no valid soft error generation strategy specified");
@@ -377,6 +371,12 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
   if (_parser.isValid()) {
     exahype::parser::Parser::OffloadingStrategy selectedStrategy = _parser.getOffloadingStrategy();
     if(selectedStrategy!=exahype::parser::Parser::OffloadingStrategy::None)  {
+      //always use offloading analyser
+      //Todo: this will disable the Peano default performance analyser, need to re-add it somehow
+      #if defined(PerformanceAnalysis)
+      logWarning("initDistributeMemoryConfiguration","The default Peano performance analyser is disabled, as the reactive extensions require their own analyser and Peano only supports one analyser!");
+      #endif
+      peano::performanceanalysis::Analysis::getInstance().setDevice(&exahype::reactive::OffloadingAnalyser::getInstance());
 
       if(exahype::solvers::Solver::allSolversUseTimeSteppingScheme(exahype::solvers::Solver::TimeStepping::GlobalFixed)) {
         logWarning("initDistributedMemoryConfiguration()", "You are using global fixed time stepping which is not interoperable with reactive task offloading yet. This might not work as expected.");
@@ -392,8 +392,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
       _parser.invalidate();
 #endif
       exahype::reactive::OffloadingAnalyser::getInstance().enable(true);
-      // Create new MPI communicators + progress engine for offloading related MPI communication
-      //exahype::reactive::OffloadingManager::getInstance().initialize();
+
 #if defined(SharedTBB)
       exahype::reactive::OffloadingProgressService::getInstance().enable();
 #endif
@@ -461,12 +460,6 @@ void exahype::runners::Runner::shutdownDistributedMemoryConfiguration() {
   SCOREP_USER_REGION( (std::string("exahype::runners::Runner::shutdownDistributedMemoryConfiguration")).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
 #ifdef Parallel
   tarch::parallel::NodePool::getInstance().terminate();
-
-/*  if(_parser.getOffloadingStrategy()!=exahype::parser::Parser::OffloadingStrategy::None
-      || _parser.getResilienceStrategy()!=exahype::parser::Parser::ResilienceStrategy::None) {
-    exahype::reactive::OffloadingManager::getInstance().destroy();
-    logInfo("shutdownDistributedMemoryConfiguration()","destroyed MPI communicators + progress engine");
-  }*/
   exahype::repositories::RepositoryFactory::getInstance().shutdownAllParallelDatatypes();
 #endif
 }
@@ -989,8 +982,8 @@ void exahype::runners::Runner::initHPCEnvironment() {
 
   #if defined(GenerateNoise)
   exahype::reactive::NoiseGenerator::getInstance().setStrategy(new exahype::reactive::NoiseGenerationStrategyChaseVictim(
-																 _parser.getNoiseGenerationFactor(),
-																 _parser.getNoiseBaseTime()));
+						 _parser.getNoiseGenerationFactor(),
+						 _parser.getNoiseBaseTime()));
   #endif
 
   #if defined(FileTrace)
@@ -1003,7 +996,7 @@ void exahype::runners::Runner::initHPCEnvironment() {
   //
   #ifdef USE_ITAC
   int ierr=0;
-  ierr=VT_funcdef("FusedTimeStep::noiseHandle"                            , VT_NOCLASS, &exahype::mappings::FusedTimeStep::noiseHandle                              ); assertion(ierr==0);
+  //ierr=VT_funcdef("FusedTimeStep::noiseHandle"                            , VT_NOCLASS, &exahype::mappings::FusedTimeStep::noiseHandle                              ); assertion(ierr==0);
   ierr=VT_funcdef("Empty::iterationHandle"                                , VT_NOCLASS, &exahype::mappings::Empty::iterationHandle                              ); assertion(ierr==0);
   ierr=VT_funcdef("Solver::waitUntilCompletedLastStepHandle"              , VT_NOCLASS, &exahype::solvers::Solver::waitUntilCompletedLastStepHandle             ); assertion(ierr==0);
   ierr=VT_funcdef("Solver::ensureAllJobsHaveTerminatedHandle"             , VT_NOCLASS, &exahype::solvers::Solver::ensureAllJobsHaveTerminatedHandle            ); assertion(ierr==0);
@@ -1016,18 +1009,6 @@ void exahype::runners::Runner::initHPCEnvironment() {
   ierr=VT_funcdef("ADERDGSolver::mergeNeighboursHandle"                   , VT_NOCLASS, &exahype::solvers::ADERDGSolver::mergeNeighboursHandle                  ); assertion(ierr==0);
   ierr=VT_funcdef("ADERDGSolver::prolongateFaceDataToVirtualCellHandle"   , VT_NOCLASS, &exahype::solvers::ADERDGSolver::prolongateFaceDataToVirtualCellHandle  ); assertion(ierr==0);
   ierr=VT_funcdef("ADERDGSolver::restrictToTopMostParentHandle"           , VT_NOCLASS, &exahype::solvers::ADERDGSolver::restrictToTopMostParentHandle          ); assertion(ierr==0);
-  //todo(Philipp): are all these still used?
-  ierr=VT_funcdef("ADERDGSolver::computeSTP"                              , VT_NOCLASS, &exahype::solvers::ADERDGSolver::event_stp                              ); assertion(ierr==0);
-  ierr=VT_funcdef("ADERDGSolver::computeSTPLocalReplica"                  , VT_NOCLASS, &exahype::solvers::ADERDGSolver::event_stp_local_replica                ); assertion(ierr==0);
-  ierr=VT_funcdef("ADERDGSolver::computeSTPRemoteReplica"                 , VT_NOCLASS, &exahype::solvers::ADERDGSolver::event_stp_remote                       ); assertion(ierr==0);
-  ierr=VT_funcdef("ADERDGSolver::offloadingManager"                       , VT_NOCLASS, &exahype::solvers::ADERDGSolver::event_offloadingManager                ); assertion(ierr==0);
-  ierr=VT_funcdef("ADERDGSolver::spawnSTP"                                , VT_NOCLASS, &exahype::solvers::ADERDGSolver::event_spawn                            ); assertion(ierr==0);
-  ierr=VT_funcdef("ADERDGSolver::initialSTP"                              , VT_NOCLASS, &exahype::solvers::ADERDGSolver::event_initial                          ); assertion(ierr==0);
-  ierr=VT_funcdef("ADERDGSolver::lock"                                    , VT_NOCLASS, &exahype::solvers::ADERDGSolver::event_lock                             ); assertion(ierr==0);
-  ierr=VT_funcdef("ADERDGSolver::memory"                                  , VT_NOCLASS, &exahype::solvers::ADERDGSolver::event_memory                           ); assertion(ierr==0);
-  ierr=VT_funcdef("ADERDGSolver::pack"                                    , VT_NOCLASS, &exahype::solvers::ADERDGSolver::event_pack                             ); assertion(ierr==0);
-  ierr=VT_funcdef("ADERDGSolver::offload"                                 , VT_NOCLASS, &exahype::solvers::ADERDGSolver::event_offload                          ); assertion(ierr==0);
-  ierr=VT_funcdef("ADERDGSolver::progress"                                , VT_NOCLASS, &exahype::solvers::ADERDGSolver::event_progress                         ); assertion(ierr==0)
   ierr=VT_funcdef("LimitingADERDGSolver::adjustSolutionHandle"            , VT_NOCLASS, &exahype::solvers::LimitingADERDGSolver::adjustSolutionHandle           ); assertion(ierr==0);
   ierr=VT_funcdef("LimitingADERDGSolver::fusedTimeStepBodyHandle"         , VT_NOCLASS, &exahype::solvers::LimitingADERDGSolver::fusedTimeStepBodyHandle        ); assertion(ierr==0);
   ierr=VT_funcdef("LimitingADERDGSolver::fusedTimeStepBodyHandleSkeleton" , VT_NOCLASS, &exahype::solvers::LimitingADERDGSolver::fusedTimeStepBodyHandleSkeleton); assertion(ierr==0);
@@ -1107,7 +1088,6 @@ int exahype::runners::Runner::run() {
       initDistributedMemoryConfiguration();
     if ( _parser.isValid() )
       initSharedMemoryConfiguration();
-
     if ( _parser.isValid() )
       initDataCompression();
     if ( _parser.isValid() )
@@ -1156,7 +1136,6 @@ int exahype::runners::Runner::run() {
     }
 
     logInfo("shutdownDistributedMemoryConfiguration()","stopped offloading manager");
-    //Todo(Philipp): print also with local recomp
     if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()!=exahype::reactive::ReactiveContext::ResilienceStrategy::None)
       exahype::reactive::ResilienceStatistics::getInstance().printStatistics();
   }
@@ -1168,12 +1147,8 @@ int exahype::runners::Runner::run() {
 
     if ( _parser.isValid() )
       shutdownSharedMemoryConfiguration();
-
-    logInfo("run()","shutdownSharedMemoryConfiguration");
-
     if ( _parser.isValid() )
       shutdownDistributedMemoryConfiguration();
-    logInfo("run()","shutdownDistributedMemoryConfiguration");
 
     shutdownHeaps();
 

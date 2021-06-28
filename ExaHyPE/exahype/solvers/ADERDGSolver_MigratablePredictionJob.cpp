@@ -818,7 +818,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::setSTPPotCorrupted
     
   bool violatedAdmCheck = false;                                                    
   if(exahype::reactive::ResilienceTools::CheckSTPsWithViolatedAdmissibility) {
-    violatedAdmCheck = !_solver.updateYieldsPhysicallyAdmissibleSolution(cellDescription);
+    violatedAdmCheck = !_solver.isPredictorAdmissible(cellDescription);
   }
 
   //trigger is set later if we are using limiter as a trigger

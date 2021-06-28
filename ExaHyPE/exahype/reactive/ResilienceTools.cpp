@@ -33,7 +33,7 @@ bool exahype::reactive::ResilienceTools::CheckFlipped;
 bool exahype::reactive::ResilienceTools::CheckSTPsWithViolatedAdmissibility;
 
 exahype::reactive::ResilienceTools::ResilienceTools()
- : _injectionInterval(1500),
+ : _injectionInterval(100),
    _numFlips(1),
    _cnt(1),
    _numFlipped(0),
@@ -41,7 +41,8 @@ exahype::reactive::ResilienceTools::ResilienceTools()
    _l1NormTol(0.0000001),
    _l2NormTol(0.0000001),
    _corruptionDetected(false),
-   _injectionRank(0)
+   _injectionRank(0),
+   _absError(0)
 {
   if(_injectionRank>=tarch::parallel::Node::getInstance().getNumberOfNodes()
      && GenerationStrategy!=SoftErrorGenerationStrategy::None) {
@@ -51,6 +52,10 @@ exahype::reactive::ResilienceTools::ResilienceTools()
 }
 
 exahype::reactive::ResilienceTools::~ResilienceTools() {}
+
+void exahype::reactive::ResilienceTools::configure(double absError) {
+  _absError = absError;
+}
 
 exahype::reactive::ResilienceTools& exahype::reactive::ResilienceTools::getInstance() {
   static ResilienceTools singleton;
@@ -113,7 +118,8 @@ bool exahype::reactive::ResilienceTools::overwriteRandomValueInArrayIfActive(dou
 
     double old_val = array[idx_array];
     //overwrite with "random number"
-    array[idx_array] = 8192; //std::numeric_limits<double>::max();
+    array[idx_array] += _absError;
+    //std::numeric_limits<double>::max();
     _numFlipped++;
 
     logError("overwriteDoubleIfActive()", "overwrite double value, pos = "<<idx_array<<" old ="<<old_val<<" new = "<<array[idx_array]);
@@ -145,8 +151,9 @@ bool exahype::reactive::ResilienceTools::overwriteHardcodedIfActive(double *cent
     double old_val = array[idx_array];
     //array[idx_array] = 0.1; //ADER-DG only
 
-    array[idx_array] = 20; //limiter SWE immediately
+    //array[idx_array] = 20; //limiter SWE immediately
     //array[idx_array] = 2; //limiter SWE later
+    array[idx_array] += _absError * array[idx_array];
     _numFlipped++;
 
     logError("overwriteDoubleIfActive()", "overwrite double value, pos = "<<idx_array<<" old ="<<old_val<<" new = "<<array[idx_array]
