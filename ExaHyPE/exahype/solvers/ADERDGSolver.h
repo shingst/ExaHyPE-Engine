@@ -2805,6 +2805,8 @@ public:
 
   double computePredictorConfidence(CellDescription& cellDescription);
 
+  double computeMaxAbsSecondDerivative(double *luh, CellDescription& cellDescription);
+
   ///////////////////////////////////
   // NEIGHBOUR
   ///////////////////////////////////

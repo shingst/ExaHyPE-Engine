@@ -51,7 +51,7 @@
     "check_mechanism" : "check_stps_with_violated_admissibility",
     "save_redundant_computations" : true,
     "task_sharing" : "task_sharing_resilience_correction",
-    "abs_error" : -0.000001,
+    "abs_error" : 0,
     "confidence_required" : 1.0
   },
   "optimisation": {
@@ -70,7 +70,7 @@
     {
       "type": "Limiting-ADER-DG",
       "name": "MySWESolver",
-      "order": 5,
+      "order": 2,
       "maximum_mesh_size": 0.5,
       "maximum_mesh_depth": 0,
       "time_stepping": "global",

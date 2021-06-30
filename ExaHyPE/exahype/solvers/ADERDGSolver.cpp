@@ -42,6 +42,7 @@
 #include "exahype/solvers/OutcomeDatabase.h"
 
 #include "kernels/KernelUtils.h"
+#include "kernels/aderdg/generic/c/computeGradients.cpph"
 
 #include "tarch/multicore/Jobs.h"
 #include "tarch/multicore/Core.h"
@@ -1815,6 +1816,12 @@ double exahype::solvers::ADERDGSolver::computePredictorConfidence(CellDescriptio
   //  logError("computePredictorConfidence","Predictor would result in inadmissible update!");
   //}
 
+  double previousMaxDer =  computeMaxAbsSecondDerivative(static_cast<double*>(cellDescription.getUpdate()), cellDescription);
+ //computeMaxAbsSecondDerivative(static_cast<double*>(cellDescription.getUpdate()), cellDescription);
+  double newMaxDer = computeMaxAbsSecondDerivative(luhtemp, cellDescription);
+
+  logError("computePredictorConfidence","scaling derivatives: "<<newMaxDer/previousMaxDer<< " previousMaxDer "<<previousMaxDer<<" newMaxDer "<<newMaxDer);
+
   delete[] luhtemp;
   return std::min(confTimeStep, confAdm);
 }
@@ -1844,6 +1851,27 @@ double exahype::solvers::ADERDGSolver::computePredictorUpdateConfAdmissibility(d
           cellDescription.getTimeStamp());
 
   return isAdmissible ? 1 : 0;
+}
+
+double exahype::solvers::ADERDGSolver::computeMaxAbsSecondDerivative(double *luh,  CellDescription& cellDescription) {
+  double *tmp = new double[getDataPerCell()];
+  std::fill_n(tmp, getDataPerCell(), 0);
+
+  double maxAbs = std::numeric_limits<double>::min();
+  kernels::aderdg::generic::c::computeSecondDerivatives(tmp, luh, 0, _nodesPerCoordinateAxis-1, getNumberOfVariables()+getNumberOfParameters(), cellDescription.getSize());
+  maxAbs = std::max(maxAbs, std::abs(*std::max_element(tmp, tmp+getDataPerCell())));
+
+  std::fill_n(tmp, getDataPerCell(), 0);
+  kernels::aderdg::generic::c::computeSecondDerivatives(tmp, luh, 1, _nodesPerCoordinateAxis-1, getNumberOfVariables()+getNumberOfParameters(), cellDescription.getSize());
+  maxAbs = std::max(maxAbs, std::abs(*std::max_element(tmp, tmp+getDataPerCell())));
+
+#if DIMENSIONS==3
+  std::fill_n(tmp, getDataPerCell(), 0);
+  kernels::aderdg::generic::c::computeSecondDerivatives(tmp, luh, 2, _nodesPerCoordinateAxis-1, getNumberOfVariables()+getNumberOfParameters(), cellDescription.getSize());
+  maxAbs = std::max(maxAbs, std::abs(*std::max_element(tmp, tmp+getDataPerCell())));
+#endif
+
+  return maxAbs;
 }
 
 void exahype::solvers::ADERDGSolver::mergeWithNeighbourMetadata(
