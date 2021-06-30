@@ -1807,13 +1807,13 @@ double exahype::solvers::ADERDGSolver::computePredictorConfidence(CellDescriptio
   double confTimeStep =  computePredictorUpdateConfidenceTimeStep(luhtemp, cellDescription);
   double confAdm = computePredictorUpdateConfAdmissibility(luhtemp, cellDescription);
 
-  if(!exahype::reactive::ResilienceTools::getInstance().isTrustworthy(confTimeStep)) {
-    logError("computePredictorConfidence","Predictor would result in inadmissible time step size! ConfTimeStep = "<<confTimeStep);
-  }
+  //if(!exahype::reactive::ResilienceTools::getInstance().isTrustworthy(confTimeStep)) {
+  //  logError("computePredictorConfidence","Predictor would result in inadmissible time step size! ConfTimeStep = "<<confTimeStep);
+  //}
 
-  if(!exahype::reactive::ResilienceTools::getInstance().isTrustworthy(confAdm)) {
-    logError("computePredictorConfidence","Predictor would result in inadmissible update!");
-  }
+  //if(!exahype::reactive::ResilienceTools::getInstance().isTrustworthy(confAdm)) {
+  //  logError("computePredictorConfidence","Predictor would result in inadmissible update!");
+  //}
 
   delete[] luhtemp;
   return std::min(confTimeStep, confAdm);

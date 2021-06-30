@@ -11,6 +11,10 @@ timestep_pattern=re.compile("( [0-9]*\.[0-9]*).*step.*team\ =\ ([0-9]).*t_min.*"
 #162.815577   [i01r01c03s09.sng.lrz.de],rank:0, core:25, tid:0 info         exahype::offloading::ReplicationStatistics::printStatistics  team 1 spawned tasks = 156250 executed tasks = 68468 saved tasks =  78335 sent tasks = 68395 received tasks = 85139 received keys= 0 sent keys= 0 declined tasks = 0 late tasks = 3085
 replication_pattern=re.compile("( [0-9]*\.[0-9]*).*ReplicationStatistics::printStatistics.*team\ ([0-9]).*saved tasks =  ([0-9]*) .*")
 
+# 0.536263     [login02],rank:0, core:2, tid:0 error        exahype::reactive::ResilienceTools::overwriteDoubleIfActive() overwrite double value, pos = 0 old =0 new = -0.001 (file:/dss/dsshome1/02/di57zoh3/Codes/ExaHyPE-Engine/./ExaHyPE/exahype/reactive/ResilienceTools.cpp,line:131)
+error_pattern=re.compile("( [0-9]*\.[0-9]*).*ResilienceTools::overwriteDoubleIfActive().*old =([0-9]*\.(0-9]*).*new = ([0-9]*\.[0-9]*) .*")
+# 0.536293     [login02],rank:0, core:2, tid:0 error        exahype::solvers::ADERDGSolver::corruptIfActive         Has corrupted STP job  cellDescriptionIndex = 471 center[0] = 5.640000 center[1] = 0.600000 time stamp = 0.000000 time step = 0.077104 element = 0 origin = 0 confidence = 0.000000 isCorrupted = 1 (file:/dss/dsshome1/02/di57zoh3/Codes/ExaHyPE-Engine/./ExaHyPE/exahype/solvers/ADERDGSolver_MigratablePredictionJob.cpp,line:379)
+# 0.536309     [login02],rank:0, core:2, tid:0 error        exahype::solvers::ADERDGSolver::setConfidence           Celldesc =471 confidence 1 (file:/dss/dsshome1/02/di57zoh3/Codes/ExaHyPE-Engine/./ExaHyPE/exahype/solvers/ADERDGSolver_MigratablePredictionJob.cpp,line:624)
 
 def parseFile(filename, teams):
   dict={}

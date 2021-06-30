@@ -395,7 +395,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::copyOutcome(Migrat
   double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
 
   if(outcome->_metadata._isCorrupted) {
-    logError("copyOutcome","Error: we're using a corrupted outcome! Outcome"<<outcome->_metadata.to_string()); assert(false);
+    logError("copyOutcome","Error: we're using a corrupted outcome! Outcome"<<outcome->_metadata.to_string()); //assert(false);
   }
 
   assertion(outcome!=nullptr);
@@ -608,11 +608,20 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::setConfidence(bool
     }
     else if(exahype::reactive::ResilienceTools::CheckSTPsWithViolatedAdmissibility) {
       _confidence = _solver.computePredictorConfidence(cellDescription);
+      /*if(flipped) {
+        double *luhtemp = new double[_solver.getDataPerCell()];
+
+        _solver.computeTemporarySolutionWithPredictor(cellDescription, luhtemp);
+        double confTimeStep =  _solver.computePredictorUpdateConfidenceTimeStep(luhtemp, cellDescription);
+        double admissibleTimeStepSize = _solver.stableTimeStepSize(luhtemp, cellDescription.getSize());
+        
+        logError("setConfidence()","has flipped conf time step "<<confTimeStep<<std::setprecision(30)<<" diff="<<admissibleTimeStepSize-cellDescription.getTimeStepSize());
+      }*/
     }
   }
 
   if(flipped)
-    logError("setConfidence", "Celldesc ="<<_cellDescriptionsIndex<<" confidence "<<_confidence);
+    logError("setConfidence", "Celldesc ="<<_cellDescriptionsIndex<<" confidence "<<std::setprecision(30)<<_confidence);
 }
 
 bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryToFindAndExtractEquivalentSharedOutcome(bool previous, DeliveryStatus &status, MigratablePredictionJobData **outcome) {

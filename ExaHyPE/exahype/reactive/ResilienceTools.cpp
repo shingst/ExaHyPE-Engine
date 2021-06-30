@@ -23,6 +23,7 @@
 #include "teaMPI.h"
 #endif
 
+#include <iomanip>
 
 tarch::logging::Log exahype::reactive::ResilienceTools::_log("exahype::reactive::ResilienceTools");
 
@@ -128,7 +129,7 @@ bool exahype::reactive::ResilienceTools::overwriteRandomValueInArrayIfActive(dou
     //std::numeric_limits<double>::max();
     _numFlipped++;
 
-    logError("overwriteDoubleIfActive()", "overwrite double value, pos = "<<idx_array<<" old ="<<old_val<<" new = "<<array[idx_array]);
+    logError("overwriteDoubleIfActive()", "overwrite double value, pos = "<<idx_array<<std::setprecision(30)<<" old ="<<old_val<<" new = "<<array[idx_array]);
     exahype::reactive::ResilienceStatistics::getInstance().notifyInjectedError();
     return true;
   }

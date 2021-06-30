@@ -19,7 +19,7 @@
     ]
   },
   "shared_memory": {
-    "cores": 3,
+    "cores": 2,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
     "background_job_processing": "job_system",
@@ -51,8 +51,8 @@
     "check_mechanism" : "check_stps_with_violated_admissibility",
     "save_redundant_computations" : true,
     "task_sharing" : "task_sharing_resilience_correction",
-    "abs_error" : 0.001,
-    "confidence_required" : 0.999
+    "abs_error" : -0.000001,
+    "confidence_required" : 1.0
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",
@@ -126,7 +126,7 @@
         "epsilon": 0.0001,
         "scenario": 5
       },
-      "_plotters": [
+      "plotters": [
         {
           "type": "vtu::Cartesian::cells::limited::ascii",
           "name": "ConservedWriter",
