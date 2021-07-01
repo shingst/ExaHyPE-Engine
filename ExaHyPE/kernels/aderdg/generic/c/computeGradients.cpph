@@ -47,26 +47,26 @@ inline void computeSecondDerivatives(double *secondDerivatives, const double* co
   for(int z = 0; z<basisZ; z++) {
     for(int y = 0; y<basisY; y++) {
       for(int x = 0; x<basisX; x++) {
-        for(int v = 3; v<numberOfData; v++){ //test
+        for(int v = 0; v<numberOfData; v++){ 
           //x direction
           if(direction==0) { //if can be taken out for optimization
             for(int n = 0; n<basisSize; n++) {
               secondDerivatives[idx_derivative(z,y,x,v)] += (1/(sizeOfPatch[0]*sizeOfPatch[0])) * u[idx_u(z,y,n,v)] *
-                                                          kernels::legendre::basisFunctionSecondDerivative[order][n](kernels::legendre::nodes[order][n]);
+                                                          kernels::legendre::basisFunctionSecondDerivative[order][n](kernels::legendre::nodes[order][x]);
             }
           }
           //y direction
           else if (direction==1) {
             for(int n = 0; n<basisSize; n++) {
               secondDerivatives[idx_derivative(z,y,x,v)] += (1/(sizeOfPatch[1]*sizeOfPatch[1])) * u[idx_u(z,n,x,v)] *
-                                                          kernels::legendre::basisFunctionSecondDerivative[order][n](kernels::legendre::nodes[order][n]);
+                                                          kernels::legendre::basisFunctionSecondDerivative[order][n](kernels::legendre::nodes[order][y]);
             }
           }
           //z direction
           else if (direction==2) {
             for(int n = 0; n<basisSize; n++) {
               secondDerivatives[idx_derivative(z,y,x,v)] += (1/(sizeOfPatch[2]*sizeOfPatch[2])) * u[idx_u(n,y,x,v)] *
-                                                          kernels::legendre::basisFunctionSecondDerivative[order][n](kernels::legendre::nodes[order][n]);
+                                                          kernels::legendre::basisFunctionSecondDerivative[order][n](kernels::legendre::nodes[order][z]);
             }
           }
         }

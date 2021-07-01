@@ -48,10 +48,11 @@
     "stp_tracing_frequency" : 10
   },
   "resilience" : {
-    "generate_soft_errors" : "no",
+    "generate_soft_errors" : "migratable_stp_tasks_overwrite",
     "check_mechanism" : "check_stps_with_violated_admissibility",
     "save_redundant_computations" : true,
-    "task_sharing" : "task_sharing_resilience_correction"
+    "task_sharing" : "task_sharing_resilience_correction",
+    "abs_error" : 0.1
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",

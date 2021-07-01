@@ -133,7 +133,7 @@ void InitialData::SeaAtRestProblem(const double* const x,double* Q) {
     vars.h() = 2.0;
     vars.hu()= 0.0;
     vars.hv()= 0.0;
-    vars.b() = x[0]*x[0];
+    vars.b() = 0;
   //}
 }
 

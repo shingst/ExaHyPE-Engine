@@ -620,7 +620,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::setConfidence(bool
     }
   }
 
-  if(flipped)
+  if(flipped || !exahype::reactive::ResilienceTools::getInstance().isTrustworthy(_confidence))
     logError("setConfidence", "Celldesc ="<<_cellDescriptionsIndex<<" confidence "<<std::setprecision(30)<<_confidence);
 }
 

@@ -1805,7 +1805,7 @@ double exahype::solvers::ADERDGSolver::computePredictorConfidence(CellDescriptio
   double *luhtemp = new double[getDataPerCell()];
 
   computeTemporarySolutionWithPredictor(cellDescription, luhtemp);
-  double confTimeStep =  computePredictorUpdateConfidenceTimeStep(luhtemp, cellDescription);
+  double confTimeStep =  1 ; //  computePredictorUpdateConfidenceTimeStep(luhtemp, cellDescription);
   double confAdm = computePredictorUpdateConfAdmissibility(luhtemp, cellDescription);
 
   //if(!exahype::reactive::ResilienceTools::getInstance().isTrustworthy(confTimeStep)) {
@@ -1816,14 +1816,20 @@ double exahype::solvers::ADERDGSolver::computePredictorConfidence(CellDescriptio
   //  logError("computePredictorConfidence","Predictor would result in inadmissible update!");
   //}
 
-  double previousMaxDer =  computeMaxAbsSecondDerivative(static_cast<double*>(cellDescription.getUpdate()), cellDescription);
+  double previousMaxDer =  computeMaxAbsSecondDerivative(static_cast<double*>(cellDescription.getSolution()), cellDescription);
  //computeMaxAbsSecondDerivative(static_cast<double*>(cellDescription.getUpdate()), cellDescription);
   double newMaxDer = computeMaxAbsSecondDerivative(luhtemp, cellDescription);
 
-  logError("computePredictorConfidence","scaling derivatives: "<<newMaxDer/previousMaxDer<< " previousMaxDer "<<previousMaxDer<<" newMaxDer "<<newMaxDer);
+
+  double calibrated = previousMaxDer>1.0 ? newMaxDer / previousMaxDer : previousMaxDer;
+  //if(!exahype::reactive::ResilienceTools::getInstance().isTrustworthy(confTimeStep))
+  //if(calibrated>1.0)
+   //logError("computePredictorConfidence","scaling derivatives: "<<newMaxDer/previousMaxDer<< " previousMaxDer "<<previousMaxDer<<" newMaxDer "<<newMaxDer<<" e_calibrated "<<calibrated);
+
+  double confDerivatives = (newMaxDer/previousMaxDer)>1 ? 0: 1;
 
   delete[] luhtemp;
-  return std::min(confTimeStep, confAdm);
+  return std::min(confTimeStep, std::min(confAdm, confDerivatives));
 }
 
 double exahype::solvers::ADERDGSolver::computePredictorUpdateConfidenceTimeStep(double *luhWithPredictor, CellDescription& cellDescription) {
