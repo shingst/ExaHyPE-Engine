@@ -1100,6 +1100,7 @@ int exahype::solvers::ADERDGSolver::predictionAndVolumeIntegralBody(
 
   //if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()==exahype::reactive::ReactiveContext::ResilienceStrategy::None)
   exahype::reactive::ResilienceTools::getInstance().corruptDataIfActive(
+                                    luh,
                                     (cellDescription.getOffset()+0.5*cellDescription.getSize()).data(),
                                     DIMENSIONS, 
                                     predictorTimeStamp,
@@ -1816,17 +1817,7 @@ double exahype::solvers::ADERDGSolver::computePredictorConfidence(CellDescriptio
   //  logError("computePredictorConfidence","Predictor would result in inadmissible update!");
   //}
 
-  double previousMaxDer =  computeMaxAbsSecondDerivative(static_cast<double*>(cellDescription.getSolution()), cellDescription);
- //computeMaxAbsSecondDerivative(static_cast<double*>(cellDescription.getUpdate()), cellDescription);
-  double newMaxDer = computeMaxAbsSecondDerivative(luhtemp, cellDescription);
-
-
-  double calibrated = previousMaxDer>1.0 ? newMaxDer / previousMaxDer : previousMaxDer;
-  //if(!exahype::reactive::ResilienceTools::getInstance().isTrustworthy(confTimeStep))
-  //if(calibrated>1.0)
-   //logError("computePredictorConfidence","scaling derivatives: "<<newMaxDer/previousMaxDer<< " previousMaxDer "<<previousMaxDer<<" newMaxDer "<<newMaxDer<<" e_calibrated "<<calibrated);
-
-  double confDerivatives = (newMaxDer/previousMaxDer)>1 ? 0: 1;
+  double confDerivatives = computePredictorUpdateConfDerivatives(luhtemp, cellDescription);
 
   delete[] luhtemp;
   return std::min(confTimeStep, std::min(confAdm, confDerivatives));
@@ -1859,25 +1850,57 @@ double exahype::solvers::ADERDGSolver::computePredictorUpdateConfAdmissibility(d
   return isAdmissible ? 1 : 0;
 }
 
-double exahype::solvers::ADERDGSolver::computeMaxAbsSecondDerivative(double *luh,  CellDescription& cellDescription) {
-  double *tmp = new double[getDataPerCell()];
-  std::fill_n(tmp, getDataPerCell(), 0);
+double exahype::solvers::ADERDGSolver::computePredictorUpdateConfDerivatives(double *luhWithPredictor, CellDescription& cellDescription) {
 
-  double maxAbs = std::numeric_limits<double>::min();
-  kernels::aderdg::generic::c::computeSecondDerivatives(tmp, luh, 0, _nodesPerCoordinateAxis-1, getNumberOfVariables()+getNumberOfParameters(), cellDescription.getSize());
-  maxAbs = std::max(maxAbs, std::abs(*std::max_element(tmp, tmp+getDataPerCell())));
+  double *luh = static_cast<double*> (cellDescription.getSolution());
 
-  std::fill_n(tmp, getDataPerCell(), 0);
-  kernels::aderdg::generic::c::computeSecondDerivatives(tmp, luh, 1, _nodesPerCoordinateAxis-1, getNumberOfVariables()+getNumberOfParameters(), cellDescription.getSize());
-  maxAbs = std::max(maxAbs, std::abs(*std::max_element(tmp, tmp+getDataPerCell())));
+  double *maxDerivativesPerComponentOld  = new double[getNumberOfVariables()+getNumberOfParameters()];
+  double *maxDerivativesPerComponentNew  = new double[getNumberOfVariables()+getNumberOfParameters()];
+  double *maxDerivativeScaling  = new double[getNumberOfVariables()+getNumberOfParameters()];
 
-#if DIMENSIONS==3
-  std::fill_n(tmp, getDataPerCell(), 0);
-  kernels::aderdg::generic::c::computeSecondDerivatives(tmp, luh, 2, _nodesPerCoordinateAxis-1, getNumberOfVariables()+getNumberOfParameters(), cellDescription.getSize());
-  maxAbs = std::max(maxAbs, std::abs(*std::max_element(tmp, tmp+getDataPerCell())));
-#endif
+  std::fill_n(maxDerivativeScaling, getNumberOfVariables()+getNumberOfParameters(), std::numeric_limits<double>::min());
 
-  return maxAbs;
+  for(int i=0; i<DIMENSIONS; i++) {
+    computeMaxAbsSecondDerivativeDirection(luh, cellDescription, i, maxDerivativesPerComponentOld);
+    computeMaxAbsSecondDerivativeDirection(luhWithPredictor, cellDescription, i, maxDerivativesPerComponentNew);
+
+    for(int j=0; j<getNumberOfVariables()+getNumberOfParameters(); j++) {
+      //logError("computePredictorUpdateConfDerivatives", "derivative for direction i="<<i<<"component j="<<j
+      //                                              <<" maxDerivativesPerComponentOld="<<maxDerivativesPerComponentOld[j]
+      //                                              <<" maxDerivativesPerComponentNew="<<maxDerivativesPerComponentNew[j]);
+
+     // double derivativeScaling = (maxDerivativesPerComponentNew[j]>0.00000001) ?  maxDerivativesPerComponentNew[j]/maxDerivativesPerComponentOld[j] : maxDerivativesPerComponentOld[j];
+      double derivativeScaling =  maxDerivativesPerComponentNew[j]/maxDerivativesPerComponentOld[j];
+      if(maxDerivativeScaling[j]<derivativeScaling)
+        maxDerivativeScaling[j] = derivativeScaling;
+    }
+  }
+
+  double maxScaling = std::numeric_limits<double>::min();
+
+  for(int j=0; j<getNumberOfVariables()+getNumberOfParameters(); j++) {
+    //logError("computePredictorUpdateConfDerivatives", "scaling for component="<<j<<"="<<maxDerivativeScaling[j]);
+    if(maxScaling<maxDerivativeScaling[j])
+      maxScaling = maxDerivativeScaling[j];
+  }
+
+  delete [] maxDerivativesPerComponentOld;
+  delete [] maxDerivativesPerComponentNew;
+
+  maxScaling = std::min(maxScaling, 1e06);
+
+  return maxScaling> 100 ? (1-(maxScaling/1e06)) : 1;
+}
+
+void exahype::solvers::ADERDGSolver::computeMaxAbsSecondDerivativeDirection(double *luh,  CellDescription& cellDescription, int direction, double *maxAbsDerivativesComponents) {
+
+  kernels::aderdg::generic::c::computeMaxAbsSecondDerivativesPerComponent(maxAbsDerivativesComponents,
+                                                        luh,
+                                                        direction,
+                                                        _nodesPerCoordinateAxis-1,
+                                                        getNumberOfVariables()+getNumberOfParameters(),
+                                                        cellDescription.getSize());
+
 }
 
 void exahype::solvers::ADERDGSolver::mergeWithNeighbourMetadata(
@@ -3756,7 +3779,9 @@ void exahype::solvers::ADERDGSolver::releasePendingOutcomeAndShare(int cellDescr
 void exahype::solvers::ADERDGSolver::correctCellDescriptionWithOutcome(CellDescription& cellDescription, MigratablePredictionJobData *outcome) {
   double *lduh = static_cast<double*>(cellDescription.getUpdate());
   double *lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
+#if OffloadingGradQhbnd
   double *lGradQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictorGradient());
+#endif
   double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
 
   //correct here
@@ -3775,7 +3800,8 @@ void exahype::solvers::ADERDGSolver::correctCellDescriptionWithOutcome(CellDescr
 exahype::solvers::ADERDGSolver::SDCCheckResult exahype::solvers::ADERDGSolver::checkCellDescriptionAgainstOutcome(CellDescription& cellDescription,
      MigratablePredictionJobData *data,
      double predictorTimeStamp,
-     double predictorTimeStepSize){
+     double predictorTimeStepSize,
+     double myConfidence){
   double *lduh = static_cast<double*>(cellDescription.getUpdate());
   double *lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
 #if defined(OffloadingGradQhbnd)
@@ -3824,10 +3850,13 @@ exahype::solvers::ADERDGSolver::SDCCheckResult exahype::solvers::ADERDGSolver::c
   exahype::reactive::ResilienceStatistics::getInstance().notifyDoubleCheckedTask();
 
   if(!equal) {
-    if(!exahype::reactive::ResilienceTools::getInstance().isTrustworthy(data->_metadata._confidence))
-      return SDCCheckResult::UncorrectableSoftError; //don't know which outcome is sane
-    else {
+    if(data->_metadata._confidence==1)
       return SDCCheckResult::OutcomeSaneAsTriggerNotActive; //we assume that the trigger is good enough to tell us that the outcome is ok
+    else if (data->_metadata._confidence>myConfidence) {
+      return SDCCheckResult::OutcomeHasHigherConfidence;
+     }
+    else { 
+      return SDCCheckResult::UncorrectableSoftError; //don't know which outcome can be used
     }
   }
   else

@@ -1272,11 +1272,12 @@ private:
       bool run(bool calledFromMaster) override;
   };
 
-  enum class SDCCheckResult {NoCorruption, OutcomeSaneAsTriggerNotActive, UncorrectableSoftError};
+  enum class SDCCheckResult {NoCorruption, OutcomeSaneAsTriggerNotActive, OutcomeHasHigherConfidence, UncorrectableSoftError};
   void correctCellDescriptionWithOutcome(CellDescription& cellDescription, MigratablePredictionJobData *outcome);
   SDCCheckResult checkCellDescriptionAgainstOutcome(CellDescription& cellDescription, MigratablePredictionJobData *outcome,
                                                     double predictorTimeStamp,
-                                                    double predictorTimeStepSize);
+                                                    double predictorTimeStepSize,
+                                                    double confidence);
 
   class CheckAndCorrectSolutionJob : public tarch::multicore::jobs::Job {
 
@@ -1285,6 +1286,7 @@ private:
        CellDescription&            _solverPatch;
        const double                _predictorTimeStamp;
        const double                _predictorTimeStepSize;
+       const double                _confidence;
 
        bool run(bool runOnMasterThread) override;
        SDCCheckResult checkAgainstOutcome(MigratablePredictionJobData *outcome);
@@ -1297,7 +1299,8 @@ private:
          ADERDGSolver&     solver,
          CellDescription& solverPatch,
          const double predictorTimeStamp,
-         const double predictorTimeStepSize
+         const double predictorTimeStepSize,
+         const double confidence
        );
 
        CheckAndCorrectSolutionJob(const CheckAndCorrectSolutionJob& stp) = delete;
@@ -2803,9 +2806,11 @@ public:
 
   double computePredictorUpdateConfidenceTimeStep(double *luhWithPredictor, CellDescription& cellDescription);
 
+  double computePredictorUpdateConfDerivatives(double *luhWithPredictor, CellDescription& cellDescription);
+
   double computePredictorConfidence(CellDescription& cellDescription);
 
-  double computeMaxAbsSecondDerivative(double *luh, CellDescription& cellDescription);
+  void computeMaxAbsSecondDerivativeDirection(double *luh,  CellDescription& cellDescription, int direction, double *tmpDerivativesComponents);
 
   ///////////////////////////////////
   // NEIGHBOUR

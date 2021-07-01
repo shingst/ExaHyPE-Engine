@@ -246,13 +246,14 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     setConfidence(hasFlipped);
 
     if(needToCheckThisSTP(hasComputed)) {
-      switch(_solver.checkCellDescriptionAgainstOutcome(getCellDescription(_cellDescriptionsIndex,_element), outcome, _predictorTimeStamp, _predictorTimeStepSize)) {
+      switch(_solver.checkCellDescriptionAgainstOutcome(getCellDescription(_cellDescriptionsIndex,_element), outcome, _predictorTimeStamp, _predictorTimeStepSize, _confidence)) {
         case SDCCheckResult::NoCorruption:
           break;
-        case SDCCheckResult::UncorrectableSoftError:
-          logError("handleLocalExecution", "Soft error detected in job execution: "<<to_string());
-          logError("handleLocalExecution", "Detected an uncorrectable soft error, but I am continuing..");
-          break;
+        case SDCCheckResult::OutcomeHasHigherConfidence:
+          logError("handleLocalExecution", "I'm correcting with an outcome that has higher confidence!"
+                                "My confidence = "<<_confidence<<
+              " other outcome's confidence = "<<outcome->_metadata._confidence);
+           //no break!
         case SDCCheckResult::OutcomeSaneAsTriggerNotActive:
           logError("handleLocalExecution", "Soft error detected in job execution: "<<to_string());
           if( exahype::reactive::ReactiveContext::getResilienceStrategy()
@@ -262,6 +263,12 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
           else {
             logError("handleLocalExecution", "Could have corrected soft error but correction is not enabled. Continuing...");
           }
+          break;
+        case SDCCheckResult::UncorrectableSoftError:
+          logError("handleLocalExecution", "Soft error detected in job execution: "<<to_string());
+          logError("handleLocalExecution", "Detected an uncorrectable soft error, but I am continuing..");
+          logError("handleLocalExecution", "My confidence = "<<_confidence<<" other outcome's confidence = "<<outcome->_metadata._confidence);
+          break;
       }
     }
     if(needToShare(true /*hasOutcome*/, outcome->_metadata._confidence)) {
@@ -298,7 +305,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
         CheckAndCorrectSolutionJob *job = new CheckAndCorrectSolutionJob(_solver,
                                            getCellDescription(_cellDescriptionsIndex,_element),
                                            _predictorTimeStamp,
-                                           _predictorTimeStepSize);
+                                           _predictorTimeStepSize,
+					   _confidence);
         peano::datatraversal::TaskSet spawnedSet(job);
         return false; //check job will take care next
       }
@@ -353,7 +361,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::needToShare(bool h
   else if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()
           ==exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharing){
     return !hasOutcome
-        && (AllocatedSTPsSend
+        && ((unsigned int) AllocatedSTPsSend
             <= exahype::reactive::PerformanceMonitor::getInstance().getTasksPerTimestep()/((exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams()-1)*tarch::multicore::Core::getInstance().getNumberOfThreads()));
   }
   else {
@@ -369,7 +377,9 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::corruptIfActive() 
 
   double *lduh = static_cast<double*>(cellDescription.getUpdate());
   bool hasFlipped = exahype::reactive::ResilienceTools::getInstance().corruptDataIfActive(
-                                                              _center, DIMENSIONS,
+                                                              static_cast<double*>(cellDescription.getSolution()),
+                                                              _center,
+                                                              DIMENSIONS,
                                                               _predictorTimeStamp,
                                                               lduh,
                                                               _solver.getUpdateSize());
@@ -608,28 +618,29 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::setConfidence(bool
     }
     else if(exahype::reactive::ResilienceTools::CheckSTPsWithViolatedAdmissibility) {
       _confidence = _solver.computePredictorConfidence(cellDescription);
-      /*if(flipped) {
-        double *luhtemp = new double[_solver.getDataPerCell()];
+      if(flipped) {
+        //double *luhtemp = new double[_solver.getDataPerCell()];
 
-        _solver.computeTemporarySolutionWithPredictor(cellDescription, luhtemp);
-        double confTimeStep =  _solver.computePredictorUpdateConfidenceTimeStep(luhtemp, cellDescription);
-        double admissibleTimeStepSize = _solver.stableTimeStepSize(luhtemp, cellDescription.getSize());
-        
-        logError("setConfidence()","has flipped conf time step "<<confTimeStep<<std::setprecision(30)<<" diff="<<admissibleTimeStepSize-cellDescription.getTimeStepSize());
-      }*/
+        //_solver.computeTemporarySolutionWithPredictor(cellDescription, luhtemp);
+        //double confTimeStep =  _solver.computePredictorUpdateConfidenceTimeStep(luhtemp, cellDescription);
+        //double admissibleTimeStepSize = _solver.stableTimeStepSize(luhtemp, cellDescription.getSize());
+        logError("setConfidence()","has flipped conf ="<<_confidence);
+
+        //logError("setConfidence()","has flipped conf time step "<<confTimeStep<<std::setprecision(30)<<" diff="<<admissibleTimeStepSize-cellDescription.getTimeStepSize());
+      }
     }
   }
 
-  if(flipped || !exahype::reactive::ResilienceTools::getInstance().isTrustworthy(_confidence))
+  if(flipped) // || !exahype::reactive::ResilienceTools::getInstance().isTrustworthy(_confidence))
     logError("setConfidence", "Celldesc ="<<_cellDescriptionsIndex<<" confidence "<<std::setprecision(30)<<_confidence);
 }
 
 bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryToFindAndExtractEquivalentSharedOutcome(bool previous, DeliveryStatus &status, MigratablePredictionJobData **outcome) {
-  CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
-      _element);
+  //CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
+  //    _element);
 
-  logDebug("tryToFindAndExtractEquivalentSharedOutcome", "team = "<<exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber()
-      <<" looking for "<<cellDescription.toString())
+  //logDebug("tryToFindAndExtractEquivalentSharedOutcome", "team = "<<exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber()
+  //    <<" looking for "<<cellDescription.toString())
 
   return _solver.tryToFindAndExtractOutcome(_cellDescriptionsIndex, _element, _predictorTimeStamp, _predictorTimeStepSize, status, outcome);
 }

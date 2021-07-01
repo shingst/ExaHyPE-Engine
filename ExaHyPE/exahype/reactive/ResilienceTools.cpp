@@ -34,7 +34,7 @@ bool exahype::reactive::ResilienceTools::CheckFlipped;
 bool exahype::reactive::ResilienceTools::CheckSTPsWithViolatedAdmissibility;
 
 exahype::reactive::ResilienceTools::ResilienceTools()
- : _injectionInterval(100),
+ : _injectionInterval(3000),
    _numFlips(1),
    _cnt(1),
    _numFlipped(0),
@@ -112,7 +112,7 @@ bool exahype::reactive::ResilienceTools::generateBitflipErrorInDoubleIfActive(do
   return false;
 }
 
-bool exahype::reactive::ResilienceTools::overwriteRandomValueInArrayIfActive(double *array, size_t size) {
+bool exahype::reactive::ResilienceTools::overwriteRandomValueInArrayIfActive(const double* ref, double *array, size_t size) {
   _cnt++;
   if(_cnt.load()%_injectionInterval==0 && _numFlipped<_numFlips
       && tarch::parallel::Node::getInstance().getRank()==_injectionRank) {
@@ -129,7 +129,10 @@ bool exahype::reactive::ResilienceTools::overwriteRandomValueInArrayIfActive(dou
     //std::numeric_limits<double>::max();
     _numFlipped++;
 
-    logError("overwriteDoubleIfActive()", "overwrite double value, pos = "<<idx_array<<std::setprecision(30)<<" old ="<<old_val<<" new = "<<array[idx_array]);
+    logError("overwriteDoubleIfActive()", "overwrite double value, pos = "<<idx_array<<std::setprecision(30)
+                                       <<" old ="<<old_val
+                                       <<" new = "<<array[idx_array]
+                                       <<" corresponds to relative error "<<array[idx_array]/ref[idx_array]);
     exahype::reactive::ResilienceStatistics::getInstance().notifyInjectedError();
     return true;
   }
@@ -173,7 +176,7 @@ bool exahype::reactive::ResilienceTools::overwriteHardcodedIfActive(double *cent
 }
 
 
-bool exahype::reactive::ResilienceTools::corruptDataIfActive(double *center, int dim, double t, double *array, size_t size) {
+bool exahype::reactive::ResilienceTools::corruptDataIfActive(const double *ref, double *center, int dim, double t, double *array, size_t size) {
   bool result = false;
 #ifdef USE_TMPI
 if(TMPI_IsLeadingRank()) {
@@ -186,7 +189,7 @@ if(TMPI_IsLeadingRank()) {
     result = generateBitflipErrorInDoubleIfActive(array, size);
     break;
   case SoftErrorGenerationStrategy::Overwrite:
-    result = overwriteRandomValueInArrayIfActive(array, size);
+    result = overwriteRandomValueInArrayIfActive(ref, array, size);
     break;
   case SoftErrorGenerationStrategy::OverwriteHardcoded:
     result = overwriteHardcodedIfActive(center, dim, t, array, size);

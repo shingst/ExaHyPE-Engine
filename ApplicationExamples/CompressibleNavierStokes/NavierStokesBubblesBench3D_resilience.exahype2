@@ -52,7 +52,7 @@
     "check_mechanism" : "check_stps_with_violated_admissibility",
     "save_redundant_computations" : true,
     "task_sharing" : "task_sharing_resilience_correction",
-    "abs_error" : 0.1
+    "abs_error" : -0.00001
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",

@@ -77,7 +77,7 @@ class exahype::reactive::ResilienceTools {
 
   void configure(double absError, double confidenceRequired);
 
-  bool corruptDataIfActive(double *center, int dim, double t, double *array, size_t length);
+  bool corruptDataIfActive(const double *ref, double *center, int dim, double t, double *array, size_t length);
 
   bool isTrustworthy(double confidence);
 
@@ -100,7 +100,7 @@ class exahype::reactive::ResilienceTools {
 
   private:
   bool generateBitflipErrorInDoubleIfActive(double *array, size_t length);
-  bool overwriteRandomValueInArrayIfActive(double *array, size_t size);
+  bool overwriteRandomValueInArrayIfActive(const double *ref, double *array, size_t size);
   bool overwriteHardcodedIfActive(double *center, int dim, double t,  double *array, size_t size);
 
   virtual ~ResilienceTools();
