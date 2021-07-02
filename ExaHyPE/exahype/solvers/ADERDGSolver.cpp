@@ -1802,12 +1802,12 @@ void exahype::solvers::ADERDGSolver::computeTemporarySolutionWithPredictor(CellD
 
 }
 
-double exahype::solvers::ADERDGSolver::computePredictorConfidence(CellDescription& cellDescription) {
+double exahype::solvers::ADERDGSolver::computePredictorConfidence(CellDescription& cellDescription, double predictorTimeStepSize) {
   double *luhtemp = new double[getDataPerCell()];
 
   computeTemporarySolutionWithPredictor(cellDescription, luhtemp);
-  double confTimeStep =  1 ; //  computePredictorUpdateConfidenceTimeStep(luhtemp, cellDescription);
-  double confAdm = computePredictorUpdateConfAdmissibility(luhtemp, cellDescription);
+  double confTimeStep = exahype::reactive::ResilienceTools::CheckTimeStepsForConfidence ? computePredictorUpdateConfidenceTimeStep(luhtemp, cellDescription, predictorTimeStepSize) : 1;
+  double confAdm = exahype::reactive::ResilienceTools::CheckAdmissibilityForConfidence ? computePredictorUpdateConfAdmissibility(luhtemp, cellDescription) : 1;
 
   //if(!exahype::reactive::ResilienceTools::getInstance().isTrustworthy(confTimeStep)) {
   //  logError("computePredictorConfidence","Predictor would result in inadmissible time step size! ConfTimeStep = "<<confTimeStep);
@@ -1817,16 +1817,19 @@ double exahype::solvers::ADERDGSolver::computePredictorConfidence(CellDescriptio
   //  logError("computePredictorConfidence","Predictor would result in inadmissible update!");
   //}
 
-  double confDerivatives = computePredictorUpdateConfDerivatives(luhtemp, cellDescription);
+  double confDerivatives = exahype::reactive::ResilienceTools::CheckDerivativesForConfidence ? computePredictorUpdateConfDerivatives(luhtemp, cellDescription) : 1;
 
   delete[] luhtemp;
   return std::min(confTimeStep, std::min(confAdm, confDerivatives));
 }
 
-double exahype::solvers::ADERDGSolver::computePredictorUpdateConfidenceTimeStep(double *luhWithPredictor, CellDescription& cellDescription) {
+double exahype::solvers::ADERDGSolver::computePredictorUpdateConfidenceTimeStep(double *luhWithPredictor, CellDescription& cellDescription, double predictorTimeStepSize) {
   double admissibleTimeStepSize = stableTimeStepSize(luhWithPredictor, cellDescription.getSize());
+  //if(admissibleTimeStepSize!=predictorTimeStepSize) {
+  //  logError("computePredictorUpdateConfidenceTimeStep", "factor "<<std::abs(admissibleTimeStepSize-predictorTimeStepSize)/(predictorTimeStepSize));
+  //}
 
-  return 1.0-std::min(1.0, std::abs(admissibleTimeStepSize-cellDescription.getTimeStepSize())/cellDescription.getTimeStepSize());
+  return 1.0-std::min(1.0, std::abs(admissibleTimeStepSize-predictorTimeStepSize)/(predictorTimeStepSize));
 }
 
 double exahype::solvers::ADERDGSolver::computePredictorUpdateConfAdmissibility(double *luhWithPredictor, CellDescription& cellDescription) {
@@ -1887,9 +1890,12 @@ double exahype::solvers::ADERDGSolver::computePredictorUpdateConfDerivatives(dou
   delete [] maxDerivativesPerComponentOld;
   delete [] maxDerivativesPerComponentNew;
 
-  maxScaling = std::min(maxScaling, 1e06);
+  double minScalingFactor = exahype::reactive::ResilienceTools::getInstance().getMinDerivativeScalingFactor();
+  double maxScalingFactor = exahype::reactive::ResilienceTools::getInstance().getMaxDerivativeScalingFactor();
 
-  return maxScaling> 100 ? (1-(maxScaling/1e06)) : 1;
+  maxScaling = std::min(maxScaling, minScalingFactor);
+
+  return (maxScaling> minScalingFactor) ? std::max(0.0,1-(maxScaling/maxScalingFactor)) : 1;
 }
 
 void exahype::solvers::ADERDGSolver::computeMaxAbsSecondDerivativeDirection(double *luh,  CellDescription& cellDescription, int direction, double *maxAbsDerivativesComponents) {
@@ -3842,21 +3848,21 @@ exahype::solvers::ADERDGSolver::SDCCheckResult exahype::solvers::ADERDGSolver::c
     logError("checkCellDescriptionAgainstOutcome", "lduh is not  (numerically) equal for cell "<<"center[0]="<<center[0]<<" center[1]="<<center[1]<<" timestamp "<<cellDescription.getTimeStamp());
   }
 
-  if(!equal) {
-    logError("checkCellDescriptionAgainstOutcome", "soft error detected: "<<data->_metadata.to_string());
-    exahype::reactive::ResilienceStatistics::getInstance().notifyDetectedError();
-  }
-
   exahype::reactive::ResilienceStatistics::getInstance().notifyDoubleCheckedTask();
 
   if(!equal) {
-    if(data->_metadata._confidence==1)
+    if(data->_metadata._confidence==1) {
+      logError("checkCellDescriptionAgainstOutcome", "soft error detected: "<<data->_metadata.to_string());
+      exahype::reactive::ResilienceStatistics::getInstance().notifyDetectedError();
       return SDCCheckResult::OutcomeSaneAsTriggerNotActive; //we assume that the trigger is good enough to tell us that the outcome is ok
+    }
     else if (data->_metadata._confidence>myConfidence) {
+      logError("checkCellDescriptionAgainstOutcome", "soft error detected: "<<data->_metadata.to_string());
+      exahype::reactive::ResilienceStatistics::getInstance().notifyDetectedError();
       return SDCCheckResult::OutcomeHasHigherConfidence;
      }
     else { 
-      return SDCCheckResult::UncorrectableSoftError; //don't know which outcome can be used
+      return SDCCheckResult::MyConfidenceIsHigher; //I think my outcome is better and I will keep it
     }
   }
   else

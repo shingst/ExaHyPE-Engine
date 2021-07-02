@@ -19,6 +19,9 @@
 #include <random>
 
 #include "tarch/logging/Log.h"
+#include "tarch/la/Vector.h"
+
+#include "exahype/solvers/Solver.h"
 
 namespace exahype {
   namespace reactive {
@@ -62,20 +65,36 @@ class exahype::reactive::ResilienceTools {
   int _injectionRank;
 
   double _absError;
+  double _relError;
   double _confidenceRequired;
+
+  tarch::la::Vector<DIMENSIONS, double> _injectionPosition;
+  double _injectionTime;
+
+  double _minScalingFactorOfDerivative;
+  double _maxScalingFactorOfDerivative;
 
   public:
 
   static SoftErrorGenerationStrategy GenerationStrategy;
   static bool CheckAllMigratableSTPs;
-  static bool CheckSTPsWithViolatedAdmissibility;
+  static bool CheckSTPsWithLowConfidence;
   static bool CheckLimitedCellsOnly;
   static bool CheckFlipped;
+
+  static bool CheckDerivativesForConfidence;
+  static bool CheckTimeStepsForConfidence;
+  static bool CheckAdmissibilityForConfidence;
+
 
   ResilienceTools();
   static ResilienceTools& getInstance();
 
-  void configure(double absError, double confidenceRequired);
+  void configure(double absError, double relError, double injectionTime,
+                 tarch::la::Vector<DIMENSIONS, double> injectionPos,
+                 double confidenceRequired,
+                 double minScalingFactorOfDerivative,
+                 double maxScalingFactorOfDerivative);
 
   bool corruptDataIfActive(const double *ref, double *center, int dim, double t, double *array, size_t length);
 
@@ -98,10 +117,13 @@ class exahype::reactive::ResilienceTools {
   void setCorruptionDetected(bool corrupted);
   bool getCorruptionDetected();
 
+  double getMinDerivativeScalingFactor() const;
+  double getMaxDerivativeScalingFactor() const;
+
   private:
   bool generateBitflipErrorInDoubleIfActive(double *array, size_t length);
   bool overwriteRandomValueInArrayIfActive(const double *ref, double *array, size_t size);
-  bool overwriteHardcodedIfActive(double *center, int dim, double t,  double *array, size_t size);
+  bool overwriteHardcodedIfActive(const double *ref, double *center, int dim, double t,  double *array, size_t size);
 
   virtual ~ResilienceTools();
 

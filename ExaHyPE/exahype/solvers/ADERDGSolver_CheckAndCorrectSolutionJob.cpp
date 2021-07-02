@@ -54,11 +54,10 @@ bool exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::run(bool isRunO
         _solverPatch.setHasCompletedLastStep(true);
         reschedule = false;
         break;
-      case SDCCheckResult::UncorrectableSoftError:
-        //soft error detected
+      case SDCCheckResult::MyConfidenceIsHigher:
         reschedule = false;
         _solverPatch.setHasCompletedLastStep(true);
-        logError("runCheck"," Detected a soft error and I don't know which outcome is correct. Continuing...");
+        logError("runCheck","My result has higher confidence. Continuing...");
         break;
       case SDCCheckResult::OutcomeHasHigherConfidence:
          //continue to correction

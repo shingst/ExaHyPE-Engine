@@ -243,7 +243,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   DeliveryStatus status;
   if(tryToFindAndExtractEquivalentSharedOutcome(false, status, &outcome)) {
     executeOrCopySTPOutcome(outcome, hasComputed, hasFlipped); //corruption can also happen here if executed
-    setConfidence(hasFlipped);
+    computeConfidence(hasFlipped);
 
     if(needToCheckThisSTP(hasComputed)) {
       switch(_solver.checkCellDescriptionAgainstOutcome(getCellDescription(_cellDescriptionsIndex,_element), outcome, _predictorTimeStamp, _predictorTimeStepSize, _confidence)) {
@@ -264,9 +264,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
             logError("handleLocalExecution", "Could have corrected soft error but correction is not enabled. Continuing...");
           }
           break;
-        case SDCCheckResult::UncorrectableSoftError:
-          logError("handleLocalExecution", "Soft error detected in job execution: "<<to_string());
-          logError("handleLocalExecution", "Detected an uncorrectable soft error, but I am continuing..");
+        case SDCCheckResult::MyConfidenceIsHigher:
+          logError("handleLocalExecution", "There is disagreement between two outcomes but my confidence is higher..");
           logError("handleLocalExecution", "My confidence = "<<_confidence<<" other outcome's confidence = "<<outcome->_metadata._confidence);
           break;
       }
@@ -290,7 +289,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     executeLocally();
     hasComputed = true;
     hasFlipped = corruptIfActive();
-    setConfidence(hasFlipped);
+    computeConfidence(hasFlipped);
 
     if(needToShare(false, false)) {
       shareSTPImmediatelyOrLater();
@@ -306,7 +305,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
                                            getCellDescription(_cellDescriptionsIndex,_element),
                                            _predictorTimeStamp,
                                            _predictorTimeStepSize,
-					   _confidence);
+				           _confidence);
         peano::datatraversal::TaskSet spawnedSet(job);
         return false; //check job will take care next
       }
@@ -601,7 +600,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackOutcomeToO
 #endif
 }
 
-void exahype::solvers::ADERDGSolver::MigratablePredictionJob::setConfidence(bool flipped) {
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::computeConfidence(bool flipped) {
 
   CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
                                                         _element);
@@ -616,17 +615,17 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::setConfidence(bool
       || exahype::reactive::ResilienceTools::CheckAllMigratableSTPs) {
       _confidence = 0;
     }
-    else if(exahype::reactive::ResilienceTools::CheckSTPsWithViolatedAdmissibility) {
-      _confidence = _solver.computePredictorConfidence(cellDescription);
+    else if(exahype::reactive::ResilienceTools::CheckSTPsWithLowConfidence) {
+      _confidence = _solver.computePredictorConfidence(cellDescription, _predictorTimeStepSize);
       if(flipped) {
-        //double *luhtemp = new double[_solver.getDataPerCell()];
+        double *luhtemp = new double[_solver.getDataPerCell()];
 
-        //_solver.computeTemporarySolutionWithPredictor(cellDescription, luhtemp);
-        //double confTimeStep =  _solver.computePredictorUpdateConfidenceTimeStep(luhtemp, cellDescription);
-        //double admissibleTimeStepSize = _solver.stableTimeStepSize(luhtemp, cellDescription.getSize());
-        logError("setConfidence()","has flipped conf ="<<_confidence);
+        _solver.computeTemporarySolutionWithPredictor(cellDescription, luhtemp);
+        double confTimeStep =  _solver.computePredictorUpdateConfidenceTimeStep(luhtemp, cellDescription, _predictorTimeStepSize);
+        double admissibleTimeStepSize = _solver.stableTimeStepSize(luhtemp, cellDescription.getSize());
+        //logError("setConfidence()","has flipped conf ="<<_confidence);
 
-        //logError("setConfidence()","has flipped conf time step "<<confTimeStep<<std::setprecision(30)<<" diff="<<admissibleTimeStepSize-cellDescription.getTimeStepSize());
+        logError("setConfidence()","has flipped conf time step "<<confTimeStep<<std::setprecision(30)<<" diff="<<admissibleTimeStepSize-cellDescription.getTimeStepSize());
       }
     }
   }

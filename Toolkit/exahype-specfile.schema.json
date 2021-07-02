@@ -450,12 +450,18 @@
          "check_mechanism" : { 
           "type" : "string",
           "title" : "Specifies which results in ADER-DG should be checked for soft errors (checking requires teaMPI + tasksharing with resilience checks).",
-          "enum" : ["none", "check_limited_after_update", "check_all_stps", "check_stps_with_violated_admissibility", "check_corrupted_stps"],
+          "enum" : ["none", "check_limited_after_update", "check_all_stps", "check_stps_with_low_confidence", "check_corrupted_stps"],
           "default" : "none"
          },
          "abs_error" : {
             "type" : "number",
-            "title" : "Absolute error that should be introduced with error injection (overwrite + hardcoded) into the STP update.",
+            "title" : "Absolute error that should be introduced with error injection (only overwrite) into the STP update.",
+            "scope" : "run-time",
+            "default" : 0
+         },
+         "rel_error" : {
+            "type" : "number",
+            "title" : "Relative error that should be introduced into the solution with error injection (only overwrite) by STP update.",
             "scope" : "run-time",
             "default" : 0
          },
@@ -464,6 +470,51 @@
             "title" : "Specifies the confidence value required for a task outcome to be considered as being trustworthy.",
             "scope" : "run-time",
             "default" : 1
+         },
+         "injection_position" : {
+            "type" : "array",
+            "default" : [0.0, 0.0, 0.0],
+            "items" : {
+              "type" : "number", 
+              "title" : "The spatial position of the node the error should be injected.",
+              "scope" : "run-time"
+            },
+            "$comment" : "We wait for a solution to: https://stackoverflow.com/questions/27597825/assigning-maxitems-property-in-an-array-in-json-schema-equal-to-some-other-prope",
+            "minItems" : 2,
+            "maxItems" : 3
+        },
+        "injection_time" : {
+            "type" : "number",
+            "title" : "Time stamp at which the error should be injected.",
+            "scope" : "run-time",
+            "default" : -1
+        },
+        "confidence_check_admissibility" : {
+           "type" : "boolean", 
+           "title" : "Checks admissibility for confidence.",
+           "default" : false
+         },
+         "confidence_check_derivatives" : {
+           "type" : "boolean", 
+           "title" : "Checks derivatives for confidence.",
+           "default" : false
+         },
+         "confidence_check_time_step_sizes" : {
+           "type" : "boolean", 
+           "title" : "Checks time step sizes for confidence.",
+           "default" : false
+         },
+         "confidence_min_derivative" : {
+             "type" : "number",
+            "title" : "Specifies the minimum scaling of a second derivative that may be suspicious.",
+            "scope" : "run-time",
+            "default" : 100
+         },
+         "confidence_max_derivative" : {
+             "type" : "number",
+            "title" : "Specifies the maximum scaling of a second derivative above which an outcome attains confidence 0..",
+            "scope" : "run-time",
+            "default" : 1e06
          }
       }
     },

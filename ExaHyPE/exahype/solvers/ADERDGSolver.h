@@ -1195,7 +1195,7 @@ private:
 
       bool tryToFindAndExtractEquivalentSharedOutcome(bool previous, DeliveryStatus &status, MigratablePredictionJobData **outcome);
 
-      void setConfidence(bool flipped);
+      void computeConfidence(bool flipped);
 
       bool isRemoteJob() {
         return (_originRank!= tarch::parallel::Node::getInstance().getRank());
@@ -1272,7 +1272,7 @@ private:
       bool run(bool calledFromMaster) override;
   };
 
-  enum class SDCCheckResult {NoCorruption, OutcomeSaneAsTriggerNotActive, OutcomeHasHigherConfidence, UncorrectableSoftError};
+  enum class SDCCheckResult {NoCorruption, OutcomeSaneAsTriggerNotActive, OutcomeHasHigherConfidence, MyConfidenceIsHigher};
   void correctCellDescriptionWithOutcome(CellDescription& cellDescription, MigratablePredictionJobData *outcome);
   SDCCheckResult checkCellDescriptionAgainstOutcome(CellDescription& cellDescription, MigratablePredictionJobData *outcome,
                                                     double predictorTimeStamp,
@@ -2804,11 +2804,11 @@ public:
 
   double computePredictorUpdateConfAdmissibility(double *luhWithPredictor, CellDescription& cellDescription);
 
-  double computePredictorUpdateConfidenceTimeStep(double *luhWithPredictor, CellDescription& cellDescription);
+  double computePredictorUpdateConfidenceTimeStep(double *luhWithPredictor, CellDescription& cellDescription, double predictorTimeStepSize);
 
   double computePredictorUpdateConfDerivatives(double *luhWithPredictor, CellDescription& cellDescription);
 
-  double computePredictorConfidence(CellDescription& cellDescription);
+  double computePredictorConfidence(CellDescription& cellDescription, double predictorTimeStepSize);
 
   void computeMaxAbsSecondDerivativeDirection(double *luh,  CellDescription& cellDescription, int direction, double *tmpDerivativesComponents);
 

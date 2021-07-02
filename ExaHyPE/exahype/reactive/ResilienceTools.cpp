@@ -31,7 +31,11 @@ exahype::reactive::ResilienceTools::SoftErrorGenerationStrategy exahype::reactiv
 bool exahype::reactive::ResilienceTools::CheckAllMigratableSTPs;
 bool exahype::reactive::ResilienceTools::CheckLimitedCellsOnly;
 bool exahype::reactive::ResilienceTools::CheckFlipped;
-bool exahype::reactive::ResilienceTools::CheckSTPsWithViolatedAdmissibility;
+bool exahype::reactive::ResilienceTools::CheckSTPsWithLowConfidence;
+
+bool exahype::reactive::ResilienceTools::CheckDerivativesForConfidence;
+bool exahype::reactive::ResilienceTools::CheckTimeStepsForConfidence;
+bool exahype::reactive::ResilienceTools::CheckAdmissibilityForConfidence;
 
 exahype::reactive::ResilienceTools::ResilienceTools()
  : _injectionInterval(3000),
@@ -44,7 +48,12 @@ exahype::reactive::ResilienceTools::ResilienceTools()
    _corruptionDetected(false),
    _injectionRank(0),
    _absError(0),
-   _confidenceRequired(1)
+   _relError(0),
+   _confidenceRequired(1),
+   _injectionPosition(),
+   _injectionTime(-1),
+   _minScalingFactorOfDerivative(100),
+   _maxScalingFactorOfDerivative(1e8)
 {
   if(_injectionRank>=tarch::parallel::Node::getInstance().getNumberOfNodes()
      && GenerationStrategy!=SoftErrorGenerationStrategy::None) {
@@ -55,9 +64,22 @@ exahype::reactive::ResilienceTools::ResilienceTools()
 
 exahype::reactive::ResilienceTools::~ResilienceTools() {}
 
-void exahype::reactive::ResilienceTools::configure(double absError, double confidenceRequired) {
+void exahype::reactive::ResilienceTools::configure(double absError,
+                    double relError,
+                    double injectionTime,
+                    tarch::la::Vector<DIMENSIONS, double> injectionPos,
+                    double confidenceRequired,
+                    double minScalingFactorOfDerivative,
+                    double maxScalingFactorOfDerivative) {
   _absError = absError;
+  _relError = relError;
   _confidenceRequired = confidenceRequired;
+
+  _injectionTime = injectionTime;
+  _injectionPosition = injectionPos;
+
+  _minScalingFactorOfDerivative = minScalingFactorOfDerivative;
+  _maxScalingFactorOfDerivative = maxScalingFactorOfDerivative;
 }
 
 bool exahype::reactive::ResilienceTools::isTrustworthy(double confidence) {
@@ -124,25 +146,28 @@ bool exahype::reactive::ResilienceTools::overwriteRandomValueInArrayIfActive(con
     int idx_array = 0;
 
     double old_val = array[idx_array];
+    double error = (_relError>0) ? (_relError*(ref[idx_array]+old_val)) //introduces relative error into new ref (e.g., new solution), if added to ref
+                                : _absError;           //only introduces absolute error
+
+
     //overwrite with "random number"
-    array[idx_array] += _absError;
+    array[idx_array] += error;
     //std::numeric_limits<double>::max();
     _numFlipped++;
 
     logError("overwriteDoubleIfActive()", "overwrite double value, pos = "<<idx_array<<std::setprecision(30)
                                        <<" old ="<<old_val
                                        <<" new = "<<array[idx_array]
-                                       <<" corresponds to relative error "<<array[idx_array]/ref[idx_array]);
+                                       <<" corresponds to relative error "<<error/(ref[idx_array]+old_val));
     exahype::reactive::ResilienceStatistics::getInstance().notifyInjectedError();
     return true;
   }
   return false;
 }
 
-bool exahype::reactive::ResilienceTools::overwriteHardcodedIfActive(double *center, int dim, double t, double *array, size_t size) {
+bool exahype::reactive::ResilienceTools::overwriteHardcodedIfActive(const double *ref, double *center, int dim, double t, double *array, size_t size) {
 
-  //logError("overwriteHardcodedIfActive", "center[0]="<<center[0]<<", center[1]="<<center[1]<<" t "<<t);
-  //center[0]=3.96, center[1]=0.36 t 0.0427902
+  //logError("overwriteHardcodedIfActive", "center[0]="<<center[0]<<", center[1]="<<center[1]<<", center[2]="<<center[2]<<" t "<<t);
 
   //without limiter
   /*bool isActive = tarch::la::equals(center[0],3.00,0.001)
@@ -151,24 +176,35 @@ bool exahype::reactive::ResilienceTools::overwriteHardcodedIfActive(double *cent
 
   //with limiter
   //exahype::reactive::ResilienceTools::overwriteHardcodedIfActive center[0]=1.8, center[1]=0.12 t 0.138786
-  bool isActive = tarch::la::equals(center[0],3.00,0.001)
-                 && tarch::la::equals(center[1],3.00,0.001)
-                 && tarch::la::equals(t, 0.138786,0.0001);
+  bool isActive = tarch::la::equals(center[0], _injectionPosition[0],0.001)
+                 && tarch::la::equals(center[1], _injectionPosition[1],0.001)
+#if DIMENSIONS==3
+                 && tarch::la::equals(center[2], _injectionPosition[2],0.001)
+#endif
+                 && tarch::la::equals(t, _injectionTime,0.0001);
 
   if(isActive) {
     int idx_array = 0;
 
     double old_val = array[idx_array];
+
+    double error = (_relError>0) ? (_relError*(ref[idx_array]+old_val)) //introduces relative error into new ref (e.g., new solution), if added to ref
+                                : _absError;           //only introduces absolute error
+
     //array[idx_array] = 0.1; //ADER-DG only
 
     //array[idx_array] = 20; //limiter SWE immediately
     //array[idx_array] = 2; //limiter SWE later
-    array[idx_array] += _absError * array[idx_array];
+    array[idx_array] += error;
     _numFlipped++;
 
-    logError("overwriteDoubleIfActive()", "overwrite double value, pos = "<<idx_array<<" old ="<<old_val<<" new = "<<array[idx_array]
-                                                                         <<"center[0]="<<center[0]<<" center[1]="<<center[1]
-                                                                         <<" t ="<<t);
+    logError("overwriteHardcodedIfActive()", "overwrite double value, pos = "<<idx_array<<" old ="<<old_val<<" new = "<<array[idx_array]
+                                                                         <<" in center[0]="<<center[0]<<" center[1]="<<center[1]
+#if DIMENSIONS==3
+                                                                         <<" center[2]="<<center[2]
+#endif
+                                                                         <<" t ="<<t
+                                                                         <<" corresponds to relative error "<<error/(ref[idx_array]+old_val));
     exahype::reactive::ResilienceStatistics::getInstance().notifyInjectedError();
     return true;
   }
@@ -192,7 +228,7 @@ if(TMPI_IsLeadingRank()) {
     result = overwriteRandomValueInArrayIfActive(ref, array, size);
     break;
   case SoftErrorGenerationStrategy::OverwriteHardcoded:
-    result = overwriteHardcodedIfActive(center, dim, t, array, size);
+    result = overwriteHardcodedIfActive(ref, center, dim, t, array, size);
     break;
   default:
     result = false;
@@ -279,9 +315,9 @@ bool exahype::reactive::ResilienceTools::isAdmissibleNumericalError(const double
                                          << " inf norm = "<<infnorm
                                          << " l1 norm = "<<l1norm
                                          << " l2 norm = "<<l2norm);
-    for(size_t i=0; i<length; i++) {
+    /*for(size_t i=0; i<length; i++) {
       logError("isAdmissibleNumericalError", "i = "<<i<<" a = "<<a1[i]<<" , b = "<<a2[i]);
-    }
+    }*/
   }
 
   return admissible;
@@ -293,4 +329,12 @@ void exahype::reactive::ResilienceTools::setCorruptionDetected(bool corrupted) {
 
 bool exahype::reactive::ResilienceTools::getCorruptionDetected() {
   return _corruptionDetected;
+}
+
+double exahype::reactive::ResilienceTools::getMinDerivativeScalingFactor() const {
+  return _minScalingFactorOfDerivative;
+}
+
+double exahype::reactive::ResilienceTools::getMaxDerivativeScalingFactor() const {
+  return _maxScalingFactorOfDerivative;
 }

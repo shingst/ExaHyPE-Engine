@@ -1442,8 +1442,31 @@ double exahype::parser::Parser::getAbsErrorForHardcodedInjection() const {
   return getDoubleFromPath("/resilience/abs_error", 0, isOptional);
 }
 
+double exahype::parser::Parser::getRelErrorForHardcodedInjection() const {
+  return getDoubleFromPath("/resilience/rel_error", 0, isOptional);
+}
+
+tarch::la::Vector<DIMENSIONS, double> exahype::parser::Parser::getErrorInjectionPosition() const {
+  std::string token;
+  tarch::la::Vector<DIMENSIONS, double> result;
+  result = getDimVectorFromPath("/resilience/injection_position");
+  return result;
+}
+
+double exahype::parser::Parser::getErrorInjectionTime() const {
+  return getDoubleFromPath("/resilience/injection_time", -1, isOptional);
+}
+
 double exahype::parser::Parser::getConfidenceForTrustworthiness() const {
   return getDoubleFromPath("/resilience/confidence_required", 0.90, isOptional);
+}
+
+double exahype::parser::Parser::getMinDerivativeScalingFactor() const {
+  return getDoubleFromPath("/resilience/confidence_min_derivative", 100, isOptional);
+}
+
+double exahype::parser::Parser::getMaxDerivativeScalingFactor() const {
+  return getDoubleFromPath("/resilience/confidence_max_derivative", 1e06, isOptional);
 }
 
 bool exahype::parser::Parser::getTryToSaveRedundantComputations() const {
@@ -1462,6 +1485,18 @@ bool exahype::parser::Parser::getCheckCorrupted() const {
   return getStringFromPath("/resilience/check_mechanism", "none", isOptional).compare("check_corrupted_stps")==0;
 }
 
-bool exahype::parser::Parser::getCheckSTPsWithViolatedAdmissibility() const {
-  return getStringFromPath("/resilience/check_mechanism", "none", isOptional).compare("check_stps_with_violated_admissibility")==0;
+bool exahype::parser::Parser::getCheckSTPsWithLowConfidence() const {
+  return getStringFromPath("/resilience/check_mechanism", "none", isOptional).compare("check_stps_with_low_confidence")==0;
+}
+
+bool exahype::parser::Parser::getCheckSTPConfidenceAdmissibility() const {
+  return getBoolFromPath("/resilience/confidence_check_admissibility", false, isOptional);;
+}
+
+bool exahype::parser::Parser::getCheckSTPConfidenceDerivatives() const {
+  return getBoolFromPath("/resilience/confidence_check_derivatives", false, isOptional);;
+}
+
+bool exahype::parser::Parser::getCheckSTPConfidenceTimeStepSizes() const {
+  return getBoolFromPath("/resilience/confidence_check_time_step_sizes", false, isOptional);;
 }

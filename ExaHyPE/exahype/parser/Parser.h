@@ -812,7 +812,17 @@ class exahype::parser::Parser {
 
   double getAbsErrorForHardcodedInjection() const;
 
+  double getRelErrorForHardcodedInjection() const;
+
   double getConfidenceForTrustworthiness() const;
+
+  double getMinDerivativeScalingFactor() const;
+
+  double getMaxDerivativeScalingFactor() const;
+
+  tarch::la::Vector<DIMENSIONS, double> getErrorInjectionPosition() const;
+
+  double getErrorInjectionTime() const;
 
   /**
    * @return True if ExaHyPE should try so save redundant computations sharing task outcomes between team.
@@ -838,7 +848,15 @@ class exahype::parser::Parser {
   /**
    * @return True if only STPs should be checked which -- if applied to the solution -- would violate the physical admissibility checks.
    */
-  bool getCheckSTPsWithViolatedAdmissibility() const;
+  bool getCheckSTPsWithLowConfidence() const;
+
+
+  bool getCheckSTPConfidenceAdmissibility() const;
+
+  bool getCheckSTPConfidenceDerivatives() const;
+
+  bool getCheckSTPConfidenceTimeStepSizes() const;
+
 };
 
 #endif

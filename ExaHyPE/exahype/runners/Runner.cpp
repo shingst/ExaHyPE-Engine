@@ -326,7 +326,13 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
 
         if(selectedStrategy != exahype::parser::Parser::ResilienceStrategy::None) {
           exahype::reactive::ReactiveContext::setSaveRedundantComputations(_parser.getTryToSaveRedundantComputations());
-          exahype::reactive::ResilienceTools::getInstance().configure(_parser.getAbsErrorForHardcodedInjection(), _parser.getConfidenceForTrustworthiness());
+          exahype::reactive::ResilienceTools::getInstance().configure(_parser.getAbsErrorForHardcodedInjection(),
+                                                                      _parser.getRelErrorForHardcodedInjection(),
+                                                                      _parser.getErrorInjectionTime(),
+                                                                      _parser.getErrorInjectionPosition(),
+                                                                      _parser.getConfidenceForTrustworthiness(),
+                                                                      _parser.getMinDerivativeScalingFactor(),
+                                                                      _parser.getMaxDerivativeScalingFactor());
         }
 #if defined(SharedTBB)
         // order is important: set resilience strategy first before starting offloading service
@@ -364,7 +370,12 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     exahype::reactive::ResilienceTools::CheckAllMigratableSTPs = _parser.getCheckAllMigratableSTPs();
     exahype::reactive::ResilienceTools::CheckLimitedCellsOnly= _parser.getCheckLimitedCellsOnly();
     exahype::reactive::ResilienceTools::CheckFlipped = _parser.getCheckCorrupted();
-    exahype::reactive::ResilienceTools::CheckSTPsWithViolatedAdmissibility = _parser.getCheckSTPsWithViolatedAdmissibility();
+    exahype::reactive::ResilienceTools::CheckSTPsWithLowConfidence = _parser.getCheckSTPsWithLowConfidence();
+
+    exahype::reactive::ResilienceTools::CheckDerivativesForConfidence = _parser.getCheckSTPConfidenceDerivatives();
+    exahype::reactive::ResilienceTools::CheckAdmissibilityForConfidence = _parser.getCheckSTPConfidenceAdmissibility();
+    exahype::reactive::ResilienceTools::CheckTimeStepsForConfidence = _parser.getCheckSTPConfidenceTimeStepSizes();
+
   }
 
   //Reactive load balancing configuration
