@@ -240,12 +240,13 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       // Compute the "derivatives" (contributions of the stiffness matrix)
       // x direction (independent from the y and z derivatives), note transposed n and x
       for (int zy = 0; zy < {{nDof3D*nDof}}; zy++) {
-        {{ m.matmul('gradQ_x', 'dudx_by_dx', 'lQi', 'gradQ', '0', idxLQi(t,0,zy,0,0), idxGradQ(0,0,zy,0,0)) | indent(8) }}{##}
+        {{ m.matmul_prefetch('gradQ_x', 'dudx_by_dx', 'lQi', 'gradQ', '0', idxLQi(t,0,zy,0,0), idxGradQ(0,0,zy,0,0), '0', idxLQi(t,0,'(zy+1)',0,0), idxGradQ(0,0,'(zy+1)',0,0)) | indent(8) }}{##}
       }
       
       // y direction (independent from the x and z derivatives), fuse nx
       for (int z = 0; z < {{nDof3D}}; z++) {
-        {{ m.matmul('gradQ_y', 'lQi', 'dudx_T_by_dx', 'gradQ', idxLQi(t,z,0,0,0), '0', idxGradQ(1,z,0,0,0)) | indent(10) }}{##}
+        {#{{ m.matmul('gradQ_y', 'lQi', 'dudx_T_by_dx', 'gradQ', idxLQi(t,z,0,0,0), '0', idxGradQ(1,z,0,0,0)) | indent(8) }}{##}
+        {{ m.matmul_prefetch('gradQ_y', 'lQi', 'dudx_T_by_dx', 'gradQ', idxLQi(t,z,0,0,0), '0', idxGradQ(1,z,0,0,0), idxLQi(t,'(z+1)',0,0,0), '0', idxGradQ(1,'(z+1)',0,0,0)) | indent(8) }}{##}
       }
        
 {% if nDim==3 %}
@@ -296,8 +297,8 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       
       // y direction (independent from the x and z derivatives), fuse nx
       for (int z = 0; z < {{nDof3D}}; z++) {
-        {#{{ m.matmul_prefetch('rhs_y', 'lFhi', 'rhsCoeff', 'rhs', idxLFhi(1,z,0,0,0), '0', idxRhs(t,z,0,0,0), idxLFhi(1,'(z+1)',0,0,0), '0', idxRhs(t,'(z+1)',0,0,0)) | indent(8) }}{##}
-        {{ m.matmul('rhs_y', 'lFhi', 'rhsCoeff', 'rhs', idxLFhi(1,z,0,0,0), '0', idxRhs(t,z,0,0,0)) | indent(8) }}{##}
+        {{ m.matmul_prefetch('rhs_y', 'lFhi', 'rhsCoeff', 'rhs', idxLFhi(1,z,0,0,0), '0', idxRhs(t,z,0,0,0), idxLFhi(1,'(z+1)',0,0,0), '0', idxRhs(t,'(z+1)',0,0,0)) | indent(8) }}{##}
+        {#{{ m.matmul('rhs_y', 'lFhi', 'rhsCoeff', 'rhs', idxLFhi(1,z,0,0,0), '0', idxRhs(t,z,0,0,0)) | indent(8) }}{##}
       }
        
 {% if nDim==3 %}
@@ -417,12 +418,13 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
     // Compute the "derivatives" (contributions of the stiffness matrix)
     // x direction (independent from the y and z derivatives), note transposed n and x
     for (int zy = 0; zy < {{nDof3D*nDof}}; zy++) {
-      {{ m.matmul('gradQ_x', 'dudx_by_dx', 'lQi', 'gradQ', '0', idxLQi(t,0,zy,0,0), idxGradQ(0,0,zy,0,0)) | indent(6) }}{##}
+      {{ m.matmul_prefetch('gradQ_x', 'dudx_by_dx', 'lQi', 'gradQ', '0', idxLQi(t,0,zy,0,0), idxGradQ(0,0,zy,0,0), '0', idxLQi(t,0,'(zy+1)',0,0), idxGradQ(0,0,'(zy+1)',0,0)) | indent(6) }}{##}
     }
     
     // y direction (independent from the x and z derivatives), fuse nx
     for (int z = 0; z < {{nDof3D}}; z++) {
-      {{ m.matmul('gradQ_y', 'lQi', 'dudx_T_by_dx', 'gradQ', idxLQi(t,z,0,0,0), '0', idxGradQ(1,z,0,0,0)) | indent(6) }}{##}
+      {#{{ m.matmul('gradQ_y', 'lQi', 'dudx_T_by_dx', 'gradQ', idxLQi(t,z,0,0,0), '0', idxGradQ(1,z,0,0,0)) | indent(6) }}{##}
+      {{ m.matmul_prefetch('gradQ_y', 'lQi', 'dudx_T_by_dx', 'gradQ', idxLQi(t,z,0,0,0), '0', idxGradQ(1,z,0,0,0), idxLQi(t,'(z+1)',0,0,0), '0', idxGradQ(1,'(z+1)',0,0,0)) | indent(6) }}{##}
     }
      
 {% if nDim==3 %}
@@ -666,12 +668,13 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   // Compute the "derivatives" (contributions of the stiffness matrix)      
   // x direction (independent from the y and z derivatives), note transposed n and x
   for (int zy = 0; zy < {{nDof3D*nDof}}; zy++) {
-    {{ m.matmul('gradQ_x', 'dudx_by_dx', 'lQhi', 'gradQ', '0', idxLQhi(0,zy,0,0), idxGradQ(0,0,zy,0,0)) | indent(4) }}{##}
+    {{ m.matmul_prefetch('gradQ_x', 'dudx_by_dx', 'lQhi', 'gradQ', '0', idxLQhi(0,zy,0,0), idxGradQ(0,0,zy,0,0), '0', idxLQhi(0,'(zy+1)',0,0), idxGradQ(0,0,'(zy+1)',0,0)) | indent(4) }}{##}
   }
   
   // y direction (independent from the x and z derivatives), fuse nx
   for (int z = 0; z < {{nDof3D}}; z++) {
-    {{ m.matmul('gradQ_y', 'lQhi', 'dudx_T_by_dx', 'gradQ', idxLQhi(z,0,0,0), '0', idxGradQ(1,z,0,0,0)) | indent(4) }}{##}
+    {#{{ m.matmul('gradQ_y', 'lQhi', 'dudx_T_by_dx', 'gradQ', idxLQhi(z,0,0,0), '0', idxGradQ(1,z,0,0,0)) | indent(4) }}{##}
+    {{ m.matmul_prefetch('gradQ_y', 'lQhi', 'dudx_T_by_dx', 'gradQ', idxLQhi(z,0,0,0), '0', idxGradQ(1,z,0,0,0), idxLQhi('(z+1)',0,0,0), '0', idxGradQ(1,'(z+1)',0,0,0)) | indent(4) }}{##}
   }
    
 {% if nDim==3 %}
@@ -821,8 +824,8 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 
   //y, fuse nx
   for (int z = 0; z < {{nDof3D}}; z++) {
-    {#{{ m.matmul_prefetch('lduh_y', 'lFhi', 'coeffVolume', 'lQi', idxLFhi(1,z,0,0,0), '0', idxLQhi(z,0,0,0), idxLFhi(1,'(z+1)',0,0,0), '0', idxLQhi('(z+1)',0,0,0)) | indent(4) }}{##}
-    {{ m.matmul('lduh_y', 'lFhi', 'coeffVolume', 'lQi', idxLFhi(1,z,0,0,0), '0', idxLQhi(z,0,0,0)) | indent(4) }}{##}
+    {{ m.matmul_prefetch('lduh_y', 'lFhi', 'coeffVolume', 'lQi', idxLFhi(1,z,0,0,0), '0', idxLQhi(z,0,0,0), idxLFhi(1,'(z+1)',0,0,0), '0', idxLQhi('(z+1)',0,0,0)) | indent(4) }}{##}
+    {#{{ m.matmul('lduh_y', 'lFhi', 'coeffVolume', 'lQi', idxLFhi(1,z,0,0,0), '0', idxLQhi(z,0,0,0)) | indent(4) }}{##}
   }
 
 {% if nDim == 3 %}

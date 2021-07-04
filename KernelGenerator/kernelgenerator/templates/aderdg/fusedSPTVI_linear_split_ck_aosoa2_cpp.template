@@ -270,7 +270,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
       }
 {% else %}
       for (int n = 0; n < {{nVar}}; n++) {
-        {{ m.matmul('flux_y_sck_vect', 'lFhi', 'negativeDudxT_by_dx', 'lQi_next', idx(0,n,0,0), '0', idx(z,n,0,0)) | indent(8) }}{##}
+        {{ m.matmul('flux_y_sck_aosoa2', 'lFhi', 'negativeDudxT_by_dx', 'lQi_next', idx(0,n,0,0), '0', idx(z,n,0,0)) | indent(8) }}{##}
       }
 {% endif %}{# useMaterialParam #}
     }
