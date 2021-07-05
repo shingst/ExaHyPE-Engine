@@ -188,7 +188,7 @@ bool exahype::reactive::ResilienceTools::overwriteHardcodedIfActive(const double
 
     double old_val = array[idx_array];
 
-    double error = (_relError>0) ? (_relError*(ref[idx_array]+old_val)) //introduces relative error into new ref (e.g., new solution), if added to ref
+    double error = (std::abs(_relError)>0) ? (_relError*(ref[idx_array]+old_val)) //introduces relative error into new ref (e.g., new solution), if added to ref
                                 : _absError;           //only introduces absolute error
 
     //array[idx_array] = 0.1; //ADER-DG only

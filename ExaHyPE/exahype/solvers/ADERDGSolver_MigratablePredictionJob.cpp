@@ -625,7 +625,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::computeConfidence(
         double admissibleTimeStepSize = _solver.stableTimeStepSize(luhtemp, cellDescription.getSize());
         //logError("setConfidence()","has flipped conf ="<<_confidence);
 
-        logError("setConfidence()","has flipped conf time step "<<confTimeStep<<std::setprecision(30)<<" diff="<<admissibleTimeStepSize-cellDescription.getTimeStepSize());
+        //logError("setConfidence()","has flipped conf time step "<<confTimeStep<<std::setprecision(30)<<" diff="<<admissibleTimeStepSize-cellDescription.getTimeStepSize());
       }
     }
   }

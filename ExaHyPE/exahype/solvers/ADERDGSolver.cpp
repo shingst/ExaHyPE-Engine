@@ -1882,7 +1882,7 @@ double exahype::solvers::ADERDGSolver::computePredictorUpdateConfDerivatives(dou
   double maxScaling = std::numeric_limits<double>::min();
 
   for(int j=0; j<getNumberOfVariables()+getNumberOfParameters(); j++) {
-    //logError("computePredictorUpdateConfDerivatives", "scaling for component="<<j<<"="<<maxDerivativeScaling[j]);
+    logError("computePredictorUpdateConfDerivatives", "scaling for component="<<j<<"="<<maxDerivativeScaling[j]);
     if(maxScaling<maxDerivativeScaling[j])
       maxScaling = maxDerivativeScaling[j];
   }
@@ -1893,9 +1893,13 @@ double exahype::solvers::ADERDGSolver::computePredictorUpdateConfDerivatives(dou
   double minScalingFactor = exahype::reactive::ResilienceTools::getInstance().getMinDerivativeScalingFactor();
   double maxScalingFactor = exahype::reactive::ResilienceTools::getInstance().getMaxDerivativeScalingFactor();
 
-  maxScaling = std::min(maxScaling, minScalingFactor);
+  double intervalLength = std::log10(maxScalingFactor/minScalingFactor);
 
-  return (maxScaling> minScalingFactor) ? std::max(0.0,1-(maxScaling/maxScalingFactor)) : 1;
+  logError("computePredictorUpdateConfDerivatives", "intervalLength="<<intervalLength);
+
+  maxScaling = std::min(maxScaling, maxScalingFactor);
+
+  return (maxScaling> minScalingFactor) ? std::max(0.0,1-(std::log10(maxScaling)-std::log10(minScalingFactor))/intervalLength) : 1;
 }
 
 void exahype::solvers::ADERDGSolver::computeMaxAbsSecondDerivativeDirection(double *luh,  CellDescription& cellDescription, int direction, double *maxAbsDerivativesComponents) {
