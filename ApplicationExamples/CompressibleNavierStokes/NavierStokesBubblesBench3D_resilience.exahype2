@@ -48,19 +48,17 @@
     "stp_tracing_frequency" : 10
   },
   "resilience" : {
-    "generate_soft_errors" : "migratable_stp_tasks_overwrite_hardcoded",
+    "generate_soft_errors" : "migratable_stp_tasks_overwrite",
     "check_mechanism" : "check_stps_with_low_confidence",
     "save_redundant_computations" : true,
     "task_sharing" : "task_sharing_resilience_correction",
-    "rel_error" : 0.1,
+    "rel_error" : 0.00001,
     "injection_time" : 0.136866,
     "injection_position" : [500.0, 500.0, 500.0],
-    "confidence_required" : 1.0,
+    "max_error_indicator" : 1000,
     "confidence_check_time_step_sizes" : false,
-    "confidence_check_derivatives" : false,
-    "confidence_check_admissibility" : false,
-    "confidence_min_derivative" : 100,
-    "confidence_max_derivative" : 100000
+    "confidence_check_derivatives" : true,
+    "confidence_check_admissibility" : false
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",

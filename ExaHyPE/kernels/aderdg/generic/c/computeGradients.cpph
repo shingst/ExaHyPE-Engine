@@ -41,6 +41,8 @@ inline void computeSecondDerivatives(double *secondDerivatives, const double* co
   const int basisY = basisSize;
   const int basisZ = DIMENSIONS == 3 ? basisSize : 1;
   
+  std::fill_n(secondDerivatives, numberOfData*basisX*basisY*basisZ, 0);
+  
   index idx_derivative(basisZ, basisY, basisX, numberOfData);
   index idx_u(basisZ, basisY, basisX, numberOfData);
   

@@ -330,9 +330,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
                                                                       _parser.getRelErrorForHardcodedInjection(),
                                                                       _parser.getErrorInjectionTime(),
                                                                       _parser.getErrorInjectionPosition(),
-                                                                      _parser.getConfidenceForTrustworthiness(),
-                                                                      _parser.getMinDerivativeScalingFactor(),
-                                                                      _parser.getMaxDerivativeScalingFactor());
+                                                                      _parser.getMaximumErrorIndicatorForTrustworthiness());
         }
 #if defined(SharedTBB)
         // order is important: set resilience strategy first before starting offloading service
@@ -372,9 +370,9 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     exahype::reactive::ResilienceTools::CheckFlipped = _parser.getCheckCorrupted();
     exahype::reactive::ResilienceTools::CheckSTPsWithLowConfidence = _parser.getCheckSTPsWithLowConfidence();
 
-    exahype::reactive::ResilienceTools::CheckDerivativesForConfidence = _parser.getCheckSTPConfidenceDerivatives();
-    exahype::reactive::ResilienceTools::CheckAdmissibilityForConfidence = _parser.getCheckSTPConfidenceAdmissibility();
-    exahype::reactive::ResilienceTools::CheckTimeStepsForConfidence = _parser.getCheckSTPConfidenceTimeStepSizes();
+    exahype::reactive::ResilienceTools::CheckDerivatives = _parser.getCheckSTPConfidenceDerivatives();
+    exahype::reactive::ResilienceTools::CheckAdmissibility = _parser.getCheckSTPConfidenceAdmissibility();
+    exahype::reactive::ResilienceTools::CheckTimeSteps = _parser.getCheckSTPConfidenceTimeStepSizes();
 
   }
 

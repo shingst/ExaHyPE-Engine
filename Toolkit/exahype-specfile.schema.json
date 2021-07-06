@@ -465,11 +465,11 @@
             "scope" : "run-time",
             "default" : 0
          },
-         "confidence_required" : {
+         "max_error_indicator" : {
             "type" : "number",
-            "title" : "Specifies the confidence value required for a task outcome to be considered as being trustworthy.",
+            "title" : "Specifies the maximum error indicator below which a task outcome to be considered as being trustworthy.",
             "scope" : "run-time",
-            "default" : 1
+            "default" : 0.0
          },
          "injection_position" : {
             "type" : "array",

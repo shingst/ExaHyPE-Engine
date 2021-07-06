@@ -1457,17 +1457,17 @@ double exahype::parser::Parser::getErrorInjectionTime() const {
   return getDoubleFromPath("/resilience/injection_time", -1, isOptional);
 }
 
-double exahype::parser::Parser::getConfidenceForTrustworthiness() const {
-  return getDoubleFromPath("/resilience/confidence_required", 0.90, isOptional);
+double exahype::parser::Parser::getMaximumErrorIndicatorForTrustworthiness() const {
+  return getDoubleFromPath("/resilience/max_error_indicator", 0.00, isOptional);
 }
 
-double exahype::parser::Parser::getMinDerivativeScalingFactor() const {
+/*double exahype::parser::Parser::getMinDerivativeScalingFactor() const {
   return getDoubleFromPath("/resilience/confidence_min_derivative", 100, isOptional);
 }
 
 double exahype::parser::Parser::getMaxDerivativeScalingFactor() const {
   return getDoubleFromPath("/resilience/confidence_max_derivative", 1e06, isOptional);
-}
+}*/
 
 bool exahype::parser::Parser::getTryToSaveRedundantComputations() const {
   return getBoolFromPath("/resilience/save_redundant_computations", false, isOptional);

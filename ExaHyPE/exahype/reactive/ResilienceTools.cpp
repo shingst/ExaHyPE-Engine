@@ -33,9 +33,9 @@ bool exahype::reactive::ResilienceTools::CheckLimitedCellsOnly;
 bool exahype::reactive::ResilienceTools::CheckFlipped;
 bool exahype::reactive::ResilienceTools::CheckSTPsWithLowConfidence;
 
-bool exahype::reactive::ResilienceTools::CheckDerivativesForConfidence;
-bool exahype::reactive::ResilienceTools::CheckTimeStepsForConfidence;
-bool exahype::reactive::ResilienceTools::CheckAdmissibilityForConfidence;
+bool exahype::reactive::ResilienceTools::CheckDerivatives;
+bool exahype::reactive::ResilienceTools::CheckTimeSteps;
+bool exahype::reactive::ResilienceTools::CheckAdmissibility;
 
 exahype::reactive::ResilienceTools::ResilienceTools()
  : _injectionInterval(3000),
@@ -49,7 +49,7 @@ exahype::reactive::ResilienceTools::ResilienceTools()
    _injectionRank(0),
    _absError(0),
    _relError(0),
-   _confidenceRequired(1),
+   _maxErrorIndicator(1),
    _injectionPosition(),
    _injectionTime(-1),
    _minScalingFactorOfDerivative(100),
@@ -68,22 +68,40 @@ void exahype::reactive::ResilienceTools::configure(double absError,
                     double relError,
                     double injectionTime,
                     tarch::la::Vector<DIMENSIONS, double> injectionPos,
-                    double confidenceRequired,
-                    double minScalingFactorOfDerivative,
-                    double maxScalingFactorOfDerivative) {
+                    double maxErrorIndicator) {
   _absError = absError;
   _relError = relError;
-  _confidenceRequired = confidenceRequired;
-
+  _maxErrorIndicator = maxErrorIndicator;
+  std::cerr<<"setting error to "<<_maxErrorIndicator<<std::endl;
   _injectionTime = injectionTime;
   _injectionPosition = injectionPos;
 
-  _minScalingFactorOfDerivative = minScalingFactorOfDerivative;
-  _maxScalingFactorOfDerivative = maxScalingFactorOfDerivative;
 }
 
-bool exahype::reactive::ResilienceTools::isTrustworthy(double confidence) {
-  return confidence>=_confidenceRequired;
+bool exahype::reactive::ResilienceTools::isTrustworthy(double errorIndicator) {
+  return errorIndicator<=_maxErrorIndicator;
+}
+
+bool exahype::reactive::ResilienceTools::shouldInjectError(const double *center, double t) {
+  if(GenerationStrategy==SoftErrorGenerationStrategy::OverwriteHardcoded) {
+    return tarch::la::equals(center[0], _injectionPosition[0],0.001)
+                   && tarch::la::equals(center[1], _injectionPosition[1],0.001)
+                   #if DIMENSIONS==3
+                   && tarch::la::equals(center[2], _injectionPosition[2],0.001)
+                   #endif
+                   && tarch::la::equals(t, _injectionTime,0.0001);
+  }
+  else if(GenerationStrategy==SoftErrorGenerationStrategy::Overwrite
+      || GenerationStrategy==SoftErrorGenerationStrategy::Bitflips ){
+
+    if(_cnt.load()%_injectionInterval==0
+        && _numFlipped<_numFlips
+        && tarch::parallel::Node::getInstance().getRank()==_injectionRank) {
+      return true;
+    }
+    else  _cnt++;
+  }
+  return false;
 }
 
 exahype::reactive::ResilienceTools& exahype::reactive::ResilienceTools::getInstance() {
@@ -101,12 +119,9 @@ bool exahype::reactive::ResilienceTools::checkSTPsImmediatelyAfterComputation() 
 #endif
 }
 
-bool exahype::reactive::ResilienceTools::generateBitflipErrorInDoubleIfActive(double *array, size_t size) {
-  _cnt++;
+bool exahype::reactive::ResilienceTools::generateBitflipErrorInDoubleIfActive(const double *ref, double *center, int dim, double t, double *array, size_t size) {
 
-  if(_cnt.load()%_injectionInterval==0
-      && _numFlipped<_numFlips
-      && tarch::parallel::Node::getInstance().getRank()==_injectionRank) {
+  if(shouldInjectError(center, t)) {
     std::random_device r;
     std::default_random_engine generator(r());
     std::uniform_int_distribution<int> un_arr(0, size-1);
@@ -134,10 +149,8 @@ bool exahype::reactive::ResilienceTools::generateBitflipErrorInDoubleIfActive(do
   return false;
 }
 
-bool exahype::reactive::ResilienceTools::overwriteRandomValueInArrayIfActive(const double* ref, double *array, size_t size) {
-  _cnt++;
-  if(_cnt.load()%_injectionInterval==0 && _numFlipped<_numFlips
-      && tarch::parallel::Node::getInstance().getRank()==_injectionRank) {
+bool exahype::reactive::ResilienceTools::overwriteRandomValueInArrayIfActive(const double *ref, double *center, int dim, double t, double *array, size_t size) {
+  if(shouldInjectError(center, t)) {
     std::random_device r;
     std::default_random_engine generator(r());
     std::uniform_int_distribution<int> un_arr(0, size-1);
@@ -176,12 +189,7 @@ bool exahype::reactive::ResilienceTools::overwriteHardcodedIfActive(const double
 
   //with limiter
   //exahype::reactive::ResilienceTools::overwriteHardcodedIfActive center[0]=1.8, center[1]=0.12 t 0.138786
-  bool isActive = tarch::la::equals(center[0], _injectionPosition[0],0.001)
-                 && tarch::la::equals(center[1], _injectionPosition[1],0.001)
-#if DIMENSIONS==3
-                 && tarch::la::equals(center[2], _injectionPosition[2],0.001)
-#endif
-                 && tarch::la::equals(t, _injectionTime,0.0001);
+  bool isActive = shouldInjectError(center, t);
 
   if(isActive) {
     int idx_array = 0;
@@ -222,10 +230,10 @@ if(TMPI_IsLeadingRank()) {
     result = false;
     break;
   case SoftErrorGenerationStrategy::Bitflips:
-    result = generateBitflipErrorInDoubleIfActive(array, size);
+    result = generateBitflipErrorInDoubleIfActive(ref, center, dim, t, array, size);
     break;
   case SoftErrorGenerationStrategy::Overwrite:
-    result = overwriteRandomValueInArrayIfActive(ref, array, size);
+    result = overwriteRandomValueInArrayIfActive(ref, center, dim, t, array, size);
     break;
   case SoftErrorGenerationStrategy::OverwriteHardcoded:
     result = overwriteHardcodedIfActive(ref, center, dim, t, array, size);
@@ -331,10 +339,10 @@ bool exahype::reactive::ResilienceTools::getCorruptionDetected() {
   return _corruptionDetected;
 }
 
-double exahype::reactive::ResilienceTools::getMinDerivativeScalingFactor() const {
+/*double exahype::reactive::ResilienceTools::getMinDerivativeScalingFactor() const {
   return _minScalingFactorOfDerivative;
 }
 
 double exahype::reactive::ResilienceTools::getMaxDerivativeScalingFactor() const {
   return _maxScalingFactorOfDerivative;
-}
+}*/

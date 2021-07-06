@@ -119,7 +119,7 @@ exahype::solvers::LimitingADERDGSolver::CheckAndCorrectSolutionJob::SDCCheckResu
 
   exahype::reactive::ResilienceStatistics::getInstance().notifyDoubleCheckedTask();
 
-  if(exahype::reactive::ResilienceTools::getInstance().isTrustworthy(outcome->_metadata._confidence))
+  if(exahype::reactive::ResilienceTools::getInstance().isTrustworthy(outcome->_metadata._errorIndicator))
   {
     /*logError("checkAgainstOutcome","Limiter was not active previously in other team, we must have a soft error!"
         <<_cellInfo._cellDescriptionsIndex

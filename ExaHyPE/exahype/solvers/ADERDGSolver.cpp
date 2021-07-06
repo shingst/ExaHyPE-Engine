@@ -1802,12 +1802,12 @@ void exahype::solvers::ADERDGSolver::computeTemporarySolutionWithPredictor(CellD
 
 }
 
-double exahype::solvers::ADERDGSolver::computePredictorConfidence(CellDescription& cellDescription, double predictorTimeStepSize) {
+double exahype::solvers::ADERDGSolver::computePredictorErrorIndicator(CellDescription& cellDescription, double predictorTimeStepSize) {
   double *luhtemp = new double[getDataPerCell()];
 
   computeTemporarySolutionWithPredictor(cellDescription, luhtemp);
-  double confTimeStep = exahype::reactive::ResilienceTools::CheckTimeStepsForConfidence ? computePredictorUpdateConfidenceTimeStep(luhtemp, cellDescription, predictorTimeStepSize) : 1;
-  double confAdm = exahype::reactive::ResilienceTools::CheckAdmissibilityForConfidence ? computePredictorUpdateConfAdmissibility(luhtemp, cellDescription) : 1;
+  double errorIndTimeStep = exahype::reactive::ResilienceTools::CheckTimeSteps ? computePredictorUpdateErrorIndicatorTimeStep(luhtemp, cellDescription, predictorTimeStepSize) : 0;
+  double errorIndAdm = exahype::reactive::ResilienceTools::CheckAdmissibility ? computePredictorUpdateErrorIndicatorAdmissibility(luhtemp, cellDescription) : 0;
 
   //if(!exahype::reactive::ResilienceTools::getInstance().isTrustworthy(confTimeStep)) {
   //  logError("computePredictorConfidence","Predictor would result in inadmissible time step size! ConfTimeStep = "<<confTimeStep);
@@ -1817,22 +1817,23 @@ double exahype::solvers::ADERDGSolver::computePredictorConfidence(CellDescriptio
   //  logError("computePredictorConfidence","Predictor would result in inadmissible update!");
   //}
 
-  double confDerivatives = exahype::reactive::ResilienceTools::CheckDerivativesForConfidence ? computePredictorUpdateConfDerivatives(luhtemp, cellDescription) : 1;
+  double errorIndDerivatives = exahype::reactive::ResilienceTools::CheckDerivatives ? computePredictorUpdateErrorIndicatorDerivatives(luhtemp, cellDescription) : 0;
 
   delete[] luhtemp;
-  return std::min(confTimeStep, std::min(confAdm, confDerivatives));
+  //std::cerr<<" error ind "<< std::max(errorIndTimeStep, std::max(errorIndAdm, errorIndDerivatives))<<std::endl;
+  return std::max(errorIndTimeStep, std::max(errorIndAdm, errorIndDerivatives));
 }
 
-double exahype::solvers::ADERDGSolver::computePredictorUpdateConfidenceTimeStep(double *luhWithPredictor, CellDescription& cellDescription, double predictorTimeStepSize) {
+double exahype::solvers::ADERDGSolver::computePredictorUpdateErrorIndicatorTimeStep(double *luhWithPredictor, CellDescription& cellDescription, double predictorTimeStepSize) {
   double admissibleTimeStepSize = stableTimeStepSize(luhWithPredictor, cellDescription.getSize());
   //if(admissibleTimeStepSize!=predictorTimeStepSize) {
   //  logError("computePredictorUpdateConfidenceTimeStep", "factor "<<std::abs(admissibleTimeStepSize-predictorTimeStepSize)/(predictorTimeStepSize));
   //}
 
-  return 1.0-std::min(1.0, std::abs(admissibleTimeStepSize-predictorTimeStepSize)/(predictorTimeStepSize));
+  return std::abs(admissibleTimeStepSize-predictorTimeStepSize)/predictorTimeStepSize;
 }
 
-double exahype::solvers::ADERDGSolver::computePredictorUpdateConfAdmissibility(double *luhWithPredictor, CellDescription& cellDescription) {
+double exahype::solvers::ADERDGSolver::computePredictorUpdateErrorIndicatorAdmissibility(double *luhWithPredictor, CellDescription& cellDescription) {
 
   double* observablesMin = nullptr;
   double* observablesMax = nullptr;
@@ -1850,14 +1851,14 @@ double exahype::solvers::ADERDGSolver::computePredictorUpdateConfAdmissibility(d
           cellDescription.getOffset()+0.5*cellDescription.getSize(),cellDescription.getSize(),
           cellDescription.getTimeStamp());
 
-  return isAdmissible ? 1 : 0;
+  return isAdmissible ? 0 : std::numeric_limits<double>::max();
 }
 
-double exahype::solvers::ADERDGSolver::computePredictorUpdateConfDerivatives(double *luhWithPredictor, CellDescription& cellDescription) {
+double exahype::solvers::ADERDGSolver::computePredictorUpdateErrorIndicatorDerivatives(double *luhWithPredictor, CellDescription& cellDescription) {
 
   double *luh = static_cast<double*> (cellDescription.getSolution());
 
-  double *maxDerivativesPerComponentOld  = new double[getNumberOfVariables()+getNumberOfParameters()];
+  /*double *maxDerivativesPerComponentOld  = new double[getNumberOfVariables()+getNumberOfParameters()];
   double *maxDerivativesPerComponentNew  = new double[getNumberOfVariables()+getNumberOfParameters()];
   double *maxDerivativeScaling  = new double[getNumberOfVariables()+getNumberOfParameters()];
 
@@ -1882,24 +1883,48 @@ double exahype::solvers::ADERDGSolver::computePredictorUpdateConfDerivatives(dou
   double maxScaling = std::numeric_limits<double>::min();
 
   for(int j=0; j<getNumberOfVariables()+getNumberOfParameters(); j++) {
-    logError("computePredictorUpdateConfDerivatives", "scaling for component="<<j<<"="<<maxDerivativeScaling[j]);
+    //logError("computePredictorUpdateErrorIndicatorDerivatives", "scaling for component="<<j<<"="<<maxDerivativeScaling[j]);
     if(maxScaling<maxDerivativeScaling[j])
       maxScaling = maxDerivativeScaling[j];
   }
 
   delete [] maxDerivativesPerComponentOld;
   delete [] maxDerivativesPerComponentNew;
+  delete [] maxDerivativeScaling;*/
 
-  double minScalingFactor = exahype::reactive::ResilienceTools::getInstance().getMinDerivativeScalingFactor();
-  double maxScalingFactor = exahype::reactive::ResilienceTools::getInstance().getMaxDerivativeScalingFactor();
+  double *secondDerivativesBase = new double[getDataPerCell()];
+  double *secondDerivativesUpdated = new double[getDataPerCell()];
 
-  double intervalLength = std::log10(maxScalingFactor/minScalingFactor);
+  double maxScaling = std::numeric_limits<double>::min();
 
-  logError("computePredictorUpdateConfDerivatives", "intervalLength="<<intervalLength);
+  for(int i=0; i<DIMENSIONS; i++) {
+    kernels::aderdg::generic::c::computeSecondDerivatives(secondDerivativesBase, luh, i,  _nodesPerCoordinateAxis-1,
+                           getNumberOfVariables()+getNumberOfParameters(), cellDescription.getSize());
+    kernels::aderdg::generic::c::computeSecondDerivatives(secondDerivativesUpdated, luhWithPredictor, i,  _nodesPerCoordinateAxis-1,
+                           getNumberOfVariables()+getNumberOfParameters(), cellDescription.getSize());
 
-  maxScaling = std::min(maxScaling, maxScalingFactor);
+    for(int j=0; j<getDataPerCell(); j++) {
+      //logError("computePredictorUpdateErrorIndicatorDerivatives", "secondDerivativesUpdated[j]="<<secondDerivativesUpdated[j]
+      //                                                                     <<" , secondDerivativesBase[j]="<<secondDerivativesBase[j]);
+       double tmp = std::abs(secondDerivativesUpdated[j]-secondDerivativesBase[j])/secondDerivativesBase[j];
+       maxScaling = std::max(maxScaling, secondDerivativesBase[j]<=1e-12 ? secondDerivativesUpdated[j] : tmp);
+    }
+  }
 
-  return (maxScaling> minScalingFactor) ? std::max(0.0,1-(std::log10(maxScaling)-std::log10(minScalingFactor))/intervalLength) : 1;
+  delete[] secondDerivativesBase;
+  delete[] secondDerivativesUpdated;
+
+//  double minScalingFactor = exahype::reactive::ResilienceTools::getInstance().getMinDerivativeScalingFactor();
+//  double maxScalingFactor = exahype::reactive::ResilienceTools::getInstance().getMaxDerivativeScalingFactor();
+
+  //double intervalLength = std::log10(maxScalingFactor/minScalingFactor);
+
+  //logError("computePredictorUpdateErrorIndicatorDerivatives", "maxScaling="<<maxScaling);
+
+  //maxScaling = std::min(maxScaling, maxScalingFactor);
+
+  //return (maxScaling> minScalingFactor) ? std::max(0.0,1-(std::log10(maxScaling)-std::log10(minScalingFactor))/intervalLength) : 1;
+  return maxScaling;
 }
 
 void exahype::solvers::ADERDGSolver::computeMaxAbsSecondDerivativeDirection(double *luh,  CellDescription& cellDescription, int direction, double *maxAbsDerivativesComponents) {
@@ -1972,22 +1997,18 @@ void exahype::solvers::ADERDGSolver::mergeNeighboursMetadata(
       mergeWithCommunicationStatus(cellDescription1,face._faceIndex1,cellDescription2.getCommunicationStatus());
       mergeWithAugmentationStatus( cellDescription1,face._faceIndex1,cellDescription2.getAugmentationStatus());
       mergeWithRefinementStatus(   cellDescription1,face._faceIndex1,cellDescription2.getRefinementStatus());
-      //mergeWithCorruptionStatus(   cellDescription1,face._faceIndex1,cellDescription2.getCorruptionStatus());
 
       mergeWithCommunicationStatus(cellDescription2,face._faceIndex2,cellDescription1.getCommunicationStatus());
       mergeWithAugmentationStatus( cellDescription2,face._faceIndex2,cellDescription1.getAugmentationStatus());
       mergeWithRefinementStatus(   cellDescription2,face._faceIndex2,cellDescription1.getRefinementStatus());
-      //mergeWithCorruptionStatus(   cellDescription2,face._faceIndex2,cellDescription1.getCorruptionStatus());
     } else {
       mergeWithCommunicationStatus(cellDescription1,face._faceIndex1,EmptyStatus);
       mergeWithAugmentationStatus( cellDescription1,face._faceIndex1,EmptyStatus);
       mergeWithRefinementStatus(   cellDescription1,face._faceIndex1,EmptyStatus);
-      //mergeWithCorruptionStatus(   cellDescription1,face._faceIndex1, Uncorrupted); //todo no hardcoding
 
       mergeWithCommunicationStatus(cellDescription2,face._faceIndex2,EmptyStatus);
       mergeWithAugmentationStatus( cellDescription2,face._faceIndex2,EmptyStatus);
       mergeWithRefinementStatus(   cellDescription2,face._faceIndex2,EmptyStatus);
-      //mergeWithCorruptionStatus(   cellDescription2,face._faceIndex1, Uncorrupted); //todo no hardcoding
     }
 
     cellDescription1.setNeighbourMergePerformed(face._faceIndex1,true); // here we only set, doesn't matter if operation is done twice.
@@ -3600,7 +3621,7 @@ void exahype::solvers::ADERDGSolver::storePendingOutcomeToBeShared(int cellDescr
   data->_metadata._predictorTimeStamp = timestamp;
   data->_metadata._predictorTimeStepSize = timestep;
   data->_metadata._isCorrupted = false;
-  data->_metadata._confidence = 0; //will be re-set once limiter status is known
+  data->_metadata._errorIndicator = 0; //will be re-set once limiter status is known
 
   //outcome may already be available due to predictor re-run -> replace old data
   tbb::concurrent_hash_map<std::pair<int,int>, MigratablePredictionJobData*>::accessor accessor;
@@ -3655,7 +3676,7 @@ void exahype::solvers::ADERDGSolver::releaseDummyOutcomeAndShare(int cellDescrip
   data->_metadata._predictorTimeStepSize = timestep;
   data->_metadata._isCorrupted = false;
   if(exahype::reactive::ResilienceTools::CheckLimitedCellsOnly)
-    data->_metadata._confidence = isTroubled ? 0 : 1;
+    data->_metadata._errorIndicator = isTroubled ? 0 : 1;
 
   //Share now
   int teams = exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams();
@@ -3668,8 +3689,8 @@ void exahype::solvers::ADERDGSolver::releaseDummyOutcomeAndShare(int cellDescrip
 
   if(data->_metadata._isCorrupted) {
     logWarning("releaseDummyOutcomeAndShare", "Caution: a corrupted outcome is shared. SDC should be detected...");
-    if(!exahype::reactive::ResilienceTools::getInstance().isTrustworthy(data->_metadata._confidence))
-      logError("releaseDummyOutcomeAndShare","has not been detected by SDC mechanism, confidence="<<data->_metadata._confidence);
+    if(!exahype::reactive::ResilienceTools::getInstance().isTrustworthy(data->_metadata._errorIndicator))
+      logError("releaseDummyOutcomeAndShare","has not been detected by SDC mechanism, errorIndicator="<<data->_metadata._errorIndicator);
   }
 
   int j = 0;
@@ -3730,7 +3751,7 @@ void exahype::solvers::ADERDGSolver::releasePendingOutcomeAndShare(int cellDescr
     logDebug("releasePendingOutcomeAndShare", " celldesc ="<<cellDescriptionsIndex<<" isPotentiallyCorrupted "<<isTroubled
                                               <<" timestepsize "<<std::setprecision(30)<<data->_metadata._predictorTimeStepSize);
     if(exahype::reactive::ResilienceTools::CheckLimitedCellsOnly)
-      data->_metadata._confidence = isTroubled ? 0 : 1.0;
+      data->_metadata._errorIndicator = isTroubled ? 0 : 1.0;
 
     //update solution
     double *luh   = static_cast<double*>(cellDescription.getSolution());
@@ -3747,8 +3768,8 @@ void exahype::solvers::ADERDGSolver::releasePendingOutcomeAndShare(int cellDescr
 
     if(data->_metadata._isCorrupted) {
       logWarning("releasePendingOutcomeAndShare", "Caution: a corrupted outcome is shared. SDC should be detected...");
-      if(!exahype::reactive::ResilienceTools::getInstance().isTrustworthy(data->_metadata._confidence))
-        logError("releasePendingOutcomeAndShare","has not been detected by SDC mechanism, confidence="<<data->_metadata._confidence);
+      if(!exahype::reactive::ResilienceTools::getInstance().isTrustworthy(data->_metadata._errorIndicator))
+        logError("releasePendingOutcomeAndShare","has not been detected by SDC mechanism, errorIndicator="<<data->_metadata._errorIndicator);
     }
 
     int j = 0;
@@ -3811,7 +3832,7 @@ exahype::solvers::ADERDGSolver::SDCCheckResult exahype::solvers::ADERDGSolver::c
      MigratablePredictionJobData *data,
      double predictorTimeStamp,
      double predictorTimeStepSize,
-     double myConfidence){
+     double errorIndicator){
   double *lduh = static_cast<double*>(cellDescription.getUpdate());
   double *lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
 #if defined(OffloadingGradQhbnd)
@@ -3855,18 +3876,18 @@ exahype::solvers::ADERDGSolver::SDCCheckResult exahype::solvers::ADERDGSolver::c
   exahype::reactive::ResilienceStatistics::getInstance().notifyDoubleCheckedTask();
 
   if(!equal) {
-    if(data->_metadata._confidence==1) {
+    if(data->_metadata._errorIndicator==0) {
       logError("checkCellDescriptionAgainstOutcome", "soft error detected: "<<data->_metadata.to_string());
       exahype::reactive::ResilienceStatistics::getInstance().notifyDetectedError();
       return SDCCheckResult::OutcomeSaneAsTriggerNotActive; //we assume that the trigger is good enough to tell us that the outcome is ok
     }
-    else if (data->_metadata._confidence>myConfidence) {
+    else if (data->_metadata._errorIndicator<errorIndicator) {
       logError("checkCellDescriptionAgainstOutcome", "soft error detected: "<<data->_metadata.to_string());
       exahype::reactive::ResilienceStatistics::getInstance().notifyDetectedError();
-      return SDCCheckResult::OutcomeHasHigherConfidence;
+      return SDCCheckResult::OutcomeHasLowerErrorIndicator;
      }
     else { 
-      return SDCCheckResult::MyConfidenceIsHigher; //I think my outcome is better and I will keep it
+      return SDCCheckResult::MyErrorIndicatorIsLower; //I think my outcome is better and I will keep it
     }
   }
   else

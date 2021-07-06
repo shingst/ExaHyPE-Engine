@@ -814,11 +814,11 @@ class exahype::parser::Parser {
 
   double getRelErrorForHardcodedInjection() const;
 
-  double getConfidenceForTrustworthiness() const;
+  double getMaximumErrorIndicatorForTrustworthiness() const;
 
-  double getMinDerivativeScalingFactor() const;
+  //double getMinDerivativeScalingFactor() const;
 
-  double getMaxDerivativeScalingFactor() const;
+  //double getMaxDerivativeScalingFactor() const;
 
   tarch::la::Vector<DIMENSIONS, double> getErrorInjectionPosition() const;
 
