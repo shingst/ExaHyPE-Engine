@@ -3451,9 +3451,9 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
 
   double minTimeStampToKeep = _previousMinTimeStamp;
 
-  if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()
-    >= exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceCorrection)
-    minTimeStampToKeep = std::min(minTimeStampToKeep, lastconsistentTimeStepSize); //keep even older outcomes to be able to rollback
+  //if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()
+  //  >= exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceCorrection)
+  //  minTimeStampToKeep = std::min(minTimeStampToKeep, lastconsistentTimeStepSize); //keep even older outcomes to be able to rollback
 
   while( (i< unsafe_size || isFinal) && gotOne) {
     MigratablePredictionJobOutcomeKey key;

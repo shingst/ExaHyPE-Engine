@@ -79,6 +79,7 @@ bool exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::run(bool isRunO
           _solverPatch.setHasCompletedLastStep(true);
         }
       }
+      delete outcome;
     }
     else {
       logDebug("runCheck"," Not found "<<to_string()<<std::setprecision(30)<<"time stamp ="<<_predictorTimeStamp<<" timestep "<<_predictorTimeStepSize);

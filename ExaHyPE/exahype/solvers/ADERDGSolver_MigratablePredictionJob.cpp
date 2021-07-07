@@ -906,7 +906,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
 
   double minTimeStampToKeep = static_cast<exahype::solvers::ADERDGSolver*>(solver)->getPreviousMinTimeStamp();
 
-  exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().trackTimeStepAndTriggerActive(team, 
+ /* exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().trackTimeStepAndTriggerActive(team, 
 		                                              key._timestamp,
 							      key._timestepSize,
 							      !exahype::reactive::ResilienceTools::getInstance().isTrustworthy(data->_metadata.getErrorIndicator()));
@@ -922,7 +922,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
   if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()
     >= exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceChecks) {
     minTimeStampToKeep = std::min(minTimeStampToKeep, lastconsistentTimeStepSize);
-  }
+  }*/
 
   if(key._timestamp<minTimeStampToKeep)
   {
