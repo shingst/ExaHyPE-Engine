@@ -1817,7 +1817,11 @@ double exahype::solvers::ADERDGSolver::computePredictorErrorIndicator(CellDescri
   //  logError("computePredictorConfidence","Predictor would result in inadmissible update!");
   //}
 
+  double time = -MPI_Wtime();
   double errorIndDerivatives = exahype::reactive::ResilienceTools::CheckDerivatives ? computePredictorUpdateErrorIndicatorDerivatives(luhtemp, cellDescription) : 0;
+  time +=MPI_Wtime();
+
+  //std::cerr<<"took "<<time<<" s "<<std::endl;
 
   delete[] luhtemp;
   //std::cerr<<" error ind "<< std::max(errorIndTimeStep, std::max(errorIndAdm, errorIndDerivatives))<<std::endl;
@@ -1892,12 +1896,14 @@ double exahype::solvers::ADERDGSolver::computePredictorUpdateErrorIndicatorDeriv
   delete [] maxDerivativesPerComponentNew;
   delete [] maxDerivativeScaling;*/
 
-  double *secondDerivativesBase = new double[getDataPerCell()];
-  double *secondDerivativesUpdated = new double[getDataPerCell()];
 
-  double maxScaling = std::numeric_limits<double>::min();
 
-  for(int i=0; i<DIMENSIONS; i++) {
+ // double *secondDerivativesBase = new double[getDataPerCell()];
+ // double *secondDerivativesUpdated = new double[getDataPerCell()];
+
+//  double maxScaling = std::numeric_limits<double>::min();
+
+ /* for(int i=0; i<DIMENSIONS; i++) {
     kernels::aderdg::generic::c::computeSecondDerivatives(secondDerivativesBase, luh, i,  _nodesPerCoordinateAxis-1,
                            getNumberOfVariables()+getNumberOfParameters(), cellDescription.getSize());
     kernels::aderdg::generic::c::computeSecondDerivatives(secondDerivativesUpdated, luhWithPredictor, i,  _nodesPerCoordinateAxis-1,
@@ -1913,7 +1919,7 @@ double exahype::solvers::ADERDGSolver::computePredictorUpdateErrorIndicatorDeriv
 
   delete[] secondDerivativesBase;
   delete[] secondDerivativesUpdated;
-
+*/
 //  double minScalingFactor = exahype::reactive::ResilienceTools::getInstance().getMinDerivativeScalingFactor();
 //  double maxScalingFactor = exahype::reactive::ResilienceTools::getInstance().getMaxDerivativeScalingFactor();
 
@@ -1924,6 +1930,9 @@ double exahype::solvers::ADERDGSolver::computePredictorUpdateErrorIndicatorDeriv
   //maxScaling = std::min(maxScaling, maxScalingFactor);
 
   //return (maxScaling> minScalingFactor) ? std::max(0.0,1-(std::log10(maxScaling)-std::log10(minScalingFactor))/intervalLength) : 1;
+  double maxScaling = kernels::aderdg::generic::c::compareSecondDerivativesAndFindMaxScaling(luhWithPredictor, luh, _nodesPerCoordinateAxis-1,
+  getNumberOfVariables()+getNumberOfParameters(), cellDescription.getSize());
+
   return maxScaling;
 }
 

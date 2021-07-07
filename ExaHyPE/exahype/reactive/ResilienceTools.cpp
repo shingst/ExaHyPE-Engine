@@ -72,7 +72,7 @@ void exahype::reactive::ResilienceTools::configure(double absError,
   _absError = absError;
   _relError = relError;
   _maxErrorIndicator = maxErrorIndicator;
-  std::cerr<<"setting error to "<<_maxErrorIndicator<<std::endl;
+  
   _injectionTime = injectionTime;
   _injectionPosition = injectionPos;
 
@@ -155,11 +155,11 @@ bool exahype::reactive::ResilienceTools::overwriteRandomValueInArrayIfActive(con
     std::default_random_engine generator(r());
     std::uniform_int_distribution<int> un_arr(0, size-1);
 
-    //int idx_array = un_arr(generator);
-    int idx_array = 0;
+    int idx_array = un_arr(generator);
+    //int idx_array = 0;
 
     double old_val = array[idx_array];
-    double error = (_relError>0) ? (_relError*(ref[idx_array]+old_val)) //introduces relative error into new ref (e.g., new solution), if added to ref
+    double error = (std::abs(_relError)>0) ? (_relError*(ref[idx_array]+old_val)) //introduces relative error into new ref (e.g., new solution), if added to ref
                                 : _absError;           //only introduces absolute error
 
 
@@ -171,7 +171,8 @@ bool exahype::reactive::ResilienceTools::overwriteRandomValueInArrayIfActive(con
     logError("overwriteDoubleIfActive()", "overwrite double value, pos = "<<idx_array<<std::setprecision(30)
                                        <<" old ="<<old_val
                                        <<" new = "<<array[idx_array]
-                                       <<" corresponds to relative error "<<error/(ref[idx_array]+old_val));
+                                       <<" corresponds to relative error "<<error/(ref[idx_array]+old_val)
+                                       <<" max error indicator "<<_maxErrorIndicator);
     exahype::reactive::ResilienceStatistics::getInstance().notifyInjectedError();
     return true;
   }

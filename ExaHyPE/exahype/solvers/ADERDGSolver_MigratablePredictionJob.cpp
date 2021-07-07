@@ -1024,7 +1024,7 @@ std::string exahype::solvers::ADERDGSolver::MigratablePredictionJob::to_string()
   result += " time step = " + std::to_string(_predictorTimeStepSize);
   result += " element = " + std::to_string(_element);
   result += " origin = " + std::to_string(_originRank);
-  result += " confidence = " + std::to_string(_errorIndicator);
+  result += " error indicator = " + std::to_string(_errorIndicator);
   result += " isCorrupted = " + std::to_string(_isCorrupted);
 
   return result;

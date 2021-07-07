@@ -32,6 +32,81 @@ inline constexpr int basisSizeD(int basisSize) {
     return basisSize * basisSize * (DIMENSIONS == 3 ? basisSize : 1);
 }
 
+inline double compareSecondDerivativesAndFindMaxScaling(const double* const u1, const double* const u2, int order, int numberOfData, const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch) {
+  const int basisSize = order +1;
+
+  const int basisX = basisSize;
+  const int basisY = basisSize;
+  const int basisZ = DIMENSIONS == 3 ? basisSize : 1;
+
+  index idx_derivative(basisZ, basisY, basisX, numberOfData);
+  index idx_u(basisZ, basisY, basisX, numberOfData);
+ 
+  double maxScaling = std::numeric_limits<double>::min();
+
+  //x direction
+  for(int z = 0; z<basisZ; z++) {
+    for(int y = 0; y<basisY; y++) {
+      for(int x = 0; x<basisX; x++) {
+        for(int v = 0; v<numberOfData; v++){
+            double tmp1 = 0;
+            double tmp2 = 0;
+            for(int n = 0; n<basisSize; n++) {
+              tmp1 += (1/(sizeOfPatch[0]*sizeOfPatch[0])) * u1[idx_u(z,y,n,v)] *
+                                                          kernels::legendre::basisFunctionSecondDerivative[order][n](kernels::legendre::nodes[order][x]);
+              tmp2 += (1/(sizeOfPatch[0]*sizeOfPatch[0])) * u2[idx_u(z,y,n,v)] *
+                                                          kernels::legendre::basisFunctionSecondDerivative[order][n](kernels::legendre::nodes[order][x]);
+            }
+            double tmp = std::abs(tmp1-tmp2)/tmp2;
+            maxScaling = std::max(maxScaling, tmp2<=1e-12 ? tmp1 : tmp);
+        }
+      }
+    }
+  }
+
+  //y direction
+  for(int z = 0; z<basisZ; z++) {
+    for(int y = 0; y<basisY; y++) {
+      for(int x = 0; x<basisX; x++) {
+        for(int v = 0; v<numberOfData; v++){
+            double tmp1 = 0;
+            double tmp2 = 0;
+            for(int n = 0; n<basisSize; n++) {
+              tmp1 += (1/(sizeOfPatch[0]*sizeOfPatch[0])) * u1[idx_u(z,n,x,v)] *
+                                                          kernels::legendre::basisFunctionSecondDerivative[order][n](kernels::legendre::nodes[order][y]);
+              tmp2 += (1/(sizeOfPatch[0]*sizeOfPatch[0])) * u2[idx_u(z,n,x,v)] *
+                                                          kernels::legendre::basisFunctionSecondDerivative[order][n](kernels::legendre::nodes[order][y]);
+            }
+            double tmp = std::abs(tmp1-tmp2)/tmp2;
+            maxScaling = std::max(maxScaling, tmp2<=1e-12 ? tmp1 : tmp);
+        }
+      }
+    }
+  }
+
+#if DIMENSIONS==3
+  for(int z = 0; z<basisZ; z++) {
+    for(int y = 0; y<basisY; y++) {
+      for(int x = 0; x<basisX; x++) {
+        for(int v = 0; v<numberOfData; v++){
+            double tmp1 = 0;
+            double tmp2 = 0;
+            for(int n = 0; n<basisSize; n++) {
+              tmp1 += (1/(sizeOfPatch[0]*sizeOfPatch[0])) * u1[idx_u(n,y,x,v)] *
+                                                          kernels::legendre::basisFunctionSecondDerivative[order][n](kernels::legendre::nodes[order][z]);
+              tmp2 += (1/(sizeOfPatch[0]*sizeOfPatch[0])) * u2[idx_u(n,y,x,v)] *
+                                                          kernels::legendre::basisFunctionSecondDerivative[order][n](kernels::legendre::nodes[order][z]);
+            }
+            double tmp = std::abs(tmp1-tmp2)/tmp2;
+            maxScaling = std::max(maxScaling, tmp2<=1e-12 ? tmp1 : tmp);
+        }
+      }
+    }
+  }
+#endif
+  return maxScaling;
+}
+
 //todo(Philipp): document and probably move somewhere else
 inline void computeSecondDerivatives(double *secondDerivatives, const double* const u, int direction, int order, int numberOfData, const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch) {
  

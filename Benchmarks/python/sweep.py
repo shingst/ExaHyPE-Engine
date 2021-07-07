@@ -563,7 +563,10 @@ def generateScripts():
                                                  
                                 outputFileName = projectName + "-" + environmentDictHash + "-" + parameterDictHash + \
                                                  "-n" + ranks + "-N" + nodes + "-t"+ranksPerNode+"-c"+cores+"-b"+consumers+"-r"+myRun+".out"
+                                errorFileName = projectName + "-" + environmentDictHash + "-" + parameterDictHash + \
+                                                 "-n" + ranks + "-N" + nodes + "-t"+ranksPerNode+"-c"+cores+"-b"+consumers+"-r"+myRun+".err"
                                 outputFilePath = resultsFolderPath + "/" + outputFileName 
+                                errorFilePath = resultsFolderPath + "/" + errorFileName
 
                                 if "preamble" in jobs:
                                     renderedPreamble = jobs["preamble"].strip("\"")
@@ -605,7 +608,7 @@ def generateScripts():
                                     runCommand = runCommand.strip()
                                 else:
                                     runCommand += " "
-                                jobScriptBody += runCommand+executable+" "+specFilePath+" >> "+outputFilePath+"\n" # no whitespace after runCommand
+                                jobScriptBody += runCommand+executable+" "+specFilePath+" >> "+outputFilePath+" 2> "+errorFilePath +"\n" # no whitespace after runCommand
                                 
                                 if "likwid" in general:
                                     groups = sweep_options.parseList(general["likwid"])
