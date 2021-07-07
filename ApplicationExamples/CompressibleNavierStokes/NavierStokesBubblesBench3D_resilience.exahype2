@@ -7,7 +7,7 @@
   },
   "computational_domain": {
     "dimension": 3,
-    "time_steps": 5,
+    "time_steps": 15,
     "offset": [
       0.0,
       0.0,
@@ -51,13 +51,13 @@
     "check_mechanism" : "check_stps_with_low_confidence",
     "save_redundant_computations" : true,
     "task_sharing" : "task_sharing_resilience_correction",
-    "rel_error" : 0,
+    "rel_error" : 0.00001,
     "injection_time" : 0.136866,
     "injection_position" : [500.0, 500.0, 500.0],
-    "max_error_indicator" : 10000000,
+    "max_error_indicator" : 0,
     "confidence_check_time_step_sizes" : false,
-    "confidence_check_derivatives" : false,
-    "confidence_check_admissibility" : true
+    "confidence_check_derivatives" : true,
+    "confidence_check_admissibility" : false
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",
@@ -77,7 +77,7 @@
       "type": "ADER-DG",
       "name": "NavierStokesSolver_ADERDG",
       "order": 7,
-      "maximum_mesh_size": 100,
+      "maximum_mesh_size": 400,
       "maximum_mesh_depth": 0,
       "time_stepping": "global",
       "halo_cells": 0,

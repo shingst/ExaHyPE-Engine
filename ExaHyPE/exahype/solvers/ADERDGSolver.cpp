@@ -1928,12 +1928,18 @@ double exahype::solvers::ADERDGSolver::computePredictorUpdateErrorIndicatorDeriv
   //logError("computePredictorUpdateErrorIndicatorDerivatives", "maxScaling="<<maxScaling);
 
   //maxScaling = std::min(maxScaling, maxScalingFactor);
-
+  //double *maxScalingPerComponent = new double[getNumberOfVariables()+getNumberOfParameters()];
   //return (maxScaling> minScalingFactor) ? std::max(0.0,1-(std::log10(maxScaling)-std::log10(minScalingFactor))/intervalLength) : 1;
-  double maxScaling = kernels::aderdg::generic::c::compareSecondDerivativesAndFindMaxScaling(luhWithPredictor, luh, _nodesPerCoordinateAxis-1,
-  getNumberOfVariables()+getNumberOfParameters(), cellDescription.getSize());
+  //kernels::aderdg::generic::c::compareSecondDerivativesAndFindMaxScaling(maxScalingPerComponent, luhWithPredictor, luh, _nodesPerCoordinateAxis-1, getNumberOfVariables()+getNumberOfParameters(), cellDescription.getSize());
 
-  return maxScaling;
+  //double maxScaling = 0;
+  //for(int i=0; i<getNumberOfVariables()+getNumberOfParameters(); i++) {
+  //  maxScaling += maxScalingPerComponent[i];
+ // }
+ // maxScaling /= getNumberOfVariables()+getNumberOfParameters();
+
+  //delete[] maxScalingPerComponent;
+  return kernels::aderdg::generic::c::compareSecondDerivativesAndGetMeanMaxScaling(luhWithPredictor, luh, _nodesPerCoordinateAxis-1, getNumberOfVariables()+getNumberOfParameters(), cellDescription.getSize());
 }
 
 void exahype::solvers::ADERDGSolver::computeMaxAbsSecondDerivativeDirection(double *luh,  CellDescription& cellDescription, int direction, double *maxAbsDerivativesComponents) {
