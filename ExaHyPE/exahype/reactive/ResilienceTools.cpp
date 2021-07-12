@@ -66,7 +66,6 @@ exahype::reactive::ResilienceTools::ResilienceTools()
   std::uniform_int_distribution<int> un_injection_int(0, 729);
 
   _injectionInterval = 3000 + un_injection_int(r);
-  std::cerr<<"Injection interval "<<_injectionInterval<<std::endl;
 }
 
 exahype::reactive::ResilienceTools::~ResilienceTools() {}
@@ -92,7 +91,7 @@ void exahype::reactive::ResilienceTools::configure(double absError,
     _injectionRank = 0;
   }
   else {
-    _injectionRank = 0;
+    _injectionRank = injectionRank;
   }
 }
 
