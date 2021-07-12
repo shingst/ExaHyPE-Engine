@@ -839,7 +839,6 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
           cellInfo._cellDescriptionsIndex, element,
           predictionTimeStamp,
           predictionTimeStepSize,
-          isTroubled,
           isSkeletonCell);
       logDebug("fusedTimeStepBody", "spawning migratable job for "<< cellInfo._cellDescriptionsIndex<< " predictionTimeStamp "<<predictionTimeStamp<<" predictionTimeStepSize "<<predictionTimeStepSize
           << " troubled "<<isTroubled<<" previous stamp "<<_solver.get()->getMinTimeStamp());

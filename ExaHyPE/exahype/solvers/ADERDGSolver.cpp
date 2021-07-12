@@ -885,7 +885,7 @@ void exahype::solvers::ADERDGSolver::fusedTimeStepBody(
       MigratablePredictionJob *migratablePredictionJob = new MigratablePredictionJob(*this,
           cellInfo._cellDescriptionsIndex, element,
           predictionTimeStamp,
-          predictionTimeStepSize, false, isSkeletonCell);
+          predictionTimeStepSize, isSkeletonCell);
       submitOrSendMigratablePredictionJob(migratablePredictionJob);
 #else
       peano::datatraversal::TaskSet( new PredictionJob(
@@ -1099,13 +1099,15 @@ int exahype::solvers::ADERDGSolver::predictionAndVolumeIntegralBody(
 
 
   //if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()==exahype::reactive::ReactiveContext::ResilienceStrategy::None)
-  exahype::reactive::ResilienceTools::getInstance().corruptDataIfActive(
+  if(exahype::reactive::ResilienceTools::getInstance().shouldInjectError((cellDescription.getOffset()+0.5*cellDescription.getSize()).data(), predictorTimeStamp)) {
+    exahype::reactive::ResilienceTools::getInstance().corruptData(
                                     luh,
                                     (cellDescription.getOffset()+0.5*cellDescription.getSize()).data(),
                                     DIMENSIONS, 
                                     predictorTimeStamp,
                                     lduh,
                                     getUpdateSize());
+  }
 
   compress(cellDescription,isSkeletonCell);
 
@@ -1166,7 +1168,6 @@ void exahype::solvers::ADERDGSolver::predictionAndVolumeIntegral(
           cellInfo._cellDescriptionsIndex, element,
           predictorTimeStamp,
           predictorTimeStepSize,
-          false,
           isSkeletonCell);
         submitOrSendMigratablePredictionJob(migratablePredictionJob);
         exahype::reactive::OffloadingProfiler::getInstance().notifySpawnedTask();
@@ -1802,42 +1803,27 @@ void exahype::solvers::ADERDGSolver::computeTemporarySolutionWithPredictor(CellD
 
 }
 
-double exahype::solvers::ADERDGSolver::computePredictorErrorIndicator(CellDescription& cellDescription, double predictorTimeStepSize) {
+void exahype::solvers::ADERDGSolver::computePredictorErrorIndicators(CellDescription& cellDescription, double predictorTimeStepSize, double *errIndDerivative, double *errIndTimeStep, double *errIndAdmissibility) {
   double *luhtemp = new double[getDataPerCell()];
 
   computeTemporarySolutionWithPredictor(cellDescription, luhtemp);
-  double errorIndTimeStep = exahype::reactive::ResilienceTools::CheckTimeSteps ? computePredictorUpdateErrorIndicatorTimeStep(luhtemp, cellDescription, predictorTimeStepSize) : 0;
-  double errorIndAdm = exahype::reactive::ResilienceTools::CheckAdmissibility ? computePredictorUpdateErrorIndicatorAdmissibility(luhtemp, cellDescription) : 0;
-
-  //if(!exahype::reactive::ResilienceTools::getInstance().isTrustworthy(confTimeStep)) {
-  //  logError("computePredictorConfidence","Predictor would result in inadmissible time step size! ConfTimeStep = "<<confTimeStep);
-  //}
-
-  //if(!exahype::reactive::ResilienceTools::getInstance().isTrustworthy(confAdm)) {
-  //  logError("computePredictorConfidence","Predictor would result in inadmissible update!");
-  //}
-
-  double time = -MPI_Wtime();
-  double errorIndDerivatives = exahype::reactive::ResilienceTools::CheckDerivatives ? computePredictorUpdateErrorIndicatorDerivatives(luhtemp, cellDescription) : 0;
-  time +=MPI_Wtime();
-
-  //std::cerr<<"took "<<time<<" s "<<std::endl;
+  *errIndTimeStep = exahype::reactive::ResilienceTools::CheckTimeSteps ? computePredictorErrorIndicatorTimeStep(luhtemp, cellDescription, predictorTimeStepSize) : 0;
+  *errIndAdmissibility = exahype::reactive::ResilienceTools::CheckAdmissibility ? computePredictorErrorIndicatorAdmissibility(luhtemp, cellDescription) : 0;
+  *errIndDerivative = exahype::reactive::ResilienceTools::CheckDerivatives ? computePredictorErrorIndicatorDerivative(luhtemp, cellDescription) : 0;
 
   delete[] luhtemp;
-  //std::cerr<<" error ind "<< std::max(errorIndTimeStep, std::max(errorIndAdm, errorIndDerivatives))<<std::endl;
-  return std::max(errorIndTimeStep, std::max(errorIndAdm, errorIndDerivatives));
 }
 
-double exahype::solvers::ADERDGSolver::computePredictorUpdateErrorIndicatorTimeStep(double *luhWithPredictor, CellDescription& cellDescription, double predictorTimeStepSize) {
+double exahype::solvers::ADERDGSolver::computePredictorErrorIndicatorTimeStep(double *luhWithPredictor, CellDescription& cellDescription, double predictorTimeStepSize) {
   double admissibleTimeStepSize = stableTimeStepSize(luhWithPredictor, cellDescription.getSize());
   //if(admissibleTimeStepSize!=predictorTimeStepSize) {
-  //  logError("computePredictorUpdateConfidenceTimeStep", "factor "<<std::abs(admissibleTimeStepSize-predictorTimeStepSize)/(predictorTimeStepSize));
+  // logError("computePredictorUpdateConfidenceTimeStep", "factor "<<std::abs(admissibleTimeStepSize-predictorTimeStepSize)/(predictorTimeStepSize));
   //}
 
   return std::abs(admissibleTimeStepSize-predictorTimeStepSize)/predictorTimeStepSize;
 }
 
-double exahype::solvers::ADERDGSolver::computePredictorUpdateErrorIndicatorAdmissibility(double *luhWithPredictor, CellDescription& cellDescription) {
+double exahype::solvers::ADERDGSolver::computePredictorErrorIndicatorAdmissibility(double *luhWithPredictor, CellDescription& cellDescription) {
 
   double* observablesMin = nullptr;
   double* observablesMax = nullptr;
@@ -1858,99 +1844,10 @@ double exahype::solvers::ADERDGSolver::computePredictorUpdateErrorIndicatorAdmis
   return isAdmissible ? 0 : std::numeric_limits<double>::max();
 }
 
-double exahype::solvers::ADERDGSolver::computePredictorUpdateErrorIndicatorDerivatives(double *luhWithPredictor, CellDescription& cellDescription) {
+double exahype::solvers::ADERDGSolver::computePredictorErrorIndicatorDerivative(double *luhWithPredictor, CellDescription& cellDescription) {
 
   double *luh = static_cast<double*> (cellDescription.getSolution());
-
-  /*double *maxDerivativesPerComponentOld  = new double[getNumberOfVariables()+getNumberOfParameters()];
-  double *maxDerivativesPerComponentNew  = new double[getNumberOfVariables()+getNumberOfParameters()];
-  double *maxDerivativeScaling  = new double[getNumberOfVariables()+getNumberOfParameters()];
-
-  std::fill_n(maxDerivativeScaling, getNumberOfVariables()+getNumberOfParameters(), std::numeric_limits<double>::min());
-
-  for(int i=0; i<DIMENSIONS; i++) {
-    computeMaxAbsSecondDerivativeDirection(luh, cellDescription, i, maxDerivativesPerComponentOld);
-    computeMaxAbsSecondDerivativeDirection(luhWithPredictor, cellDescription, i, maxDerivativesPerComponentNew);
-
-    for(int j=0; j<getNumberOfVariables()+getNumberOfParameters(); j++) {
-      //logError("computePredictorUpdateConfDerivatives", "derivative for direction i="<<i<<"component j="<<j
-      //                                              <<" maxDerivativesPerComponentOld="<<maxDerivativesPerComponentOld[j]
-      //                                              <<" maxDerivativesPerComponentNew="<<maxDerivativesPerComponentNew[j]);
-
-     // double derivativeScaling = (maxDerivativesPerComponentNew[j]>0.00000001) ?  maxDerivativesPerComponentNew[j]/maxDerivativesPerComponentOld[j] : maxDerivativesPerComponentOld[j];
-      double derivativeScaling =  maxDerivativesPerComponentNew[j]/maxDerivativesPerComponentOld[j];
-      if(maxDerivativeScaling[j]<derivativeScaling)
-        maxDerivativeScaling[j] = derivativeScaling;
-    }
-  }
-
-  double maxScaling = std::numeric_limits<double>::min();
-
-  for(int j=0; j<getNumberOfVariables()+getNumberOfParameters(); j++) {
-    //logError("computePredictorUpdateErrorIndicatorDerivatives", "scaling for component="<<j<<"="<<maxDerivativeScaling[j]);
-    if(maxScaling<maxDerivativeScaling[j])
-      maxScaling = maxDerivativeScaling[j];
-  }
-
-  delete [] maxDerivativesPerComponentOld;
-  delete [] maxDerivativesPerComponentNew;
-  delete [] maxDerivativeScaling;*/
-
-
-
- // double *secondDerivativesBase = new double[getDataPerCell()];
- // double *secondDerivativesUpdated = new double[getDataPerCell()];
-
-//  double maxScaling = std::numeric_limits<double>::min();
-
- /* for(int i=0; i<DIMENSIONS; i++) {
-    kernels::aderdg::generic::c::computeSecondDerivatives(secondDerivativesBase, luh, i,  _nodesPerCoordinateAxis-1,
-                           getNumberOfVariables()+getNumberOfParameters(), cellDescription.getSize());
-    kernels::aderdg::generic::c::computeSecondDerivatives(secondDerivativesUpdated, luhWithPredictor, i,  _nodesPerCoordinateAxis-1,
-                           getNumberOfVariables()+getNumberOfParameters(), cellDescription.getSize());
-
-    for(int j=0; j<getDataPerCell(); j++) {
-      //logError("computePredictorUpdateErrorIndicatorDerivatives", "secondDerivativesUpdated[j]="<<secondDerivativesUpdated[j]
-      //                                                                     <<" , secondDerivativesBase[j]="<<secondDerivativesBase[j]);
-       double tmp = std::abs(secondDerivativesUpdated[j]-secondDerivativesBase[j])/secondDerivativesBase[j];
-       maxScaling = std::max(maxScaling, secondDerivativesBase[j]<=1e-12 ? secondDerivativesUpdated[j] : tmp);
-    }
-  }
-
-  delete[] secondDerivativesBase;
-  delete[] secondDerivativesUpdated;
-*/
-//  double minScalingFactor = exahype::reactive::ResilienceTools::getInstance().getMinDerivativeScalingFactor();
-//  double maxScalingFactor = exahype::reactive::ResilienceTools::getInstance().getMaxDerivativeScalingFactor();
-
-  //double intervalLength = std::log10(maxScalingFactor/minScalingFactor);
-
-  //logError("computePredictorUpdateErrorIndicatorDerivatives", "maxScaling="<<maxScaling);
-
-  //maxScaling = std::min(maxScaling, maxScalingFactor);
-  //double *maxScalingPerComponent = new double[getNumberOfVariables()+getNumberOfParameters()];
-  //return (maxScaling> minScalingFactor) ? std::max(0.0,1-(std::log10(maxScaling)-std::log10(minScalingFactor))/intervalLength) : 1;
-  //kernels::aderdg::generic::c::compareSecondDerivativesAndFindMaxScaling(maxScalingPerComponent, luhWithPredictor, luh, _nodesPerCoordinateAxis-1, getNumberOfVariables()+getNumberOfParameters(), cellDescription.getSize());
-
-  //double maxScaling = 0;
-  //for(int i=0; i<getNumberOfVariables()+getNumberOfParameters(); i++) {
-  //  maxScaling += maxScalingPerComponent[i];
- // }
- // maxScaling /= getNumberOfVariables()+getNumberOfParameters();
-
-  //delete[] maxScalingPerComponent;
   return kernels::aderdg::generic::c::compareSecondDerivativesAndGetMeanMaxScaling(luhWithPredictor, luh, _nodesPerCoordinateAxis-1, getNumberOfVariables()+getNumberOfParameters(), cellDescription.getSize());
-}
-
-void exahype::solvers::ADERDGSolver::computeMaxAbsSecondDerivativeDirection(double *luh,  CellDescription& cellDescription, int direction, double *maxAbsDerivativesComponents) {
-
-  kernels::aderdg::generic::c::computeMaxAbsSecondDerivativesPerComponent(maxAbsDerivativesComponents,
-                                                        luh,
-                                                        direction,
-                                                        _nodesPerCoordinateAxis-1,
-                                                        getNumberOfVariables()+getNumberOfParameters(),
-                                                        cellDescription.getSize());
-
 }
 
 void exahype::solvers::ADERDGSolver::mergeWithNeighbourMetadata(
@@ -2313,7 +2210,6 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourMetadata(
 
   mergeWithNeighbourMetadata(solverNumber,cellInfo,
       neighbourAugmentationStatus,neighbourCommunicationStatus,neighbourRefinementStatus,
-      // Uncorrupted, //todo: corruption status needs to be distributed with MPI!
       pos,posNeighbour,barycentre);
 }
 
@@ -3465,7 +3361,7 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
     i++;
 
     assertion(key._center!=nullptr);
-    //logInfo("cleanUpStaleReplicatedSTPs()", " trying to find key - "
+    //logInfo("cleanUpStaleTaskOutcomes()", " trying to find key - "
     //                                        <<" center[0] = "<<key._center[0]
     //                                       <<" center[1] = "<<key._center[1]
     //                                       <<" center[2] = "<<key._center[2]
@@ -3529,10 +3425,10 @@ bool exahype::solvers::ADERDGSolver::tryToFindAndExtractOutcome(
   tarch::la::Vector<DIMENSIONS, double> center;
   center = cellDescription.getOffset() + 0.5 * cellDescription.getSize();
 
-  //logInfo("tryToFindAndExtractOutcome()", "looking for center[0] = "<<center[0]
-  //                                       <<" center[1] = "<<center[1]
-  //                                       <<" timestamp = "<<predictionTimeStamp
-  //                                       <<" time step = "<<predictorTimeStepSize);
+  logDebug("tryToFindAndExtractOutcome()", "looking for center[0] = "<<center[0]
+                                         <<" center[1] = "<<center[1]
+                                         <<" timestamp = "<<predictionTimeStamp
+                                         <<" time step = "<<predictorTimeStepSize);
 
   MigratablePredictionJobOutcomeKey key(center.data(), predictionTimeStamp, predictorTimeStepSize, 0); //todo: verify that element is always 0
   bool found = _outcomeDatabase.tryFindAndExtractOutcome(key, outcome, status);
@@ -3601,7 +3497,7 @@ void exahype::solvers::ADERDGSolver::storePendingOutcomeToBeShared(MigratablePre
       assertion(data2!=nullptr);
       _pendingOutcomesToBeShared.erase(accessor);
       accessor.release();
-      logInfo("storePendingOutcomeToBeShared", "replacing cellDesc ="<<job->_cellDescriptionsIndex
+      logDebug("storePendingOutcomeToBeShared", "replacing cellDesc ="<<job->_cellDescriptionsIndex
                                                 <<" time step size "<<std::setprecision(30)<<job->_predictorTimeStepSize);
   }
 
@@ -3636,7 +3532,9 @@ void exahype::solvers::ADERDGSolver::storePendingOutcomeToBeShared(int cellDescr
   data->_metadata._predictorTimeStamp = timestamp;
   data->_metadata._predictorTimeStepSize = timestep;
   data->_metadata._isCorrupted = false;
-  data->_metadata._errorIndicator = 0; //will be re-set once limiter status is known
+  data->_metadata._errorIndicatorAdmissibility = 0; //will be re-set once limiter status is known
+  data->_metadata._errorIndicatorDerivative = 0; 
+  data->_metadata._errorIndicatorTimeStepSize = 0;
 
   //outcome may already be available due to predictor re-run -> replace old data
   tbb::concurrent_hash_map<std::pair<int,int>, MigratablePredictionJobData*>::accessor accessor;
@@ -3649,7 +3547,7 @@ void exahype::solvers::ADERDGSolver::storePendingOutcomeToBeShared(int cellDescr
     assertion(data2!=nullptr);
     _pendingOutcomesToBeShared.erase(accessor);
     accessor.release();
-    logInfo("storePendingOutcomeToBeShared", "replacing cellDesc ="<<cellDescriptionsIndex
+    logDebug("storePendingOutcomeToBeShared", "replacing cellDesc ="<<cellDescriptionsIndex
                                                <<" time step size "<<std::setprecision(30)<<timestep);
   }
 
@@ -3691,7 +3589,7 @@ void exahype::solvers::ADERDGSolver::releaseDummyOutcomeAndShare(int cellDescrip
   data->_metadata._predictorTimeStepSize = timestep;
   data->_metadata._isCorrupted = false;
   if(exahype::reactive::ResilienceTools::CheckLimitedCellsOnly)
-    data->_metadata._errorIndicator = isTroubled ? 0 : 1;
+    data->_metadata._errorIndicatorAdmissibility = isTroubled ? std::numeric_limits<double>::max() : 0;
 
   //Share now
   int teams = exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams();
@@ -3704,8 +3602,15 @@ void exahype::solvers::ADERDGSolver::releaseDummyOutcomeAndShare(int cellDescrip
 
   if(data->_metadata._isCorrupted) {
     logWarning("releaseDummyOutcomeAndShare", "Caution: a corrupted outcome is shared. SDC should be detected...");
-    if(!exahype::reactive::ResilienceTools::getInstance().isTrustworthy(data->_metadata._errorIndicator))
-      logError("releaseDummyOutcomeAndShare","has not been detected by SDC mechanism, errorIndicator="<<data->_metadata._errorIndicator);
+    if(!exahype::reactive::ResilienceTools::getInstance().isTrustworthy(
+                                             data->_metadata._errorIndicatorDerivative,
+                                             data->_metadata._errorIndicatorTimeStepSize,
+                                             data->_metadata._errorIndicatorAdmissibility))
+      logError("releaseDummyOutcomeAndShare","has not been detected by SDC mechanism, error indicators: derivative="
+                                              <<data->_metadata._errorIndicatorDerivative<<
+                                              " time step size="<<data->_metadata._errorIndicatorTimeStepSize<<
+                                              " admissibility="<<data->_metadata._errorIndicatorAdmissibility 
+      );
   }
 
   int j = 0;
@@ -3759,14 +3664,13 @@ void exahype::solvers::ADERDGSolver::releasePendingOutcomeAndShare(int cellDescr
     if(data->_metadata._predictorTimeStamp != timeStamp)
       logError("releasePendingOutcomeAndShare", "time stamp="<<timeStamp<<" predictorTimeStamp="<<data->_metadata._predictorTimeStamp);
 
-    assert(data->_metadata._predictorTimeStamp == timeStamp);
-    assert(data->_metadata._predictorTimeStepSize == timeStepSize);
-    //data->_metadata._predictorTimeStamp = timeStamp;
-    //data->_metadata._predictorTimeStepSize = timeStepSize;
+    assertion(data->_metadata._predictorTimeStamp == timeStamp);
+    assertion(data->_metadata._predictorTimeStepSize == timeStepSize);
+    
     logDebug("releasePendingOutcomeAndShare", " celldesc ="<<cellDescriptionsIndex<<" isPotentiallyCorrupted "<<isTroubled
                                               <<" timestepsize "<<std::setprecision(30)<<data->_metadata._predictorTimeStepSize);
     if(exahype::reactive::ResilienceTools::CheckLimitedCellsOnly)
-      data->_metadata._errorIndicator = isTroubled ? 0 : 1.0;
+      data->_metadata._errorIndicatorAdmissibility = isTroubled ? std::numeric_limits<double>::max() : 0;
 
     //update solution
     double *luh   = static_cast<double*>(cellDescription.getSolution());
@@ -3783,8 +3687,12 @@ void exahype::solvers::ADERDGSolver::releasePendingOutcomeAndShare(int cellDescr
 
     if(data->_metadata._isCorrupted) {
       logWarning("releasePendingOutcomeAndShare", "Caution: a corrupted outcome is shared. SDC should be detected...");
-      if(!exahype::reactive::ResilienceTools::getInstance().isTrustworthy(data->_metadata._errorIndicator))
-        logError("releasePendingOutcomeAndShare","has not been detected by SDC mechanism, errorIndicator="<<data->_metadata._errorIndicator);
+      if(!exahype::reactive::ResilienceTools::getInstance().isTrustworthy(data->_metadata._errorIndicatorDerivative,
+                                                                          data->_metadata._errorIndicatorTimeStepSize,
+                                                                          data->_metadata._errorIndicatorAdmissibility))
+        logError("releasePendingOutcomeAndShare","has not been detected by SDC mechanism, error indicators: derivative ="<<data->_metadata._errorIndicatorDerivative
+                                                                                            <<" time step size="<<data->_metadata._errorIndicatorTimeStepSize
+                                                                                            <<" admissibility="<<data->_metadata._errorIndicatorAdmissibility);
     }
 
     int j = 0;
@@ -3843,11 +3751,14 @@ void exahype::solvers::ADERDGSolver::correctCellDescriptionWithOutcome(CellDescr
   exahype::reactive::ResilienceStatistics::getInstance().notifyHealedTask();
 }
 
-exahype::solvers::ADERDGSolver::SDCCheckResult exahype::solvers::ADERDGSolver::checkCellDescriptionAgainstOutcome(CellDescription& cellDescription,
+exahype::solvers::ADERDGSolver::SDCCheckResult exahype::solvers::ADERDGSolver::checkCellDescriptionAgainstOutcome(
+     CellDescription& cellDescription,
      MigratablePredictionJobData *data,
      double predictorTimeStamp,
      double predictorTimeStepSize,
-     double errorIndicator){
+     double errorIndicatorDerivative,
+     double errorIndicatorTimeStepSize,
+     double errorIndicatorAdmissibility) {
   double *lduh = static_cast<double*>(cellDescription.getUpdate());
   double *lQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictor());
 #if defined(OffloadingGradQhbnd)
@@ -3891,18 +3802,26 @@ exahype::solvers::ADERDGSolver::SDCCheckResult exahype::solvers::ADERDGSolver::c
   exahype::reactive::ResilienceStatistics::getInstance().notifyDoubleCheckedTask();
 
   if(!equal) {
-    if(data->_metadata._errorIndicator==0) {
+    if(data->_metadata._errorIndicatorDerivative==0 &&
+       data->_metadata._errorIndicatorAdmissibility==0 &&
+       data->_metadata._errorIndicatorTimeStepSize==0) {
       logError("checkCellDescriptionAgainstOutcome", "soft error detected: "<<data->_metadata.to_string());
       exahype::reactive::ResilienceStatistics::getInstance().notifyDetectedError();
+      //todo: need to revise the name here
       return SDCCheckResult::OutcomeSaneAsTriggerNotActive; //we assume that the trigger is good enough to tell us that the outcome is ok
     }
-    else if (data->_metadata._errorIndicator<errorIndicator) {
+    else if (data->_metadata._errorIndicatorDerivative<=errorIndicatorDerivative 
+          && data->_metadata._errorIndicatorAdmissibility<=errorIndicatorAdmissibility
+          && data->_metadata._errorIndicatorTimeStepSize<=errorIndicatorTimeStepSize
+          && !(    data->_metadata._errorIndicatorDerivative==errorIndicatorDerivative
+                && data->_metadata._errorIndicatorAdmissibility==errorIndicatorAdmissibility
+                && data->_metadata._errorIndicatorTimeStepSize==errorIndicatorTimeStepSize)) {
       logError("checkCellDescriptionAgainstOutcome", "soft error detected: "<<data->_metadata.to_string());
       exahype::reactive::ResilienceStatistics::getInstance().notifyDetectedError();
-      return SDCCheckResult::OutcomeHasLowerErrorIndicator;
-     }
+      return SDCCheckResult::OutcomeIsMoreTrustworthy;
+    }
     else { 
-      return SDCCheckResult::MyErrorIndicatorIsLower; //I think my outcome is better and I will keep it
+      return SDCCheckResult::MyOutcomeIsMoreTrustworthy; //I think my outcome is better and I will keep it
     }
   }
   else
@@ -4076,19 +3995,19 @@ void exahype::solvers::ADERDGSolver::pollForOutstandingCommunicationRequests(exa
 //#if defined(TaskSharing)
 #if !defined(TaskSharingUseHandshake)
     if(receivedReplicaTask) {
-      int msgLenDouble = -1;
+      int msgLen = -1;
 #if defined UseSmartMPI
-      MPI_Get_count_offload(&statRepDataOffload, MigratablePredictionJobMetaData::getMPIDatatype(), &msgLenDouble);
-      if(msgLenDouble==MigratablePredictionJobMetaData::getMessageLen()) {
+      MPI_Get_count_offload(&statRepDataOffload, MigratablePredictionJobMetaData::getMPIDatatype(), &msgLen);
+      if(msgLen==MigratablePredictionJobMetaData::getMessageLen()) {
         logDebug("progressOffloading","received replica task from "<<statRepDataOffload.MPI_SOURCE<<" , tag "<<statRepDataOffload.MPI_TAG);
         assert(solver->_lastReceiveReplicaTag[statRepDataOffload.MPI_SOURCE]!=statRepDataOffload.MPI_TAG);
         solver->_lastReceiveReplicaTag[statRepDataOffload.MPI_SOURCE] = statRepDataOffload.MPI_TAG;
         receiveTaskOutcome(statRepDataOffload.MPI_TAG, statRepDataOffload.MPI_SOURCE, solver, statRepDataOffload.rail);
       }
 #else
-      MPI_Get_count(&statRepData, MigratablePredictionJobMetaData::getMPIDatatype(), &msgLenDouble);
+      MPI_Get_count(&statRepData, MigratablePredictionJobMetaData::getMPIDatatype(), &msgLen);
       // is this message metadata? -> if true, we are about to receive a new STP task
-      if((size_t) msgLenDouble==MigratablePredictionJobMetaData::getMessageLen()) {
+      if((size_t) msgLen==MigratablePredictionJobMetaData::getMessageLen()) {
         assertion(solver->_lastReceiveReplicaTag[statRepData.MPI_SOURCE]!=statRepData.MPI_TAG);
         solver->_lastReceiveReplicaTag[statRepData.MPI_SOURCE] = statRepData.MPI_TAG;
         logDebug("progressOffloading","team "<<exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber()<<" received replica task from "<<statRepData.MPI_SOURCE<<" , tag "<<statRepData.MPI_TAG);

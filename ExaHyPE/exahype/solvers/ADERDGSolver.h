@@ -1028,7 +1028,9 @@ private:
       double _predictorTimeStepSize;
       int    _element;
       int    _originRank;
-      double  _errorIndicator;
+      double  _errorIndicatorTimeStepSize;
+      double  _errorIndicatorDerivative;
+      double  _errorIndicatorAdmissibility;
       bool   _isCorrupted;
       char * _contiguousBuffer;
 
@@ -1044,7 +1046,9 @@ private:
          equal &= _predictorTimeStepSize == other._predictorTimeStepSize;
          equal &= _element == other._element;
          equal &= _originRank == other._originRank;
-         equal &= _errorIndicator == other._errorIndicator;
+         equal &= _errorIndicatorTimeStepSize == other._errorIndicatorTimeStepSize;
+         equal &= _errorIndicatorDerivative == other._errorIndicatorDerivative;
+         equal &= _errorIndicatorAdmissibility == other._errorIndicatorAdmissibility;
          return true;
       }
 
@@ -1068,7 +1072,7 @@ private:
 
       static size_t getMessageLen() {
       #if defined(UseSmartMPI) || defined(OffloadingMetadataPacked)
-        return (2*DIMENSIONS+3)*sizeof(double)+2*sizeof(int)+1*sizeof(bool);
+        return (2*DIMENSIONS+5)*sizeof(double)+2*sizeof(int)+1*sizeof(bool);
       #else
         return 1;
       #endif
@@ -1098,8 +1102,16 @@ private:
         return _originRank;
       }
 
-      double getErrorIndicator() const {
-        return _errorIndicator;
+      double getErrorIndicatorAdmissibility() const {
+        return _errorIndicatorAdmissibility;
+      }
+      
+      double getErrorIndicatorTimeStepSize() const {
+        return _errorIndicatorTimeStepSize;
+      }
+      
+      double getErrorIndicatorDerivative() const {
+        return _errorIndicatorDerivative;
       }
 
       void unpackContiguousBuffer();
@@ -1170,7 +1182,9 @@ private:
       double                      _center[DIMENSIONS];
       double                      _dx[DIMENSIONS];
       bool                        _isLocalReplica;
-      double                      _errorIndicator;
+      double                      _errorIndicatorTimeStepSize;
+      double                      _errorIndicatorDerivative;
+      double                      _errorIndicatorAdmissibility;
       bool                        _isCorrupted;
 
       static std::atomic<int> JobCounter;
@@ -1182,11 +1196,11 @@ private:
       void setFinished();
       void copyOutcome(MigratablePredictionJobData *outcome);
       void executeOrCopySTPOutcome(MigratablePredictionJobData *outcome, bool& hasComputed, bool& hasFlipped);
-      bool corruptIfActive();
+      bool corruptIfActive(bool force);
       void shareSTPImmediatelyOrLater();
       bool needToCheckThisSTP(bool hasComputed);
       bool needToPutBackOutcome();
-      bool needToShare(bool hasOutcome, double errorIndicator);
+      bool needToShare(bool hasOutcome, bool isTrustworthy, bool isOutcomeTrustworthy);
 
       bool handleExecution(bool isCalledOnMaster, bool& hasComputed);
       bool handleLocalExecution(bool isCalledOnMaster, bool& hasComputed);
@@ -1215,7 +1229,6 @@ private:
         const int element,
         const double predictorTimeStamp,
         const double predictorTimeStepSize,
-        const double errorIndicator,
         const bool isSkeletonJob //enables task outcome sharing for skeletons
       );
       // constructor for remote jobs that were received from another rank
@@ -1272,12 +1285,14 @@ private:
       bool run(bool calledFromMaster) override;
   };
 
-  enum class SDCCheckResult {NoCorruption, OutcomeSaneAsTriggerNotActive, OutcomeHasLowerErrorIndicator, MyErrorIndicatorIsLower};
+  enum class SDCCheckResult {NoCorruption, OutcomeSaneAsTriggerNotActive, OutcomeIsMoreTrustworthy, MyOutcomeIsMoreTrustworthy};
   void correctCellDescriptionWithOutcome(CellDescription& cellDescription, MigratablePredictionJobData *outcome);
   SDCCheckResult checkCellDescriptionAgainstOutcome(CellDescription& cellDescription, MigratablePredictionJobData *outcome,
                                                     double predictorTimeStamp,
                                                     double predictorTimeStepSize,
-                                                    double errorIndicator);
+                                                    double errorIndicatorDerivative,
+                                                    double errorIndicatorTimeStepSize,
+                                                    double errorIndicatorAdmissibility);
 
   class CheckAndCorrectSolutionJob : public tarch::multicore::jobs::Job {
 
@@ -1286,7 +1301,9 @@ private:
        CellDescription&            _solverPatch;
        const double                _predictorTimeStamp;
        const double                _predictorTimeStepSize;
-       const double                _errorIndicator;
+       const double                _errorIndicatorDerivative;
+       const double                _errorIndicatorTimeStepSize;
+       const double                _errorIndicatorAdmissibility;
 
        bool run(bool runOnMasterThread) override;
        SDCCheckResult checkAgainstOutcome(MigratablePredictionJobData *outcome);
@@ -1300,7 +1317,9 @@ private:
          CellDescription& solverPatch,
          const double predictorTimeStamp,
          const double predictorTimeStepSize,
-         const double errorIndicator
+         const double errorIndicatorDerivative,
+         const double errorIndicatorTimeStepSize,
+         const double errorIndicatorAdmissibility
        );
 
        CheckAndCorrectSolutionJob(const CheckAndCorrectSolutionJob& stp) = delete;
@@ -2802,15 +2821,18 @@ public:
 
   void computeTemporarySolutionWithPredictor(CellDescription& cellDescription, double *luhWithPredictor);
 
-  double computePredictorUpdateErrorIndicatorAdmissibility(double *luhWithPredictor, CellDescription& cellDescription);
+  double computePredictorErrorIndicatorAdmissibility(double *luhWithPredictor, CellDescription& cellDescription);
 
-  double computePredictorUpdateErrorIndicatorTimeStep(double *luhWithPredictor, CellDescription& cellDescription, double predictorTimeStepSize);
+  double computePredictorErrorIndicatorTimeStep(double *luhWithPredictor, CellDescription& cellDescription, double predictorTimeStepSize);
 
-  double computePredictorUpdateErrorIndicatorDerivatives(double *luhWithPredictor, CellDescription& cellDescription);
-
-  double computePredictorErrorIndicator(CellDescription& cellDescription, double predictorTimeStepSize);
-
-  void computeMaxAbsSecondDerivativeDirection(double *luh,  CellDescription& cellDescription, int direction, double *tmpDerivativesComponents);
+  double computePredictorErrorIndicatorDerivative(double *luhWithPredictor, CellDescription& cellDescription);
+  
+  void computePredictorErrorIndicators(CellDescription& cellDescription, 
+                                       double predictorTimeStepSize,
+                                       double *errorIndicatorDerivative,
+                                       double *errorIndicatorTimeStepSize,
+                                       double *errorIndicatorAdmissibility);
+  
 
   ///////////////////////////////////
   // NEIGHBOUR

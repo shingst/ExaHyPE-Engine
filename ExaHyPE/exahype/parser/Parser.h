@@ -814,15 +814,15 @@ class exahype::parser::Parser {
 
   double getRelErrorForHardcodedInjection() const;
 
-  double getMaximumErrorIndicatorForTrustworthiness() const;
-
-  //double getMinDerivativeScalingFactor() const;
-
-  //double getMaxDerivativeScalingFactor() const;
+  double getMaximumErrorIndicatorForDerivatives() const;
+  
+  double getMaximumErrorIndicatorForTimeStepSizes() const;
 
   tarch::la::Vector<DIMENSIONS, double> getErrorInjectionPosition() const;
 
   double getErrorInjectionTime() const;
+  
+  int getErrorInjectionRank() const;
 
   /**
    * @return True if ExaHyPE should try so save redundant computations sharing task outcomes between team.

@@ -330,7 +330,9 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
                                                                       _parser.getRelErrorForHardcodedInjection(),
                                                                       _parser.getErrorInjectionTime(),
                                                                       _parser.getErrorInjectionPosition(),
-                                                                      _parser.getMaximumErrorIndicatorForTrustworthiness());
+                                                                      _parser.getErrorInjectionRank(),
+                                                                      _parser.getMaximumErrorIndicatorForDerivatives(),
+                                                                      _parser.getMaximumErrorIndicatorForTimeStepSizes());
         }
 #if defined(SharedTBB)
         // order is important: set resilience strategy first before starting offloading service

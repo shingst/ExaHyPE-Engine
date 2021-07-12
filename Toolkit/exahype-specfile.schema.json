@@ -465,9 +465,15 @@
             "scope" : "run-time",
             "default" : 0
          },
-         "max_error_indicator" : {
+         "max_error_indicator_timestepsizes" : {
             "type" : "number",
-            "title" : "Specifies the maximum error indicator below which a task outcome to be considered as being trustworthy.",
+            "title" : "Specifies the maximum error indicator for the time step size criterion below which a task outcome is considered as being trustworthy.",
+            "scope" : "run-time",
+            "default" : 0.0
+         },
+         "max_error_indicator_derivatives" : {
+            "type" : "number",
+            "title" : "Specifies the maximum error indicator for the derivatives criterion below which a task outcome is considered as being trustworthy.",
             "scope" : "run-time",
             "default" : 0.0
          },
@@ -488,6 +494,12 @@
             "title" : "Time stamp at which the error should be injected.",
             "scope" : "run-time",
             "default" : -1
+        },
+        "injection_rank" : {
+            "type" : "number",
+            "title" : "Rank on which the error should be injected.",
+            "scope" : "run-time",
+            "default" : 0
         },
         "confidence_check_admissibility" : {
            "type" : "boolean", 

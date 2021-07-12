@@ -36,7 +36,6 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
     const int element,
     const double predictorTimeStamp,
     const double predictorTimeStepSize,
-    const double errorIndicator,
     const bool isSkeleton) :
       tarch::multicore::jobs::Job(
           tarch::multicore::jobs::JobType::BackgroundTask, 0,
@@ -56,7 +55,9 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
       _lFhbnd(nullptr),
       _lGradQhbnd(nullptr),
       _isLocalReplica(false),
-      _errorIndicator(errorIndicator),
+      _errorIndicatorAdmissibility(0),
+      _errorIndicatorTimeStepSize(0),
+      _errorIndicatorDerivative(0),
       _isCorrupted(false)
 {
   if (_isSkeleton) {
@@ -110,7 +111,9 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
       _lFhbnd(lFhbnd),
       _lGradQhbnd(lGradQhbnd),
       _isLocalReplica(false),
-      _errorIndicator(1),
+      _errorIndicatorTimeStepSize(0),
+      _errorIndicatorDerivative(0),
+      _errorIndicatorAdmissibility(0),
       _isCorrupted(false)
 {
   assertion(!_isSkeleton);
@@ -231,7 +234,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
       ==exahype::reactive::ReactiveContext::ResilienceStrategy::None) {
     executeLocally();
     hasComputed = true;
-    corruptIfActive();
+    corruptIfActive(false);
     setFinished();
     return false;
   }
@@ -246,13 +249,21 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     computeErrorIndicator(hasFlipped);
 
     if(needToCheckThisSTP(hasComputed)) {
-      switch(_solver.checkCellDescriptionAgainstOutcome(getCellDescription(_cellDescriptionsIndex,_element), outcome, _predictorTimeStamp, _predictorTimeStepSize, _errorIndicator)) {
+      switch(_solver.checkCellDescriptionAgainstOutcome(getCellDescription(_cellDescriptionsIndex,_element), outcome, 
+                                                                _predictorTimeStamp, _predictorTimeStepSize,
+                                                                _errorIndicatorDerivative,
+                                                                _errorIndicatorTimeStepSize,
+                                                                _errorIndicatorAdmissibility)) {
         case SDCCheckResult::NoCorruption:
           break;
-        case SDCCheckResult::OutcomeHasLowerErrorIndicator:
-          logError("handleLocalExecution", "I'm correcting with an outcome that has higher confidence!"
-                                "My error indicator = "<<_errorIndicator<<
-              " other outcome's error indicator = "<<outcome->_metadata._errorIndicator);
+        case SDCCheckResult::OutcomeIsMoreTrustworthy:
+          logError("handleLocalExecution", "I'm correcting with an outcome that is more trustworthy!"<<
+                                " My error indicators: derivative = "<<_errorIndicatorDerivative<<
+                                " time step size = "<<_errorIndicatorTimeStepSize<<
+                                " admissibility = "<<_errorIndicatorAdmissibility<<
+                                " 0ther outcome's error indicators: derivative = "<<outcome->_metadata._errorIndicatorDerivative<<
+                                " time step size = "<<outcome->_metadata._errorIndicatorTimeStepSize<<
+                                " admissibility = "<<outcome->_metadata._errorIndicatorAdmissibility);
            //no break!
         case SDCCheckResult::OutcomeSaneAsTriggerNotActive:
           logError("handleLocalExecution", "Soft error detected in job execution: "<<to_string());
@@ -264,13 +275,26 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
             logError("handleLocalExecution", "Could have corrected soft error but correction is not enabled. Continuing...");
           }
           break;
-        case SDCCheckResult::MyErrorIndicatorIsLower:
-          logError("handleLocalExecution", "There is disagreement between two outcomes but my error indicator is lower..");
-          logError("handleLocalExecution", "My error indicator = "<<_errorIndicator<<" other outcome's error indicator = "<<outcome->_metadata._errorIndicator);
+        case SDCCheckResult::MyOutcomeIsMoreTrustworthy:
+          logError("handleLocalExecution", "There is disagreement between two outcomes but my result is more trustworthy..");
+          logError("handleLocalExecution", "My error indicators: derivative = "<<_errorIndicatorDerivative<<
+                                           " time step size = "<<_errorIndicatorTimeStepSize<<
+                                           " admissibility = "<<_errorIndicatorAdmissibility<<
+                                           " Other outcome's error indicators: derivative = "<<outcome->_metadata._errorIndicatorDerivative<<
+                                           " time step size = "<<outcome->_metadata._errorIndicatorTimeStepSize<<
+                                           " admissibility = "<<outcome->_metadata._errorIndicatorAdmissibility);
           break;
       }
     }
-    if(needToShare(true /*hasOutcome*/, outcome->_metadata._errorIndicator)) {
+    if(needToShare(true /*hasOutcome*/,
+                   exahype::reactive::ResilienceTools::getInstance().isTrustworthy(
+                   _errorIndicatorDerivative,
+                   _errorIndicatorTimeStepSize,
+                   _errorIndicatorAdmissibility),
+                  exahype::reactive::ResilienceTools::getInstance().isTrustworthy(
+                   outcome->_metadata._errorIndicatorDerivative,
+                   outcome->_metadata._errorIndicatorTimeStepSize,
+                   outcome->_metadata._errorIndicatorAdmissibility))) {
       shareSTPImmediatelyOrLater();
     }
     if(needToPutBackOutcome()) {
@@ -288,10 +312,10 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   else {
     executeLocally();
     hasComputed = true;
-    hasFlipped = corruptIfActive();
+    hasFlipped = corruptIfActive(false);
     computeErrorIndicator(hasFlipped);
 
-    if(needToShare(false, false)) {
+    if(needToShare(false, false, false)) {
       shareSTPImmediatelyOrLater();
     }
 
@@ -305,15 +329,17 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
                                            getCellDescription(_cellDescriptionsIndex,_element),
                                            _predictorTimeStamp,
                                            _predictorTimeStepSize,
-				                                   _errorIndicator);
+                                           _errorIndicatorDerivative,
+                                           _errorIndicatorTimeStepSize,
+                                           _errorIndicatorAdmissibility);
         peano::datatraversal::TaskSet spawnedSet(job);
         return false; //check job will take care next
       }
       else {
-        logInfo("handleLocalExecution","Won't be able to find STP anymore as timestamps/timestep sizes have diverged. Timestamp ="
+        logDebug("handleLocalExecution","Won't be able to find STP anymore as timestamps/timestep sizes have diverged. Timestamp ="
             <<std::setprecision(30)<<_predictorTimeStamp
             <<" time step "<<_predictorTimeStepSize);
-        exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().printHistory();
+        //exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().printHistory();
         exahype::reactive::ResilienceStatistics::getInstance().notifyDetectedError();
         setFinished();
         return false;
@@ -333,8 +359,12 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::shareSTPImmediatel
     _solver.storePendingOutcomeToBeShared(this); //delay sharing until we can be sure that trigger has been set (correction must happen first)
   }
   else {
-    if(_isCorrupted && exahype::reactive::ResilienceTools::getInstance().isTrustworthy(_errorIndicator))
-      logWarning("handleLocalExecution","Sharing corrupted outcome but soft error has not been triggered!");
+    if(_isCorrupted && exahype::reactive::ResilienceTools::getInstance().isTrustworthy(
+                                           _errorIndicatorDerivative,
+                                           _errorIndicatorTimeStepSize,
+                                           _errorIndicatorAdmissibility)) {
+     logWarning("handleLocalExecution","Sharing corrupted outcome but soft error has not been triggered!");
+    }
     _solver.sendTaskOutcomeToOtherTeams(this);
   }
 }
@@ -349,10 +379,13 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::needToCheckThisSTP
   return (exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()
         >=exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceChecks)
       &&  hasComputed
-      && !exahype::reactive::ResilienceTools::getInstance().isTrustworthy(_errorIndicator);
+      && !exahype::reactive::ResilienceTools::getInstance().isTrustworthy(
+         _errorIndicatorDerivative,
+         _errorIndicatorTimeStepSize,
+         _errorIndicatorAdmissibility);
 }
 
-bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::needToShare(bool hasOutcome, double confidence) {
+bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::needToShare(bool hasOutcome, bool isTrustworthy, bool isOutcomeTrustworthy) {
   if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()
       ==exahype::reactive::ReactiveContext::ResilienceStrategy::None) {
     return false;
@@ -365,30 +398,36 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::needToShare(bool h
   }
   else {
     return !hasOutcome
+         || !isOutcomeTrustworthy
          || exahype::reactive::ResilienceTools::CheckLimitedCellsOnly
-         || !exahype::reactive::ResilienceTools::getInstance().isTrustworthy(confidence);
+         || !isTrustworthy;
   }
 }
 
-bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::corruptIfActive() {
+bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::corruptIfActive(bool forceCorruption) {
   CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
    _element);
 
-  double *lduh = static_cast<double*>(cellDescription.getUpdate());
-  bool hasFlipped = exahype::reactive::ResilienceTools::getInstance().corruptDataIfActive(
+  bool shouldCorrupt = false;
+  if(!forceCorruption)
+    shouldCorrupt = exahype::reactive::ResilienceTools::getInstance().shouldInjectError(_center, _predictorTimeStamp); 
+  else 
+    shouldCorrupt = true;
+
+  if(shouldCorrupt){
+    double *lduh = static_cast<double*>(cellDescription.getUpdate());
+    exahype::reactive::ResilienceTools::getInstance().corruptData(
                                                               static_cast<double*>(cellDescription.getSolution()),
                                                               _center,
                                                               DIMENSIONS,
                                                               _predictorTimeStamp,
                                                               lduh,
                                                               _solver.getUpdateSize());
-
-  if(hasFlipped) {
     _isCorrupted = true;
     logError("corruptIfActive","Has corrupted STP job "<<to_string());
   }
 
-  return hasFlipped;
+  return shouldCorrupt;
 }
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::copyOutcome(MigratablePredictionJobData *outcome) {
@@ -421,17 +460,22 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::copyOutcome(Migrat
 }
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::executeOrCopySTPOutcome(MigratablePredictionJobData *outcome, bool& hasComputed, bool& hasFlipped) {
+
+  bool shouldInjectError = exahype::reactive::ResilienceTools::getInstance().shouldInjectError(_center, _predictorTimeStamp);
   if( (exahype::reactive::ReactiveContext::getResilienceStrategy()>=exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharing)
    && exahype::reactive::ReactiveContext::getSaveRedundantComputations()
-   && exahype::reactive::ResilienceTools::getInstance().isTrustworthy(outcome->_metadata._errorIndicator)
-   && !exahype::reactive::ResilienceTools::getInstance().shouldInjectError(_center, _predictorTimeStamp)) {
+   && exahype::reactive::ResilienceTools::getInstance().isTrustworthy(
+         outcome->_metadata._errorIndicatorDerivative,
+         outcome->_metadata._errorIndicatorTimeStepSize,
+         outcome->_metadata._errorIndicatorAdmissibility)
+   && !shouldInjectError) {
     copyOutcome(outcome);
     hasFlipped = false; //we don't assume any corruption after copying an outcome for now
     hasComputed = false;
   }
   else {
     executeLocally();
-    hasFlipped = corruptIfActive();
+    hasFlipped = corruptIfActive(shouldInjectError);
     hasComputed = true;
   }
 }
@@ -607,32 +651,32 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::computeErrorIndica
                                                         _element);
     
   //confidence is set later if we are using the limiter checks!
-  _errorIndicator = 0;
+  _errorIndicatorDerivative = 0;
+  _errorIndicatorTimeStepSize = 0;
+  _errorIndicatorAdmissibility = 0;
 
   if(exahype::reactive::ReactiveContext::getResilienceStrategy()
     >=exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceChecks) {
 
     if( (exahype::reactive::ResilienceTools::CheckFlipped && flipped)
       || exahype::reactive::ResilienceTools::CheckAllMigratableSTPs) {
-      _errorIndicator = std::numeric_limits<double>::max();
+      _errorIndicatorDerivative = std::numeric_limits<double>::max();
+      _errorIndicatorTimeStepSize = std::numeric_limits<double>::max();
+      _errorIndicatorAdmissibility = std::numeric_limits<double>::max();
     }
     else if(exahype::reactive::ResilienceTools::CheckSTPsWithLowConfidence) {
-      _errorIndicator = _solver.computePredictorErrorIndicator(cellDescription, _predictorTimeStepSize);
-      if(flipped) {
-        double *luhtemp = new double[_solver.getDataPerCell()];
-
-        _solver.computeTemporarySolutionWithPredictor(cellDescription, luhtemp);
-        double errorIndTimeStep =  _solver.computePredictorUpdateErrorIndicatorTimeStep(luhtemp, cellDescription, _predictorTimeStepSize);
-        double errorIndAdmissibleTimeStepSize = _solver.stableTimeStepSize(luhtemp, cellDescription.getSize());
-        //logError("setConfidence()","has flipped conf ="<<_confidence);
-
-        //logError("setConfidence()","has flipped conf time step "<<confTimeStep<<std::setprecision(30)<<" diff="<<admissibleTimeStepSize-cellDescription.getTimeStepSize());
-      }
+       _solver.computePredictorErrorIndicators(cellDescription,
+                              _predictorTimeStepSize,
+                              &_errorIndicatorDerivative,
+                              &_errorIndicatorTimeStepSize,
+                              &_errorIndicatorAdmissibility);
     }
   }
 
   if(flipped) // || !exahype::reactive::ResilienceTools::getInstance().isTrustworthy(_confidence))
-    logError("computeErrorIndicator", "Celldesc ="<<_cellDescriptionsIndex<<" errorIndicator "<<std::setprecision(30)<<_errorIndicator);
+    logError("computeErrorIndicator", "Celldesc ="<<_cellDescriptionsIndex<<" errorIndicator derivative "<<std::setprecision(30)<<_errorIndicatorDerivative
+                                                                           <<" errorIndicator time step size "<<_errorIndicatorTimeStepSize
+                                                                           <<" errorIndicator admissibility "<<_errorIndicatorAdmissibility);
 }
 
 bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryToFindAndExtractEquivalentSharedOutcome(bool previous, DeliveryStatus &status, MigratablePredictionJobData **outcome) {
@@ -906,18 +950,22 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
 
   double minTimeStampToKeep = static_cast<exahype::solvers::ADERDGSolver*>(solver)->getPreviousMinTimeStamp();
 
- /* exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().trackTimeStepAndTriggerActive(team, 
+  exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().trackTimeStepAndTriggerActive(team, 
 		                                              key._timestamp,
-							      key._timestepSize,
-							      !exahype::reactive::ResilienceTools::getInstance().isTrustworthy(data->_metadata.getErrorIndicator()));
-  double lastconsistentTimeStamp, lastconsistentTimeStepSize, lastconsistentEstimatedTimeStepSize;
-  exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().getLastConsistentTimeStepData(lastconsistentTimeStamp, lastconsistentTimeStepSize, lastconsistentEstimatedTimeStepSize);
+							                          key._timestepSize,
+							                          !exahype::reactive::ResilienceTools::getInstance().isTrustworthy(
+                                                         data->_metadata.getErrorIndicatorDerivative(),
+                                                         data->_metadata.getErrorIndicatorTimeStepSize(),
+                                                         data->_metadata.getErrorIndicatorAdmissibility()));
   
   logDebug("receiveHandlerTaskSharing", "team "
       <<exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber()
       <<" received replica job: "
       <<data->_metadata.to_string()
       <<" min timestamp to keep "<<minTimeStampToKeep);
+ /* double lastconsistentTimeStamp, lastconsistentTimeStepSize, lastconsistentEstimatedTimeStepSize;
+  exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().getLastConsistentTimeStepData(lastconsistentTimeStamp, lastconsistentTimeStepSize, lastconsistentEstimatedTimeStepSize);
+  
 
   if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()
     >= exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceChecks) {
@@ -986,26 +1034,30 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::packMetaData(Migra
   std::memcpy(tmp, &_predictorTimeStepSize, sizeof(double)); tmp+= sizeof(double);
   std::memcpy(tmp, &_element, sizeof(int)); tmp+= sizeof(int);
   std::memcpy(tmp, &_originRank, sizeof(int)); tmp+= sizeof(int);
-  std::memcpy(tmp, &_errorIndicator, sizeof(double)); tmp+= sizeof(double);
+  std::memcpy(tmp, &_errorIndicatorDerivative, sizeof(double)); tmp+= sizeof(double);
+  std::memcpy(tmp, &_errorIndicatorTimeStepSize, sizeof(double)); tmp+= sizeof(double);
+  std::memcpy(tmp, &_errorIndicatorAdmissibility, sizeof(double)); tmp+= sizeof(double);
   std::memcpy(tmp, &_isCorrupted, sizeof(bool)); tmp+= sizeof(bool);
 #else
   metadata->_center[0] = _center[0];
   metadata->_center[1] = _center[1];
-#if DIMENSIONS==3
+  #if DIMENSIONS==3
   metadata->_center[2] = _center[2];
-#endif
+  #endif
 
   metadata->_dx[0] = _dx[0];
   metadata->_dx[1] = _dx[1];
-#if DIMENSIONS==3
+  #if DIMENSIONS==3
   metadata->_dx[2] = _dx[2];
-#endif
+  #endif
 
   metadata->_predictorTimeStamp = _predictorTimeStamp;
   metadata->_predictorTimeStepSize = _predictorTimeStepSize;
   metadata->_element = _element;
   metadata->_originRank = _originRank;
-  metadata->_errorIndicator = _errorIndicator;
+  metadata->_errorIndicatorDerivative = _errorIndicatorDerivative;
+  metadata->_errorIndicatorTimeStepSize = _errorIndicatorTimeStepSize;
+  metadata->_errorIndicatorAdmissibility = _errorIndicatorAdmissibility;
   metadata->_isCorrupted = _isCorrupted;
 #endif
 }
@@ -1024,7 +1076,9 @@ std::string exahype::solvers::ADERDGSolver::MigratablePredictionJob::to_string()
   result += " time step = " + std::to_string(_predictorTimeStepSize);
   result += " element = " + std::to_string(_element);
   result += " origin = " + std::to_string(_originRank);
-  result += " error indicator = " + std::to_string(_errorIndicator);
+  result += " error indicator derivative = " + std::to_string(_errorIndicatorDerivative);
+  result += " error indicator time step size = " + std::to_string(_errorIndicatorTimeStepSize);
+  result += " error indicator admissibility  = " + std::to_string(_errorIndicatorAdmissibility);
   result += " isCorrupted = " + std::to_string(_isCorrupted);
 
   return result;
@@ -1080,7 +1134,9 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::MigratablePredi
   _predictorTimeStepSize(0),
   _element(0),
   _originRank(-1),
-  _errorIndicator(0),
+  _errorIndicatorDerivative(0),
+  _errorIndicatorTimeStepSize(0),
+  _errorIndicatorAdmissibility(0),
   _isCorrupted(false),
   _contiguousBuffer(nullptr) {
 #if defined(UseSmartMPI) || defined(OffloadingMetadataPacked)
@@ -1102,7 +1158,9 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::unpackCont
   std::memcpy(&_predictorTimeStepSize, tmp,  sizeof(double)); tmp+= sizeof(double);
   std::memcpy(&_element, tmp, sizeof(int)); tmp+= sizeof(int);
   std::memcpy(&_originRank, tmp, sizeof(int)); tmp+= sizeof(int);
-  std::memcpy(&_errorIndicator, tmp, sizeof(double)); tmp+= sizeof(double);
+  std::memcpy(&_errorIndicatorDerivative, tmp, sizeof(double)); tmp+= sizeof(double);
+  std::memcpy(&_errorIndicatorTimeStepSize, tmp, sizeof(double)); tmp+= sizeof(double);
+  std::memcpy(&_errorIndicatorAdmissibility, tmp, sizeof(double)); tmp+= sizeof(double);
   std::memcpy(&_isCorrupted, tmp, sizeof(bool)); tmp+= sizeof(bool);
 }
 
@@ -1119,7 +1177,9 @@ std::string exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::to_
   result += " time step = " + std::to_string(_predictorTimeStepSize);
   result += " element = " + std::to_string(_element);
   result += " origin = " + std::to_string(_originRank);
-  result += " error indicator = " + std::to_string(_errorIndicator);
+  result += " error indicator derivative = " + std::to_string(_errorIndicatorDerivative);
+  result += " error indicator time step size = " + std::to_string(_errorIndicatorTimeStepSize);
+  result += " error indicator admissibility = " + std::to_string(_errorIndicatorAdmissibility);
   result += " isCorrupted = " + std::to_string(_isCorrupted);
 
   return result;
@@ -1129,12 +1189,12 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::initDataty
 #if defined(UseSmartMPI) || defined(OffloadingMetadataPacked)
   _datatype = MPI_BYTE;
 #else
-  int entries = 2+6;
+  int entries = 2+8;
   MigratablePredictionJobMetaData dummy;
 
-  int blocklengths[] = {DIMENSIONS, DIMENSIONS, 1, 1, 1, 1, sizeof(bool), sizeof(bool)};
-  MPI_Datatype subtypes[] = {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INT, MPI_INT, MPI_DOUBLE, MPI_BYTE};
-  MPI_Aint displs[] = {0, 0, 0, 0, 0, 0, 0, 0};
+  int blocklengths[] = {DIMENSIONS, DIMENSIONS, 1, 1, 1, 1, 1, 1, 1, sizeof(bool)};
+  MPI_Datatype subtypes[] = {MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_INT, MPI_INT, MPI_DOUBLE, MPI_DOUBLE, MPI_DOUBLE, MPI_BYTE};
+  MPI_Aint displs[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
   MPI_Aint base;
   MPI_Get_address(&dummy, &base);
@@ -1145,8 +1205,10 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::initDataty
   MPI_Get_address(&(dummy._predictorTimeStepSize), &(displs[3]));
   MPI_Get_address(&(dummy._element), &(displs[4]));
   MPI_Get_address(&(dummy._originRank), &(displs[5]));
-  MPI_Get_address(&(dummy._errorIndicator), &(displs[6]));
-  MPI_Get_address(&(dummy._isCorrupted), &(displs[7]));
+  MPI_Get_address(&(dummy._errorIndicatorDerivative), &(displs[6]));
+  MPI_Get_address(&(dummy._errorIndicatorTimeStepSize), &(displs[7]));
+  MPI_Get_address(&(dummy._errorIndicatorAdmissibility), &(displs[8]));
+  MPI_Get_address(&(dummy._isCorrupted), &(displs[9]));
 
   for(int i=0; i<entries; i++) {
     displs[i] = displs[i]-base;

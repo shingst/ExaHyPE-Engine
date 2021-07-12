@@ -3,7 +3,7 @@
   "paths": {
     "peano_kernel_path": "./Peano",
     "exahype_path": "./ExaHyPE",
-    "output_directory": "./ApplicationExamples/SWE/SWE_asagi_limited"
+    "output_directory": "./ApplicationExamples/SWE/SWE_ADERDG"
   },
   "architecture": "hsw",
   "computational_domain": {
@@ -51,10 +51,10 @@
     "check_mechanism" : "check_stps_with_low_confidence",
     "save_redundant_computations" : true,
     "task_sharing" : "task_sharing_resilience_correction",
-    "abs_error" : -0.0000001,
+    "abs_error" : 1000,
     "max_error_indicator" : 0,
     "confidence_check_admissibility" : false,
-    "confidence_check_timesteps" : true,
+    "confidence_check_time_step_sizes" : true,
     "confidence_check_derivatives" : false
   },
   "optimisation": {
@@ -71,7 +71,7 @@
   },
   "solvers": [
     {
-      "type": "Limiting-ADER-DG",
+      "type": "ADER-DG",
       "name": "MySWESolver",
       "order": 3,
       "maximum_mesh_size": 0.5,
@@ -90,22 +90,6 @@
         "implementation": "generic"
       },
       "point_sources": 0,
-      "limiter": {
-        "dmp_observables": 0,
-        "dmp_relaxation_parameter": 101.0,
-        "dmp_difference_scaling": 101.0,
-        "implementation": "generic"
-      },
-      "fv_kernel": {
-        "language": "C",
-        "terms": [
-          "flux",
-          "ncp"
-        ],
-        "scheme": "godunov",
-        "implementation": "generic",
-        "allocate_temporary_arrays": "stack"
-      },
       "variables": [
         {
           "name": "h",
@@ -129,7 +113,7 @@
         "epsilon": 0.0001,
         "scenario": 5
       },
-      "plotters": [
+      "_plotters": [
         {
           "type": "vtu::Cartesian::cells::limited::ascii",
           "name": "ConservedWriter",

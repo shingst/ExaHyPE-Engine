@@ -1457,8 +1457,16 @@ double exahype::parser::Parser::getErrorInjectionTime() const {
   return getDoubleFromPath("/resilience/injection_time", -1, isOptional);
 }
 
-double exahype::parser::Parser::getMaximumErrorIndicatorForTrustworthiness() const {
-  return getDoubleFromPath("/resilience/max_error_indicator", 0.00, isOptional);
+double exahype::parser::Parser::getMaximumErrorIndicatorForDerivatives() const {
+  return getDoubleFromPath("/resilience/max_error_indicator_derivatives", 0.00, isOptional);
+}
+
+double exahype::parser::Parser::getMaximumErrorIndicatorForTimeStepSizes() const {
+  return getDoubleFromPath("/resilience/max_error_indicator_timestepsizes", 0.00, isOptional);
+}
+
+int exahype::parser::Parser::getErrorInjectionRank() const {
+  return getIntFromPath("/resilience/injection_rank", 0, isOptional);
 }
 
 /*double exahype::parser::Parser::getMinDerivativeScalingFactor() const {

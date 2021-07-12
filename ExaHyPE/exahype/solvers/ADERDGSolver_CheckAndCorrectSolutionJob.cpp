@@ -10,7 +10,9 @@ exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::CheckAndCorrectSolut
     CellDescription& solverPatch,
     double predictorTimeStamp,
     double predictorTimeStepSize,
-    double errorIndicator)
+    double errorIndicatorDerivative,
+    double errorIndicatorTimeStepSize,
+    double errorIndicatorAdmissibility)
  : tarch::multicore::jobs::Job(
      tarch::multicore::jobs::JobType::BackgroundTask, 0,
      getTaskPriority(false)),
@@ -18,7 +20,9 @@ exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::CheckAndCorrectSolut
    _solverPatch(solverPatch),
    _predictorTimeStamp(predictorTimeStamp),
    _predictorTimeStepSize(predictorTimeStepSize),
-   _errorIndicator (errorIndicator){
+   _errorIndicatorDerivative(errorIndicatorDerivative),
+   _errorIndicatorTimeStepSize(errorIndicatorTimeStepSize),
+   _errorIndicatorAdmissibility(errorIndicatorAdmissibility)  {
 
 }
 
@@ -32,6 +36,12 @@ bool exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::run(bool isRunO
   DeliveryStatus status;
   MigratablePredictionJobData *outcome;
   bool found = tryToFindAndExtractEquivalentSharedOutcome(status, &outcome);
+        
+        
+  logDebug("runCheck", "Checking my outcome."<<
+                      "My error indicators: derivative = "<<_errorIndicatorDerivative<<
+                      " time step size = "<<_errorIndicatorTimeStepSize<<
+                      " admissibility = "<<_errorIndicatorAdmissibility);
 
   //assert(exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().otherTeamHasTimeStepData(_predictorTimeStamp, _predictorTimeStepSize));
   if( !found
@@ -54,16 +64,20 @@ bool exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::run(bool isRunO
         _solverPatch.setHasCompletedLastStep(true);
         reschedule = false;
         break;
-      case SDCCheckResult::MyErrorIndicatorIsLower:
+      case SDCCheckResult::MyOutcomeIsMoreTrustworthy:
         reschedule = false;
         _solverPatch.setHasCompletedLastStep(true);
-        logError("runCheck","My result has higher confidence. Continuing...");
+        logError("runCheck","My result is more trustworthy. Continuing...");
         break;
-      case SDCCheckResult::OutcomeHasLowerErrorIndicator:
+      case SDCCheckResult::OutcomeIsMoreTrustworthy:
          //continue to correction
-        logError("runCheck", "I'm correcting with an outcome that has lower error indicator!"
-                              "My error indicator = "<<_errorIndicator<<
-			      " other outcome's error indicator = "<<outcome->_metadata._errorIndicator);
+        logError("runCheck", "I'm correcting with an outcome that has lower error indicator!"<<
+                              "My error indicators: derivative = "<<_errorIndicatorDerivative<<
+                              " time step size = "<<_errorIndicatorTimeStepSize<<
+                              " admissibility = "<<_errorIndicatorAdmissibility<<
+			                  " other outcome's error indicators: derivative = "<<outcome->_metadata._errorIndicatorDerivative<<
+                              " time step size "<<outcome->_metadata._errorIndicatorTimeStepSize<<
+                              " admissibility "<<outcome->_metadata._errorIndicatorAdmissibility);
          //no break!
       case SDCCheckResult::OutcomeSaneAsTriggerNotActive:
         if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()
@@ -92,18 +106,17 @@ bool exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::run(bool isRunO
 
 bool exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::tryToFindAndExtractEquivalentSharedOutcome(DeliveryStatus &status, MigratablePredictionJobData **outcome) {
 
-  logDebug("tryToFindAndExtractEquivalentSharedOutcome", "team = "<<exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber()
-      <<" looking for "<<_cellDescription.toString())
-
   return _solver.tryToFindAndExtractOutcome(_solverPatch, _predictorTimeStamp, _predictorTimeStepSize, status, outcome);
 }
 
 exahype::solvers::ADERDGSolver::SDCCheckResult exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::checkAgainstOutcome(ADERDGSolver::MigratablePredictionJobData *data) {
-  return _solver.checkCellDescriptionAgainstOutcome(_solverPatch, data, _predictorTimeStamp, _predictorTimeStepSize, _errorIndicator);
+  return _solver.checkCellDescriptionAgainstOutcome(_solverPatch, data, _predictorTimeStamp, _predictorTimeStepSize,
+                                                    _errorIndicatorDerivative,
+                                                    _errorIndicatorTimeStepSize,
+                                                    _errorIndicatorAdmissibility);
 }
 
 void exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::correctWithOutcome(ADERDGSolver::MigratablePredictionJobData *outcome){
-
    _solver.correctCellDescriptionWithOutcome(_solverPatch, outcome);
 }
 #endif

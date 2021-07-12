@@ -42,7 +42,7 @@ class exahype::reactive::ResilienceTools {
   /**
    * Specifies how many STPs is a soft-error generated.
    */
-  const int _injectionInterval;
+  int _injectionInterval;
 
   const int _numFlips;
 
@@ -66,13 +66,11 @@ class exahype::reactive::ResilienceTools {
 
   double _absError;
   double _relError;
-  double _maxErrorIndicator;
+  double _maxErrorIndicatorDerivatives;
+  double _maxErrorIndicatorTimeStepSizes;
 
   tarch::la::Vector<DIMENSIONS, double> _injectionPosition;
   double _injectionTime;
-
-  double _minScalingFactorOfDerivative;
-  double _maxScalingFactorOfDerivative;
 
   public:
 
@@ -92,11 +90,13 @@ class exahype::reactive::ResilienceTools {
 
   void configure(double absError, double relError, double injectionTime,
                  tarch::la::Vector<DIMENSIONS, double> injectionPos,
-                 double maxErrorIndicator);
+                 int injectionRank,
+                 double maxErrorIndicatorDerivatives,
+                 double maxErrorIndicatorTimeStepSizes);
 
-  bool corruptDataIfActive(const double *ref, double *center, int dim, double t, double *array, size_t length);
+  void corruptData(const double *ref, double *center, int dim, double t, double *array, size_t length);
 
-  bool isTrustworthy(double errorIndicator);
+  bool isTrustworthy(double errorIndicatorDerivatives, double errorIndicatorTimeStepSizes, double errorIndicatorAdmissibility);
 
   bool shouldInjectError(const double *center, double t);
 
@@ -121,9 +121,9 @@ class exahype::reactive::ResilienceTools {
   //double getMaxDerivativeScalingFactor() const;
 
   private:
-  bool generateBitflipErrorInDoubleIfActive(const double *ref, double *center, int dim, double t, double *array, size_t length);
-  bool overwriteRandomValueInArrayIfActive(const double *ref, double *center, int dim, double t, double *array, size_t size);
-  bool overwriteHardcodedIfActive(const double *ref, double *center, int dim, double t,  double *array, size_t size);
+  void generateBitflipErrorInDouble(const double *ref, double *center, int dim, double t, double *array, size_t length);
+  void overwriteRandomValueInArray(const double *ref, double *center, int dim, double t, double *array, size_t size);
+  void overwriteHardcoded(const double *ref, double *center, int dim, double t,  double *array, size_t size);
 
   virtual ~ResilienceTools();
 
