@@ -13,8 +13,8 @@
 # # #SBATCH -D ./
 
 #Notification and type
-#SBATCH --mail-type=END
-#SBATCH --mail-user={{mail}}
+##SBATCH --mail-type=END
+##SBATCH --mail-user={{mail}}
 
 # Wall clock limit:
 #SBATCH --time={{time}}

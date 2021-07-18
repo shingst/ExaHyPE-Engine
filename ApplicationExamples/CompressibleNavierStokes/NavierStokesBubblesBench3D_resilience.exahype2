@@ -7,7 +7,7 @@
   },
   "computational_domain": {
     "dimension": 3,
-    "time_steps": 15,
+    "end_time": 1000,
     "offset": [
       0.0,
       0.0,
@@ -19,10 +19,10 @@
       1000.0
     ]
   },
-  "architecture": "noarch",
+  "architecture": "skx",
   "shared_memory": {
-    "cores": 2,
-    "background_job_consumers": 1,
+    "cores": 12,
+    "background_job_consumers": 11,
     "autotuning_strategy": "dummy"
   },
  "distributed_memory": {
@@ -47,18 +47,18 @@
     "stp_tracing_frequency" : 10
   },
   "resilience" : {
-    "generate_soft_errors" : "migratable_stp_tasks_overwrite",
+    "generate_soft_errors" : "no",
     "check_mechanism" : "check_stps_with_low_confidence",
-    "save_redundant_computations" : true,
-    "task_sharing" : "task_sharing_resilience_correction",
-    "abs_error" : -1000.0,
+    "save_redundant_computations" : false,
+    "task_sharing" : "no",
+    "abs_error" : 0,
     "injection_time" : 0.136866,
-    "injection_rank" : 1,
+    "injection_rank" : 0,
     "injection_position" : [500.0, 500.0, 500.0],
     "max_error_indicator_derivatives" : 100,
     "max_error_indicator_timestepsizes" : 0.5,
-    "confidence_check_time_step_sizes" : true,
-    "confidence_check_derivatives" : true,
+    "confidence_check_time_step_sizes" : false,
+    "confidence_check_derivatives" : false,
     "confidence_check_admissibility" : false
   },
   "optimisation": {
@@ -78,9 +78,9 @@
     {
       "type": "ADER-DG",
       "name": "NavierStokesSolver_ADERDG",
-      "order": 7,
-      "maximum_mesh_size": 100,
-      "maximum_mesh_depth": 0,
+      "order": 3,
+      "maximum_mesh_size": 400,
+      "maximum_mesh_depth": 1,
       "time_stepping": "global",
       "halo_cells": 0,
       "aderdg_kernel": {
@@ -123,25 +123,31 @@
           "multiplicity": 2
         }
       ],
+      "global_observables": [
+        {
+          "name": "gobs",
+          "multiplicity": 3
+        }
+      ],
       "parameters": {
         "use-gravity": true,
         "use-background-state": true,
         "viscosity": 0.01,
         "scenario": "cosine-bubble",
-        "use-amr": false,
+        "use-amr": true,
         "use-tv-amr": true,
-        "use-tv-volume-correction": false,
+        "use-tv-volume-correction": true,
         "amr-indicator": "potential-temperature",
         "amr-factor-refine": 2.5,
         "amr-factor-erase": -1.5
       },
-      "_plotters": [
+      "plotters": [
         {
-          "type": "vtu::Legendre::vertices::ascii",
-          "name": "Plotter_Limiting",
+          "type": "vtu::Cartesian::vertices::ascii",
+          "name": "Plotter",
           "time": 0.0,
-          "repeat": 0.0001,
-          "output": "results/solution",
+          "repeat": 100,
+          "output": "plots/solution",
           "variables": 6
         }
       ]

@@ -57,8 +57,8 @@ inline double compareSecondDerivativesAndGetMeanMaxScaling(const double* const u
               tmp2 += (1/(sizeOfPatch[0]*sizeOfPatch[0])) * u2[idx_u(z,y,n,v)] *
                                                           kernels::legendre::basisFunctionSecondDerivative[order][n](kernels::legendre::nodes[order][x]);
             }
-            double tmp = std::abs(tmp1-tmp2)/tmp2;
-            sumScaling += (tmp2<=1e-15 ? tmp1 : tmp);
+            double tmp = std::abs(tmp1-tmp2)/std::abs(tmp2);
+            sumScaling += (tmp2<=1e-15 ? std::abs(tmp1) : tmp);
         }
       }
     }
@@ -77,8 +77,8 @@ inline double compareSecondDerivativesAndGetMeanMaxScaling(const double* const u
               tmp2 += (1/(sizeOfPatch[0]*sizeOfPatch[0])) * u2[idx_u(z,n,x,v)] *
                                                           kernels::legendre::basisFunctionSecondDerivative[order][n](kernels::legendre::nodes[order][y]);
             }
-            double tmp = std::abs(tmp1-tmp2)/tmp2;
-            sumScaling += (tmp2<=1e-15 ? tmp1 : tmp);
+            double tmp = std::abs(tmp1-tmp2)/std::abs(tmp2);
+            sumScaling += (tmp2<=1e-15 ? std::abs(tmp1) : tmp);
         }
       }
     }
@@ -97,8 +97,8 @@ inline double compareSecondDerivativesAndGetMeanMaxScaling(const double* const u
               tmp2 += (1/(sizeOfPatch[0]*sizeOfPatch[0])) * u2[idx_u(n,y,x,v)] *
                                                           kernels::legendre::basisFunctionSecondDerivative[order][n](kernels::legendre::nodes[order][z]);
             }
-            double tmp = std::abs(tmp1-tmp2)/tmp2;
-            sumScaling += (tmp2<=1e-15 ? tmp1 : tmp);
+            double tmp = std::abs(tmp1-tmp2)/std::abs(tmp2);
+            sumScaling += (tmp2<=1e-15 ? std::abs(tmp1) : tmp);
         }
       }
     }

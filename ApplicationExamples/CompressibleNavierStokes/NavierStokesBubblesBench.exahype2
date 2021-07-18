@@ -7,7 +7,7 @@
   },
   "computational_domain": {
     "dimension": 2,
-    "end_time": 600,
+    "end_time": 800,
     "offset": [
       0.0,
       0.0
@@ -19,7 +19,7 @@
   },
   "shared_memory": {
     "cores": 12,
-    "background_job_consumers": 6,  
+    "background_job_consumers": 11,  
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy"
   },
@@ -41,9 +41,9 @@
     {
       "type": "ADER-DG",
       "name": "NavierStokesSolver_ADERDG",
-      "order": 4,
-      "maximum_mesh_size": 200,
-      "maximum_mesh_depth": 0,
+      "order": 6,
+      "maximum_mesh_size": 400,
+      "maximum_mesh_depth": 2,
       "time_stepping": "global",
       "halo_cells": 0,
       "aderdg_kernel": {
@@ -93,13 +93,13 @@
       "parameters": {
         "use-gravity": true,
         "use-background-state": true,
-        "viscosity": 0.1,
-        "scenario": "two-bubbles",
+        "viscosity": 0.001,
+        "scenario": "cosine-bubble",
         "use-amr": true,
         "use-tv-amr": true,
-        "use-tv-volume-correction": true,
+        "use-tv-volume-correction": false,
         "amr-indicator": "potential-temperature",
-        "amr-factor-refine": 2.5,
+        "amr-factor-refine": 1.5,
         "amr-factor-erase": -0.5
       },
       "plotters": [
@@ -108,15 +108,15 @@
           "name": "Plotter",
           "time": 0.0,
           "repeat": 60.0,
-          "output": "/work_fast/krenz/bubble_amr/solution_cartesian",
+          "output": "plots_2d/solution_cartesian",
           "variables": 5
         },
         {
           "type": "vtu::Legendre::vertices::ascii",
           "name": "Plotter",
           "time": 0.0,
-          "repeat": 30.0,
-          "output": "/work_fast/krenz/bubble_amr/solution",
+          "repeat": 60.0,
+          "output": "plots_2d/solution",
           "variables": 5
         }
       ]
