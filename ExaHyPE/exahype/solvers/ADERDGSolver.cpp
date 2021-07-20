@@ -1821,9 +1821,12 @@ void exahype::solvers::ADERDGSolver::computePredictorErrorIndicators(CellDescrip
     //second, check time step criterion
     //third, check derivatives lazily (only if other criteria make result seem dubious)
     *errIndAdmissibility = exahype::reactive::ResilienceTools::CheckSTPAdmissibility ? computePredictorErrorIndicatorAdmissibility(luhtemp, cellDescription) : 0;
-    *errIndTimeStep = exahype::reactive::ResilienceTools::CheckSTPTimeSteps ? computePredictorErrorIndicatorTimeStep(luhtemp, cellDescription, predictorTimeStepSize) : 0;
 
-    if(exahype::reactive::ResilienceTools::getInstance().isTrustworthy(0, *errIndTimeStep, *errIndAdmissibility)) {
+    if(!exahype::reactive::ResilienceTools::getInstance().isTrustworthy(std::numeric_limits<double>::max(), std::numeric_limits<double>::max(), *errIndAdmissibility)) {
+      *errIndTimeStep = exahype::reactive::ResilienceTools::CheckSTPTimeSteps ? computePredictorErrorIndicatorTimeStep(luhtemp, cellDescription, predictorTimeStepSize) : 0;
+    }
+
+    if(!exahype::reactive::ResilienceTools::getInstance().isTrustworthy(std::numeric_limits<double>::max(), *errIndTimeStep, *errIndAdmissibility)) {
       *errIndDerivative = exahype::reactive::ResilienceTools::CheckSTPDerivatives ? computePredictorErrorIndicatorDerivative(luhtemp, cellDescription) : 0;
     }
   }

@@ -97,9 +97,16 @@ void exahype::reactive::ResilienceTools::configure(double absError,
 }
 
 bool exahype::reactive::ResilienceTools::isTrustworthy(double errorIndicatorDerivatives, double errorIndicatorTimeStepSizes, double errorIndicatorAdmissibility) {
-  return errorIndicatorDerivatives<=_maxErrorIndicatorDerivatives
-      && errorIndicatorTimeStepSizes<=_maxErrorIndicatorTimeStepSizes
-      && (errorIndicatorAdmissibility==0);
+  if(!exahype::reactive::ResilienceTools::CheckSTPsLazily) {
+    return errorIndicatorDerivatives<=_maxErrorIndicatorDerivatives
+        && errorIndicatorTimeStepSizes<=_maxErrorIndicatorTimeStepSizes
+        && (errorIndicatorAdmissibility==0);
+  }
+  else {
+    return !(errorIndicatorDerivatives>_maxErrorIndicatorDerivatives
+        &&  errorIndicatorTimeStepSizes>_maxErrorIndicatorTimeStepSizes
+        && errorIndicatorAdmissibility!=0);
+  }
 }
 
 bool exahype::reactive::ResilienceTools::shouldInjectError(const double *center, double t) {
