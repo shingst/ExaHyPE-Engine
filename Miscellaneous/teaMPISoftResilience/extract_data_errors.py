@@ -93,8 +93,7 @@ def parseErrorFile(filename, teams):
         healed = int(m.group(3))
     if(injected!=healed):
       print("ERROR: was corrected on wrong team!")
-      res = None
-      #raise AssertionError("We count an error as corrected but the outfile says something different")
+      res["errors_corrected"] = 0
  
   if(res!=None and res["error"]==0):
     print("Problem: file ",filename, " does not contain valid output")
