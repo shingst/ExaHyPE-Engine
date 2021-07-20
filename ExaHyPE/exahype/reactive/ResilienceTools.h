@@ -98,6 +98,12 @@ class exahype::reactive::ResilienceTools {
 
   bool isTrustworthy(double errorIndicatorDerivatives, double errorIndicatorTimeStepSizes, double errorIndicatorAdmissibility);
 
+  bool violatesCriterion(double value, double threshold) const;
+
+  bool violatesAdmissibility(double value) const;
+  bool violatesDerivatives(double value) const;
+  bool violatesTimestep(double value) const;
+
   bool shouldInjectError(const double *center, double t);
 
   static void setSoftErrorGenerationStrategy(SoftErrorGenerationStrategy strat);

@@ -98,15 +98,42 @@ void exahype::reactive::ResilienceTools::configure(double absError,
 
 bool exahype::reactive::ResilienceTools::isTrustworthy(double errorIndicatorDerivatives, double errorIndicatorTimeStepSizes, double errorIndicatorAdmissibility) {
   if(!exahype::reactive::ResilienceTools::CheckSTPsLazily) {
-    return errorIndicatorDerivatives<=_maxErrorIndicatorDerivatives
-        && errorIndicatorTimeStepSizes<=_maxErrorIndicatorTimeStepSizes
-        && (errorIndicatorAdmissibility==0);
+    return !violatesAdmissibility(errorIndicatorAdmissibility)
+        && !violatesTimestep(errorIndicatorTimeStepSizes)
+        && !violatesDerivatives(errorIndicatorDerivatives);
   }
   else {
-    return !(errorIndicatorDerivatives>_maxErrorIndicatorDerivatives
-        &&  errorIndicatorTimeStepSizes>_maxErrorIndicatorTimeStepSizes
-        && errorIndicatorAdmissibility!=0);
+    if(!CheckSTPAdmissibility && !CheckSTPAdmissibility && !CheckSTPDerivatives){
+          return true;
+    }
+    bool dubious = true;
+    if(dubious && CheckSTPAdmissibility) {
+      dubious = dubious && violatesAdmissibility(errorIndicatorAdmissibility);
+    }
+    if(dubious && CheckSTPTimeSteps) {
+      dubious = dubious && violatesTimestep(errorIndicatorTimeStepSizes);
+    }
+    if(dubious && CheckSTPDerivatives) {
+      dubious = dubious && violatesDerivatives(errorIndicatorDerivatives);
+    }
+    return !dubious;
   }
+}
+
+bool exahype::reactive::ResilienceTools::violatesCriterion(double value, double threshold) const {
+  return value>threshold;
+}
+
+bool exahype::reactive::ResilienceTools::violatesAdmissibility(double value) const {
+  return violatesCriterion(value, 0);
+}
+
+bool exahype::reactive::ResilienceTools::violatesTimestep(double value) const {
+  return violatesCriterion(value, _maxErrorIndicatorTimeStepSizes);
+}
+
+bool exahype::reactive::ResilienceTools::violatesDerivatives(double value) const {
+  return violatesCriterion(value, _maxErrorIndicatorDerivatives);
 }
 
 bool exahype::reactive::ResilienceTools::shouldInjectError(const double *center, double t) {
@@ -223,13 +250,20 @@ void exahype::reactive::ResilienceTools::overwriteHardcoded(const double *ref, d
   array[idx_array] += error;
   _numFlipped++;
 
+#if DIMENSIONS==2
   logError("overwriteHardcodedIfActive()", "overwrite double value, pos = "<<idx_array<<" old ="<<old_val<<" new = "<<array[idx_array]
-                                                                         <<" in center[0]="<<center[0]<<" center[1]="<<center[1]
-#if DIMENSIONS==3
-                                                                         <<" center[2]="<<center[2]
-#endif
+                                                                         <<" in center[0]="<<center[0]
+                                                                         <<" center[1]="<<center[1]
                                                                          <<" t ="<<t
                                                                          <<" corresponds to relative error "<<error/(ref[idx_array]+old_val));
+#else if DIMENSIONS==3
+  logError("overwriteHardcodedIfActive()", "overwrite double value, pos = "<<idx_array<<" old ="<<old_val<<" new = "<<array[idx_array]
+                                                                         <<" in center[0]="<<center[0]<<" center[1]="<<center[1]
+                                                                         <<" center[2]="<<center[2]
+                                                                         <<" t ="<<t
+                                                                         <<" corresponds to relative error "<<error/(ref[idx_array]+old_val));
+#endif
+
   exahype::reactive::ResilienceStatistics::getInstance().notifyInjectedError();
 }
 

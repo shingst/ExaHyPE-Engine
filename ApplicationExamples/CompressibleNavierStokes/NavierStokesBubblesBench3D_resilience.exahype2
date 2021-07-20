@@ -21,8 +21,8 @@
   },
   "architecture": "noarch",
   "shared_memory": {
-    "cores": 12,
-    "background_job_consumers": 11,
+    "cores": 2,
+    "background_job_consumers": 1,
     "autotuning_strategy": "dummy"
   },
  "distributed_memory": {
@@ -81,7 +81,7 @@
       "name": "NavierStokesSolver_ADERDG",
       "order": 3,
       "maximum_mesh_size": 400,
-      "maximum_mesh_depth": 1,
+      "maximum_mesh_depth": 0,
       "time_stepping": "global",
       "halo_cells": 0,
       "aderdg_kernel": {
@@ -142,7 +142,7 @@
         "amr-factor-refine": 2.5,
         "amr-factor-erase": -1.5
       },
-      "plotters": [
+      "_plotters": [
         {
           "type": "vtu::Cartesian::vertices::ascii",
           "name": "Plotter",
