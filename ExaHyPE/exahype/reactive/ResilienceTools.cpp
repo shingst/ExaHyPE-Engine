@@ -107,12 +107,7 @@ bool exahype::reactive::ResilienceTools::isTrustworthy(double errorIndicatorDeri
           return true;
     }
     bool dubious = true;
-    if(dubious && CheckSTPAdmissibility) {
-      dubious = dubious && violatesAdmissibility(errorIndicatorAdmissibility);
-    }
-    if(dubious && CheckSTPTimeSteps) {
-      dubious = dubious && violatesTimestep(errorIndicatorTimeStepSizes);
-    }
+    dubious = dubious && (violatesAdmissibility(errorIndicatorAdmissibility) || violatesTimestep(errorIndicatorTimeStepSizes));
     if(dubious && CheckSTPDerivatives) {
       dubious = dubious && violatesDerivatives(errorIndicatorDerivatives);
     }
@@ -125,15 +120,15 @@ bool exahype::reactive::ResilienceTools::violatesCriterion(double value, double 
 }
 
 bool exahype::reactive::ResilienceTools::violatesAdmissibility(double value) const {
-  return violatesCriterion(value, 0);
+  return CheckSTPAdmissibility && violatesCriterion(value, 0);
 }
 
 bool exahype::reactive::ResilienceTools::violatesTimestep(double value) const {
-  return violatesCriterion(value, _maxErrorIndicatorTimeStepSizes);
+  return CheckSTPTimeSteps && violatesCriterion(value, _maxErrorIndicatorTimeStepSizes);
 }
 
 bool exahype::reactive::ResilienceTools::violatesDerivatives(double value) const {
-  return violatesCriterion(value, _maxErrorIndicatorDerivatives);
+  return CheckSTPDerivatives && violatesCriterion(value, _maxErrorIndicatorDerivatives);
 }
 
 bool exahype::reactive::ResilienceTools::shouldInjectError(const double *center, double t) {
