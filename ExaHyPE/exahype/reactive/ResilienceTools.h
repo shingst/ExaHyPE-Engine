@@ -80,10 +80,10 @@ class exahype::reactive::ResilienceTools {
   static bool CheckLimitedCellsOnly;
   static bool CheckFlipped;
 
-  static bool CheckDerivatives;
-  static bool CheckTimeSteps;
-  static bool CheckAdmissibility;
-
+  static bool CheckSTPDerivatives;
+  static bool CheckSTPTimeSteps;
+  static bool CheckSTPAdmissibility;
+  static bool CheckSTPsLazily;
 
   ResilienceTools();
   static ResilienceTools& getInstance();

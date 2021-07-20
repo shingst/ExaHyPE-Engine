@@ -33,9 +33,10 @@ bool exahype::reactive::ResilienceTools::CheckLimitedCellsOnly;
 bool exahype::reactive::ResilienceTools::CheckFlipped;
 bool exahype::reactive::ResilienceTools::CheckSTPsWithLowConfidence;
 
-bool exahype::reactive::ResilienceTools::CheckDerivatives;
-bool exahype::reactive::ResilienceTools::CheckTimeSteps;
-bool exahype::reactive::ResilienceTools::CheckAdmissibility;
+bool exahype::reactive::ResilienceTools::CheckSTPDerivatives;
+bool exahype::reactive::ResilienceTools::CheckSTPTimeSteps;
+bool exahype::reactive::ResilienceTools::CheckSTPAdmissibility;
+bool exahype::reactive::ResilienceTools::CheckSTPsLazily;
 
 exahype::reactive::ResilienceTools::ResilienceTools()
   : _numFlips(1),

@@ -1806,10 +1806,27 @@ void exahype::solvers::ADERDGSolver::computeTemporarySolutionWithPredictor(CellD
 void exahype::solvers::ADERDGSolver::computePredictorErrorIndicators(CellDescription& cellDescription, double predictorTimeStepSize, double *errIndDerivative, double *errIndTimeStep, double *errIndAdmissibility) {
   double *luhtemp = new double[getDataPerCell()];
 
+  *errIndTimeStep = 0;
+  *errIndAdmissibility = 0;
+  *errIndDerivative = 0;
+
   computeTemporarySolutionWithPredictor(cellDescription, luhtemp);
-  *errIndTimeStep = exahype::reactive::ResilienceTools::CheckTimeSteps ? computePredictorErrorIndicatorTimeStep(luhtemp, cellDescription, predictorTimeStepSize) : 0;
-  *errIndAdmissibility = exahype::reactive::ResilienceTools::CheckAdmissibility ? computePredictorErrorIndicatorAdmissibility(luhtemp, cellDescription) : 0;
-  *errIndDerivative = exahype::reactive::ResilienceTools::CheckDerivatives ? computePredictorErrorIndicatorDerivative(luhtemp, cellDescription) : 0;
+  if(!exahype::reactive::ResilienceTools::CheckSTPsLazily) {
+    *errIndTimeStep = exahype::reactive::ResilienceTools::CheckSTPTimeSteps ? computePredictorErrorIndicatorTimeStep(luhtemp, cellDescription, predictorTimeStepSize) : 0;
+    *errIndAdmissibility = exahype::reactive::ResilienceTools::CheckSTPAdmissibility ? computePredictorErrorIndicatorAdmissibility(luhtemp, cellDescription) : 0;
+    *errIndDerivative = exahype::reactive::ResilienceTools::CheckSTPDerivatives ? computePredictorErrorIndicatorDerivative(luhtemp, cellDescription) : 0;
+  }
+  else {
+    //first, evaluate admissibility
+    //second, check time step criterion
+    //third, check derivatives lazily (only if other criteria make result seem dubious)
+    *errIndAdmissibility = exahype::reactive::ResilienceTools::CheckSTPAdmissibility ? computePredictorErrorIndicatorAdmissibility(luhtemp, cellDescription) : 0;
+    *errIndTimeStep = exahype::reactive::ResilienceTools::CheckSTPTimeSteps ? computePredictorErrorIndicatorTimeStep(luhtemp, cellDescription, predictorTimeStepSize) : 0;
+
+    if(exahype::reactive::ResilienceTools::getInstance().isTrustworthy(0, *errIndTimeStep, *errIndAdmissibility)) {
+      *errIndDerivative = exahype::reactive::ResilienceTools::CheckSTPDerivatives ? computePredictorErrorIndicatorDerivative(luhtemp, cellDescription) : 0;
+    }
+  }
 
   delete[] luhtemp;
 }

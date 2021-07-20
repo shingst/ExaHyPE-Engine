@@ -857,6 +857,9 @@ class exahype::parser::Parser {
 
   bool getCheckSTPConfidenceTimeStepSizes() const;
 
+  bool getCheckSTPsLazily() const;
+
+
 };
 
 #endif

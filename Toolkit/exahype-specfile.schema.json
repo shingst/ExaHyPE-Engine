@@ -516,6 +516,11 @@
            "title" : "Checks time step sizes for confidence.",
            "default" : false
          },
+         "confidence_check_lazily" : {
+           "type" : "boolean", 
+           "title" : "Check criteria lazily for improved performance.",
+           "default" : false
+         },
          "confidence_min_derivative" : {
              "type" : "number",
             "title" : "Specifies the minimum scaling of a second derivative that may be suspicious.",

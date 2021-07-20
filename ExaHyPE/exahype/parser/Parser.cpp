@@ -1508,3 +1508,7 @@ bool exahype::parser::Parser::getCheckSTPConfidenceDerivatives() const {
 bool exahype::parser::Parser::getCheckSTPConfidenceTimeStepSizes() const {
   return getBoolFromPath("/resilience/confidence_check_time_step_sizes", false, isOptional);;
 }
+
+bool exahype::parser::Parser::getCheckSTPsLazily() const {
+  return getBoolFromPath("/resilience/confidence_check_lazily", false, isOptional);;
+}

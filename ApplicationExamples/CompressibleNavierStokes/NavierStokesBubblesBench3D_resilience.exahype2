@@ -19,7 +19,7 @@
       1000.0
     ]
   },
-  "architecture": "skx",
+  "architecture": "noarch",
   "shared_memory": {
     "cores": 12,
     "background_job_consumers": 11,
@@ -47,19 +47,20 @@
     "stp_tracing_frequency" : 10
   },
   "resilience" : {
-    "generate_soft_errors" : "no",
+    "generate_soft_errors" : "migratable_stp_tasks_overwrite",
     "check_mechanism" : "check_stps_with_low_confidence",
-    "save_redundant_computations" : false,
-    "task_sharing" : "no",
-    "abs_error" : 0,
+    "save_redundant_computations" : true,
+    "task_sharing" : "task_sharing_resilience_correction",
+    "abs_error" : 0.001,
     "injection_time" : 0.136866,
     "injection_rank" : 0,
     "injection_position" : [500.0, 500.0, 500.0],
-    "max_error_indicator_derivatives" : 100,
+    "max_error_indicator_derivatives" : 10,
     "max_error_indicator_timestepsizes" : 0.5,
-    "confidence_check_time_step_sizes" : false,
-    "confidence_check_derivatives" : false,
-    "confidence_check_admissibility" : false
+    "confidence_check_time_step_sizes" : true,
+    "confidence_check_derivatives" : true,
+    "confidence_check_admissibility" : true,
+    "confidence_check_lazily" : false
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",

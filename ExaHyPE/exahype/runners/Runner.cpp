@@ -372,9 +372,10 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     exahype::reactive::ResilienceTools::CheckFlipped = _parser.getCheckCorrupted();
     exahype::reactive::ResilienceTools::CheckSTPsWithLowConfidence = _parser.getCheckSTPsWithLowConfidence();
 
-    exahype::reactive::ResilienceTools::CheckDerivatives = _parser.getCheckSTPConfidenceDerivatives();
-    exahype::reactive::ResilienceTools::CheckAdmissibility = _parser.getCheckSTPConfidenceAdmissibility();
-    exahype::reactive::ResilienceTools::CheckTimeSteps = _parser.getCheckSTPConfidenceTimeStepSizes();
+    exahype::reactive::ResilienceTools::CheckSTPDerivatives = _parser.getCheckSTPConfidenceDerivatives();
+    exahype::reactive::ResilienceTools::CheckSTPAdmissibility = _parser.getCheckSTPConfidenceAdmissibility();
+    exahype::reactive::ResilienceTools::CheckSTPTimeSteps = _parser.getCheckSTPConfidenceTimeStepSizes();
+    exahype::reactive::ResilienceTools::CheckSTPsLazily = _parser.getCheckSTPsLazily();
 
   }
 
