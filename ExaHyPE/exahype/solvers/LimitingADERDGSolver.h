@@ -288,14 +288,8 @@ private:
   MeshUpdateEvent updateRefinementStatusAfterSolutionUpdate(
       SolverPatch& solverPatch,
       CellInfo&    cellInfo,
-      const bool   isTroubled,
-      const bool needToRollbackToTeamSolution);
-
-  //todo: docu
-  void updateCorruptionStatusAfterSolutionUpdate(
-      SolverPatch& solverPatch,
       const bool   isTroubled);
-
+  
   /**
    * Takes the FV solution from the limiter patch and projects it on the
    * DG space, overwrites the DG solution on the solver patch with the projected values.

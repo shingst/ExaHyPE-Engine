@@ -650,7 +650,6 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
     exahype::reactive::ResilienceStatistics::getInstance().notifyLimitedTask();
   }
 
-  bool needToRollbackToTeamSolution = false;
 #if defined(SharedTBB) && defined(Parallel) //todo: tasksharing and resilience extensions only work with TBB!
   if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()
       >= exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceChecks
@@ -720,41 +719,24 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
       return; //early exit here, do checks later
     }
     else  { //if (otherTeamHasLargerTimestamp) {
-      if( exahype::reactive::ReactiveContext::getInstance().getInstance().getResilienceStrategy()
-            == exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceCorrection) {
-        needToRollbackToTeamSolution = true;
-        logError("fusedTimeStepBody", "Time stamps/time step sizes have become inconsistent. Trying to correct by rolling back DG solution to previous time step."
-                                      <<"This won't work if there are FV cells that would have to be rolled back (rollback of FV cells is currently not implemented).");
-      }
-      else {
-        double lastConsistentTimeStamp, lastConsistentTimeStepSize, lastConsistentEstimatedTimeStepSize;
-        exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().getLastConsistentTimeStepData(lastConsistentTimeStamp, lastConsistentTimeStepSize, lastConsistentEstimatedTimeStepSize);
-        logError("fusedTimeStepBody", "Team = "<<exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber()
-                                   <<" is trying to check an outcome that it won't be able to find as the other team is ahead or doesn't have the time step size."
-                                   << " There must be a soft error somewhere."
-                                   <<" I was looking for timestamp="<<std::setprecision(30)<<predictionTimeStamp
-                                   <<" and for timestep="<<predictionTimeStepSize
-                                   <<" . Abort due to soft error! This case currently can't be treated without correction."
-                                   <<" Last consistent timestamp = "<<lastConsistentTimeStamp);
-        //exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().printHistory();
-        MPI_Abort(MPI_COMM_WORLD, -1);
-
-        /*logError("fusedTimeStepBody", "Team = "<<exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()
-                                   <<" is trying to check an outcome that it won't be able to find as the other team is ahead or doesn't have the time step size."
-                                   << " There must be a soft error somewhere."
-                                   <<" I was looking for timestamp="<<std::setprecision(30)<<predictionTimeStamp
-                                   <<" and for timestep="<<predictionTimeStepSize<<"."<<
-                                   <<" Detect this as an error and continue."
-                                   <<" Last consistent timestamp = "<<lastConsistentTimeStamp);*/
-        //exahype::reactive::ResilienceStatistics::getInstance().notifyDetectedError();
-      }
+      double lastConsistentTimeStamp, lastConsistentTimeStepSize, lastConsistentEstimatedTimeStepSize;
+      exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().getLastConsistentTimeStepData(lastConsistentTimeStamp, lastConsistentTimeStepSize, lastConsistentEstimatedTimeStepSize);
+      logError("fusedTimeStepBody", "Team = "<<exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber()
+                                 <<" is trying to check an outcome that it won't be able to find as the other team is ahead or doesn't have the time step size."
+                                 << " There must be a soft error somewhere."
+                                 <<" I was looking for timestamp="<<std::setprecision(30)<<predictionTimeStamp
+                                 <<" and for timestep="<<predictionTimeStepSize
+                                 <<" . Abort due to soft error! This case currently can't be treated without correction."
+                                 <<" Last consistent timestamp = "<<lastConsistentTimeStamp);
+      //exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().printHistory();
+      MPI_Abort(MPI_COMM_WORLD, -1);
     }
   }
 #endif
 
   UpdateResult result;
   result._timeStepSize    = startNewTimeStep(solverPatch,cellInfo,isFirstTimeStepOfBatch);
-  result._meshUpdateEvent = updateRefinementStatusAfterSolutionUpdate(solverPatch,cellInfo,isTroubled,needToRollbackToTeamSolution);
+  result._meshUpdateEvent = updateRefinementStatusAfterSolutionUpdate(solverPatch,cellInfo,isTroubled);
 
   assertion(std::isfinite(result._timeStepSize));
 
@@ -917,7 +899,7 @@ void exahype::solvers::LimitingADERDGSolver::updateBody(
 
   UpdateResult result;
   result._timeStepSize    = startNewTimeStep(solverPatch,cellInfo,true); // uses DG solution to compute time step size; might be result of FV->DG projection
-  result._meshUpdateEvent = updateRefinementStatusAfterSolutionUpdate(solverPatch,cellInfo,isTroubled, false);
+  result._meshUpdateEvent = updateRefinementStatusAfterSolutionUpdate(solverPatch,cellInfo,isTroubled);
 
   reduce(solverPatch,cellInfo,result);
 
@@ -1100,13 +1082,8 @@ exahype::solvers::Solver::MeshUpdateEvent
 exahype::solvers::LimitingADERDGSolver::updateRefinementStatusAfterSolutionUpdate(
     SolverPatch& solverPatch,
     CellInfo&    cellInfo,
-    const bool   isTroubled,
-    const bool   needToRollbackToTeamSolution) {
+    const bool   isTroubled) {
   assertion1(_solver->isLeaf(solverPatch),solverPatch.toString());
-
-  if(needToRollbackToTeamSolution) {
-    return MeshUpdateEvent::RollbackToTeamSolution;
-  }
 
   if ( OnlyInitialMeshRefinement && OnlyStaticLimiting ) {
     return MeshUpdateEvent::None;

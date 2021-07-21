@@ -173,11 +173,11 @@ bool exahype::reactive::TimeStampAndDubiosityTeamHistory::checkConsistency() {
     if((long int)_dubiosityStatuses[myTeam].size()> _lastConsistentTimeStepPtr && (long int) _dubiosityStatuses[otherTeam].size()>_lastConsistentTimeStepPtr) {
       if(_dubiosityStatuses[myTeam][_lastConsistentTimeStepPtr+1]==1
          &&_dubiosityStatuses[otherTeam][_lastConsistentTimeStepPtr+1]==0) {
-        logError("checkConsistency","team="<<myTeam<<" should be the faulty one, as the trigger was activated there.");
+        logError("checkConsistency","team="<<myTeam<<" should be the faulty one, as a dubious result was detected there.");
       }
       else if(_dubiosityStatuses[otherTeam][_lastConsistentTimeStepPtr+1]==1
           &&_dubiosityStatuses[myTeam][_lastConsistentTimeStepPtr+1]==0) {
-         logError("checkConsistency","team="<<otherTeam<<" should be the faulty one, as the trigger was activated there.");
+         logError("checkConsistency","team="<<otherTeam<<" should be the faulty one, as a dubious result was detected there.");
       }
     }
 

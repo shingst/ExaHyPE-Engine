@@ -273,6 +273,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
           }
           else {
             logError("handleLocalExecution", "Could have corrected soft error but correction is not enabled. Continuing...");
+            exahype::reactive::ResilienceTools::getInstance().setCorruptionDetected(true);
           }
           break;
         case SDCCheckResult::MyOutcomeIsMoreOrEquallyTrustworthy:

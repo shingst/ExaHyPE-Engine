@@ -863,8 +863,6 @@ public:
      * The initial mesh will be created.
      */
     InitialRefinementRequested = 3,
-
-    RollbackToTeamSolution = 4
   };
 
 

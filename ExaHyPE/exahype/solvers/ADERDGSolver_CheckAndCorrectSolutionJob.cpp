@@ -94,6 +94,7 @@ bool exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::run(bool isRunO
           logError("runCheck","I could probably correct an error, but correction has not been activated. Continuing...");
           reschedule = false;
           _solverPatch.setHasCompletedLastStep(true);
+          exahype::reactive::ResilienceTools::getInstance().setCorruptionDetected(true);
         }
         break;
       }
