@@ -255,20 +255,20 @@ void exahype::mappings::FusedTimeStep::endIteration(
   }
 #endif 
 
+#if !defined(OffloadingUseProgressThread)
   if (
       !tarch::parallel::Node::getInstance().isGlobalMaster() )
   {
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
-#if !defined(OffloadingUseProgressThread)
       if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
         static_cast<exahype::solvers::ADERDGSolver*>(solver)->pauseOffloadingManager();
       }
       if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
         static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->pauseOffloadingManager();
       }
-#endif
     } 
   }
+#endif
 #endif
 
   logTraceOutWith1Argument("endIteration(State)", state);

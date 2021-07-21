@@ -22,6 +22,7 @@
 #include "exahype/reactive/OffloadingProfiler.h"
 #include "peano/utils/UserInterface.h"
 #include "exahype/reactive/ResilienceStatistics.h"
+#include "exahype/reactive/TimeStampAndDubiosityTeamHistory.h"
 
 #include "exahype/Cell.h"
 #include "exahype/Vertex.h"
@@ -54,7 +55,6 @@
 #include <chrono>
 #include <algorithm> // copy_n
 
-#include "exahype/reactive/TimeStampAndDubiosityTeamHistory.h"
 
 #if defined(SharedTBB) && !defined(noTBBPrefetchesJobData)
 #include <immintrin.h>
@@ -288,6 +288,7 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
   exahype::reactive::OffloadingProgressService::getInstance().setSolver(this);
 #endif
 
+//todo: move somewhere else
 #ifdef OffloadingUseProfiler
   exahype::reactive::OffloadingProfiler::getInstance().beginPhase();
 #endif
@@ -432,18 +433,6 @@ void exahype::solvers::ADERDGSolver::kickOffTimeStep(const bool isFirstTimeStepO
   beginTimeStep(_minTimeStamp,isFirstTimeStepOfBatchOrNoBatch);
 }
 
-void exahype::solvers::ADERDGSolver::rollbackTimeStepMetadataToLastConsistentTimeStep() {
-
-  logDebug("rollbackTimeStepMetadataToLastConsistentTimeStep","Limiting solver needs to rollback to team solution of previous consistent time stamp");
-  exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().getLastConsistentTimeStepData(_minTimeStamp, _minTimeStepSize,_estimatedTimeStepSize);
-  _admissibleTimeStepSize = _minTimeStepSize;
-  logInfo("rollbackTimeStepMetadataToLastConsistentTimeStep","Trying to recover DG solution from other team next timeStamp="
-                                               <<_minTimeStamp
-                                               <<" time step size = "<<_minTimeStepSize
-                                               <<" estimated time step size ="<<_estimatedTimeStepSize);
-
-}
-
 void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch,const bool isLastTimeStepOfBatchOrNoBatch) {
   if ( isFirstTimeStepOfBatchOrNoBatch ) {
     _previousMinTimeStepSize  = _minTimeStepSize;
@@ -460,54 +449,35 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
                                                                                           _minTimeStepSize,
                                                                                           exahype::reactive::ResilienceTools::CheckAllMigratableSTPs);
 
+  _minTimeStamp += _minTimeStepSize;
 
-  // with rollback, timestamps should not be adapted, they are set in LimitingADERDGSolver::wrapUpTimeStep and in ADERDGSolver::mergeWithWorkerData
-  if(!(_meshUpdateEvent==MeshUpdateEvent::RollbackToTeamSolution)) {
-    _minTimeStamp += _minTimeStepSize;
-
-    _stabilityConditionWasViolated = false;
-    if (
+  _stabilityConditionWasViolated = false;
+  if (
       tarch::parallel::Node::getInstance().isGlobalMaster() &&
       getTimeStepping() != TimeStepping::GlobalFixed // fix the time step size in intermediate batch iterations
-    ) {
-      if ( FuseAllADERDGPhases && !isLinear() ) {
-        if ( isLastTimeStepOfBatchOrNoBatch ) {
-          if ( _estimatedTimeStepSize > _admissibleTimeStepSize ) { // rerun
-            _minTimeStepSize       = FusedTimeSteppingRerunFactor * _admissibleTimeStepSize;
-            _estimatedTimeStepSize = _minTimeStepSize;
-            _stabilityConditionWasViolated = true;
-            //logDebug("wrapUpTimeStep","recompute dt_min"<<std::setprecision(30)<<_minTimeStepSize);
-          } else {
-            _minTimeStepSize       = _estimatedTimeStepSize; // as we have computed the predictor with an estimate, we have to use the estimated time step size to perform the face integral
-            _estimatedTimeStepSize = 0.5 * ( FusedTimeSteppingDiffusionFactor * _admissibleTimeStepSize + _estimatedTimeStepSize );
-          }
-        } else { // use fixed time step size in intermediate batch iterations
-          _minTimeStepSize  = _estimatedTimeStepSize;
+  ) {
+    if ( FuseAllADERDGPhases && !isLinear() ) {
+      if ( isLastTimeStepOfBatchOrNoBatch ) {
+        if ( _estimatedTimeStepSize > _admissibleTimeStepSize ) { // rerun
+          _minTimeStepSize       = FusedTimeSteppingRerunFactor * _admissibleTimeStepSize;
+          _estimatedTimeStepSize = _minTimeStepSize;
+          _stabilityConditionWasViolated = true;
+          //logDebug("wrapUpTimeStep","recompute dt_min"<<std::setprecision(30)<<_minTimeStepSize);
+        } else {
+          _minTimeStepSize       = _estimatedTimeStepSize; // as we have computed the predictor with an estimate, we have to use the estimated time step size to perform the face integral
+          _estimatedTimeStepSize = 0.5 * ( FusedTimeSteppingDiffusionFactor * _admissibleTimeStepSize + _estimatedTimeStepSize );
         }
-      } else if ( !isLinear() ) { // non-fused, non-linear
-        _minTimeStepSize = _admissibleTimeStepSize;
-      } // else if linear do not change the time step size at all
-    }
-  }
-  //rollback to solution of another replica
-  else {
-    _minTimeStepSize = _admissibleTimeStepSize;
-    logError("wrapUpTimeStep","global master determined dt_min="<<_minTimeStepSize<<" after rollback");
+      } else { // use fixed time step size in intermediate batch iterations
+        _minTimeStepSize  = _estimatedTimeStepSize;
+      }
+    } else if ( !isLinear() ) { // non-fused, non-linear
+      _minTimeStepSize = _admissibleTimeStepSize;
+    } // else if linear do not change the time step size at all
   }
 
   if ( isLastTimeStepOfBatchOrNoBatch ) {
     std::copy(_nextGlobalObservables.begin(),_nextGlobalObservables.end(),_globalObservables.begin());
     wrapUpGlobalObservables(_globalObservables.data());
-  }
-
-  if (tarch::parallel::Node::getInstance().isGlobalMaster()
-    && _meshUpdateEvent==MeshUpdateEvent::RollbackToTeamSolution) {
-    logDebug("wrapUpTimeStep","Rollback activated! Global master uses estimated dt="
-      <<_estimatedTimeStepSize
-      <<" admissible dt"<<_admissibleTimeStepSize
-      <<" min dt"<<_minTimeStepSize
-      <<" min stamp"<<_minTimeStamp
-      <<" for the next time step.");
   }
 
   // call user code
@@ -857,8 +827,8 @@ void exahype::solvers::ADERDGSolver::fusedTimeStepBody(
 
   if (
       SpawnPredictionAsBackgroundJob &&
-      !mustBeDoneImmediately 
-      && isLastTimeStepOfBatch // only spawned in last iteration if a FusedTimeStepJob was spawned before
+      !mustBeDoneImmediately &&
+      isLastTimeStepOfBatch // only spawned in last iteration if a FusedTimeStepJob was spawned before
   ) {
     const int element = cellInfo.indexOfADERDGCellDescription(cellDescription.getSolverNumber());
     //skeleton cells are not considered for offloading
@@ -1098,9 +1068,7 @@ int exahype::solvers::ADERDGSolver::predictionAndVolumeIntegralBody(
       predictorTimeStepSize,
       addVolumeIntegralResultToUpdate); // TODO(Dominic): fix 'false' case
 
-
-  //if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()==exahype::reactive::ReactiveContext::ResilienceStrategy::None)
-  if(exahype::reactive::ResilienceTools::getInstance().shouldInjectError((cellDescription.getOffset()+0.5*cellDescription.getSize()).data(), predictorTimeStamp)) {
+   if(exahype::reactive::ResilienceTools::getInstance().shouldInjectError((cellDescription.getOffset()+0.5*cellDescription.getSize()).data(), predictorTimeStamp)) {
     exahype::reactive::ResilienceTools::getInstance().corruptData(
                                     luh,
                                     (cellDescription.getOffset()+0.5*cellDescription.getSize()).data(),
@@ -1115,6 +1083,7 @@ int exahype::solvers::ADERDGSolver::predictionAndVolumeIntegralBody(
   validateCellDescriptionData(cellDescription,true,true,false,"exahype::solvers::ADERDGSolver::performPredictionAndVolumeIntegralBody [post]");
 
   cellDescription.setHasCompletedLastStep(true);
+
   
   #ifdef USE_ITAC
   if ( isSkeletonCell ) {
@@ -1200,9 +1169,7 @@ void exahype::solvers::ADERDGSolver::predictionAndVolumeIntegral(
 
     const bool isAMRSkeletonCell = belongsToAMRSkeleton(cellDescription);
     const bool isSkeletonCell    = isAMRSkeletonCell || isAtRemoteBoundary;
-
     waitUntilCompletedLastStep(cellDescription,isSkeletonCell,false);
-
     if ( cellDescription.getType()==CellDescription::Type::Leaf ) {
       const auto predictionTimeStepData = getPredictionTimeStepData(cellDescription,false); // this is either the fused scheme or a predictor recomputation
 
@@ -1228,7 +1195,6 @@ double exahype::solvers::ADERDGSolver::computeTimeStepSize(CellDescription& cell
 
     validateCellDescriptionData(cellDescription,false,false,true,"computeTimeStepSizes(...)");
     double admissibleTimeStepSize = stableTimeStepSize(luh,cellDescription.getSize());
-
     assertion2(!_checkForNaNs || admissibleTimeStepSize>0,admissibleTimeStepSize,cellDescription.toString());
 
     assertion3(!_checkForNaNs || admissibleTimeStepSize<std::numeric_limits<double>::infinity(),std::numeric_limits<double>::infinity(),admissibleTimeStepSize,cellDescription.toString());
@@ -1636,9 +1602,8 @@ void exahype::solvers::ADERDGSolver::prolongateFaceData(
         CellDescription& parentCellDescription = getCellDescription(
             subcellPosition.parentCellDescriptionsIndex,subcellPosition.parentElement);
         assertion1(parentCellDescription.getType()==CellDescription::Type::Leaf,parentCellDescription.toString());
-        
-        waitUntilCompletedLastStep<CellDescription>(parentCellDescription,true,false); // TODO(Dominic): We wait for skeleton jobs here. It might make sense to receiveDanglingMessages here too
 
+        waitUntilCompletedLastStep<CellDescription>(parentCellDescription,true,false); // TODO(Dominic): We wait for skeleton jobs here. It might make sense to receiveDanglingMessages here too
         if (
             !SpawnProlongationAsBackgroundJob ||
             isAtRemoteBoundary
@@ -1801,7 +1766,6 @@ void exahype::solvers::ADERDGSolver::computeTemporarySolutionWithPredictor(CellD
 
   std::memcpy(luhWithPredictor, cellDescription.getSolution(), getDataPerCell()*sizeof(double));
   addUpdateToSolution(luhWithPredictor, luhWithPredictor, update, cellDescription.getTimeStepSize());
-
 }
 
 void exahype::solvers::ADERDGSolver::computePredictorErrorIndicators(CellDescription& cellDescription, double predictorTimeStepSize, double *errIndDerivative, double *errIndTimeStep, double *errIndAdmissibility) {
@@ -1878,7 +1842,6 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourMetadata(
     const int                                    neighbourAugmentationStatus,
     const int                                    neighbourCommunicationStatus,
     const int                                    neighbourRefinementStatus,
-    //const int                                    neighbourCorruptionStatus,
     const tarch::la::Vector<DIMENSIONS, int>&    pos,
     const tarch::la::Vector<DIMENSIONS, int>&    posNeighbour,
     const tarch::la::Vector<DIMENSIONS, double>& barycentreFromVertex) {
@@ -1896,7 +1859,6 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourMetadata(
       mergeWithAugmentationStatus (cellDescription,face._faceIndex,neighbourAugmentationStatus );
       mergeWithCommunicationStatus(cellDescription,face._faceIndex,neighbourCommunicationStatus);
       mergeWithRefinementStatus   (cellDescription,face._faceIndex,neighbourRefinementStatus   );
-      //mergeWithCorruptionStatus   (cellDescription,face._faceIndex,neighbourCorruptionStatus   );
 
       cellDescription.setNeighbourMergePerformed(face._faceIndex,true);
     }
@@ -2226,8 +2188,6 @@ void exahype::solvers::ADERDGSolver::mergeWithNeighbourMetadata(
   const int neighbourCommunicationStatus = neighbourMetadata[exahype::NeighbourCommunicationMetadataCommunicationStatus ];
   const int neighbourRefinementStatus    = neighbourMetadata[exahype::NeighbourCommunicationMetadataRefinementStatus    ];
 
-  //todo: Corruption status is not yet on metadata heap!
-
   logDebug("mergeWithNeighbourMetadata(...)", "received neighbour metadata="<<neighbourAugmentationStatus<<","<<neighbourCommunicationStatus<<","<<neighbourRefinementStatus);
 
   mergeWithNeighbourMetadata(solverNumber,cellInfo,
@@ -2341,8 +2301,8 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
 
     riemannSolver(
         FL, FR, QL, QR,
-    cellDescription.getTimeStamp(), cellDescription.getTimeStepSize(),
-    cellDescription.getSize(), face._direction,false,face._faceIndex);
+	cellDescription.getTimeStamp(), cellDescription.getTimeStepSize(),
+	cellDescription.getSize(), face._direction,false,face._faceIndex);
     #ifdef Asserts
     if ( _checkForNaNs ) {
       for (int ii = 0; ii<dofsPerFace; ii++) {
@@ -2369,7 +2329,7 @@ void exahype::solvers::ADERDGSolver::solveRiemannProblemAtInterface(
         FL, FR, QL, QR,
         std::get<0>(timeStepData),
         std::get<1>(timeStepData),
-    cellDescription.getSize(),
+	cellDescription.getSize(),
         face._direction,false,face._faceIndex);
     
     #ifdef Asserts
@@ -2420,8 +2380,6 @@ void exahype::solvers::ADERDGSolver::sendDataToMaster(
     logDebug("sendDataToMaster(...)","Sending data to master: " <<
         "data[0]=" << message[0] << "," <<
         "data[1]=" << message[1] << "," <<
-        "data[2]=" << message[2] << "," <<
-        //"data[3]=" << message[3] << "," <<
         "to rank " << masterRank <<
         ", message size="<<message.size()
     );
@@ -2434,14 +2392,12 @@ void exahype::solvers::ADERDGSolver::sendDataToMaster(
 
 exahype::DataHeap::HeapEntries
 exahype::solvers::ADERDGSolver::compileMessageForMaster(const int capacity) const {
-  const int messageSize = 3 + _numberOfGlobalObservables;
+  const int messageSize = 2 + _numberOfGlobalObservables;
   DataHeap::HeapEntries message;
   message.reserve(std::max(messageSize,capacity));
 
   message.push_back(_admissibleTimeStepSize);
   message.push_back(convertToDouble(_meshUpdateEvent));
-  message.push_back(_minTimeStamp);
-  //message.push_back(_estimatedTimeStepSize);
 
   for (const auto observable : _globalObservables) {
     logDebug("sendDataToMaster(...)","Sending data to master: " << "entry=" << observable);
@@ -2464,11 +2420,11 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
     const int                                    workerRank,
     const tarch::la::Vector<DIMENSIONS, double>& x,
     const int                                    level) {
-  const auto messageSize = 3 + _numberOfGlobalObservables;
+  const auto messageSize = 2 + _numberOfGlobalObservables;
   DataHeap::HeapEntries message(messageSize);
 
-  tarch::multicore::RecursiveLock lock( 
-        tarch::services::Service::receiveDanglingMessagesSemaphore );
+  //tarch::multicore::RecursiveLock lock( 
+  //      tarch::services::Service::receiveDanglingMessagesSemaphore );
   
 
   DataHeap::getInstance().receiveData(
@@ -2479,8 +2435,6 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
     logDebug("mergeWithWorkerData(...)","Receive data from worker rank: " <<
              "data[0]=" << message[0] << "," <<
              "data[1]=" << message[1] << "," <<
-             "data[2]=" << message[2] << "," <<
-             //"data[3]=" << message[3] << "," <<
              "from worker " << workerRank << "," <<
              "message size="<<message.size());
    }
@@ -2491,30 +2445,14 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
   if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     logDebug("mergeWithWorkerData(...)","Updated fields: " <<
              "_admissibleTimeStepSize=" << _admissibleTimeStepSize << "," <<
-             "_minTimeStamp=" << _minTimeStamp << "," <<
-             //"_estimatedTimeStampSize=" << _estimatedTimeStepSize << "," <<
              "_meshUpdateEvent="        << Solver::toString(_meshUpdateEvent) );
   }
 }
 
 void exahype::solvers::ADERDGSolver::mergeWithWorkerData(const DataHeap::HeapEntries& message) {
   int index=0; // post update
-
-  if(convertToMeshUpdateEvent(message[index+1])==MeshUpdateEvent::RollbackToTeamSolution) {
-    _admissibleTimeStepSize = std::numeric_limits<double>::infinity();
-    //_estimatedTimeStepSize = std::numeric_limits<double>::infinity();
-    _minTimeStamp = std::numeric_limits<double>::infinity();
-
-    _admissibleTimeStepSize = std::min( _admissibleTimeStepSize, message[index++] );
-    _meshUpdateEvent       = mergeMeshUpdateEvents(_meshUpdateEvent,convertToMeshUpdateEvent(message[index++]));
-    _minTimeStamp = std::min( _minTimeStamp, message[index++] );
-    //_estimatedTimeStepSize = std::min(_estimatedTimeStepSize, message[index++]);
-  }
-  else {
-    _admissibleTimeStepSize = std::min( _admissibleTimeStepSize, message[index++] );
-    _meshUpdateEvent       = mergeMeshUpdateEvents(_meshUpdateEvent,convertToMeshUpdateEvent(message[index++]));
-    index += 1;
-  }
+  _admissibleTimeStepSize = std::min( _admissibleTimeStepSize, message[index++] );
+  _meshUpdateEvent       = mergeMeshUpdateEvents(_meshUpdateEvent,convertToMeshUpdateEvent(message[index++]));
   DataHeap::HeapEntries observablesFromWorker = DataHeap::HeapEntries(_numberOfGlobalObservables);
   for (int i = 0; i < _numberOfGlobalObservables; ++i) {
     observablesFromWorker[i] = message[index++];
@@ -2585,9 +2523,7 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterData(
     const int                                    level) {
   const auto messageSize = 5 + _numberOfGlobalObservables;
   DataHeap::HeapEntries message(messageSize);
-
-  tarch::multicore::RecursiveLock lock(tarch::services::Service::receiveDanglingMessagesSemaphore, true);
-
+  //tarch::multicore::RecursiveLock lock(tarch::services::Service::receiveDanglingMessagesSemaphore, true);
 
   DataHeap::getInstance().receiveData(
       message.data(), message.size(),
@@ -2595,8 +2531,7 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterData(
 
   assertion1(static_cast<int>(message.size())==messageSize,message.size());
   mergeWithMasterData(message);
-  
-  lock.free();
+  //lock.free();
 
   if ( !tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     logDebug(
@@ -5742,11 +5677,11 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
       );
       return false;
       },
-    peano::datatraversal::TaskSet::TaskType::Background,
-    peano::datatraversal::TaskSet::TaskType::Background,
-    peano::datatraversal::TaskSet::TaskType::Background,
-    peano::datatraversal::TaskSet::TaskType::Background,
-    peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
     true
   );
 
@@ -5949,11 +5884,11 @@ void exahype::solvers::ADERDGSolver::putUnknownsIntoByteStream(
       }
       return false;
     },
-    peano::datatraversal::TaskSet::TaskType::Background,
-    peano::datatraversal::TaskSet::TaskType::Background,
-    peano::datatraversal::TaskSet::TaskType::Background,
-    peano::datatraversal::TaskSet::TaskType::Background,
-    peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
+	peano::datatraversal::TaskSet::TaskType::Background,
     true
   );
 }

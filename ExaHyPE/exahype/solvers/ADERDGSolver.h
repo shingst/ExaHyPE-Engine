@@ -149,7 +149,6 @@ public:
   static int mergeNeighboursHandle;
   static int prolongateFaceDataToVirtualCellHandle;
   static int restrictToTopMostParentHandle;
-
   #endif
 
   /**
@@ -211,7 +210,6 @@ public:
   typedef exahype::records::ADERDGCellDescription CellDescription;
   typedef peano::heap::RLEHeap<CellDescription> Heap;
 
-
   static std::atomic<int> NumberOfReceiveJobs;
   static std::atomic<int> NumberOfReceiveBackJobs;
 
@@ -226,7 +224,6 @@ public:
   static std::atomic<bool> VetoEmergency;
   static const CellDescription* LastEmergencyCell;
   static tarch::multicore::BooleanSemaphore  EmergencySemaphore;
-//#endif
 
   /**
    * @return if this an ADER-DG solver which is not able to solve nonlinear problems.
@@ -2178,12 +2175,6 @@ public:
       const int        faceIndex,
       const int        neighbourLimiterStatus);
 
-  static void mergeWithCorruptionStatus(
-      CellDescription& cellDescription,
-      const int        faceIndex,
-      const int        corruptionStatus);
-
-
   /**
    * Determine the refinement status from the face
    * neighbour values.
@@ -2193,8 +2184,6 @@ public:
    * calling this function.
    */
   void updateRefinementStatus(CellDescription& cellDescription) const;
-
-  //void updateCorruptionStatus(CellDescription& cellDescription) const;
 
   /**
    * Updates the status flags and sets the stability criterion to
@@ -2417,13 +2406,6 @@ public:
   void resetAdmissibleTimeStepSize() final override;
 
   double getEstimatedTimeStepSize() const;
-
-  /**
-   * Rolls back solver time stamp and time step size to the last 
-   * consistent time stamp and time step size. 
-   * To be only used with TeaMPI and Task Sharing.
-   */
-  void rollbackTimeStepMetadataToLastConsistentTimeStep();
 
   /**
    * \return true if the CFL condition was violated
@@ -2858,7 +2840,6 @@ public:
       const int                                    neighbourAugmentationStatus,
       const int                                    neighbourCommunicationStatus,
       const int                                    neighbourRefinementStatus,
-      //const int                                  neighbourCorruptionStatus,
       const tarch::la::Vector<DIMENSIONS, int>&    pos,
       const tarch::la::Vector<DIMENSIONS, int>&    posNeighbour,
       const tarch::la::Vector<DIMENSIONS, double>& barycentreFromVertex);
