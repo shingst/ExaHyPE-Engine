@@ -20,7 +20,6 @@
 #include "exahype/reactive/RequestManager.h"
 #include "exahype/reactive/OffloadingProgressService.h"
 #include "exahype/reactive/OffloadingProfiler.h"
-#include "exahype/reactive/TimeStampAndTriggerTeamHistory.h"
 #include "peano/utils/UserInterface.h"
 #include "exahype/reactive/ResilienceStatistics.h"
 
@@ -54,6 +53,8 @@
 #include <vector>
 #include <chrono>
 #include <algorithm> // copy_n
+
+#include "exahype/reactive/TimeStampAndDubiosityTeamHistory.h"
 
 #if defined(SharedTBB) && !defined(noTBBPrefetchesJobData)
 #include <immintrin.h>
@@ -434,7 +435,7 @@ void exahype::solvers::ADERDGSolver::kickOffTimeStep(const bool isFirstTimeStepO
 void exahype::solvers::ADERDGSolver::rollbackTimeStepMetadataToLastConsistentTimeStep() {
 
   logDebug("rollbackTimeStepMetadataToLastConsistentTimeStep","Limiting solver needs to rollback to team solution of previous consistent time stamp");
-  exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().getLastConsistentTimeStepData(_minTimeStamp, _minTimeStepSize,_estimatedTimeStepSize);
+  exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().getLastConsistentTimeStepData(_minTimeStamp, _minTimeStepSize,_estimatedTimeStepSize);
   _admissibleTimeStepSize = _minTimeStepSize;
   logInfo("rollbackTimeStepMetadataToLastConsistentTimeStep","Trying to recover DG solution from other team next timeStamp="
                                                <<_minTimeStamp
@@ -454,7 +455,7 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
 #else
   int team = 0;
 #endif
-  exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().trackTimeStepAndTriggerActive(team,
+  exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().trackTimeStepAndDubiosity(team,
                                                                                           _minTimeStamp,
                                                                                           _minTimeStepSize,
                                                                                           exahype::reactive::ResilienceTools::CheckAllMigratableSTPs);
@@ -520,7 +521,7 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
   }
 
   if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()>=exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceChecks) {
-    bool isConsistent = exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().checkConsistency();
+    bool isConsistent = exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().checkConsistency();
     if(!isConsistent) {
       exahype::reactive::ResilienceTools::getInstance().setCorruptionDetected(true); //todo: reduce to master?
       //MPI_Abort(MPI_COMM_WORLD, -1);
@@ -3364,7 +3365,7 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
                                                                                             +exahype::reactive::RequestManager::getInstance().getNumberOfOutstandingRequests(exahype::reactive::RequestType::receiveOutcome));
 
   double lastconsistentTimeStamp, lastconsistentTimeStepSize, lastconsistentEstimatedSize;
-  exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().getLastConsistentTimeStepData(lastconsistentTimeStamp, lastconsistentTimeStepSize, lastconsistentEstimatedSize);
+  exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().getLastConsistentTimeStepData(lastconsistentTimeStamp, lastconsistentTimeStepSize, lastconsistentEstimatedSize);
 
   double minTimeStampToKeep = _previousMinTimeStamp;
 
@@ -3800,22 +3801,22 @@ exahype::solvers::ADERDGSolver::SDCCheckResult exahype::solvers::ADERDGSolver::c
      assert(tmp);
   }
 
-  tmp = exahype::reactive::ResilienceTools::getInstance().isAdmissibleNumericalError(data->_lQhbnd.data(), lQhbnd, data->_lQhbnd.size()); equal&=tmp;
+  tmp = exahype::reactive::ResilienceTools::getInstance().isEqual(data->_lQhbnd.data(), lQhbnd, data->_lQhbnd.size()); equal&=tmp;
   if(!tmp) {
     logError("checkCellDescriptionAgainstOutcome", "lQhbnd is not (numerically) equal for cell "<<"center[0]="<<center[0]<<" center[1]="<<center[1]<<" timestamp "<<cellDescription.getTimeStamp());
   }
 
 #if defined(OffloadingGradQhbnd)
-  tmp = exahype::reactive::ResilienceTools::getInstance().isAdmissibleNumericalError(data->_lGradQhbnd.data(), lGradQhbnd, data->_lGradQhbnd.size()); equal&=tmp;
+  tmp = exahype::reactive::ResilienceTools::getInstance().isEqual(data->_lGradQhbnd.data(), lGradQhbnd, data->_lGradQhbnd.size()); equal&=tmp;
   if(!tmp) {
     logError("checkCellDescriptionAgainstOutcome", "lGradQhbnd is not (numerically) equal for cell "<<"center[0]="<<center[0]<<" center[1]="<<center[1]<<" timestamp "<<cellDescription.getTimeStamp());
   }
 #endif
-  tmp = exahype::reactive::ResilienceTools::getInstance().isAdmissibleNumericalError(data->_lFhbnd.data(), lFhbnd, data->_lFhbnd.size()); equal&=tmp;
+  tmp = exahype::reactive::ResilienceTools::getInstance().isEqual(data->_lFhbnd.data(), lFhbnd, data->_lFhbnd.size()); equal&=tmp;
   if(!tmp) {
     logError("checkCellDescriptionAgainstOutcome", "lFhbnd is not  (numerically) equal for cell "<<"center[0]="<<center[0]<<" center[1]="<<center[1]<<" timestamp "<<cellDescription.getTimeStamp());
   }
-  tmp = exahype::reactive::ResilienceTools::getInstance().isAdmissibleNumericalError(data->_lduh.data(), lduh, data->_lduh.size()); equal&=tmp;
+  tmp = exahype::reactive::ResilienceTools::getInstance().isEqual(data->_lduh.data(), lduh, data->_lduh.size()); equal&=tmp;
   if(!tmp) {
     logError("checkCellDescriptionAgainstOutcome", "lduh is not  (numerically) equal for cell "<<"center[0]="<<center[0]<<" center[1]="<<center[1]<<" timestamp "<<cellDescription.getTimeStamp());
   }
@@ -3828,8 +3829,7 @@ exahype::solvers::ADERDGSolver::SDCCheckResult exahype::solvers::ADERDGSolver::c
        data->_metadata._errorIndicatorTimeStepSize==0) {
       logError("checkCellDescriptionAgainstOutcome", "soft error detected: "<<data->_metadata.to_string());
       exahype::reactive::ResilienceStatistics::getInstance().notifyDetectedError();
-      //todo: need to revise the name here
-      return SDCCheckResult::OutcomeSaneAsTriggerNotActive; //we assume that the trigger is good enough to tell us that the outcome is ok
+      return SDCCheckResult::OutcomeHasZeroErrorIndicator;
     }
     else if (data->_metadata._errorIndicatorDerivative<=errorIndicatorDerivative 
           && data->_metadata._errorIndicatorAdmissibility<=errorIndicatorAdmissibility
@@ -3842,7 +3842,7 @@ exahype::solvers::ADERDGSolver::SDCCheckResult exahype::solvers::ADERDGSolver::c
       return SDCCheckResult::OutcomeIsMoreTrustworthy;
     }
     else { 
-      return SDCCheckResult::MyOutcomeIsMoreTrustworthy; //I think my outcome is better and I will keep it
+      return SDCCheckResult::MyOutcomeIsMoreOrEquallyTrustworthy; //I think my outcome is better and I will keep it
     }
   }
   else
@@ -4644,11 +4644,6 @@ void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahyp
   AllocatedSTPsReceive++;
 
 #ifdef UseSmartMPI
-
-#if defined(UseSmartMPINB) || defined(ResilienceHealing)
-#error "Not implemented yet!"
-#endif
-
   solver->mpiRecvMigratablePredictionJobOutcomeOffload(
          data->_lduh.data(),
          data->_lQhbnd.data(),

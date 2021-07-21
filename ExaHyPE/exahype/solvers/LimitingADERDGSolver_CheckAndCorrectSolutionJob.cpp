@@ -4,7 +4,7 @@
 
 #include "exahype/solvers/OutcomeDatabase.h"
 
-#include "exahype/reactive/TimeStampAndTriggerTeamHistory.h"
+#include "exahype/reactive/TimeStampAndDubiosityTeamHistory.h"
 #include "exahype/reactive/ResilienceTools.h"
 
 #if defined(FileTrace)
@@ -45,7 +45,7 @@ bool exahype::solvers::LimitingADERDGSolver::CheckAndCorrectSolutionJob::run(boo
       <<" time step size = "<<std::setprecision(30)<< _solverPatch.getTimeStepSize()
       <<" patch "<<_solverPatch.toString() );
 
-  assert(exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().otherTeamHasTimeStepData( _solverPatch.getTimeStamp(),
+  assertion(exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().otherTeamHasTimeStepData( _solverPatch.getTimeStamp(),
                                                                                                     _solverPatch.getTimeStepSize()));
 
   bool found = _solver._solver.get()->tryToFindAndExtractOutcome(_cellInfo._cellDescriptionsIndex, 0 /*is this always correct?*/,
@@ -133,7 +133,7 @@ exahype::solvers::LimitingADERDGSolver::CheckAndCorrectSolutionJob::SDCCheckResu
      return SDCCheckResult::OutcomeSaneAsLimiterNotActive;
   }
   else {
-    bool equalSolution = exahype::reactive::ResilienceTools::getInstance().isAdmissibleNumericalError(outcome->_luh.data(), luh, outcome->_luh.size());
+    bool equalSolution = exahype::reactive::ResilienceTools::getInstance().isEqual(outcome->_luh.data(), luh, outcome->_luh.size());
     if(!equalSolution) {
       exahype::reactive::ResilienceStatistics::getInstance().notifyDetectedError();
       return SDCCheckResult::UncorrectableSoftError;

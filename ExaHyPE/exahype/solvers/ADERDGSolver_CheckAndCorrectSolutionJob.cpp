@@ -2,7 +2,7 @@
 #include "ADERDGSolver.h"
 
 #include "exahype/reactive/ResilienceTools.h"
-#include "exahype/reactive/TimeStampAndTriggerTeamHistory.h"
+#include "exahype/reactive/TimeStampAndDubiosityTeamHistory.h"
 
 
 exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::CheckAndCorrectSolutionJob(
@@ -38,18 +38,21 @@ bool exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::run(bool isRunO
   bool found = tryToFindAndExtractEquivalentSharedOutcome(status, &outcome);
         
         
-  logDebug("runCheck", "Checking my outcome."<<
-                      "My error indicators: derivative = "<<_errorIndicatorDerivative<<
+  logDebug("runCheck", std::setprecision(30)<<
+                      " Checking my outcome: predictorTimeStamp = "<<_predictorTimeStamp<<
+                      " predictor time step size = "<<_predictorTimeStepSize<<
+                      " My error indicators: derivative = "<<_errorIndicatorDerivative<<
                       " time step size = "<<_errorIndicatorTimeStepSize<<
                       " admissibility = "<<_errorIndicatorAdmissibility);
 
   //assert(exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().otherTeamHasTimeStepData(_predictorTimeStamp, _predictorTimeStepSize));
   if( !found
-    && (
-        !exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().otherTeamHasTimeStepData(_predictorTimeStamp, _predictorTimeStepSize)
-        &&
-        exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().otherTeamHasLargerTimeStamp(_predictorTimeStamp)))
-      // || !exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().checkConsistency())
+    && !exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().otherTeamHasTimeStepData(_predictorTimeStamp, _predictorTimeStepSize)
+    && (exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().otherTeamHasLargerTimeStamp(_predictorTimeStamp)
+        ||
+        exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().otherTeamHasLargerTimeStepSizeForStamp(_predictorTimeStamp,_predictorTimeStepSize)
+        ||
+        !exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().checkConsistency()))
   {
     _solverPatch.setHasCompletedLastStep(true);
     reschedule = false;
@@ -64,10 +67,10 @@ bool exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::run(bool isRunO
         _solverPatch.setHasCompletedLastStep(true);
         reschedule = false;
         break;
-      case SDCCheckResult::MyOutcomeIsMoreTrustworthy:
+      case SDCCheckResult::MyOutcomeIsMoreOrEquallyTrustworthy:
         reschedule = false;
         _solverPatch.setHasCompletedLastStep(true);
-        logError("runCheck","My result is more trustworthy. Continuing...");
+        logError("runCheck","My result is more trustworthy. Continuing but the error remains which may result in undefined behavior...");
         break;
       case SDCCheckResult::OutcomeIsMoreTrustworthy:
          //continue to correction
@@ -79,7 +82,7 @@ bool exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::run(bool isRunO
                               " time step size "<<outcome->_metadata._errorIndicatorTimeStepSize<<
                               " admissibility "<<outcome->_metadata._errorIndicatorAdmissibility);
          //no break!
-      case SDCCheckResult::OutcomeSaneAsTriggerNotActive:
+      case SDCCheckResult::OutcomeHasZeroErrorIndicator:
         if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()
           ==exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceCorrection) {
           correctWithOutcome(outcome);
@@ -92,20 +95,19 @@ bool exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::run(bool isRunO
           reschedule = false;
           _solverPatch.setHasCompletedLastStep(true);
         }
+        break;
       }
       delete outcome;
     }
     else {
-      logDebug("runCheck"," Not found "<<to_string()<<std::setprecision(30)<<"time stamp ="<<_predictorTimeStamp<<" timestep "<<_predictorTimeStepSize);
+      logDebug("runCheck"," Not found "<<std::setprecision(30)<<"time stamp ="<<_predictorTimeStamp<<" timestep "<<_predictorTimeStepSize);
       reschedule = true;
     }
   }
-
   return reschedule;
 }
 
 bool exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::tryToFindAndExtractEquivalentSharedOutcome(DeliveryStatus &status, MigratablePredictionJobData **outcome) {
-
   return _solver.tryToFindAndExtractOutcome(_solverPatch, _predictorTimeStamp, _predictorTimeStepSize, status, outcome);
 }
 

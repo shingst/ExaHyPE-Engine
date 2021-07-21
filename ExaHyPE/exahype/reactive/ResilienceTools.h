@@ -29,6 +29,11 @@ namespace exahype {
   }
 }
 
+/**
+ * Utility class for ExaHyPE's reactive resilience mechanisms.
+ * Contains functions to inject errors according to specified parameters such as injection position (spatial), frequency and error.
+ * It also allows to check double arrays for equality.
+ */
 class exahype::reactive::ResilienceTools {
   public:
   enum class SoftErrorGenerationStrategy { None, Bitflips, Overwrite, OverwriteHardcoded };
@@ -44,17 +49,20 @@ class exahype::reactive::ResilienceTools {
    */
   int _injectionInterval;
 
-  const int _numFlips;
+  /**
+   * Controls how many bitflips should be injected.
+   */
+  int _numInjections;
 
   /**
    * Internal counter of executed STPs since last bitflip.
    */
-  std::atomic<int> _cnt;
+  std::atomic<int> _cntSinceLastFlip;
 
   /**
    * Counts how many bits have already been flipped.
    */
-  std::atomic<int> _numFlipped;
+  std::atomic<int> _numInjected;
 
   double _infNormTol;
   double _l1NormTol;
@@ -85,6 +93,18 @@ class exahype::reactive::ResilienceTools {
   static bool CheckSTPAdmissibility;
   static bool CheckSTPsLazily;
 
+  static void setSoftErrorGenerationStrategy(SoftErrorGenerationStrategy strat);
+
+  static double computeInfNormError(const double *a1, const double *a2, size_t length);
+  static double computeL1NormError(const double *a1, const double *a2, size_t length);
+  static double computeL2NormError(const double *a1, const double *a2, size_t length);
+
+  static double computeInfNormErrorRel(const double *a1, const double *a2, size_t length);
+  static double computeL1NormErrorRel(const double *a1, const double *a2, size_t length);
+  static double computeL2NormErrorRel(const double *a1, const double *a2, size_t length);
+
+  static bool checkSTPsImmediatelyAfterComputation();
+
   ResilienceTools();
   static ResilienceTools& getInstance();
 
@@ -98,33 +118,20 @@ class exahype::reactive::ResilienceTools {
 
   bool isTrustworthy(double errorIndicatorDerivatives, double errorIndicatorTimeStepSizes, double errorIndicatorAdmissibility);
 
-  bool violatesCriterion(double value, double threshold) const;
-
-  bool violatesAdmissibility(double value) const;
-  bool violatesDerivatives(double value) const;
-  bool violatesTimestep(double value) const;
+  /**
+   *
+   */
+  bool violatesCriterion(double errorIndicator, double threshold) const;
+  bool violatesAdmissibility(double errorIndicator) const;
+  bool violatesDerivatives(double errorIndicator) const;
+  bool violatesTimestep(double errorIndicator) const;
 
   bool shouldInjectError(const double *center, double t);
 
-  static void setSoftErrorGenerationStrategy(SoftErrorGenerationStrategy strat);
-
-  static double computeInfNormError(const double *a1, const double *a2, size_t length);
-  static double computeL1NormError(const double *a1, const double *a2, size_t length);
-  static double computeL2NormError(const double *a1, const double *a2, size_t length);
-
-  static double computeInfNormErrorRel(const double *a1, const double *a2, size_t length);
-  static double computeL1NormErrorRel(const double *a1, const double *a2, size_t length);
-  static double computeL2NormErrorRel(const double *a1, const double *a2, size_t length);
-
-  static bool checkSTPsImmediatelyAfterComputation();
-
-  bool isAdmissibleNumericalError(const double *a1, const double *a2, size_t length);
+  bool isEqual(const double *a1, const double *a2, size_t length);
 
   void setCorruptionDetected(bool corrupted);
   bool getCorruptionDetected();
-
-  //double getMinDerivativeScalingFactor() const;
-  //double getMaxDerivativeScalingFactor() const;
 
   private:
   void generateBitflipErrorInDouble(const double *ref, double *center, int dim, double t, double *array, size_t length);
@@ -134,6 +141,4 @@ class exahype::reactive::ResilienceTools {
   virtual ~ResilienceTools();
 
 };
-
-
 #endif /* EXAHYPE_OFFLOADING_SOFTERRORINJECTOR_H_ */

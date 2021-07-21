@@ -16,7 +16,7 @@
 #include "exahype/reactive/MemoryMonitor.h"
 #include "exahype/reactive/NoiseGenerator.h"
 #include "exahype/reactive/ResilienceTools.h"
-#include "exahype/reactive/TimeStampAndTriggerTeamHistory.h"
+#include "exahype/reactive/TimeStampAndDubiosityTeamHistory.h"
 #include "exahype/reactive/RequestManager.h"
 
 #include "tarch/multicore/Core.h"
@@ -55,9 +55,9 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
       _lFhbnd(nullptr),
       _lGradQhbnd(nullptr),
       _isLocalReplica(false),
-      _errorIndicatorAdmissibility(0),
       _errorIndicatorTimeStepSize(0),
       _errorIndicatorDerivative(0),
+      _errorIndicatorAdmissibility(0),
       _isCorrupted(false)
 {
   if (_isSkeleton) {
@@ -265,7 +265,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
                                 " time step size = "<<outcome->_metadata._errorIndicatorTimeStepSize<<
                                 " admissibility = "<<outcome->_metadata._errorIndicatorAdmissibility);
            //no break!
-        case SDCCheckResult::OutcomeSaneAsTriggerNotActive:
+        case SDCCheckResult::OutcomeHasZeroErrorIndicator:
           logError("handleLocalExecution", "Soft error detected in job execution: "<<to_string());
           if( exahype::reactive::ReactiveContext::getResilienceStrategy()
            == exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceCorrection) {
@@ -275,8 +275,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
             logError("handleLocalExecution", "Could have corrected soft error but correction is not enabled. Continuing...");
           }
           break;
-        case SDCCheckResult::MyOutcomeIsMoreTrustworthy:
-          logError("handleLocalExecution", "There is disagreement between two outcomes but my result is more trustworthy..");
+        case SDCCheckResult::MyOutcomeIsMoreOrEquallyTrustworthy:
+          logError("handleLocalExecution", "There is disagreement between two outcomes but my result is more or equall trustworthy..");
           logError("handleLocalExecution", "My error indicators: derivative = "<<_errorIndicatorDerivative<<
                                            " time step size = "<<_errorIndicatorTimeStepSize<<
                                            " admissibility = "<<_errorIndicatorAdmissibility<<
@@ -320,8 +320,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     }
 
     if(needToCheckThisSTP(hasComputed)) {
-      if((exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().otherTeamHasTimeStepData(_predictorTimeStamp, _predictorTimeStepSize)
-         || !exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().otherTeamHasLargerTimeStamp(_predictorTimeStamp))) {
+      if((exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().otherTeamHasTimeStepData(_predictorTimeStamp, _predictorTimeStepSize)
+         || !exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().otherTeamHasLargerTimeStamp(_predictorTimeStamp))) {
         // && exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().checkConsistency()) {
         logDebug("handleLocalExecution","going into check mode "<<to_string());
 
@@ -950,10 +950,10 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
 
   double minTimeStampToKeep = static_cast<exahype::solvers::ADERDGSolver*>(solver)->getPreviousMinTimeStamp();
 
-  exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().trackTimeStepAndTriggerActive(team, 
+  exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().trackTimeStepAndDubiosity(team, 
 		                                              key._timestamp,
-							                          key._timestepSize,
-							                          !exahype::reactive::ResilienceTools::getInstance().isTrustworthy(
+							      key._timestepSize,
+							      !exahype::reactive::ResilienceTools::getInstance().isTrustworthy(
                                                          data->_metadata.getErrorIndicatorDerivative(),
                                                          data->_metadata.getErrorIndicatorTimeStepSize(),
                                                          data->_metadata.getErrorIndicatorAdmissibility()));
@@ -1108,21 +1108,21 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJobData::matches(const 
 
   tmp = _metadata == a._metadata; equal&=tmp;
 
-  tmp = exahype::reactive::ResilienceTools::getInstance().isAdmissibleNumericalError(a._lQhbnd.data(), _lQhbnd.data(), a._lQhbnd.size()); equal&=tmp;
+  tmp = exahype::reactive::ResilienceTools::getInstance().isEqual(a._lQhbnd.data(), _lQhbnd.data(), a._lQhbnd.size()); equal&=tmp;
   if(!tmp) {
     logError("matches", "lQhbnd is not (numerically) equal");
   }
 #if defined(OffloadingGradQhbnd)
-  tmp = exahype::reactive::ResilienceTools::getInstance().isAdmissibleNumericalError(a._lGradQhbnd.data(), _lGradQhbnd, a._lGradQhbnd.size()); equal&=tmp;
+  tmp = exahype::reactive::ResilienceTools::getInstance().isEqual(a._lGradQhbnd.data(), _lGradQhbnd, a._lGradQhbnd.size()); equal&=tmp;
   if(!tmp) {
     logError("matches", "lGradQhbnd is not (numerically) equal");
   }
 #endif
-  tmp = exahype::reactive::ResilienceTools::getInstance().isAdmissibleNumericalError(a._lFhbnd.data(), _lFhbnd.data(), a._lFhbnd.size()); equal&=tmp;
+  tmp = exahype::reactive::ResilienceTools::getInstance().isEqual(a._lFhbnd.data(), _lFhbnd.data(), a._lFhbnd.size()); equal&=tmp;
   if(!tmp) {
     logError("matches", "lFhbnd is not  (numerically) equal");
   }
-  tmp = exahype::reactive::ResilienceTools::getInstance().isAdmissibleNumericalError(a._lduh.data(), _lduh.data(), a._lduh.size()); equal&=tmp;
+  tmp = exahype::reactive::ResilienceTools::getInstance().isEqual(a._lduh.data(), _lduh.data(), a._lduh.size()); equal&=tmp;
   if(!tmp) {
     logError("matches", "lduh is not  (numerically) equal");
   }
@@ -1134,8 +1134,8 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::MigratablePredi
   _predictorTimeStepSize(0),
   _element(0),
   _originRank(-1),
-  _errorIndicatorDerivative(0),
   _errorIndicatorTimeStepSize(0),
+  _errorIndicatorDerivative(0),
   _errorIndicatorAdmissibility(0),
   _isCorrupted(false),
   _contiguousBuffer(nullptr) {

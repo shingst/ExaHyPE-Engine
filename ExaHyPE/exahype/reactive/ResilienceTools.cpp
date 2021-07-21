@@ -39,9 +39,9 @@ bool exahype::reactive::ResilienceTools::CheckSTPAdmissibility;
 bool exahype::reactive::ResilienceTools::CheckSTPsLazily;
 
 exahype::reactive::ResilienceTools::ResilienceTools()
-  : _numFlips(1),
-   _cnt(1),
-   _numFlipped(0),
+  : _numInjections(1),
+   _cntSinceLastFlip(1),
+   _numInjected(0),
    _infNormTol(0.0000001),
    _l1NormTol(0.0000001),
    _l2NormTol(0.0000001),
@@ -115,20 +115,20 @@ bool exahype::reactive::ResilienceTools::isTrustworthy(double errorIndicatorDeri
   }
 }
 
-bool exahype::reactive::ResilienceTools::violatesCriterion(double value, double threshold) const {
-  return value>threshold;
+bool exahype::reactive::ResilienceTools::violatesCriterion(double errorIndicator, double threshold) const {
+  return errorIndicator>threshold;
 }
 
-bool exahype::reactive::ResilienceTools::violatesAdmissibility(double value) const {
-  return CheckSTPAdmissibility && violatesCriterion(value, 0);
+bool exahype::reactive::ResilienceTools::violatesAdmissibility(double errorIndicator) const {
+  return CheckSTPAdmissibility && violatesCriterion(errorIndicator, 0);
 }
 
-bool exahype::reactive::ResilienceTools::violatesTimestep(double value) const {
-  return CheckSTPTimeSteps && violatesCriterion(value, _maxErrorIndicatorTimeStepSizes);
+bool exahype::reactive::ResilienceTools::violatesTimestep(double errorIndicator) const {
+  return CheckSTPTimeSteps && violatesCriterion(errorIndicator, _maxErrorIndicatorTimeStepSizes);
 }
 
-bool exahype::reactive::ResilienceTools::violatesDerivatives(double value) const {
-  return CheckSTPDerivatives && violatesCriterion(value, _maxErrorIndicatorDerivatives);
+bool exahype::reactive::ResilienceTools::violatesDerivatives(double errorIndicator) const {
+  return CheckSTPDerivatives && violatesCriterion(errorIndicator, _maxErrorIndicatorDerivatives);
 }
 
 bool exahype::reactive::ResilienceTools::shouldInjectError(const double *center, double t) {
@@ -143,8 +143,8 @@ bool exahype::reactive::ResilienceTools::shouldInjectError(const double *center,
   else if(GenerationStrategy==SoftErrorGenerationStrategy::Overwrite
       || GenerationStrategy==SoftErrorGenerationStrategy::Bitflips){
 
-    if(_cnt.fetch_add(1)%_injectionInterval==0
-        && _numFlipped<_numFlips
+    if(_cntSinceLastFlip.fetch_add(1)%_injectionInterval==0
+        && _numInjected<_numInjections
         && tarch::parallel::Node::getInstance().getRank()==_injectionRank) {
       return true;
     }
@@ -188,8 +188,8 @@ void exahype::reactive::ResilienceTools::generateBitflipErrorInDouble(const doub
   array[idx_array] = new_val;
 
   logError("generateBitflipErrorInDoubleIfActive()","generating bitflip: pos = "<<idx_array<<" byte = "<<idx_byte<<" bit = "<<idx_bit<< " old ="<<old_val<<" new = "<<new_val);
-  _cnt = 0;
-  _numFlipped++;
+  _cntSinceLastFlip = 0;
+  _numInjected++;
   exahype::reactive::ResilienceStatistics::getInstance().notifyInjectedError();
 }
 
@@ -209,7 +209,7 @@ void exahype::reactive::ResilienceTools::overwriteRandomValueInArray(const doubl
   //overwrite with "random number"
   array[idx_array] += error;
   //std::numeric_limits<double>::max();
-  _numFlipped++;
+  _numInjected++;
 
   logError("overwriteDoubleIfActive()", "overwrite double value, pos = "<<idx_array<<std::setprecision(30)
                                      <<" old ="<<old_val
@@ -243,7 +243,7 @@ void exahype::reactive::ResilienceTools::overwriteHardcoded(const double *ref, d
   //array[idx_array] = 20; //limiter SWE immediately
   //array[idx_array] = 2; //limiter SWE later
   array[idx_array] += error;
-  _numFlipped++;
+  _numInjected++;
 
 #if DIMENSIONS==2
   logError("overwriteHardcodedIfActive()", "overwrite double value, pos = "<<idx_array<<" old ="<<old_val<<" new = "<<array[idx_array]
@@ -251,7 +251,7 @@ void exahype::reactive::ResilienceTools::overwriteHardcoded(const double *ref, d
                                                                          <<" center[1]="<<center[1]
                                                                          <<" t ="<<t
                                                                          <<" corresponds to relative error "<<error/(ref[idx_array]+old_val));
-#else if DIMENSIONS==3
+#elif DIMENSIONS==3
   logError("overwriteHardcodedIfActive()", "overwrite double value, pos = "<<idx_array<<" old ="<<old_val<<" new = "<<array[idx_array]
                                                                          <<" in center[0]="<<center[0]<<" center[1]="<<center[1]
                                                                          <<" center[2]="<<center[2]
@@ -341,33 +341,23 @@ double exahype::reactive::ResilienceTools::computeL2NormErrorRel(const double *a
   return std::sqrt(result);
 }
 
-bool exahype::reactive::ResilienceTools::isAdmissibleNumericalError(const double *a1, const double *a2, size_t length) {
-  //double infnorm = computeInfNormErrorRel(a1, a2, length);
-  //double l1norm = computeL1NormErrorRel(a1, a2, length);
-  //double l2norm = computeL2NormErrorRel(a1, a2, length);
-
+bool exahype::reactive::ResilienceTools::isEqual(const double *a1, const double *a2, size_t length) {
   double infnorm = computeInfNormError(a1, a2, length);
   double l1norm = computeL1NormError(a1, a2, length);
   double l2norm = computeL2NormError(a1, a2, length);
 
-  //bool admissible = (infnorm<_infNormTol)
-   //         &&  (l1norm<_l1NormTol)
-   //         &&  (l2norm<_l2NormTol);
-  bool admissible = (infnorm==0)
+  bool equal = (infnorm==0)
             &&  (l1norm==0)
-            &&  (l2norm==0);
+            &&  (l2norm==0);  //todo: we may need some tolerance but in all experiments,
+                              // teams compute exactly (in a bitwise sense) the same results
 
-  if(!admissible || infnorm!=0 || l1norm!=0 || l2norm!=0) {
+  /*if(!admissible || infnorm!=0 || l1norm!=0 || l2norm!=0) {
     logError("isAdmissibleNumericalError","We'll likely have a soft error: "
                                          << " inf norm = "<<infnorm
                                          << " l1 norm = "<<l1norm
                                          << " l2 norm = "<<l2norm);
-    /*for(size_t i=0; i<length; i++) {
-      logError("isAdmissibleNumericalError", "i = "<<i<<" a = "<<a1[i]<<" , b = "<<a2[i]);
-    }*/
-  }
-
-  return admissible;
+  }*/
+  return equal;
 }
 
 void exahype::reactive::ResilienceTools::setCorruptionDetected(bool corrupted) {

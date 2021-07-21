@@ -7,7 +7,7 @@
   },
   "computational_domain": {
     "dimension": 3,
-    "end_time": 1000,
+    "time_steps": 100,
     "offset": [
       0.0,
       0.0,
@@ -48,7 +48,7 @@
   },
   "resilience" : {
     "generate_soft_errors" : "migratable_stp_tasks_overwrite",
-    "check_mechanism" : "check_stps_with_low_confidence",
+    "check_mechanism" : "check_all_stps",
     "save_redundant_computations" : true,
     "task_sharing" : "task_sharing_resilience_correction",
     "abs_error" : 0.001,

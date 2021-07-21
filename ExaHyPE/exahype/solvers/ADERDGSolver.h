@@ -1204,7 +1204,6 @@ private:
 
       bool handleExecution(bool isCalledOnMaster, bool& hasComputed);
       bool handleLocalExecution(bool isCalledOnMaster, bool& hasComputed);
-      bool handleLocalExecutionOld(bool isCalledOnMaster, bool& hasComputed);
       bool handleRemoteExecution(bool& hasComputed);
 
       bool tryToFindAndExtractEquivalentSharedOutcome(bool previous, DeliveryStatus &status, MigratablePredictionJobData **outcome);
@@ -1285,7 +1284,7 @@ private:
       bool run(bool calledFromMaster) override;
   };
 
-  enum class SDCCheckResult {NoCorruption, OutcomeSaneAsTriggerNotActive, OutcomeIsMoreTrustworthy, MyOutcomeIsMoreTrustworthy};
+  enum class SDCCheckResult {NoCorruption, OutcomeHasZeroErrorIndicator, OutcomeIsMoreTrustworthy, MyOutcomeIsMoreOrEquallyTrustworthy};
   void correctCellDescriptionWithOutcome(CellDescription& cellDescription, MigratablePredictionJobData *outcome);
   SDCCheckResult checkCellDescriptionAgainstOutcome(CellDescription& cellDescription, MigratablePredictionJobData *outcome,
                                                     double predictorTimeStamp,
@@ -1395,7 +1394,7 @@ private:
   struct JobTableKey {
 	  double center[DIMENSIONS];
 	  double timestamp;
-	  double timestepSize; //need this for optimistic time stepping with rollbacks!
+	  double timestepSize; //need this due to optimistic time stepping with rollbacks!
 	  int element;
 
 	  bool operator==(const JobTableKey &other) const {
@@ -1752,11 +1751,6 @@ private:
       int rail,
       MPI_Request *requests,
       MigratablePredictionJobMetaData *metadata =nullptr);
-
-
-
-//#endif
-
 #endif
 
   /**

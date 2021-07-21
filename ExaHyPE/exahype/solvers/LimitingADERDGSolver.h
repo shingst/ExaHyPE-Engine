@@ -742,11 +742,6 @@ private:
       CheckAndCorrectSolutionJob(const CheckAndCorrectSolutionJob& stp) = delete;
   };
 
-  bool _healingActivated;
-
-  void activateHealing();
-  bool isHealingActivated() const;
-  void deactivateHealing();
 #endif
 
 public:
