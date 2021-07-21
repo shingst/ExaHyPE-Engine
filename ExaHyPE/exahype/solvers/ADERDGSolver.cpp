@@ -3795,8 +3795,7 @@ exahype::solvers::ADERDGSolver::SDCCheckResult exahype::solvers::ADERDGSolver::c
   tmp = data->_metadata._predictorTimeStamp == predictorTimeStamp; equal &= tmp; assert(tmp);
   tmp = data->_metadata._predictorTimeStepSize == predictorTimeStepSize; equal &= tmp;
   if(!tmp) {
-     logError("checkCellDescriptionAgainstOutcome", std::setprecision(30)<<"data->_metadata._predictorTimeStepSize"<<data->_metadata._predictorTimeStepSize
-                                                    <<" , cellDescription.getTimeStepSize()="<<cellDescription.getTimeStepSize());
+     logError("checkCellDescriptionAgainstOutcome", std::setprecision(30)<<"data->_metadata._predictorTimeStepSize"<<data->_metadata._predictorTimeStepSize<<" , cellDescription.getTimeStepSize()="<<cellDescription.getTimeStepSize());
      assert(tmp);
   }
 
@@ -3831,12 +3830,14 @@ exahype::solvers::ADERDGSolver::SDCCheckResult exahype::solvers::ADERDGSolver::c
       //todo: need to revise the name here
       return SDCCheckResult::OutcomeSaneAsTriggerNotActive; //we assume that the trigger is good enough to tell us that the outcome is ok
     }
-    else if (data->_metadata._errorIndicatorDerivative<=errorIndicatorDerivative 
-          && data->_metadata._errorIndicatorAdmissibility<=errorIndicatorAdmissibility
-          && data->_metadata._errorIndicatorTimeStepSize<=errorIndicatorTimeStepSize
-          && !(    data->_metadata._errorIndicatorDerivative==errorIndicatorDerivative
-                && data->_metadata._errorIndicatorAdmissibility==errorIndicatorAdmissibility
-                && data->_metadata._errorIndicatorTimeStepSize==errorIndicatorTimeStepSize)) {
+    else if (data->_metadata._errorIndicatorAdmissibility<errorIndicatorAdmissibility
+          || (data->_metadata._errorIndicatorDerivative < errorIndicatorDerivative && data->_metadata._errorIndicatorAdmissibility<=errorIndicatorAdmissibility)
+          || (data->_metadata._errorIndicatorTimeStepSize < errorIndicatorTimeStepSize && data->_metadata._errorIndicatorAdmissibility<=errorIndicatorAdmissibility &&  data->_metadata._errorIndicatorDerivative<=errorIndicatorDerivative)
+          //&& !(    data->_metadata._errorIndicatorDerivative==errorIndicatorDerivative
+          //      && data->_metadata._errorIndicatorAdmissibility==errorIndicatorAdmissibility
+          //      && data->_metadata._errorIndicatorTimeStepSize==errorIndicatorTimeStepSize) {
+     )
+    {
       logError("checkCellDescriptionAgainstOutcome", "soft error detected: "<<data->_metadata.to_string());
       exahype::reactive::ResilienceStatistics::getInstance().notifyDetectedError();
       return SDCCheckResult::OutcomeIsMoreTrustworthy;

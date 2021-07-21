@@ -120,7 +120,7 @@
       "parameters": {
         "use-gravity": true,
         "use-background-state": true,
-        "viscosity": 0.001,
+        "viscosity": 0.01,
         "scenario": "cosine-bubble",
         "use-amr": true,
         "use-tv-amr": true,
@@ -135,7 +135,7 @@
           "name": "Plotter",
           "time": 1e-06,
           "repeat": 100.0,
-          "output": "./plots_amr_resilience_2/solution",
+          "output": "./plots_amr_resilience_for_lukas/solution",
           "variables": 5
         }
       ]

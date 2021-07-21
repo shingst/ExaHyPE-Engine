@@ -251,7 +251,7 @@ void exahype::reactive::ResilienceTools::overwriteHardcoded(const double *ref, d
                                                                          <<" center[1]="<<center[1]
                                                                          <<" t ="<<t
                                                                          <<" corresponds to relative error "<<error/(ref[idx_array]+old_val));
-#else if DIMENSIONS==3
+#elif DIMENSIONS==3
   logError("overwriteHardcodedIfActive()", "overwrite double value, pos = "<<idx_array<<" old ="<<old_val<<" new = "<<array[idx_array]
                                                                          <<" in center[0]="<<center[0]<<" center[1]="<<center[1]
                                                                          <<" center[2]="<<center[2]
