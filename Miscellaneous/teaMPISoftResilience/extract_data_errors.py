@@ -16,7 +16,7 @@ timestep_pattern=re.compile("( [0-9]*\.[0-9]*).*step.*team\ =\ ([0-9]).*t_min.*"
 stats_pattern=re.compile("( [0-9]*\.[0-9]*).*JobTableStatistics::printStatistics.*team\ 0.*soft errors injected = ([0-9]*) .*healed tasks = ([0-9]*)")
 
 # 3.321646     [i01r09c04s10],rank:0, core:53, tid:1 error        exahype::reactive::ResilienceTools::overwriteDoubleIfActive() overwrite double value, pos = 906 old =-1.84735394850702130197364404377e-10 new = -1.00000000018473533813789799751 corresponds to relative error -230280961.399737566709518432617 corresponds to absolute error -1 max error indicator derivatives 1 max error indicator timestepsizes 0 (file:/dss/dsshome1/02/di57zoh3/Codes/ExaHyPE-Engine/./ExaHyPE/exahype/reactive/ResilienceTools.cpp,line:197)
-error_overwrite_pattern=re.compile("( [0-9]*\.[0-9]*).*ResilienceTools::overwrite.*IfActive.*old =(-?[0-9]*\.?[0-9]*[e]?[-]?[0-9]*).*new = (-?[0-9]*\.?[0-9]*[e]?[-]?[0-9]*).*relative error (-?[0-9]*\.?[0-9]*[e]?[-]?[0-9]*).*absolute error (-?[0-9]*\.?[0-9]*[e]?[-]?[0-9]*).*max error indicator derivatives (-?[0-9]*\.?[0-9]*[e]?[-]?[0-9]*).*max error indicator timestepsizes (-?[0-9]*\.?[0-9]*[e]?[-]?[0-9]*)")
+error_overwrite_pattern=re.compile("( [0-9]*\.[0-9]*).*ResilienceTools::overwrite.*IfActive.*old =(-?[0-9]*\.?[0-9]*[e]?[-|+]?[0-9]*).*new = (-?[0-9]*\.?[0-9]*[e]?[-|+]?[0-9]*).*relative error (-?[0-9]*\.?[0-9]*[e]?[-|+]?[0-9]*).*absolute error (-?[0-9]*\.?[0-9]*[e]?[-|+]?[0-9]*).*max error indicator derivatives (-?[0-9]*\.?[0-9]*[e]?[-]?[0-9]*).*max error indicator timestepsizes (-?[0-9]*\.?[0-9]*[e]?[-]?[0-9]*)")
 
 # 3.322003     [i01r09c04s10],rank:0, core:53, tid:1 error        exahype::solvers::ADERDGSolver::computeErrorIndicator   Celldesc =15 errorIndicator derivative 290596004.635142624378204345703 errorIndicator time step size 0 errorIndicator admissibility 0 (file:/dss/dsshome1/02/di57zoh3/Codes/ExaHyPE-Engine/./ExaHyPE/exahype/solvers/ADERDGSolver_MigratablePredictionJob.cpp,line:672)
 error_indicator_pattern=re.compile("( [0-9]*\.[0-9]*).*ADERDGSolver::computeErrorIndicator.*errorIndicator derivative ([0-9]*\.?[0-9]*) errorIndicator time step size ([0-9]*\.?[0-9]*)")
@@ -62,7 +62,10 @@ def parseResult(filenamePrefix, teams):
     if m:
      res["old"] = float(m.group(2))
      res["new"] =float(m.group(3))
-     rel_error = float(m.group(4))
+     if m.group(4):
+       rel_error = float(m.group(4))
+     else:
+       rel_error = 100000000000
      abs_error = float(m.group(5))
      error = abs_error
      res["error"] = math.copysign(1,error) * 10 **math.ceil(math.log10(abs(error)))
@@ -104,9 +107,10 @@ def parseResult(filenamePrefix, teams):
   elif (res["errors_corrected"]==1):
     print("Was corrected appropriately:",outFilename)
 
-  if(res!=None and res["error"]==0):
+  if(res!=None and abs(res["error"])<1e-7):
     print("Problem: file ",errFilename, " does not contain valid output")
-    os.remove(errFilename)
+    #os.remove(errFilename)
+    #os.remove(outFilename)
     return None
 
   return res
@@ -163,9 +167,9 @@ def readAccumResults(resultsfile):
   return results
 
 def accumulateResults(results):
-  #unique_rel_errors = []
-  #[unique_rel_errors.append(res["error"]) for res in results if res["error"] not in unique_rel_errors]
-  #unique_rel_errors.sort()
+  unique_abs_errors = []
+  [unique_abs_errors.append(res["error"]) for res in results if res["error"] not in unique_abs_errors]
+  unique_abs_errors.sort()
 
   #unique_error_indicators_der = []
   #[unique_error_indicators_der.append(res["max_err_ind_der"]) for res in results if res["max_err_ind_der"] not in unique_error_indicators_der]
@@ -183,7 +187,7 @@ def accumulateResults(results):
   accumResults = []
 
   for config in unique_configs:
-      for error in errors:
+      for error in unique_abs_errors:
         runs = 0
         detected = 0
         detected_corrected = 0
@@ -228,20 +232,21 @@ def computeAvgSensitivity(accumResults):
   accuracy_res = []
   accuracy_dict = {}
   for config in unique_configs:
-    accuracy_dict[config] = (0,0)
+    accuracy_dict[config] = (0,0,0)
 
   for res in accumResults:
     key = (res["max_err_ind_der"],res["max_err_ind_ts"],res["check_adm"],res["check_ts"], res["check_der"], res["check_lazy"])
     old_tuple = accuracy_dict[key]
     #print (res)
     if(res["runs"]>0):
-      new_tuple = (old_tuple[0]+1, old_tuple[1]+res["corrected"]/res["runs"])
+      new_tuple = (old_tuple[0]+1, old_tuple[1]+res["runs"], old_tuple[2]+res["corrected"]/res["runs"])
     accuracy_dict[key] = new_tuple
   for key in accuracy_dict:
     cnt = accuracy_dict[key][0]
     if(cnt>0):
-      sum_accuracy = accuracy_dict[key][1]
-      accuracy_dict[key] = (cnt,sum_accuracy/cnt)
+      sum_accuracy = accuracy_dict[key][2]
+      #accuracy_dict[key] = (cnt,sum_accuracy/cnt)
+      cnt_runs = accuracy_dict[key][1]
       res_element = {
 			"check_adm" : key[2],
                      "check_ts" : key[3],
@@ -251,13 +256,14 @@ def computeAvgSensitivity(accumResults):
                      "max_err_ind_ts" : key[1],
                      "avg_sensitivity" : sum_accuracy/cnt,
                      "normalised_realtime_min" : 0,
-                     "cnt" : cnt
+                     "cnt" : cnt,
+                     "cnt_runs" : cnt_runs
                   }
       accuracy_res.append(res_element)
   return accuracy_res
 
 def printSensitivityResults(accuracyResults):
-  print("check_adm\tcheck_ts\tcheck_der\tcheck_lazy\tmax_err_ind_der\tmax_err_ind_ts\tavg_sensitivity\tnormalised_realtime_min\ttradeoff_ratio\tcnt")
+  print("check_adm\tcheck_ts\tcheck_der\tcheck_lazy\tmax_err_ind_der\tmax_err_ind_ts\tavg_sensitivity\tnormalised_realtime_min\ttradeoff_ratio\tcnt\tcnt_runs")
   for res in accuracyResults:  
     if(res["normalised_realtime_min"]>0):
       factor = res["avg_sensitivity"]/res["normalised_realtime_min"]
@@ -265,7 +271,7 @@ def printSensitivityResults(accuracyResults):
       factor = 0
    
     print(res["check_adm" ],'\t',res["check_ts" ],\
-         '\t',res["check_der"],'\t',res["check_lazy"],'\t',res["max_err_ind_der"],'\t',res["max_err_ind_ts"],'\t',res["avg_sensitivity"],'\t',res["normalised_realtime_min"],'\t',factor,'\t',res["cnt"])
+         '\t',res["check_der"],'\t',res["check_lazy"],'\t',res["max_err_ind_der"],'\t',res["max_err_ind_ts"],'\t',res["avg_sensitivity"],'\t',res["normalised_realtime_min"],'\t',factor,'\t',res["cnt"],'\t',res["cnt_runs"])
     
 if __name__=="__main__":
   dir_base = sys.argv[1]

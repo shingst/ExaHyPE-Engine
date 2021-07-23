@@ -47,8 +47,8 @@
     "stp_tracing_frequency" : 10
   },
   "resilience" : {
-    "generate_soft_errors" : "migratable_stp_tasks_overwrite",
-    "check_mechanism" : "check_all_stps",
+    "generate_soft_errors" : "migratable_stp_tasks_bitflip",
+    "check_mechanism" : "check_stps_with_low_confidence",
     "save_redundant_computations" : true,
     "task_sharing" : "task_sharing_resilience_correction",
     "rel_error" : 0.001,
