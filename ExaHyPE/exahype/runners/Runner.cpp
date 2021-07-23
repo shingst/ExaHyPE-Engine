@@ -353,6 +353,9 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     else if (_parser.compareSoftErrorGenerationStrategy("migratable_stp_tasks_overwrite")) {
       exahype::reactive::ResilienceTools::setSoftErrorGenerationStrategy(exahype::reactive::ResilienceTools::SoftErrorGenerationStrategy::Overwrite);
     }
+    else if (_parser.compareSoftErrorGenerationStrategy("migratable_stp_tasks_overwrite_random")) {
+      exahype::reactive::ResilienceTools::setSoftErrorGenerationStrategy(exahype::reactive::ResilienceTools::SoftErrorGenerationStrategy::OverwriteRandom);
+    }
     else if (_parser.compareSoftErrorGenerationStrategy("migratable_stp_tasks_overwrite_hardcoded")) {
       exahype::reactive::ResilienceTools::setSoftErrorGenerationStrategy(exahype::reactive::ResilienceTools::SoftErrorGenerationStrategy::OverwriteHardcoded);
     }

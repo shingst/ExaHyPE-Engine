@@ -193,7 +193,7 @@ void exahype::reactive::ResilienceTools::generateBitflipErrorInDouble(const doub
   exahype::reactive::ResilienceStatistics::getInstance().notifyInjectedError();
 }
 
-void exahype::reactive::ResilienceTools::overwriteRandomValueInArray(const double *ref, double *center, int dim, double t, double *array, size_t size) {
+void exahype::reactive::ResilienceTools::overwriteRandomValueInArrayWithGivenError(const double *ref, double *center, int dim, double t, double *array, size_t size) {
   std::random_device r;
   std::default_random_engine generator(r());
   std::uniform_int_distribution<int> un_arr(0, size-1);
@@ -204,6 +204,40 @@ void exahype::reactive::ResilienceTools::overwriteRandomValueInArray(const doubl
   double old_val = array[idx_array];
   double error = (std::abs(_relError)>0) ? (_relError*(ref[idx_array]+old_val)) //introduces relative error into new ref (e.g., new solution), if added to ref
                                 : _absError;           //only introduces absolute error
+
+
+  //overwrite with "random number"
+  array[idx_array] += error;
+  //std::numeric_limits<double>::max();
+  _numInjected++;
+
+  logError("overwriteDoubleIfActive()", "overwrite double value, pos = "<<idx_array<<std::setprecision(30)
+                                     <<" old ="<<old_val
+                                     <<" new = "<<array[idx_array]
+                                     <<" corresponds to relative error "<<error/(ref[idx_array]+old_val)
+                                     <<" corresponds to absolute error "<<error
+                                     <<" max error indicator derivatives "<<_maxErrorIndicatorDerivatives
+                                     <<" max error indicator timestepsizes "<<_maxErrorIndicatorTimeStepSizes);
+  exahype::reactive::ResilienceStatistics::getInstance().notifyInjectedError();
+}
+
+void exahype::reactive::ResilienceTools::overwriteRandomValueInArrayWithRandomError(const double *ref, double *center, int dim, double t, double *array, size_t size) {
+  std::random_device r;
+  std::default_random_engine generator(r());
+  std::uniform_int_distribution<int> un_arr(0, size-1);
+  std::uniform_real_distribution<double> un_err(1e-07, std::numeric_limits<double>::max());
+  std::uniform_int_distribution<int> un_sign(0, 1);
+
+  int idx_array = un_arr(generator);
+  //int idx_array = 0;
+
+  double old_val = array[idx_array];
+
+  int sign = un_sign(generator);
+  sign = (sign==0) ? -1 : 1;
+  double randomRelError = sign * un_err(generator);
+
+  double error = randomRelError*(ref[idx_array]+old_val);           //only random relative error
 
 
   //overwrite with "random number"
@@ -273,7 +307,10 @@ if(TMPI_IsLeadingRank()) {
     generateBitflipErrorInDouble(ref, center, dim, t, array, size);
     break;
   case SoftErrorGenerationStrategy::Overwrite:
-    overwriteRandomValueInArray(ref, center, dim, t, array, size);
+    overwriteRandomValueInArrayWithGivenError(ref, center, dim, t, array, size);
+    break;
+  case SoftErrorGenerationStrategy::OverwriteRandom:
+    overwriteRandomValueInArrayWithRandomError(ref, center, dim, t, array, size);
     break;
   case SoftErrorGenerationStrategy::OverwriteHardcoded:
     overwriteHardcoded(ref, center, dim, t, array, size);
