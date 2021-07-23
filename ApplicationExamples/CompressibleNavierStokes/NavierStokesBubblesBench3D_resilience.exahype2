@@ -51,7 +51,7 @@
     "check_mechanism" : "check_all_stps",
     "save_redundant_computations" : true,
     "task_sharing" : "task_sharing_resilience_correction",
-    "abs_error" : 0.001,
+    "rel_error" : 0.001,
     "injection_time" : 0.136866,
     "injection_rank" : 0,
     "injection_position" : [500.0, 500.0, 500.0],
