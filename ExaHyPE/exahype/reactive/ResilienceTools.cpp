@@ -141,7 +141,8 @@ bool exahype::reactive::ResilienceTools::shouldInjectError(const double *center,
                    && tarch::la::equals(t, _injectionTime,0.0001);
   }
   else if(GenerationStrategy==SoftErrorGenerationStrategy::Overwrite
-      || GenerationStrategy==SoftErrorGenerationStrategy::Bitflips){
+      || GenerationStrategy==SoftErrorGenerationStrategy::Bitflips
+      || GenerationStrategy==SoftErrorGenerationStrategy::OverwriteRandom){
 
     if(_cntSinceLastFlip.fetch_add(1)%_injectionInterval==0
         && _numInjected<_numInjections
