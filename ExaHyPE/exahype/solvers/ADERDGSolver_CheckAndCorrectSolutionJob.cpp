@@ -22,7 +22,8 @@ exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::CheckAndCorrectSolut
    _predictorTimeStepSize(predictorTimeStepSize),
    _errorIndicatorDerivative(errorIndicatorDerivative),
    _errorIndicatorTimeStepSize(errorIndicatorTimeStepSize),
-   _errorIndicatorAdmissibility(errorIndicatorAdmissibility)  {
+   _errorIndicatorAdmissibility(errorIndicatorAdmissibility),
+   _startTimeStamp(MPI_Wtime()){
 
 }
 
@@ -44,6 +45,15 @@ bool exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::run(bool isRunO
                       " My error indicators: derivative = "<<_errorIndicatorDerivative<<
                       " time step size = "<<_errorIndicatorTimeStepSize<<
                       " admissibility = "<<_errorIndicatorAdmissibility);
+
+  bool timeout = (MPI_Wtime()-_startTimeStamp) > 10;
+
+  if(timeout) {
+    _solverPatch.setHasCompletedLastStep(true);
+    reschedule = false;
+    exahype::reactive::ResilienceStatistics::getInstance().notifyDetectedError();
+    logError("runCheck","I've been waiting too long for an outcome. Won't check anymore.");
+  }
 
   //assert(exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().otherTeamHasTimeStepData(_predictorTimeStamp, _predictorTimeStepSize));
   if( !found

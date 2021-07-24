@@ -191,6 +191,14 @@ void exahype::reactive::ResilienceTools::generateBitflipErrorInDouble(const doub
   logError("generateBitflipErrorInDoubleIfActive()","generating bitflip: pos = "<<idx_array<<" byte = "<<idx_byte<<" bit = "<<idx_bit<< " old ="<<old_val<<" new = "<<new_val);
   _cntSinceLastFlip = 0;
   _numInjected++;
+  
+  logError("overwriteDoubleIfActive()", "overwrite double value, pos = "<<idx_array<<std::setprecision(30)
+                                     <<" old ="<<old_val
+                                     <<" new = "<<array[idx_array]
+                                     <<" corresponds to relative error "<<(new_val-old_val)/(ref[idx_array]+old_val)
+                                     <<" corresponds to absolute error "<<new_val-old_val
+                                     <<" max error indicator derivatives "<<_maxErrorIndicatorDerivatives
+                                     <<" max error indicator timestepsizes "<<_maxErrorIndicatorTimeStepSizes);
   exahype::reactive::ResilienceStatistics::getInstance().notifyInjectedError();
 }
 
@@ -226,7 +234,7 @@ void exahype::reactive::ResilienceTools::overwriteRandomValueInArrayWithRandomEr
   std::random_device r;
   std::default_random_engine generator(r());
   std::uniform_int_distribution<int> un_arr(0, size-1);
-  std::uniform_real_distribution<double> un_err(1e-07, std::numeric_limits<double>::max());
+  std::uniform_real_distribution<double> un_err(1e-07, std::numeric_limits<double>::max()-1);
   std::uniform_int_distribution<int> un_sign(0, 1);
 
   int idx_array = un_arr(generator);
@@ -236,10 +244,9 @@ void exahype::reactive::ResilienceTools::overwriteRandomValueInArrayWithRandomEr
 
   int sign = un_sign(generator);
   sign = (sign==0) ? -1 : 1;
-  double randomRelError = sign * un_err(generator);
+  double error = sign * un_err(generator);
 
-  double error = randomRelError*(ref[idx_array]+old_val);           //only random relative error
-
+  logError("overwriteDoubleIfActive()","generated sign = "<<sign<<" error "<<error);
 
   //overwrite with "random number"
   array[idx_array] += error;

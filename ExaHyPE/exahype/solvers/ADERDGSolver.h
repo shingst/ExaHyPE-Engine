@@ -1300,6 +1300,8 @@ private:
        const double                _errorIndicatorDerivative;
        const double                _errorIndicatorTimeStepSize;
        const double                _errorIndicatorAdmissibility;
+ 
+       const double                _startTimeStamp;
 
        bool run(bool runOnMasterThread) override;
        SDCCheckResult checkAgainstOutcome(MigratablePredictionJobData *outcome);

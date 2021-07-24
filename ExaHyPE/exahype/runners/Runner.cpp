@@ -735,8 +735,8 @@ void exahype::runners::Runner::shutdownSharedMemoryConfiguration() {
           "wrote statistics into file " << _parser.getMulticorePropertiesFile()
           << ". Dump from all other ranks subpressed to avoid file races"
       );
-      peano::datatraversal::autotuning::Oracle::getInstance().plotStatistics(
-          _parser.getMulticorePropertiesFile());
+      //peano::datatraversal::autotuning::Oracle::getInstance().plotStatistics(
+      //    _parser.getMulticorePropertiesFile());
     }
     #else
     if ( tarch::multicore::Core::getInstance().getNumberOfThreads()>1 ) {
