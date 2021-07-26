@@ -66,7 +66,7 @@ exahype::reactive::ResilienceTools::ResilienceTools()
   std::default_random_engine generator(r());
   std::uniform_int_distribution<int> un_injection_int(0, 729);
 
-  _injectionInterval = 3000 + un_injection_int(r);
+  _injectionInterval = 2000 + un_injection_int(r);
 }
 
 exahype::reactive::ResilienceTools::~ResilienceTools() {}

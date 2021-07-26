@@ -30,10 +30,13 @@ error_correct_pattern=re.compile("( [0-9]*\.[0-9]*).*ADERDGSolver::correctWithOu
 #sweep/parameters={"order": "5", "maximumMeshSize": "400", "maximumMeshDepth": "0", "kernels": "generic", "soft_error_generation": "migratable_stp_tasks_overwrite", "check_mechanism": "check_stps_with_low_confidence", "save_redundancy": "true", "task_sharing_mode": "task_sharing_resilience_correction", "check_time_steps": "true", "check_derivatives": "true", "check_admissibility": "true", "check_lazily": "true", "max_error_indicator_derivatives": "0", "max_error_indicator_timestepsizes": "0.03", "offloading": "none", "offloading_progress": "none", "offloading_CCP_temperature": "0.5", "offloading_diffusion_temperature": "0.5", "offloading_CCP_frequency": "0", "offloading_CCP_steps": "0", "offloading_update_temperature": "true", "offloading_increase_temp_threshold": "0", "abs_error": "-1", "rel_error": "0", "injection_rank": "0", "architecture": "skx", "dimension": "3", "bufferSize": "64", "timeSteps": "10", "timeStepping": "global"}
 configuration_pattern=re.compile("sweep/parameters.*\"check_time_steps\": \"(true|false)\".*\"check_derivatives\": \"(true|false)\".*\"check_admissibility\": \"(true|false)\".*\"check_lazily\": \"(true|false)\".*")
 
+#MAX REL ERROR 0.00000000000000000000e+00
+rel_error_pattern=re.compile("MAX REL ERROR ([0-9]*\.[0-9]*[e][-|+]?[0-9]*)")
+
 #errors = [-1e-7,-1e-6,-1e-5,-1e-4,-1e-3,-1e-2,-1e-1,-1e0,1e0,1e-1,1e-2,1e-3,1e-4,1e-5,1e-6,1e-7]
 errors = [-1e-7,-1e-6,-1e-5,-1e-4,-1e-3,-1e-2,-1e-1,-1e0,-1e1,-1e2,-1e3,-1e4,1e4,1e3,1e2,1e1,1e0,1e-1,1e-2,1e-3,1e-4,1e-5,1e-6,1e-7]
 
-throw_away_results_at_run = 100
+throw_away_results_at_run = 1000
 
 def parseResult(filenamePrefix, teams):
   res={
@@ -55,14 +58,14 @@ def parseResult(filenamePrefix, teams):
 
   #parse error file
   errFilename = filenamePrefix+".err"
-  #print(errFilename)
+  print(filenamePrefix)
   err_file = open(errFilename,"r")
   for line in err_file:
     m = re.match(error_overwrite_pattern, line)
     if m:
      res["old"] = float(m.group(2))
      res["new"] =float(m.group(3))
-     if m.group(4):
+     if m.group(4)!="" and m.group(4)!="inf" and  m.group(4)!="-inf" and m.group(4)!="-":
        rel_error = float(m.group(4))
      else:
        rel_error = 100000000000
@@ -90,6 +93,10 @@ def parseResult(filenamePrefix, teams):
   healed = 0
   outFilename = filenamePrefix+".out"
   outfile = open(outFilename,"r")
+
+  max_rel_error = 1e07
+  max_rel_error_found = False
+
   for line in outfile:
     m = re.match(stats_pattern, line)
     if m:
@@ -101,17 +108,28 @@ def parseResult(filenamePrefix, teams):
       res["check_der"] = (bool(distutils.util.strtobool(m.group(2))))
       res["check_adm"] = (bool(distutils.util.strtobool(m.group(3))))
       res["check_lazy"] = (bool(distutils.util.strtobool(m.group(4))))
+    m = re.match(rel_error_pattern, line)
+    if m: 
+      max_rel_error = float(m.group(1))
+      max_rel_error_found = True
   if(injected!=healed):
     print("ERROR: was not corrected appropriately:",outFilename)
     res["errors_corrected"] = 0
   elif (res["errors_corrected"]==1):
     print("Was corrected appropriately:",outFilename)
 
-  if(res!=None and abs(res["error"])<1e-7):
-    print("Problem: file ",errFilename, " does not contain valid output")
-    #os.remove(errFilename)
-    #os.remove(outFilename)
-    return None
+  if(max_rel_error_found and max_rel_error<1e-06 and res["errors_corrected"]!=1):
+    print("Excluding result as there was no significant error")
+    res = None
+
+  if(max_rel_error_found and max_rel_error>1e-06 and res["errors_corrected"]==0):
+    print("There is an error of ", max_rel_error, " in the data which was not corrected. Filename ",filenamePrefix)
+
+  #if(res!=None): # and abs(res["error"])<1e-7):
+  #  print("Problem: file ",errFilename, " does not contain valid output")
+  #  #os.remove(errFilename)
+  #  #os.remove(outFilename)
+  #  return None
 
   return res
 

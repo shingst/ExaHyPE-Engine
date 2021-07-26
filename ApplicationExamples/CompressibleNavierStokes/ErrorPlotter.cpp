@@ -24,8 +24,7 @@ ifstream input_file;
 double maxRelError;
 
 NavierStokes::ErrorPlotter::ErrorPlotter(NavierStokes::NavierStokesSolver_ADERDG& solver) {
-  // @TODO Please insert your code here.
-  input_file.open("ref.csv", std::ifstream::in);
+  input_file.open("/dss/dsshome1/02/di57zoh3/Codes/ExaHyPE-Engine/ApplicationExamples/CompressibleNavierStokes/ref.csv", std::ifstream::in);
 }
 
 NavierStokes::ErrorPlotter::~ErrorPlotter() {
@@ -94,7 +93,7 @@ void NavierStokes::ErrorPlotter::mapQuantities(
   for (int i=0; i<writtenUnknowns; i++){ 
     output<<separator<<Q[i];
   }
-  //output<<std::endl;
+  output<<std::endl;
 
   double t_out = 0;
   double Q_out[5];
@@ -125,7 +124,6 @@ void NavierStokes::ErrorPlotter::mapQuantities(
        maxRelError = std::max(relError, maxRelError);
     }
   }
-
 
   //assert(output.str()==line);
    

@@ -7,7 +7,7 @@
   },
   "computational_domain": {
     "dimension": 3,
-    "time_steps": 10,
+    "end_time": 0.0427705,
     "offset": [
       0.0,
       0.0,
@@ -55,8 +55,8 @@
     "injection_time" : 0.136866,
     "injection_rank" : 0,
     "injection_position" : [500.0, 500.0, 500.0],
-    "max_error_indicator_derivatives" : 0,
-    "max_error_indicator_timestepsizes" : 0.01,
+    "max_error_indicator_derivatives" : 10,
+    "max_error_indicator_timestepsizes" : 0.005,
     "confidence_check_time_step_sizes" : true,
     "confidence_check_derivatives" : true,
     "confidence_check_admissibility" : true,
