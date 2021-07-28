@@ -46,7 +46,7 @@ bool exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::run(bool isRunO
                       " time step size = "<<_errorIndicatorTimeStepSize<<
                       " admissibility = "<<_errorIndicatorAdmissibility);
 
-  bool timeout = (MPI_Wtime()-_startTimeStamp) > 10;
+  bool timeout = (MPI_Wtime()-_startTimeStamp) > 120;
 
   if(timeout) {
     _solverPatch.setHasCompletedLastStep(true);

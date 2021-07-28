@@ -257,7 +257,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
         case SDCCheckResult::NoCorruption:
           break;
         case SDCCheckResult::OutcomeIsMoreTrustworthy:
-          logError("handleLocalExecution", "I'm correcting with an outcome that is more trustworthy!"<<
+          logError("handleLocalExecution", std::setprecision(16)<<"I'm correcting with an outcome that is more trustworthy!"<<
                                 " My error indicators: derivative = "<<_errorIndicatorDerivative<<
                                 " time step size = "<<_errorIndicatorTimeStepSize<<
                                 " admissibility = "<<_errorIndicatorAdmissibility<<
@@ -278,7 +278,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
           break;
         case SDCCheckResult::MyOutcomeIsMoreOrEquallyTrustworthy:
           logError("handleLocalExecution", "There is disagreement between two outcomes but my result is more or equall trustworthy..");
-          logError("handleLocalExecution", "My error indicators: derivative = "<<_errorIndicatorDerivative<<
+          logError("handleLocalExecution", std::setprecision(16)<<"My error indicators: derivative = "<<_errorIndicatorDerivative<<
                                            " time step size = "<<_errorIndicatorTimeStepSize<<
                                            " admissibility = "<<_errorIndicatorAdmissibility<<
                                            " Other outcome's error indicators: derivative = "<<outcome->_metadata._errorIndicatorDerivative<<

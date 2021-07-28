@@ -36,7 +36,7 @@ rel_error_pattern=re.compile("MAX REL ERROR ([0-9]*\.[0-9]*[e][-|+]?[0-9]*)")
 #errors = [-1e-7,-1e-6,-1e-5,-1e-4,-1e-3,-1e-2,-1e-1,-1e0,1e0,1e-1,1e-2,1e-3,1e-4,1e-5,1e-6,1e-7]
 errors = [-1e-7,-1e-6,-1e-5,-1e-4,-1e-3,-1e-2,-1e-1,-1e0,-1e1,-1e2,-1e3,-1e4,1e4,1e3,1e2,1e1,1e0,1e-1,1e-2,1e-3,1e-4,1e-5,1e-6,1e-7]
 
-throw_away_results_at_run = 1000
+throw_away_results_at_run = 100
 
 def parseResult(filenamePrefix, teams):
   res={
@@ -72,6 +72,8 @@ def parseResult(filenamePrefix, teams):
      abs_error = float(m.group(5))
      error = abs_error
      res["error"] = math.copysign(1,error) * 10 **math.ceil(math.log10(abs(error)))
+     if(res["error"]==0):
+       print("ERROR: no error introduced!",filenamePrefix)
      res["max_err_ind_der"] = float(m.group(6))
      res["max_err_ind_ts"] = float(m.group(7))
     m = re.match(error_indicator_pattern, line)
@@ -112,25 +114,28 @@ def parseResult(filenamePrefix, teams):
     if m: 
       max_rel_error = float(m.group(1))
       max_rel_error_found = True
-  if(injected!=healed):
+  if(healed!=1):
     print("ERROR: was not corrected appropriately:",outFilename)
     res["errors_corrected"] = 0
   elif (res["errors_corrected"]==1):
     print("Was corrected appropriately:",outFilename)
 
-  if(max_rel_error_found and max_rel_error<1e-06 and res["errors_corrected"]!=1):
+  if(max_rel_error_found and max_rel_error<1e-06):
     print("Excluding result as there was no significant error")
     res = None
 
   if(max_rel_error_found and max_rel_error>1e-06 and res["errors_corrected"]==0):
     print("There is an error of ", max_rel_error, " in the data which was not corrected. Filename ",filenamePrefix)
 
-  #if(res!=None): # and abs(res["error"])<1e-7):
-  #  print("Problem: file ",errFilename, " does not contain valid output")
-  #  #os.remove(errFilename)
-  #  #os.remove(outFilename)
-  #  return None
-
+  if(res!=None and str(res["error"])=="0"):
+    print("Problem: file ",errFilename, " does not contain valid output")
+    #os.remove(errFilename)
+    #os.remove(outFilename)
+    return None
+  if(res!=None and str(res["error"])=="0"):
+    print ("ERROR in res: ",res)
+  if (res!=None and res["check_ts"] and res["max_err_ind_ts"]==0):
+    print(res)
   return res
 
 def accumResultToString(res):
@@ -184,10 +189,11 @@ def readAccumResults(resultsfile):
   f.close()
   return results
 
-def accumulateResults(results):
+def accumulateResults(results, accumulatePerAbsError):
   unique_abs_errors = []
-  [unique_abs_errors.append(res["error"]) for res in results if res["error"] not in unique_abs_errors]
-  unique_abs_errors.sort()
+  if accumulatePerAbsError:
+    [unique_abs_errors.append(res["error"]) for res in results if res["error"] not in unique_abs_errors]
+    unique_abs_errors.sort()
 
   #unique_error_indicators_der = []
   #[unique_error_indicators_der.append(res["max_err_ind_der"]) for res in results if res["max_err_ind_der"] not in unique_error_indicators_der]
@@ -204,7 +210,8 @@ def accumulateResults(results):
 
   accumResults = []
 
-  for config in unique_configs:
+  if accumulatePerAbsError:
+    for config in unique_configs:
       for error in unique_abs_errors:
         runs = 0
         detected = 0
@@ -212,6 +219,8 @@ def accumulateResults(results):
         run_numbers = []
 
         for res in results:
+          if(str(res["error"])=="0"):
+            print ("ERROR",res)
           if(res["error"]==error and res["max_err_ind_der"]==config[0] and res["max_err_ind_ts"]==config[1] and
             res["check_adm"]==config[2] and res["check_ts"]==config[3] and res["check_der"]==config[4] and
             res["check_lazy"]==config[5]):
@@ -241,6 +250,44 @@ def accumulateResults(results):
         if(res["runs"]>0):
           #print (res)
           accumResults.append(res)
+  else:
+     for config in unique_configs:
+        runs = 0
+        detected = 0
+        detected_corrected = 0
+        run_numbers = []
+
+        for res in results:
+          if(res["max_err_ind_der"]==config[0] and res["max_err_ind_ts"]==config[1] and
+            res["check_adm"]==config[2] and res["check_ts"]==config[3] and res["check_der"]==config[4] and
+            res["check_lazy"]==config[5]):
+            runs = runs+1
+            if(res["errors_detected"]>0):
+               detected=detected+1
+            if(res["errors_detected"]==1 and res["errors_corrected"]==1):
+               detected_corrected=detected_corrected+1
+
+            run_numbers += [int(res["run_number"])]
+
+            if(runs==throw_away_results_at_run):
+              break
+        run_numbers.sort()
+        res = {"check_adm" : config[2],
+               "check_ts" : config[3],
+               "check_der" : config[4],
+               "check_lazy" : config[5],
+               "max_err_ind_der" : config[0],
+               "max_err_ind_ts" : config[1],
+               "error" : -10000000000,
+               "runs" : runs,
+               "detected" : detected,
+               "corrected" : detected_corrected,
+    #           "run_numbers" : run_numbers
+        }
+        if(res["runs"]>0):
+          #print (res)
+          accumResults.append(res)
+
   return accumResults
 
 def computeAvgSensitivity(accumResults):
@@ -303,11 +350,11 @@ if __name__=="__main__":
       if(result_tuple!=None):
         results += [result_tuple]
 
-  results = accumulateResults(results)
+  results = accumulateResults(results,True)
   printAccumResults(results)
 
-  writeAccumResults(results, "output.txt")
-  results = readAccumResults("output.txt")
+  #writeAccumResults(results, "output.txt")
+  #results = readAccumResults("output.txt")
 
   accuracies = computeAvgSensitivity(results)
 
