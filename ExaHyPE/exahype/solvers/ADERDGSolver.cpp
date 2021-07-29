@@ -836,8 +836,7 @@ void exahype::solvers::ADERDGSolver::fusedTimeStepBody(
        (isSkeletonCell
 #if defined(Parallel)
         &&
-        exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()
-          < exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceChecks
+        !exahype::reactive::ReactiveContext::getInstance().getMakeSkeletonsShareable()
 #endif
        )
 #if defined(Parallel)
@@ -1119,8 +1118,7 @@ void exahype::solvers::ADERDGSolver::predictionAndVolumeIntegral(
       if (
           (isSkeletonCell
 #if defined(Parallel)
-          && exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()
-             < exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceChecks
+          && !exahype::reactive::ReactiveContext::getInstance().getMakeSkeletonsShareable()
 #endif
           )
 #if defined(Parallel)

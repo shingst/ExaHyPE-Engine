@@ -830,6 +830,9 @@ class exahype::parser::Parser {
    */
   bool getTryToSaveRedundantComputations() const;
 
+  //todo: docu!
+  bool getMakeSkeletonsShareable() const;
+
   /**
    * @return True if all migratable STPs should be checked for soft errors (i.e., if they are considered as potentially having an error).
    */

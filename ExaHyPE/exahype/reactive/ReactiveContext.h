@@ -71,6 +71,10 @@ class exahype::reactive::ReactiveContext {
 
     static void setSaveRedundantComputations(bool saveRedundantComputations);
     static bool getSaveRedundantComputations();
+
+    static void setMakeSkeletonsShareable(bool makeSkeletonsShareable);
+    static bool getMakeSkeletonsShareable();
+
   private:
     /**
      * The logging device.
@@ -126,6 +130,7 @@ class exahype::reactive::ReactiveContext {
     static ResilienceStrategy ChosenResilienceStrategy;
 
     static bool SaveRedundantComputations;
+    static bool MakeSkeletonsShareable;
   public:
 
     bool isEnabled();

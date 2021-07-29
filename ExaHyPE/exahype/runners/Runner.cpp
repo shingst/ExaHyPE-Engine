@@ -316,12 +316,15 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
 #endif
         if(selectedStrategy == exahype::parser::Parser::ResilienceStrategy::TaskSharing) {
           exahype::reactive::ReactiveContext::setResilienceStrategy(exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharing);
+          exahype::reactive::ReactiveContext::setMakeSkeletonsShareable(_parser.getMakeSkeletonsShareable());
         }
         if(selectedStrategy == exahype::parser::Parser::ResilienceStrategy::TaskSharingResilienceChecks) {
           exahype::reactive::ReactiveContext::setResilienceStrategy(exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceChecks);
+          exahype::reactive::ReactiveContext::setMakeSkeletonsShareable(true);
         }
         if(selectedStrategy == exahype::parser::Parser::ResilienceStrategy::TaskSharingResilienceCorrection) {
           exahype::reactive::ReactiveContext::setResilienceStrategy(exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceCorrection);
+          exahype::reactive::ReactiveContext::setMakeSkeletonsShareable(true);
         }
 
         if(selectedStrategy != exahype::parser::Parser::ResilienceStrategy::None) {
@@ -386,6 +389,9 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
   if (_parser.isValid()) {
     exahype::parser::Parser::OffloadingStrategy selectedStrategy = _parser.getOffloadingStrategy();
     if(selectedStrategy!=exahype::parser::Parser::OffloadingStrategy::None)  {
+      //just to be on the safe side: skeletons should not be shareable with task offloading, as they may be migrated (not supported!)
+      exahype::reactive::ReactiveContext::setMakeSkeletonsShareable(false);
+
       //always use offloading analyser
       //Todo: this will disable the Peano default performance analyser, need to re-add it somehow
       #if defined(PerformanceAnalysis)

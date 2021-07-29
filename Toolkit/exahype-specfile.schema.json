@@ -441,6 +441,11 @@
           "title": "Specifies whether ExaHyPE attempts to save redundant computations by reusing shared outcomes (requires task sharing). This can make undetected silent errors propagate to other teams.",
           "default" : true
         },
+        "make_skeletons_shareable": { 
+          "type" : "boolean",
+          "title" : "Specifies whether task sharing should also share the outcome of skeleton tasks (not to be used with task offloading!).",
+          "default" : false
+        },
         "generate_soft_errors" : { 
           "type" : "string",
           "title" : "Specifies whether and how soft-errors should be artifically generated.",

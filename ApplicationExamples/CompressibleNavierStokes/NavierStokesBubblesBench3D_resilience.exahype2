@@ -55,6 +55,7 @@
     "injection_time" : 0.136866,
     "injection_rank" : 0,
     "injection_position" : [500.0, 500.0, 500.0],
+    "make_skeletons_shareable" : true,
     "max_error_indicator_derivatives" : 0,
     "max_error_indicator_timestepsizes" : 0.0,
     "confidence_check_time_step_sizes" : true,

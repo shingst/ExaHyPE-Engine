@@ -756,8 +756,7 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
     if (
         (isSkeletonCell
 #if defined(Parallel)
-          && exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()
-             < exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceChecks
+          && !exahype::reactive::ReactiveContext::getInstance().getMakeSkeletonsShareable()
 #endif
         )
 #if defined(Parallel)

@@ -81,7 +81,8 @@ MPI_Comm exahype::reactive::ReactiveContext::_interTeamComms[MAX_THREADS];
 
 exahype::reactive::ReactiveContext::OffloadingStrategy exahype::reactive::ReactiveContext::ChosenOffloadingStrategy(exahype::reactive::ReactiveContext::OffloadingStrategy::None);
 exahype::reactive::ReactiveContext::ResilienceStrategy exahype::reactive::ReactiveContext::ChosenResilienceStrategy(exahype::reactive::ReactiveContext::ResilienceStrategy::None);
-bool exahype::reactive::ReactiveContext::SaveRedundantComputations;
+bool exahype::reactive::ReactiveContext::SaveRedundantComputations(false);
+bool exahype::reactive::ReactiveContext::MakeSkeletonsShareable(false);
 
 exahype::reactive::ReactiveContext::ReactiveContext(int threadId) :
     _threadId(threadId),
@@ -149,6 +150,14 @@ void exahype::reactive::ReactiveContext::setSaveRedundantComputations(bool saveR
 
 bool exahype::reactive::ReactiveContext::getSaveRedundantComputations() {
   return SaveRedundantComputations;
+}
+
+void exahype::reactive::ReactiveContext::setMakeSkeletonsShareable(bool makeSkeletonsShareable){
+  MakeSkeletonsShareable = makeSkeletonsShareable;
+}
+
+bool exahype::reactive::ReactiveContext::getMakeSkeletonsShareable() {
+  return MakeSkeletonsShareable;
 }
 
 bool exahype::reactive::ReactiveContext::isEnabled() {

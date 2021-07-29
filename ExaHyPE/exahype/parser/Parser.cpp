@@ -1469,16 +1469,12 @@ int exahype::parser::Parser::getErrorInjectionRank() const {
   return getIntFromPath("/resilience/injection_rank", 0, isOptional);
 }
 
-/*double exahype::parser::Parser::getMinDerivativeScalingFactor() const {
-  return getDoubleFromPath("/resilience/confidence_min_derivative", 100, isOptional);
-}
-
-double exahype::parser::Parser::getMaxDerivativeScalingFactor() const {
-  return getDoubleFromPath("/resilience/confidence_max_derivative", 1e06, isOptional);
-}*/
-
 bool exahype::parser::Parser::getTryToSaveRedundantComputations() const {
   return getBoolFromPath("/resilience/save_redundant_computations", false, isOptional);
+}
+
+bool exahype::parser::Parser::getMakeSkeletonsShareable() const {
+  return getBoolFromPath("/resilience/make_skeletons_shareable", false, isOptional);
 }
 
 bool exahype::parser::Parser::getCheckAllMigratableSTPs() const {
