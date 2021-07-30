@@ -325,7 +325,6 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                         process = subprocess.Popen([makeCommand], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
                         (output, makeErr) = process.communicate()
                         process.wait()
-                        print(output)
                         if "build of ExaHyPE successful" in str(output):
                             print(" [OK]")
                         else:
