@@ -103,7 +103,7 @@ bool exahype::reactive::ResilienceTools::isTrustworthy(double errorIndicatorDeri
         && !violatesDerivatives(errorIndicatorDerivatives);
   }
   else {
-    if(!CheckSTPAdmissibility && !CheckSTPAdmissibility && !CheckSTPDerivatives){
+    if(!CheckSTPAdmissibility && !CheckSTPTimeSteps && !CheckSTPDerivatives){
           return true;
     }
     bool dubious = true;
