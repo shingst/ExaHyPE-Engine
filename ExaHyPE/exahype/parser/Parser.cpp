@@ -1447,9 +1447,12 @@ double exahype::parser::Parser::getRelErrorForHardcodedInjection() const {
 }
 
 tarch::la::Vector<DIMENSIONS, double> exahype::parser::Parser::getErrorInjectionPosition() const {
-  std::string token;
+  //default is zero vector
   tarch::la::Vector<DIMENSIONS, double> result;
-  result = getDimVectorFromPath("/resilience/injection_position");
+  if(hasPath("/resilience/injection_position")) {
+    std::string token;
+    result = getDimVectorFromPath("/resilience/injection_position");
+  }
   return result;
 }
 
