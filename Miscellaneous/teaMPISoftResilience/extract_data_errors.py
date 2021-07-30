@@ -120,7 +120,7 @@ def parseResult(filenamePrefix, teams):
   elif (res["errors_corrected"]==1):
     print("Was corrected appropriately:",outFilename)
 
-  if(max_rel_error_found and max_rel_error<1e-06):
+  if(max_rel_error_found and max_rel_error<1e-06 and res["errors_corrected"]!=1):
     print("Excluding result as there was no significant error")
     res = None
 
