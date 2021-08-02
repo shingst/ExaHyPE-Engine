@@ -98,7 +98,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   {{ m.setupMatmul('lqi') | indent(2) }}{##}
 
   // 0. Allocate local variable
-  double new_lQi_slice[{{nDof*nVarPad}}] __attribute__((aligned(ALIGNMENT))); //for step 4 (computing new lQi value), doesn't update parameters
   const double inverseDt = 1.0 / dt;
   const double dtBydx = inverseDx * dt; //Assume dx[0] == dx[1] == dx[2]
 {% if useNCP or (useFlux and useCERKGuess)  or useViscousFlux %}
@@ -109,11 +108,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   for(int it=0;it<{{nDof*nDofPad}};it++) {
     dudx_T_by_dx[it] = inverseDx * dudx_T[it];
   }
-{% if useLibxsmm %}
-#if defined(USE_IPO) && ! defined(UNSAFE_IPO)
-  volatile double doNotOptimizeAway_dudx_by_dt = dudx_T_by_dx[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-#endif   
-{% endif %}
 {% endif %}
 {% if useFlux%}
 // Set rhs matmul coef matrix
@@ -124,11 +118,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       rhsCoeff[i*{{nDofPad}}+j] = -inverseDx * Kxi[i*{{nDofPad}}+j] * iweights1[i];
     }
   }
-{% if useLibxsmm %}
-#if defined(USE_IPO) && ! defined(UNSAFE_IPO)
-  volatile double doNotOptimizeAway_rhsCoeff = rhsCoeff[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-#endif   
-{% endif %}
 {% endif %}
   // used at the end of the picard loop, integrate coefficient for rhs
   double iK1_T_wt_dt[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
@@ -138,15 +127,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       iK1_T_wt_dt[i*{{nDofPad}}+j] = dt * iK1_T[i*{{nDofPad}}+j] * weights1[j];
     }
   }
-{% if useLibxsmm %}
-#if defined(USE_IPO) && ! defined(UNSAFE_IPO)
-  volatile double doNotOptimizeAway_iK1_T_wt_dt = iK1_T_wt_dt[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-#endif   
-{% endif %}
 
-
-//TODO JMG Inital guess template
-{% if not useCERKGuess or True %}{# fallback trivial guess #}
   // 1. Trivial initial guess
   std::memset(lQi, 0, sizeof(double)*{{nVarPad*(nDof**nDim)*nDof}});
 {% if nPar > 0 %}
@@ -162,67 +143,10 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   for (int t = 1; t < {{nDof}}; t++) {
     std::copy_n(lQi, {{(nDof**nDim)*nVarPad}}, lQi+{{idxLQi(t,0,0,0,0)}});
   }
-{% else %}{# useCERKGuess #}
-/*
-  //1. Optimized initial guess, Continuous Extension Runga-Kutta.
-  {
-{% if useFlux %}{# use lFi as temp array, lFi total size = nVarPad*(nDof**(nDim+1))*nDim #}
-    // use lFi as temporary storage for CERK's temporary arrays
-    double* const lF_guess = lFi; // lF[0-2][z?][y][x][n]
-    double* const K1 = lFi+{{nDim*(nDof**nDim)*nVarPad}}; // K1[z?][y][x][n]
-    double* const K2 = lFi+{{(nDim+1)*(nDof**nDim)*nVarPad}}; // K2[z?][y][x][n]
-    double* const lwh = lFi+{{(nDim+2)*(nDof**nDim)*nDataPad}}; // lwh[z?][y][x][n] (nData)
-    std::memset(lFi+{{nDim*(nDof**nDim)*nVarPad}}, 0, {{2*(nDof**nDim)*nVarPad}} * sizeof(double)); //K1 and K2 must be set to 0
-{% else %}{# no flux so use lSi instead, lSi total size = nVarPad*(nDof**(nDim+1)) #}
-    // use lSi as temporary storage for CERK's temporary arrays
-    double* const K1 = lSi; // K1[z?][y][x][n]
-    double* const K2 = lSi+{{(nDof**nDim)*nVarPad}}; // K2[z?][y][x][n]
-    double* const lwh = lSi+{{2*(nDof**nDim)*nDataPad}}; // lwh[z?][y][x][n] (nData)
-    std::memset(lSi, 0, {{2*(nDof**nDim)*nVarPad}} * sizeof(double)); //K1 and K2 must be set to 0
-{% endif %}
-    //Note: temporary storage will be overwritten by user functions later, no need to reset them to 0
-
-    // K1
-{% with inputLuh='luh', outputKi='K1', inputLuh_dataSize=nData %}
-{% filter indent(width=2, first=True) %}{% include 'subtemplates/RK_loop.template' %}{% endfilter %}
-{% endwith %}
-    
-    // K2
-    for (int zyx = 0; zyx < {{nDof**nDim}}; zyx++) {
-      for (int n = 0; n < {{nVar}}; n++) {
-        lwh[n+{{nData}}*zyx] = luh[n+{{nData}}*zyx] - dt * K1[n+{{nVarPad}}*zyx];
-      }
-{% if nPar != 0 %}
-      for (int n = {{nVar}}; n < {{nData}}; n++) { //copy parameters
-        lwh[n+{{nData}}*zyx] = luh[n+{{nData}}*zyx];
-      }
-{% endif %}
-    }
-{% with inputLuh='lwh', outputKi='K2', inputLuh_dataSize=nData %}
-{% filter indent(width=2, first=True) %}{% include 'subtemplates/RK_loop.template' %}{% endfilter %}
-{% endwith %}
-
-    // Set initial guess using CERK
-    for (int zyx = 0; zyx < {{nDof**nDim}}; zyx++) {
-      for (int t = 0; t < {{nDof}}; t++) {
-        for (int n = 0; n < {{nVar}}; n++) {
-          lQi[n+{{nDataPad}}*(zyx+{{nDof**nDim}}*t)] = luh[n+{{nData}}*zyx] - (dt * nodes[t] * K1[n+{{nVarPad}}*zyx]) - (0.5*dt*nodes[t]*nodes[t]* (K2[n+{{nVarPad}}*zyx]-K1[n+{{nVarPad}}*zyx]));
-        }
-{% if nPar != 0 %}
-        for (int n = {{nVar}}; n < {{nData}}; n++) { // copy parameters
-          lQi[n+{{nDataPad}}*(zyx+{{nDof**nDim}}*t)] = luh[n+{{nData}}*zyx];
-        }
-{% endif %}
-      }
-    } 
-    
-  } // end initial guess
-*/
-{% endif %}{# useCERKGuess #}
 
 
   // 2. Discrete Picard iterations
-  constexpr int MaxIterations = {% if useCERKGuess %}{% if nDof-3 <= 1 %}1; //cannot be lower than 1{% else %}{{nDof-3}}; //nDof-3{% endif %}{% else %}{{2*nDof+1}};{% endif %}
+  constexpr int MaxIterations = {{2*nDof+1}};
 
   int iter = 0;
   for (; iter < MaxIterations; iter++) {
@@ -365,11 +289,12 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
     // 3. Multiply with (K1)^(-1) to get the discrete time integral of the discrete Picard iteration. Rhs missing weight and dt included in coeff matrix
     double sq_res = 0.0;
     for (int zyx = 0; zyx < {{nDof**nDim}}; zyx++) {
-      {{ m.matmul('lqi', 'rhs', 'iK1_T_wt_dt', 'new_lQi_slice',idxRhs(0,0,0,zyx,0), '0', '0') | indent(6) }}{##}
+      // use lduh as scratch to store new slice
+      {{ m.matmul('lqi', 'rhs', 'iK1_T_wt_dt', 'lduh',idxRhs(0,0,0,zyx,0), '0', '0') | indent(6) }}{##}
       for(int t = 0; t < {{nDof}}; t++) {
-        for(int n=0; n<{{nVar}}; n++) { //only copy and change the variables, skip parameters
-          sq_res += (new_lQi_slice[n+{{nVarPad}}*t] - lQi[{{idxLQi(t,0,0,zyx,n)}}]) * (new_lQi_slice[n+{{nVarPad}}*t] - lQi[{{idxLQi(t,0,0,zyx,n)}}]);
-          lQi[{{idxLQi(t,0,0,zyx,n)}}] = new_lQi_slice[n+{{nVarPad}}*t];
+        for(int n = 0; n < {{nVar}}; n++) { //only copy and change the variables, skip padding
+          sq_res += (lduh[n+{{nVarPad}}*t] - lQi[{{idxLQi(t,0,0,zyx,n)}}]) * (lduh[n+{{nVarPad}}*t] - lQi[{{idxLQi(t,0,0,zyx,n)}}]);
+          lQi[{{idxLQi(t,0,0,zyx,n)}}] = lduh[n+{{nVarPad}}*t];
         }
       }
     }
@@ -767,11 +692,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       coeffVolume[i*{{nDofPad}}+j] = Kxi_T[i*{{nDofPad}}+j] * iweights1[i] * inverseDx;
     }
   }
-{% if useLibxsmm %}
-#if defined(USE_IPO) && ! defined(UNSAFE_IPO)
-  volatile double doNotOptimizeAway_coeffVolume = coeffVolume[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-#endif   
-{% endif %}
   
   // Assume equispaced mesh, dx[0] == dx[1] == dx[2]
   

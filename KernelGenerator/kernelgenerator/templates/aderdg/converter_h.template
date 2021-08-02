@@ -15,7 +15,6 @@
 #define EXAHYPE_{{guardNamespace}}_CONVERTER_H_
 #include <cstring>
 
-#include "kernels/KernelUtils.h"
 
 {% for namespaceName in codeNamespaceList %}
 namespace {{namespaceName}} {

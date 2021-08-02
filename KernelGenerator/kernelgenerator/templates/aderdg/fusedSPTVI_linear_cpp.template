@@ -64,7 +64,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   const double invDt = 1. / dt;
   const double invDx = 1. / dx;
 
-  std::memset(lQi, 0, {{(nDof+1)*(nDof**nDim)*nDataPad}}*sizeof(double));
+  std::memset(lQi, 0, {{nDof*(nDof**nDim)*nDataPad}}*sizeof(double));
   std::memset(lFi, 0, {{nDim*nDof*(nDof**nDim)*nVarPad}}*sizeof(double));
 {% if useSource %}
   std::memset(lSi  , 0, {{nDof*(nDof**nDim)*nVarPad}}*sizeof(double));
@@ -76,11 +76,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% endif %}
   double tmpArray[{{tmpArraySize}}] __attribute__((aligned(ALIGNMENT))); //used by flux (nDof*nVarPad) and ncp (nVarPad*nDim)
   double dudxT_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
-{% if useLibxsmm %}
-#if defined(USE_IPO) && ! defined(UNSAFE_IPO)
-  double doNotOptimizeAway = dudxT_by_dx[0]; // used to prevent the compiler from optimizing dudxT_by_dx away
-#endif
-{% endif %}
 {% if useFluxVect or useNCPVect or useMaterialParamVect%}
   // transposed F slice for flux_vect, or used by ncp_vect as gradQt
   {{m.vectPDEsArrays('Ft', nVar, True) | indent(2)}}{##}
@@ -465,26 +460,29 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
     }
 {% endif %}{# useSource #}
 
-    for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
-      #pragma omp simd aligned(lQi,lFi{{',lSi' if useSource else ''}}:ALIGNMENT)
-      for (int n = 0; n < {{nVarPad}}; n++) { // Skip parameters
-        lQi[((i+1)*{{nDof**nDim}}+xyz)*{{nDataPad}}+n] -= lFi[(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+n];
-        lQi[((i+1)*{{nDof**nDim}}+xyz)*{{nDataPad}}+n] -= lFi[(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+n+{{1*(nDof**nDim)*nDof*nVarPad}}];
+    if (i<{{nDof-1}}) {
+
+      for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
+        #pragma omp simd aligned(lQi,lFi{{',lSi' if useSource else ''}}:ALIGNMENT)
+        for (int n = 0; n < {{nVarPad}}; n++) { // Skip parameters
+          lQi[((i+1)*{{nDof**nDim}}+xyz)*{{nDataPad}}+n] -= lFi[(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+n];
+          lQi[((i+1)*{{nDof**nDim}}+xyz)*{{nDataPad}}+n] -= lFi[(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+n+{{1*(nDof**nDim)*nDof*nVarPad}}];
 {% if nDim==3 %}
-        lQi[((i+1)*{{nDof**nDim}}+xyz)*{{nDataPad}}+n] -= lFi[(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+n+{{2*(nDof**nDim)*nDof*nVarPad}}];
+          lQi[((i+1)*{{nDof**nDim}}+xyz)*{{nDataPad}}+n] -= lFi[(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+n+{{2*(nDof**nDim)*nDof*nVarPad}}];
 {% endif %}
 {% if useSource %}
-        lQi[((i+1)*{{nDof**nDim}}+xyz)*{{nDataPad}}+n] -= lSi[(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+n];
+          lQi[((i+1)*{{nDof**nDim}}+xyz)*{{nDataPad}}+n] -= lSi[(i*{{nDof**nDim}}+xyz)*{{nVarPad}}+n];
 {% endif %}
+        }
       }
-    }
 
 {% if nPar > 0 %}
-    // Copy parameters
-    for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
-      std::copy_n(lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}+{{nVar}}, {{nDataPad-nVar}}, lQi+((i+1)*{{nDof**nDim}}+xyz)*{{nDataPad}}+{{nVar}});
-    }
+      // Copy parameters
+      for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
+        std::copy_n(lQi+(i*{{nDof**nDim}}+xyz)*{{nDataPad}}+{{nVar}}, {{nDataPad-nVar}}, lQi+((i+1)*{{nDof**nDim}}+xyz)*{{nDataPad}}+{{nVar}});
+      }
 {% endif %}
+    }
 
   } //i
 

@@ -103,7 +103,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
 
   // 0. Allocate local variable
   constexpr int MaxIterations = {{2*nDof+1}};
-  double new_lQi_slice[{{nDof*nVar*nDofPad}}] __attribute__((aligned(ALIGNMENT))) = {0.}; //for step 4 (computing new lQi value), doesn't update parameters
   const double inverseDt = 1.0 / dt;
   const double dtBydx = inverseDx * dt; //Assume dx[0] == dx[1] == dx[2]
 {% if useNCP or (useFlux and useCERKGuess)  or useViscousFlux %}
@@ -116,12 +115,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
     dudx_T_by_dx[it] = inverseDx * dudx_T[it];
     dudx_by_dx[it]  = inverseDx * dudx[it];
   }
-{% if useLibxsmm %}
-#if defined(USE_IPO) && ! defined(UNSAFE_IPO)
-  volatile double doNotOptimizeAway_dudx_T_by_dt = dudx_T_by_dx[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-  volatile double doNotOptimizeAway_dudx_by_dt  = dudx_by_dx[0];  //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-#endif   
-{% endif %}
 {% endif %}
 {% if useFlux%}
 // Set rhs matmul coef matrix
@@ -139,12 +132,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       rhsCoeff_T[i*{{nDofPad}}+j] = -inverseDx * Kxi_T[i*{{nDofPad}}+j] * iweights1[j];
     }
   }
-{% if useLibxsmm %}
-#if defined(USE_IPO) && ! defined(UNSAFE_IPO)
-  volatile double doNotOptimizeAway_rhsCoeff   = rhsCoeff[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-  volatile double doNotOptimizeAway_rhsCoeff_T = rhsCoeff_T[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-#endif   
-{% endif %}
 {% endif %}
   // used at the end of the picard loop, integrate coefficient for rhs
   double iK1_T_wt_dt[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
@@ -154,11 +141,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       iK1_T_wt_dt[i*{{nDofPad}}+j] = dt * iK1_T[i*{{nDofPad}}+j] * weights1[j];
     }
   }
-{% if useLibxsmm %}
-#if defined(USE_IPO) && ! defined(UNSAFE_IPO)
-  volatile double doNotOptimizeAway_iK1_T_wt_dt = iK1_T_wt_dt[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-#endif   
-{% endif %}
 
 
 //TODO JMG Inital guess template
@@ -175,8 +157,8 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
         lQi[{{idxLQi(0,0,zy,n,x)}}] = luh[{{idxLuh(0,zy,x,n)}}];
       }
 {% if nPar > 0 %}
-      for (int n = {{nVar}}; n < {{nData}}; n++) {
-        lPi[{{idxLPi(0,zy,n,x)}}] = luh[{{idxLuh(0,zy,x,n)}}];
+      for (int n = 0; n < {{nPar}}; n++) {
+        lPi[{{idxLPi(0,zy,n,x)}}] = luh[{{idxLuh(0,zy,x,"n+"~nVar)}}];
       }
 {% endif %}
     }
@@ -258,12 +240,13 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       // Compute the "derivatives" (contributions of the stiffness matrix)
       // x direction (independent from the y and z derivatives), note transposed n and x
       for (int zy = 0; zy < {{nDof3D*nDof}}; zy++) {
-        {{ m.matmul('gradQ_x', 'dudx_by_dx', 'lQi', 'gradQ', '0', idxLQi(t,0,zy,0,0), idxGradQ(0,0,zy,0,0)) | indent(8) }}{##}
+        {{ m.matmul_prefetch('gradQ_x', 'dudx_by_dx', 'lQi', 'gradQ', '0', idxLQi(t,0,zy,0,0), idxGradQ(0,0,zy,0,0), '0', idxLQi(t,0,'(zy+1)',0,0), idxGradQ(0,0,'(zy+1)',0,0)) | indent(8) }}{##}
       }
       
       // y direction (independent from the x and z derivatives), fuse nx
       for (int z = 0; z < {{nDof3D}}; z++) {
-        {{ m.matmul('gradQ_y', 'lQi', 'dudx_T_by_dx', 'gradQ', idxLQi(t,z,0,0,0), '0', idxGradQ(1,z,0,0,0)) | indent(10) }}{##}
+        {#{{ m.matmul('gradQ_y', 'lQi', 'dudx_T_by_dx', 'gradQ', idxLQi(t,z,0,0,0), '0', idxGradQ(1,z,0,0,0)) | indent(8) }}{##}
+        {{ m.matmul_prefetch('gradQ_y', 'lQi', 'dudx_T_by_dx', 'gradQ', idxLQi(t,z,0,0,0), '0', idxGradQ(1,z,0,0,0), idxLQi(t,'(z+1)',0,0,0), '0', idxGradQ(1,'(z+1)',0,0,0)) | indent(8) }}{##}
       }
        
 {% if nDim==3 %}
@@ -315,6 +298,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       // y direction (independent from the x and z derivatives), fuse nx
       for (int z = 0; z < {{nDof3D}}; z++) {
         {{ m.matmul_prefetch('rhs_y', 'lFhi', 'rhsCoeff', 'rhs', idxLFhi(1,z,0,0,0), '0', idxRhs(t,z,0,0,0), idxLFhi(1,'(z+1)',0,0,0), '0', idxRhs(t,'(z+1)',0,0,0)) | indent(8) }}{##}
+        {#{{ m.matmul('rhs_y', 'lFhi', 'rhsCoeff', 'rhs', idxLFhi(1,z,0,0,0), '0', idxRhs(t,z,0,0,0)) | indent(8) }}{##}
       }
        
 {% if nDim==3 %}
@@ -381,11 +365,14 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
     // 3. Multiply with (K1)^(-1) to get the discrete time integral of the discrete Picard iteration. Rhs missing weight and dt included in coeff matrix
     double sq_res = 0.0;
     for (int zy = 0; zy < {{nDof3D*nDof}}; zy++) {
-      {{ m.matmul('lqi', 'rhs', 'iK1_T_wt_dt', 'new_lQi_slice',idxRhs(0,0,zy,0,0), '0', '0') | indent(6) }}{##}
+      // use lduh as scratch to store new slice
+      {{ m.matmul('lqi', 'rhs', 'iK1_T_wt_dt', 'lduh',idxRhs(0,0,zy,0,0), '0', '0') | indent(6) }}{##}
       for(int t = 0; t < {{nDof}}; t++) {
-        for(int nx=0; nx<{{nVar*nDofPad}}; nx++) { //only copy and change the variables, skip parameters
-          sq_res += (new_lQi_slice[nx+{{nVar*nDofPad}}*t] - lQi[{{idxLQi(t,0,zy,0,nx)}}]) * (new_lQi_slice[nx+{{nVar*nDofPad}}*t] - lQi[{{idxLQi(t,0,zy,0,nx)}}]);
-          lQi[{{idxLQi(t,0,zy,0,nx)}}] = new_lQi_slice[nx+{{nVar*nDofPad}}*t];
+        for(int n = 0 ; n < {{nVar}}; n++) {
+          for(int x = 0; x < {{nDof}}; x++) { // skip padding
+            sq_res += (lduh[(n*{{nDofPad}}+x)+{{nVar*nDofPad}}*t] - lQi[{{idxLQi(t,0,zy,n,x)}}]) * (lduh[(n*{{nDofPad}}+x)+{{nVar*nDofPad}}*t] - lQi[{{idxLQi(t,0,zy,n,x)}}]);
+            lQi[{{idxLQi(t,0,zy,n,x)}}] = lduh[(n*{{nDofPad}}+x)+{{nVar*nDofPad}}*t];
+          }
         }
       }
     }
@@ -431,12 +418,13 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
     // Compute the "derivatives" (contributions of the stiffness matrix)
     // x direction (independent from the y and z derivatives), note transposed n and x
     for (int zy = 0; zy < {{nDof3D*nDof}}; zy++) {
-      {{ m.matmul('gradQ_x', 'dudx_by_dx', 'lQi', 'gradQ', '0', idxLQi(t,0,zy,0,0), idxGradQ(0,0,zy,0,0)) | indent(6) }}{##}
+      {{ m.matmul_prefetch('gradQ_x', 'dudx_by_dx', 'lQi', 'gradQ', '0', idxLQi(t,0,zy,0,0), idxGradQ(0,0,zy,0,0), '0', idxLQi(t,0,'(zy+1)',0,0), idxGradQ(0,0,'(zy+1)',0,0)) | indent(6) }}{##}
     }
     
     // y direction (independent from the x and z derivatives), fuse nx
     for (int z = 0; z < {{nDof3D}}; z++) {
-      {{ m.matmul('gradQ_y', 'lQi', 'dudx_T_by_dx', 'gradQ', idxLQi(t,z,0,0,0), '0', idxGradQ(1,z,0,0,0)) | indent(6) }}{##}
+      {#{{ m.matmul('gradQ_y', 'lQi', 'dudx_T_by_dx', 'gradQ', idxLQi(t,z,0,0,0), '0', idxGradQ(1,z,0,0,0)) | indent(6) }}{##}
+      {{ m.matmul_prefetch('gradQ_y', 'lQi', 'dudx_T_by_dx', 'gradQ', idxLQi(t,z,0,0,0), '0', idxGradQ(1,z,0,0,0), idxLQi(t,'(z+1)',0,0,0), '0', idxGradQ(1,'(z+1)',0,0,0)) | indent(6) }}{##}
     }
      
 {% if nDim==3 %}
@@ -680,12 +668,13 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
   // Compute the "derivatives" (contributions of the stiffness matrix)      
   // x direction (independent from the y and z derivatives), note transposed n and x
   for (int zy = 0; zy < {{nDof3D*nDof}}; zy++) {
-    {{ m.matmul('gradQ_x', 'dudx_by_dx', 'lQhi', 'gradQ', '0', idxLQhi(0,zy,0,0), idxGradQ(0,0,zy,0,0)) | indent(4) }}{##}
+    {{ m.matmul_prefetch('gradQ_x', 'dudx_by_dx', 'lQhi', 'gradQ', '0', idxLQhi(0,zy,0,0), idxGradQ(0,0,zy,0,0), '0', idxLQhi(0,'(zy+1)',0,0), idxGradQ(0,0,'(zy+1)',0,0)) | indent(4) }}{##}
   }
   
   // y direction (independent from the x and z derivatives), fuse nx
   for (int z = 0; z < {{nDof3D}}; z++) {
-    {{ m.matmul('gradQ_y', 'lQhi', 'dudx_T_by_dx', 'gradQ', idxLQhi(z,0,0,0), '0', idxGradQ(1,z,0,0,0)) | indent(4) }}{##}
+    {#{{ m.matmul('gradQ_y', 'lQhi', 'dudx_T_by_dx', 'gradQ', idxLQhi(z,0,0,0), '0', idxGradQ(1,z,0,0,0)) | indent(4) }}{##}
+    {{ m.matmul_prefetch('gradQ_y', 'lQhi', 'dudx_T_by_dx', 'gradQ', idxLQhi(z,0,0,0), '0', idxGradQ(1,z,0,0,0), idxLQhi('(z+1)',0,0,0), '0', idxGradQ(1,'(z+1)',0,0,0)) | indent(4) }}{##}
   }
    
 {% if nDim==3 %}
@@ -818,11 +807,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       coeffVolume_T[i*{{nDofPad}}+j] = Kxi[i*{{nDofPad}}+j] * iweights1[j] * inverseDx;
     }
   }
-{% if useLibxsmm %}
-#if defined(USE_IPO) && ! defined(UNSAFE_IPO)
-  volatile double doNotOptimizeAway_coeffVolume_T = coeffVolume_T[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-#endif   
-{% endif %}
   
   // Assume equispaced mesh, dx[0] == dx[1] == dx[2]
   //x, note transposed n and x
@@ -837,15 +821,11 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral(
       coeffVolume[i*{{nDofPad}}+j] = Kxi_T[i*{{nDofPad}}+j] * iweights1[i] * inverseDx;
     }
   }
-{% if useLibxsmm %}
-#if defined(USE_IPO) && ! defined(UNSAFE_IPO)
-  volatile double doNotOptimizeAway_coeffVolume = coeffVolume[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-#endif   
-{% endif %}
 
   //y, fuse nx
   for (int z = 0; z < {{nDof3D}}; z++) {
     {{ m.matmul_prefetch('lduh_y', 'lFhi', 'coeffVolume', 'lQi', idxLFhi(1,z,0,0,0), '0', idxLQhi(z,0,0,0), idxLFhi(1,'(z+1)',0,0,0), '0', idxLQhi('(z+1)',0,0,0)) | indent(4) }}{##}
+    {#{{ m.matmul('lduh_y', 'lFhi', 'coeffVolume', 'lQi', idxLFhi(1,z,0,0,0), '0', idxLQhi(z,0,0,0)) | indent(4) }}{##}
   }
 
 {% if nDim == 3 %}

@@ -20,11 +20,13 @@
 namespace {{namespaceName}} {
 {% endfor %}
 
-{% for gemm,precision in gemmList %}
+{% for gemm,precision,prefetch in gemmList %}
 {% if precision == "DP" %}
 void {{gemm}}(const double* A, const double* B, double* C);
+{#void {{gemm}}(const double* A, const double* B, double* C{% if prefetch %}, const double* A2, const double* B2, const double* C2{% endif %});#}
 {% else %}
 void {{gemm}}(const float* A, const float* B, float* C);
+{#void {{gemm}}(const float* A, const float* B, float* C{% if prefetch %}, const double* A2, const double* B2, const double* C2{% endif %});#}
 {% endif %}
 {% endfor %}
 

@@ -82,7 +82,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   const double invDt = 1. / dt;
   const double invDx = 1. / dx;
 
-  std::memset(lQi, 0, {{(nDof+1)*(nDof**nDim)*nDataPad}}*sizeof(double));
+  std::memset(lQi, 0, {{nDof*(nDof**nDim)*nDataPad}}*sizeof(double));
   std::memset(lFi, 0, {{nDim*nDof*(nDof**nDim)*nVarPad}}*sizeof(double));
 {% if useSource %}
   std::memset(lSi  , 0, {{nDof*(nDof**nDim)*nVarPad}}*sizeof(double));
@@ -94,11 +94,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
 {% endif %}
   double tmpArray[{{tmpArraySize}}] __attribute__((aligned(ALIGNMENT))); //used by flux (nDof*nVarPad) and ncp (nVarPad*nDim)
   double dudxT_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
-{% if useLibxsmm %}
-#if defined(USE_IPO) && ! defined(UNSAFE_IPO)
-  double doNotOptimizeAway = dudxT_by_dx[0]; // used to prevent the compiler from optimizing dudxT_by_dx away
-#endif
-{% endif %}
 {% if useVectPDE %}
  // todo allocate tmp array
 {% endif %}
@@ -375,27 +370,30 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
       solver.{{solverName}}::algebraicSource(center[0], tStep, lQi+{{idxLQi(t,0,0,xyz,0)}}, lSi+{{idxLSi(t,0,0,xyz,0)}});
     }
 {% endif %}{# useSource #}
-
-    for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
-      #pragma omp simd aligned(lQi,lFi{{',lSi' if useSource else ''}}:ALIGNMENT)
-      for (int n = 0; n < {{nVarPad}}; n++) { // Skip parameters
-        lQi[{{idxLQi('t+1',0,0,xyz,n)}}] -= lFi[{{idxLFi(0,t,0,0,xyz,n)}}];
-        lQi[{{idxLQi('t+1',0,0,xyz,n)}}] -= lFi[{{idxLFi(1,t,0,0,xyz,n)}}];
+    
+    if (i<{{nDof-1}}) {
+    
+      for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
+        #pragma omp simd aligned(lQi,lFi{{',lSi' if useSource else ''}}:ALIGNMENT)
+        for (int n = 0; n < {{nVarPad}}; n++) { // Skip parameters
+          lQi[{{idxLQi('t+1',0,0,xyz,n)}}] -= lFi[{{idxLFi(0,t,0,0,xyz,n)}}];
+          lQi[{{idxLQi('t+1',0,0,xyz,n)}}] -= lFi[{{idxLFi(1,t,0,0,xyz,n)}}];
 {% if nDim==3 %}
-        lQi[{{idxLQi('t+1',0,0,xyz,n)}}] -= lFi[{{idxLFi(2,t,0,0,xyz,n)}}];
+          lQi[{{idxLQi('t+1',0,0,xyz,n)}}] -= lFi[{{idxLFi(2,t,0,0,xyz,n)}}];
 {% endif %}
 {% if useSource %}
-        lQi[{{idxLQi('t+1',0,0,xyz,n)}}] -= lSi[{{idxLSi(t,0,0,xyz,n)}}];
+          lQi[{{idxLQi('t+1',0,0,xyz,n)}}] -= lSi[{{idxLSi(t,0,0,xyz,n)}}];
 {% endif %}
+        }
       }
-    }
 
 {% if nPar > 0 %}
-    // Copy parameters
-    for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
-      std::copy_n(lQi+{{idxLQi(t,0,0,xyz,nVar)}}, {{nDataPad-nVar}}, {{idxLQi('t+1',0,0,xyz,nVar)}});
-    }
+      // Copy parameters
+      for (int xyz = 0; xyz < {{nDof**nDim}}; xyz++) {
+        std::copy_n(lQi+{{idxLQi(t,0,0,xyz,nVar)}}, {{nDataPad-nVar}}, {{idxLQi('t+1',0,0,xyz,nVar)}});
+      }
 {% endif %}
+    }
 
   } //t
 
