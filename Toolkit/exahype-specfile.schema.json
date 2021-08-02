@@ -506,6 +506,12 @@
             "scope" : "run-time",
             "default" : 0
         },
+	"max_injections" : {
+            "type" : "number",
+	    "title" : "Limits the maximum number of injected errors",
+	    "scope" : "run-time",
+	    "default" : 1
+        },
         "injection_frequency": { 
            "type" : "number",
            "title": "Controls after how many STPs the next error should be injected (migratable_stp_tasks_bitflip, migratable_stp_tasks_overwrite, migratable_stp_tasks_overwrite_random) or after how many time steps each error should be injected (migratable_stp_tasks_hardcoded).",
