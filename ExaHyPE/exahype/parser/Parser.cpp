@@ -1460,16 +1460,24 @@ double exahype::parser::Parser::getErrorInjectionTime() const {
   return getDoubleFromPath("/resilience/injection_time", -1, isOptional);
 }
 
+int exahype::parser::Parser::getErrorInjectionRank() const {
+  return getIntFromPath("/resilience/injection_rank", 0, isOptional);
+}
+
+int exahype::parser::Parser::getErrorInjectionFrequency() const {
+  return getIntFromPath("/resilience/injection_frequency", 0, isOptional);
+}
+
+int exahype::parser::Parser::getMaxNumInjections() const {
+  return getIntFromPath("/resilience/max_injections", 1, isOptional);
+}
+
 double exahype::parser::Parser::getMaximumErrorIndicatorForDerivatives() const {
   return getDoubleFromPath("/resilience/max_error_indicator_derivatives", 0.00, isOptional);
 }
 
 double exahype::parser::Parser::getMaximumErrorIndicatorForTimeStepSizes() const {
   return getDoubleFromPath("/resilience/max_error_indicator_timestepsizes", 0.00, isOptional);
-}
-
-int exahype::parser::Parser::getErrorInjectionRank() const {
-  return getIntFromPath("/resilience/injection_rank", 0, isOptional);
 }
 
 bool exahype::parser::Parser::getTryToSaveRedundantComputations() const {
@@ -1497,17 +1505,17 @@ bool exahype::parser::Parser::getCheckSTPsWithLowConfidence() const {
 }
 
 bool exahype::parser::Parser::getCheckSTPConfidenceAdmissibility() const {
-  return getBoolFromPath("/resilience/confidence_check_admissibility", false, isOptional);;
+  return getBoolFromPath("/resilience/check_admissibility", false, isOptional);;
 }
 
 bool exahype::parser::Parser::getCheckSTPConfidenceDerivatives() const {
-  return getBoolFromPath("/resilience/confidence_check_derivatives", false, isOptional);;
+  return getBoolFromPath("/resilience/check_derivatives", false, isOptional);;
 }
 
 bool exahype::parser::Parser::getCheckSTPConfidenceTimeStepSizes() const {
-  return getBoolFromPath("/resilience/confidence_check_time_step_sizes", false, isOptional);;
+  return getBoolFromPath("/resilience/check_time_step_sizes", false, isOptional);;
 }
 
 bool exahype::parser::Parser::getCheckSTPsLazily() const {
-  return getBoolFromPath("/resilience/confidence_check_lazily", false, isOptional);;
+  return getBoolFromPath("/resilience/check_lazily", false, isOptional);;
 }

@@ -39,8 +39,8 @@ bool exahype::reactive::ResilienceTools::CheckSTPAdmissibility;
 bool exahype::reactive::ResilienceTools::CheckSTPsLazily;
 
 exahype::reactive::ResilienceTools::ResilienceTools()
-  : _numInjections(1),
-   _cntSinceLastFlip(1),
+  : _maxNumInjections(1),
+   _cntSinceLastInjection(1),
    _numInjected(0),
    _infNormTol(0.0000001),
    _l1NormTol(0.0000001),
@@ -51,22 +51,10 @@ exahype::reactive::ResilienceTools::ResilienceTools()
    _relError(0),
    _maxErrorIndicatorDerivatives(0),
    _maxErrorIndicatorTimeStepSizes(0),
+   _injectionFrequency(-1),
    _injectionPosition(),
    _injectionTime(-1) {
 
-  if((_injectionRank>=tarch::parallel::Node::getInstance().getNumberOfNodes() || _injectionRank<0)
-     && GenerationStrategy!=SoftErrorGenerationStrategy::None) {
-    logWarning("ResilienceTools","The error injection rank is invalid, resetting injection rank to rank 0...");
-    _injectionRank = 0;
-  }
-   	//assertion(_injectionRank<=tarch::parallel::Node::getInstance().getNumberOfNodes());
-  //todo: this random shuffling is currently hardcoded
-  //we assume 729 cells
-  std::random_device r;
-  std::default_random_engine generator(r());
-  std::uniform_int_distribution<int> un_injection_int(0, 729);
-
-  _injectionInterval = 2000 + un_injection_int(r);
 }
 
 exahype::reactive::ResilienceTools::~ResilienceTools() {}
@@ -76,13 +64,13 @@ void exahype::reactive::ResilienceTools::configure(double absError,
                     double injectionTime,
                     tarch::la::Vector<DIMENSIONS, double> injectionPos,
                     int injectionRank,
+                    int injectionFrequency,
+                    int maxNumInjections,
                     double maxErrorIndicatorDerivatives,
                     double maxErrorIndicatorTimeStepSizes) {
   _absError = absError;
   _relError = relError;
-  _maxErrorIndicatorDerivatives = maxErrorIndicatorDerivatives;
-  _maxErrorIndicatorTimeStepSizes = maxErrorIndicatorTimeStepSizes;
-  
+
   _injectionTime = injectionTime;
   _injectionPosition = injectionPos;
 
@@ -94,6 +82,24 @@ void exahype::reactive::ResilienceTools::configure(double absError,
   else {
     _injectionRank = injectionRank;
   }
+
+  if(injectionFrequency>0) {
+    _injectionFrequency = injectionFrequency;
+  }
+  else {
+    //random STP for injection
+    std::random_device r;
+    std::default_random_engine generator(r());
+    std::uniform_int_distribution<int> un_injection_int(0, 729);
+
+    _injectionFrequency = 2000 + un_injection_int(r);
+  }
+
+  _maxNumInjections = maxNumInjections;
+
+  _maxErrorIndicatorDerivatives = maxErrorIndicatorDerivatives;
+  _maxErrorIndicatorTimeStepSizes = maxErrorIndicatorTimeStepSizes;
+
 }
 
 bool exahype::reactive::ResilienceTools::isTrustworthy(double errorIndicatorDerivatives, double errorIndicatorTimeStepSizes, double errorIndicatorAdmissibility) {
@@ -138,14 +144,16 @@ bool exahype::reactive::ResilienceTools::shouldInjectError(const double *center,
                    #if DIMENSIONS==3
                    && tarch::la::equals(center[2], _injectionPosition[2],0.001)
                    #endif
-                   && tarch::la::equals(t, _injectionTime,0.0001);
+                   && (tarch::la::equals(t, _injectionTime,0.0001)
+                   ||  _cntSinceLastInjection.fetch_add(1)%_injectionFrequency==0)
+                   && _numInjected<_maxNumInjections;
   }
   else if(GenerationStrategy==SoftErrorGenerationStrategy::Overwrite
       || GenerationStrategy==SoftErrorGenerationStrategy::Bitflips
       || GenerationStrategy==SoftErrorGenerationStrategy::OverwriteRandom){
 
-    if(_cntSinceLastFlip.fetch_add(1)%_injectionInterval==0
-        && _numInjected<_numInjections
+    if(_cntSinceLastInjection.fetch_add(1)%_injectionFrequency==0
+        && _numInjected<_maxNumInjections
         && tarch::parallel::Node::getInstance().getRank()==_injectionRank) {
       return true;
     }
@@ -188,11 +196,11 @@ void exahype::reactive::ResilienceTools::generateBitflipErrorInDouble(const doub
   ptr[idx_byte] = ptr[idx_byte] ^ mask;
   array[idx_array] = new_val;
 
-  logError("generateBitflipErrorInDoubleIfActive()","generating bitflip: pos = "<<idx_array<<" byte = "<<idx_byte<<" bit = "<<idx_bit<< " old ="<<old_val<<" new = "<<new_val);
-  _cntSinceLastFlip = 0;
+  logError("generateBitflipErrorInDouble()","generating bitflip: pos = "<<idx_array<<" byte = "<<idx_byte<<" bit = "<<idx_bit<< " old ="<<old_val<<" new = "<<new_val);
+  _cntSinceLastInjection = 0;
   _numInjected++;
   
-  logError("overwriteDoubleIfActive()", "overwrite double value, pos = "<<idx_array<<std::setprecision(30)
+  logError("generateBitflipErrorInDouble()", "overwrite double value, pos = "<<idx_array<<std::setprecision(30)
                                      <<" old ="<<old_val
                                      <<" new = "<<array[idx_array]
                                      <<" corresponds to relative error "<<(new_val-old_val)/(ref[idx_array]+old_val)
@@ -220,7 +228,7 @@ void exahype::reactive::ResilienceTools::overwriteRandomValueInArrayWithGivenErr
   //std::numeric_limits<double>::max();
   _numInjected++;
 
-  logError("overwriteDoubleIfActive()", "overwrite double value, pos = "<<idx_array<<std::setprecision(30)
+  logError("overwriteRandomValueInArrayWithGivenError()", "overwrite double value, pos = "<<idx_array<<std::setprecision(30)
                                      <<" old ="<<old_val
                                      <<" new = "<<array[idx_array]
                                      <<" corresponds to relative error "<<error/(ref[idx_array]+old_val)
@@ -246,14 +254,14 @@ void exahype::reactive::ResilienceTools::overwriteRandomValueInArrayWithRandomEr
   sign = (sign==0) ? -1 : 1;
   double error = sign * un_err(generator);
 
-  logError("overwriteDoubleIfActive()","generated sign = "<<sign<<" error "<<error);
+  logError("overwriteRandomValueInArrayWithRandomError()","generated sign = "<<sign<<" error "<<error);
 
   //overwrite with "random number"
   array[idx_array] += error;
   //std::numeric_limits<double>::max();
   _numInjected++;
 
-  logError("overwriteDoubleIfActive()", "overwrite double value, pos = "<<idx_array<<std::setprecision(30)
+  logError("overwriteRandomValueInArrayWithRandomError()", "overwrite double value, pos = "<<idx_array<<std::setprecision(30)
                                      <<" old ="<<old_val
                                      <<" new = "<<array[idx_array]
                                      <<" corresponds to relative error "<<error/(ref[idx_array]+old_val)
@@ -288,13 +296,13 @@ void exahype::reactive::ResilienceTools::overwriteHardcoded(const double *ref, d
   _numInjected++;
 
 #if DIMENSIONS==2
-  logError("overwriteHardcodedIfActive()", "overwrite double value, pos = "<<idx_array<<" old ="<<old_val<<" new = "<<array[idx_array]
+  logError("overwriteHardcoded()", "overwrite double value, pos = "<<idx_array<<" old ="<<old_val<<" new = "<<array[idx_array]
                                                                          <<" in center[0]="<<center[0]
                                                                          <<" center[1]="<<center[1]
                                                                          <<" t ="<<t
                                                                          <<" corresponds to relative error "<<error/(ref[idx_array]+old_val));
 #elif DIMENSIONS==3
-  logError("overwriteHardcodedIfActive()", "overwrite double value, pos = "<<idx_array<<" old ="<<old_val<<" new = "<<array[idx_array]
+  logError("overwriteHardcoded()", "overwrite double value, pos = "<<idx_array<<" old ="<<old_val<<" new = "<<array[idx_array]
                                                                          <<" in center[0]="<<center[0]<<" center[1]="<<center[1]
                                                                          <<" center[2]="<<center[2]
                                                                          <<" t ="<<t

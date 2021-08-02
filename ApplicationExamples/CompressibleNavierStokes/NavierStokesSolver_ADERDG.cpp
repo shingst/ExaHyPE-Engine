@@ -48,7 +48,6 @@ void NavierStokes::NavierStokesSolver_ADERDG::adjustPointSolution(const double* 
     scenario->initialValues(x, ns, vars);
     for (int i = 0; i < vars.variables(); ++i) {
       assertion2(std::isfinite(Q[i]), i, Q[i]);
-      assert(Q[0]>0);
     }
   }
 
@@ -339,7 +338,7 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
 }
 
 void NavierStokes::NavierStokesSolver_ADERDG::mapDiscreteMaximumPrincipleObservables(double* observables,const double* const Q) const {
-  /*if (ns.useAdvection) {
+  if (ns.useAdvection) {
     // TODO(Lukas) Remove this.
     std::fill_n(observables, NumberOfDMPObservables, 0.0);
     assert(NumberOfDMPObservables >= 2);
@@ -366,18 +365,7 @@ void NavierStokes::NavierStokesSolver_ADERDG::mapDiscreteMaximumPrincipleObserva
     observables[0] = vars.rho();
     observables[1] = pressure;
     observables[2] = potT;
-  }*/
-  const auto vars = ReadOnlyVariables{Q};
-    const auto pressure = ns.evaluatePressure(vars.E(),
-                                         vars.rho(),
-                                         vars.j(),
-                                         ns.getZ(Q),
-                                         ns.getHeight(Q));
-    const auto temperature = ns.evaluateTemperature(vars.rho(), pressure);
-    const auto potT = ns.evaluatePotentialTemperature(temperature, pressure);
-    observables[0] = vars.rho();
-    observables[1] = pressure;
-    observables[2] = potT;
+  }
 }
 
 

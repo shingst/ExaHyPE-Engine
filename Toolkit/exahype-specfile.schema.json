@@ -506,37 +506,31 @@
             "scope" : "run-time",
             "default" : 0
         },
-        "confidence_check_admissibility" : {
+        "injection_frequency": { 
+           "type" : "number",
+           "title": "Controls after how many STPs the next error should be injected (migratable_stp_tasks_bitflip, migratable_stp_tasks_overwrite, migratable_stp_tasks_overwrite_random) or after how many time steps each error should be injected (migratable_stp_tasks_hardcoded).",
+           "scope" : "run-time",
+           "default" : 0
+        },
+        "check_admissibility" : {
            "type" : "boolean", 
-           "title" : "Checks admissibility for confidence.",
+           "title" : "Use admissibility checks as error indicator.",
            "default" : false
          },
-         "confidence_check_derivatives" : {
+         "check_derivatives" : {
            "type" : "boolean", 
-           "title" : "Checks derivatives for confidence.",
+           "title" : "Use second derivatives changes as error indicator.",
            "default" : false
          },
-         "confidence_check_time_step_sizes" : {
+         "check_time_step_sizes" : {
            "type" : "boolean", 
-           "title" : "Checks time step sizes for confidence.",
+           "title" : "Use changes in admissible time step sizes as error indicator.",
            "default" : false
          },
-         "confidence_check_lazily" : {
+         "check_lazily" : {
            "type" : "boolean", 
-           "title" : "Check criteria lazily for improved performance.",
+           "title" : "Check error indicators lazily for improved performance (typically looses sensitivity).",
            "default" : false
-         },
-         "confidence_min_derivative" : {
-             "type" : "number",
-            "title" : "Specifies the minimum scaling of a second derivative that may be suspicious.",
-            "scope" : "run-time",
-            "default" : 100
-         },
-         "confidence_max_derivative" : {
-             "type" : "number",
-            "title" : "Specifies the maximum scaling of a second derivative above which an outcome attains confidence 0..",
-            "scope" : "run-time",
-            "default" : 1e06
          }
       }
     },

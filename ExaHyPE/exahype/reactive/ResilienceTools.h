@@ -44,23 +44,19 @@ class exahype::reactive::ResilienceTools {
    */
   static tarch::logging::Log _log;
 
-  /**
-   * Specifies how many STPs is a soft-error generated.
-   */
-  int _injectionInterval;
 
   /**
-   * Controls how many bitflips should be injected.
+   * Controls how many bitflips should be injected in an application run.
    */
-  int _numInjections;
+  int _maxNumInjections;
 
   /**
-   * Internal counter of executed STPs since last bitflip.
+   * Internal counter of executed STPs since last error injection.
    */
-  std::atomic<int> _cntSinceLastFlip;
+  std::atomic<int> _cntSinceLastInjection;
 
   /**
-   * Counts how many bits have already been flipped.
+   * Counts how many errors have already been injected in this run.
    */
   std::atomic<int> _numInjected;
 
@@ -76,6 +72,11 @@ class exahype::reactive::ResilienceTools {
   double _relError;
   double _maxErrorIndicatorDerivatives;
   double _maxErrorIndicatorTimeStepSizes;
+
+  /**
+   * Specifies after how many STPs a soft-error is injected.
+   */
+  int _injectionFrequency;
 
   tarch::la::Vector<DIMENSIONS, double> _injectionPosition;
   double _injectionTime;
@@ -108,9 +109,13 @@ class exahype::reactive::ResilienceTools {
   ResilienceTools();
   static ResilienceTools& getInstance();
 
-  void configure(double absError, double relError, double injectionTime,
+  void configure(double absError,
+                 double relError,
+                 double injectionTime,
                  tarch::la::Vector<DIMENSIONS, double> injectionPos,
                  int injectionRank,
+                 int injectionFrequency,
+                 int maxNumInjections,
                  double maxErrorIndicatorDerivatives,
                  double maxErrorIndicatorTimeStepSizes);
 

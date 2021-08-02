@@ -9,8 +9,6 @@
 
 #include "exahype/plotters/Plotter.h"
 
-
-
 namespace NavierStokes {
   class NavierStokesSolver_ADERDG;
   class ErrorPlotter;

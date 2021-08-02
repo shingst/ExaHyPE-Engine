@@ -334,6 +334,8 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
                                                                       _parser.getErrorInjectionTime(),
                                                                       _parser.getErrorInjectionPosition(),
                                                                       _parser.getErrorInjectionRank(),
+                                                                      _parser.getErrorInjectionFrequency(),
+                                                                      _parser.getMaxNumInjections(),
                                                                       _parser.getMaximumErrorIndicatorForDerivatives(),
                                                                       _parser.getMaximumErrorIndicatorForTimeStepSizes());
         }

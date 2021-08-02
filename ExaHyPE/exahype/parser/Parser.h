@@ -824,6 +824,10 @@ class exahype::parser::Parser {
   
   int getErrorInjectionRank() const;
 
+  int getErrorInjectionFrequency() const;
+
+  int getMaxNumInjections() const;
+
   /**
    * @return True if ExaHyPE should try so save redundant computations sharing task outcomes between team.
    * @note Makes only sense if task sharing is activated and more than one team is run.

@@ -24,6 +24,7 @@ ifstream input_file;
 double maxRelError;
 
 NavierStokes::ErrorPlotter::ErrorPlotter(NavierStokes::NavierStokesSolver_ADERDG& solver) {
+  //reference file (generated with the same plotter) to compare numerical solution against
   input_file.open("/dss/dsshome1/02/di57zoh3/Codes/ExaHyPE-Engine/ApplicationExamples/CompressibleNavierStokes/ref.csv", std::ifstream::in);
 }
 
@@ -32,7 +33,6 @@ NavierStokes::ErrorPlotter::~ErrorPlotter() {
 }
 
 void NavierStokes::ErrorPlotter::startPlotting( double time) {
-  // @TODO Please insert your code here.
   maxRelError = 0;
 }
 
@@ -64,6 +64,9 @@ void NavierStokes::ErrorPlotter::dissectOutputLine(std::string line, double *t, 
 
 }
 
+/**
+* Todo: this error checking may not be threadsafe, if ExaHyPE/Peano calls mapQuantities from multiple threads
+**/
 void NavierStokes::ErrorPlotter::mapQuantities(
     const tarch::la::Vector<DIMENSIONS, double>& offsetOfPatch,
     const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch,
@@ -84,39 +87,28 @@ void NavierStokes::ErrorPlotter::mapQuantities(
    
   dissectOutputLine(line, &t_in, x_in, Q_in);
 
+  // the conversion to str in the reference file must be applied to current state, too 
+  //(such that input data and current cell state data are rounded similarly)
   std::string separator = "\t";
-  std::stringstream output;
-  output<<std::setprecision(16)<<timeStamp;
+  std::stringstream stateString;
+  stateString<<std::setprecision(16)<<timeStamp;
   for(int d = 0;d<DIMENSIONS;d++) {
-    output<<separator<<x[d];
+    stateString<<separator<<x[d];
   }
   for (int i=0; i<writtenUnknowns; i++){ 
-    output<<separator<<Q[i];
+    stateString<<separator<<Q[i];
   }
-  output<<std::endl;
+  stateString<<std::endl;
 
   double t_out = 0;
   double Q_out[5];
   double x_out[DIMENSIONS];
 
-  dissectOutputLine(output.str(), &t_out, x_out, Q_out);
+  dissectOutputLine(stateString.str(), &t_out, x_out, Q_out);
 
-  //if(t_in!=t_out) {
-  //if(output.str()!=line) {
-  //  std::cout<<"output "<<output.str()<<std::endl;
-  //  std::cout<<"line "<<line<<std::endl;
-  //}
-  //}
-
-  //assert(t_in==t_out);
   for(int d = 0;d<DIMENSIONS;d++) {
     assert(x_out[d]==x_in[d]);
   } 
-  //if(output.str()!=line) {
-  //  std::cout<<"output "<<output.str()<<std::endl;
-  //  std::cout<<"line "<<line<<std::endl;
-  //}
-
   
   for (int i=0; i<writtenUnknowns; i++){ 
     if(Q_out[i]!=Q_in[i]) {
@@ -124,8 +116,6 @@ void NavierStokes::ErrorPlotter::mapQuantities(
        maxRelError = std::max(relError, maxRelError);
     }
   }
-
-  //assert(output.str()==line);
    
   for (int i=0; i<writtenUnknowns; i++){ 
     outputQuantities[i]=Q[i];

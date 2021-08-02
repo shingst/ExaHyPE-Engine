@@ -56,9 +56,9 @@
     "injection_time" : 0.136866,
     "injection_position" : [500.0, 500.0, 500.0],
     "max_error_indicator" : 1000,
-    "confidence_check_time_step_sizes" : false,
-    "confidence_check_derivatives" : true,
-    "confidence_check_admissibility" : false
+    "check_time_step_sizes" : false,
+    "check_derivatives" : true,
+    "check_admissibility" : false
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",
