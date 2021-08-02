@@ -1,0 +1,142 @@
+{
+  "project_name": "NavierStokes",
+  "paths": {
+    "peano_kernel_path": "./Peano",
+    "exahype_path": "./ExaHyPE",
+    "output_directory": "./ApplicationExamples/CompressibleNavierStokes"
+  },
+  "architecture": "{{architecture}}",
+  "computational_domain": {
+    "dimension": {{dimension}},
+    "time_steps" : {{timeSteps}},
+    "offset": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "width": [
+      1000.0,
+      1000.0,
+      1000.0
+    ]
+  },
+  "shared_memory": {
+      "cores": {{coresPerRank}},
+      "properties_file": "sharedmemory.properties",
+      "autotuning_strategy": "dummy",
+      "background_job_consumers": {{consumerTasks}},
+      "manual_pinning": false,
+      "thread_stack_size" : 12582912
+  },
+  "resilience" : {
+    "generate_soft_errors" : "{{soft_error_generation}}",
+    "check_mechanism" : "{{check_mechanism}}",
+    "save_redundant_computations" : {{save_redundancy}},
+    "task_sharing" : "{{task_sharing_mode}}",
+    "max_error_indicator_derivatives" : {{max_error_indicator_derivatives}},
+    "max_error_indicator_timestepsizes" : {{max_error_indicator_timestepsizes}},
+    "rel_error" : {{rel_error}},
+    "abs_error" : {{abs_error}},
+    "injection_rank" : {{injection_rank}},
+    "injection_frequency" : {{injection_frequency}},
+    "max_injections" : {{max_injections}},
+    "injection_position" : [500.0, 500.0, 500.0],
+    "check_time_step_sizes" : {{check_time_steps}},
+    "check_derivatives" : {{check_derivatives}},
+    "check_admissibility" : {{check_admissibility}},
+    "check_lazily" : {{check_lazily}}
+  },
+  "distributed_memory": {
+    "offloading_lb_strategy": "{{offloading}}",
+    "offloading_input_file" : "",
+    "offloading_progress" : "{{offloading_progress}}",
+    "offloading_CCP_temperature" : {{offloading_CCP_temperature}},
+    "offloading_diffusion_temperature" : {{offloading_diffusion_temperature}},
+    "offloading_CCP_frequency" : {{offloading_CCP_frequency}},
+    "offloading_CCP_steps" : {{offloading_CCP_steps}},
+    "offloading_update_temperature" : {{offloading_update_temperature}},
+    "offloading_increase_temp_threshold" : {{offloading_increase_temp_threshold}},
+    "timeout": 600,
+    "load_balancing_type": "static",
+    "buffer_size"            : {{bufferSize}},    
+    "load_balancing_strategy": "hotspot",
+    "node_pool_strategy": "fair",
+    "node_pool_timeout" : 2,
+    "ranks_per_node"         : {{ranksPerNode}}   
+  },
+  "optimisation": {
+    "fuse_algorithmic_steps"				: "all",
+    "fuse_algorithmic_steps_rerun_factor"		  	: 0.99,
+    "fuse_algorithmic_steps_diffusion_factor"		  	: 0.99,
+    "spawn_predictor_as_background_thread"           : true,    
+    "spawn_amr_background_threads"			: true,
+    "spawn_update_as_background_thread"                 : false,
+    "disable_vertex_exchange_in_time_steps"     : true,
+    "time_step_batch_factor"                : 1.0,
+    "disable_metadata_exchange_in_batched_time_steps"   : true,
+    "double_compression"                : 0.0,
+    "spawn_double_compression_as_background_thread" : false                       
+  },
+  "solvers": [
+    {
+      "type": "ADER-DG",
+      "name": "NavierStokesSolver_ADERDG",
+      "order": {{order}},
+      "maximum_mesh_size": {{maximumMeshSize}},
+      "maximum_mesh_depth": {{maximumMeshDepth}},
+      "time_stepping": "{{timeStepping}}",
+      "aderdg_kernel": {
+        "language": "C",
+        "nonlinear": true,
+        "terms": [
+          "flux",
+          "viscous_flux",
+          "source"
+        ],
+        "space_time_predictor": {
+          "fix_picard_iterations" : false
+        },
+        "optimised_terms": [],
+        "optimised_kernel_debugging": [],
+        "implementation": "{{kernels}}"
+      },
+      "point_sources": 0,
+      "variables": [
+        {
+          "name": "rho",
+          "multiplicity": 1
+        },
+        {
+          "name": "j",
+          "multiplicity": 3
+        },
+        {
+          "name": "E",
+          "multiplicity": 1
+        }
+      ],
+      "material_parameters" : [
+         {
+             "name" : "height",
+             "multiplicity": 1
+         },
+         {
+            "name" : "backgroundstate",
+            "multiplicity": 2
+         }
+      ],
+      "parameters" : {
+        "use-gravity": true,
+        "use-background-state": true,
+        "viscosity": 0.01,
+        "scenario": "cosine-bubble",
+        "use-amr": false,
+        "use-tv-amr": true,
+        "use-tv-volume-correction": false,
+        "amr-indicator": "potential-temperature",
+        "amr-factor-refine": 2.5,
+        "amr-factor-erase": -1.5
+      }
+    }
+  ]
+}
