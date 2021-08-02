@@ -333,7 +333,6 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
     return true;
   }
 
-
   return true;
 }
 

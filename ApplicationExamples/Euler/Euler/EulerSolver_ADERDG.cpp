@@ -27,7 +27,6 @@
 
 #include "peano/utils/Loop.h"
 
-
 #ifdef USE_TMPI
 #include "teaMPI.h"
 #endif
@@ -477,7 +476,6 @@ void Euler::EulerSolver_ADERDG::adjustPointSolution(const double* const x,const 
     referenceSolution(x,0.0,Q);
   }
 #if defined(USE_TMPI) && defined(GenerateSolutionError)
-  //if (tarch::la::equals(t,0.208,0.001)) 
   //  std::cerr<<" t "<<t<<" x[0] "<<x[0]<<" , x[1] "<<x[1]<<std::endl;
   if (tarch::la::equals(t,0.208,0.001) && tarch::la::equals(x[0],0.719,0.001) 
        && tarch::la::equals(x[1],0.9758,0.001))

@@ -28,46 +28,17 @@
 ##SBATCH --ntasks={{ranks}}
 #SBATCH --ntasks-per-node={{ranksPerNode}}
 ##SBATCH --cpus-per-task={{coresPerRank}}
-##SBATCH --ear=off
-
-#. /etc/profile
-#. /etc/profile.d/modules.sh
-#. $HOME/.bashrc
 
 ulimit -s unlimited
 
-
-
 module load slurm_setup
-#module load tempdir
-#module load mpi_diagnostics/default
-#module load slurm_setup
-#module load valgrind/3.15.0-impi
-#module load inspector_xe/2019
 module load ddt
 module load python/3.6_intel
-#module load gcc
-#module load tbb
-#module load itac
-#module unload mpi.intel
-#module load mpi.intel/2019
 
-#export I_MPI_FABRICS="shmofi"
 export LD_LIBRARY_PATH="/hppfs/work/pr48ma/di57zoh3/ExaHyPE_Replication/teaMPI/lib:$LD_LIBRARY_PATH"
 export LD_PRELOAD="/hppfs/work/pr48ma/di57zoh3/ExaHyPE_Replication/teaMPI/lib/libtmpi.so"
-#export LD_LIBRARY_PATH="/lrz/sys/intel/studio2019_u4/impi/2019.4.243/intel64/lib/debug:$LD_LIBRARY_PATH"
-
-#module load mpi.intel/2018
-
-#export ASAN_OPTIONS=halt_on_error=0
 
 export OMP_NUM_THREADS={{coresPerRank}}
-
-#export DEADLOCK-TIMEOUT=500
-#export CHECK-MAX-ERRORS=1
-#export	I_MPI_DEBUG=6
-#export		I_MPI_HYDRA_DEBUG=yes
-#export I_MPI_FABRICS=shm:dapl
 
 # run the application
 echo "Running ExaHyPE"
