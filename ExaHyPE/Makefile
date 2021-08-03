@@ -384,7 +384,7 @@ endif
 ifeq ($(call tolower,$(DISTRIBUTEDMEM)),mpi)
 	COMPILER_CFLAGS += -DParallel
 	COMPILER_CFLAGS += -DnoPackedRecords -DnoPersistentRegularSubtrees 
-	COMPILER_CFLAGS += -DIprobeEveryKIterations=0 -DUsePeanosRLEBoundaryExchanger -DUsePeanosRLEBoundaryExchangerForMetaData
+	COMPILER_CFLAGS += -DIprobeEveryKIterations=0 # -DUsePeanosRLEBoundaryExchanger -DUsePeanosRLEBoundaryExchangerForMetaData: slows down tasksharing performance 
 endif
 
 
