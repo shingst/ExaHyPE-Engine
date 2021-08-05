@@ -594,7 +594,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackOutcomeToO
     //logInfo("handleLocalExecution()", "postSendBack");
 #if defined(UseSmartMPI)
 #if defined(SmartMPINB)
-  MPI_Request sendBackRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME];
+  MPI_Request sendBackRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME_OFFLOADING];
   _solver.mpiIsendMigratablePredictionJobOutcomeOffload(
        _lduh,
        _lQhbnd,
@@ -606,7 +606,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackOutcomeToO
        sendBackRequests);
   exahype::reactive::ReactiveContext::getInstance().submitRequests(
        sendBackRequests,
-       NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME,
+       NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME_OFFLOADING,
        _tag,
        _originRank,
        sendBackHandler,
@@ -625,7 +625,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackOutcomeToO
   MigratablePredictionJob::sendBackHandler(&_solver, _tag, _originRank);
 #endif
 #else
-  MPI_Request sendBackRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME];
+  MPI_Request sendBackRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME_OFFLOADING];
   _solver.mpiIsendMigratablePredictionJobOutcome(
        _lduh,
        _lQhbnd,
@@ -637,7 +637,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackOutcomeToO
        sendBackRequests);
   exahype::reactive::RequestManager::getInstance().submitRequests(
        sendBackRequests,
-       NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME,
+       NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME_OFFLOADING,
        _tag,
        _originRank,
        sendBackHandler,

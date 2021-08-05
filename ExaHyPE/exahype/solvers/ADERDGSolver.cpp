@@ -4407,7 +4407,7 @@ void exahype::solvers::ADERDGSolver::receiveBackMigratableJob(int tag, int src, 
 
 #if defined(UseSmartMPI)
 #if defined(SmartMPINB)
-  MPI_Request recvRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME];
+  MPI_Request recvRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME_OFFLOADING];
 
   solver->mpiIrecvMigratablePredictionJobOutcomeOffload(
       &(data->_lduh[0]),
@@ -4422,7 +4422,7 @@ void exahype::solvers::ADERDGSolver::receiveBackMigratableJob(int tag, int src, 
 
   exahype::reactive::RequestManager::getInstance().submitRequests(
       recvRequests,
-      NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME, //5,
+      NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME_OFFLOADING, //5,
       tag,
       src,
       exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler,
@@ -4442,7 +4442,7 @@ void exahype::solvers::ADERDGSolver::receiveBackMigratableJob(int tag, int src, 
   MigratablePredictionJob::receiveBackHandler(solver, tag, src);
 #endif /*SmartMPINB*/
 #else
-  MPI_Request recvRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME];
+  MPI_Request recvRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME_OFFLOADING];
   solver->mpiIrecvMigratablePredictionJobOutcome(
       &(data->_lduh[0]),
       &(data->_lQhbnd[0]),
@@ -4456,7 +4456,7 @@ void exahype::solvers::ADERDGSolver::receiveBackMigratableJob(int tag, int src, 
 
   exahype::reactive::RequestManager::getInstance().submitRequests(
       recvRequests,
-      NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME, //5,
+      NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME_OFFLOADING, //5,
       tag,
       src,
       exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler,
@@ -4514,7 +4514,7 @@ void exahype::solvers::ADERDGSolver::receiveBackMigratableJob(int tag, int src, 
 
 #if defined(UseSmartMPI)
 #if defined(SmartMPINB)
-  MPI_Request recvRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME];
+  MPI_Request recvRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME_OFFLOADING];
 
   solver->mpiIrecvMigratablePredictionJobOutcomeOffload(
       lduh,
@@ -4529,7 +4529,7 @@ void exahype::solvers::ADERDGSolver::receiveBackMigratableJob(int tag, int src, 
 
   exahype::reactive::RequestManager::getInstance().submitRequests(
       recvRequests,
-      NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME, //5,
+      NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME_OFFLOADING, //5,
       tag,
       src,
       exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler,
@@ -4549,7 +4549,7 @@ void exahype::solvers::ADERDGSolver::receiveBackMigratableJob(int tag, int src, 
   MigratablePredictionJob::receiveBackHandler(solver, tag, src);
 #endif
 #else
-  MPI_Request recvRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME];
+  MPI_Request recvRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME_OFFLOADING];
   solver->mpiIrecvMigratablePredictionJobOutcome(
     lduh,
     lQhbnd,
@@ -4561,7 +4561,7 @@ void exahype::solvers::ADERDGSolver::receiveBackMigratableJob(int tag, int src, 
     recvRequests);
   exahype::reactive::RequestManager::getInstance().submitRequests(
       recvRequests,
-      NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME,
+      NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME_OFFLOADING,
       tag,
       src,
       exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler,
@@ -4614,7 +4614,7 @@ void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahyp
   exahype::reactive::ResilienceStatistics::getInstance().notifyReceivedTask();
 #else
    //logInfo("progressOffloading", "allocated stps receive"<<AllocatedSTPsReceive);
-  MPI_Request receiveReplicaRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME+1];
+  MPI_Request receiveReplicaRequests[NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME+1]; //+1 for metadata
 
   solver->mpiIrecvMigratablePredictionJobOutcomeSolution(
          data->_luh.data(),

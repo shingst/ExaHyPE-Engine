@@ -7,7 +7,7 @@
   },
   "computational_domain": {
     "dimension": 3,
-    "end_time": 0.0427705,
+    "time_steps": 10,
     "offset": [
       0.0,
       0.0,
@@ -21,8 +21,8 @@
   },
   "architecture": "noarch",
   "shared_memory": {
-    "cores": 12,
-    "background_job_consumers": 11,
+    "cores": 2,
+    "background_job_consumers": 1,
     "autotuning_strategy": "dummy"
   },
  "distributed_memory": {
@@ -50,25 +50,25 @@
     "generate_soft_errors" : "no",
     "check_mechanism" : "check_stps_with_low_confidence",
     "save_redundant_computations" : true,
-    "task_sharing" : "task_sharing",
+    "task_sharing" : "no",
     "make_skeletons_shareable" : true,
     "abs_error" : 1.0,
     "injection_rank" : 0,
     "injection_position" : [500.0, 500.0, 500.0],
     "make_skeletons_shareable" : true,
     "max_error_indicator_derivatives" : 0,
-    "max_error_indicator_timestepsizes" : 0.0,
+    "max_error_indicator_timestepsizes" : 0.04,
     "check_time_step_sizes" : true,
     "check_derivatives" : true,
     "check_admissibility" : true,
-    "check_lazily" : false
+    "check_lazily" : true
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",
     "fuse_algorithmic_steps_diffusion_factor": 0.99,
     "fuse_algorithmic_steps_rerun_factor": 0.99,
     "spawn_predictor_as_background_thread": true,
-    "spawn_amr_background_threads": true,
+    "spawn_amr_background_threads": false,
     "spawn_update_as_background_thread": false,
     "time_step_batch_factor": 1.0,
     "disable_metadata_exchange_in_batched_time_steps": true,
@@ -80,8 +80,8 @@
     {
       "type": "ADER-DG",
       "name": "NavierStokesSolver_ADERDG",
-      "order": 5,
-      "maximum_mesh_size": 40,
+      "order": 7,
+      "maximum_mesh_size": 30,
       "maximum_mesh_depth": 0,
       "time_stepping": "global",
       "halo_cells": 0,

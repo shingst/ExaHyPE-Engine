@@ -7,7 +7,7 @@
   },
   "computational_domain": {
     "dimension": 3,
-    "end_time": 400,
+    "end_time": 800,
     "offset": [
       0.0,
       0.0,
@@ -27,7 +27,7 @@
     "autotuning_strategy": "dummy"
   },
  "distributed_memory": {
-    "offloading_lb_strategy": "none",
+    "offloading_lb_strategy": "aggressiveHybrid",
     "offloading_input_file" : "",
     "offloading_progress" : "none",
     "offloading_CCP_temperature" : 0,
@@ -36,7 +36,6 @@
     "offloading_CCP_steps" : 0,
     "offloading_update_temperature" : true,
     "offloading_increase_temp_threshold" : 1.0,
-    "task_sharing" : "no",
     "ranks_per_node": 1,
     "load_balancing_strategy": "hotspot",
     "load_balancing_type": "static",
@@ -66,8 +65,8 @@
       "type": "ADER-DG",
       "name": "NavierStokesSolver_ADERDG",
       "order": 3,
-      "maximum_mesh_size": 40,
-      "maximum_mesh_depth": 0,
+      "maximum_mesh_size": 400,
+      "maximum_mesh_depth": 2,
       "time_stepping": "global",
       "halo_cells": 0,
       "aderdg_kernel": {
@@ -110,12 +109,18 @@
           "multiplicity": 2
         }
       ],
+      "global_observables": [
+        {
+          "name": "gobs",
+          "multiplicity": 3
+      }
+      ],
       "parameters": {
         "use-gravity": true,
         "use-background-state": true,
         "viscosity": 0.01,
         "scenario": "cosine-bubble",
-        "use-amr": false,
+        "use-amr": true,
         "use-tv-amr": true,
         "use-tv-volume-correction": false,
         "amr-indicator": "potential-temperature",
@@ -127,16 +132,16 @@
           "type": "vtu::Cartesian::vertices::ascii",
           "name": "Plotter",
           "time": 0.0,
-          "repeat": 10.0,
-          "output": "/hppfs/work/pr83no/di57zoh3/NS_output_nooffloading_o3_new/solution_cartesian",
+          "repeat": 100.0,
+          "output": "/hppfs/work/pr83no/di57zoh3/NS_output_offloading_o3_new_amr/solution_cartesian",
           "variables": 6
         },
         {
           "type": "vtu::Legendre::vertices::ascii",
           "name": "Plotter",
           "time": 0.0,
-          "repeat": 10.0,
-          "output": "/hppfs/work/pr83no/di57zoh3/NS_output_nooffloading_o3_new/solution",
+          "repeat": 100.0,
+          "output": "/hppfs/work/pr83no/di57zoh3/NS_output_offloading_o3_new_amr/solution",
           "variables": 6
         }
       ]

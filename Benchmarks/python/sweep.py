@@ -321,7 +321,7 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                         # call make
                         make_threads=general["make_threads"]
                         makeCommand="make -j"+make_threads
-                        print(makeCommand,end="",flush=True)
+                        print(makeCommand)
                         process = subprocess.Popen([makeCommand], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
                         (output, makeErr) = process.communicate()
                         process.wait()
