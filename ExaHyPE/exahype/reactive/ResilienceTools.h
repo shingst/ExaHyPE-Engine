@@ -68,8 +68,8 @@ class exahype::reactive::ResilienceTools {
 
   int _injectionRank;
 
-  double _absError;
-  double _relError;
+  double _injectedErrorVal;
+
   double _maxErrorIndicatorDerivatives;
   double _maxErrorIndicatorTimeStepSizes;
 
@@ -109,8 +109,7 @@ class exahype::reactive::ResilienceTools {
   ResilienceTools();
   static ResilienceTools& getInstance();
 
-  void configure(double absError,
-                 double relError,
+  void configure(double injectedError,
                  double injectionTime,
                  tarch::la::Vector<DIMENSIONS, double> injectionPos,
                  int injectionRank,

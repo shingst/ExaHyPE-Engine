@@ -36,7 +36,6 @@
 
 #include "exahype/reactive/AggressiveHybridDistributor.h"
 
-
 #include <sstream>
 
 bool exahype::mappings::MeshRefinement::DynamicLoadBalancing    = false;
@@ -149,7 +148,7 @@ void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverSt
       exit(-1);
   }
   
-  // for mesh refinement, disable the task distributor, todo: still needed?
+  // for mesh refinement, disable the reactive task distributor
   if(exahype::reactive::ReactiveContext::getInstance().getOffloadingStrategy()
      == exahype::reactive::ReactiveContext::OffloadingStrategy::AggressiveHybrid)
     exahype::reactive::AggressiveHybridDistributor::getInstance().disable();  

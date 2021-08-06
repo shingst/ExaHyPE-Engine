@@ -458,15 +458,9 @@
           "enum" : ["none", "check_limited_after_update", "check_all_stps", "check_stps_with_low_confidence", "check_corrupted_stps"],
           "default" : "none"
          },
-         "abs_error" : {
+         "error" : {
             "type" : "number",
-            "title" : "Absolute error that should be introduced with error injection (only overwrite) into the STP update.",
-            "scope" : "run-time",
-            "default" : 0
-         },
-         "rel_error" : {
-            "type" : "number",
-            "title" : "Relative error that should be introduced into the solution with error injection (only overwrite) by STP update.",
+            "title" : "Error of fixed value that should be introduced with error injection (only overwrite) into the STP update: a coefficient in the Lagrange polynomial is modified by this error.",
             "scope" : "run-time",
             "default" : 0
          },

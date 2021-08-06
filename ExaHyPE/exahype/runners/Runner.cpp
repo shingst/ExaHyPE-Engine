@@ -329,8 +329,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
 
         if(selectedStrategy != exahype::parser::Parser::ResilienceStrategy::None) {
           exahype::reactive::ReactiveContext::setSaveRedundantComputations(_parser.getTryToSaveRedundantComputations());
-          exahype::reactive::ResilienceTools::getInstance().configure(_parser.getAbsErrorForHardcodedInjection(),
-                                                                      _parser.getRelErrorForHardcodedInjection(),
+          exahype::reactive::ResilienceTools::getInstance().configure(_parser.getFixedErrorForInjection(),
                                                                       _parser.getErrorInjectionTime(),
                                                                       _parser.getErrorInjectionPosition(),
                                                                       _parser.getErrorInjectionRank(),

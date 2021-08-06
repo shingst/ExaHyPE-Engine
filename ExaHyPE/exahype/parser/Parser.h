@@ -810,9 +810,7 @@ class exahype::parser::Parser {
    */
   bool compareSoftErrorGenerationStrategy(const std::string& strategy) const;
 
-  double getAbsErrorForHardcodedInjection() const;
-
-  double getRelErrorForHardcodedInjection() const;
+  double getFixedErrorForInjection() const;
 
   double getMaximumErrorIndicatorForDerivatives() const;
   

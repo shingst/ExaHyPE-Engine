@@ -107,7 +107,7 @@ void exahype::mappings::Prediction::beginIteration(
   #endif
 
   #ifdef Parallel
-  MPI_Pcontrol(1);  //Todo(Philipp): this seems to cause some trouble with Vtune, which deadlocks. You may want to deactivate this.
+  MPI_Pcontrol(1);  //Todo(Philipp): this seems to cause some trouble with Vtune, which deadlocks on some machines. You may want to deactivate this.
   #endif
 
   if (
