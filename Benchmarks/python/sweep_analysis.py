@@ -205,7 +205,7 @@ def parseResultFile(filePath):
                 stats["unrefined_inner_cells_max"]  = max( stats["unrefined_inner_cells_max"], unrefinedInnerCells )
                 stats["unrefined_inner_cells_avg"] += unrefinedInnerCells
             # 154.448      [i22r02c02s11],rank:0 info         exahype::runners::Runner::startNewTimeStep(...)         step 20	t_min          =0.0015145
-            m = re.search("step(\s*)([0-9]+)(\s*)t_min",line)
+            m = re.search("step(\s*)([0-9]+)(\s*).*t_min",line)
             if m:
                 isPassedGridSetup = True
                 stats["run_time_steps"] = max(stats["run_time_steps"],float(m.group(2)))
@@ -519,6 +519,7 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
                 normalization_factor = float(line[runTimeStepsColumn])
                 if (fused and adapter in fusedAdapters and int(line[iterationsColumn])/2!=normalization_factor):
                   print("WARNING: number of time steps run does not match iterations count. Using adapted normalization_factor. You should only see this warning if you have used -DKSkipFirstTimeSteps!")
+                  print("Old normalization factor:", normalization_factor)
                   normalization_factor = float(line[iterationsColumn])/2  # assumes two iterations per time step!
                   print("WARNING: Assuming you tracked "+str(normalization_factor)+" fused time steps")
                 summedCPUTimes[-1]            += float(line[cpuTimeColumn]) / normalization_factor

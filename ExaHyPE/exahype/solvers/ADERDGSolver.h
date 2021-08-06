@@ -44,8 +44,10 @@
 
 #if defined(OffloadingGradQhbnd)
 #define NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME 5
+#define NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME_OFFLOADING 4
 #else
 #define NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME 4
+#define NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME_OFFLOADING 3
 #endif
 
 //some routines need to make progress to poll the unexpected message queue, determines how many loop iterations are done
