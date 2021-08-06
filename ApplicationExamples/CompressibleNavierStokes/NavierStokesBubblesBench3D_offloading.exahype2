@@ -132,7 +132,7 @@
           "type": "vtu::Cartesian::vertices::ascii",
           "name": "Plotter",
           "time": 0.0,
-          "repeat": 100.0,
+          "repeat": 100,
           "output": "/hppfs/work/pr83no/di57zoh3/NS_output_offloading_o3_new_amr/solution_cartesian",
           "variables": 6
         },
@@ -140,7 +140,7 @@
           "type": "vtu::Legendre::vertices::ascii",
           "name": "Plotter",
           "time": 0.0,
-          "repeat": 100.0,
+          "repeat": 100,
           "output": "/hppfs/work/pr83no/di57zoh3/NS_output_offloading_o3_new_amr/solution",
           "variables": 6
         }

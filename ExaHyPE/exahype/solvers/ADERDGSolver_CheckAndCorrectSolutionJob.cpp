@@ -51,9 +51,9 @@ bool exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::run(bool isRunO
   if(timeout) {
     _solverPatch.setHasCompletedLastStep(true);
     reschedule = false;
-    exahype::reactive::ResilienceStatistics::getInstance().notifyDetectedError();
+    //exahype::reactive::ResilienceStatistics::getInstance().notifyDetectedError();
+    logWarning("runCheck","Waiting too long for an outcome (progression problem?). Won't check anymore.");
     return reschedule;
-    //logError("runCheck","I've been waiting too long for an outcome. Won't check anymore.");
   }
 
   //assert(exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().otherTeamHasTimeStepData(_predictorTimeStamp, _predictorTimeStepSize));
