@@ -304,7 +304,7 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                         process = subprocess.Popen([toolkitCommand], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
                         (output, toolkitErr) = process.communicate()
                         process.wait()
-                        
+                        print(output)
                         if toolkitErr: # do not use -v as info output is piped into stderr
                             print(" [FAILED]")
                             print("toolkit output=\n"+output.decode('UTF-8'),file=sys.stderr)
@@ -321,7 +321,7 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                         # call make
                         make_threads=general["make_threads"]
                         makeCommand="make -j"+make_threads
-                        print(makeCommand)
+                        print(makeCommand,end="",flush=True)
                         process = subprocess.Popen([makeCommand], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
                         (output, makeErr) = process.communicate()
                         process.wait()

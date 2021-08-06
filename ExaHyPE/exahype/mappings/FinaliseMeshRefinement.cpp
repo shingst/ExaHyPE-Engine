@@ -227,6 +227,7 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
   NumberOfEnclaveCells = _numberOfEnclaveCells;
   NumberOfSkeletonCells = _numberOfSkeletonCells;
 #if defined(SharedTBB) && defined(Parallel)
+  //pass info on numbers of cells to performance monitor
   exahype::reactive::PerformanceMonitor::getInstance().setTasksPerTimestep(_numberOfEnclaveCells + _numberOfSkeletonCells);
 
   //start offloading manager background job
@@ -243,6 +244,7 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
 
   if(exahype::reactive::ReactiveContext::getInstance().getOffloadingStrategy()
    ==  exahype::reactive::ReactiveContext::OffloadingStrategy::AggressiveHybrid) {
+    // 
     exahype::reactive::AggressiveHybridDistributor::getInstance().resetTasksToOffload();
     exahype::reactive::OffloadingAnalyser::getInstance().resetMeasurements(); //makes sure that grid refinement does not influence diffusion
     exahype::reactive::AggressiveHybridDistributor::getInstance().enable();

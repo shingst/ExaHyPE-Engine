@@ -106,14 +106,6 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   float dudx_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
   float negativeDudxT_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
   float negativeDudx_by_dx[{{nDof*nDofPad}}] __attribute__((aligned(ALIGNMENT)));
-{% if useLibxsmm %}
-#if defined(USE_IPO) && ! defined(UNSAFE_IPO)
-  volatile float doNotOptimizeAway1 = dudxT_by_dx[0]; // used to prevent the compiler from optimizing dudxT_by_dx away
-  volatile float doNotOptimizeAway2 = dudx_by_dx[0]; // used to prevent the compiler from optimizing dudx_by_dx away
-  volatile float doNotOptimizeAway3 = negativeDudxT_by_dx[0]; // used to prevent the compiler from optimizing dudxT_by_dx away
-  volatile float doNotOptimizeAway4 = negativeDudx_by_dx[0]; // used to prevent the compiler from optimizing dudx_by_dx away
-#endif
-{% endif %}
 
   // buffer for output
   {{ m.allocateArray("lduh_SP",   (nDof**nDim)*nVarPad,        precision="float", forceStack=True) }}{##}
@@ -227,7 +219,7 @@ int {{codeNamespace}}::fusedSpaceTimePredictorVolumeIntegral{{nameSuffix}}(
   float dtavFac = 0.5 * dt_SP;
   // 3. Cauchy-Kovalewski procedure
   // use lFhi as tmpArray
-  for (int t = 0; t < {{nDof}}; t++) {  // time DOFs
+  for (int t = 0; t < {{nDof-1}}; t++) {  // time DOFs, compute order derivatives
     //put source here
     
     // reset lQi_next

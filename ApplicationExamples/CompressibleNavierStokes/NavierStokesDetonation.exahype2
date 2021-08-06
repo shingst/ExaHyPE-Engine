@@ -130,7 +130,7 @@
       },
       "plotters": [
         {
-          "type": "vtu::Cartesian::cells::limited::ascii",
+          "type": "vtu::Cartesian::vertices::limited::ascii",
           "name": "Plotter_Limiting",
           "time": 0.0,
           "repeat": 0.05,

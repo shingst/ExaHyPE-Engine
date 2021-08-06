@@ -4,7 +4,7 @@
   :platform: Unix, Windows, Mac
   :synopsis: Generate benchmark suites for ExaHyPE.
    
-.. moduleauthor:: Dominic Etienne Charrier <dominic.e.charrier@durham.ac.uk>, 
+.. moduleauthor:: Dominic Etienne Charrier <dominic.e.charrier@durham.ac.uk>, Philipp Samfass (samfass@in.tum.de)
 
 :synopsis: Generate benchmark suites for ExaHyPE.
 """

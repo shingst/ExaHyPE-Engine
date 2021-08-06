@@ -27,21 +27,16 @@
 # SHAREDMEM           None              OMP, TBB, CPP14            Shared-memory parallelisation
 # DISTRIBUTEDMEM      None              MPI                        Distributed-memory parallelisation
 # BOUNDARYCONDITIONS  None              Periodic                   Type of boundary conditions
-# USE_IPO             Off               On, Unsafe                 IPO during compilation (intel only)
+# USE_IPO             Off               On                         IPO during compilation (intel only)
 # *********************************************************************************************
 
 SHELL = bash
 tolower = $(shell echo $(1) | tr '[:upper:]' '[:lower:]')
 
-#USE_IPO unsafe => on with unsafe flag enabled
+
 USE_IPO_INTERN=$(call tolower,$(USE_IPO))
 ifeq ($(USE_IPO),)
 	USE_IPO_INTERN=off
-else ifeq ($(call tolower,$(USE_IPO)),unsafe)
-	USE_IPO_INTERN=on
-	IPO_UNSAFE_FLAG=-DUNSAFE_IPO
-else
-	IPO_UNSAFE_FLAG=
 endif
 
 
@@ -493,19 +488,19 @@ ifneq (,$(findstring Yes, $(MIXEDLANG) ))
 endif
 ifneq ($(call tolower,$(USE_IPO_INTERN)),on)
 	find -H $(EXAHYPE_PATH)'/exahype/solvers' -name '*.cpp' | tr '\n' ' ' >> cfiles.mk
-	find -L $(PROJECT_PATH) -name '*.cpp' | tr '\n' ' ' >> cfiles.mk
-	#find  $(PROJECT_PATH) -name '*.cpp' | tr '\n' ' ' >> cfiles.mk
+	find -L $(PROJECT_PATH) -name '*.cpp' -and ! -name 'gemmsCPP.cpp' | tr '\n' ' ' >> cfiles.mk
 endif
+# explicitely find compile the gemms without IPO in all case
+	find -L $(PROJECT_PATH) -name 'gemmsCPP.cpp' | tr '\n' ' ' >> cfiles.mk
 
 
-#	ipo for kernel + application + exahype/solvers
+#	ipo for kernel + application + exahype/solvers. Explicitely exclude gemms to avoid IPO bug due to assembly code!
 cipofiles.mk:
 	touch cipofiles.mk
 	echo -n CIPOSOURCES= > cipofiles.mk
 ifeq ($(call tolower,$(USE_IPO_INTERN)),on)
 	find -H $(EXAHYPE_PATH)'/exahype/solvers' -name '*.cpp' | tr '\n' ' ' >> cipofiles.mk
-	find -L $(PROJECT_PATH) -name '*.cpp' | tr '\n' ' ' >> cipofiles.mk
-	#find  $(PROJECT_PATH) -name '*.cpp' | tr '\n' ' ' >> cipofiles.mk
+	find -L $(PROJECT_PATH) -name '*.cpp' -and ! -name 'gemmsCPP.cpp' | tr '\n' ' ' >> cipofiles.mk
 endif
 
 ffiles.mk:
@@ -513,21 +508,17 @@ ffiles.mk:
 #	First, write down a flag whether Fortran files have been found.
 #	If no Fortran files are in the project, we don't include the fortran library in the linking in the end.
 #	This works with inverted logic: "find -exec false" will return true if nothing is found.
-#	if find  $(PROJECT_PATH) -name '*.f90' -exec false {} \+; then echo 'FOUND_ANY_FORTRAN=No' > ffiles.mk; else echo 'FOUND_ANY_FORTRAN=Yes' > ffiles.mk; fi
 	if find -L $(PROJECT_PATH) -name '*.f90' -exec false {} \+; then echo 'FOUND_ANY_FORTRAN=No' > ffiles.mk; else echo 'FOUND_ANY_FORTRAN=Yes' > ffiles.mk; fi
 #	ALLOW mixed language Fortran applications! C.f. SRHD, MHD, Z4
 #	To resolve the dependency problem  (compile fortran modules first), we detect them heuristically.
 	echo -n FMODULESOURCES= >> ffiles.mk
 	find -L $(PROJECT_PATH) -name '*.f90' -exec grep -il "end module" {} \+ | tr '\n'  ' ' >> ffiles.mk
-#	find  $(PROJECT_PATH) -name '*.f90' -exec grep -il "end module" {} \+ | tr '\n'  ' ' >> ffiles.mk
 	echo >> ffiles.mk
 	echo -n FSOURCES= >> ffiles.mk
 	find -L $(PROJECT_PATH) -name '*.f90' -exec grep -iL "end module" {} \+ | tr '\n' ' ' >> ffiles.mk
-#	find  $(PROJECT_PATH) -name '*.f90' -exec grep -iL "end module" {} \+ | tr '\n' ' ' >> ffiles.mk
 #	 only for the projects which use the old fortran kernels:
 ifneq (,$(findstring Yes, $(MIXEDLANG) ))
 	find -L $(EXAHYPE_PATH) -name '*.f90' | tr '\n' ' ' >> ffiles.mk
-#	find  $(EXAHYPE_PATH) -name '*.f90' | tr '\n' ' ' >> ffiles.mk
 endif
 
 mergeipoobjects:  $(CIPOOBJECTS)
@@ -632,7 +623,7 @@ $(COBJECTS): %.o : %.cpp
 	$(CC) $(COMPILER_CFLAGS) $(NO_IPO_FLAG) $(SYSTEM_CFLAGS) $(PROJECT_CFLAGS) -I$(PEANO_KERNEL_PEANO_PATH)/../ -I$(PEANO_KERNEL_TARCH_PATH)/../ -I$(PROJECT_PATH) -I$(PEANO_TOOLBOX_MPI_BLANCING_PATH)/../ -I$(PEANO_TOOLBOX_SHAREDMEMORY_ORACLES_PATH)/../ -I$(PEANO_TOOLBOX_MULTISCALELINKEDCELL_PATH)/../ -I$(EXAHYPE_PATH) -I$(PROJECT_PATH)  -c $< -o $@
 
 $(CIPOOBJECTS): %.o : %.cpp
-	$(CC) $(COMPILER_CFLAGS) $(IPO_FLAG) -DUSE_IPO $(IPO_UNSAFE_FLAG) $(SYSTEM_CFLAGS) $(PROJECT_CFLAGS) -I$(PEANO_KERNEL_PEANO_PATH)/../ -I$(PEANO_KERNEL_TARCH_PATH)/../  -I$(PROJECT_PATH) -I$(PEANO_TOOLBOX_MPI_BLANCING_PATH)/../ -I$(PEANO_TOOLBOX_SHAREDMEMORY_ORACLES_PATH)/../ -I$(PEANO_TOOLBOX_MULTISCALELINKEDCELL_PATH)/../ -I$(EXAHYPE_PATH) -I$(PROJECT_PATH)  -c $< -o $@
+	$(CC) $(COMPILER_CFLAGS) $(IPO_FLAG) -DUSE_IPO $(SYSTEM_CFLAGS) $(PROJECT_CFLAGS) -I$(PEANO_KERNEL_PEANO_PATH)/../ -I$(PEANO_KERNEL_TARCH_PATH)/../  -I$(PROJECT_PATH) -I$(PEANO_TOOLBOX_MPI_BLANCING_PATH)/../ -I$(PEANO_TOOLBOX_SHAREDMEMORY_ORACLES_PATH)/../ -I$(PEANO_TOOLBOX_MULTISCALELINKEDCELL_PATH)/../ -I$(EXAHYPE_PATH) -I$(PROJECT_PATH)  -c $< -o $@
 
 $(FOBJECTS): %.o : %.f90
 	$(FC) $(FCOMPILER_CFLAGS) $(PROJECT_CFLAGS) -I$(PROJECT_PATH) -c $< -o $@

@@ -47,8 +47,7 @@ exahype::reactive::ResilienceTools::ResilienceTools()
    _l2NormTol(0.0000001),
    _corruptionDetected(false),
    _injectionRank(0),
-   _absError(0),
-   _relError(0),
+   _injectedErrorVal(0),
    _maxErrorIndicatorDerivatives(0),
    _maxErrorIndicatorTimeStepSizes(0),
    _injectionFrequency(-1),
@@ -59,8 +58,8 @@ exahype::reactive::ResilienceTools::ResilienceTools()
 
 exahype::reactive::ResilienceTools::~ResilienceTools() {}
 
-void exahype::reactive::ResilienceTools::configure(double absError,
-                    double relError,
+void exahype::reactive::ResilienceTools::configure(
+                    double injectedErrorVal,
                     double injectionTime,
                     tarch::la::Vector<DIMENSIONS, double> injectionPos,
                     int injectionRank,
@@ -68,8 +67,7 @@ void exahype::reactive::ResilienceTools::configure(double absError,
                     int maxNumInjections,
                     double maxErrorIndicatorDerivatives,
                     double maxErrorIndicatorTimeStepSizes) {
-  _absError = absError;
-  _relError = relError;
+  _injectedErrorVal = injectedErrorVal;
 
   _injectionTime = injectionTime;
   _injectionPosition = injectionPos;
@@ -219,9 +217,7 @@ void exahype::reactive::ResilienceTools::overwriteRandomValueInArrayWithGivenErr
   //int idx_array = 0;
 
   double old_val = array[idx_array];
-  double error = (std::abs(_relError)>0) ? (_relError*(ref[idx_array]+old_val)) //introduces relative error into new ref (e.g., new solution), if added to ref
-                                : _absError;           //only introduces absolute error
-
+  double error =  _injectedErrorVal;      //introduces error of fixed value
 
   //overwrite with "random number"
   array[idx_array] += error;
@@ -273,25 +269,11 @@ void exahype::reactive::ResilienceTools::overwriteRandomValueInArrayWithRandomEr
 
 void exahype::reactive::ResilienceTools::overwriteHardcoded(const double *ref, double *center, int dim, double t, double *array, size_t size) {
 
-  //logError("overwriteHardcodedIfActive", "center[0]="<<center[0]<<", center[1]="<<center[1]<<", center[2]="<<center[2]<<" t "<<t);
-
-  //without limiter
-  /*bool isActive = tarch::la::equals(center[0],3.00,0.001)
-                 && tarch::la::equals(center[1],3.00,0.001)
-                 && tarch::la::equals(t, 0.0197496,0.0001);*/
-
-  //with limiter
-  //exahype::reactive::ResilienceTools::overwriteHardcodedIfActive center[0]=1.8, center[1]=0.12 t 0.138786
-
   int idx_array = 0;
 
   double old_val = array[idx_array];
-  double error = (std::abs(_relError)>0) ? (_relError*(ref[idx_array]+old_val)) //introduces relative error into new ref (e.g., new solution), if added to ref
-                                : _absError;           //only introduces absolute error
+  double error =  _injectedErrorVal;           //only introduces error of fixed value
 
-  //array[idx_array] = 0.1; //ADER-DG only
-  //array[idx_array] = 20; //limiter SWE immediately
-  //array[idx_array] = 2; //limiter SWE later
   array[idx_array] += error;
   _numInjected++;
 

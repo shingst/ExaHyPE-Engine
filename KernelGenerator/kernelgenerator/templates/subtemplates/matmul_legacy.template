@@ -72,13 +72,7 @@
 for (int it = 0; it < {{conf.LDB*conf.K}}; it++) {
   {{B}}[it] = {{trueAlpha}} * {{trueB}}[it];
 }
-#if defined(USE_IPO) && !defined(UNSAFE_IPO)
-volatile {{fpFormat}} doNotOptimizeAway_{{B}} = {{B}}[0]; //used to prevent the compiler from optimizing temp array away. Needs to be volatile
-#endif
 {% endif %}{# useTrueB #}
-#ifdef USE_IPO
-#pragma forceinline
-#endif
 {{conf.baseroutinename}}({{A}}{% if A_shift != '0' %}+{{A_shift}}{% endif %}, {{B}}{% if B_shift != '0' %}+{{B_shift}}{% endif %}, {{C}}{% if C_shift != '0' %}+{{C_shift}}{% endif %});
 {# 
 

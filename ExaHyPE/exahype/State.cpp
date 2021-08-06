@@ -21,11 +21,11 @@
 #include "exahype/plotters/Plotter.h"
 
 #include "exahype/mappings/MeshRefinement.h"
+#include "exahype/reactive/OffloadingAnalyser.h"
 
 #include "tarch/parallel/NodePool.h"
 
 #include <limits>
-#include "exahype/reactive/OffloadingAnalyser.h"
 
 tarch::logging::Log exahype::State::_log("exahype::State");
 

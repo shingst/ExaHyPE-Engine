@@ -11,6 +11,12 @@
  * For the full license text, see LICENSE.txt
  **/ #}
 
+
+// THIS FILE MUST NEVER BE INCLUDED IN THE IPO
+// assembly code in the IPO causes optimization bugs (e.g. array wrongfully marked as dead code as only read in the assembly code)
+
+
+
 #include "{{pathToOptKernel}}/gemmsCPP.h"
 #include "{{pathToOptKernel}}/Kernels.h" //for the libxsmm flop counter
 

@@ -65,6 +65,9 @@ _mm_free({{name}});
 #include <xmmintrin.h>
 {% endif %}
 {% if useEigen %}
+// defines for Eigen
+#define EIGEN_DONT_PARALLELIZE
+#define EIGEN_NO_DEBUG
 // include Eigen for matmul
 #include <{{pathToOptKernel}}/Eigen/Dense>
 {% endif %}

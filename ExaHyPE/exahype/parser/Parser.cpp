@@ -1355,6 +1355,7 @@ exahype::parser::Parser::TBBInvadeStrategy exahype::parser::Parser::getTBBInvade
   return TBBInvadeStrategy::Undef;
 }
 
+// Settings for reactive extensions
 exahype::parser::Parser::OffloadingStrategy exahype::parser::Parser::getOffloadingStrategy() const{
   if (stringFromPathEquals("/distributed_memory/offloading_lb_strategy", "none", true, "aggressiveHybrid")) {
     return OffloadingStrategy::AggressiveHybrid;
@@ -1438,12 +1439,8 @@ bool exahype::parser::Parser::compareSoftErrorGenerationStrategy(const std::stri
   return getStringFromPath("/resilience/generate_soft_errors", "no", isOptional).compare(strategy)==0;
 }
 
-double exahype::parser::Parser::getAbsErrorForHardcodedInjection() const {
-  return getDoubleFromPath("/resilience/abs_error", 0, isOptional);
-}
-
-double exahype::parser::Parser::getRelErrorForHardcodedInjection() const {
-  return getDoubleFromPath("/resilience/rel_error", 0, isOptional);
+double exahype::parser::Parser::getFixedErrorForInjection() const {
+  return getDoubleFromPath("/resilience/error", 0, isOptional);
 }
 
 tarch::la::Vector<DIMENSIONS, double> exahype::parser::Parser::getErrorInjectionPosition() const {

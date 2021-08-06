@@ -329,8 +329,7 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
 
         if(selectedStrategy != exahype::parser::Parser::ResilienceStrategy::None) {
           exahype::reactive::ReactiveContext::setSaveRedundantComputations(_parser.getTryToSaveRedundantComputations());
-          exahype::reactive::ResilienceTools::getInstance().configure(_parser.getAbsErrorForHardcodedInjection(),
-                                                                      _parser.getRelErrorForHardcodedInjection(),
+          exahype::reactive::ResilienceTools::getInstance().configure(_parser.getFixedErrorForInjection(),
                                                                       _parser.getErrorInjectionTime(),
                                                                       _parser.getErrorInjectionPosition(),
                                                                       _parser.getErrorInjectionRank(),
@@ -1352,19 +1351,6 @@ int exahype::runners::Runner::runAsMaster(exahype::repositories::Repository& rep
 
     bool communicatePeanoVertices =
         !exahype::solvers::Solver::DisablePeanoNeighbourExchangeInTimeSteps;
-
-/*#if defined(USE_TMPI)
-    //todo: shuffle differently for more than two teams
-   if(TMPI_IsLeadingRank()
-    && (exahype::reactive::OffloadingContext::getInstance().getResilienceStrategy()
-           >=exahype::reactive::OffloadingContext::ResilienceStrategy::TaskSharingResilienceChecks)
-    && exahype::reactive::ResilienceTools::CheckLimitedCellsOnly) {
-     repository.switchToEmpty();
-     repository.iterate(1, false);
-   }
-   PMPI_Barrier(MPI_COMM_WORLD);
-#endif*/
-
     if ( !_parser.getProfileEmptyAdapter() ) {
       repository.switchToInitialPrediction();
       repository.iterate( exahype::solvers::Solver::PredictionSweeps, communicatePeanoVertices );
@@ -1995,7 +1981,6 @@ void exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps(
   } else {
     repository.iterate( exahype::solvers::Solver::PredictionSweeps*numberOfStepsToRun,false/*Always disable during batching*/ );
   }
-
 
   if (exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {
     logInfo("runTimeStepsWithFusedAlgorithmicSteps(...)","local recomputation requested by at least one solver");

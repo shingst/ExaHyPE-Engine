@@ -19,8 +19,6 @@
 #endif
 #include <vector>
 
-#include "tarch/la/Vector.h"
-
 //forward declaration of the user solver
 namespace {{solverNamespace}} {
   class {{solverClass}};

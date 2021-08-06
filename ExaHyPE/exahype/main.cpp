@@ -121,7 +121,7 @@ int exahype::main(int argc, char** argv) {
   }
 
 //Can only run in Asserts mode as otherwise two versions of exahype::records::Vertex would need to be compiled which results in undefined behaviour/errors in valgrind
-#if defined(Asserts)
+#ifdef Asserts
   if (runPingPong) {
     return pingPongTest();
   }
@@ -253,21 +253,16 @@ int exahype::main(int argc, char** argv) {
   }
  
 #if defined(OffloadingUseProfiler)
-  //prints useful statistics about offloading on every rank
+  //prints useful statistics about reactive offloading on every rank
   exahype::reactive::OffloadingProfiler::getInstance().endPhase();
   exahype::reactive::OffloadingProfiler::getInstance().printStatistics();
 #endif
 
-//currently there is a race with the OffloadingManager as TBB threads are still active (which shouldn't be the case!)
-#if defined(DirtyCleanUp)
-  exahype::reactive::OffloadingManager::getInstance().cancelOutstandingRequests();
-#endif
   peano::shutdownParallelEnvironment();
   peano::shutdownSharedMemoryEnvironment();
   peano::releaseCachedData();
 
-  kernels::finalise();  
-
+  kernels::finalise();
 
   return programExitCode;
 }
