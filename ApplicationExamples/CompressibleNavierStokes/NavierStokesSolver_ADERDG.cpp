@@ -313,8 +313,7 @@ bool NavierStokes::NavierStokesSolver_ADERDG::isPhysicallyAdmissible(
                 );
           bool isAdvectionTroubled = ns.useAdvection && (Z < 0.0);
           if (Q[rho] <= 0.0 || pressure < 0.0 || isAdvectionTroubled) {
-            //std::cout<<Q[rho]<<std::endl;
-            return false;
+              return false;
           }
 
          //Surprisingly, this is necessary.

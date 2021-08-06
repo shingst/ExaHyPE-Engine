@@ -53,9 +53,9 @@
     "task_sharing" : "task_sharing_resilience_correction",
     "abs_error" : -0.0000001,
     "max_error_indicator" : 0,
-    "confidence_check_admissibility" : false,
-    "confidence_check_timesteps" : true,
-    "confidence_check_derivatives" : false
+    "check_admissibility" : false,
+    "check_timesteps" : true,
+    "check_derivatives" : false
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",

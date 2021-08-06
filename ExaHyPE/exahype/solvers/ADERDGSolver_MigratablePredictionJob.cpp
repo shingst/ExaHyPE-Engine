@@ -951,14 +951,16 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveHandlerTask
 
   double minTimeStampToKeep = static_cast<exahype::solvers::ADERDGSolver*>(solver)->getPreviousMinTimeStamp();
 
-  exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().trackTimeStepAndDubiosity(team, 
+  if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()>=exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceChecks) {
+    exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().trackTimeStepAndDubiosity(team, 
 		                                              key._timestamp,
 							      key._timestepSize,
 							      !exahype::reactive::ResilienceTools::getInstance().isTrustworthy(
                                                          data->_metadata.getErrorIndicatorDerivative(),
                                                          data->_metadata.getErrorIndicatorTimeStepSize(),
                                                          data->_metadata.getErrorIndicatorAdmissibility()));
-  
+  }
+
   logDebug("receiveHandlerTaskSharing", "team "
       <<exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber()
       <<" received replica job: "

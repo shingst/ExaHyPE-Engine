@@ -54,7 +54,7 @@
 #include <vector>
 #include <chrono>
 #include <algorithm> // copy_n
-
+#include <cstring>
 
 #if defined(SharedTBB) && !defined(noTBBPrefetchesJobData)
 #include <immintrin.h>
@@ -441,14 +441,15 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
 
 #if defined(Parallel)
   int team = exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber();
-#else
-  int team = 0;
-#endif
-  exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().trackTimeStepAndDubiosity(team,
+  if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()>=exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceChecks) {
+    exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().trackTimeStepAndDubiosity(team,
                                                                                           _minTimeStamp,
                                                                                           _minTimeStepSize,
                                                                                           exahype::reactive::ResilienceTools::CheckAllMigratableSTPs);
-
+  }
+#else
+  int team = 0;
+#endif
   _minTimeStamp += _minTimeStepSize;
 
   _stabilityConditionWasViolated = false;
@@ -462,7 +463,6 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
           _minTimeStepSize       = FusedTimeSteppingRerunFactor * _admissibleTimeStepSize;
           _estimatedTimeStepSize = _minTimeStepSize;
           _stabilityConditionWasViolated = true;
-          //logDebug("wrapUpTimeStep","recompute dt_min"<<std::setprecision(30)<<_minTimeStepSize);
         } else {
           _minTimeStepSize       = _estimatedTimeStepSize; // as we have computed the predictor with an estimate, we have to use the estimated time step size to perform the face integral
           _estimatedTimeStepSize = 0.5 * ( FusedTimeSteppingDiffusionFactor * _admissibleTimeStepSize + _estimatedTimeStepSize );
