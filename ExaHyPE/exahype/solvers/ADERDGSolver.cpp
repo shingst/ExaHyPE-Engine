@@ -3085,6 +3085,16 @@ int exahype::solvers::ADERDGSolver::getTaskPriorityLocalMigratableJob(int cellDe
   }
 }
 
+int exahype::solvers::ADERDGSolver::getTaskPriorityCheckCorrectJob(bool isSkeleton) {
+  if(isSkeleton) {
+    return getTaskPriority(isSkeleton)*2;
+  }
+  else {
+    return getTaskPriority(false)/2;
+  }
+ 
+}
+
 void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(MigratablePredictionJob* job) {
 
    int myRank = tarch::parallel::Node::getInstance().getRank();

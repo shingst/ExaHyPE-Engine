@@ -332,7 +332,8 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
                                            _predictorTimeStepSize,
                                            _errorIndicatorDerivative,
                                            _errorIndicatorTimeStepSize,
-                                           _errorIndicatorAdmissibility);
+                                           _errorIndicatorAdmissibility,
+                                           _isSkeleton);
         peano::datatraversal::TaskSet spawnedSet(job);
         return false; //check job will take care next
       }
@@ -392,7 +393,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::needToShare(bool h
     return false;
   }
   else if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()
-          ==exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharing){
+          ==exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharing) {
     return !hasOutcome
         && ((unsigned int) AllocatedSTPsSend
             <= exahype::reactive::PerformanceMonitor::getInstance().getTasksPerTimestep()/((exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams()-1)*tarch::multicore::Core::getInstance().getNumberOfThreads()));

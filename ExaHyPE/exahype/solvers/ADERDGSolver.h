@@ -951,6 +951,8 @@ private:
                                                double timeStamp,
                                                bool isSkeleton);
 
+  static int getTaskPriorityCheckCorrectJob(bool isSkeleton);
+
 #ifdef OffloadingUseProgressTask
   /**
    * Used to track sending ranks from which my rank currently receives tasks.
@@ -1319,7 +1321,8 @@ private:
          const double predictorTimeStepSize,
          const double errorIndicatorDerivative,
          const double errorIndicatorTimeStepSize,
-         const double errorIndicatorAdmissibility
+         const double errorIndicatorAdmissibility,
+         bool isSkeleton
        );
 
        CheckAndCorrectSolutionJob(const CheckAndCorrectSolutionJob& stp) = delete;

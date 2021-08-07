@@ -12,10 +12,11 @@ exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::CheckAndCorrectSolut
     double predictorTimeStepSize,
     double errorIndicatorDerivative,
     double errorIndicatorTimeStepSize,
-    double errorIndicatorAdmissibility)
+    double errorIndicatorAdmissibility,
+    bool isSkeleton)
  : tarch::multicore::jobs::Job(
      tarch::multicore::jobs::JobType::BackgroundTask, 0,
-     getTaskPriority(false)),
+     getTaskPriorityCheckCorrectJob(isSkeleton)),
    _solver(solver),
    _solverPatch(solverPatch),
    _predictorTimeStamp(predictorTimeStamp),
@@ -30,7 +31,8 @@ exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::CheckAndCorrectSolut
 bool exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::run(bool isRunOnMaster) {
   //caution, this may delay setting the completed flag and cause slowdowns for the master!
 #if !defined(OffloadingUseProgressThread)
-  exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, MAX_PROGRESS_ITS);
+  if(!isRunOnMaster)
+    exahype::solvers::ADERDGSolver::progressOffloading(&_solver, false, MAX_PROGRESS_ITS);
 #endif
   bool reschedule = true;
 
@@ -52,7 +54,7 @@ bool exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::run(bool isRunO
     _solverPatch.setHasCompletedLastStep(true);
     reschedule = false;
     //exahype::reactive::ResilienceStatistics::getInstance().notifyDetectedError();
-    logWarning("runCheck","Waiting too long for an outcome (progression problem?). Won't check anymore.");
+    //logWarning("runCheck","Waiting too long for an outcome (progression problem?). Won't check anymore.");
     return reschedule;
   }
 
