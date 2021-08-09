@@ -166,7 +166,7 @@ bool exahype::reactive::TimeStampAndDubiosityTeamHistory::checkConsistency() {
     consistentTimeStepSizes = consistentTimeStepSizes && std::all_of(tmp_timestepsizes.begin(), tmp_timestepsizes.end(), [tmp_timestepsizes](double x){ return x==tmp_timestepsizes[0]; });
   }
 
-  if((!consistentTimeStamps || !consistentDubiosityStatuses || !consistentTimeStepSizes)) {
+  /*if((!consistentTimeStamps || !consistentDubiosityStatuses || !consistentTimeStepSizes)) {
     //logError("checkConsistency"," Time stamps or limiter statuses are diverged between teams! Consistent stamps = "<<consistentTimeStamps
     //    <<" consistent limiter statuses = "<<consistentLimiterStatuses<<" consistent time step sizes="<<consistentTimeStepSizes);
     //logError("checkConsistency","team="<<exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()<<": Time stamps or trigger statuses are inconsistent between teams! There must have been a soft error on at least one team.");
@@ -182,7 +182,7 @@ bool exahype::reactive::TimeStampAndDubiosityTeamHistory::checkConsistency() {
     }
 
     //printHistory();
-  }
+  }*/
   lock.free();
 
   return consistentTimeStamps && consistentDubiosityStatuses && consistentTimeStepSizes;

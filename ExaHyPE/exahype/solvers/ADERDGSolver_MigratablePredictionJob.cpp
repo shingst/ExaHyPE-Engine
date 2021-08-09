@@ -277,7 +277,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
           }
           break;
         case SDCCheckResult::MyOutcomeIsMoreOrEquallyTrustworthy:
-          logError("handleLocalExecution", "There is disagreement between two outcomes but my result is more or equall trustworthy..");
+          logError("handleLocalExecution", "There is disagreement between two outcomes but local result is more or at least equally trustworthy..");
           logError("handleLocalExecution", std::setprecision(16)<<"My error indicators: derivative = "<<_errorIndicatorDerivative<<
                                            " time step size = "<<_errorIndicatorTimeStepSize<<
                                            " admissibility = "<<_errorIndicatorAdmissibility<<

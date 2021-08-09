@@ -7,7 +7,7 @@
   },
   "computational_domain": {
     "dimension": 3,
-    "time_steps": 2,
+    "time_steps": 10,
     "offset": [
       0.0,
       0.0,
@@ -21,8 +21,8 @@
   },
   "architecture": "noarch",
   "shared_memory": {
-    "cores": 24,
-    "background_job_consumers": 22,
+    "cores": 2,
+    "background_job_consumers": 1,
     "autotuning_strategy": "dummy"
   },
  "distributed_memory": {
@@ -47,7 +47,7 @@
     "stp_tracing_frequency" : 10
   },
   "resilience" : {
-    "generate_soft_errors" : "no",
+    "generate_soft_errors" : "migratable_stp_tasks_overwrite_hardcoded",
     "check_mechanism" : "check_stps_with_low_confidence",
     "save_redundant_computations" : true,
     "task_sharing" : "task_sharing_resilience_correction",
@@ -80,7 +80,7 @@
       "type": "ADER-DG",
       "name": "NavierStokesSolver_ADERDG",
       "order": 7,
-      "maximum_mesh_size": 30,
+      "maximum_mesh_size": 400,
       "maximum_mesh_depth": 0,
       "time_stepping": "global",
       "halo_cells": 0,

@@ -63,9 +63,9 @@ bool exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::run(bool isRunO
     && !exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().otherTeamHasTimeStepData(_predictorTimeStamp, _predictorTimeStepSize)
     && (exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().otherTeamHasLargerTimeStamp(_predictorTimeStamp)
         ||
-        exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().otherTeamHasLargerTimeStepSizeForStamp(_predictorTimeStamp,_predictorTimeStepSize)
-        ||
-        !exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().checkConsistency()))
+        exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().otherTeamHasLargerTimeStepSizeForStamp(_predictorTimeStamp,_predictorTimeStepSize)))
+       // ||
+       // !exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().checkConsistency()))
   {
     _solverPatch.setHasCompletedLastStep(true);
     reschedule = false;
