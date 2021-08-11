@@ -16,7 +16,7 @@ exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::CheckAndCorrectSolut
     bool isSkeleton)
  : tarch::multicore::jobs::Job(
      tarch::multicore::jobs::JobType::BackgroundTask, 0,
-     getTaskPriorityCheckCorrectJob(isSkeleton)),
+     getTaskPriorityCheckCorrectJob(false)/2),
    _solver(solver),
    _solverPatch(solverPatch),
    _predictorTimeStamp(predictorTimeStamp),
@@ -24,8 +24,9 @@ exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::CheckAndCorrectSolut
    _errorIndicatorDerivative(errorIndicatorDerivative),
    _errorIndicatorTimeStepSize(errorIndicatorTimeStepSize),
    _errorIndicatorAdmissibility(errorIndicatorAdmissibility),
-   _startTimeStamp(MPI_Wtime()){
-
+   _startTimeStamp(MPI_Wtime()),
+   _printedTimeoutWarning(false){
+   NumberOfCheckJobs.fetch_add(1);
 }
 
 bool exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::run(bool isRunOnMaster) {
@@ -48,14 +49,22 @@ bool exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::run(bool isRunO
                       " time step size = "<<_errorIndicatorTimeStepSize<<
                       " admissibility = "<<_errorIndicatorAdmissibility);
 
-  bool timeout = (MPI_Wtime()-_startTimeStamp) > 120;
+  bool timeout = (MPI_Wtime()-_startTimeStamp) > 30;
 
-  if(timeout) {
-    _solverPatch.setHasCompletedLastStep(true);
-    reschedule = false;
+  if(timeout && !_printedTimeoutWarning) {
+    //_solverPatch.setHasCompletedLastStep(true);
+    //reschedule = false;
     //exahype::reactive::ResilienceStatistics::getInstance().notifyDetectedError();
-    //logWarning("runCheck","Waiting too long for an outcome (progression problem?). Won't check anymore.");
-    return reschedule;
+    logWarning("runCheck","Waiting too long for an outcome (progression problem?). Won't check anymore. sent ="<<SentSTPs<< " received "<<ReceivedSTPs<< " CheckJobs "<<NumberOfCheckJobs<< " NumberOfEnclaveJobs "<<NumberOfEnclaveJobs );
+    tarch::la::Vector<DIMENSIONS, double> center;
+    center = _solverPatch.getOffset() + 0.5 *_solverPatch.getSize();
+
+    logWarning("runCheck", "team = "<<exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber()<<" looking for center[0] = "<<center[0]
+                                         <<" center[1] = "<<center[1]
+                                         <<" center[2] = "<<center[2]
+                                         <<" timestamp = "<<_predictorTimeStamp
+                                         <<" time step = "<<_predictorTimeStepSize);
+    _printedTimeoutWarning = true;
   }
 
   //assert(exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().otherTeamHasTimeStepData(_predictorTimeStamp, _predictorTimeStepSize));
@@ -111,6 +120,7 @@ bool exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::run(bool isRunO
         }
         break;
       }
+      NumberOfCheckJobs.fetch_add(-1);
       delete outcome;
     }
     else {

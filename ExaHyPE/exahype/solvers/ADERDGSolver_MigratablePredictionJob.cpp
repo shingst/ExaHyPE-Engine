@@ -367,6 +367,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::shareSTPImmediatel
                                            _errorIndicatorAdmissibility)) {
      logWarning("handleLocalExecution","Sharing corrupted outcome but soft error has not been triggered!");
     }
+    logDebug("shareSTP"," sharing "<<to_string());
     _solver.sendTaskOutcomeToOtherTeams(this);
   }
 }
@@ -462,6 +463,9 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::copyOutcome(Migrat
 }
 
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::executeOrCopySTPOutcome(MigratablePredictionJobData *outcome, bool& hasComputed, bool& hasFlipped) {
+  logDebug("executeOrCopySTPOutcome","team "<<exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber()<<" computing or copying STP for "
+        <<to_string()
+        <<std::setprecision(30)<<" time step size "<<_predictorTimeStepSize);
 
   bool shouldInjectError = exahype::reactive::ResilienceTools::getInstance().shouldInjectError(_center, _predictorTimeStamp);
   if( (exahype::reactive::ReactiveContext::getResilienceStrategy()>=exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharing)
@@ -492,7 +496,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::executeLocally() {
   double *lGradQhbnd = static_cast<double*>(cellDescription.getExtrapolatedPredictorGradient());
   double *lFhbnd = static_cast<double*>(cellDescription.getFluctuation());
 
-  logDebug("handleLocalExecution","team "<<exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber()<<" computing STP for "
+  logDebug("executeLocally","team "<<exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber()<<" computing STP for "
         <<to_string()
         <<std::setprecision(30)<<" time step size "<<_predictorTimeStepSize);
 

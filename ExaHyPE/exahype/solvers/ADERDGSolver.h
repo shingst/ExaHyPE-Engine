@@ -219,9 +219,12 @@ public:
 
   static std::atomic<int> CompletedSentSTPs;
   static std::atomic<int> SentSTPs;
+  static std::atomic<int> ReceivedSTPs;
   static std::atomic<int> AllocatedSTPs;
   static std::atomic<int> AllocatedSTPsSend;
   static std::atomic<int> AllocatedSTPsReceive;
+  
+  static std::atomic<int> NumberOfCheckJobs;
 
   static std::atomic<bool> VetoEmergency;
   static const CellDescription* LastEmergencyCell;
@@ -1306,6 +1309,7 @@ private:
        const double                _errorIndicatorAdmissibility;
  
        const double                _startTimeStamp;
+       bool                        _printedTimeoutWarning;
 
        bool run(bool runOnMasterThread) override;
        SDCCheckResult checkAgainstOutcome(MigratablePredictionJobData *outcome);
@@ -1313,7 +1317,6 @@ private:
        void correctWithOutcome(MigratablePredictionJobData *outcome);
 
      public:
-       // constructor for local jobs that can be stolen
        CheckAndCorrectSolutionJob(
          ADERDGSolver&     solver,
          CellDescription& solverPatch,

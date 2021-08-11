@@ -66,7 +66,7 @@
       "name": "NavierStokesSolver_ADERDG",
       "order": 3,
       "maximum_mesh_size": 400,
-      "maximum_mesh_depth": 2,
+      "maximum_mesh_depth": 1,
       "time_stepping": "global",
       "halo_cells": 0,
       "aderdg_kernel": {
@@ -133,7 +133,7 @@
           "name": "Plotter",
           "time": 0.0,
           "repeat": 100,
-          "output": "/hppfs/work/pr83no/di57zoh3/NS_output_offloading_o3_new_amr/solution_cartesian",
+          "output": "/hppfs/work/pr83no/di57zoh3/NS_output_offloading_o3_new_amr_one_level/solution_cartesian",
           "variables": 6
         },
         {
@@ -141,7 +141,7 @@
           "name": "Plotter",
           "time": 0.0,
           "repeat": 100,
-          "output": "/hppfs/work/pr83no/di57zoh3/NS_output_offloading_o3_new_amr/solution",
+          "output": "/hppfs/work/pr83no/di57zoh3/NS_output_offloading_o3_new_amr_one_level/solution",
           "variables": 6
         }
       ]

@@ -139,9 +139,13 @@ std::atomic<int> exahype::solvers::ADERDGSolver::NumberOfReceiveBackJobs (0);
 std::atomic<int> exahype::solvers::ADERDGSolver::LocalStealableSTPCounter (0);
 std::atomic<int> exahype::solvers::ADERDGSolver::CompletedSentSTPs(0);
 std::atomic<int> exahype::solvers::ADERDGSolver::SentSTPs (0);
+std::atomic<int> exahype::solvers::ADERDGSolver::ReceivedSTPs (0);
 std::atomic<int> exahype::solvers::ADERDGSolver::AllocatedSTPs (0);
 std::atomic<int> exahype::solvers::ADERDGSolver::AllocatedSTPsSend (0);
 std::atomic<int> exahype::solvers::ADERDGSolver::AllocatedSTPsReceive (0);
+
+std::atomic<int> exahype::solvers::ADERDGSolver::NumberOfCheckJobs(0);
+
 
 std::atomic<bool> exahype::solvers::ADERDGSolver::VetoEmergency(false);
 const exahype::solvers::ADERDGSolver::CellDescription* exahype::solvers::ADERDGSolver::LastEmergencyCell;
@@ -4586,6 +4590,7 @@ void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahyp
 
   MigratablePredictionJobData *data = new MigratablePredictionJobData(*solver);
   AllocatedSTPsReceive++;
+  ReceivedSTPs++;
 
 #ifdef UseSmartMPI
   solver->mpiRecvMigratablePredictionJobOutcomeOffload(

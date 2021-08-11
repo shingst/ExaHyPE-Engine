@@ -37,7 +37,7 @@ info  exahype::reactive::OffloadingManager::triggerEmergencyForRank -1 black
 info  exahype::reactive::OffloadingManager::run -1 black
 #info  exahype::reactive::OffloadingManager::getInstance -1 black
 info  exahype::reactive::OffloadingManager::printBlacklist -1 black
-#info  exahype::solvers::ADERDGSolver   -1 black
+info  exahype::solvers::ADERDGSolver   -1 black
 #info  exahype::solvers::ADERDGSolver::run   -1 black
 #info  exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob   -1 black
 info  exahype::reactive::AggressiveHybridDistributor::selectVictimRank -1 black
