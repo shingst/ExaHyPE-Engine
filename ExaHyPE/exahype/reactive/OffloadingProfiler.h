@@ -21,7 +21,6 @@
 #include <atomic>
 #include <vector>
 
-#include "exahype/solvers/Solver.h"
 
 namespace exahype {
   namespace reactive {

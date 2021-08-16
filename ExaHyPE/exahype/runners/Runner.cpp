@@ -440,6 +440,11 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
       exahype::reactive::PerformanceMonitor::getInstance().disable();
     }
 
+    if(exahype::reactive::ReactiveContext::getInstance().getOffloadingStrategy() != exahype::reactive::ReactiveContext::OffloadingStrategy::None
+      && exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy() != exahype::reactive::ReactiveContext::ResilienceStrategy::None) {
+      logWarning("initDistributedMemoryConfiguration()", "You are using task sharing together with task offloading. This is not been tested extensively and may result in errors.");
+    }
+
     tarch::parallel::NodePool::getInstance().restart();
 
     tarch::parallel::Node::getInstance().setDeadlockTimeOut(_parser.getMPITimeOut());

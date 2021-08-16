@@ -3111,6 +3111,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
      _mapTagToCellDesc.insert(std::make_pair(tag, &cellDescription));
      //logInfo("submitOrSendMigratablePredictionJob", "inserting tag"<<tag);
      _mapCellDescToTagRank.insert(std::make_pair(&cellDescription, std::make_pair(tag, destRank)));
+     _mapCellDescToJob.insert(std::make_pair(&cellDescription, job));
      //_mapTagToOffloadTime.insert(std::make_pair(tag, -MPI_Wtime()));
      logDebug("submitOrSendMigratablePredictionJob()","send away with tag "<<tag<<" to rank "<<destRank<<" job "<<metadata->to_string());
      // send away
@@ -3167,7 +3168,6 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
      assertion(!job->_isSkeleton); //skeleton jobs should never be sent away!
 
      NumberOfRemoteJobs++;
-     delete job;
 
      exahype::reactive::OffloadingProfiler::getInstance().notifyOffloadedTask(destRank);
      exahype::reactive::PerformanceMonitor::getInstance().decCurrentTasks();

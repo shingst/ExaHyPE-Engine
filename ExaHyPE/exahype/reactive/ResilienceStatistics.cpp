@@ -19,7 +19,7 @@ namespace exahype {
 namespace reactive {
 
 
-tarch::logging::Log ResilienceStatistics::_log( "exahype::reactive::JobTableStatistics" );
+tarch::logging::Log ResilienceStatistics::_log( "exahype::reactive::ResilienceStatistics" );
 
 
 ResilienceStatistics::ResilienceStatistics() :

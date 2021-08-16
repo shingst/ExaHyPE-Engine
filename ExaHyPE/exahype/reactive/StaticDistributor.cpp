@@ -16,6 +16,8 @@
 
 #include <algorithm>
 #include <numeric>
+#include <iostream>
+#include <fstream>
 
 #include "tarch/multicore/Lock.h"
 #include "tarch/parallel/Node.h"
@@ -25,6 +27,7 @@
 #include "exahype/reactive/PerformanceMonitor.h"
 #include "tarch/multicore/Core.h"
 #include "tarch/multicore/Jobs.h"
+
 
 tarch::logging::Log exahype::reactive::StaticDistributor::_log( "exahype::reactive::StaticDistributor" );
 

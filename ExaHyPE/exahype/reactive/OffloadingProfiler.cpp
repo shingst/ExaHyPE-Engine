@@ -338,7 +338,7 @@ void exahype::reactive::OffloadingProfiler::printStatistics() {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
 #if defined (USE_TMPI)
-  int team = exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank();
+  int team = exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber();
 #endif
 
   std::string str="Offloading statistics for rank "+std::to_string(rank);

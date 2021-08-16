@@ -1193,6 +1193,9 @@ private:
 
       static std::atomic<int> JobCounter;
 
+      //job entry method
+      bool run(bool calledFromMaster) override;
+
       // actual execution of a STP job
       bool runExecution(bool isCalledOnMaster);
 
@@ -1200,8 +1203,8 @@ private:
       void setFinished();
       void copyOutcome(MigratablePredictionJobData *outcome);
       void executeOrCopySTPOutcome(MigratablePredictionJobData *outcome, bool& hasComputed, bool& hasFlipped);
-      bool corruptIfActive(bool force);
       void shareSTPImmediatelyOrLater();
+
       bool needToCheckThisSTP(bool hasComputed);
       bool needToPutBackOutcome();
       bool needToShare(bool hasOutcome, bool isTrustworthy, bool isOutcomeTrustworthy);
@@ -1211,8 +1214,9 @@ private:
       bool handleRemoteExecution(bool& hasComputed);
 
       bool tryToFindAndExtractEquivalentSharedOutcome(bool previous, DeliveryStatus &status, MigratablePredictionJobData **outcome);
-
+      void checkAgainstOutcomeAndCorrectIfActive(MigratablePredictionJobData *outcome);
       void computeErrorIndicator(bool flipped);
+      bool corruptIfActive(bool force);
 
       bool isRemoteJob() {
         return (_originRank!= tarch::parallel::Node::getInstance().getRank());
@@ -1285,7 +1289,6 @@ private:
         int tag,
         int rank);
 
-      bool run(bool calledFromMaster) override;
   };
 
   enum class SDCCheckResult {NoCorruption, OutcomeHasZeroErrorIndicator, OutcomeIsMoreTrustworthy, MyOutcomeIsMoreOrEquallyTrustworthy};
@@ -1344,7 +1347,7 @@ private:
   tbb::concurrent_hash_map<std::pair<int,int>, MigratablePredictionJobData*> _mapTagRankToReplicaData;
   tbb::concurrent_hash_map<int, CellDescription*> _mapTagToCellDesc;
   tbb::concurrent_hash_map<const CellDescription*, std::pair<int,int>> _mapCellDescToTagRank;
-  tbb::concurrent_hash_map<const CellDescription*, tarch::multicore::jobs::Job*> _mapCellDescToRecompJob;
+  tbb::concurrent_hash_map<const CellDescription*, MigratablePredictionJob*> _mapCellDescToJob;
   tbb::concurrent_hash_map<int, MigratablePredictionJobMetaData*> _mapTagToMetaData;
   tbb::concurrent_hash_map<int, MigratablePredictionJobData*> _mapTagToSTPData;
 #endif

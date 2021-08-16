@@ -249,43 +249,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     computeErrorIndicator(hasFlipped);
 
     if(needToCheckThisSTP(hasComputed)) {
-      switch(_solver.checkCellDescriptionAgainstOutcome(getCellDescription(_cellDescriptionsIndex,_element), outcome, 
-                                                                _predictorTimeStamp, _predictorTimeStepSize,
-                                                                _errorIndicatorDerivative,
-                                                                _errorIndicatorTimeStepSize,
-                                                                _errorIndicatorAdmissibility)) {
-        case SDCCheckResult::NoCorruption:
-          break;
-        case SDCCheckResult::OutcomeIsMoreTrustworthy:
-          logError("handleLocalExecution", std::setprecision(16)<<"I'm correcting with an outcome that is more trustworthy!"<<
-                                " My error indicators: derivative = "<<_errorIndicatorDerivative<<
-                                " time step size = "<<_errorIndicatorTimeStepSize<<
-                                " admissibility = "<<_errorIndicatorAdmissibility<<
-                                " 0ther outcome's error indicators: derivative = "<<outcome->_metadata._errorIndicatorDerivative<<
-                                " time step size = "<<outcome->_metadata._errorIndicatorTimeStepSize<<
-                                " admissibility = "<<outcome->_metadata._errorIndicatorAdmissibility);
-           //no break!
-        case SDCCheckResult::OutcomeHasZeroErrorIndicator:
-          logError("handleLocalExecution", "Soft error detected in job execution: "<<to_string());
-          if( exahype::reactive::ReactiveContext::getResilienceStrategy()
-           == exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceCorrection) {
-             _solver.correctCellDescriptionWithOutcome(getCellDescription(_cellDescriptionsIndex,_element), outcome);
-          }
-          else {
-            logError("handleLocalExecution", "Could have corrected soft error but correction is not enabled. Continuing...");
-            exahype::reactive::ResilienceTools::getInstance().setCorruptionDetected(true);
-          }
-          break;
-        case SDCCheckResult::MyOutcomeIsMoreOrEquallyTrustworthy:
-          logError("handleLocalExecution", "There is disagreement between two outcomes but local result is more or at least equally trustworthy..");
-          logError("handleLocalExecution", std::setprecision(16)<<"My error indicators: derivative = "<<_errorIndicatorDerivative<<
-                                           " time step size = "<<_errorIndicatorTimeStepSize<<
-                                           " admissibility = "<<_errorIndicatorAdmissibility<<
-                                           " Other outcome's error indicators: derivative = "<<outcome->_metadata._errorIndicatorDerivative<<
-                                           " time step size = "<<outcome->_metadata._errorIndicatorTimeStepSize<<
-                                           " admissibility = "<<outcome->_metadata._errorIndicatorAdmissibility);
-          break;
-      }
+      checkAgainstOutcomeAndCorrectIfActive(outcome);
     }
     if(needToShare(true /*hasOutcome*/,
                    exahype::reactive::ResilienceTools::getInstance().isTrustworthy(
@@ -514,15 +478,15 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::executeLocally() {
            true);
 #else
   _solver.fusedSpaceTimePredictorVolumeIntegral(lduh,
-              lQhbnd,
-              lGradQhbnd,
-              lFhbnd,
-              luh,
-              cellDescription.getOffset() + 0.5 * cellDescription.getSize(),
-              cellDescription.getSize(),
-              _predictorTimeStamp,
-               _predictorTimeStepSize,
-               true);
+           lQhbnd,
+           lGradQhbnd,
+           lFhbnd,
+           luh,
+           cellDescription.getOffset() + 0.5 * cellDescription.getSize(),
+           cellDescription.getSize(),
+           _predictorTimeStamp,
+           _predictorTimeStepSize,
+           true);
 #endif
 
 #if defined(FileTrace)
@@ -695,6 +659,46 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::tryToFindAndExtrac
   return _solver.tryToFindAndExtractOutcome(_cellDescriptionsIndex, _element, _predictorTimeStamp, _predictorTimeStepSize, status, outcome);
 }
 
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::checkAgainstOutcomeAndCorrectIfActive(MigratablePredictionJobData *outcome) {
+  switch(_solver.checkCellDescriptionAgainstOutcome(getCellDescription(_cellDescriptionsIndex,_element), outcome,
+                                                            _predictorTimeStamp, _predictorTimeStepSize,
+                                                            _errorIndicatorDerivative,
+                                                            _errorIndicatorTimeStepSize,
+                                                            _errorIndicatorAdmissibility)) {
+    case SDCCheckResult::NoCorruption:
+      break;
+    case SDCCheckResult::OutcomeIsMoreTrustworthy:
+      logError("handleLocalExecution", std::setprecision(16)<<"I'm correcting with an outcome that is more trustworthy!"<<
+                            " My error indicators: derivative = "<<_errorIndicatorDerivative<<
+                            " time step size = "<<_errorIndicatorTimeStepSize<<
+                            " admissibility = "<<_errorIndicatorAdmissibility<<
+                            " 0ther outcome's error indicators: derivative = "<<outcome->_metadata._errorIndicatorDerivative<<
+                            " time step size = "<<outcome->_metadata._errorIndicatorTimeStepSize<<
+                            " admissibility = "<<outcome->_metadata._errorIndicatorAdmissibility);
+       //no break!
+    case SDCCheckResult::OutcomeHasZeroErrorIndicator:
+      logError("handleLocalExecution", "Soft error detected in job execution: "<<to_string());
+      if( exahype::reactive::ReactiveContext::getResilienceStrategy()
+       == exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceCorrection) {
+         _solver.correctCellDescriptionWithOutcome(getCellDescription(_cellDescriptionsIndex,_element), outcome);
+      }
+      else {
+        logError("handleLocalExecution", "Could have corrected soft error but correction is not enabled. Continuing...");
+        exahype::reactive::ResilienceTools::getInstance().setCorruptionDetected(true);
+      }
+      break;
+    case SDCCheckResult::MyOutcomeIsMoreOrEquallyTrustworthy:
+      logError("handleLocalExecution", "There is disagreement between two outcomes but local result is more or at least equally trustworthy..");
+      logError("handleLocalExecution", std::setprecision(16)<<"My error indicators: derivative = "<<_errorIndicatorDerivative<<
+                                       " time step size = "<<_errorIndicatorTimeStepSize<<
+                                       " admissibility = "<<_errorIndicatorAdmissibility<<
+                                       " Other outcome's error indicators: derivative = "<<outcome->_metadata._errorIndicatorDerivative<<
+                                       " time step size = "<<outcome->_metadata._errorIndicatorTimeStepSize<<
+                                       " admissibility = "<<outcome->_metadata._errorIndicatorAdmissibility);
+      break;
+  }
+}
+
 void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendHandler(
     exahype::solvers::Solver* solver, int tag, int remoteRank) {
 #if defined(PerformanceAnalysisOffloadingDetailed)
@@ -797,16 +801,100 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
       a_tagToMetaData);
   a_tagToMetaData.release();
 
+  MigratablePredictionJob *job = nullptr;
+  tbb::concurrent_hash_map<const CellDescription*, MigratablePredictionJob*>::accessor a_cellDescToJob;
+  found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapCellDescToJob.find(a_cellDescToJob, cellDescription);
+  assertion(found);
+  job = a_cellDescToJob->second;
+  static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapCellDescToJob.erase(a_cellDescToJob);
+  a_cellDescToJob.release();
+  assertion(job!=nullptr);
+
   tbb::concurrent_hash_map<const CellDescription*, std::pair<int,int>>::accessor a_cellDescToTagRank;
   found = static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapCellDescToTagRank.find(a_cellDescToTagRank, cellDescription);
   assertion(found);
   static_cast<exahype::solvers::ADERDGSolver*> (solver)->_mapCellDescToTagRank.erase(a_cellDescToTagRank);
   a_cellDescToTagRank.release();
 
+  if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()
+     >=exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceChecks) {
+
+    MigratablePredictionJobData *outcome = nullptr;
+    DeliveryStatus status;
+    bool hasOutcome = job->tryToFindAndExtractEquivalentSharedOutcome(false, status, &outcome);
+
+    job->computeErrorIndicator(false);
+    bool isTrustworthy = exahype::reactive::ResilienceTools::getInstance().isTrustworthy(
+                                                                job->_errorIndicatorDerivative,
+                                                                job->_errorIndicatorTimeStepSize,
+                                                                job->_errorIndicatorAdmissibility);
+
+    if(hasOutcome) {
+      bool outcomeIsTrustworthy =  exahype::reactive::ResilienceTools::getInstance().isTrustworthy(
+                                                                outcome->_metadata._errorIndicatorDerivative,
+                                                                outcome->_metadata._errorIndicatorTimeStepSize,
+                                                                outcome->_metadata._errorIndicatorAdmissibility);
+      if(job->needToCheckThisSTP(true)) {
+        job->checkAgainstOutcomeAndCorrectIfActive(outcome);
+        job->setFinished();
+      }
+
+      if(job->needToShare(true /*hasOutcome*/,
+                     isTrustworthy,
+                     outcomeIsTrustworthy)) {
+        job->shareSTPImmediatelyOrLater();
+      }
+      if(job->needToPutBackOutcome()) {
+        MigratablePredictionJobOutcomeKey key(outcome->_metadata.getCenter(), outcome->_metadata.getPredictorTimeStamp(),
+                                               outcome->_metadata.getPredictorTimeStepSize(), outcome->_metadata.getElement());
+        job->_solver._outcomeDatabase.insertOutcome(key, outcome, DeliveryStatus::Received);
+      }
+      else {
+        delete outcome;
+      }
+      job->setFinished(); //have already checked if that was necessary, so it's safe to release the job here
+    }
+    else { //outcome not available
+      if(job->needToShare(false, false, false)) {
+        job->shareSTPImmediatelyOrLater();
+      }
+
+      if(job->needToCheckThisSTP(true)) {
+        if((exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().otherTeamHasTimeStepData(job->_predictorTimeStamp, job->_predictorTimeStepSize)
+           || !exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().otherTeamHasLargerTimeStamp(job->_predictorTimeStamp))) {
+          // && exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().checkConsistency()) {
+          logDebug("handleLocalExecution","going into check mode "<<job->to_string());
+
+          CheckAndCorrectSolutionJob *checkJob = new CheckAndCorrectSolutionJob(job->_solver,
+                                             getCellDescription(job->_cellDescriptionsIndex,job->_element),
+                                             job->_predictorTimeStamp,
+                                             job->_predictorTimeStepSize,
+                                             job->_errorIndicatorDerivative,
+                                             job->_errorIndicatorTimeStepSize,
+                                             job->_errorIndicatorAdmissibility,
+                                             job->_isSkeleton);
+          peano::datatraversal::TaskSet spawnedSet(checkJob);
+        }
+        else {
+          logDebug("handleLocalExecution","Won't be able to find STP anymore as timestamps/timestep sizes have diverged. Timestamp ="
+              <<std::setprecision(30)<<job->_predictorTimeStamp
+              <<" time step "<<job->_predictorTimeStepSize);
+          //exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().printHistory();
+          exahype::reactive::ResilienceStatistics::getInstance().notifyDetectedError();
+          job->setFinished();
+        }
+      }
+    }
+  }
+  // no resilience checks
+  else {
+    job->setFinished();
+  }
+
+  delete job;
+
   NumberOfRemoteJobs--;
   NumberOfEnclaveJobs--;
-
-  cellDescription->setHasCompletedLastStep(true);
 
   assertion( NumberOfEnclaveJobs>=0 ); assertion( NumberOfRemoteJobs>=0 );
 }
