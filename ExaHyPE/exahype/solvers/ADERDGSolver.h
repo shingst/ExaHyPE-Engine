@@ -3309,10 +3309,6 @@ public:
   void spawnReceiveBackJob();
 #endif
 
-#if defined(OffloadingLocalRecompute)
-  tarch::multicore::jobs::Job* grabRecomputeJobForCellDescription(const void* cellDescription);
-  void addRecomputeJobForCellDescription(tarch::multicore::jobs::Job* job, const CellDescription* cellDescription);
-#endif
 
 #endif /*SharedTBB*/
 
@@ -3732,9 +3728,6 @@ public:
    const CellDescription& cellDescription = *((const CellDescription*) cellDescripPtr);
    //bool hasProcessed = false;
    bool hasTriggeredEmergency = false;
-#if defined(OffloadingLocalRecompute)
-   bool hasRecomputed = false;
-#endif
 
  #if !defined(OffloadingUseProgressThread)
      //pauseOffloadingManager();
@@ -3787,64 +3780,17 @@ public:
         tarch::multicore::jobs::processBackgroundJobs( 1, -1, true );
       #endif
 
-#if defined(OffloadingLocalRecompute)
-      tarch::la::Vector<DIMENSIONS, double> center;
-      center = cellDescription.getOffset()+0.5*cellDescription.getSize();
-      
-      //logInfo("waitUntil()", " looking for recompute job center[0] = "<< center[0]
-      //                              <<" center[1] = "<< center[1]
-      //                              <<" center[2] = "<< center[2]);
-
-      if( responsibleRank!=myRank
-         &&      (exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs
-              == exahype::solvers::ADERDGSolver::NumberOfRemoteJobs)) {
-#ifndef OffloadingDeactivateRecompute
-  		  tarch::multicore::Lock lock(exahype::solvers::ADERDGSolver::EmergencySemaphore);
-    	  if(!hasRecomputed) {
-    	    tarch::multicore::jobs::Job* recompJob = grabRecomputeJobForCellDescription((&cellDescription));
-            if(recompJob!=nullptr) {// got one
-              recompJob->run(true);
-              hasRecomputed = true;
-              exahype::reactive::JobTableStatistics::getInstance().notifyRecomputedTask();
-            }
-      	}
-      	if(!hasTriggeredEmergency) {
-      	  //tarch::multicore::jobs::Job* recompJob = grabRecomputeJobForCellDescription((&cellDescription));//test
-    	    if(!exahype::solvers::ADERDGSolver::VetoEmergency && hasRecomputed) {
-      	      hasTriggeredEmergency = true;
-              logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank);
-              exahype::solvers::ADERDGSolver::VetoEmergency = true;
-              exahype::solvers::ADERDGSolver::LastEmergencyCell = &cellDescription;
-              exahype::reactive::ReactiveContext::getInstance().triggerEmergencyForRank(responsibleRank);
-    	    }
-      	}
-  	    lock.free();
-#else
-      	if(!hasTriggeredEmergency) {
-    	    hasTriggeredEmergency = true;
-          logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank);
-          exahype::reactive::ReactiveContext::getInstance().triggerEmergencyForRank(responsibleRank);
-      	}
-#endif
-      }
-#endif
-
-#if !defined(OffloadingLocalRecompute)
-        if( !cellDescription.getHasCompletedLastStep()
+      if( !cellDescription.getHasCompletedLastStep()
           && !hasTriggeredEmergency
           && myRank!=responsibleRank
           && ( exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs
               -exahype::solvers::ADERDGSolver::NumberOfRemoteJobs)==0
-        )
-
-        {
+        )  {
 
           hasTriggeredEmergency = true;
           logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank);
           exahype::reactive::ReactiveContext::getInstance().triggerEmergencyForRank(responsibleRank);
-
         }
-#endif
     }
  #if !defined(OffloadingUseProgressThread)
     exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressOffloading( std::numeric_limits<int>::max() );

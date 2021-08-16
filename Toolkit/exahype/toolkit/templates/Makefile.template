@@ -80,10 +80,6 @@ PROJECT_CFLAGS += -DPerformanceAnalysis
 PROJECT_CFLAGS += -DUSE_TMPI  
 {% endif %}
 
-{% if useLocalRecompute %}
-PROJECT_CFLAGS += -DOffloadingLocalRecompute
-{% endif %}
-
 {% if useNoiseGenerator %}
 PROJECT_CFLAGS += -DGenerateNoise
 {% endif %}

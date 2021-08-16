@@ -325,12 +325,10 @@ class Controller:
             context["offloading"]  = self.spec["distributed_memory"]["offloading_lb_strategy"]
             context["offloadingProgress"] = self.spec["distributed_memory"]["offloading_progress"]
             context["useTasksharing"] = "resilience" in self.spec and self.spec["resilience"]["task_sharing"]!="no"
-            context["useLocalRecompute"] = self.spec["distributed_memory"]["offloading_local_recompute"]
         else:
             context["offloading"] = "none"
             context["offloadingProgress"] = "none"
             context["useTasksharing"] = False
-            context["useLocalRecompute"] = False
       
         context["useViscousFlux"] = False
         for solver in self.spec["solvers"]: 
