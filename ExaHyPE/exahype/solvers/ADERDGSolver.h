@@ -956,14 +956,6 @@ private:
 
   static int getTaskPriorityCheckCorrectJob(bool isSkeleton);
 
-#ifdef OffloadingUseProgressTask
-  /**
-   * Used to track sending ranks from which my rank currently receives tasks.
-   */
-  static std::unordered_set<int> ActiveSenders; //only to be modified with lock on 
-                                                //offloading semaphore!
-#endif
-
 
   /**
    * A helper job that should run on every rank in the background while offloading
@@ -3308,10 +3300,6 @@ public:
    */
   void stopOffloadingManager();
 
-#ifdef OffloadingUseProgressTask
-  void spawnReceiveBackJob();
-#endif
-
 
 #endif /*SharedTBB*/
 
@@ -3733,9 +3721,7 @@ public:
    bool hasTriggeredEmergency = false;
 
  #if !defined(OffloadingUseProgressThread)
-     //pauseOffloadingManager();
-     //exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressOffloading(1);
-     setMaxNumberOfIprobesInProgressOffloading(1);
+   setMaxNumberOfIprobesInProgressOffloading(1);
  #endif
    int myRank = tarch::parallel::Node::getInstance().getRank();
    int responsibleRank = myRank;
@@ -3759,7 +3745,6 @@ public:
  #if !defined(OffloadingUseProgressThread)
       if ( responsibleRank != myRank ) {
         tryToReceiveTaskBack(this);
-        //solver->spawnReceiveBackJob();
       }
  #endif
       //for task sharing without progression thread, it makes sense to not receive dangling messages here as there seems to
@@ -3774,14 +3759,7 @@ public:
       }
       #endif
 
-      //switch ( JobSystemWaitBehaviour ) {
-      //   case JobSystemWaitBehaviourType::ProcessJobsWithSamePriority:
-      #ifndef OffloadingUseProgressTask
-        tarch::multicore::jobs::processBackgroundJobs( 1, getTaskPriority(waitForHighPriorityJob), true );
-      #else
-        //Receive Job may be active and yield a deadlock situation when only local jobs are processed
-        tarch::multicore::jobs::processBackgroundJobs( 1, -1, true );
-      #endif
+      tarch::multicore::jobs::processBackgroundJobs( 1, getTaskPriority(waitForHighPriorityJob), true );
 
       if( !cellDescription.getHasCompletedLastStep()
           && !hasTriggeredEmergency

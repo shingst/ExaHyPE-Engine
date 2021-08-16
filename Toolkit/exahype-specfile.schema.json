@@ -613,7 +613,7 @@
         "offloading_progress": {
           "type" : "string",
           "title": "Sets progression mode in MPI for offloading-related communication.",
-          "enum" : ["none","progress_task","progress_thread", "smartmpi", "smartmpi_nb", "mpithreadsplit"],
+          "enum" : ["none","progress_thread", "smartmpi", "smartmpi_nb", "mpithreadsplit"],
           "default": "none"
         },
         "offloading_CCP_temperature" : {

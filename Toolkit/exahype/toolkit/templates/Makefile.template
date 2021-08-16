@@ -90,8 +90,6 @@ PROJECT_CFLAGS += -DFileTrace -DPicard
 
 {% if offloadingProgress=="progress_thread" %}
 PROJECT_CFLAGS += -DOffloadingUseProgressThread
-{% elif offloadingProgress=="progress_task" %}
-PROJECT_CFLAGS += -DOffloadingUseProgressTask -DnoMPIWaitsProcessJobs
 {% elif offloadingProgress=="mpithreadsplit" %}
 PROJECT_CFLAGS +=  -DUseMPIThreadSplit
 {% elif offloadingProgress=="smartmpi" %}
@@ -99,7 +97,7 @@ PROJECT_CFLAGS +=  -DUseSmartMPI -DOffloadingNoEarlyReceiveBacks
 {% elif offloadingProgress=="smartmpi_nb" %}
 PROJECT_CFLAGS +=  -DUseSmartMPI -DSmartMPINB -DOffloadingNoEarlyReceiveBacks
 {% elif offloadingProgress=="none" %}
-PROJECT_CFLAGS += 
+PROJECT_CFLAGS += -DnoMPIWaitsProcessJobs 
 {% endif %}
 
 {% if useViscousFlux and (offloading!="none" or tasksharingMode!="no") %}

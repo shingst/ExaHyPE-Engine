@@ -404,45 +404,6 @@ bool exahype::reactive::ReactiveContext::selectVictimRank(int& victim, bool& las
   return false;
 }
 
-#ifdef OffloadingUseProgressTask
-void exahype::reactive::ReactiveContext::resetHasNotifiedSendCompleted() {
-  _hasNotifiedSendCompleted = false;
-  logDebug("resetHasNotifiedSendCompleted","resetting flag");
-}
-
-void exahype::reactive::ReactiveContext::notifySendCompleted(int rank) {
-  char send = 1;
-  MPI_Send(&send, 1, MPI_CHAR, rank, 0, getMPICommunicator());
-  //logInfo("notifySendCompleted()","sent status message to "<<rank);
-}
-
-void exahype::reactive::ReactiveContext::receiveCompleted(int rank, int rail) {
-  char receive = 0;
-#if defined (UseSmartMPI)
-  MPI_Status_Offload stat;
-  MPI_Recv_offload(&receive, 1, MPI_CHAR, rank, 0, getMPICommunicator(), &stat, rail);
-#else
-  MPI_Recv(&receive, 1, MPI_CHAR, rank, 0, getMPICommunicator(), MPI_STATUS_IGNORE);
-#endif
-  //logInfo("receiveCompleted()","received status message from "<<rank);
-}
-
-void exahype::reactive::ReactiveContext::notifyAllVictimsSendCompletedIfNotNotified() {
-  if(!_hasNotifiedSendCompleted) {
-    //logInfo("notifyAllVictimsSendCompleted","notifying that last job was sent to victims");
-    _hasNotifiedSendCompleted = true;
-    std::vector<int> victimRanks;
-    if(OffloadingStrategy==OffloadingStrategy::AggressiveHybrid)
-      exahype::reactive::AggressiveHybridDistributor::getInstance().getAllVictimRanks(victimRanks);
-    if(OffloadingStrategy==OffloadingStrategy::Static)
-      exahype::reactive::StaticDistributor::getInstance().getAllVictimRanks(victimRanks);
-
-    for(auto victim : victimRanks)
-      notifySendCompleted(victim);
-  }
-}
-#endif
-
 #endif
 
 //#undef assertion

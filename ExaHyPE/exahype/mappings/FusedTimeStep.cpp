@@ -247,13 +247,6 @@ void exahype::mappings::FusedTimeStep::endIteration(
   }
 
 #if defined(Parallel) && defined(SharedTBB)
-#ifdef OffloadingUseProgressTask
-  if( issuePredictionJobsInThisIteration()
-     && exahype::reactive::ReactiveContext::getInstance().isEnabled()) {
-    exahype::reactive::ReactiveContext::getInstance().notifyAllVictimsSendCompletedIfNotNotified();
-    exahype::reactive::ReactiveContext::getInstance().resetHasNotifiedSendCompleted();
-  }
-#endif 
 
 #if !defined(OffloadingUseProgressThread)
   if (

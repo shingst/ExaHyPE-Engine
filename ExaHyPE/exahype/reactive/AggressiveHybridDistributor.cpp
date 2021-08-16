@@ -550,12 +550,6 @@ bool exahype::reactive::AggressiveHybridDistributor::selectVictimRank(int& victi
   }
   rank_cnt=l_rank;
 
-#ifdef OffloadingUseProgressTask
-  if(victim == myRank) 
-    last = true;
-    //exahype::reactive::OffloadingManager::getInstance().notifyAllVictimsSendCompletedIfNotNotified();
-#endif
-
 #if defined(SharedTBB) //_minimNumberOfJobsPerConsumerRun
   int threshold = (_localStarvationThreshold==-1) ? 1
 		         + std::max(1, tarch::multicore::Core::getInstance().getNumberOfThreads()-1)

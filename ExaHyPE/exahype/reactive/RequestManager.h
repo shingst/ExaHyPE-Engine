@@ -264,14 +264,6 @@ class exahype::reactive::RequestManager {
     void cancelOutstandingRequests();
 #endif
 
-
-#ifdef OffloadingUseProgressTask
-    void resetHasNotifiedSendCompleted();
-    void notifySendCompleted(int rank);
-    void receiveCompleted(int rank, int rail=-1);
-    void notifyAllVictimsSendCompletedIfNotNotified();
-#endif
-
     static RequestManager& getInstance();
     virtual ~RequestManager();
 };

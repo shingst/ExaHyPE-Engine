@@ -184,13 +184,6 @@ class exahype::reactive::ReactiveContext {
      */
     bool selectVictimRank(int& victim, bool& last);
 
-#ifdef OffloadingUseProgressTask
-    void resetHasNotifiedSendCompleted();
-    void notifySendCompleted(int rank);
-    void receiveCompleted(int rank, int rail=-1);
-    void notifyAllVictimsSendCompletedIfNotNotified();
-#endif
-
     void triggerVictimFlag();
     void resetVictimFlag();
     bool isVictim();
