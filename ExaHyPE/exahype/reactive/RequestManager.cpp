@@ -58,8 +58,7 @@ exahype::reactive::RequestManager* exahype::reactive::RequestManager::_static_ma
 exahype::reactive::RequestManager::RequestManager(int threadId) :
     _threadId(threadId),
     _nextRequestId(0),
-    _nextGroupId(0),
-    _numProgressJobs(0) {
+    _nextGroupId(0){
 
 #ifdef USE_ITAC
   int ierr;
@@ -149,7 +148,7 @@ exahype::reactive::RequestManager& exahype::reactive::RequestManager::getInstanc
   //logInfo("getInstance()", "getting offloading manager for thread id "<<threadID);
 
   if(threadID>=MAX_THREADS) {
-	  logError("getInstance()","The application is using too many threads (>48), we need to exit...");
+	  logError("getInstance()","The application is using too many threads (>MAX_THREADS), we need to exit...");
 	  assertion(false);
 	  MPI_Abort(MPI_COMM_WORLD, -1);
   }
@@ -290,14 +289,6 @@ void exahype::reactive::RequestManager::submitRequests(
     _outstandingRequests[mapId].push(id);
   }
 
-#ifdef OffloadingUseProgressTask
-  if(_numProgressJobs==0 && type==RequestType::send) {
-    //logInfo("submitRequests()", "spawning progress job (high priority)");
-    _numProgressJobs++;
-    ProgressJob *job = new ProgressJob();
-    peano::datatraversal::TaskSet spawnedSet( job);
-  }
-#endif
 }
 
 void exahype::reactive::RequestManager::createRequestArray(
@@ -496,19 +487,6 @@ bool exahype::reactive::RequestManager::progressRequestsOfType( RequestType type
   tarch::multicore::Lock lock(_progressSemaphore, false);
   bool canRun = lock.tryLock();
   if(!canRun) {
-#if defined(PerformanceAnalysisOffloadingDetailed)
-    watch.stopTimer();
-    if(watch.getCalendarTime() >= 0.0) {
-      logDebug(
-          "progressRequestsOfType",
-          "couldn't run "<<
-          "time=" << std::fixed <<
-          watch.getCalendarTime() <<
-          ", cpu time=" <<
-          watch.getCPUTime()
-      );
-    }
-#endif
     return false;
   }
 
@@ -698,81 +676,6 @@ bool exahype::reactive::RequestManager::RequestHandlerJob::operator()() {
 #ifdef USE_ITAC
   VT_end(event_handling);
 #endif
-  return false;
-}
-
-//todo: I think these can be removed as no longer used
-exahype::reactive::RequestManager::ProgressJob::ProgressJob() :
-tarch::multicore::jobs::Job(tarch::multicore::jobs::JobType::BackgroundTask, 0, tarch::multicore::DefaultPriority*8)
-{}
-
-bool exahype::reactive::RequestManager::ProgressJob::run( bool calledFromMaster ) {
-
-  if(calledFromMaster) return false;
-
-  int flag;
-  //logInfo("submitRequests()", "executing progress job (high priority)");
-
-  int mapId = RequestManager::requestTypeToMsgQueueIdx(RequestType::send);
-//   while(RequestManager::getInstance()._requests[0].unsafe_size()>0 || RequestManager::getInstance()._currentOutstandingRequests[0].size()>0
-//        || RequestManager::getInstance()._requests[1].unsafe_size()>0 || RequestManager::getInstance()._currentOutstandingRequests[1].size()>0
-//        || RequestManager::getInstance()._requests[2].unsafe_size()>0 || RequestManager::getInstance()._currentOutstandingRequests[2].size()>0
-//        || RequestManager::getInstance()._requests[3].unsafe_size()>0 || RequestManager::getInstance()._currentOutstandingRequests[3].size()>0
-//   ) 
-  while(RequestManager::getInstance()._outstandingRequests[mapId].unsafe_size()>0 || RequestManager::getInstance()._activeRequests[mapId].size()>0)
-  {
-    //getInstance().progressAnyRequests();
-    getInstance().progressRequestsOfType(RequestType::send);
-    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, ReactiveContext::getInstance().getMPICommunicator(), &flag, MPI_STATUS_IGNORE);
-    MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, ReactiveContext::getInstance().getMPICommunicatorMapped(), &flag, MPI_STATUS_IGNORE);
-  }
-  //logInfo("submitRequests()", "terminated progress job (high priority)");
-
-  RequestManager::getInstance()._numProgressJobs--;
-  return false;
-}
-
-exahype::reactive::RequestManager::ProgressSendJob::ProgressSendJob() {}
-
-bool exahype::reactive::RequestManager::ProgressSendJob::operator()() {
-  getInstance().progressRequestsOfType(RequestType::send);
-  int mapId = RequestManager::requestTypeToMsgQueueIdx(RequestType::send);
-//   bool reschedule=RequestManager::getInstance()._requests[mapId].unsafe_size()>0;
-
-  while(RequestManager::getInstance()._outstandingRequests[mapId].unsafe_size()>0 || RequestManager::getInstance()._activeRequests[mapId].size()>0) {
-    getInstance().progressRequestsOfType(RequestType::send);
-  }
-
-//   if(!reschedule)
-  RequestManager::getInstance()._numProgressSendJobs--;
-  return false;
-}
-
-exahype::reactive::RequestManager::ProgressReceiveJob::ProgressReceiveJob() {}
-
-bool exahype::reactive::RequestManager::ProgressReceiveJob::operator()() {
-  getInstance().progressRequestsOfType(RequestType::receive);
-  int mapId = RequestManager::requestTypeToMsgQueueIdx(RequestType::receive);
-
-  while(RequestManager::getInstance()._outstandingRequests[mapId].unsafe_size()>0 || RequestManager::getInstance()._activeRequests[mapId].size()>0) {
-    getInstance().progressRequestsOfType(RequestType::receive);
-  }
-
-  RequestManager::getInstance()._numProgressReceiveJobs--;
-  return false;
-}
-
-exahype::reactive::RequestManager::ProgressReceiveBackJob::ProgressReceiveBackJob() {}
-
-bool exahype::reactive::RequestManager::ProgressReceiveBackJob::operator()() {
-  getInstance().progressRequestsOfType(RequestType::receiveBack);
-  int mapId = RequestManager::requestTypeToMsgQueueIdx(RequestType::receiveBack);
-
-  while(RequestManager::getInstance()._outstandingRequests[mapId].unsafe_size()>0 || RequestManager::getInstance()._activeRequests[mapId].size()>0) {
-    getInstance().progressRequestsOfType(RequestType::receiveBack);
-  }
-
-  RequestManager::getInstance()._numProgressReceiveBackJobs--;
   return false;
 }
 

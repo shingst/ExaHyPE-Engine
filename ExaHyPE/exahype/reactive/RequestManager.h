@@ -107,13 +107,6 @@ class exahype::reactive::RequestManager {
      */
     std::atomic<int> _nextGroupId;
 
-    /**
-     * Counts number of running progress jobs.
-     */
-    std::atomic<int> _numProgressJobs;
-    std::atomic<int> _numProgressSendJobs;
-    std::atomic<int> _numProgressReceiveJobs;
-    std::atomic<int> _numProgressReceiveBackJobs;
 
     /**
      * Request queues for each request type.
@@ -224,33 +217,6 @@ class exahype::reactive::RequestManager {
       bool operator()();
     };
 
-    class ProgressJob : public tarch::multicore::jobs::Job
-    {
-      public:
-      ProgressJob();
-      bool run(bool calledFromMaster) override;
-    };
-
-    class ProgressSendJob
-    {
-      public:
-      ProgressSendJob();
-      bool operator()();
-    };
-
-    class ProgressReceiveJob
-    {
-      public:
-      ProgressReceiveJob();
-      bool operator()();
-    };
-
-    class ProgressReceiveBackJob
-    {
-      public:
-      ProgressReceiveBackJob();
-      bool operator()();
-    };
 
     inline int getNextRequestId() {
       // Todo: Deal with overflow
