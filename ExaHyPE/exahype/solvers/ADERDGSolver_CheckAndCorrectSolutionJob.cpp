@@ -49,13 +49,13 @@ bool exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::run(bool isRunO
                       " time step size = "<<_errorIndicatorTimeStepSize<<
                       " admissibility = "<<_errorIndicatorAdmissibility);
 
-  bool timeout = (MPI_Wtime()-_startTimeStamp) > 30;
+  bool timeout = (MPI_Wtime()-_startTimeStamp) > 300;
 
   if(timeout && !_printedTimeoutWarning) {
-    //_solverPatch.setHasCompletedLastStep(true);
-    //reschedule = false;
-    //exahype::reactive::ResilienceStatistics::getInstance().notifyDetectedError();
-    logWarning("runCheck","Waiting too long for an outcome (progression problem?). Won't check anymore. sent ="<<SentSTPs<< " received "<<ReceivedSTPs<< " CheckJobs "<<NumberOfCheckJobs<< " NumberOfEnclaveJobs "<<NumberOfEnclaveJobs );
+    _solverPatch.setHasCompletedLastStep(true);
+    reschedule = false;
+    exahype::reactive::ResilienceStatistics::getInstance().notifyDetectedError();
+    logWarning("runCheck","Waiting too long for an outcome. You may either have a progresion problem or a silent error which could not be corrected so time step sizes between teams diverge. Won't check anymore! sent ="<<SentSTPs<< " received "<<ReceivedSTPs<< " CheckJobs "<<NumberOfCheckJobs<< " NumberOfEnclaveJobs "<<NumberOfEnclaveJobs );
     tarch::la::Vector<DIMENSIONS, double> center;
     center = _solverPatch.getOffset() + 0.5 *_solverPatch.getSize();
 
