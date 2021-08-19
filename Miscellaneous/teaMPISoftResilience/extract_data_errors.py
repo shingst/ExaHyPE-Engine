@@ -13,7 +13,7 @@ import distutils.util
 timestep_pattern=re.compile("( [0-9]*\.[0-9]*).*step.*team\ =\ ([0-9]).*t_min.*")
 
 # 2.195630     [i04r11c03s05],rank:0, core:0, tid:0 info         exahype::reactive::JobTableStatistics::printStatistics   team 0 spawned tasks = 3773 executed tasks = 1909 double checked tasks = 0 soft errors injected = 1 detected soft errors = 0 limited tasks = 0 healed tasks = 0 saved tasks =  1864 sent tasks = 1909 received tasks = 1959 declined tasks = 0 late tasks = 72
-stats_pattern=re.compile("( [0-9]*\.[0-9]*).*JobTableStatistics::printStatistics.*team\ 0.*soft errors injected = ([0-9]*) .*healed tasks = ([0-9]*)")
+stats_pattern=re.compile("( [0-9]*\.[0-9]*).*printStatistics.*team\ 0.*soft errors injected = ([0-9]*) .*healed tasks = ([0-9]*)")
 
 # 3.321646     [i01r09c04s10],rank:0, core:53, tid:1 error        exahype::reactive::ResilienceTools::overwriteDoubleIfActive() overwrite double value, pos = 906 old =-1.84735394850702130197364404377e-10 new = -1.00000000018473533813789799751 corresponds to relative error -230280961.399737566709518432617 corresponds to absolute error -1 max error indicator derivatives 1 max error indicator timestepsizes 0 (file:/dss/dsshome1/02/di57zoh3/Codes/ExaHyPE-Engine/./ExaHyPE/exahype/reactive/ResilienceTools.cpp,line:197)
 error_overwrite_pattern=re.compile("( [0-9]*\.[0-9]*).*ResilienceTools::overwrite.*old =(-?[0-9]*\.?[0-9]*[e]?[-|+]?[0-9]*).*new = (-?[0-9]*\.?[0-9]*[e]?[-|+]?[0-9]*).*relative error (-?[0-9]*\.?[0-9]*[e]?[-|+]?[0-9]*).*absolute error (-?[0-9]*\.?[0-9]*[e]?[-|+]?[0-9]*).*max error indicator derivatives (-?[0-9]*\.?[0-9]*[e]?[-]?[0-9]*).*max error indicator timestepsizes (-?[0-9]*\.?[0-9]*[e]?[-]?[0-9]*)")
