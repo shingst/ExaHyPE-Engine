@@ -822,8 +822,6 @@ public:
      */
     None = 0,
 
-   // IrregularLimiterDomainChangeButMayCorrect = 1,
-
     /**
      * The limiter domain of this solver changed in an irregular
      * fashion, i.e. a troubled cell appeared suddenly.
@@ -862,7 +860,7 @@ public:
     /**
      * The initial mesh will be created.
      */
-    InitialRefinementRequested = 3,
+    InitialRefinementRequested = 3
   };
 
 
@@ -1066,7 +1064,6 @@ public:
    */
   static bool allSolversPerformOnlyUniformRefinement();
 
-  static bool oneSolverRequestedRollbackToTeamSolution();
 
   /**
    * Loop over the solver registry and check if one

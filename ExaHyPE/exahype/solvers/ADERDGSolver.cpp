@@ -2420,16 +2420,14 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
   const auto messageSize = 2 + _numberOfGlobalObservables;
   DataHeap::HeapEntries message(messageSize);
 
-  //tarch::multicore::RecursiveLock lock( 
-  //      tarch::services::Service::receiveDanglingMessagesSemaphore );
-  
+  logError("mergeWithWorkerData()","begin");
 
   DataHeap::getInstance().receiveData(
       message.data(), message.size(),
       workerRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
 
   if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-    logDebug("mergeWithWorkerData(...)","Receive data from worker rank: " <<
+    logError("mergeWithWorkerData(...)","Receive data from worker rank: " <<
              "data[0]=" << message[0] << "," <<
              "data[1]=" << message[1] << "," <<
              "from worker " << workerRank << "," <<
@@ -2520,7 +2518,6 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterData(
     const int                                    level) {
   const auto messageSize = 5 + _numberOfGlobalObservables;
   DataHeap::HeapEntries message(messageSize);
-  //tarch::multicore::RecursiveLock lock(tarch::services::Service::receiveDanglingMessagesSemaphore, true);
 
   DataHeap::getInstance().receiveData(
       message.data(), message.size(),
@@ -2528,7 +2525,6 @@ void exahype::solvers::ADERDGSolver::mergeWithMasterData(
 
   assertion1(static_cast<int>(message.size())==messageSize,message.size());
   mergeWithMasterData(message);
-  //lock.free();
 
   if ( !tarch::parallel::Node::getInstance().isGlobalMaster() ) {
     logDebug(

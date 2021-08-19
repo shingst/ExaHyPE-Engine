@@ -747,6 +747,7 @@ void exahype::runners::Runner::shutdownSharedMemoryConfiguration() {
           "wrote statistics into file " << _parser.getMulticorePropertiesFile()
           << ". Dump from all other ranks subpressed to avoid file races"
       );
+      // sometimes this is really slow so commented out for now
       //peano::datatraversal::autotuning::Oracle::getInstance().plotStatistics(
       //    _parser.getMulticorePropertiesFile());
     }
@@ -1995,7 +1996,7 @@ void exahype::runners::Runner::runTimeStepsWithFusedAlgorithmicSteps(
   }
 
   if (exahype::solvers::Solver::oneSolverRequestedMeshRefinement() ||
-       exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {
+      exahype::solvers::LimitingADERDGSolver::oneSolverRequestedLocalRecomputation()) {
     updateMeshOrLimiterDomain(repository,true);
   }
 
