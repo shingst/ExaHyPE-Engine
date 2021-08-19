@@ -2420,14 +2420,12 @@ void exahype::solvers::ADERDGSolver::mergeWithWorkerData(
   const auto messageSize = 2 + _numberOfGlobalObservables;
   DataHeap::HeapEntries message(messageSize);
 
-  logError("mergeWithWorkerData()","begin");
-
   DataHeap::getInstance().receiveData(
       message.data(), message.size(),
       workerRank,x,level,peano::heap::MessageType::MasterWorkerCommunication);
 
   if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) {
-    logError("mergeWithWorkerData(...)","Receive data from worker rank: " <<
+    logDebug("mergeWithWorkerData(...)","Receive data from worker rank: " <<
              "data[0]=" << message[0] << "," <<
              "data[1]=" << message[1] << "," <<
              "from worker " << workerRank << "," <<
@@ -2862,7 +2860,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
      // we need this info when the task comes back...
      _mapTagToMetaData.insert(std::make_pair(tag, metadata));
      _mapTagToCellDesc.insert(std::make_pair(tag, &cellDescription));
-     //logInfo("submitOrSendMigratablePredictionJob", "inserting tag"<<tag);
+      logDebug("submitOrSendMigratablePredictionJob", "inserting tag"<<tag);
      _mapCellDescToTagRank.insert(std::make_pair(&cellDescription, std::make_pair(tag, destRank)));
      _mapCellDescToJob.insert(std::make_pair(&cellDescription, job));
      //_mapTagToOffloadTime.insert(std::make_pair(tag, -MPI_Wtime()));
@@ -2965,10 +2963,6 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
 
   double minTimeStampToKeep = _previousMinTimeStamp;
 
-  //if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()
-  //  >= exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceCorrection)
-  //  minTimeStampToKeep = std::min(minTimeStampToKeep, lastconsistentTimeStepSize); //keep even older outcomes to be able to rollback
-
   while( (i< unsafe_size || isFinal) && gotOne) {
     MigratablePredictionJobOutcomeKey key;
     gotOne = _allocatedOutcomes.try_pop_front(&key);
@@ -2979,11 +2973,11 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
     i++;
 
     assertion(key._center!=nullptr);
-    //logInfo("cleanUpStaleTaskOutcomes()", " trying to find key - "
-    //                                        <<" center[0] = "<<key._center[0]
-    //                                       <<" center[1] = "<<key._center[1]
-    //                                       <<" center[2] = "<<key._center[2]
-    //                                       <<" time stamp = "<<key._timestamp);
+    /*logDebug("cleanUpStaleTaskOutcomes()", " trying to find key - "
+                                            <<" center[0] = "<<key._center[0]
+                                           <<" center[1] = "<<key._center[1]
+                                           <<" center[2] = "<<key._center[2]
+                                           <<" time stamp = "<<key._timestamp);*/
 
     if(key._timestamp>=minTimeStampToKeep) {
       _allocatedOutcomes.push_front(key);

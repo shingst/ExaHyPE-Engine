@@ -163,6 +163,12 @@ void exahype::mappings::FusedTimeStep::beginIteration(
     }
 #endif
   }
+ 
+  #ifdef Parallel
+  // ensure reductions are initiated from worker side
+  solverState.setReduceStateAndCell( exahype::State::isLastIterationOfBatchOrNoBatch() );
+  #endif
+
 
 #if defined(Parallel) && defined(SharedTBB)
    // offloading manager job is paused after each iteration to not disturb other communication -> need to restart
@@ -195,8 +201,6 @@ void exahype::mappings::FusedTimeStep::beginIteration(
     exahype::reactive::StaticDistributor::getInstance().resetRemainingTasksToOffload();
   }
 
-  // ensure reductions are initiated from worker side
-  solverState.setReduceStateAndCell( exahype::State::isLastIterationOfBatchOrNoBatch() );
 
 #endif
   logTraceOutWith1Argument("beginIteration(State)", solverState);
