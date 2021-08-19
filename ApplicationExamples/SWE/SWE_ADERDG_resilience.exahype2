@@ -51,11 +51,12 @@
     "check_mechanism" : "check_stps_with_low_confidence",
     "save_redundant_computations" : true,
     "task_sharing" : "task_sharing_resilience_correction",
-    "abs_error" : 1000,
-    "max_error_indicator" : 0,
-    "confidence_check_admissibility" : false,
-    "confidence_check_time_step_sizes" : true,
-    "confidence_check_derivatives" : false
+    "error" : 1000,
+    "max_error_indicator_derivatives" : 0,
+    "max_error_indicator_timestepsizes" : 0,
+    "check_admissibility" : false,
+    "check_time_step_sizes" : true,
+    "check_derivatives" : false
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",

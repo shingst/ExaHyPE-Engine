@@ -17,11 +17,19 @@
       1000.0
     ]
   },
-  "shared_memory": {
+  "_shared_memory": {
     "cores": 12,
     "background_job_consumers": 11,  
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy"
+  },
+  "distributed_memory": {
+      "ranks_per_node": 1,
+      "load_balancing_strategy": "greedy_naive",
+      "load_balancing_type": "dynamic",
+      "node_pool_strategy": "fair",
+      "timeout": 6000,
+      "buffer_size": 1600
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",
@@ -36,7 +44,7 @@
     "double_compression": 0.0,
     "spawn_double_compression_as_background_thread": false
   },
-  "architecture": "skx",
+  "architecture": "hsw",
   "solvers": [
     {
       "type": "ADER-DG",

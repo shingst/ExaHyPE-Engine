@@ -28,8 +28,7 @@ info  exahype::mappings::LoadBalancing        -1  white
 info  exahype::runners::Runner::runAsWorker   -1  black
 info  exahype::runners::Runner::init          -1  black
 info  exahype::runners::Runner::createRepository -1  white
-info  exahype::solvers::ADERDGSolver -1 black
-#info  exahype::reactive::TimeStampAndLimiterHistory -1 black
+
 info  exahype::mappings::LoadBalancing::endIteration -1 black
 
 

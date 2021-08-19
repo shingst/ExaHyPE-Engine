@@ -120,18 +120,18 @@
       "parameters": {
         "use-gravity": true,
         "use-background-state": true,
-        "viscosity": 0.01,
+        "viscosity": 0.1,
         "scenario": "cosine-bubble",
         "use-amr": true,
         "use-tv-amr": true,
         "use-tv-volume-correction": true,
         "amr-indicator": "potential-temperature",
-        "amr-factor-refine": 1.5,
-        "amr-factor-erase": -0.5
+        "amr-factor-refine": 2.5,
+        "amr-factor-erase": 0.5
       },
       "plotters": [
         {
-          "type": "vtu::legendre::vertices::ascii",
+          "type": "vtu::Cartesian::vertices::ascii",
           "name": "Plotter",
           "time": 1e-06,
           "repeat": 100.0,
