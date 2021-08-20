@@ -106,17 +106,17 @@ void SWE::DamBreakProblem(const double* const x,double* Q) {
 void SWE::SeaAtRestProblem(const double* const x,double* Q) {
   MySWESolver::Variables vars(Q);
 
-  /*if(x[0] >= (10.0/3.0) && x[0]<= (20.0/3.0)) {
+  if(x[0] >= (10.0/3.0) && x[0]<= (20.0/3.0)) {
     vars.h() = 2 - x[0]*(3.0/10.0) + 1;
     vars.hu()= 0.0;
     vars.hv()= 0.0;
     vars.b() = x[0]*(3.0/10.0) - 1;
-  } else {*/
+  } else {
     vars.h() = 2.0;
     vars.hu()= 0.0;
     vars.hv()= 0.0;
     vars.b() = 0.0;
-  //  }
+  }
 
 }
 

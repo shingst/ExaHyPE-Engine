@@ -281,10 +281,6 @@ exahype::solvers::Solver::MeshUpdateEvent exahype::solvers::LimitingADERDGSolver
   }
 }
 
-//void exahype::solvers::LimitingADERDGSolver::updateCorruptionStatusDuringRefinementStatusSpreading( SolverPatch& solverPatch) const {
-//  _solver->updateCorruptionStatus(solverPatch);
-//}
-
 bool exahype::solvers::LimitingADERDGSolver::progressMeshRefinementInEnterCell(
     exahype::Cell& fineGridCell,
     exahype::Vertex* const fineGridVertices,
@@ -1022,7 +1018,7 @@ void exahype::solvers::LimitingADERDGSolver::updateSolution(
       logError("updateSolution"," trying to run limiter with time step size "<<limiterPatch.getTimeStepSize()
                                     <<" cell "<<limiterPatch.toString());
     }
-    logInfo("updateSolution"," running limiter with time step size "<<limiterPatch.getTimeStepSize()
+    logDebug("updateSolution"," running limiter with time step size "<<limiterPatch.getTimeStepSize()
                                         <<" cell "<<limiterPatch.toString());
 
     assertion(std::isfinite(limiterPatch.getTimeStepSize()));
@@ -1054,14 +1050,11 @@ bool
 exahype::solvers::LimitingADERDGSolver::checkIfCellIsTroubledAndDetermineMinAndMax(
     SolverPatch& solverPatch,
     CellInfo&    cellInfo) {
-  bool isTroubled;
-
   if ( OnlyStaticLimiting ) {
-    isTroubled =  solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell;
-    return isTroubled;
+    return solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell;
   }
 
-  isTroubled =
+  bool isTroubled =
       !evaluateDiscreteMaximumPrincipleAndDetermineMinAndMax(solverPatch) ||
       !evaluatePhysicalAdmissibilityCriterion(solverPatch,
                                               solverPatch.getTimeStamp()+solverPatch.getTimeStepSize()); // after min and max was found
