@@ -48,7 +48,7 @@ class exahype::reactive::TimeStampAndDubiosityTeamHistory {
     std::vector<double> _estimatedTimestepSizes;
     std::vector<bool> *_dubiosityStatuses;
 
-    int _lastConsistentTimeStepPtr;
+    unsigned int _lastConsistentTimeStepPtr;
 
     tarch::multicore::BooleanSemaphore _semaphore;
 

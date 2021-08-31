@@ -447,8 +447,6 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
                                                                                           _minTimeStepSize,
                                                                                           exahype::reactive::ResilienceTools::CheckAllMigratableSTPs);
   }
-#else
-  int team = 0;
 #endif
   _minTimeStamp += _minTimeStepSize;
 
@@ -2729,8 +2727,8 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob* exahype::solvers::ADERD
   const int origin,
   const int tag) {
   return new MigratablePredictionJob(*this,
-      -1,
-      -1,
+      0,
+      0,
       data->_metadata._predictorTimeStamp,
       data->_metadata._predictorTimeStepSize,
       data->_luh.data(),
@@ -2921,7 +2919,6 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
      NumberOfRemoteJobs++;
 
      exahype::reactive::OffloadingProfiler::getInstance().notifyOffloadedTask(destRank);
-     exahype::reactive::PerformanceMonitor::getInstance().decCurrentTasks();
 
   }
   else {

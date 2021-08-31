@@ -134,8 +134,8 @@
           "type": "vtu::Cartesian::vertices::ascii",
           "name": "Plotter",
           "time": 1e-06,
-          "repeat": 100.0,
-          "output": "./plots_amr_resilience_for_lukas/solution",
+          "repeat": 30.0,
+          "output": "./results/solution",
           "variables": 5
         }
       ]

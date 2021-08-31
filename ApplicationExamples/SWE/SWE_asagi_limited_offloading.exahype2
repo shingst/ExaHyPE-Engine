@@ -51,8 +51,9 @@
     "check_mechanism" : "check_stps_with_low_confidence",
     "save_redundant_computations" : true,
     "task_sharing" : "task_sharing_resilience_correction",
-    "abs_error" : -0.0000001,
-    "max_error_indicator" : 0,
+    "error" : -0.0000001,
+    "max_error_indicator_derivatives" : 0,
+    "max_error_indicator_timestepsizes" : 0,
     "check_admissibility" : false,
     "check_timesteps" : true,
     "check_derivatives" : false

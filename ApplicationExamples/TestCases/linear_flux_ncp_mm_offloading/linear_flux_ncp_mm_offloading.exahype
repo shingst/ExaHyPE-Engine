@@ -30,7 +30,7 @@
     "thread_stack_size" : 12582912 
   },
   "distributed_memory": {
-    "offloading": "aggressiveHybrid",
+    "offloading_lb_strategy": "aggressiveHybrid",
     "offloading_input_file" : "",
     "offloading_progress" : "progress_task",
     "offloading_CCP_temperature" : 1,

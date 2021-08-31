@@ -31,7 +31,7 @@ tarch::logging::Log exahype::reactive::TimeStampAndDubiosityTeamHistory::_log("e
 
 
 exahype::reactive::TimeStampAndDubiosityTeamHistory::TimeStampAndDubiosityTeamHistory() :
-  _lastConsistentTimeStepPtr(-1)
+  _lastConsistentTimeStepPtr(0)
 {
 #if defined(Parallel)
   _timestamps = new std::vector<double> [exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams()];
@@ -67,14 +67,15 @@ void exahype::reactive::TimeStampAndDubiosityTeamHistory::forwardLastConsistentT
     maxIdx = std::min(_timestamps[i].size(), maxIdx);
   }
 
-  unsigned int i = std::max(0, _lastConsistentTimeStepPtr);
+  unsigned int i = std::max((unsigned int)0, _lastConsistentTimeStepPtr);
   while(i<maxIdx && _timestamps[otherTeam][i]==_timestamps[myTeam][i]
                  && _dubiosityStatuses[otherTeam][i]== _dubiosityStatuses[myTeam][i]  //we may only want to consider a time step consistent if limiter status is both zero (for linear applications)
                  && _timestepSizes[otherTeam][i]==_timestepSizes[myTeam][i]) {
     i++;
   }
-  _lastConsistentTimeStepPtr = --i;
-  assert(_lastConsistentTimeStepPtr>=-1);
+  if(i>0)
+   _lastConsistentTimeStepPtr = --i;
+  assertion(_lastConsistentTimeStepPtr>=0);
 #else
   _lastConsistentTimeStepPtr = _timestamps[0].size();
 #endif
@@ -134,9 +135,6 @@ void exahype::reactive::TimeStampAndDubiosityTeamHistory::trackTimeStepAndDubios
 
 bool exahype::reactive::TimeStampAndDubiosityTeamHistory::checkConsistency() {
 #if defined(Parallel)
-  int myTeam = exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber();
-  int otherTeam = (myTeam + 1) % 2; //todo: support if more than 2 teams are used
-
   forwardLastConsistentTimeStepPtr();
 
   tarch::multicore::Lock lock(_semaphore, true);
@@ -166,6 +164,8 @@ bool exahype::reactive::TimeStampAndDubiosityTeamHistory::checkConsistency() {
     consistentTimeStepSizes = consistentTimeStepSizes && std::all_of(tmp_timestepsizes.begin(), tmp_timestepsizes.end(), [tmp_timestepsizes](double x){ return x==tmp_timestepsizes[0]; });
   }
 
+  //int myTeam = exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber();
+  //int otherTeam = (myTeam + 1) % 2; //todo: support if more than 2 teams are used
   /*if((!consistentTimeStamps || !consistentDubiosityStatuses || !consistentTimeStepSizes)) {
     //logError("checkConsistency"," Time stamps or limiter statuses are diverged between teams! Consistent stamps = "<<consistentTimeStamps
     //    <<" consistent limiter statuses = "<<consistentLimiterStatuses<<" consistent time step sizes="<<consistentTimeStepSizes);
@@ -198,7 +198,7 @@ bool exahype::reactive::TimeStampAndDubiosityTeamHistory::otherTeamHasTimeStepDa
 
   forwardLastConsistentTimeStepPtr();
 
-  int startIndex = std::max(0, _lastConsistentTimeStepPtr);
+  int startIndex = std::max((unsigned int)0, _lastConsistentTimeStepPtr);
 
   for(size_t i=startIndex; i<_timestamps[otherTeam].size(); i++) {
     if(_timestamps[otherTeam][i]==timeStamp && _timestepSizes[otherTeam][i]==timeStep)
@@ -217,7 +217,7 @@ bool exahype::reactive::TimeStampAndDubiosityTeamHistory::otherTeamHasTimeStamp(
 
   forwardLastConsistentTimeStepPtr();
 
-  int startIndex = std::max(0, _lastConsistentTimeStepPtr);
+  int startIndex = std::max((unsigned int)0, _lastConsistentTimeStepPtr);
 
   for(size_t i=startIndex; i<_timestamps[otherTeam].size(); i++) {
     if(_timestamps[otherTeam][i]==timeStamp)
@@ -236,7 +236,7 @@ bool exahype::reactive::TimeStampAndDubiosityTeamHistory::otherTeamHasLargerTime
 
   forwardLastConsistentTimeStepPtr();
 
-  int startIndex = std::max(0, _lastConsistentTimeStepPtr);
+  int startIndex = std::max((unsigned int) 0, _lastConsistentTimeStepPtr);
 
   for(unsigned int i=startIndex; i<_timestamps[otherTeam].size(); i++) {
     if(_timestamps[otherTeam][i]>timeStamp)
@@ -256,7 +256,7 @@ bool exahype::reactive::TimeStampAndDubiosityTeamHistory::otherTeamHasLargerTime
 
   forwardLastConsistentTimeStepPtr();
 
-  int startIndex = std::max(0, _lastConsistentTimeStepPtr);
+  int startIndex = std::max((unsigned int) 0, _lastConsistentTimeStepPtr);
 
   for(unsigned int i=startIndex; i<_timestamps[otherTeam].size(); i++) {
     if(_timestamps[otherTeam][i]==timeStamp && _timestepSizes[otherTeam][i]>timeStep)
@@ -279,7 +279,7 @@ void exahype::reactive::TimeStampAndDubiosityTeamHistory::getLastConsistentTimeS
   forwardLastConsistentTimeStepPtr();
 
   tarch::multicore::Lock lock(_semaphore, true);
-  if(_lastConsistentTimeStepPtr>=0) {
+  if(_lastConsistentTimeStepPtr>=0 && _timestamps[myTeam].size()>0) {
     timestamp = _timestamps[myTeam][_lastConsistentTimeStepPtr];
     timestepSize = _timestepSizes[myTeam][_lastConsistentTimeStepPtr];
     estimated = _estimatedTimestepSizes[_lastConsistentTimeStepPtr];
@@ -300,7 +300,7 @@ void exahype::reactive::TimeStampAndDubiosityTeamHistory::resetMyTeamHistoryToLa
   int myTeam = 0;
 #endif
 
-  if(_lastConsistentTimeStepPtr>=0 && _lastConsistentTimeStepPtr<_timestamps[myTeam].size()) {
+  if(_lastConsistentTimeStepPtr>=0 && _lastConsistentTimeStepPtr<_timestamps[myTeam].size() && _timestamps[myTeam].size()>0) {
     _timestamps[myTeam].erase(_timestamps[myTeam].begin()+_lastConsistentTimeStepPtr+1, _timestamps[myTeam].end());
     _timestepSizes[myTeam].erase(_timestepSizes[myTeam].begin()+_lastConsistentTimeStepPtr+1, _timestepSizes[myTeam].end());
     _estimatedTimestepSizes.erase(_estimatedTimestepSizes.begin()+_lastConsistentTimeStepPtr+1, _estimatedTimestepSizes.end());
@@ -322,7 +322,7 @@ void exahype::reactive::TimeStampAndDubiosityTeamHistory::printHistory() const {
   int myTeam = 0;
 #endif  
 
-  for(unsigned int i=0; i<numTeams; i++) {
+  for(unsigned int i=0; i< (unsigned int) numTeams; i++) {
     std::ostringstream stream;
     stream <<" Timestamps: "<<std::setprecision(30);
     for(unsigned int j=0; j<_timestamps[i].size(); j++) {

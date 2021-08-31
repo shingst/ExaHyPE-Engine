@@ -36,7 +36,7 @@ void SWE::ConservedWriter::mapQuantities(
   for (int i=0; i<writtenUnknowns-1; i++){ 
     outputQuantities[i] = Q[i];
   }
-  //outputQuantities[4] = 0;
-  //if(Q[3] < 0.0)
-  //    outputQuantities[4] = Q[0] + Q[3];
+  outputQuantities[4] = 0;
+  if(Q[3] < 0.0)
+      outputQuantities[4] = Q[0] + Q[3];
 }

@@ -625,9 +625,6 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
   }
   #endif
 
-  logDebug("fusedTimeStepBody", "team = "<<exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber()
-      <<" updating "<<solverPatch.toString());
-
   updateSolution(solverPatch,cellInfo,isFirstTimeStepOfBatch,boundaryMarkers,
                  isFirstTimeStepOfBatch/*addSurfaceIntegralContributionToUpdate*/);
   const bool isTroubled = checkIfCellIsTroubledAndDetermineMinAndMax(solverPatch,cellInfo);

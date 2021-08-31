@@ -79,7 +79,7 @@
     {
       "type": "ADER-DG",
       "name": "NavierStokesSolver_ADERDG",
-      "order": 7,
+      "order": 4,
       "maximum_mesh_size": 400,
       "maximum_mesh_depth": 0,
       "time_stepping": "global",

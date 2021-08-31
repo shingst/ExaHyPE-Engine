@@ -255,19 +255,19 @@ class Controller:
             self.log.exception(e)
             sys.exit(-4)
 
-        useOffloading = False
+        useReactive = False
         #check if offloading is used together with multiple solvers -> abort as currently not supported
         if "distributed_memory" in spec:
-           useOffloading = spec["distributed_memory"]["offloading_lb_strategy"]!="none" 
+           useReactive = spec["distributed_memory"]["offloading_lb_strategy"]!="none" 
         if "resilience" in spec:
-           useOffloading = useOffloading or spec["resilience"]["task_sharing"] or spec["resilience"]["task_sharing_resilience_checks"] or spec["resilience"]["task_sharing_resilience_correction"]
+           useReactive = useReactive or spec["resilience"]["task_sharing"] or spec["resilience"]["task_sharing_resilience_checks"] or spec["resilience"]["task_sharing_resilience_correction"]
         
         numADERDGSolvers = 0
         for solver in spec["solvers"]: 
             if(solver["type"]=="ADER-DG"):
                 numADERDGSolvers += 1
   
-        if (useOffloading and numADERDGSolvers>1):
+        if (useReactive and numADERDGSolvers>1):
            self.log.error("Specification file uses offloading for more than one ADERDGSolver which is currently not supported! Aborting...")
            sys.exit(-4)
        
