@@ -606,7 +606,7 @@
         "offloading_lb_strategy" : {
           "type" : "string", 
           "title" : "Offloading strategy for non-persistent task-based diffusive load balancing (runs only with TBB enabled).",  
-          "enum"  : ["none",  "static_hardcoded", "aggressiveHybrid"],
+          "enum"  : ["none",  "static_hardcoded", "reactive_diffusion"],
           "default" : "none",
           "old_format" : { "token_after" : "offloading_lb_strategy" }
         },

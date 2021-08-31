@@ -24,7 +24,7 @@
     "autotuning_strategy": "dummy"
   },
   "distributed_memory": {
-      "offloading_lb_strategy" : "aggressiveHybrid",
+      "offloading_lb_strategy" : "reactive_diffusion",
       "ranks_per_node": 1,
       "load_balancing_strategy": "greedy_naive",
       "load_balancing_type": "dynamic",
