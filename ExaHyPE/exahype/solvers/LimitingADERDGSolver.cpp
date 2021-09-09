@@ -687,7 +687,7 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
       ADERDGSolver::progressOffloading(_solver.get(), false, 1); //do some progress and receive task outcomes/time stamps
       otherTeamHasTimestamp = exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().otherTeamHasTimeStamp(solverPatch.getTimeStamp());
       otherTeamHasLargerTimestamp =  exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().otherTeamHasLargerTimeStamp(solverPatch.getTimeStamp());
-      exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().printHistory();
+      //exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().printHistory();
       logDebug("fusedTimeStepBody"," waiting for timestamp="<<solverPatch.getTimeStamp()
                                      <<" time step size "<<solverPatch.getTimeStepSize()
                                      <<" other has larger "<<otherTeamHasLargerTimestamp

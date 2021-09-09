@@ -84,7 +84,7 @@ void exahype::reactive::TimeStampAndDubiosityTeamHistory::forwardLastConsistentT
 
 void exahype::reactive::TimeStampAndDubiosityTeamHistory::trackTimeStepAndDubiosity(int team, double timeStamp, double timeStepSize, bool triggerActive, double estimatedTimeStepSize) {
   tarch::multicore::Lock lock(_semaphore, true);
-  logDebug("trackTimeStepAndLimiterActive", "Tracking time stamp="<<timeStamp<<" for team "<<team);
+  logDebug("trackTimeStepAndDubiosity", "Tracking time stamp="<<timeStamp<<" for team "<<team);
 
   int myTeam;
 #if defined(Parallel)

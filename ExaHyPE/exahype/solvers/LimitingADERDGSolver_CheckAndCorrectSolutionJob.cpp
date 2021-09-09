@@ -40,7 +40,7 @@ bool exahype::solvers::LimitingADERDGSolver::CheckAndCorrectSolutionJob::run(boo
   DeliveryStatus status;
   ADERDGSolver::MigratablePredictionJobData *outcome = nullptr;
 
-  logInfo("run","CheckAndCorrectSolution looking for outcome time stamp= "<< _solverPatch.getTimeStamp()
+  logDebug("run","CheckAndCorrectSolution looking for outcome time stamp= "<< _solverPatch.getTimeStamp()
       <<" previous time step size = "<< _solverPatch.getPreviousTimeStepSize()
       <<" time step size = "<<std::setprecision(30)<< _solverPatch.getTimeStepSize()
       <<" patch "<<_solverPatch.toString() );
@@ -53,7 +53,7 @@ bool exahype::solvers::LimitingADERDGSolver::CheckAndCorrectSolutionJob::run(boo
 
   if(!found) return true; //reschedule
   else {
-    logInfo("run","CheckAndCorrectSolution found outcome time stamp= "<< _solverPatch.getTimeStamp()
+    logDebug("run","CheckAndCorrectSolution found outcome time stamp= "<< _solverPatch.getTimeStamp()
         <<" time step size = "<< _solverPatch.getTimeStepSize()
         <<" patch "<<_solverPatch.toString() );
 
