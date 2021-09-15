@@ -27,6 +27,10 @@
 #include "VT.h"
 #endif
 
+#ifdef OffloadingUseProfiler
+#include "exahype/reactive/OffloadingProfiler.h"
+#endif
+
 tarch::logging::Log exahype::repositories::RepositorySTDStack::_log( "exahype::repositories::RepositorySTDStack" );
 
 
@@ -302,6 +306,14 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
         _gridWithFusedTimeStep.iterate(); break;
       }
       else {
+        #ifdef OffloadingUseProfiler
+        //activate profiler after k iterations
+        if(skip_cnt==KSkipFirstFusedIterations) {
+          exahype::reactive::OffloadingProfiler::getInstance().beginPhase();
+          skip_cnt++;
+        }
+        #endif
+
         watch.startTimer(); _gridWithFusedTimeStep.iterate(); watch.stopTimer(); _measureFusedTimeStepCPUTime.setValue( watch.getCPUTime() ); _measureFusedTimeStepCalendarTime.setValue( watch.getCalendarTime() ); break;
       }
 #else
