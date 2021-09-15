@@ -21,8 +21,8 @@
   },
   "architecture": "skx",
   "shared_memory": {
-    "cores": 24,
-    "background_job_consumers": 23,
+    "cores": 2,
+    "background_job_consumers": 1,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy"
   },
@@ -64,9 +64,9 @@
     {
       "type": "ADER-DG",
       "name": "NavierStokesSolver_ADERDG",
-      "order": 6,
+      "order": 3,
       "maximum_mesh_size": 400,
-      "maximum_mesh_depth": 1,
+      "maximum_mesh_depth": 0,
       "time_stepping": "global",
       "halo_cells": 0,
       "aderdg_kernel": {
@@ -127,7 +127,7 @@
         "amr-factor-refine": 1.5,
         "amr-factor-erase": -0.5
       },
-      "plotters": [
+      "_plotters": [
         {
           "type": "vtu::Cartesian::vertices::ascii",
           "name": "Plotter",

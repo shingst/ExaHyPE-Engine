@@ -437,6 +437,9 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
       }
     }
     else {
+#ifdef OffloadingUseProfiler
+      peano::performanceanalysis::Analysis::getInstance().setDevice(&exahype::reactive::OffloadingAnalyser::getInstance());
+#endif
       exahype::reactive::PerformanceMonitor::getInstance().disable();
     }
 
