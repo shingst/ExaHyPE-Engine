@@ -226,13 +226,12 @@ bool SWE::MySWESolver_ADERDG::isPhysicallyAdmissible(
     }
   }
 
-/*  if(bMin < 0.100){
+  if(bMin < 0.100){
     //    //std::cout <<center[0] << "," << center[1] <<": false" << std::endl;
     return false;
-  }*/
+  }
 
   if(hMin < epsilon_DG * 10.0){
-    std::cout <<center[0] << "," << center[1] <<": false" << " hMin " << hMin << std::endl;
     return false;
   }
   

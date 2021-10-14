@@ -432,7 +432,7 @@
       "properties" : { 
         "task_sharing": {
           "type" : "string",
-          "title" : "Task sharing mode between teams (requires teaMPI): task outcomes can be merely shared or shared + checked for soft resilience (experimental) or shared + corrected from soft errors (experimental, works only with DG-only simulation).",
+          "title" : "Task sharing mode between teams (requires teaMPI): task outcomes can be merely shared or shared + checked for soft resilience (experimental) or shared + recovered from soft errors (experimental).",
           "enum" : ["no","task_sharing","task_sharing_resilience_checks","task_sharing_resilience_correction"],
           "default" : "no"
         }, 
@@ -606,24 +606,25 @@
         "offloading_lb_strategy" : {
           "type" : "string", 
           "title" : "Offloading strategy for non-persistent task-based diffusive load balancing (runs only with TBB enabled).",  
-          "enum"  : ["none",  "static_hardcoded", "aggressiveHybrid"],
+          "enum"  : ["none",  "static_hardcoded", "reactive_diffusion"],
           "default" : "none",
-          "old_format" : { "token_after" : "offloading" }
+          "old_format" : { "token_after" : "offloading_lb_strategy" }
         },
         "offloading_progress": {
           "type" : "string",
-          "title": "Sets progression mode in MPI for offloading-related communication.",
+          "scope" : "compile-time",
+          "title": "Sets progression mode in MPI for offloading-related communication. This is a compile-time flag.",
           "enum" : ["none","progress_thread", "smartmpi", "smartmpi_nb", "mpithreadsplit"],
           "default": "none"
         },
         "offloading_CCP_temperature" : {
               "type" : "number",
-              "title" : "The initial temperature for CCP (load balancing).",
+              "title" : "The initial temperature for chains-on-chains (CCP) approximation .",
               "default" : 1.0
         },
         "offloading_diffusion_temperature" : {
               "type" : "number",
-              "title" : "The initial temperature for diffusion (load balancing).",
+              "title" : "The initial temperature for diffusion.",
               "default" : 0.5
         },
         "offloading_increase_temp_threshold" : {
@@ -633,12 +634,12 @@
         },
         "offloading_CCP_frequency" : {
               "type" : "integer",
-              "title" : "Frequency after how many steps CCP is restarted (load balancing).",
+              "title" : "Frequency after how many steps CCP is restarted.",
               "default" : 0
         },
         "offloading_CCP_steps" : {
               "type" : "integer",
-              "title" : "Number of CCP steps conducted per CCP phase (load balancing).",
+              "title" : "Number of CCP steps conducted per CCP phase.",
               "default" : 5
         },
         "offloading_local_starvation_threshold" : {

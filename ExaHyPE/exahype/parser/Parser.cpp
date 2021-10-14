@@ -1357,7 +1357,7 @@ exahype::parser::Parser::TBBInvadeStrategy exahype::parser::Parser::getTBBInvade
 
 // Settings for reactive extensions
 exahype::parser::Parser::OffloadingStrategy exahype::parser::Parser::getOffloadingStrategy() const{
-  if (stringFromPathEquals("/distributed_memory/offloading_lb_strategy", "none", true, "aggressiveHybrid")) {
+  if (stringFromPathEquals("/distributed_memory/offloading_lb_strategy", "none", true, "reactive_diffusion")) {
     return OffloadingStrategy::AggressiveHybrid;
   }
   if (stringFromPathEquals("/distributed_memory/offloading_lb_strategy", "none", true, "none")) {

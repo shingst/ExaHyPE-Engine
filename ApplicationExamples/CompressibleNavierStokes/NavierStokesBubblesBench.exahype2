@@ -17,13 +17,14 @@
       1000.0
     ]
   },
-  "_shared_memory": {
+  "shared_memory": {
     "cores": 12,
     "background_job_consumers": 11,  
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy"
   },
   "distributed_memory": {
+      "offloading_lb_strategy" : "reactive_diffusion",
       "ranks_per_node": 1,
       "load_balancing_strategy": "greedy_naive",
       "load_balancing_type": "dynamic",

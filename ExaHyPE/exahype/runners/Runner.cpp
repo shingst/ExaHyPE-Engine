@@ -437,6 +437,9 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
       }
     }
     else {
+#ifdef OffloadingUseProfiler
+      peano::performanceanalysis::Analysis::getInstance().setDevice(&exahype::reactive::OffloadingAnalyser::getInstance());
+#endif
       exahype::reactive::PerformanceMonitor::getInstance().disable();
     }
 
@@ -1149,7 +1152,6 @@ int exahype::runners::Runner::run() {
     exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
       if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
-      //static_cast<exahype::solvers::ADERDGSolver*>(solver)->stopOffloadingManager();
 #if !defined(DirtyCleanUp)
         if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()!=exahype::reactive::ReactiveContext::ResilienceStrategy::None) {
           static_cast<exahype::solvers::ADERDGSolver*>(solver)->finishOutstandingInterTeamCommunication();

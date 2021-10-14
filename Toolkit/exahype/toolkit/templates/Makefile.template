@@ -74,10 +74,16 @@ endif
 
 {% if offloading!="none" %}
 PROJECT_CFLAGS += -DPerformanceAnalysis
+{% if offloadingProgress=="none" %}
+PROJECT_CFLAGS += -DnoMPIWaitsProcessJobs
+{% endif %}
 {% endif %}
 
 {% if useTasksharing %}
 PROJECT_CFLAGS += -DUSE_TMPI  
+{% if offloadingProgress=="none" %}
+PROJECT_CFLAGS += -DnoMPIWaitsProcessJobs
+{% endif %}
 {% endif %}
 
 {% if useNoiseGenerator %}
@@ -96,8 +102,6 @@ PROJECT_CFLAGS +=  -DUseMPIThreadSplit
 PROJECT_CFLAGS +=  -DUseSmartMPI -DOffloadingNoEarlyReceiveBacks
 {% elif offloadingProgress=="smartmpi_nb" %}
 PROJECT_CFLAGS +=  -DUseSmartMPI -DSmartMPINB -DOffloadingNoEarlyReceiveBacks
-{% elif offloadingProgress=="none" %}
-PROJECT_CFLAGS += -DnoMPIWaitsProcessJobs 
 {% endif %}
 
 {% if useViscousFlux and (offloading!="none" or tasksharingMode!="no") %}
