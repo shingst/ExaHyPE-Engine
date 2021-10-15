@@ -26,47 +26,44 @@ namespace reactive {
 HeartbeatJob* HeartbeatJob::_singleton;
 tarch::logging::Log HeartbeatJob::_log( "exahype::reactive::HeartbeatJob");
 
-HeartbeatJob::HeartbeatJob() :
- tarch::multicore::jobs::Job( tarch::multicore::jobs::JobType::BackgroundTask, 0 , tarch::multicore::DefaultPriority),
- _terminateTrigger(false),
- _hasTerminated(false),
- _lastTimeStampTriggered(0)
-{
-	// TODO Auto-generated constructor stub
+#define TIME_INTERVAL_BETWEEN_HEARTBEATS 1 //todo: fixed time interval of 1 s could be made a runtime argument
 
+HeartbeatJob::HeartbeatJob() :
+  tarch::multicore::jobs::Job( tarch::multicore::jobs::JobType::BackgroundTask, 0 , tarch::multicore::DefaultPriority),
+  _hasSetTerminateTrigger(false),
+  _hasTerminated(false),
+  _timestampOfLastHeartbeat(0) {
 }
 
 HeartbeatJob::~HeartbeatJob() {
-	// TODO Auto-generated destructor stub
 }
 
 void HeartbeatJob::startHeartbeatJob() {
   _singleton = new HeartbeatJob();
-  _singleton->_lastTimeStampTriggered = MPI_Wtime();
+  _singleton->_timestampOfLastHeartbeat = MPI_Wtime();
+  //trigger initial heartbeat
   MPI_Sendrecv(MPI_IN_PLACE, 0, MPI_BYTE, MPI_PROC_NULL, 1, MPI_IN_PLACE, 0, MPI_BYTE, MPI_PROC_NULL, 0, MPI_COMM_SELF, MPI_STATUS_IGNORE);
 
   peano::datatraversal::TaskSet spawned(_singleton);
-
 }
 
 void HeartbeatJob::stopHeartbeatJob() {
-  _singleton->_terminateTrigger = true;
+  _singleton->_hasSetTerminateTrigger = true;
   while(!_singleton->_hasTerminated) {
 	  usleep(5);
   }
 }
 
 bool HeartbeatJob::run(bool runOnMasterThread) {
-	if(!_terminateTrigger) {
+	if(!_hasSetTerminateTrigger) {
 	  double curTime = MPI_Wtime();
 
-	  if(curTime-_lastTimeStampTriggered>1) {
+	  if(curTime-_timestampOfLastHeartbeat>TIME_INTERVAL_BETWEEN_HEARTBEATS) {
 		  MPI_Sendrecv(MPI_IN_PLACE, 0, MPI_BYTE, MPI_PROC_NULL, -1, MPI_IN_PLACE, 0, MPI_BYTE, MPI_PROC_NULL, 0, MPI_COMM_SELF, MPI_STATUS_IGNORE);
 		  logInfo("run()", "triggering new heartbeat")
 		  MPI_Sendrecv(MPI_IN_PLACE, 0, MPI_BYTE, MPI_PROC_NULL, 1, MPI_IN_PLACE, 0, MPI_BYTE, MPI_PROC_NULL, 0, MPI_COMM_SELF, MPI_STATUS_IGNORE);
-          _lastTimeStampTriggered = curTime;
+      _timestampOfLastHeartbeat = curTime;
 	  }
-
 	  return true;
 	}
 	else {

@@ -11,7 +11,7 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if  defined(Parallel)
+#if defined(Parallel)
 #include "exahype/reactive/OffloadingAnalyser.h"
 
 #include "tarch/parallel/Node.h"

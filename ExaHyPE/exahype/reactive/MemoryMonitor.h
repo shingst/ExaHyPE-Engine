@@ -27,22 +27,33 @@
 namespace exahype {
   namespace reactive {
     class MemoryMonitor;
-    class MemoryMeasurement;
+    class MemorySample;
   }
 }
 
-
-class exahype::reactive::MemoryMeasurement {
+/**
+ * Represents a single sample point of a memory consumption snapshot.
+ */
+class exahype::reactive::MemorySample {
   private:
-    unsigned long _elapsed;
-    size_t _freeMem;
-    size_t _usedMem;
+    /**
+     * Elapsed wall clock time since the start of the application.
+     */
+    unsigned long _elapsedSeconds;
+    size_t _freeMemMB;
+    size_t _usedMemMB;
   public:
-    MemoryMeasurement(unsigned long, std::size_t freeMem, std::size_t usedMem );
+    MemorySample(unsigned long, std::size_t freeMem, std::size_t usedMem );
 
     std::string to_string();
 };
 
+/**
+ * The memory monitor is a service invoked by Peano which repeatedly
+ * samples ExaHyPE's memory usage at runtime. The samples
+ * can be dumped into an output text file for postprocessing.
+ * Memory monitoring is deactivated per default.
+ */
 class exahype::reactive::MemoryMonitor : public tarch::services::Service {
 
   private:
@@ -52,16 +63,34 @@ class exahype::reactive::MemoryMonitor : public tarch::services::Service {
    */
   static tarch::logging::Log _log;
 
-  std::vector<MemoryMeasurement> _measurements;
+  /**
+   * Vector of memory state samples.
+   */
+  std::vector<MemorySample> _samples;
 
-  std::chrono::system_clock::time_point _lastMeasurementTimestamp, _start;
+  /**
+   * Timestamp at which the last sample was taken.
+   */
+  std::chrono::system_clock::time_point _timestampLastSample;
 
+  /**
+   * Timestamp at which the monitoring started.
+   */
+  std::chrono::system_clock::time_point _timestampStart;
+
+  /**
+   * Directory path where the output should be stored.
+   */
   std::string _output_dir;
 
   public:
+
   MemoryMonitor();
   static MemoryMonitor& getInstance();
 
+  /**
+   * Reads the amount of free memory in MB from the linux filesystem.
+   */
   static size_t getFreeMemMB();
 
   virtual ~MemoryMonitor();
@@ -70,6 +99,9 @@ class exahype::reactive::MemoryMonitor : public tarch::services::Service {
    */
   virtual void receiveDanglingMessages();
 
+  /**
+   * Dumps memory usage to a file.
+   */
   virtual void dumpMemoryUsage();
 
   virtual void setOutputDir(std::string output_dir);

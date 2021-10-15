@@ -31,21 +31,23 @@
 registerService(exahype::reactive::MemoryMonitor);
 #endif
 
+#define SAMPLING_INTERVAL 1 //samples every 1 seconds
+
 tarch::logging::Log exahype::reactive::MemoryMonitor::_log("exahype::reactive::MemoryMonitor");
 
-exahype::reactive::MemoryMeasurement::MemoryMeasurement(unsigned long elapsed, std::size_t freeMem, std::size_t usedMem )
- : _elapsed(elapsed), _freeMem(freeMem), _usedMem(usedMem)
+exahype::reactive::MemorySample::MemorySample(unsigned long elapsed, std::size_t freeMem, std::size_t usedMem )
+ : _elapsedSeconds(elapsed), _freeMemMB(freeMem), _usedMemMB(usedMem)
 {}
 
-std::string exahype::reactive::MemoryMeasurement::to_string() {
+std::string exahype::reactive::MemorySample::to_string() {
   std::string result = "";
-  result = result +  std::to_string(_elapsed) + " " + std::to_string(_usedMem) + " " + std::to_string(_freeMem);
+  result = result +  std::to_string(_elapsedSeconds) + " " + std::to_string(_usedMemMB) + " " + std::to_string(_freeMemMB);
   return result;
 }
 
 exahype::reactive::MemoryMonitor::MemoryMonitor()
- : _lastMeasurementTimestamp(std::chrono::system_clock::now()),
-   _start(std::chrono::system_clock::now())
+ : _timestampLastSample(std::chrono::system_clock::now()),
+   _timestampStart(std::chrono::system_clock::now())
 {}
 
 exahype::reactive::MemoryMonitor::~MemoryMonitor() {}
@@ -67,7 +69,7 @@ std::size_t exahype::reactive::MemoryMonitor::getFreeMemMB() {
 
   char *line_buf = work;
   size_t size = 256;
-  //size_t line_size = 0;
+
   size_t read1, read2;
   read1 = getline(&line_buf, &size, f);
   read2 = getline(&line_buf, &size, f);
@@ -81,7 +83,6 @@ std::size_t exahype::reactive::MemoryMonitor::getFreeMemMB() {
   fclose(f);
 
   size_t result = 0;
-  //char *p;
 
   for(unsigned int i=0; i<size; i++) {
     if(isdigit(line_buf[i])) {
@@ -89,7 +90,6 @@ std::size_t exahype::reactive::MemoryMonitor::getFreeMemMB() {
       break;
     }
   }
-
   return result/1024;
 }
 
@@ -112,8 +112,8 @@ void exahype::reactive::MemoryMonitor::dumpMemoryUsage() {
 
   file<<"timestamp usedMem freeMem\n";
 
-  for(auto& measurement : _measurements) {
-    file<<measurement.to_string()<<"\n";
+  for(auto& sample : _samples) {
+    file<<sample.to_string()<<"\n";
   }
 
 }
@@ -128,9 +128,9 @@ void exahype::reactive::MemoryMonitor::receiveDanglingMessages() {
                                           <<" free memory ="<< freeMem << " MB ");
 
 #if defined(MemoryMonitoringTrack)
-  if(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-_lastMeasurementTimestamp).count()>=1) {
-    _lastMeasurementTimestamp = std::chrono::system_clock::now();
-    _measurements.push_back(MemoryMeasurement(std::chrono::duration_cast<std::chrono::seconds>((_lastMeasurementTimestamp-_start)).count(), freeMem, usedMem));
+  if(std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now()-_timestampLastSample).count()>=SAMPLING_INTERVAL) {
+    _timestampLastSample = std::chrono::system_clock::now();
+    _samples.push_back(MemorySample(std::chrono::duration_cast<std::chrono::seconds>((_timestampLastSample-_timestampStart)).count(), freeMem, usedMem));
   }
 #endif
 

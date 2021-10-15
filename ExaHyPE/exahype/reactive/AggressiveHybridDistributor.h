@@ -99,6 +99,7 @@ class exahype::reactive::AggressiveHybridDistributor {
      * overloading of the network.
      */
     int *_optimalTasks;
+
     /**
      * Stores how many tasks the algorithm actually attempts to offload
      * in every time step.
@@ -138,6 +139,7 @@ class exahype::reactive::AggressiveHybridDistributor {
      * step when compared to the previous one.
      */
     int _incrementCurrent;
+
     /**
      * Stores task increment of previous time step (see above).
      */
@@ -148,18 +150,25 @@ class exahype::reactive::AggressiveHybridDistributor {
      */
     bool _isEnabled;
 
-    // Todo: docu
+    /**
+     * Rank that is currently seen as an optimal victim for receiving work.
+     */
     int _currentOptimalVictim;
+
+    /**
+     * Rank that is currently seens as the critical rank.
+     */
     int _currentCriticalRank;
 
     int _localStarvationThreshold;
 
     /**
-     * Conducts a CCP step.
+     * Updates load distribution according to a CCP step.
      */
     void updateLoadDistributionCCP();
+
     /**
-     * Conducts a diffusive load balancing step.
+     * Updates load distribution according to a diffusive load balancing step.
      */
     void updateLoadDistributionDiffusive();
 
@@ -193,7 +202,7 @@ class exahype::reactive::AggressiveHybridDistributor {
                    int CCPFrequency, int CCPStepsPerPhase,
                    bool adaptTemperature,
                    double thresholdTempAdaptation,
-		   int localStarvationThreshold);
+		               int localStarvationThreshold);
 
     /**
      *  This operation computes a new unique load distribution (and accordingly, distribution rules)
@@ -209,11 +218,14 @@ class exahype::reactive::AggressiveHybridDistributor {
     void computeIdealLoadDistribution(int enclaveCells, int skeletonCells);
 
     /**
-     * Updates the remaining tasks to offload counters. This typically happens after
+     * Resets the remaining tasks to offload counters to the current distribution. This typically happens after
      * a new load re-distribution has been computed.
      */
     void resetRemainingTasksToOffload();
 
+    /**
+     * Resets the current distribution rules to zero for each rank. This restarts the diffusion algorithm (e.g., after mesh refinement).
+     */
     void resetTasksToOffload();
 
     /**
@@ -228,7 +240,7 @@ class exahype::reactive::AggressiveHybridDistributor {
      * @return True if a victim rank was chosen.
      * @Note  ToDo: This should be moved into a super class.
      */
-    bool selectVictimRank(int& victim, bool& last);
+    bool selectVictimRank(int& victim, bool& isLastVictim);
 
     /**
      * Inserts ranks to which
@@ -236,17 +248,17 @@ class exahype::reactive::AggressiveHybridDistributor {
      * into parameter vector victimRanks.
      * @param victimRanks Result
      */
-    void getAllVictimRanks(std::vector<int>& victimRanks);
+    void getAllVictimRanks(std::vector<int>& victimRanks) const;
 
     /**
      * Returns current optimal victim
      */
-    int getCurrentOptimalVictim();
+    int getCurrentOptimalVictim() const;
 
     /**
      * Returns current critical rank.
      */
-    int getCurrentCriticalRank();
+    int getCurrentCriticalRank() const;
  
     /**
      * Conducts another update of the load re-distribution. This is

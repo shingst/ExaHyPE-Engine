@@ -22,20 +22,43 @@ namespace exahype {
 
 namespace reactive{
 
+/**
+ * A heartbeat job regularly posts teaMPI heartbeats after an interval of 1 s (currently hardcoded) has elapsed.
+ * It reschedules itself until it has been stopped.
+ * There can only be a single heartbeat job per rank.
+ */
 class HeartbeatJob : public tarch::multicore::jobs::Job {
   public:
 	static tarch::logging::Log _log;
 
+	/**
+	 * Starts heartbeat job.
+	 */
 	static void startHeartbeatJob();
+
+	/**
+	 * Stops heartbeat job (busy polls until the task has finished).
+	 */
 	static void stopHeartbeatJob();
 	bool run(bool runOnMasterThread);
+
   private:
 	static HeartbeatJob* _singleton;
 
-	std::atomic <bool> _terminateTrigger;
+	/**
+	 * Flag that indicates whether the heartbeat job should terminate.
+	 */
+	std::atomic <bool> _hasSetTerminateTrigger;
+
+	/**
+	 * Flag that indicates whether the heartbeat job has terminated.
+	 */
 	std::atomic <bool> _hasTerminated;
 
-	double _lastTimeStampTriggered;
+	/**
+	 * Stores time stamp of last heartbeat.
+	 */
+	double _timestampOfLastHeartbeat;
 
 	HeartbeatJob();
 	virtual ~HeartbeatJob();

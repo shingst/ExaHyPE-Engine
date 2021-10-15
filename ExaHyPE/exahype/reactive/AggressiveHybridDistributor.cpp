@@ -32,6 +32,8 @@
 
 tarch::logging::Log exahype::reactive::AggressiveHybridDistributor::_log( "exahype::reactive::AggressiveHybridDistributor" );
 
+#define MINIMUM_TASKS_IN_QUEUE 20 //a magic constant which controls that there is always a minimum of 20 tasks in the queue
+
 exahype::reactive::AggressiveHybridDistributor::AggressiveHybridDistributor() :
   _temperatureDiffusion(0.5),
   _temperatureCCP(1),
@@ -94,7 +96,7 @@ void exahype::reactive::AggressiveHybridDistributor::computeIdealLoadDistributio
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();
   
-  // nothing to do
+  // nothing to do if there is a single rank only
   if(nnodes<=1)
     return;
 
@@ -152,9 +154,6 @@ void exahype::reactive::AggressiveHybridDistributor::computeIdealLoadDistributio
         if(input_r==myRank) {
           logInfo("computeIdealLoadDistribution()"," inc_l="<<inc_l);
           _idealTasksToOffloadCCP[output_r] = inc_l;
-          //reactive::OffloadingProfiler::getInstance().notifyTargetOffloadedTask(inc_l, output_r);
-          //_tasksToOffload[output_r]= std::min(inc_l,1);
-          //offloading::OffloadingProfiler::getInstance().notifyTargetOffloadedTask(std::min(inc_l,1), output_r);
         }
       }
 
@@ -173,10 +172,10 @@ void exahype::reactive::AggressiveHybridDistributor::computeIdealLoadDistributio
 
   std::string str="ideal load distribution ";
   for(int i=0;i<nnodes;i++) str=str+" , "+std::to_string(newLoadDist[i]);
-  logDebug("computeIdealLoadDistribution()", str);
+    logDebug("computeIdealLoadDistribution()", str);
   str="ideal tasks to offload ";
   for(int i=0;i<nnodes;i++) str=str+" , "+std::to_string(_idealTasksToOffloadCCP[i]);
-  logDebug("computeIdealLoadDistribution()", str);
+    logDebug("computeIdealLoadDistribution()", str);
 
   delete[] newLoadDist;
 }
@@ -189,7 +188,7 @@ int exahype::reactive::AggressiveHybridDistributor::determineCriticalRank() {
 		 exahype::reactive::OffloadingAnalyser::getInstance().getFilteredWaitingTimesSnapshot();
  
   int *waitingRanks = new int[nnodes];
-  bool *isWaitingForSomeone = new bool[nnodes];
+  bool *isWaitingForRank = new bool[nnodes];
   std::fill(waitingRanks, waitingRanks+nnodes, 0);
 
   double currentLongestWaitTimeCritical = -1;
@@ -197,14 +196,14 @@ int exahype::reactive::AggressiveHybridDistributor::determineCriticalRank() {
   int k = 0;
 
   for(int i=0; i<nnodes; i++) {
-    bool waitingForSomeone = false;
+    bool isWaitingForSomeone = false;
     for(int j=0; j<nnodes; j++) {
       if(waitingTimesSnapshot[k+j]> exahype::reactive::OffloadingAnalyser::getInstance().getZeroThreshold()) {
         waitingRanks[j]++;   
-        waitingForSomeone = true;
+        isWaitingForSomeone = true;
       }
     }
-    isWaitingForSomeone[i]= waitingForSomeone;
+    isWaitingForRank[i]= isWaitingForSomeone;
     k+= nnodes;
   }
 
@@ -213,7 +212,7 @@ int exahype::reactive::AggressiveHybridDistributor::determineCriticalRank() {
     for(int j=0; j<nnodes; j++) {
       if(waitingTimesSnapshot[k+j]> exahype::reactive::OffloadingAnalyser::getInstance().getZeroThreshold()) {
          if(waitingTimesSnapshot[k+j]>currentLongestWaitTimeCritical
-           && !isWaitingForSomeone[j]
+           && !isWaitingForRank[j]
            && waitingRanks[j]>0) {
              currentCriticalRank = j;
              currentLongestWaitTimeCritical = waitingTimesSnapshot[k+j];
@@ -223,7 +222,7 @@ int exahype::reactive::AggressiveHybridDistributor::determineCriticalRank() {
     k+= nnodes;
   }
   
-  delete[] isWaitingForSomeone;
+  delete[] isWaitingForRank;
   delete[] waitingRanks;
 
   return currentCriticalRank;
@@ -327,9 +326,9 @@ void exahype::reactive::AggressiveHybridDistributor::printOffloadingStatistics()
   for(int i=0; i<nnodes; i++) {
     if(i==myRank)
       continue;
-    //if(_tasksToOffload[i]>0)
-    //  logInfo("printOffloadingStatistics()", "target tasks to rank "<<i<<" ntasks "<<_tasksToOffload[i]<<" not offloaded "
-    //                                        <<_tasksNotOffloaded[i]<<" actually offloaded "<<_tasksActuallyOffloaded[i]); 
+    if(_tasksToOffload[i]>0)
+      logDebug("printOffloadingStatistics()", "target tasks to rank "<<i<<" ntasks "<<_tasksToOffload[i]<<" not offloaded "
+                                            <<_tasksNotOffloaded[i]<<" actually offloaded "<<_tasksActuallyOffloaded[i]);
     _tasksNotOffloaded[i] = 0;
     _tasksActuallyOffloaded[i] = 0;
   }
@@ -376,7 +375,6 @@ void exahype::reactive::AggressiveHybridDistributor::updateLoadDistribution() {
   logDebug("updateLoadDistribution()","total offloaded (target): "<<_totalTasksOffloaded<<" previous: "<<_oldTotalTasksOffloaded);
   logDebug("updateLoadDistribution()","increment current "<<_incrementCurrent<<" previous: "<<_incrementPrevious);
 
-
   _oldTotalTasksOffloaded = _totalTasksOffloaded;
 
   std::copy(&_tasksToOffload[0], &_tasksToOffload[nnodes], &_optimalTasks[0]);
@@ -416,7 +414,6 @@ void exahype::reactive::AggressiveHybridDistributor::updateLoadDistribution() {
     }
     _totalTasksOffloaded += _tasksToOffload[i];
   }
-  //Todo:: handling if we offload to critical rank here? -> currently only in diffusion, CCP does not care about critical ranks anymore
 
   //compute new increment
   _incrementPrevious = _incrementCurrent;
@@ -443,15 +440,11 @@ void exahype::reactive::AggressiveHybridDistributor::updateLoadDistributionCCP()
   
   for(int i=0; i<nnodes; i++) {
     if(_idealTasksToOffloadCCP[i]>0) {
-      //we have a potential victim rank
-//     if(!exahype::reactive::OffloadingManager::getInstance().isBlacklisted(i)) {
-      //logInfo("updateLoadDistributionCCP", "offloading to "<<i<<" tasks "<<_temperatureCCP*_idealTasksToOffloadCCP[i]);
-      _optimalTasks[i] = _idealTasksToOffloadCCP[i];
+       _optimalTasks[i] = _idealTasksToOffloadCCP[i];
       _tasksToOffload[i] = std::ceil(std::max((1.0-_temperatureCCP), 0.0)*_tasksToOffload[i] + _temperatureCCP*_idealTasksToOffloadCCP[i]);
 #ifdef DistributedOffloadingDisable
        _tasksToOffload[i] = 0;
 #endif
-//       }
      }
    }
 
@@ -477,15 +470,16 @@ void exahype::reactive::AggressiveHybridDistributor::updateLoadDistributionDiffu
   logDebug("updateLoadDistributionDiffusive()", "optimal victim: "<<currentOptimalVictim<<" critical rank:"<<currentCriticalRank);
 
 #ifndef DistributedOffloadingDisable
-
   bool isVictim = exahype::reactive::ReactiveContext::getInstance().isVictim();
-  if(currentOptimalVictim>=0 && myRank == currentCriticalRank && currentCriticalRank!=currentOptimalVictim) {
+
+  if(currentOptimalVictim>=0
+  && myRank == currentCriticalRank
+  && currentCriticalRank!=currentOptimalVictim) {
     if(!isVictim) {
       int currentTasksCritical = _initialLoad[currentCriticalRank];
       for(int i=0; i<nnodes; i++) {
         currentTasksCritical -= _tasksToOffload[i];
       }
-      //int currentTasksOptimal = _initialLoad[currentOptimalVictim]+_tasksToOffload[currentOptimalVictim];
 
       int optimalTasksToOffload = (tarch::multicore::Core::getInstance().getNumberOfThreads()-1) *
                                   currentLongestWaitTimeVictim/
@@ -511,61 +505,61 @@ void exahype::reactive::AggressiveHybridDistributor::updateLoadDistributionDiffu
 
 }
 
-void exahype::reactive::AggressiveHybridDistributor::getAllVictimRanks(std::vector<int> &victims ) {
+void exahype::reactive::AggressiveHybridDistributor::getAllVictimRanks(std::vector<int> &victims ) const {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   for(int i=0; i<nnodes; i++) {
     if(_tasksToOffload[i]>0 && _tasksNotOffloaded[i]!=_tasksToOffload[i] ) victims.push_back(i);
   }
 }
 
-int exahype::reactive::AggressiveHybridDistributor::getCurrentOptimalVictim() {
+int exahype::reactive::AggressiveHybridDistributor::getCurrentOptimalVictim() const {
   return _currentOptimalVictim;
 }
 
-int exahype::reactive::AggressiveHybridDistributor::getCurrentCriticalRank() {
+int exahype::reactive::AggressiveHybridDistributor::getCurrentCriticalRank() const {
   return _currentCriticalRank;
 }
 
-bool exahype::reactive::AggressiveHybridDistributor::selectVictimRank(int& victim, bool& last) {
+bool exahype::reactive::AggressiveHybridDistributor::selectVictimRank(int& victim, bool& isLastVictim) {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   int myRank = tarch::parallel::Node::getInstance().getRank();
   victim = myRank;
 
-  static std::atomic<int> rank_cnt (0);
+  static std::atomic<int> nextRoundRobinRank (0);
 
-  int l_rank = rank_cnt;
+  int tmpRank = nextRoundRobinRank;
 
   for(int i=0; i<nnodes; i++) {
-    if(l_rank!=myRank) {
-      int lastVal = _remainingTasksToOffload[l_rank].fetch_sub(1);
+    if(tmpRank!=myRank) {
+      int lastVal = _remainingTasksToOffload[tmpRank].fetch_sub(1);
       if(lastVal>0) {
-        victim = l_rank;
-        l_rank = (l_rank + 1)%nnodes;
+        victim = tmpRank;
+        tmpRank = (tmpRank + 1)%nnodes;
         break;
       }
       else
-        _remainingTasksToOffload[l_rank]=0;
+        _remainingTasksToOffload[tmpRank]=0;
     }
-    l_rank = (l_rank + 1)%nnodes;
+    tmpRank = (tmpRank + 1)%nnodes;
   }
-  rank_cnt=l_rank;
+  nextRoundRobinRank = tmpRank;
 
-#if defined(SharedTBB) //_minimNumberOfJobsPerConsumerRun
-  int threshold = (_localStarvationThreshold==-1) ? 1
+#if defined(SharedTBB)
+  int minimumTasksInQueue = (_localStarvationThreshold==-1) ? 1
 		         + std::max(1, tarch::multicore::Core::getInstance().getNumberOfThreads()-1)
                  * tarch::multicore::jobs::internal::_minimalNumberOfJobsPerConsumerRun
 		 : _localStarvationThreshold;
 #else
-  int threshold = 20;
+  int minimumTasksInQueue = MINIMUM_TASKS_IN_QUEUE;
 #endif 
             
-  threshold = std::max(threshold, 20);
+  minimumTasksInQueue = std::max(minimumTasksInQueue, MINIMUM_TASKS_IN_QUEUE);
 
-  if(exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs-exahype::solvers::ADERDGSolver::NumberOfRemoteJobs<
-        threshold) {
-	  logDebug("selectVictimRank", "threshold "<<threshold
+  if(exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs-exahype::solvers::ADERDGSolver::NumberOfRemoteJobs //current number of jobs
+      < minimumTasksInQueue) {
+	  logDebug("selectVictimRank", "threshold "<<minimumTasksInQueue
 	  		                       << " there are "<<exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs-exahype::solvers::ADERDGSolver::NumberOfRemoteJobs
-	                                       <<" jobs "<< " and "<<tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs());
+	                             <<" jobs "<< " and "<<tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs()<<" waiting background jobs");
 
     reactive::OffloadingProfiler::getInstance().notifyThresholdFail();
     _tasksNotOffloaded[victim]++;
