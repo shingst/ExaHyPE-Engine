@@ -313,7 +313,6 @@ void exahype::repositories::RepositorySTDStack::iterate(int numberOfIterations, 
           skip_cnt++;
         }
         #endif
-
         watch.startTimer(); _gridWithFusedTimeStep.iterate(); watch.stopTimer(); _measureFusedTimeStepCPUTime.setValue( watch.getCPUTime() ); _measureFusedTimeStepCalendarTime.setValue( watch.getCalendarTime() ); break;
       }
 #else
