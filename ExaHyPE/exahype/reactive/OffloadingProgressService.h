@@ -11,7 +11,7 @@
  * For the full license text, see LICENSE.txt
  **/
 
-#if !defined(_EXAHYPE_OFFLOADINGPROGRESSSERVICE_H_)  && defined(Parallel) && defined(SharedTBB)
+#if !defined(_EXAHYPE_OFFLOADINGPROGRESSSERVICE_H_) && defined(Parallel) && defined(SharedTBB)
 #define _EXAHYPE_OFFLOADINGPROGRESSSERVICE_H_
 
 #include "tarch/logging/Log.h"
@@ -38,7 +38,7 @@ namespace exahype {
  * This ensures that task offloading communication actually progresses in
  * the background. A single solver is attached for now, on which
  * the offloading progress method is invoked. In the future, this may
- * need to be extended to support multiple solvers.
+ * need to be extended for multiple solvers.
  */
 class exahype::reactive::OffloadingProgressService : public tarch::services::Service {
 
@@ -50,27 +50,46 @@ class exahype::reactive::OffloadingProgressService : public tarch::services::Ser
   /**
    * Flag indicating if a solver has been registered.
    */
-  bool _isSet;
+  bool _isSolverSet;
 
+  /**
+   * Indicates if service is active.
+   */
   bool _isEnabled;
+
   /**
    * The log device of this class.
    */
   static tarch::logging::Log _log;
 
   public:
+
   OffloadingProgressService();
+  virtual ~OffloadingProgressService();
+
+  OffloadingProgressService(const OffloadingProgressService& other) = delete;
+  OffloadingProgressService& operator=(const OffloadingProgressService& other) = delete;
+
   static OffloadingProgressService& getInstance();
  
-  virtual void enable();
-
-  virtual ~OffloadingProgressService();
   /**
-   *  Progress method invoked by Peano
+   * Enables service.
+   */
+  void enable();
+
+  /**
+   * Disables service.
+   */
+  void disable();
+
+  /**
+   *  Progress method invoked by Peano.
+   *  The service progresses outstanding messages related to task offloading and task sharing here.
    */
   virtual void receiveDanglingMessages();
+
   /**
-   * Registers a solver on which offloading progress is made.
+   * Registers the solver on which offloading progress is made (currently only a single one is supported).
    */
   void setSolver(exahype::solvers::ADERDGSolver *solver);
 };

@@ -28,7 +28,7 @@ registerService(exahype::reactive::OffloadingProgressService)
 tarch::logging::Log exahype::reactive::OffloadingProgressService::_log("exahype::reactive::OffloadingProgressService");
 
 exahype::reactive::OffloadingProgressService::OffloadingProgressService()
-: _solver(nullptr),  _isSet(false), _isEnabled(false){}
+: _solver(nullptr),  _isSolverSet(false), _isEnabled(false){}
 
 exahype::reactive::OffloadingProgressService::~OffloadingProgressService() {}
 
@@ -36,8 +36,12 @@ void exahype::reactive::OffloadingProgressService::enable() {
   _isEnabled = true;
 }
 
+void exahype::reactive::OffloadingProgressService::disable() {
+  _isEnabled = false;
+}
+
 void exahype::reactive::OffloadingProgressService::receiveDanglingMessages() {
-  if(_isSet && _isEnabled) {
+  if(_isSolverSet && _isEnabled) {
     exahype::solvers::ADERDGSolver::progressOffloading(_solver, true, 1);
   }
 }
@@ -49,7 +53,7 @@ exahype::reactive::OffloadingProgressService& exahype::reactive::OffloadingProgr
 
 void exahype::reactive::OffloadingProgressService::setSolver(exahype::solvers::ADERDGSolver *solver) {
   _solver = solver;
-  _isSet = true;
+  _isSolverSet = true;
 }
 #endif
 

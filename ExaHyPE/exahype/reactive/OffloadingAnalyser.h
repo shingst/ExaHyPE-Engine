@@ -91,6 +91,9 @@ class exahype::reactive::OffloadingAnalyser : public peano::performanceanalysis:
     OffloadingAnalyser();
     virtual ~OffloadingAnalyser();
 
+    OffloadingAnalyser(const OffloadingAnalyser& other) = delete;
+    OffloadingAnalyser& operator=(const OffloadingAnalyser& other) = delete;
+
     const double* getFilteredWaitingTimesSnapshot();
 
     void notifyReceivedSTPJob();    

@@ -27,7 +27,7 @@
 #include <limits>
 
 #if defined(UseMPIThreadSplit)
-#define MAX_THREADS 48
+#define MAX_THREADS 48  // for SuperMUC, may be increased for other architectures
 #else
 #define MAX_THREADS 1
 #endif

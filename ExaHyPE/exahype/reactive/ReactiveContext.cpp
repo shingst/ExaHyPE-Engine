@@ -19,15 +19,16 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <mpi.h>
 
 #include "tarch/multicore/Lock.h"
 #include "tarch/multicore/Core.h"
 #include "tarch/parallel/Node.h"
 
-#include "../reactive/OffloadingProfiler.h"
-#include "../reactive/StaticDistributor.h"
-#include "../reactive/AggressiveHybridDistributor.h"
-#include "../reactive/PerformanceMonitor.h"
+#include "exahype/reactive/OffloadingProfiler.h"
+#include "exahype/reactive/StaticDistributor.h"
+#include "exahype/reactive/AggressiveHybridDistributor.h"
+#include "exahype/reactive/PerformanceMonitor.h"
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
 #ifndef MPI_CHECK
@@ -62,8 +63,6 @@ static int event_progress_receiveBack;
 #if defined(USE_TMPI)
 #include "teaMPI.h"
 #endif
-
-#include <mpi.h>
 
 //#undef assertion
 //#define assertion assert
@@ -169,16 +168,13 @@ bool exahype::reactive::ReactiveContext::usesOffloading() {
 }
 
 void exahype::reactive::ReactiveContext::initializeCommunicatorsAndTeamMetadata() {
-  //exahype::reactive::OffloadingManager::getInstance().createMPICommunicator();
- static bool initialized = false;
-//Todo:  this collective routine should be exposed to the runner instead of being implicitly invoked by the constructor 
-// can cause deadlocks if only a single thread calls the first getInstance() for getting an OffloadingContext
-//#if defined(SharedTBB)
- if(!initialized)
-  createMPICommunicators();
-//#endif
-
- initialized = true;
+  static bool initialized = false;
+  //Todo:  this collective routine should be exposed to the runner instead of being implicitly invoked by the constructor
+  //#if defined(SharedTBB)
+  if(!initialized)
+    createMPICommunicators();
+  //#endif
+  initialized = true;
 }
 
 void exahype::reactive::ReactiveContext::destroy() {
@@ -282,18 +278,15 @@ MPI_Comm exahype::reactive::ReactiveContext::getMPICommunicatorMapped() {
 }
 
 exahype::reactive::ReactiveContext& exahype::reactive::ReactiveContext::getInstance() {
-  //static OffloadingManager offloadingManager;
-  int threadID; // tarch::multicore::Core::getInstance().getThreadNum();
+  int threadID;
 #if defined(UseMPIThreadSplit)
   threadID = tarch::multicore::Core::getInstance().getThreadNum();
 #else
   threadID = 0;
 #endif
 
-  //logInfo("getInstance()", "getting offloading manager for thread id "<<threadID);
-
   if(threadID>=MAX_THREADS) {
-	  logError("getInstance()","The application is using too many threads (>48), we need to exit...");
+	  logError("getInstance()","The application is using too many threads (>48), we need to exit... You may want to increase MAX_THREADS.");
 	  assertion(false);
 	  MPI_Abort(MPI_COMM_WORLD, -1);
   }
@@ -337,40 +330,29 @@ bool exahype::reactive::ReactiveContext::isVictim() {
 }
 
 void exahype::reactive::ReactiveContext::triggerEmergencyForRank(int rank) {
-//  if(!_emergencyTriggered) {
-//    logInfo("triggerEmergency()","emergency event triggered");
-//    _emergencyTriggered = true;
-//  }
   switch(exahype::reactive::ReactiveContext::getInstance().getOffloadingStrategy()){
     case ReactiveContext::OffloadingStrategy::AggressiveHybrid:
       exahype::reactive::AggressiveHybridDistributor::getInstance().handleEmergencyOnRank(rank); break;
     default:
-      //do nothing, no emergencies for other offloading strategies
+      //do nothing, no emergencies for other offloading strategies so far
       break;
   }
 
   _localBlacklist[rank]++;
   exahype::reactive::PerformanceMonitor::getInstance().submitBlacklistValueForRank(_localBlacklist[rank], rank);
-  //logInfo("triggerEmergencyForRank()","blacklist value for rank "<<rank<<":"<<_localBlacklist[rank]
-	//                                 <<" NumberOfRemoteJobs"<<  exahype::solvers::ADERDGSolver::NumberOfRemoteJobs
-	//								                 <<" NumberOfEnclaveJobs"<<  exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs);
 }
 
 void exahype::reactive::ReactiveContext::recoverBlacklistedRanks() {
-  logDebug("decreaseHeat()","decrease heat of emergency heat map");
+  logDebug("recoverBlacklistedRanks()","decrease heat of emergency heat map");
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   for(int i=0; i<nnodes;i++) {
     _localBlacklist[i]*= 0.9;
     if(_localBlacklist[i]>0)
     exahype::reactive::PerformanceMonitor::getInstance().submitBlacklistValueForRank(_localBlacklist[i], i);
-    //if(_emergencyHeatMap[i]>0.5) {
-    //  logInfo("decreaseHeat()","blacklist value for rank "<<i<<":"<<_emergencyHeatMap[i]);
-    //}
   }
 }
 
 bool exahype::reactive::ReactiveContext::isBlacklisted(int rank) {
-  //return _emergencyHeatMap[rank]>0.5;
   const double* globalHeatMap = exahype::reactive::PerformanceMonitor::getInstance().getBlacklistSnapshot();
   return (globalHeatMap[rank]>0.5) || (_localBlacklist[rank]>0.5);
 }

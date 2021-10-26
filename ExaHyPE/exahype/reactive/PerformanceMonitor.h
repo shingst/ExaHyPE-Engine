@@ -35,6 +35,10 @@ class exahype::reactive::PerformanceMonitor {
     static tarch::logging::Log _log;
 
     PerformanceMonitor();
+    virtual ~PerformanceMonitor();
+
+    PerformanceMonitor(const PerformanceMonitor& other) = delete;
+    PerformanceMonitor& operator=(const PerformanceMonitor& other) = delete;
 
     /**
      * Status flag, if false then a rank has stopped
@@ -184,7 +188,6 @@ class exahype::reactive::PerformanceMonitor {
     void disable();
 
     static PerformanceMonitor& getInstance();
-    virtual ~PerformanceMonitor();
 };
 
 #endif

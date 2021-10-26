@@ -171,7 +171,7 @@ void exahype::mappings::FusedTimeStep::beginIteration(
 
 
 #if defined(Parallel) && defined(SharedTBB)
-   // offloading manager job is paused after each iteration to not disturb other communication -> need to restart
+  // Offloading manager job is paused after each iteration to not disturb other communication -> need to restart
   if ( exahype::reactive::ReactiveContext::getInstance().isEnabled()
      && !tarch::parallel::Node::getInstance().isGlobalMaster())
   {
@@ -195,12 +195,11 @@ void exahype::mappings::FusedTimeStep::beginIteration(
      ||
         (exahype::reactive::ReactiveContext::getInstance().getOffloadingStrategy()
          ==exahype::reactive::ReactiveContext::OffloadingStrategy::Static)
-     )
+      )
      &&  issuePredictionJobsInThisIteration()
-     ) {
+    ) {
     exahype::reactive::StaticDistributor::getInstance().resetRemainingTasksToOffload();
   }
-
 
 #endif
   logTraceOutWith1Argument("beginIteration(State)", solverState);
@@ -215,7 +214,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
 #ifdef USE_ITAC
     VT_begin(noiseHandle);
 #endif
-    //generate noise after prediction jobs have been issued
+    //generate noise on master thread after prediction jobs have been issued
     exahype::reactive::NoiseGenerator::getInstance().generateNoiseIfActive();
 #ifdef USE_ITAC
     VT_end(noiseHandle);
@@ -250,9 +249,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
     //exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().printHistory();
   }
 
-#if defined(Parallel) && defined(SharedTBB)
-
-#if !defined(OffloadingUseProgressThread)
+#if defined(Parallel) && defined(SharedTBB) && !defined(OffloadingUseProgressThread)
   if (
       !tarch::parallel::Node::getInstance().isGlobalMaster() )
   {
@@ -265,7 +262,6 @@ void exahype::mappings::FusedTimeStep::endIteration(
       }
     } 
   }
-#endif
 #endif
 
   logTraceOutWith1Argument("endIteration(State)", state);

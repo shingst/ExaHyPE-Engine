@@ -50,6 +50,10 @@ class exahype::reactive::AggressiveHybridDistributor {
     static tarch::logging::Log _log;
 
     AggressiveHybridDistributor();
+    virtual ~AggressiveHybridDistributor();
+
+    AggressiveHybridDistributor(const AggressiveHybridDistributor& other) = delete;
+    AggressiveHybridDistributor& operator=(const AggressiveHybridDistributor& other) = delete;
 
     /**
      * Temperature used for diffusion.
@@ -105,6 +109,7 @@ class exahype::reactive::AggressiveHybridDistributor {
      * in every time step.
      */
     int *_tasksToOffload;
+
     /**
      * Counts how many tasks still need to be offloaded in the current time step.
      */
@@ -123,7 +128,6 @@ class exahype::reactive::AggressiveHybridDistributor {
      * Counts the number of tasks that were actually offloaded (per rank, for statistics).
      */
     std::atomic<int> *_tasksActuallyOffloaded;
-
 
     /**
      * Counts total number of tasks offloaded from this rank (statistics).
@@ -187,7 +191,6 @@ class exahype::reactive::AggressiveHybridDistributor {
 
   public:
     static AggressiveHybridDistributor& getInstance();
-    virtual ~AggressiveHybridDistributor();
 
     /**
      * Configures the aggressive hybrid distribution strategy
@@ -278,6 +281,7 @@ class exahype::reactive::AggressiveHybridDistributor {
      * Enables distributor.
      */
     void enable();
+
     /**
      * Disables distributor.
      */

@@ -176,6 +176,10 @@ class exahype::reactive::RequestManager {
     std::atomic<int> *_postedReceiveOutcomesPerRank;
 
     RequestManager(int threadId);
+    virtual ~RequestManager();
+
+    RequestManager(const RequestManager& other) = delete;
+    RequestManager& operator=(const RequestManager& other) = delete;
 
     /**
      * This method makes progress on all current requests of the given request type.
@@ -217,14 +221,13 @@ class exahype::reactive::RequestManager {
       bool operator()();
     };
 
-
     inline int getNextRequestId() {
-      // Todo: Deal with overflow
+      // overflow is ignored for now, as it would not cause any problems
       return _nextRequestId++;
     }
 
     inline int getNextGroupId() {
-      // Todo: Deal with overflow
+      // overflow is ignored for now, as it would not cause any problems
       return _nextGroupId++;
     }
 
@@ -265,7 +268,6 @@ class exahype::reactive::RequestManager {
 #endif
 
     static RequestManager& getInstance();
-    virtual ~RequestManager();
 };
 
 #endif

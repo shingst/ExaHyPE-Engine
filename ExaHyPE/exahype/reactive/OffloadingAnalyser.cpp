@@ -185,7 +185,7 @@ void exahype::reactive::OffloadingAnalyser::beginIteration() {
     }
     _timeStepWatch.startTimer();
 
-    exahype::reactive::ReactiveContext::getInstance().resetVictimFlag(); //TODO: correct position here?
+    exahype::reactive::ReactiveContext::getInstance().resetVictimFlag(); //todo: find better position
     exahype::reactive::ReactiveContext::getInstance().recoverBlacklistedRanks();
   }
 }
