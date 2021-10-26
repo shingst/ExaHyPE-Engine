@@ -13,50 +13,47 @@
 
 #include "exahype/reactive/NoiseGenerationStrategyChaseVictim.h"
 
-#include "tarch/parallel/Node.h"
 #include <unistd.h>
 #include <cstdlib>
 #include <string>
-#include "../reactive/AggressiveHybridDistributor.h"
-#include "../reactive/OffloadingAnalyser.h"
+
+#include "tarch/parallel/Node.h"
+
+#include "exahype/reactive/AggressiveHybridDistributor.h"
+#include "exahype/reactive/OffloadingAnalyser.h"
 #include "exahype/reactive/ReactiveContext.h"
+
 
 namespace exahype {
 namespace reactive {
 
 tarch::logging::Log  exahype::reactive::NoiseGenerationStrategyChaseVictim::_log( "exahype::reactive::NoiseGenerationStrategyChaseVictim" );
 
-
-NoiseGenerationStrategyChaseVictim::NoiseGenerationStrategyChaseVictim() : _factor(0.5), _baseNoise(1){
+NoiseGenerationStrategyChaseVictim::NoiseGenerationStrategyChaseVictim() : _scalingFactor(0.5), _baseNoise(1){
 }
 
-NoiseGenerationStrategyChaseVictim::NoiseGenerationStrategyChaseVictim(double factor, double baseNoise)
- : _factor(factor), _baseNoise(baseNoise) {
+NoiseGenerationStrategyChaseVictim::NoiseGenerationStrategyChaseVictim(double scalingFactor, double baseNoise)
+ : _scalingFactor(scalingFactor), _baseNoise(baseNoise) {
+   assertion(scalingFactor>=0);
 }
 
 NoiseGenerationStrategyChaseVictim::~NoiseGenerationStrategyChaseVictim() {
 }
 
-void NoiseGenerationStrategyChaseVictim::generateNoise(int rank, std::chrono::system_clock::time_point timestamp) {
+void NoiseGenerationStrategyChaseVictim::generateNoiseIfActive(const int myRank ) {
 //does not make sense without parallelism
 #if defined(Parallel)
   pid_t pid = getpid();
-  static int cnt = 0;
+  static const int stepsBetweenDisturbance = 10;
+  static int stepsRemainingBeforeDisturbance = stepsBetweenDisturbance;
 
+  stepsRemainingBeforeDisturbance--;
+  bool isTimeToDisturb = (stepsRemainingBeforeDisturbance==0);
 
-  static bool triggeredVictim = false;
+  if (ReactiveContext::getInstance().isVictim()
+    && isTimeToDisturb) {
 
-  static const int kRecover = 10;
-  static int kLastTriggered = -1;
-
-  if(triggeredVictim && (cnt-kLastTriggered)==kRecover){
-    triggeredVictim = false;
-    kLastTriggered = -1;
-  }
-
-  if (ReactiveContext::getInstance().isVictim() && !triggeredVictim) {
-    //double timePerTimeStep = exahype::reactive::OffloadingAnalyser::getInstance().getTimePerTimeStep();
-    double timeToWait = _baseNoise*_factor;
+    double timeToWait = _baseNoise*_scalingFactor;
     std::string call = " kill -STOP "+std::to_string(pid)+" ; sleep "+std::to_string(timeToWait)+"; kill -CONT "+std::to_string(pid);
 
     logDebug("generateNoise()", "running cmd "<<call<<std::endl);
@@ -66,14 +63,11 @@ void NoiseGenerationStrategyChaseVictim::generateNoise(int rank, std::chrono::sy
       logError("generateNoise", "Sleep command could not be called, exiting...");
       exit(-1);
     }
-
-    if(ReactiveContext::getInstance().isVictim()) {
-      triggeredVictim = true;
-      kLastTriggered = cnt;
-    }
   }
 
-  cnt++;
+  if(isTimeToDisturb) {
+    stepsRemainingBeforeDisturbance = stepsBetweenDisturbance;
+  }
 #endif
 }
 

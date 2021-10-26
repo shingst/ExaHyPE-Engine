@@ -21,7 +21,7 @@ namespace exahype {
 namespace reactive {
 
 /**
- * Implements a noise generation strategy where victim ranks are disturbed.
+ * Implements a noise generation strategy where only offloading victim ranks are disturbed.
  */
 class NoiseGenerationStrategyChaseVictim : public NoiseGenerationStrategy {
 
@@ -33,9 +33,9 @@ public:
 
   virtual ~NoiseGenerationStrategyChaseVictim();
 
-  virtual void generateNoise(int rank, std::chrono::system_clock::time_point timestamp);
+  virtual void generateNoiseIfActive(const int myRank);
 private:
-  double _factor;
+  double _scalingFactor;
   double _baseNoise;
 };
 

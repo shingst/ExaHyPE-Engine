@@ -25,7 +25,7 @@ namespace exahype {
 /**
  * Implements a simple noise generator that is used to disturb the application at runtime.
  * It provides the context class in the strategy pattern where the specific
- * noise generation strategy is provided by the NoiseGenerationStrategy interface.
+ * noise generation strategy implements the NoiseGenerationStrategy interface.
  */
 class exahype::reactive::NoiseGenerator {
 public:
@@ -34,8 +34,7 @@ public:
 
   static NoiseGenerator& getInstance();
 
-  void generateNoise();
-  void generateNoiseSTP();
+  void generateNoiseIfActive();
 
   void setStrategy(NoiseGenerationStrategy* strategy);
 private:

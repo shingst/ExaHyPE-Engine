@@ -216,7 +216,7 @@ void exahype::mappings::FusedTimeStep::endIteration(
     VT_begin(noiseHandle);
 #endif
     //generate noise after prediction jobs have been issued
-    exahype::reactive::NoiseGenerator::getInstance().generateNoise();
+    exahype::reactive::NoiseGenerator::getInstance().generateNoiseIfActive();
 #ifdef USE_ITAC
     VT_end(noiseHandle);
 #endif

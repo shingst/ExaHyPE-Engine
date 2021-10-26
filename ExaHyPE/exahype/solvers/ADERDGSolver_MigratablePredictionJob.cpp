@@ -170,10 +170,6 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::runExecution(bool 
   else
     result = handleExecution(isCalledOnMaster, hasComputed);
 
-#if defined(GenerateNoise)
-    exahype::reactive::NoiseGenerator::getInstance().generateNoiseSTP();
-#endif
-
 #ifdef USE_ITAC
   VT_end(event_stp);
 #endif

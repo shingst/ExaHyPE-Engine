@@ -28,26 +28,26 @@ namespace reactive {
 tarch::logging::Log  exahype::reactive::NoiseGenerationStrategyRoundRobin::_log( "exahype::reactive::NoiseGenerationStrategyRoundRobin" );
 
 
-NoiseGenerationStrategyRoundRobin::NoiseGenerationStrategyRoundRobin() : _frequency(1), _factor(0.5){
+NoiseGenerationStrategyRoundRobin::NoiseGenerationStrategyRoundRobin() : _stepsBetweenDisturbance(1), _waitFractionTimestep(0.5){
 }
 
-NoiseGenerationStrategyRoundRobin::NoiseGenerationStrategyRoundRobin(int frequency, double factor)
- : _frequency(frequency), _factor(factor){
+NoiseGenerationStrategyRoundRobin::NoiseGenerationStrategyRoundRobin(int stepsBetweenDisturbance, double waitFraction)
+ : _stepsBetweenDisturbance(stepsBetweenDisturbance), _waitFractionTimestep(waitFraction){
 }
 
 NoiseGenerationStrategyRoundRobin::~NoiseGenerationStrategyRoundRobin() {
 }
 
-void NoiseGenerationStrategyRoundRobin::generateNoise(int rank, std::chrono::system_clock::time_point timestamp) {
+void NoiseGenerationStrategyRoundRobin::generateNoiseIfActive(const int myRank) {
   pid_t pid = getpid();
   static int cnt = 0;
-  static int phase_cnt = 0;
+  static int nextRankToDisturb = 0;
   
   int nranks = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
-  if(phase_cnt==rank) {
+  if(nextRankToDisturb==myRank) {
     double timePerTimeStep = exahype::reactive::OffloadingAnalyser::getInstance().getTimePerTimeStep();
-    double timeToWait = timePerTimeStep*_factor;
+    double timeToWait = timePerTimeStep*_waitFractionTimestep;
 
     std::string call = " kill -STOP "+std::to_string(pid)+" ; sleep "+std::to_string(timeToWait)+"; kill -CONT "+std::to_string(pid);
 
@@ -60,15 +60,12 @@ void NoiseGenerationStrategyRoundRobin::generateNoise(int rank, std::chrono::sys
     }
   }
   cnt = cnt + 1;
-  if(cnt==_frequency) {
-    phase_cnt = (phase_cnt+1) % nranks;
+  if(cnt==_stepsBetweenDisturbance) {
+    nextRankToDisturb = (nextRankToDisturb+1) % nranks;
     cnt = 0;
   }
 }
 
-
-void NoiseGenerationStrategyRoundRobin::generateNoiseSTP(int rank, std::chrono::system_clock::time_point timestamp) {}
-  //Todo: nothing here yet
 } /* namespace offloading */
 
 } /* namespace exahype */

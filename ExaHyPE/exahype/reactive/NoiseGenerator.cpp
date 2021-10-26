@@ -35,15 +35,10 @@ exahype::reactive::NoiseGenerator& exahype::reactive::NoiseGenerator::getInstanc
   return instance;
 }
 
-void exahype::reactive::NoiseGenerator::generateNoise() {
+void exahype::reactive::NoiseGenerator::generateNoiseIfActive() {
   //usleep(1000);
   if(_strategy!=nullptr)
-	_strategy->generateNoise(tarch::parallel::Node::getInstance().getRank(), std::chrono::system_clock::now());
-}
-
-void exahype::reactive::NoiseGenerator::generateNoiseSTP() {
-  if(_strategy!=nullptr)
-    _strategy->generateNoiseSTP(tarch::parallel::Node::getInstance().getRank(), std::chrono::system_clock::now());
+	  _strategy->generateNoiseIfActive(tarch::parallel::Node::getInstance().getRank());
 }
 
 void exahype::reactive::NoiseGenerator::setStrategy(NoiseGenerationStrategy *strategy) {

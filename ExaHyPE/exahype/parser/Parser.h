@@ -611,7 +611,7 @@ class exahype::parser::Parser {
   /**
    * @return A factor that determines the strength of the noise.
    */
-  double getNoiseGenerationFactor() const;
+  double getNoiseGenerationScalingFactor() const;
 
   /**
    * @return Base time a rank is sleeping for "chase victim" noise generation strategy.

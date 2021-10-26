@@ -1200,7 +1200,7 @@ int exahype::parser::Parser::getNoiseGenerationRRFrequency() const {
   return getIntFromPath("/noise_generator/frequency", 1, isOptional);
 }
 
-double exahype::parser::Parser::getNoiseGenerationFactor() const{
+double exahype::parser::Parser::getNoiseGenerationScalingFactor() const{
   return getDoubleFromPath("/noise_generator/noise_factor", 0.5, isOptional);
 }
 

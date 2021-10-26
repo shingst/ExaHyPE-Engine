@@ -22,17 +22,17 @@ namespace reactive {
 /**
  * Generic strategy pattern for noise generation. A specific noise
  * generation strategy needs to implement this interface. The
- * noise generator context class will call the contained
+ * noise generator context class will call the implemented
  * noise generation methods during the simulation.
  */
 
 class NoiseGenerationStrategy {
 public:
-    // generates noise at the beginning of a time step
-	virtual void generateNoise(int rank, std::chrono::system_clock::time_point timestamp ) = 0;
-
-	//generates noise when executing STPs
-	virtual void generateNoiseSTP(int rank, std::chrono::system_clock::time_point timestamp ) = 0;
+  /**
+   * Disturbs the calling core according to a noise generation strategy. To be called once per time step.
+   * @param rank The current rank
+   */
+	virtual void generateNoiseIfActive(const int rank) = 0;
 
 	virtual ~NoiseGenerationStrategy(){};
 };

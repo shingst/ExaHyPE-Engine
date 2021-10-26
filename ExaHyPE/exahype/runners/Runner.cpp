@@ -1012,9 +1012,12 @@ void exahype::runners::Runner::initHPCEnvironment() {
   #endif
 
   #if defined(GenerateNoise)
-  exahype::reactive::NoiseGenerator::getInstance().setStrategy(new exahype::reactive::NoiseGenerationStrategyChaseVictim(
-						 _parser.getNoiseGenerationFactor(),
-						 _parser.getNoiseBaseTime()));
+  //todo: don't hardcode noise generation strategy
+  exahype::reactive::NoiseGenerator::getInstance().setStrategy(
+      new exahype::reactive::NoiseGenerationStrategyChaseVictim(
+						 _parser.getNoiseGenerationScalingFactor(),
+						 _parser.getNoiseBaseTime())
+  );
   #endif
 
   #if defined(FileTrace)

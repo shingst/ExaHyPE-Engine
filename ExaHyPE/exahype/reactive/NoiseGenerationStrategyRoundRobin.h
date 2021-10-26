@@ -28,19 +28,22 @@ namespace reactive {
  */
 
 class NoiseGenerationStrategyRoundRobin : public NoiseGenerationStrategy {
+
 public:
   static tarch::logging::Log     _log;
   NoiseGenerationStrategyRoundRobin();
-  NoiseGenerationStrategyRoundRobin(int frequency, double factor);
+  NoiseGenerationStrategyRoundRobin(int stepsBetweenDisturbance, double waitFractionTimestep);
   virtual ~NoiseGenerationStrategyRoundRobin();
 
-  virtual void generateNoise(int rank, std::chrono::system_clock::time_point timestamp);
-  virtual void generateNoiseSTP(int rank, std::chrono::system_clock::time_point timestamp);
+  virtual void generateNoiseIfActive(const int rank);
+
 private:
-  // the number k of steps after which the next noisy rank is selected
-  int _frequency;
+  /**
+   * The number k of steps after which the next noisy rank is selected
+   */
+  int _stepsBetweenDisturbance;
   // factor determines the strength of the noise
-  double _factor;
+  double _waitFractionTimestep;
 };
 
 } /* namespace offloading */
