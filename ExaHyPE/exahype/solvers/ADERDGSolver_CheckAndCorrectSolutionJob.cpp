@@ -100,7 +100,7 @@ bool exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::run(bool isRunO
                               "My error indicators: derivative = "<<_errorIndicatorDerivative<<
                               " time step size = "<<_errorIndicatorTimeStepSize<<
                               " admissibility = "<<_errorIndicatorAdmissibility<<
-			                  " other outcome's error indicators: derivative = "<<outcome->_metadata._errorIndicatorDerivative<<
+			                        " other outcome's error indicators: derivative = "<<outcome->_metadata._errorIndicatorDerivative<<
                               " time step size "<<outcome->_metadata._errorIndicatorTimeStepSize<<
                               " admissibility "<<outcome->_metadata._errorIndicatorAdmissibility);
          //no break!

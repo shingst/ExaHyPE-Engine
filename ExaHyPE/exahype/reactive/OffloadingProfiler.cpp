@@ -95,20 +95,20 @@ void exahype::reactive::OffloadingProfiler::beginPhase() {
   std::fill(_offloadedTasksPerRankPhase, _offloadedTasksPerRankPhase+nnodes, 0);
   std::fill(_receivedTasksPerRankPhase, _receivedTasksPerRankPhase+nnodes, 0);
   std::fill(_targetOffloadedTasksPerRankPhase, _targetOffloadedTasksPerRankPhase+nnodes, 0);
-  _executedTasksPhase=0;
-  _spawnedTasksPhase=0;
-  _thresholdFailsPhase=0;
-  _performanceUpdatesPhase=0;
-  _latePerformanceUpdatesPhase=0;
-  _offloadingDecisionsPhase=0;
-  _accWaitTasksPhaseTime=0;
-  _accUsefulCommunicationPhaseTime=0;
-  _accIdleCommunicationPhaseTime=0;
-  _accProgressPhaseTime=0;
-  _accComputationPhaseTime=0;
-  _accOffloadPhaseTime=0;
-  _accWaitForWorkersPhaseTime=0;
-  _accWaitForGlobalMasterPhaseTime=0;
+  _executedTasksPhase              = 0;
+  _spawnedTasksPhase               = 0;
+  _thresholdFailsPhase             = 0;
+  _performanceUpdatesPhase         = 0;
+  _latePerformanceUpdatesPhase     = 0;
+  _offloadingDecisionsPhase        = 0;
+  _accWaitTasksPhaseTime           = 0;
+  _accUsefulCommunicationPhaseTime = 0;
+  _accIdleCommunicationPhaseTime   = 0;
+  _accProgressPhaseTime            = 0;
+  _accComputationPhaseTime         = 0;
+  _accOffloadPhaseTime             = 0;
+  _accWaitForWorkersPhaseTime      = 0;
+  _accWaitForGlobalMasterPhaseTime = 0;
 #endif
 }
 

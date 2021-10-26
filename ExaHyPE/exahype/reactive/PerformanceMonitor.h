@@ -130,17 +130,17 @@ class exahype::reactive::PerformanceMonitor {
     void setCurrentTasks(int numTasks);
 
     /**
-     * increases the current load, to be called when a new task
+     * Increases the current load, to be called when a new task is added.
      */
     void incCurrentTasks();
 
     /**
-     * decreases the current load
+     * Decreases the current load
      */
     void decCurrentTasks();
 
     /**
-     * sets the local load per time step (needs to be called again after
+     * Sets the local load per time step (needs to be called again after
      * mesh refinement
      */
     void setTasksPerTimestep(int numTasks);

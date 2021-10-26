@@ -34,16 +34,39 @@ namespace exahype {
   }
 }
 
+/**
+ * The OffloadingAnalyser is responsible for introspecting ExaHyPE's performance by collecting
+ * waiting times in Peano's vertical master-worker communication.
+ * Gathered waiting times are distributed to other ranks at runtime using the PerformanceMonitor.
+ * The waiting times serve as input to reactive task offloading (e.g., to find overloaded critical ranks).
+ */
 class exahype::reactive::OffloadingAnalyser : public peano::performanceanalysis::Analyser {
   private:
     static tarch::logging::Log     _log;
 
+    /**
+     * Flag that indicates whether the analysis is actually used.
+     */
     bool _isSwitchedOn;
 
+    /**
+     * Watch for waiting times from worker.
+     */
     tarch::timing::Watch           _waitForWorkerDataWatch;
+
+    /**
+     * Watch for waiting times from master.
+     */
     tarch::timing::Watch           _waitForMasterDataWatch;
+
+    /**
+     * Watch for waiting times from global master.
+     */
     tarch::timing::Watch           _waitForGlobalMasterDataWatch;
 
+    /**
+     * Watch for wall time per time step.
+     */
     tarch::timing::Watch           _timeStepWatch;
 
     std::vector<tarch::timing::GlidingAverageMeasurement>    _waitForOtherRank;
@@ -56,7 +79,7 @@ class exahype::reactive::OffloadingAnalyser : public peano::performanceanalysis:
     int _iterationCounter;
     double _currentAccumulatedWorkerTime;
 
-    double _estimatedWtimeForPendingJobs;
+    double _estWtimeForPendingJobs;
 
     double *_currentFilteredWaitingTimesSnapshot;
 
@@ -84,59 +107,107 @@ class exahype::reactive::OffloadingAnalyser : public peano::performanceanalysis:
     void setTimePerTimeStep(double timePerStep);
     double getTimePerTimeStep();
 
-    virtual void beginIteration();
-    virtual void endIteration(double numberOfInnerLeafCells, double numberOfOuterLeafCells, double numberOfInnerCells, double numberOfOuterCells, double numberOfLocalCells, double numberOfLocalVertices);
-
     void resetMeasurements();
 
-    virtual void enterCentralElementOfEnclosingSpacetree();
-    virtual void leaveCentralElementOfEnclosingSpacetree();
+    virtual void enable(bool value) override;
 
-    virtual void addWorker(
-      int                                 workerRank,
-      int                                 level
-    );
-
-    virtual void removeWorker(
-      int                                 workerRank,
-      int                                 level
-    );
-
+    virtual void beginIteration() override;
+    virtual void endIteration(double numberOfInnerLeafCells, double numberOfOuterLeafCells, double numberOfInnerCells, double numberOfOuterCells, double numberOfLocalCells, double numberOfLocalVertices) override;
 
     virtual void beginToSendDataToWorker();
     virtual void endToSendDataToWorker(int worker);
     virtual void beginToSendDataToMaster();
     virtual void endToSendDataToMaster();
-    virtual void beginToReceiveDataFromWorker();
-    virtual void endToReceiveDataFromWorker(int fromRank);
-    virtual void beginToReceiveDataFromMaster(int master);
-    virtual void endToReceiveDataFromMaster(int master);
     virtual void beginToReceiveDataFromGlobalMaster();
     virtual void endToReceiveDataFromGlobalMaster();
 
-    virtual void dataWasNotReceivedInBackground( int fromRank, int tag, int cardinality, int pageSize );
+    virtual void beginToReceiveDataFromWorker() override;
+    virtual void endToReceiveDataFromWorker(int fromRank) override;
+    virtual void beginToReceiveDataFromMaster(int master) override;
+    virtual void endToReceiveDataFromMaster(int master) override;
 
-    virtual void beginToReleaseSynchronousHeapData();
 
-    virtual void endToReleaseSynchronousHeapData();
+    /**
+      * Nop.
+      */
+    virtual void addWorker(
+      int                                 workerRank,
+      int                                 level
+    ) override;
 
-    virtual void beginToPrepareAsynchronousHeapDataExchange();
+    /**
+      * Nop.
+      */
+    virtual void removeWorker(
+      int                                 workerRank,
+      int                                 level
+    ) override;
 
-    virtual void endToPrepareAsynchronousHeapDataExchange();
+    /**
+      * Nop.
+      */
+    virtual void enterCentralElementOfEnclosingSpacetree() override;
 
-    virtual void beginReleaseOfJoinData();
-    virtual void endReleaseOfJoinData();
+    /**
+      * Nop.
+      */
+    virtual void leaveCentralElementOfEnclosingSpacetree() override;
 
-    virtual void beginReleaseOfBoundaryData();
-    virtual void endReleaseOfBoundaryData();
+    /**
+     * Nop.
+     */
+    virtual void dataWasNotReceivedInBackground( int fromRank, int tag, int cardinality, int pageSize ) override;
 
-    virtual void changeConcurrencyLevel(int actualChange, int maxPossibleChange);
-    virtual void minuteNumberOfBackgroundTasks(int taskCount);
+    /**
+     * Nop.
+     */
+    virtual void beginToReleaseSynchronousHeapData() override;
 
-    virtual void beginProcessingBackgroundJobs();
-    virtual void endProcessingBackgroundJobs();
+    /**
+     * Nop.
+     */
+    virtual void endToReleaseSynchronousHeapData() override;
 
-    virtual void enable(bool value);
+    /**
+     * Nop.
+     */
+    virtual void beginToPrepareAsynchronousHeapDataExchange() override;
+
+    /**
+     * Nop.
+     */
+    virtual void endToPrepareAsynchronousHeapDataExchange() override;
+
+    /**
+     * Nop.
+     */
+    virtual void beginReleaseOfJoinData() override;
+
+    /**
+     * Nop.
+     */
+    virtual void endReleaseOfJoinData() override;
+
+    /**
+     * Nop.
+     */
+    virtual void beginReleaseOfBoundaryData() override;
+
+    /**
+     * Nop.
+     */
+    virtual void endReleaseOfBoundaryData() override;
+
+    /**
+     * Nop.
+     */
+    virtual void changeConcurrencyLevel(int actualChange, int maxPossibleChange) override;
+
+    /**
+     * Nop.
+     */
+    virtual void minuteNumberOfBackgroundTasks(int taskCount) override;
+
 };
 
 

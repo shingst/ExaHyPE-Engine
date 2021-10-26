@@ -82,7 +82,6 @@ exahype::reactive::PerformanceMonitor::~PerformanceMonitor() {
 void exahype::reactive::PerformanceMonitor::submitWaitingTimeForRank(double waitingTime, int rank) {
   if(waitingTime>0)
     _currentWaitingTimes[rank] =  waitingTime;
-  //logInfo("submitWaitingTimes", "submitting new waiting time "<<waitingTime<< " for rank "<<rank); 
 }
 
 const double *exahype::reactive::PerformanceMonitor::getWaitingTimesSnapshot() {
@@ -90,21 +89,14 @@ const double *exahype::reactive::PerformanceMonitor::getWaitingTimesSnapshot() {
 }
 
 void exahype::reactive::PerformanceMonitor::submitBlacklistValueForRank(double bval, int rank) {
-  //logInfo("submitBlacklistValue", "new value "<<bval<<" for "<<rank);
   _currentBlacklist[rank] = bval;
 }
 
 const double *exahype::reactive::PerformanceMonitor::getBlacklistSnapshot() {
-  //int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
-
-  //for(int j=0; j<nnodes; j++) 
-  //  logInfo("getBlacklistSnapshot()"," val "<<_currentBlacklistSnapshot[j]<< " for "<< j);
-
   return _currentBlacklistSnapshot;
 }
 
 void exahype::reactive::PerformanceMonitor::setTasksPerTimestep(int load) {
-  //logInfo("setLocalLoadPerTimestep", "setting local load per timestep to "<<load);
   _tasksPerTimestep = load;
   _remainingTasks = _tasksPerTimestep;
 }
@@ -131,7 +123,6 @@ void exahype::reactive::PerformanceMonitor::stop() {
 }
 
 void exahype::reactive::PerformanceMonitor::setCurrentTasks(int num) {
-  //logInfo("performance monitor", "setting current load to "<<num);
   tarch::multicore::Lock lock(_semaphore);
   _currentTasksLocal = num;
   lock.free();
@@ -232,8 +223,6 @@ void exahype::reactive::PerformanceMonitor::postFusedRequest() {
 
   assertion(_fusedGatherRequest==MPI_REQUEST_NULL);
  
-  //for(int i=0; i< nnodes*2;i++)
-  //  logInfo("postFusedrequest()", "send buffer "<<_currentFusedDataSendBuffer[i]);
   MPI_Comm comm =  exahype::reactive::ReactiveContext::getInstance().getMPICommunicator(); 
   
   if(comm!=MPI_COMM_NULL) {

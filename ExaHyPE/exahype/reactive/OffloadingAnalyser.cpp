@@ -49,7 +49,7 @@ exahype::reactive::OffloadingAnalyser::OffloadingAnalyser():
   _currentZeroThreshold(0.002),
   _iterationCounter(0),
   _currentAccumulatedWorkerTime(0),
-  _estimatedWtimeForPendingJobs(0),
+  _estWtimeForPendingJobs(0),
   _lateSTPJobs(0)
 {
   enable(true);
@@ -78,7 +78,6 @@ exahype::reactive::OffloadingAnalyser& exahype::reactive::OffloadingAnalyser::ge
 exahype::reactive::OffloadingAnalyser::~OffloadingAnalyser() {
     delete[] _currentFilteredWaitingTimesSnapshot;
 }
-
 
 void exahype::reactive::OffloadingAnalyser::enable(bool value) {
   _isSwitchedOn=value;
@@ -253,8 +252,8 @@ void exahype::reactive::OffloadingAnalyser::beginToReceiveDataFromWorker() {
     _waitForWorkerDataWatch.startTimer();
     int pendingJobs  = tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs();
     _lateSTPJobs = 0;
-    _estimatedWtimeForPendingJobs = pendingJobs * getTimePerSTP() / tarch::multicore::Core::getInstance().getNumberOfThreads();
-    logDebug("beginToReceiveDataFromWorker()","there are "<<pendingJobs<<" jobs left, estimated time "<<_estimatedWtimeForPendingJobs);
+    _estWtimeForPendingJobs = pendingJobs * getTimePerSTP() / tarch::multicore::Core::getInstance().getNumberOfThreads();
+    logDebug("beginToReceiveDataFromWorker()","there are "<<pendingJobs<<" jobs left, estimated time "<<_estWtimeForPendingJobs);
 
 #ifdef USE_ITAC
     VT_begin(event_waitForWorker);
@@ -277,7 +276,7 @@ void exahype::reactive::OffloadingAnalyser::endToReceiveDataFromWorker( int from
 #endif
     _waitForWorkerDataWatch.stopTimer();
     double estimatedTimeForLateSTPs = _lateSTPJobs * getTimePerSTP()/ tarch::multicore::Core::getInstance().getNumberOfThreads();
-    const double elapsedTime = std::max(0.000001,_waitForWorkerDataWatch.getCalendarTime()-_estimatedWtimeForPendingJobs
+    const double elapsedTime = std::max(0.000001,_waitForWorkerDataWatch.getCalendarTime()-_estWtimeForPendingJobs
                                             -estimatedTimeForLateSTPs);
 
 #if defined(OffloadingUseProfiler)
@@ -378,9 +377,9 @@ void exahype::reactive::OffloadingAnalyser::endToSendDataToMaster() {
     int pendingJobs  = tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs();
     
 
-    _estimatedWtimeForPendingJobs = pendingJobs * getTimePerSTP() / tarch::multicore::Core::getInstance().getNumberOfThreads();
+    _estWtimeForPendingJobs = pendingJobs * getTimePerSTP() / tarch::multicore::Core::getInstance().getNumberOfThreads();
     _lateSTPJobs = 0;
-    logDebug("endToSendDataToMaster()","there are "<<pendingJobs<<" left estimated time "<<_estimatedWtimeForPendingJobs); 
+    logDebug("endToSendDataToMaster()","there are "<<pendingJobs<<" left estimated time "<<_estWtimeForPendingJobs); 
     _waitForMasterDataWatch.startTimer();
   }
 }
@@ -425,10 +424,10 @@ void exahype::reactive::OffloadingAnalyser::endToReceiveDataFromGlobalMaster() {
   if (_isSwitchedOn && _waitForMasterDataWatch.isOn()) {
     _waitForMasterDataWatch.stopTimer();
     double estimatedTimeForLateSTPs = _lateSTPJobs * getTimePerSTP()/ tarch::multicore::Core::getInstance().getNumberOfThreads();
-    logDebug("endToReceiveDataFromGlobalMaster()","estimate for late STPs "<<estimatedTimeForLateSTPs<<"s  estimate for pending jobs "<<_estimatedWtimeForPendingJobs); 
-    const double elapsedTime = std::max(0.000001, _waitForMasterDataWatch.getCalendarTime()-_estimatedWtimeForPendingJobs
+    logDebug("endToReceiveDataFromGlobalMaster()","estimate for late STPs "<<estimatedTimeForLateSTPs<<"s  estimate for pending jobs "<<_estWtimeForPendingJobs); 
+    const double elapsedTime = std::max(0.000001, _waitForMasterDataWatch.getCalendarTime()-_estWtimeForPendingJobs
                                             -estimatedTimeForLateSTPs);
-    _estimatedWtimeForPendingJobs = 0;
+    _estWtimeForPendingJobs = 0;
     _lateSTPJobs = 0;
     
     _waitForOtherRank[0].setValue(elapsedTime); //0 is global master
@@ -492,14 +491,6 @@ void exahype::reactive::OffloadingAnalyser::changeConcurrencyLevel(int actualCha
 
 
 void exahype::reactive::OffloadingAnalyser::minuteNumberOfBackgroundTasks(int taskCount) {
-}
-
-
-void exahype::reactive::OffloadingAnalyser::beginProcessingBackgroundJobs() {
-}
-
-
-void exahype::reactive::OffloadingAnalyser::endProcessingBackgroundJobs() {
 }
 
 

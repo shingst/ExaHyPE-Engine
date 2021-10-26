@@ -38,7 +38,6 @@ private:
   tarch::multicore::BooleanSemaphore* _semaphores[4];
   std::vector<tarch::multicore::Lock> _locks[4];
 
-
   int _dumpInterval;
   int _dumpCnt;
 

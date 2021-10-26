@@ -1158,7 +1158,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJobMetaData::initDataty
 #if defined(UseSmartMPI) || defined(OffloadingMetadataPacked)
   _datatype = MPI_BYTE;
 #else
-  int entries = 2+8;
+  int entries = 2 /*double arrays*/ +8 /*scalars*/;  //be careful here when adapting
   MigratablePredictionJobMetaData dummy;
 
   int blocklengths[] = {DIMENSIONS, DIMENSIONS, 1, 1, 1, 1, 1, 1, 1, sizeof(bool)};

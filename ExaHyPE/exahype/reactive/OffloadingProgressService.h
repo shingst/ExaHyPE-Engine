@@ -30,7 +30,7 @@ namespace exahype {
 }
 
 /**
- * A peano service to make progress on outstanding offloading-related
+ * A Peano service to make progress on outstanding offloading-related
  * communication.
  *
  * This service make progress on outstanding offloading communication
