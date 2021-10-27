@@ -28,7 +28,6 @@ namespace reactive {
 tarch::logging::Log  exahype::reactive::STPStatsTracer::_log( "exahype::reactive::STPStatsTracer" );
 
 STPStatsTracer::STPStatsTracer() : _outputDir("."), _dumpInterval(1), _dumpCnt(0){
-	// TODO Auto-generated constructor stub
   for(int type = STPTraceKey::ADERDGPrediction; type<=STPTraceKey::LimitingFusedTimeStep; type++) {
     _iterations[type].resize(tarch::multicore::Core::getInstance().getNumberOfThreads());
     _elapsed[type].resize(tarch::multicore::Core::getInstance().getNumberOfThreads());
@@ -116,7 +115,6 @@ void STPStatsTracer::dumpAndResetTraceIfActive() {
     }
   }
 }
-
 
 bool STPStatsTracer::isActive(int timestep) {
   return (timestep  % _dumpInterval) == 0;
@@ -206,11 +204,9 @@ void STPStatsTracer::writeTracingEventIterationDetailed(unsigned int iterations,
   file << (iterations+1) << std::endl;
   file.close();
 
-  //logInfo("writeTracingEventIteration", " wrote to file "<<pathIt);
 }
 
 void STPStatsTracer::writeTracingEventRunDetailed(unsigned int elapsed, STPTraceKey type) {
- //"exahype_solvers_ADERDGSolver_MigratablePredictionJob_run_rank_"
   std::stringstream stream;
   stream<<_outputDir<<"/exahype_";
 
@@ -239,11 +235,9 @@ void STPStatsTracer::writeTracingEventRunDetailed(unsigned int elapsed, STPTrace
   file << elapsed << std::endl;
   file.close();
 
-  //logInfo("writeTracingEventRun", " wrote to file "<<path);
 }
 
 void STPStatsTracer::writeTracingEventRunIterationsDetailed(unsigned int iterations, unsigned int elapsed, STPTraceKey type) {
- //"exahype_solvers_ADERDGSolver_MigratablePredictionJob_run_rank_"
   std::stringstream stream;
   stream<<_outputDir<<"/exahype_";
 
@@ -272,7 +266,6 @@ void STPStatsTracer::writeTracingEventRunIterationsDetailed(unsigned int iterati
   file << elapsed<< ":" << iterations+1 << std::endl;
   file.close();
 
-  //logInfo("writeTracingEventRunIterations", " wrote to file "<<path);
 }
 
 STPStatsTracer& STPStatsTracer::getInstance() {

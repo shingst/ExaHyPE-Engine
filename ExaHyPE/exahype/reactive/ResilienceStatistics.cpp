@@ -36,14 +36,9 @@ ResilienceStatistics::ResilienceStatistics() :
   _healedTasks(0),
   _softErrorsInjected(0),
   _limitedTasks(0)
-{
-  // TODO Auto-generated constructor stub
+{}
 
-}
-
-ResilienceStatistics::~ResilienceStatistics() {
-  // TODO Auto-generated destructor stub
-}
+ResilienceStatistics::~ResilienceStatistics() {}
 
 ResilienceStatistics& ResilienceStatistics::getInstance() {
   static ResilienceStatistics replicationStats;

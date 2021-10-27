@@ -69,14 +69,25 @@ class exahype::reactive::OffloadingAnalyser : public peano::performanceanalysis:
      */
     tarch::timing::Watch           _timeStepWatch;
 
-    std::vector<tarch::timing::GlidingAverageMeasurement>    _waitForOtherRank;
+    /**
+     * Stores gliding averages of waiting times.
+     */
+    std::vector<tarch::timing::GlidingAverageMeasurement>    _waitAvgForOtherRank;
 
-    tarch::timing::GlidingAverageMeasurement     _timePerMigratablePredictionJob;
+    /**
+     * Gliding average over times per STP.
+     */
+    tarch::timing::GlidingAverageMeasurement     _avgTimePerSTP;
 
-    tarch::timing::GlidingAverageMeasurement     _timePerTimeStep;
+    /**
+     * Gliding average over times per time step.
+     */
+    tarch::timing::GlidingAverageMeasurement     _avgTimePerTimeStep;
 
     double _currentZeroThreshold;
-    int _iterationCounter;
+
+    long _iterationCounter;
+
     double _currentAccumulatedWorkerTime;
 
     double _estWtimeForPendingJobs;

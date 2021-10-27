@@ -13,12 +13,14 @@
 
 #if defined(Parallel) && defined(SharedTBB)
 
-#include "../reactive/RequestManager.h"
+#include "exahype/reactive/RequestManager.h"
 
 #include <unordered_set>
 #include <vector>
 #include <string>
 #include <algorithm>
+
+#include <mpi.h>
 
 #include "tarch/multicore/Lock.h"
 #include "tarch/multicore/Core.h"
@@ -46,7 +48,7 @@ static int event_progress_receiveBack;
 #include "teaMPI.h"
 #endif
 
-#include <mpi.h>
+
 
 //#undef assertion
 //#define assertion assert

@@ -129,7 +129,6 @@ void exahype::reactive::TimeStampAndDubiosityTeamHistory::trackTimeStepAndDubios
       _estimatedTimestepSizes.push_back(estimatedTimeStepSize);
     }
   }
-  //printHistory();
   lock.free();
 }
 
@@ -164,25 +163,6 @@ bool exahype::reactive::TimeStampAndDubiosityTeamHistory::checkConsistency() {
     consistentTimeStepSizes = consistentTimeStepSizes && std::all_of(tmp_timestepsizes.begin(), tmp_timestepsizes.end(), [tmp_timestepsizes](double x){ return x==tmp_timestepsizes[0]; });
   }
 
-  //int myTeam = exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber();
-  //int otherTeam = (myTeam + 1) % 2; //todo: support if more than 2 teams are used
-  /*if((!consistentTimeStamps || !consistentDubiosityStatuses || !consistentTimeStepSizes)) {
-    //logError("checkConsistency"," Time stamps or limiter statuses are diverged between teams! Consistent stamps = "<<consistentTimeStamps
-    //    <<" consistent limiter statuses = "<<consistentLimiterStatuses<<" consistent time step sizes="<<consistentTimeStepSizes);
-    //logError("checkConsistency","team="<<exahype::reactive::OffloadingContext::getInstance().getTMPITeamNumber()<<": Time stamps or trigger statuses are inconsistent between teams! There must have been a soft error on at least one team.");
-    if((long int)_dubiosityStatuses[myTeam].size()> _lastConsistentTimeStepPtr && (long int) _dubiosityStatuses[otherTeam].size()>_lastConsistentTimeStepPtr) {
-      if(_dubiosityStatuses[myTeam][_lastConsistentTimeStepPtr+1]==1
-         &&_dubiosityStatuses[otherTeam][_lastConsistentTimeStepPtr+1]==0) {
-        logError("checkConsistency","team="<<myTeam<<" should be the faulty one, as a dubious result was detected there.");
-      }
-      else if(_dubiosityStatuses[otherTeam][_lastConsistentTimeStepPtr+1]==1
-          &&_dubiosityStatuses[myTeam][_lastConsistentTimeStepPtr+1]==0) {
-         logError("checkConsistency","team="<<otherTeam<<" should be the faulty one, as a dubious result was detected there.");
-      }
-    }
-
-    //printHistory();
-  }*/
   lock.free();
 
   return consistentTimeStamps && consistentDubiosityStatuses && consistentTimeStepSizes;
