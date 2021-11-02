@@ -236,6 +236,10 @@ int exahype::main(int argc, char** argv) {
                                                              "exahype", false));
 */
 
+  #if defined(OffloadingUseProfiler)
+  //prints useful statistics about reactive offloading on every rank
+  exahype::reactive::OffloadingProfiler::getInstance().beginProfilingPhase();
+  #endif
 
   exahype::runners::Runner runner(parser, cmdlineargs); // TODO Make runner singleton?
   int programExitCode = runner.run();
@@ -254,8 +258,8 @@ int exahype::main(int argc, char** argv) {
  
 #if defined(OffloadingUseProfiler)
   //prints useful statistics about reactive offloading on every rank
-  exahype::reactive::OffloadingProfiler::getInstance().endPhase();
-  exahype::reactive::OffloadingProfiler::getInstance().printStatistics();
+  exahype::reactive::OffloadingProfiler::getInstance().endProfilingPhase();
+  exahype::reactive::OffloadingProfiler::getInstance().printCumulativeStatistics();
 #endif
 
   peano::shutdownParallelEnvironment();

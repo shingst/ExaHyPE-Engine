@@ -33,7 +33,11 @@ namespace exahype {
  * characteristics during an execution run of ExaHype.
  * These statistics are gathered at runtime and printed at the
  * program exit. The OffloadingProfiler is enabled with the compile-time
- * flag -DOffloadingUseProfiler.
+ * flag -DOffloadingUseProfiler. Profiling statistics are for profiling phases
+ * which are started and ended by calls to beginProfilingPhase() and endProfilingPhase().
+ * Currently, only one profiling phase is used in ExaHyPE (for the complete application run).
+ * Whenever a profiling phase is ended, the collected statistics of the current phase are added to the ones of all previous phases.
+ * The cumulative statistics can be printed.
  */
 class exahype::reactive::OffloadingProfiler {
   private:
@@ -89,9 +93,18 @@ class exahype::reactive::OffloadingProfiler {
 
   public:
     static OffloadingProfiler& getInstance();
-    void beginPhase();
-    void endPhase();
 
+    /**
+     * Begin profiling phase.
+     */
+    void beginProfilingPhase();
+
+    /**
+     * End profiling phase (accumulates statistics).
+     */
+    void endProfilingPhase();
+
+    // counters
     void notifyOffloadedTask(int rank);
     void notifyTargetOffloadedTask(int ntasks, int rank);
     void notifyReceivedTask(int rank);
@@ -100,6 +113,8 @@ class exahype::reactive::OffloadingProfiler {
     void notifyLatePerformanceUpdate();
     void notifyOffloadingDecision();
     void notifyThresholdFail();
+
+    // timings
     void beginComputation();
     void endComputation(double elapsed);
 
@@ -115,9 +130,6 @@ class exahype::reactive::OffloadingProfiler {
     void beginPolling();
     void endPolling(double elapsed);
     
-    void beginHandling();
-    void endHandling(double elapsed);
-
     void beginWaitForTasks();
     void endWaitForTasks(double elapsed);
 
@@ -130,7 +142,10 @@ class exahype::reactive::OffloadingProfiler {
     void beginOffload();
     void endOffload(double elapsed);
 
-    void printStatistics();
+    /**
+     * Prints accumulated statistics.
+     */
+    void printCumulativeStatistics();
 };
 
 #endif

@@ -288,11 +288,6 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
   exahype::reactive::OffloadingProgressService::getInstance().setSolver(this);
 #endif
 
-//todo: move somewhere else
-#ifdef OffloadingUseProfiler
-  exahype::reactive::OffloadingProfiler::getInstance().beginPhase();
-#endif
-
 #endif
 }
 

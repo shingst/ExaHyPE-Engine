@@ -88,7 +88,7 @@ exahype::reactive::OffloadingProfiler& exahype::reactive::OffloadingProfiler::ge
   return offloadingProfiler;
 }
 
-void exahype::reactive::OffloadingProfiler::beginPhase() {
+void exahype::reactive::OffloadingProfiler::beginProfilingPhase() {
 #if defined(OffloadingUseProfiler)
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
@@ -112,7 +112,7 @@ void exahype::reactive::OffloadingProfiler::beginPhase() {
 #endif
 }
 
-void exahype::reactive::OffloadingProfiler::endPhase() {
+void exahype::reactive::OffloadingProfiler::endProfilingPhase() {
 #if defined(OffloadingUseProfiler)
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
@@ -122,7 +122,7 @@ void exahype::reactive::OffloadingProfiler::endPhase() {
     _receivedTasksPerRank[i]+=_receivedTasksPerRankPhase[i];
   }
   _executedTasks+=_executedTasksPhase;
-  _spawnedTasks+= _spawnedTasksPhase;
+  _spawnedTasks+=_spawnedTasksPhase;
   _thresholdFails+=_thresholdFailsPhase;
   _performanceUpdates+=_performanceUpdatesPhase;
   _latePerformanceUpdates+=_latePerformanceUpdatesPhase;
@@ -254,36 +254,6 @@ void exahype::reactive::OffloadingProfiler::endCommunication(bool successful, do
 #endif
 }
 
-
-void exahype::reactive::OffloadingProfiler::beginHandling() {
-}
-
-void exahype::reactive::OffloadingProfiler::endHandling(double elapsed) {
-#if defined(OffloadingUseProfiler)
-  const unsigned long long elapsedTime = elapsed*1E6;
-#endif
-}
-
-//void exahype::reactive::OffloadingProfiler::beginWaitForBackgroundTasks(exahype::solvers::Solver::JobType type) {
-//#if defined(OffloadingUseProfiler)
-//#endif
-//}
-
-//void exahype::reactive::OffloadingProfiler::endWaitForBackgroundTasks(exahype::solvers::Solver::JobType type, double elapsed) {
-//#if defined(OffloadingUseProfiler)
-//  unsigned long long elapsedTime;
-//  if(type==exahype::solvers::Solver::JobType::EnclaveJob) {
-//    elapsedTime = elapsed*1E6;
-//    _accWaitEnclaveTasksPhaseTime+=elapsedTime;
-//  }
-//  else if(type==exahype::solvers::Solver::JobType::SkeletonJob) {
-//    elapsedTime = elapsed*1E6;
-//    _accWaitSkeletonTasksPhaseTime+=elapsedTime;
-//  }
-
-//#endif
-//}
-
 void exahype::reactive::OffloadingProfiler::beginWaitForTasks() {
 #if defined(OffloadingUseProfiler)
 #endif
@@ -332,7 +302,7 @@ void exahype::reactive::OffloadingProfiler::endOffload(double elapsed) {
 #endif
 }
 
-void exahype::reactive::OffloadingProfiler::printStatistics() {
+void exahype::reactive::OffloadingProfiler::printCumulativeStatistics() {
 #if defined(OffloadingUseProfiler)
   int rank = tarch::parallel::Node::getInstance().getRank();
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
@@ -346,73 +316,73 @@ void exahype::reactive::OffloadingProfiler::printStatistics() {
   str += " team = "+ std::to_string(team);
 #endif
   str += ":\n";
-  logInfo("printStatistics", str);
+  logInfo("printCumulativeStatistics", str);
   str="  spawned tasks: "+std::to_string(_spawnedTasks)+"\n";
-  logInfo("printStatistics", str);
+  logInfo("printCumulativeStatistics", str);
   //str+="  executed tasks: "+std::to_string(_executedTasks)+"\n";
   str="  performance updates: "+std::to_string(_performanceUpdates)+"\n";
-  logInfo("printStatistics", str);
+  logInfo("printCumulativeStatistics", str);
   //str+="  late performance updates: "+std::to_string(_latePerformanceUpdates)+"\n";
   str="  offloading decisions: "+std::to_string(_offloadingDecisions)+"\n";
-  logInfo("printStatistics", str);
+  logInfo("printCumulativeStatistics", str);
   str="  target offloaded tasks:\n";
-  logInfo("printStatistics", str);
+  logInfo("printCumulativeStatistics", str);
   int totalTargetOffloaded=0;
   for(int i=0;i<nnodes;i++) {
     if(_targetOffloadedTasksPerRank[i]>0) {
       str="    to rank: "+std::to_string(i)+" : "+std::to_string(_targetOffloadedTasksPerRank[i])+"\n";
-      logInfo("printStatistics", str);
+      logInfo("printCumulativeStatistics", str);
       totalTargetOffloaded+=_targetOffloadedTasksPerRank[i];
     }
   }
   str="  total target offloaded tasks: "+std::to_string(totalTargetOffloaded)+"\n";
-  logInfo("printStatistics", str);
+  logInfo("printCumulativeStatistics", str);
   str="  offloaded tasks:\n";
-  logInfo("printStatistics", str);
+  logInfo("printCumulativeStatistics", str);
   int totalOffloaded=0;
   for(int i=0;i<nnodes;i++) {
     if(_offloadedTasksPerRank[i]>0){
       str="    to rank: "+std::to_string(i)+" : "+std::to_string(_offloadedTasksPerRank[i])+"\n";
-      logInfo("printStatistics", str);
+      logInfo("printCumulativeStatistics", str);
     }
     totalOffloaded+=_offloadedTasksPerRank[i];
   }
   str="  total offloaded tasks: "+std::to_string(totalOffloaded)+"\n";
-  logInfo("printStatistics", str);
+  logInfo("printCumulativeStatistics", str);
   str="  offloadable tasks that failed threshold requirement: "+std::to_string(_thresholdFails)+"\n";
-  logInfo("printStatistics", str);
+  logInfo("printCumulativeStatistics", str);
   str="  received tasks:\n";
-  logInfo("printStatistics", str);
+  logInfo("printCumulativeStatistics", str);
   int totalReceived=0;
   for(int i=0;i<nnodes;i++) {
     if(_receivedTasksPerRank[i]>0) {
       str="    from rank: "+std::to_string(i)+" : "+std::to_string(_receivedTasksPerRank[i])+"\n";
-      logInfo("printStatistics", str);
+      logInfo("printCumulativeStatistics", str);
     }
     totalReceived+=_receivedTasksPerRank[i];
   }
   str="  total received tasks: "+std::to_string(totalReceived)+"\n";
-  logInfo("printStatistics", str);
+  logInfo("printCumulativeStatistics", str);
   str="  total computation time: "+std::to_string(static_cast<double>(_accComputationTime/1E06))+"\n";
-  logInfo("printStatistics", str);
+  logInfo("printCumulativeStatistics", str);
   str="  total handling time: "+std::to_string(static_cast<double>(_accHandlingTime/1E06))+"\n";
-  logInfo("printStatistics", str);
+  logInfo("printCumulativeStatistics", str);
   str="  total useful communication time: "+std::to_string(static_cast<double>(_accUsefulCommunicationTime/1E06))+"\n";
-  logInfo("printStatistics", str);
+  logInfo("printCumulativeStatistics", str);
   str="  total idle communication time: "+std::to_string(static_cast<double>(_accIdleCommunicationTime/1E06))+"\n";
-  logInfo("printStatistics", str);
+  logInfo("printCumulativeStatistics", str);
   str="  total progress time: "+std::to_string(static_cast<double>(_accProgressTime/1E06))+"\n";
-  logInfo("printStatistics", str);
+  logInfo("printCumulativeStatistics", str);
   str="  total progressRequests time: "+std::to_string(static_cast<double>(_accProgressRequestsTime/1E06))+"\n";
-  logInfo("printStatistics", str);
+  logInfo("printCumulativeStatistics", str);
   str="  total poll time: "+std::to_string(static_cast<double>(_accPollTime/1E06))+"\n";
-  logInfo("printStatistics", str);
+  logInfo("printCumulativeStatistics", str);
   str="  total wait time for tasks: "+std::to_string(static_cast<double>(_accWaitTasksTime/1E06))+"\n";
-  logInfo("printStatistics", str);
+  logInfo("printCumulativeStatistics", str);
   str="  total wait time for workers: "+std::to_string(static_cast<double>(_accWaitForWorkersTime/1E06))+"\n";
-  logInfo("printStatistics", str);
+  logInfo("printCumulativeStatistics", str);
   str="  total wait time for global master: "+std::to_string(static_cast<double>(_accWaitForGlobalMasterTime/1E06))+"\n";
-  logInfo("printStatistics", str);
+  logInfo("printCumulativeStatistics", str);
   
 
 #endif

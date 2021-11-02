@@ -553,8 +553,6 @@ bool exahype::reactive::RequestManager::progressRequestsOfType( RequestType type
 
   logDebug("progressRequestsOfType()"," finished type: "<<mapId<< " nreq "<<outcount);
 
-  time = -MPI_Wtime();
-  exahype::reactive::OffloadingProfiler::getInstance().beginHandling();
   bool found=false;
   //handle finished requests
   for(int i=0; i<outcount; i++) {
@@ -612,9 +610,10 @@ bool exahype::reactive::RequestManager::progressRequestsOfType( RequestType type
       _groupIdToRank[mapId].erase(groupId);
       _groupIdToTag[mapId].erase(groupId);
     }
-    //Currently deactivated per default because it makes things slower in some cases (additional work on master
+
+    //Currently deactivated per default because it makes things slower in some cases (additional work performed on master
     //thread?)
-    //May be useful in the future, if we can move work away from the master thread or in ExaHyPE2
+    //May be useful in the future (in ExaHyPE 2?), if we can move work away from the master thread
 #if defined(RequestManagerGrabNewRequests)
     //try to grab and add a new request to active requests (thanks to Joseph Schuchart for the suggestion)
     int mapId = requestTypeToMsgQueueIdx(type);
@@ -650,10 +649,6 @@ bool exahype::reactive::RequestManager::progressRequestsOfType( RequestType type
     _activeRequests[mapId].clear();
     _internalIdsOfActiveRequests[mapId].clear();
   }
-
-  time += MPI_Wtime();
-  exahype::reactive::OffloadingProfiler::getInstance().endHandling(time);
-
   lock.free();
 
   return outcount>0;
