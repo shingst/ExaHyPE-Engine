@@ -246,7 +246,7 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
    ==  exahype::reactive::ReactiveContext::OffloadingStrategy::AggressiveHybrid) {
     // 
     exahype::reactive::AggressiveHybridDistributor::getInstance().resetTasksToOffload();
-    exahype::reactive::OffloadingAnalyser::getInstance().resetMeasurements(); //makes sure that grid refinement does not influence diffusion
+    exahype::reactive::OffloadingAnalyser::getInstance().resetWaitingTimes(); //makes sure that grid refinement does not influence diffusion
     exahype::reactive::AggressiveHybridDistributor::getInstance().enable();
   }
 

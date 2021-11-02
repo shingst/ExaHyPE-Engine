@@ -84,18 +84,40 @@ class exahype::reactive::OffloadingAnalyser : public peano::performanceanalysis:
      */
     tarch::timing::GlidingAverageMeasurement     _avgTimePerTimeStep;
 
+    /**
+     * The zero threshold is the time below which a waiting time is considered to be equal to zero.
+     */
     double _currentZeroThreshold;
 
+    /**
+     * Counts number of mesh iterations. Each second one is assumed to be the ending of a time step.
+     */ 
     long _iterationCounter;
 
+    /**
+     * Accumulates waiting times for workers in order to avoid shadowing effects (callbacks from Peano come one after the other) where a long wait for a worker hides the waiting times for subsequent workers.
+     */
     double _currentAccumulatedWorkerTime;
 
-    double _estWtimeForPendingJobs;
+    /**
+     * Estimated wall time for all pending background jobs (enclave STPs) when the code waits for a worker.
+     */
+    double _estWalltimeForPendingJobsAtReceiveForWorker;
 
+    /**
+     * Array of filtered waiting times where waiting times below zero threshold are set to zero.
+     */
     double *_currentFilteredWaitingTimesSnapshot;
 
-    std::atomic<int> _lateSTPJobs;
+    /**
+     * After the code waits for a worker, some tasks may still be received with reactive offloading. This counter counts those tasks.
+     */
+    std::atomic<int> _numLateIncomingJobsWhileWaiting;
 
+    /**
+     * Filters out zero waiting times and dynamically adapts the zero threshold below which
+     * waiting times are considered to be zero.
+     */
     void updateZeroTresholdAndFilteredSnapshot();
 
   public:
@@ -105,23 +127,41 @@ class exahype::reactive::OffloadingAnalyser : public peano::performanceanalysis:
     OffloadingAnalyser(const OffloadingAnalyser& other) = delete;
     OffloadingAnalyser& operator=(const OffloadingAnalyser& other) = delete;
 
-    const double* getFilteredWaitingTimesSnapshot();
+    /**
+     * Returns snapshot of filtered waiting times.
+     */
+    const double* getFilteredWaitingTimesSnapshot() const;
 
+    /**
+     * Returns true if there is an entry > 0 in the waiting times snapshot for each rank (each rank needs to be waiting for at least one rank)
+     */
+    bool isValidSnapshot() const;
+
+    /**
+     * Needs to be called whenever a STP job is received.
+     * (internally used to keep track of STPs that are arrive late).
+     */
     void notifyReceivedSTPJob();    
 
-    void printWaitingTimes();
+    /**
+     * Prints filtered waiting times.
+     */
+    void printWaitingTimes() const;
+
+    /**
+     * Resets all gliding averages.
+     */
+    void resetWaitingTimes();
 
     static OffloadingAnalyser& getInstance();
 
-    double getZeroThreshold();
+    double getZeroThreshold() const;
 
     void setTimePerSTP(double timePerSTP);
-    double getTimePerSTP();
+    double getTimePerSTP() const;
 
     void setTimePerTimeStep(double timePerStep);
-    double getTimePerTimeStep();
-
-    void resetMeasurements();
+    double getTimePerTimeStep() const;
 
     virtual void enable(bool value) override;
 
@@ -139,7 +179,6 @@ class exahype::reactive::OffloadingAnalyser : public peano::performanceanalysis:
     virtual void endToReceiveDataFromWorker(int fromRank) override;
     virtual void beginToReceiveDataFromMaster(int master) override;
     virtual void endToReceiveDataFromMaster(int master) override;
-
 
     /**
       * Nop.

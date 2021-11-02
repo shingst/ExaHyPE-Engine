@@ -49,8 +49,8 @@ exahype::reactive::OffloadingAnalyser::OffloadingAnalyser():
   _currentZeroThreshold(0.002),
   _iterationCounter(0),
   _currentAccumulatedWorkerTime(0),
-  _estWtimeForPendingJobs(0),
-  _lateSTPJobs(0)
+  _estWalltimeForPendingJobsAtReceiveForWorker(0),
+  _numLateIncomingJobsWhileWaiting(0)
 {
   enable(true);
 #ifdef USE_ITAC
@@ -81,11 +81,11 @@ void exahype::reactive::OffloadingAnalyser::enable(bool value) {
   _isSwitchedOn=value;
 }
 
-const double* exahype::reactive::OffloadingAnalyser::getFilteredWaitingTimesSnapshot() {
+const double* exahype::reactive::OffloadingAnalyser::getFilteredWaitingTimesSnapshot() const {
   return _currentFilteredWaitingTimesSnapshot;
 }
 
-double exahype::reactive::OffloadingAnalyser::getZeroThreshold() {
+double exahype::reactive::OffloadingAnalyser::getZeroThreshold() const {
   return _currentZeroThreshold;
 }
 
@@ -93,7 +93,7 @@ void exahype::reactive::OffloadingAnalyser::setTimePerSTP(double timePerSTP) {
   _avgTimePerSTP.setValue(timePerSTP);
 }
 
-double exahype::reactive::OffloadingAnalyser::getTimePerSTP() {
+double exahype::reactive::OffloadingAnalyser::getTimePerSTP() const {
   return _avgTimePerSTP.getValue();
 }
 
@@ -101,13 +101,11 @@ void exahype::reactive::OffloadingAnalyser::setTimePerTimeStep(double timePerSte
   return _avgTimePerTimeStep.setValue(timePerStep);
 }
 
-double exahype::reactive::OffloadingAnalyser::getTimePerTimeStep() {
+double exahype::reactive::OffloadingAnalyser::getTimePerTimeStep() const {
   return _avgTimePerTimeStep.getValue();
 }
 
-void exahype::reactive::OffloadingAnalyser::updateZeroTresholdAndFilteredSnapshot() {
-  if(!_isSwitchedOn) return;
-
+bool exahype::reactive::OffloadingAnalyser::isValidSnapshot() const {
   const double* currentWaitingTimesSnapshot = exahype::reactive::PerformanceMonitor::getInstance().getWaitingTimesSnapshot();
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
@@ -128,6 +126,17 @@ void exahype::reactive::OffloadingAnalyser::updateZeroTresholdAndFilteredSnapsho
        break;
     }
   }
+  return isValid;
+}
+
+void exahype::reactive::OffloadingAnalyser::updateZeroTresholdAndFilteredSnapshot() {
+  if(!_isSwitchedOn) return;
+
+  const double* currentWaitingTimesSnapshot = exahype::reactive::PerformanceMonitor::getInstance().getWaitingTimesSnapshot();
+  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
+
+  //check if valid: there is an entry>0 for every rank
+  bool isValid = isValidSnapshot();
   
   if(!isValid)  {
     logDebug("updateZeroThresholdAndFilteredSnapshot","not valid yet!");
@@ -138,6 +147,7 @@ void exahype::reactive::OffloadingAnalyser::updateZeroTresholdAndFilteredSnapsho
   min = std::numeric_limits<double>::max();
   max = std::numeric_limits<double>::min();
 
+  //filter out zero waiting times
   for(int i=0; i<nnodes; i++) {
     for(int j=0; j<nnodes; j++) {
       double currentWaitingTime = currentWaitingTimesSnapshot[i*nnodes+j];
@@ -158,12 +168,12 @@ void exahype::reactive::OffloadingAnalyser::updateZeroTresholdAndFilteredSnapsho
     }
   }
 
+  //update zero threshold
   if(min < std::numeric_limits<double>::max()) {
     double newThreshold = 0.95*min+0.05*max;
     _currentZeroThreshold = newThreshold;
     logDebug("updateZeroTresholdAndFilteredSnapshot()", " zero threshold set to "<< newThreshold);
   }
-//#endif
 }
 
 void exahype::reactive::OffloadingAnalyser::beginIteration() {
@@ -207,6 +217,7 @@ void exahype::reactive::OffloadingAnalyser::endIteration(double numberOfInnerLea
 
   updateZeroTresholdAndFilteredSnapshot();
   //printWaitingTimes();
+  //exahype::reactive::ReactiveContext::getInstance().printBlacklist();
 
   switch(exahype::reactive::ReactiveContext::getInstance().getOffloadingStrategy()){
     case exahype::reactive::ReactiveContext::OffloadingStrategy::AggressiveHybrid:
@@ -217,12 +228,11 @@ void exahype::reactive::OffloadingAnalyser::endIteration(double numberOfInnerLea
       //do nothing for now
       break;
   }
-  //exahype::reactive::ReactiveContext::getInstance().printBlacklist();
 
   _iterationCounter++;
 }
 
-void exahype::reactive::OffloadingAnalyser::printWaitingTimes() {
+void exahype::reactive::OffloadingAnalyser::printWaitingTimes() const {
   if(!_isSwitchedOn) return;
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
@@ -244,9 +254,9 @@ void exahype::reactive::OffloadingAnalyser::beginToReceiveDataFromWorker() {
   if (_isSwitchedOn) {
     _waitForWorkerDataWatch.startTimer();
     int pendingJobs  = tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs();
-    _lateSTPJobs = 0;
-    _estWtimeForPendingJobs = pendingJobs * getTimePerSTP() / tarch::multicore::Core::getInstance().getNumberOfThreads();
-    logDebug("beginToReceiveDataFromWorker()","there are "<<pendingJobs<<" jobs left, estimated time "<<_estWtimeForPendingJobs);
+    _numLateIncomingJobsWhileWaiting = 0;
+    _estWalltimeForPendingJobsAtReceiveForWorker = pendingJobs * getTimePerSTP() / tarch::multicore::Core::getInstance().getNumberOfThreads();
+    logDebug("beginToReceiveDataFromWorker()","there are "<<pendingJobs<<" jobs left, estimated time "<<_estWalltimeForPendingJobsAtReceiveForWorker);
 
 #ifdef USE_ITAC
     VT_begin(event_waitForWorker);
@@ -254,23 +264,16 @@ void exahype::reactive::OffloadingAnalyser::beginToReceiveDataFromWorker() {
   }
 }
 
-
 void exahype::reactive::OffloadingAnalyser::endToReceiveDataFromWorker( int fromRank ) {
 
-  if(_iterationCounter%2 !=0) {
-     _iterationCounter++; 
-     return;
-  }
-
   if (_isSwitchedOn) {
- 
 #ifdef USE_ITAC
     VT_end(event_waitForWorker);
 #endif
     _waitForWorkerDataWatch.stopTimer();
-    double estimatedTimeForLateSTPs = _lateSTPJobs * getTimePerSTP()/ tarch::multicore::Core::getInstance().getNumberOfThreads();
-    const double elapsedTime = std::max(0.000001,_waitForWorkerDataWatch.getCalendarTime()-_estWtimeForPendingJobs
-                                            -estimatedTimeForLateSTPs);
+    double estimatedTimeForLateIncomingJobs = _numLateIncomingJobsWhileWaiting * getTimePerSTP()/ tarch::multicore::Core::getInstance().getNumberOfThreads();
+    const double elapsedTime = std::max(0.000001,_waitForWorkerDataWatch.getCalendarTime()-_estWalltimeForPendingJobsAtReceiveForWorker
+                                            -estimatedTimeForLateIncomingJobs);
 
 #if defined(OffloadingUseProfiler)
     exahype::reactive::OffloadingProfiler::getInstance().endWaitForWorker(elapsedTime);
@@ -295,15 +298,14 @@ void exahype::reactive::OffloadingAnalyser::endToReceiveDataFromWorker( int from
       );
     }
 #endif
-//#ifdef USE_ITAC
-//        VT_begin(event_waitForWorker);
-//#endif
+
     _waitForWorkerDataWatch.startTimer();
   }
 }
 
-void exahype::reactive::OffloadingAnalyser::resetMeasurements() {
+void exahype::reactive::OffloadingAnalyser::resetWaitingTimes() {
   if(!_isSwitchedOn) return;
+
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
   for(int i=0; i<nnodes; i++)
@@ -327,13 +329,11 @@ void exahype::reactive::OffloadingAnalyser::beginToSendDataToMaster() {
 
 
 void exahype::reactive::OffloadingAnalyser::endToSendDataToMaster() {
-
   if (_isSwitchedOn && !_waitForMasterDataWatch.isOn()) {
     int pendingJobs  = tarch::multicore::jobs::getNumberOfWaitingBackgroundJobs();
-    
-    _estWtimeForPendingJobs = pendingJobs * getTimePerSTP() / tarch::multicore::Core::getInstance().getNumberOfThreads();
-    _lateSTPJobs = 0;
-    logDebug("endToSendDataToMaster()","there are "<<pendingJobs<<" left estimated time "<<_estWtimeForPendingJobs); 
+    _estWalltimeForPendingJobsAtReceiveForWorker = pendingJobs * getTimePerSTP() / tarch::multicore::Core::getInstance().getNumberOfThreads();
+    _numLateIncomingJobsWhileWaiting = 0;  //reset here when waiting for global master data
+    logDebug("endToSendDataToMaster()","there are "<<pendingJobs<<" left estimated time "<<_estWalltimeForPendingJobsAtReceiveForWorker); 
     _waitForMasterDataWatch.startTimer();
   }
 }
@@ -344,15 +344,10 @@ void exahype::reactive::OffloadingAnalyser::beginToSendDataToWorker() {
   }
 }
 
-
 void exahype::reactive::OffloadingAnalyser::endToSendDataToWorker(int worker) {
   if (_isSwitchedOn && _waitForWorkerDataWatch.isOn()) {
     _waitForWorkerDataWatch.stopTimer();
     const double elapsedTime = _waitForWorkerDataWatch.getCalendarTime();
-
-    //_waitForOtherRank[worker].setValue(elapsedTime);
-
-    //double currentAvg = _waitForOtherRank[worker].getValue();
 
     if (tarch::la::greater(elapsedTime,0.0)) {
       logDebug(
@@ -364,37 +359,37 @@ void exahype::reactive::OffloadingAnalyser::endToSendDataToWorker(int worker) {
 }
 
 void exahype::reactive::OffloadingAnalyser::notifyReceivedSTPJob() {
-  _lateSTPJobs++;
+  _numLateIncomingJobsWhileWaiting++;
 }
 
 void exahype::reactive::OffloadingAnalyser::beginToReceiveDataFromGlobalMaster() {
   //nop
 }
 
-
 void exahype::reactive::OffloadingAnalyser::endToReceiveDataFromGlobalMaster() {
   if (_isSwitchedOn && _waitForMasterDataWatch.isOn()) {
     _waitForMasterDataWatch.stopTimer();
-    double estimatedTimeForLateSTPs = _lateSTPJobs * getTimePerSTP()/ tarch::multicore::Core::getInstance().getNumberOfThreads();
-    logDebug("endToReceiveDataFromGlobalMaster()","estimate for late STPs "<<estimatedTimeForLateSTPs<<"s  estimate for pending jobs "<<_estWtimeForPendingJobs); 
-    const double elapsedTime = std::max(0.000001, _waitForMasterDataWatch.getCalendarTime()-_estWtimeForPendingJobs
-                                            -estimatedTimeForLateSTPs);
-    _estWtimeForPendingJobs = 0;
-    _lateSTPJobs = 0;
+    double estimatedTimeForLateIncomingJobs = _numLateIncomingJobsWhileWaiting * getTimePerSTP()/ tarch::multicore::Core::getInstance().getNumberOfThreads();
+    logDebug("endToReceiveDataFromGlobalMaster()","estimate for late STPs "<<estimatedTimeForLateIncomingJobs<<"s  estimate for pending jobs "<<_estWalltimeForPendingJobsAtReceiveForWorker); 
+
+    const double elapsedWaitTime = std::max(0.000001, _waitForMasterDataWatch.getCalendarTime()-_estWalltimeForPendingJobsAtReceiveForWorker
+                                            -estimatedTimeForLateIncomingJobs);
+    _estWalltimeForPendingJobsAtReceiveForWorker = 0;
+    _numLateIncomingJobsWhileWaiting = 0;
     
-    _waitAvgForOtherRank[0].setValue(elapsedTime); //0 is global master
+    _waitAvgForOtherRank[0].setValue(elapsedWaitTime); //0 is global master
 
 #if defined(OffloadingUseProfiler)
-    exahype::reactive::OffloadingProfiler::getInstance().endWaitForGlobalMaster(elapsedTime);
+    exahype::reactive::OffloadingProfiler::getInstance().endWaitForGlobalMaster(elapsedWaitTime);
 #endif
 
 #if defined(Debug)
     double currentAvg = _waitAvgForOtherRank[0].getValue();
 
-    if (tarch::la::greater(elapsedTime,0.0)) {
+    if (tarch::la::greater(elapsedWaitTime,0.0)) {
       logDebug(
         "endToReceiveDataFromGlobalMaster()",
-        "rank had to wait for global master "  << " for "<< elapsedTime <<
+        "rank had to wait for global master "  << " for "<< elapsedWaitTime <<
         " currentAvg "<< currentAvg << "s"
       );
     }
@@ -402,6 +397,7 @@ void exahype::reactive::OffloadingAnalyser::endToReceiveDataFromGlobalMaster() {
   }
 }
 
+//noops
 void exahype::reactive::OffloadingAnalyser::dataWasNotReceivedInBackground( int fromRank, int tag, int cardinality, int pageSize ) {
 }
 
