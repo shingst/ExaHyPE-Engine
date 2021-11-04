@@ -27,13 +27,15 @@ namespace exahype {
   }
 }
 
-/*
+/**
  * The StaticDistributor represents a load balancing strategy
  * where the number of tasks sent away to a given rank is
  * fixed for every time step. This number of tasks is either
  * hardcoded in an input file or it is computed after the mesh
  * refinement has finished based on the number of cells that
  * a rank is responsible for.
+ *
+ * Todo: A common superclass for distributors would simplify the code.
  */
 class exahype::reactive::StaticDistributor {
   private:
@@ -51,7 +53,7 @@ class exahype::reactive::StaticDistributor {
     static StaticDistributor& getInstance();
     virtual ~StaticDistributor();
 
-    /*
+    /**
      *  This operation computes a new unique load distribution (and accordingly, distribution rules)
      *  that aims to achieve the best-case load distribution (i.e. load of a rank is equal to the
      *  average load of all ranks). In order to account for the fact that on some nodes, there may

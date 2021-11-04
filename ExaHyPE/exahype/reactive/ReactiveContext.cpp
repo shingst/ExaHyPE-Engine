@@ -67,7 +67,7 @@ static int event_progress_receiveBack;
 //#undef assertion
 //#define assertion assert
 
-tarch::logging::Log exahype::reactive::ReactiveContext::_log( "exahype::reactive::OffloadingManager" );
+tarch::logging::Log exahype::reactive::ReactiveContext::_log( "exahype::reactive::ReactiveContext" );
 
 int exahype::reactive::ReactiveContext::_numTeams(-1);
 int exahype::reactive::ReactiveContext::_interTeamRank(-1);
@@ -80,6 +80,7 @@ MPI_Comm exahype::reactive::ReactiveContext::_interTeamComms[MAX_THREADS];
 
 exahype::reactive::ReactiveContext::OffloadingStrategy exahype::reactive::ReactiveContext::ChosenOffloadingStrategy(exahype::reactive::ReactiveContext::OffloadingStrategy::None);
 exahype::reactive::ReactiveContext::ResilienceStrategy exahype::reactive::ReactiveContext::ChosenResilienceStrategy(exahype::reactive::ReactiveContext::ResilienceStrategy::None);
+
 bool exahype::reactive::ReactiveContext::SaveRedundantComputations(false);
 bool exahype::reactive::ReactiveContext::MakeSkeletonsShareable(false);
 
@@ -112,14 +113,13 @@ exahype::reactive::ReactiveContext::ReactiveContext(int threadId) :
 
   int *tag_ptr;
   int flag = 0;
-  MPI_CHECK("OffloadingManager()" , MPI_Comm_get_attr(MPI_COMM_WORLD, MPI_TAG_UB, &tag_ptr, &flag));
-  _maxTag = *tag_ptr;
+  MPI_CHECK("OffloadingManager()", MPI_Comm_get_attr(MPI_COMM_WORLD, MPI_TAG_UB, &tag_ptr, &flag));
+  _maxSupportedTag = *tag_ptr;
   assertion(ierr==MPI_SUCCESS);
 
   if(!flag) {
     logWarning("OffloadingManager()"," maximum allowed MPI tag could not be determined. Offloading may leave the space of allowed tags for longer runs...");
   }
-
 }
 
 exahype::reactive::ReactiveContext::~ReactiveContext() {
@@ -159,11 +159,11 @@ bool exahype::reactive::ReactiveContext::getMakeSkeletonsShareable() {
   return MakeSkeletonsShareable;
 }
 
-bool exahype::reactive::ReactiveContext::isEnabled() {
+bool exahype::reactive::ReactiveContext::isReactivityEnabled() {
   return (ChosenOffloadingStrategy!=OffloadingStrategy::None) || (ChosenResilienceStrategy!=ResilienceStrategy::None);
 }
 
-bool exahype::reactive::ReactiveContext::usesOffloading() {
+bool exahype::reactive::ReactiveContext::isReactiveOffloadingEnabled() {
   return ChosenOffloadingStrategy!=OffloadingStrategy::None;
 }
 
@@ -298,13 +298,13 @@ exahype::reactive::ReactiveContext& exahype::reactive::ReactiveContext::getInsta
 }
 
 
-int exahype::reactive::ReactiveContext::getOffloadingTag() {
+int exahype::reactive::ReactiveContext::getNextMPITag() {
   static std::atomic<int> next_tag(1); //0 is reserved for status
 retry:
   int val =  next_tag.load();
   int val_o = val; 
 
-  if(val>_maxTag-1) {
+  if(val>_maxSupportedTag-1) {
     logWarning("getOffloadingTag","MPI tag rollover for reactive communication!");
     val = 1;
   }
@@ -327,53 +327,6 @@ void exahype::reactive::ReactiveContext::resetVictimFlag() {
 
 bool exahype::reactive::ReactiveContext::isVictim() {
   return _isVictim;
-}
-
-void exahype::reactive::ReactiveContext::triggerEmergencyForRank(int rank) {
-  switch(exahype::reactive::ReactiveContext::getInstance().getOffloadingStrategy()){
-    case ReactiveContext::OffloadingStrategy::AggressiveHybrid:
-      exahype::reactive::AggressiveHybridDistributor::getInstance().handleEmergencyOnRank(rank); break;
-    default:
-      //do nothing, no emergencies for other offloading strategies so far
-      break;
-  }
-
-  _localBlacklist[rank]++;
-  exahype::reactive::PerformanceMonitor::getInstance().submitBlacklistValueForRank(_localBlacklist[rank], rank);
-}
-
-void exahype::reactive::ReactiveContext::recoverBlacklistedRanks() {
-  logDebug("recoverBlacklistedRanks()","decrease heat of emergency heat map");
-  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
-  for(int i=0; i<nnodes;i++) {
-    _localBlacklist[i]*= 0.9;
-    if(_localBlacklist[i]>0)
-    exahype::reactive::PerformanceMonitor::getInstance().submitBlacklistValueForRank(_localBlacklist[i], i);
-  }
-}
-
-bool exahype::reactive::ReactiveContext::isBlacklisted(int rank) {
-  const double* globalHeatMap = exahype::reactive::PerformanceMonitor::getInstance().getBlacklistGlobalSnapshot();
-  return (globalHeatMap[rank]>0.5) || (_localBlacklist[rank]>0.5);
-}
-
-void exahype::reactive::ReactiveContext::printBlacklist() {
-  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
-  const double* globalHeatMap = exahype::reactive::PerformanceMonitor::getInstance().getBlacklistGlobalSnapshot();
-
-  for(int i=0; i<nnodes; i++) {
-    if(globalHeatMap[i]>0 || _localBlacklist[i]>0)
-    logInfo("printBlacklist", "blacklist value for rank "<<i<<":"<<globalHeatMap[i]);
-  }
-}
-
-bool exahype::reactive::ReactiveContext::isEmergencyTriggered() {
-  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
-  return !std::all_of(&_localBlacklist[0], &_localBlacklist[nnodes], [](double d) {return d<0.5;});
-}
-
-bool exahype::reactive::ReactiveContext::isEmergencyTriggeredOnRank(int rank) {
-  return !(_localBlacklist[rank]<0.5);
 }
 
 bool exahype::reactive::ReactiveContext::selectVictimRank(int& victim, bool& last) {

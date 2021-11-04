@@ -1175,7 +1175,7 @@ public:
  
 #if defined(Parallel)
    if ( this->getType() == solvers::Solver::Type::ADERDG 
-        && exahype::reactive::ReactiveContext::getInstance().usesOffloading()) {
+        && exahype::reactive::ReactiveContext::getInstance().isReactiveOffloadingEnabled()) {
       waitUntilCompletedLastStepOffloading((const void*) &cellDescription, waitForHighPriorityJob, receiveDanglingMessages);
    }
    else {

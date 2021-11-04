@@ -231,7 +231,7 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
   exahype::reactive::PerformanceMonitor::getInstance().setTasksPerTimestep(_numberOfEnclaveCells + _numberOfSkeletonCells);
 
   //start offloading manager background job
-  if(exahype::reactive::ReactiveContext::getInstance().isEnabled()) {
+  if(exahype::reactive::ReactiveContext::getInstance().isReactivityEnabled()) {
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
       if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
         static_cast<exahype::solvers::ADERDGSolver*>(solver)->initOffloadingManager();

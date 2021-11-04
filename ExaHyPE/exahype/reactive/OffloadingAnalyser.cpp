@@ -30,6 +30,7 @@
 #include "exahype/reactive/PerformanceMonitor.h"
 #include "exahype/reactive/AggressiveHybridDistributor.h"
 #include "exahype/reactive/ReactiveContext.h"
+#include "exahype/reactive/LocalBlacklist.h"
 
 tarch::logging::Log  exahype::reactive::OffloadingAnalyser::_log( "exahype::reactive::OffloadingAnalyser" );
 
@@ -191,8 +192,8 @@ void exahype::reactive::OffloadingAnalyser::beginIteration() {
     }
     _timeStepWatch.startTimer();
 
-    exahype::reactive::ReactiveContext::getInstance().resetVictimFlag(); //todo: find better position
-    exahype::reactive::ReactiveContext::getInstance().recoverBlacklistedRanks();
+    exahype::reactive::ReactiveContext::getInstance().resetVictimFlag(); //todo: find better position -> fused time step mapping
+    exahype::reactive::LocalBlacklist::getInstance().recoverBlacklistedRanks();
   }
 }
 
@@ -217,7 +218,7 @@ void exahype::reactive::OffloadingAnalyser::endIteration(double numberOfInnerLea
 
   updateZeroTresholdAndFilteredSnapshot();
   //printWaitingTimes();
-  //exahype::reactive::ReactiveContext::getInstance().printBlacklist();
+  //exahype::reactive::LocalBlacklist::getInstance().printBlacklist(); -> move to FusedTimeStep mapping
 
   switch(exahype::reactive::ReactiveContext::getInstance().getOffloadingStrategy()){
     case exahype::reactive::ReactiveContext::OffloadingStrategy::AggressiveHybrid:

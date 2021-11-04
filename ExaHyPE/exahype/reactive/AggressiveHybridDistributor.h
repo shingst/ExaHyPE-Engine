@@ -41,6 +41,8 @@ namespace exahype {
  * for MPI communication and the average time it takes to
  * compute an STP task. Temperature factors can be applied in order
  * to possibly speed up convergence.
+ *
+ * Todo: A common superclass for distributors would simplify the code.
  */
 class exahype::reactive::AggressiveHybridDistributor {
   private:

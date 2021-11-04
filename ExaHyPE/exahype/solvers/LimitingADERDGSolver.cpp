@@ -753,7 +753,7 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
 #endif
         )
 #if defined(Parallel)
-      || !exahype::reactive::ReactiveContext::getInstance().isEnabled()
+      || !exahype::reactive::ReactiveContext::getInstance().isReactivityEnabled()
 #endif
     ) {
       peano::datatraversal::TaskSet(

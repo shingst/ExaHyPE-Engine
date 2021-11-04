@@ -832,7 +832,7 @@ void exahype::solvers::ADERDGSolver::fusedTimeStepBody(
 #endif
        )
 #if defined(Parallel)
-      || !exahype::reactive::ReactiveContext::getInstance().isEnabled()
+      || !exahype::reactive::ReactiveContext::getInstance().isReactivityEnabled()
 #endif
     ) {
       peano::datatraversal::TaskSet( new PredictionJob(
@@ -1114,7 +1114,7 @@ void exahype::solvers::ADERDGSolver::predictionAndVolumeIntegral(
 #endif
           )
 #if defined(Parallel)
-       || !exahype::reactive::ReactiveContext::getInstance().isEnabled()
+       || !exahype::reactive::ReactiveContext::getInstance().isReactivityEnabled()
 #endif
        ) {
         peano::datatraversal::TaskSet( new PredictionJob(
@@ -2841,7 +2841,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
 #if !defined(UseSmartMPI) || defined(SmartMPINB)
      MPI_Request sendRequests[NUM_REQUESTS_MIGRATABLE_COMM+1];
 #endif
-     int tag = exahype::reactive::ReactiveContext::getInstance().getOffloadingTag(); //cellDescriptionsIndex is not a good idea here, as map entries with key+tag may be overwritten if previous sends have not been marked as finished yet
+     int tag = exahype::reactive::ReactiveContext::getInstance().getNextMPITag(); //cellDescriptionsIndex is not a good idea here, as map entries with key+tag may be overwritten if previous sends have not been marked as finished yet
      MigratablePredictionJobMetaData *metadata = new MigratablePredictionJobMetaData();
      job->packMetaData(metadata);
 #if defined(Asserts)
@@ -3201,7 +3201,7 @@ void exahype::solvers::ADERDGSolver::releaseDummyOutcomeAndShare(int cellDescrip
   MPI_Comm teamInterComm = exahype::reactive::ReactiveContext::getInstance().getTMPIInterTeamCommunicatorData();
   MPI_Request *sendRequests = new MPI_Request[(NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME+1)*(teams-1)];
   //int tag = job->_cellDescriptionsIndex; // exahype::reactive::OffloadingContext::getInstance().getOffloadingTag();
-  int tag = exahype::reactive::ReactiveContext::getInstance().getOffloadingTag();
+  int tag = exahype::reactive::ReactiveContext::getInstance().getNextMPITag();
   _mapTagToSTPData.insert(std::make_pair(tag, data));
 
   if(data->_metadata._isCorrupted) {
@@ -3286,7 +3286,7 @@ void exahype::solvers::ADERDGSolver::releasePendingOutcomeAndShare(int cellDescr
     MPI_Comm teamInterComm = exahype::reactive::ReactiveContext::getInstance().getTMPIInterTeamCommunicatorData();
     MPI_Request *sendRequests = new MPI_Request[(NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME+1)*(teams-1)];
     //int tag = job->_cellDescriptionsIndex; // exahype::reactive::OffloadingContext::getInstance().getOffloadingTag();
-    int tag = exahype::reactive::ReactiveContext::getInstance().getOffloadingTag();
+    int tag = exahype::reactive::ReactiveContext::getInstance().getNextMPITag();
     _mapTagToSTPData.insert(std::make_pair(tag, data));
 
     if(data->_metadata._isCorrupted) {
@@ -3816,7 +3816,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
     MigratablePredictionJobMetaData *metadata = new MigratablePredictionJobMetaData();
     job->packMetaData(metadata);
 
-    int tag = exahype::reactive::ReactiveContext::getInstance().getOffloadingTag();
+    int tag = exahype::reactive::ReactiveContext::getInstance().getNextMPITag();
     //int tag = job->_cellDescriptionsIndex; //exahype::reactive::OffloadingContext::getInstance().getOffloadingTag();
     //_mapTagToReplicationSendData.insert(std::make_pair(tag, data));
 
@@ -3869,7 +3869,7 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
     MPI_Request *sendRequests = new MPI_Request[(NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME+1)*(teams-1)];
 
     //int tag = job->_cellDescriptionsIndex; // exahype::reactive::OffloadingContext::getInstance().getOffloadingTag();
-    int tag = exahype::reactive::ReactiveContext::getInstance().getOffloadingTag();
+    int tag = exahype::reactive::ReactiveContext::getInstance().getNextMPITag();
 
     _mapTagToSTPData.insert(std::make_pair(tag, data));
 

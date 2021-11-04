@@ -51,6 +51,9 @@ class exahype::reactive::PerformanceMonitor {
      */
     void progressGatherAndCollectNewSnapshot();
 
+    /**
+     * Copies received waiting times to snapshot, reduces rank-local blacklists and sets global termination status.
+     */
     void processCompletedFusedRequestAndSetTerminationStatus();
 
     /**

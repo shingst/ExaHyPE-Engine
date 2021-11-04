@@ -726,7 +726,7 @@ void exahype::runners::Runner::shutdownSharedMemoryConfiguration() {
   #ifdef SharedMemoryParallelisation
 
   #ifdef Parallel
-  if(exahype::reactive::ReactiveContext::getInstance().isEnabled()) {
+  if(exahype::reactive::ReactiveContext::getInstance().isReactivityEnabled()) {
    while(  tarch::multicore::jobs::finishToProcessBackgroundJobs() ) {};
   }
   #endif
@@ -1151,7 +1151,7 @@ int exahype::runners::Runner::run() {
 #endif
 
 #if defined(SharedTBB)  && defined(Parallel)
-  if(exahype::reactive::ReactiveContext::getInstance().isEnabled()){
+  if(exahype::reactive::ReactiveContext::getInstance().isReactivityEnabled()){
     exahype::solvers::Solver::ensureAllJobsHaveTerminated(exahype::solvers::Solver::JobType::EnclaveJob);
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
       if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {

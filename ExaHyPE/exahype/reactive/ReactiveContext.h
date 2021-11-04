@@ -40,11 +40,14 @@ namespace exahype {
 
 /**
  * The ReactiveContext singleton stores the configuration of the reactive mechanisms in ExaHyPE.
- * It further manages MPI communicators for offloading- or tasksharing-related communication and the blacklist
+ * It further manages MPI communicators for offloading- or tasksharing-related communication and the rank-local(!) blacklist
  * for potentially overloaded ranks.
  */
 class exahype::reactive::ReactiveContext {
   public:
+    /**
+     * Enum for offloading strategy.
+     */
     enum class OffloadingStrategy {
       None,
       Dynamic,
@@ -56,6 +59,9 @@ class exahype::reactive::ReactiveContext {
       StaticHardcoded
     };
 
+    /**
+     * Enum for resilience strategy.
+     */
     enum class ResilienceStrategy {
       None,
       TaskSharing,
@@ -63,17 +69,60 @@ class exahype::reactive::ReactiveContext {
       TaskSharingResilienceCorrection
     };
 
+    //todo: Should probably be done in constructor? Code assumes offloading and resilience strategies to be static.
+    /**
+     * Sets offloading strategy.
+     * @param strategy The offloading strategy to be used.
+     */
     static void setOffloadingStrategy(OffloadingStrategy strategy);
+
+    /**
+     * @return Offloading strategy.
+     */
     static OffloadingStrategy getOffloadingStrategy();
 
+    /**
+     * Sets resilience strategy.
+     * @param The resilience strategy to be used.
+     */
     static void setResilienceStrategy(ResilienceStrategy strategy);
+
+    /**
+     * @return Resilience strategy.
+     */
     static ResilienceStrategy getResilienceStrategy();
 
+    /**
+     * Sets flags that indicates whether redundant computations should be saved
+     * through reactive task outcome sharing.
+     */
     static void setSaveRedundantComputations(bool saveRedundantComputations);
+
+    /**
+     * @return True if reactive task outcome sharing should be used to save redundant computations.
+     */
     static bool getSaveRedundantComputations();
 
+    /**
+     * Controls whether skeleton tasks should be shared or not.
+     * Per default only enclaves are shared.
+     */
     static void setMakeSkeletonsShareable(bool makeSkeletonsShareable);
+
+    /**
+     * @return True if skeletons should be shared.
+     */
     static bool getMakeSkeletonsShareable();
+
+    /**
+     * @return True if some reactive feature is enabled (load balancing or resilience).
+     */
+    static bool isReactivityEnabled();
+
+    /**
+     * @return True if reactive offloading is enabled.
+     */
+    static bool isReactiveOffloadingEnabled();
 
   private:
     /**
@@ -81,12 +130,22 @@ class exahype::reactive::ReactiveContext {
      */
     static tarch::logging::Log _log;
 
-    int _threadId;
-
-    int _maxTag;
+    //singleton per thread
+    ReactiveContext(int threadId);
+    virtual ~ReactiveContext();
 
     /**
-     * Flag is set, if this rank has become a victim rank in the current
+     * Thread id of the thread the reactive context object belongs to.
+     */
+    int _threadId;
+
+    /**
+     * Maximum supported tag by MPI.
+     */
+    int _maxSupportedTag;
+
+    /**
+     * Flag is set if this rank has become a victim rank in the current
      * time step.
      */
     std::atomic<bool> _isVictim;
@@ -108,15 +167,11 @@ class exahype::reactive::ReactiveContext {
      */
     bool _hasNotifiedSendCompleted;
 
-    ReactiveContext(int threadId);
-
     /**
      * Communicator for communication between replicating ranks.
      */
-    //MPI_Comm _interTeamComm, _interTeamCommKey, _interTeamCommAck;
     static int _numTeams;
     static int _interTeamRank;
-
 
     static ReactiveContext* _static_managers[MAX_THREADS];
 
@@ -132,17 +187,12 @@ class exahype::reactive::ReactiveContext {
     static bool SaveRedundantComputations;
     static bool MakeSkeletonsShareable;
   public:
-
-    bool isEnabled();
-    
-    bool usesOffloading();
-
     //Todo: with these two function, we can clean up the interface and make some more functions private
     void initializeCommunicatorsAndTeamMetadata();
 
     void destroy();
 
-    int getOffloadingTag();
+    int getNextMPITag();
 
     void setTMPIInterTeamCommunicators(MPI_Comm comm, MPI_Comm commKey, MPI_Comm commAck);
     MPI_Comm getTMPIInterTeamCommunicatorData();
@@ -188,16 +238,7 @@ class exahype::reactive::ReactiveContext {
     void resetVictimFlag();
     bool isVictim();
 
-    bool isBlacklisted(int rank);
-    bool isEmergencyTriggered();
-    bool isEmergencyTriggeredOnRank(int rank);
-    void triggerEmergencyForRank(int rank);
-
-    void recoverBlacklistedRanks();
-    void printBlacklist();
-
     static ReactiveContext& getInstance();
-    virtual ~ReactiveContext();
 };
 
 #endif
