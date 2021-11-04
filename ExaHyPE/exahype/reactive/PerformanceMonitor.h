@@ -29,6 +29,12 @@ namespace exahype {
 /**
  * The PerformanceMonitor stores and distributes on-line live performance
  * information which can be used to make effective offloading decisions.
+ * It receives the raw performance data (waiting times, blacklist values) and makes
+ * it available to other ranks. Global performance information can be retrieved using
+ * getter methods.
+ * It is important to regularly call the progress method in the application to ensure
+ * that non-blocking MPI messages for keeping the global performance information view up-to-date actually
+ * progress in the background.
  */
 class exahype::reactive::PerformanceMonitor {
   private:
@@ -41,11 +47,24 @@ class exahype::reactive::PerformanceMonitor {
     PerformanceMonitor& operator=(const PerformanceMonitor& other) = delete;
 
     /**
+     * Makes progress on outstanding Iallgather, receives a new global performance snapshot (if possible) and posts a new gather operation if necessary.
+     */
+    void progressGatherAndCollectNewSnapshot();
+
+    /**
+     * Posts a new iallgather request, which requires to copy the rank-local performance data to a send buffer.
+     */
+    void copyToSendBufferAndPostFusedRequest();
+
+    /**
      * Status flag, if false then a rank has stopped
      * the PerformanceMonitor locally.
      */
-    bool _isRankActive;
+    bool _hasTerminatedLocally;
 
+    /**
+     * Status flag set to true if performance monitoring is disabled.
+     */
     bool _isDisabled;
 
     /**
@@ -53,52 +72,73 @@ class exahype::reactive::PerformanceMonitor {
      */
     bool _terminatedGlobally;
 
-    double *_currentWaitingTimesSnapshot; //length nranks*nranks
-    double *_currentWaitingTimes; //lenght nranks
+    /**
+     * Array of current global view of waiting times (matrix with length nranks*nranks).
+     */
+    double *_currentWaitingTimesGlobalSnapshot;
 
-    double *_currentBlacklistSnapshot;
-    double *_currentBlacklist;
+    /**
+     * Stores the rank-local current waiting times (length nranks).
+     */
+    double *_currentWaitingTimesLocal;
 
+    /**
+     * Stores global snapshot of blacklist (length nranks*nranks).
+     */
+    double *_currentBlacklistGlobalSnapshot;
+
+    /**
+     * Stores the rank-local blacklist (length nranks)
+     */
+    double *_currentBlacklistLocal;
+
+    /**
+     * Stores snapshot of current number of tasks per rank (length nranks).
+     */
     int *_currentTasksSnapshot;
 
-    double *_currentFusedDataReceiveBuffer;
+    /**
+     * Buffer for the currently in-flight iallgather messages.
+     * Contains:
+     * 1) Waiting times of local rank for other ranks (length nranks)
+     * 2) Local blacklist values for each other rank (length nranks)
+     * 3) Currently outstanding tasks on this rank (length 1)
+     * 4) Local termination signal: -1 if local rank has terminated, 0 otherwise
+     */
     double *_currentFusedDataSendBuffer;
 
     /**
-     *  local load counter of a rank, represents current load (i.e. number of tasks
+     * The receive buffer stores the global allgathered view of the rank local performance infos.
+     * As each rank sends data of size nranks*2+2, it has length nranks*(nranks*2+2)
+     */
+    double *_currentFusedDataReceiveBuffer;
+
+    /**
+     *  Local load counter of a rank, represents current load (i.e. number of tasks
      *  in queue)
      */
     std::atomic<int> _currentTasksLocal;
 
     /**
-     * remaining load uses the additional information of how many tasks will be
-     * spawned in a time step, i.e. it tells us how many tasks will still need
-     * to be processed before a time step can be completed
-     */
-    std::atomic<int> _remainingTasks;
-
-    /**
-     * stores total number of tasks spawned in every time step
+     * Stores total number of tasks spawned in every time step.
      */
     int _tasksPerTimestep;
 
     /**
-     * The current gather request
+     * The current gather request.
      */
     MPI_Request _fusedGatherRequest;
 
+    /**
+     * Semaphore for thread-safety.
+     */
     tarch::multicore::BooleanSemaphore _semaphore;
 
-    // make progress on current gather requests
-    void progressGather();
-
-    void postFusedRequest();
-
-  public:
+    public:
     /**
      * Signals that a rank has finished computing any local work
      */
-    void stop();
+    void signalLocalTermination();
 
     /**
      * Submits waiting time for a rank.
@@ -111,12 +151,12 @@ class exahype::reactive::PerformanceMonitor {
      * Returns pointer to the current waiting times snapshot.
      * @return
      */
-    const double *getWaitingTimesSnapshot();
+    const double *getWaitingTimesGlobalSnapshot() const;
 
     /**
      * Submits a new blacklist value for a given rank.
-     * @param bval
-     * @param rank
+     * @param bval Blacklist value
+     * @param rank Rank which is blacklisted
      */
     void submitBlacklistValueForRank(double bval, int rank);
 
@@ -124,55 +164,46 @@ class exahype::reactive::PerformanceMonitor {
      * Returns current blacklist snapshot.
      * @return Current global blacklist snapshot.
      */
-    const double *getBlacklistSnapshot();
+    const double *getBlacklistGlobalSnapshot() const;
 
     /**
      * Sets the current number of tasks to a given
      * value.
      * @param numTasks
      */
-    void setCurrentTasks(int numTasks);
+    void setCurrentNumTasks(int numTasks);
 
     /**
      * Increases the current load, to be called when a new task is added.
      */
-    void incCurrentTasks();
+    void incCurrentNumTasks();
 
     /**
-     * Decreases the current load
+     * Decreases the current load.
      */
-    void decCurrentTasks();
+    void decCurrentNumTasks();
 
     /**
      * Sets the local load per time step (needs to be called again after
-     * mesh refinement
+     * mesh refinement.
      */
     void setTasksPerTimestep(int numTasks);
 
     /**
-     * getter for remaining load for the current time step
+     * Getter for local load per time step
      */
-    int getRemainingTasks();
+    int getTasksPerTimestep() const;
 
     /**
-     * getter for local load per time step
-     */
-    int getTasksPerTimestep();
-
-    /**getter for current number of tasks snapshot
+     * Getter for current number of tasks snapshot
      *
      * @return Snapshot containing the current number of
      * tasks on every MPI rank.
      */
-    const int *getCurrentTasksSnapshot();
+    const int *getCurrentTasksGlobalSnapshot() const;
 
     /**
-     * decrease remaining load for current time step
-     */
-    void decRemainingTasks();
-
-    /**
-     * returns true, if every rank has finished computing during
+     * @return True, if every rank has finished computing during
      * an ExahyPE run
      */
     bool isGloballyTerminated();
@@ -183,8 +214,11 @@ class exahype::reactive::PerformanceMonitor {
      * that performance information is distributed
      * through the system.
      */
-    void run();
+    void progress();
 
+    /**
+     * Disables performance monitoring.
+     */
     void disable();
 
     static PerformanceMonitor& getInstance();

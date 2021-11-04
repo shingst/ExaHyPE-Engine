@@ -353,13 +353,13 @@ void exahype::reactive::ReactiveContext::recoverBlacklistedRanks() {
 }
 
 bool exahype::reactive::ReactiveContext::isBlacklisted(int rank) {
-  const double* globalHeatMap = exahype::reactive::PerformanceMonitor::getInstance().getBlacklistSnapshot();
+  const double* globalHeatMap = exahype::reactive::PerformanceMonitor::getInstance().getBlacklistGlobalSnapshot();
   return (globalHeatMap[rank]>0.5) || (_localBlacklist[rank]>0.5);
 }
 
 void exahype::reactive::ReactiveContext::printBlacklist() {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
-  const double* globalHeatMap = exahype::reactive::PerformanceMonitor::getInstance().getBlacklistSnapshot();
+  const double* globalHeatMap = exahype::reactive::PerformanceMonitor::getInstance().getBlacklistGlobalSnapshot();
 
   for(int i=0; i<nnodes; i++) {
     if(globalHeatMap[i]>0 || _localBlacklist[i]>0)

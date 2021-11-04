@@ -67,7 +67,7 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
     NumberOfEnclaveJobs.fetch_add(1);
   }
   exahype::reactive::ResilienceStatistics::getInstance().notifySpawnedTask();
-  exahype::reactive::PerformanceMonitor::getInstance().incCurrentTasks();
+  exahype::reactive::PerformanceMonitor::getInstance().incCurrentNumTasks();
 
   auto& cellDescription = getCellDescription(cellDescriptionsIndex, element);
   logDebug("MigratablePredictionJob","team "<<exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber()<<" spawning STP for "
@@ -129,7 +129,7 @@ exahype::solvers::ADERDGSolver::MigratablePredictionJob::MigratablePredictionJob
   }
   else
     NumberOfEnclaveJobs++;
-  exahype::reactive::PerformanceMonitor::getInstance().incCurrentTasks();
+  exahype::reactive::PerformanceMonitor::getInstance().incCurrentNumTasks();
 }
 
 exahype::solvers::ADERDGSolver::MigratablePredictionJob::~MigratablePredictionJob() {
@@ -365,8 +365,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::setFinished() {
    _element);
 
   cellDescription.setHasCompletedLastStep(true);
-  exahype::reactive::PerformanceMonitor::getInstance().decRemainingTasks();
-  exahype::reactive::PerformanceMonitor::getInstance().decCurrentTasks();
+  exahype::reactive::PerformanceMonitor::getInstance().decCurrentNumTasks();
 }
 
 bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::corruptIfActive(bool forceCorruption) {

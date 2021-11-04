@@ -106,7 +106,7 @@ double exahype::reactive::OffloadingAnalyser::getTimePerTimeStep() const {
 }
 
 bool exahype::reactive::OffloadingAnalyser::isValidSnapshot() const {
-  const double* currentWaitingTimesSnapshot = exahype::reactive::PerformanceMonitor::getInstance().getWaitingTimesSnapshot();
+  const double* currentWaitingTimesSnapshot = exahype::reactive::PerformanceMonitor::getInstance().getWaitingTimesGlobalSnapshot();
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
   //check if valid: there is an entry>0 for every rank
@@ -132,7 +132,7 @@ bool exahype::reactive::OffloadingAnalyser::isValidSnapshot() const {
 void exahype::reactive::OffloadingAnalyser::updateZeroTresholdAndFilteredSnapshot() {
   if(!_isSwitchedOn) return;
 
-  const double* currentWaitingTimesSnapshot = exahype::reactive::PerformanceMonitor::getInstance().getWaitingTimesSnapshot();
+  const double* currentWaitingTimesSnapshot = exahype::reactive::PerformanceMonitor::getInstance().getWaitingTimesGlobalSnapshot();
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
   //check if valid: there is an entry>0 for every rank

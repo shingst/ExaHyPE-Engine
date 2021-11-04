@@ -2628,7 +2628,7 @@ bool exahype::solvers::ADERDGSolver::OffloadingManagerJob::run( bool isCalledOnM
       break;
     case State::Terminate:
     {
-      exahype::reactive::PerformanceMonitor::getInstance().stop();
+      exahype::reactive::PerformanceMonitor::getInstance().signalLocalTermination();
       logDebug("offloadingManager", " terminated ");
       _solver._offloadingManagerJobTerminated = true;
       result = false;
@@ -3664,7 +3664,7 @@ void exahype::solvers::ADERDGSolver::progressOffloading(exahype::solvers::ADERDG
 #endif
 
   // 3. progress on performance monitor
-  exahype::reactive::PerformanceMonitor::getInstance().run();
+  exahype::reactive::PerformanceMonitor::getInstance().progress();
 
   // 4. detect whether local rank should receive anything
   //if(!runOnMaster)
