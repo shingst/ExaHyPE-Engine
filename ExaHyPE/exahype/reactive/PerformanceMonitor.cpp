@@ -157,7 +157,6 @@ void exahype::reactive::PerformanceMonitor::progress() {
 }
 
 void exahype::reactive::PerformanceMonitor::progressGatherAndCollectNewSnapshot() {
-  int nnodes    = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
   int reqCompleted = 0;
   int ierr = MPI_SUCCESS;
@@ -169,35 +168,7 @@ void exahype::reactive::PerformanceMonitor::progressGatherAndCollectNewSnapshot(
   }
  
   if(reqCompleted) {
-    bool newGlobalTerminationStatus = true;
-    double *newSnapshot = new double[nnodes];
-    std::fill(&newSnapshot[0], &newSnapshot[nnodes], 0);
-
-    for(int i=0; i<nnodes; i++) {
-      //copy waiting times
-      int offsetWaitingTimes = i*(nnodes+nnodes+2);
-      std::copy(&_currentFusedDataReceiveBuffer[offsetWaitingTimes], &_currentFusedDataReceiveBuffer[offsetWaitingTimes+nnodes], &_currentWaitingTimesGlobalSnapshot[i*nnodes]);
-      int offsetBlacklistValues = i*(nnodes+nnodes+2)+nnodes;
-
-      //reduce blacklist values using a sum reduction
-      for(int j=0; j<nnodes; j++) {
-        newSnapshot[j] += _currentFusedDataReceiveBuffer[offsetBlacklistValues+j];
-      }
-
-      _currentTasksSnapshot[i] = _currentFusedDataReceiveBuffer[offsetBlacklistValues+nnodes];
-      //reduce termination status
-      newGlobalTerminationStatus &= (_currentFusedDataReceiveBuffer[offsetBlacklistValues+nnodes+1]==TERMINATE_SIGNAL);
-    }
-    _terminatedGlobally = newGlobalTerminationStatus;
-    if(_terminatedGlobally)
-      logInfo("progressOffloading", "received terminated"<<_terminatedGlobally);
-
-    for(int j=0; j<nnodes; j++) {
-      _currentBlacklistGlobalSnapshot[j] = newSnapshot[j];
-    }
-
-    _fusedGatherRequest = MPI_REQUEST_NULL;
-    delete[] newSnapshot;
+    processCompletedFusedRequestAndSetTerminationStatus();
   }
 
   if(_fusedGatherRequest==MPI_REQUEST_NULL && !isGloballyTerminated()) {
@@ -205,6 +176,40 @@ void exahype::reactive::PerformanceMonitor::progressGatherAndCollectNewSnapshot(
   }
 
   lock.free();
+}
+
+void exahype::reactive::PerformanceMonitor::processCompletedFusedRequestAndSetTerminationStatus() {
+  int nnodes    = tarch::parallel::Node::getInstance().getNumberOfNodes();
+
+  bool newGlobalTerminationStatus = true;
+  double *tmpBlacklistSum = new double[nnodes];
+  std::fill(&tmpBlacklistSum[0], &tmpBlacklistSum[nnodes], 0);
+
+  for(int i=0; i<nnodes; i++) {
+    //copy waiting times
+    int offsetWaitingTimes = i*(nnodes+nnodes+2);
+    std::copy(&_currentFusedDataReceiveBuffer[offsetWaitingTimes], &_currentFusedDataReceiveBuffer[offsetWaitingTimes+nnodes], &_currentWaitingTimesGlobalSnapshot[i*nnodes]);
+
+    //reduce blacklist values using a sum reduction
+    int offsetBlacklistValues = i*(nnodes+nnodes+2)+nnodes;
+    for(int j=0; j<nnodes; j++) {
+      tmpBlacklistSum[j] += _currentFusedDataReceiveBuffer[offsetBlacklistValues+j];
+    }
+
+    _currentTasksSnapshot[i] = _currentFusedDataReceiveBuffer[offsetBlacklistValues+nnodes];
+    //reduce termination status
+    newGlobalTerminationStatus &= (_currentFusedDataReceiveBuffer[offsetBlacklistValues+nnodes+1]==TERMINATE_SIGNAL);
+  }
+  _terminatedGlobally = newGlobalTerminationStatus;
+  if(_terminatedGlobally)
+    logInfo("progressOffloading", "received terminated"<<_terminatedGlobally);
+
+  for(int j=0; j<nnodes; j++) {
+    _currentBlacklistGlobalSnapshot[j] = tmpBlacklistSum[j];
+  }
+
+  _fusedGatherRequest = MPI_REQUEST_NULL;
+  delete[] tmpBlacklistSum;
 }
 
 void exahype::reactive::PerformanceMonitor::copyToSendBufferAndPostFusedRequest() {

@@ -51,6 +51,8 @@ class exahype::reactive::PerformanceMonitor {
      */
     void progressGatherAndCollectNewSnapshot();
 
+    void processCompletedFusedRequestAndSetTerminationStatus();
+
     /**
      * Posts a new iallgather request, which requires to copy the rank-local performance data to a send buffer.
      */
