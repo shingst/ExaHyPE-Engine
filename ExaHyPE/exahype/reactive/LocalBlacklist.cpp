@@ -59,7 +59,7 @@ void exahype::reactive::LocalBlacklist::recoverBlacklistedRanks() {
   for(int i=0; i<nnodes;i++) {
     _localBlacklist[i]*= 0.9;
     if(_localBlacklist[i]>0)
-    exahype::reactive::PerformanceMonitor::getInstance().submitBlacklistValueForRank(_localBlacklist[i], i);
+      exahype::reactive::PerformanceMonitor::getInstance().submitBlacklistValueForRank(_localBlacklist[i], i);
   }
 }
 
@@ -75,7 +75,7 @@ void exahype::reactive::LocalBlacklist::printBlacklist() {
 
   for(int i=0; i<nnodes; i++) {
     if(globalBlacklist[i]>0 || _localBlacklist[i]>0)
-    logInfo("printBlacklist", "blacklist value for rank "<<i<<":"<<globalHeatMap[i]);
+      logInfo("printBlacklist", "blacklist value for rank "<<i<<":"<<globalBlacklist[i]);
   }
 }
 
