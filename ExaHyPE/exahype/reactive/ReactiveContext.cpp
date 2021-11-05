@@ -69,14 +69,16 @@ static int event_progress_receiveBack;
 
 tarch::logging::Log exahype::reactive::ReactiveContext::_log( "exahype::reactive::ReactiveContext" );
 
-int exahype::reactive::ReactiveContext::_numTeams(-1);
-int exahype::reactive::ReactiveContext::_interTeamRank(-1);
+int exahype::reactive::ReactiveContext::NumTeams(-1);
+int exahype::reactive::ReactiveContext::Team(-1);
 
-exahype::reactive::ReactiveContext* exahype::reactive::ReactiveContext::_static_managers[MAX_THREADS];
-MPI_Comm exahype::reactive::ReactiveContext::_offloadingComms[MAX_THREADS];
-MPI_Comm exahype::reactive::ReactiveContext::_offloadingCommsMapped[MAX_THREADS];
+int exahype::reactive::ReactiveContext::MaxSupportedTag(-1);
 
-MPI_Comm exahype::reactive::ReactiveContext::_interTeamComms[MAX_THREADS];
+exahype::reactive::ReactiveContext* exahype::reactive::ReactiveContext::StaticManagers[MAX_THREADS];
+MPI_Comm exahype::reactive::ReactiveContext::OffloadingComms[MAX_THREADS];
+MPI_Comm exahype::reactive::ReactiveContext::OffloadingCommsMapped[MAX_THREADS];
+
+MPI_Comm exahype::reactive::ReactiveContext::InterTeamComms[MAX_THREADS];
 
 exahype::reactive::ReactiveContext::OffloadingStrategy exahype::reactive::ReactiveContext::ChosenOffloadingStrategy(exahype::reactive::ReactiveContext::OffloadingStrategy::None);
 exahype::reactive::ReactiveContext::ResilienceStrategy exahype::reactive::ReactiveContext::ChosenResilienceStrategy(exahype::reactive::ReactiveContext::ResilienceStrategy::None);
@@ -84,9 +86,10 @@ exahype::reactive::ReactiveContext::ResilienceStrategy exahype::reactive::Reacti
 bool exahype::reactive::ReactiveContext::SaveRedundantComputations(false);
 bool exahype::reactive::ReactiveContext::MakeSkeletonsShareable(false);
 
+std::atomic<bool> exahype::reactive::ReactiveContext::IsVictim(false);
+
 exahype::reactive::ReactiveContext::ReactiveContext(int threadId) :
     _threadId(threadId),
-    _emergencyTriggered(false),
     _hasNotifiedSendCompleted(false) {
 
   int ierr;
@@ -104,17 +107,12 @@ exahype::reactive::ReactiveContext::ReactiveContext(int threadId) :
 #endif
   MPI_Comm_set_errhandler(MPI_COMM_WORLD, MPI_ERRORS_RETURN);
 
-  //todo: should not be implicitly invoked
-  initializeCommunicatorsAndTeamMetadata();
-
-  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes()*_numTeams;
-  _localBlacklist = new double[nnodes];
-  std::fill(&_localBlacklist[0], &_localBlacklist[nnodes], 0);
+  initialize();
 
   int *tag_ptr;
   int flag = 0;
   MPI_CHECK("OffloadingManager()", MPI_Comm_get_attr(MPI_COMM_WORLD, MPI_TAG_UB, &tag_ptr, &flag));
-  _maxSupportedTag = *tag_ptr;
+  MaxSupportedTag = *tag_ptr;
   assertion(ierr==MPI_SUCCESS);
 
   if(!flag) {
@@ -124,7 +122,6 @@ exahype::reactive::ReactiveContext::ReactiveContext(int threadId) :
 
 exahype::reactive::ReactiveContext::~ReactiveContext() {
   destroy();
-  delete[] _localBlacklist;
 }
 
 void exahype::reactive::ReactiveContext::setOffloadingStrategy(OffloadingStrategy strategy) {
@@ -167,9 +164,22 @@ bool exahype::reactive::ReactiveContext::isReactiveOffloadingEnabled() {
   return ChosenOffloadingStrategy!=OffloadingStrategy::None;
 }
 
-void exahype::reactive::ReactiveContext::initializeCommunicatorsAndTeamMetadata() {
+void exahype::reactive::ReactiveContext::triggerVictimFlag() {
+  IsVictim = true;
+}
+
+void exahype::reactive::ReactiveContext::resetVictimFlag() {
+  IsVictim = false;
+}
+
+bool exahype::reactive::ReactiveContext::isVictim() {
+  return IsVictim;
+}
+
+
+void exahype::reactive::ReactiveContext::initialize() {
   static bool initialized = false;
-  //Todo:  this collective routine should be exposed to the runner instead of being implicitly invoked by the constructor
+  //Todo:  this collective routine should probably be exposed to the runner instead of being implicitly invoked by the constructor
   //#if defined(SharedTBB)
   if(!initialized)
     createMPICommunicators();
@@ -178,29 +188,29 @@ void exahype::reactive::ReactiveContext::initializeCommunicatorsAndTeamMetadata(
 }
 
 void exahype::reactive::ReactiveContext::destroy() {
-#if defined(SharedTBB)
+  //#if defined(SharedTBB)
   destroyMPICommunicators();
-#endif
+  //#endif
 }
 
-MPI_Comm exahype::reactive::ReactiveContext::getTMPIInterTeamCommunicatorData() {
-  return _interTeamComms[_threadId];
+MPI_Comm exahype::reactive::ReactiveContext::getTMPIInterTeamCommunicatorData() const {
+  return InterTeamComms[_threadId];
 }
 
 void exahype::reactive::ReactiveContext::setTMPINumTeams(int nteams) {
-  _numTeams = nteams;
+  NumTeams = nteams;
 }
 
 unsigned int exahype::reactive::ReactiveContext::getTMPINumTeams() {
-  return _numTeams;
+  return NumTeams;
 }
 
 void exahype::reactive::ReactiveContext::setTMPITeamNumber(int interTeamRank) {
-  _interTeamRank = interTeamRank;
+  Team = interTeamRank;
 }
 
-int exahype::reactive::ReactiveContext::getTMPITeamNumber(){
-  return _interTeamRank;
+int exahype::reactive::ReactiveContext::getTMPITeamNumber() {
+  return Team;
 }
 
 void exahype::reactive::ReactiveContext::createMPICommunicators() {
@@ -220,17 +230,15 @@ void exahype::reactive::ReactiveContext::createMPICommunicators() {
   MPI_Comm_rank(interTeamComm, &rankInterComm);
   int team = TMPI_GetTeamNumber();
 
-  _numTeams  = nteams;
-  _interTeamRank = rankInterComm;
-
-  //exahype::reactive::OffloadingManager::getInstance().setTMPIInterTeamCommunicators(interTeamComm, interTeamCommDupKey, interTeamCommDupAck);
+  NumTeams  = nteams;
+  Team = rankInterComm;
 
   logInfo("createMPICommunicators()", " teams: "<<nteams<<", rank in team "
                                                 <<team<<" : "<<rank<<", team rank in intercomm: "<<rankInterComm);
 
 #else
-  _numTeams = 1;
-  _interTeamRank = 0;
+  NumTeams = 1;
+  Team = 0;
 
   MPI_CHECK("createMPICommunicators", MPI_Comm_rank(MPI_COMM_WORLD, &rank));
   MPI_CHECK("createMPICommunicators", MPI_Comm_split(MPI_COMM_WORLD, rank, rank, &interTeamComm));
@@ -241,18 +249,18 @@ void exahype::reactive::ReactiveContext::createMPICommunicators() {
     MPI_Info_create(&info);
     MPI_Info_set(info, "thread_id", std::to_string(i).c_str());
 
-    MPI_CHECK("createMPICommunicators", MPI_Comm_dup(MPI_COMM_WORLD, &_offloadingComms[i]));
+    MPI_CHECK("createMPICommunicators", MPI_Comm_dup(MPI_COMM_WORLD, &OffloadingComms[i]));
     assertion(ierr==MPI_SUCCESS);
-    MPI_CHECK("createMPICommunicators", MPI_Comm_set_info(_offloadingComms[i], info));
-    assertion(ierr==MPI_SUCCESS);
-
-    MPI_CHECK("createMPICommunicators", MPI_Comm_dup(MPI_COMM_WORLD, &_offloadingCommsMapped[i]));
-    assertion(ierr==MPI_SUCCESS);
-    MPI_CHECK("createMPICommunicators", MPI_Comm_set_info(_offloadingCommsMapped[i], info));
+    MPI_CHECK("createMPICommunicators", MPI_Comm_set_info(OffloadingComms[i], info));
     assertion(ierr==MPI_SUCCESS);
 
-    MPI_CHECK("createMPICommunicators", MPI_Comm_dup(interTeamComm, &_interTeamComms[i])); assertion(ierr==MPI_SUCCESS);
-    MPI_CHECK("createMPICommunicators", MPI_Comm_set_info(_interTeamComms[i], info));
+    MPI_CHECK("createMPICommunicators", MPI_Comm_dup(MPI_COMM_WORLD, &OffloadingCommsMapped[i]));
+    assertion(ierr==MPI_SUCCESS);
+    MPI_CHECK("createMPICommunicators", MPI_Comm_set_info(OffloadingCommsMapped[i], info));
+    assertion(ierr==MPI_SUCCESS);
+
+    MPI_CHECK("createMPICommunicators", MPI_Comm_dup(interTeamComm, &InterTeamComms[i])); assertion(ierr==MPI_SUCCESS);
+    MPI_CHECK("createMPICommunicators", MPI_Comm_set_info(InterTeamComms[i], info));
     assertion(ierr==MPI_SUCCESS);
 
     MPI_Info_free(&info);
@@ -263,18 +271,18 @@ void exahype::reactive::ReactiveContext::createMPICommunicators() {
 void exahype::reactive::ReactiveContext::destroyMPICommunicators() {
   int ierr;
   for(int i=0; i<MAX_THREADS;i++) {
-    MPI_CHECK("destroyMPICommunicators", MPI_Comm_free(&_offloadingComms[i])); assertion(ierr==MPI_SUCCESS);
-    MPI_CHECK("destroyMPICommunicators", MPI_Comm_free(&_offloadingCommsMapped[i])); assertion(ierr==MPI_SUCCESS);
-    MPI_CHECK("destroyMPICommunicators", MPI_Comm_free(&_interTeamComms[i])); assertion(ierr==MPI_SUCCESS);
+    MPI_CHECK("destroyMPICommunicators", MPI_Comm_free(&OffloadingComms[i])); assertion(ierr==MPI_SUCCESS);
+    MPI_CHECK("destroyMPICommunicators", MPI_Comm_free(&OffloadingCommsMapped[i])); assertion(ierr==MPI_SUCCESS);
+    MPI_CHECK("destroyMPICommunicators", MPI_Comm_free(&InterTeamComms[i])); assertion(ierr==MPI_SUCCESS);
   }
 }
 
-MPI_Comm exahype::reactive::ReactiveContext::getMPICommunicator() {
-  return _offloadingComms[_threadId];
+MPI_Comm exahype::reactive::ReactiveContext::getMPICommunicator() const {
+  return OffloadingComms[_threadId];
 }
 
-MPI_Comm exahype::reactive::ReactiveContext::getMPICommunicatorMapped() {
-  return _offloadingCommsMapped[_threadId];
+MPI_Comm exahype::reactive::ReactiveContext::getMPICommunicatorMapped() const {
+  return OffloadingCommsMapped[_threadId];
 }
 
 exahype::reactive::ReactiveContext& exahype::reactive::ReactiveContext::getInstance() {
@@ -291,10 +299,10 @@ exahype::reactive::ReactiveContext& exahype::reactive::ReactiveContext::getInsta
 	  MPI_Abort(MPI_COMM_WORLD, -1);
   }
 
-  if(_static_managers[threadID]==nullptr) {
-    _static_managers[threadID] = new ReactiveContext(threadID);
+  if(StaticManagers[threadID]==nullptr) {
+    StaticManagers[threadID] = new ReactiveContext(threadID);
   }
-  return *_static_managers[threadID];
+  return *StaticManagers[threadID];
 }
 
 
@@ -304,7 +312,7 @@ retry:
   int val =  next_tag.load();
   int val_o = val; 
 
-  if(val>_maxSupportedTag-1) {
+  if(val>MaxSupportedTag-1) {
     logWarning("getOffloadingTag","MPI tag rollover for reactive communication!");
     val = 1;
   }
@@ -315,18 +323,6 @@ retry:
     goto retry;
   }
   return val;
-}
-
-void exahype::reactive::ReactiveContext::triggerVictimFlag() {
-  _isVictim = true;
-}
-
-void exahype::reactive::ReactiveContext::resetVictimFlag() {
-  _isVictim = false;
-}
-
-bool exahype::reactive::ReactiveContext::isVictim() {
-  return _isVictim;
 }
 
 bool exahype::reactive::ReactiveContext::selectVictimRank(int& victim, bool& last) {

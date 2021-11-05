@@ -55,7 +55,7 @@
 #define MAX_PROGRESS_ITS 10000
 
 #include "exahype/reactive/ReactiveContext.h"
-#include "exahype/reactive/LocalBlacklist.h"
+#include "exahype/reactive/Blacklist.h"
 #include "exahype/reactive/ResilienceStatistics.h"
 
 #if defined(SharedTBB)
@@ -3718,7 +3718,6 @@ public:
  #endif
 
    const CellDescription& cellDescription = *((const CellDescription*) cellDescripPtr);
-   //bool hasProcessed = false;
    bool hasTriggeredEmergency = false;
 
  #if !defined(OffloadingUseProgressThread)
@@ -3771,7 +3770,7 @@ public:
 
           hasTriggeredEmergency = true;
           logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank);
-          exahype::reactive::LocalBlacklist::getInstance().triggerEmergencyForRank(responsibleRank);
+          exahype::reactive::Blacklist::getInstance().triggerEmergencyAndBlacklistRank(responsibleRank); //  each emergency needs to notify blacklist
         }
     }
  #if !defined(OffloadingUseProgressThread)

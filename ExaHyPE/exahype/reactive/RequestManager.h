@@ -45,9 +45,13 @@
 #endif
 
 #if defined(UseMPIThreadSplit)
+#ifndef MAX_THREADS
 #define MAX_THREADS 48
+#endif
 #else
+#ifndef MAX_THREADS
 #define MAX_THREADS 1
+#endif
 #endif
 
 namespace exahype {
@@ -57,12 +61,12 @@ namespace exahype {
      * Different MPI request types for prioritizing message requests.
      */
     enum class RequestType {
-      send = 0,
-      sendBack = 1,
-      receive = 2,
-      receiveBack = 3,
-      sendOutcome = 4,
-      receiveOutcome = 5
+      Send = 0,
+      SendBack = 1,
+      Receive = 2,
+      ReceiveBack = 3,
+      SendOutcome = 4,
+      ReceiveOutcome = 5
     };
   }
 }
@@ -75,8 +79,8 @@ namespace exahype {
 }
 
 /**
- * The request manager manages the created asynchronous non-blocking MPI requests,
- * arising for instance when a task is offloaded.
+ * The request manager manages the asynchronous non-blocking MPI requests,
+ * arising for instance when a task is offloaded or when a task outcome is shared.
  * It allows to progress any outstanding requests and invoke call back methods
  * whenever outstanding requests have been completed.
  */
@@ -87,26 +91,30 @@ class exahype::reactive::RequestManager {
      */
     static tarch::logging::Log _log;
 
+    /**
+     * Thread id this request manager belongs to.
+     */
     int _threadId;
 
     /**
      * Semaphore to ensure that only one thread at a time
-     * makes progress.
+     * makes progress (in case UseMPIThreadSplit is not active).
      */
     tarch::multicore::BooleanSemaphore _progressSemaphore;
 
     /**
-     *  MPI_Request handles are mapped to an internal id.
+     *  Internal request id for next request.
+     *  MPI_Request handles are mapped to an internal integer request id.
      */
     std::atomic<int> _nextRequestId;
 
     /**
-     *  MPI_Request groups (e.g. all requests belonging to a task send) are mapped to
-     *  an internal group id. A request group is a logically belonging together collection of
-     *  requests.
+     *  Internal group id for next request group.
+     *  Groups of MPI_Requests (e.g. all requests belonging to a task send) are mapped to
+     *  an internal integer group id. A request group is a collection of
+     *  requests which logically belongs together.
      */
     std::atomic<int> _nextGroupId;
-
 
     /**
      * Request queues for each request type.
@@ -175,6 +183,9 @@ class exahype::reactive::RequestManager {
     std::atomic<int> *_postedSendOutcomesPerRank;
     std::atomic<int> *_postedReceiveOutcomesPerRank;
 
+    /**
+     * @param Id of the thread this manager belongs to.
+     */
     RequestManager(int threadId);
     virtual ~RequestManager();
 
@@ -202,43 +213,71 @@ class exahype::reactive::RequestManager {
         int limit = std::numeric_limits<int>::max());
 
     /**
+     * @return Next internal request id.
+     */
+    int getNextRequestId() {
+      // overflow is ignored for now, as wrap around would not cause any problems
+      return _nextRequestId++;
+    }
+
+    /**
+     * @return Next internal request group id.
+     */
+    int getNextGroupId() {
+      // overflow is ignored for now, as wrap around would not cause any problems
+      return _nextGroupId++;
+    }
+
+    /**
+     * There may be multiple request managers with UseMPIThreadSplit
+     */
+    static RequestManager* StaticManagers[MAX_THREADS];
+
+    /**
      * The request handler job aims to distribute the work that is to be done
      * when a request group is finished evenly among the TBB worker threads.
      */
     class RequestHandlerJob
     {
       private:
-      std::function<void(exahype::solvers::Solver*, int, int)> _handleRequest;
-      exahype::solvers::Solver* _solver;
-      int _tag;
-      int _remoteRank;
+        std::function<void(exahype::solvers::Solver*, int, int)> _handleRequest;
+        exahype::solvers::Solver* _solver;
+        int _tag;
+        int _remoteRank;
       public:
-      RequestHandlerJob(
+        RequestHandlerJob(
           std::function<void(exahype::solvers::Solver*, int, int)> handleRequest,
           exahype::solvers::Solver* solver,
           int tag,
           int remoteRank);
-      bool operator()();
+        bool operator()();
     };
 
-    inline int getNextRequestId() {
-      // overflow is ignored for now, as it would not cause any problems
-      return _nextRequestId++;
-    }
-
-    inline int getNextGroupId() {
-      // overflow is ignored for now, as it would not cause any problems
-      return _nextGroupId++;
-    }
-
-    static RequestManager* _static_managers[MAX_THREADS];
-
   public:
-    static constexpr int MULTIPLE_SOURCES = -1;
 
-    int getNumberOfOutstandingRequests(RequestType type);
+    /**
+     * Special flag indicating that a request group contains requests for several MPI ranks (receivers, senders).
+     */
+    static constexpr int MULTIPLE_RANKS = -1;
 
-    void printPostedRequests();
+    /**
+     * Singleton (per thread).
+     */
+    static RequestManager& getInstance();
+
+    /**
+     * For debugging.
+     */
+    int getNumberOfOutstandingRequestsOfType(RequestType type) const;
+
+    /**
+     * For debugging.
+     */
+    void printPostedRequests() const;
+
+    /**
+     * For debugging.
+     */
     void resetPostedRequests();
 
     /**
@@ -247,27 +286,48 @@ class exahype::reactive::RequestManager {
      * request has been finished where tag and rank can be used to
      * keep track of the data that a finished MPI request belongs to
      * (e.g., for clean-up of allocated heap data).
+     *
+     * @param requests Pointer to array of nRequests non-blocking requests
+     * @param nRequests Size of requests array
+     * @param tag MPI tag of all requests
+     * @param remoteRank MPI rank from/to which data is received/sent. Can be MULTIPLE_RANKS (@see MULTIPLE_RANKS).
+     * @param reqHandler Function to be invoked when request group has finished
+     * @param type Type of request (@see RequestType)
+     * @param solver Pointer to solver from which MPI requests were sent
+     * @param block If true, the call blocks until all requests have finished (MPI_Wait)
      */
     void submitRequests(
         MPI_Request *requests,
         int nRequests,
         int tag,
         int remoteRank,
-        std::function<void(exahype::solvers::Solver*, int , int)> handleRequest,
+        std::function<void(exahype::solvers::Solver*, int , int)> reqHandler,
         RequestType type,
         exahype::solvers::Solver *solver,
         bool block=false);
 
+    /**
+     * Makes progress on outstanding request groups and
+     * calls completion handler if all requests in a group can be completed.
+     */
     void progressRequests();
-    void progressAnyRequests();
+
+    /**
+     * Progresses receive back requests only.
+     * @return True if some requests could be completed.
+     */
     bool progressReceiveBackRequests();
-    bool hasOutstandingRequestOfType(RequestType requestType);
+
+    /**
+     * @param requestType RequestType to check for outstanding requests.
+     * @return True if there are outstanding requests of the given type.
+     */
+    bool hasOutstandingRequestOfType(RequestType requestType) const;
 
 #if defined (DirtyCleanUp)
     void cancelOutstandingRequests();
 #endif
 
-    static RequestManager& getInstance();
 };
 
 #endif

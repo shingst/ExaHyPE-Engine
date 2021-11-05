@@ -13,7 +13,7 @@
 
 #if defined(Parallel)
 
-#include "exahype/reactive/LocalBlacklist.h"
+#include "Blacklist.h"
 
 #include "exahype/reactive/ReactiveContext.h"
 #include "exahype/reactive/AggressiveHybridDistributor.h"
@@ -23,24 +23,24 @@
 
 #include <algorithm>
 
-tarch::logging::Log exahype::reactive::LocalBlacklist::_log( "exahype::reactive::LocalBlacklist" );
+tarch::logging::Log exahype::reactive::Blacklist::_log( "exahype::reactive::Blacklist" );
 
-exahype::reactive::LocalBlacklist::LocalBlacklist(){
+exahype::reactive::Blacklist::Blacklist(){
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   _localBlacklist = new double[nnodes];
   std::fill(&_localBlacklist[0], &_localBlacklist[nnodes], 0);
 }
 
-exahype::reactive::LocalBlacklist::~LocalBlacklist() {
+exahype::reactive::Blacklist::~Blacklist() {
   delete [] _localBlacklist;
 }
 
-exahype::reactive::LocalBlacklist& exahype::reactive::LocalBlacklist::getInstance() {
-  static LocalBlacklist blacklist;
+exahype::reactive::Blacklist& exahype::reactive::Blacklist::getInstance() {
+  static Blacklist blacklist;
   return blacklist;
 }
 
-void exahype::reactive::LocalBlacklist::triggerEmergencyForRank(int rank) {
+void exahype::reactive::Blacklist::triggerEmergencyAndBlacklistRank(int rank) {
   switch(exahype::reactive::ReactiveContext::getInstance().getOffloadingStrategy()){
     case ReactiveContext::OffloadingStrategy::AggressiveHybrid:
       exahype::reactive::AggressiveHybridDistributor::getInstance().handleEmergencyOnRank(rank); break;
@@ -53,7 +53,7 @@ void exahype::reactive::LocalBlacklist::triggerEmergencyForRank(int rank) {
   exahype::reactive::PerformanceMonitor::getInstance().submitBlacklistValueForRank(_localBlacklist[rank], rank);
 }
 
-void exahype::reactive::LocalBlacklist::recoverBlacklistedRanks() {
+void exahype::reactive::Blacklist::recoverBlacklistedRanks() {
   logDebug("recoverBlacklistedRanks()","decrease heat of emergency heat map");
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   for(int i=0; i<nnodes;i++) {
@@ -63,13 +63,13 @@ void exahype::reactive::LocalBlacklist::recoverBlacklistedRanks() {
   }
 }
 
-bool exahype::reactive::LocalBlacklist::isBlacklisted(int rank) {
+bool exahype::reactive::Blacklist::isBlacklisted(int rank) const {
   // global blacklist check might be moved out to reactive context
   const double* globalBlacklist = exahype::reactive::PerformanceMonitor::getInstance().getBlacklistGlobalSnapshot();
   return (globalBlacklist[rank]>0.5) || (_localBlacklist[rank]>0.5);
 }
 
-void exahype::reactive::LocalBlacklist::printBlacklist() {
+void exahype::reactive::Blacklist::printBlacklist() {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
   const double* globalBlacklist = exahype::reactive::PerformanceMonitor::getInstance().getBlacklistGlobalSnapshot();
 

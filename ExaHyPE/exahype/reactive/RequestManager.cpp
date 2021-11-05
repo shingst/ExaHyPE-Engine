@@ -48,14 +48,12 @@ static int event_progress_receiveBack;
 #include "teaMPI.h"
 #endif
 
-
-
 //#undef assertion
 //#define assertion assert
 
 tarch::logging::Log exahype::reactive::RequestManager::_log( "exahype::reactive::RequestManager" );
 
-exahype::reactive::RequestManager* exahype::reactive::RequestManager::_static_managers[MAX_THREADS];
+exahype::reactive::RequestManager* exahype::reactive::RequestManager::StaticManagers[MAX_THREADS];
 
 exahype::reactive::RequestManager::RequestManager(int threadId) :
     _threadId(threadId),
@@ -104,385 +102,6 @@ exahype::reactive::RequestManager::~RequestManager() {
   delete[] _postedReceiveOutcomesPerRank;
 }
 
-void exahype::reactive::RequestManager::resetPostedRequests() {
-  logDebug("resetPostedRequests","resetting posted requests statistics");
-  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes()
-               * exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams();
-  std::fill(&_postedSendsPerRank[0], &_postedSendsPerRank[nnodes], 0);
-  std::fill(&_postedReceivesPerRank[0], &_postedReceivesPerRank[nnodes], 0);
-  std::fill(&_postedSendBacksPerRank[0], &_postedSendBacksPerRank[nnodes], 0);
-  std::fill(&_postedReceiveBacksPerRank[0], &_postedReceiveBacksPerRank[nnodes], 0);
-  std::fill(&_postedReceiveOutcomesPerRank[0], &_postedReceiveOutcomesPerRank[nnodes], 0);
-  std::fill(&_postedSendOutcomesPerRank[0], &_postedSendOutcomesPerRank[nnodes], 0);
-
-}
-
-void exahype::reactive::RequestManager::printPostedRequests() {
-  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
-  for(unsigned int i=0; i< nnodes* exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams(); i++) {
-    std::string str="for rank "+std::to_string(i)+":";
-    if(_postedSendsPerRank[i]>0)
-    str = str + "posted sends: "+std::to_string(_postedSendsPerRank[i]);
-    if(_postedReceivesPerRank[i]>0)
-    str = str + "posted receives: "+std::to_string(_postedReceivesPerRank[i]);
-    if(_postedReceiveBacksPerRank[i]>0)
-    str = str + "posted receiveBacks: "+std::to_string(_postedReceiveBacksPerRank[i]);
-    if(_postedSendBacksPerRank[i]>0)
-    str = str + "posted sendBacks: "+std::to_string(_postedSendBacksPerRank[i]);
-    logDebug("printPostedRequests()", str);
-  }
-}
-
-int exahype::reactive::RequestManager::getNumberOfOutstandingRequests( RequestType type ) {
-  int mapId = requestTypeToMsgQueueIdx(type);
-  return _outstandingReqsForGroup[mapId].size() + _outstandingRequests[mapId].unsafe_size();
-}
-
-exahype::reactive::RequestManager& exahype::reactive::RequestManager::getInstance() {
-  //static RequestManager RequestManager;
-  int threadID; // tarch::multicore::Core::getInstance().getThreadNum();
-#if defined(UseMPIThreadSplit)
-  threadID = tarch::multicore::Core::getInstance().getThreadNum();
-#else
-  threadID = 0;
-#endif
-
-  //logInfo("getInstance()", "getting offloading manager for thread id "<<threadID);
-
-  if(threadID>=MAX_THREADS) {
-	  logError("getInstance()","The application is using too many threads (>MAX_THREADS), we need to exit...");
-	  assertion(false);
-	  MPI_Abort(MPI_COMM_WORLD, -1);
-  }
-
-  //Todo: need to deallocate somewhere
-  if(_static_managers[threadID]==nullptr) {
-    _static_managers[threadID] = new RequestManager(threadID);
-  }
-  return *_static_managers[threadID];
-}
-
-int exahype::reactive::RequestManager::requestTypeToMsgQueueIdx( RequestType requestType ) {
-  return static_cast<int> (requestType);
-}
-
-void exahype::reactive::RequestManager::submitRequests(
-    MPI_Request *requests,
-    int nRequests,
-    int tag,
-    int remoteRank,
-    std::function<void(exahype::solvers::Solver*, int, int)> handler,
-    RequestType type,
-    exahype::solvers::Solver *solver,
-    bool block ) {
-
-  assertion(remoteRank>=0 || remoteRank==MULTIPLE_SOURCES);
-  assertion(remoteRank<=tarch::parallel::Node::getInstance().getNumberOfNodes()
-               * exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams()
-            || remoteRank==MULTIPLE_SOURCES);
-
-  int ierr;
-  //bug only appears when using scorep
-  #ifdef ScoreP
-  for(int i=0; i<nRequests; i++) {
-	  assertion(requests[i]!=MPI_REQUEST_NULL);
-  }
-  #endif
-
-  if(remoteRank!=MULTIPLE_SOURCES) {
-    switch(type) {
-      case RequestType::send:
-        _postedSendsPerRank[remoteRank]++; break;
-      case RequestType::receive:
-        _postedReceivesPerRank[remoteRank]++; break;
-      case RequestType::sendBack:
-        _postedSendBacksPerRank[remoteRank]++; break;
-      case RequestType::receiveBack:
-        _postedReceiveBacksPerRank[remoteRank]++; break;
-      case RequestType::receiveOutcome:
-        _postedReceiveOutcomesPerRank[remoteRank]++; break;
-      case RequestType::sendOutcome:
-        _postedSendOutcomesPerRank[remoteRank]++; break;
-    }
-  }
-
-  int finished = -1;
-
-/*  for(int i=0;i<nRequests; i++) {
-    assertion(requests[i]!=MPI_REQUEST_NULL); 
-    int ierr = MPI_Test(&requests[i], &finished, MPI_STATUS_IGNORE); 
-    if(ierr!=MPI_SUCCESS) {
-      char err_buffer[MPI_MAX_ERROR_STRING];
-      int resultlen = 0;
-      MPI_Error_string(ierr,err_buffer,&resultlen);
-      fprintf(stderr,err_buffer);
-      fprintf(stderr, "request id %d\n", i);
-    }
-
-    assertion(ierr==MPI_SUCCESS);
-    finished = -1;
-  } */ 
-
-  MPI_CHECK("submitRequests", MPI_Testall(nRequests, requests, &finished, MPI_STATUSES_IGNORE));
-
-  assertion(ierr==MPI_SUCCESS);
-  if(finished) {
-    handler(solver, tag, remoteRank);
-    return;
-  }
-   //check if ok after test
-  #ifdef ScoreP
-  for(int i=0; i<nRequests; i++) {
-        assertion(requests[i]!=MPI_REQUEST_NULL);
-  }
-  #endif
-
-  if(block) {
-    MPI_CHECK("submitRequests", MPI_Waitall(nRequests, requests, MPI_STATUSES_IGNORE));
-    assertion(ierr==MPI_SUCCESS);
-    handler(solver, tag, remoteRank);
-    return;
-  }
-   //check if ok after wait
-  #ifdef ScoreP
-  for(int i=0; i<nRequests; i++) {
-        assertion(requests[i]!=MPI_REQUEST_NULL);
-  }
-  #endif
-
-  int mapId = requestTypeToMsgQueueIdx(type);
-
-  //submitted[mapId]++;
-  logDebug("submitRequests","submitted["<<mapId<<"]:"<<nRequests);
-
-  // assign group id for this request group
-  int groupId = getNextGroupId();
-  // insert metadata into maps
-  std::pair<int, std::function<void(exahype::solvers::Solver*, int, int)>> handlerElem(groupId, handler);
-  std::pair<int, exahype::solvers::Solver*> solverElem(groupId, solver);
-  std::pair<int, int> outstandingElem(groupId, nRequests);
-  std::pair<int, int> remoteRankElem(groupId, remoteRank);
-  std::pair<int, int> remoteTagElem(groupId, tag);
-
-  _handlers[mapId].insert(handlerElem);
-  _solvers[mapId].insert(solverElem);
-  _outstandingReqsForGroup[mapId].insert(outstandingElem);
-  _groupIdToRank[mapId].insert(remoteRankElem);
-  _groupIdToTag[mapId].insert(remoteTagElem);
-
-   //check if ok before pushing to queue
-  #ifdef ScoreP
-  for(int i=0; i<nRequests; i++) {
-        assertion(requests[i]!=MPI_REQUEST_NULL);
-  }
-  #endif
-
-  // push requests into queue
-  for(int i=0; i<nRequests; i++) {
-    //TODO: avoid overflow!
-    int id = getNextRequestId();
-
-    std::pair<int, MPI_Request> reqElem(id, requests[i]);
-    std::pair<int, int> reqGroupElem(id, groupId);
-    //logInfo("RequestManager", "inserted groupid "<<groupId<<" for req "<<id);
-
-    _reqIdToReqHandle[mapId].insert(reqElem);
-    _reqIdToGroup[mapId].insert(reqGroupElem);
-    _outstandingRequests[mapId].push(id);
-  }
-
-}
-
-void exahype::reactive::RequestManager::createRequestArray(
-    RequestType type,
-    std::vector<MPI_Request> &requests,
-    std::unordered_map<int, int> &map,
-    int limit) {
-
-  int mapId = requestTypeToMsgQueueIdx(type);
-
-  bool gotOne = true;
-  int j = 0;
-
-  while(gotOne && j<limit) {
-    int req_id;
-    gotOne = _outstandingRequests[mapId].try_pop(req_id);
-    if(gotOne) {
-      tbb::concurrent_hash_map<int, MPI_Request>::accessor a_requests;
-      bool found = _reqIdToReqHandle[mapId].find(a_requests, req_id);
-      if(!found)
-        logError("createRequestArray", "didn't find MPI request.");
-      assertion(found);
-      MPI_Request request = a_requests->second;
-      a_requests.release();
-      requests.push_back(request);
-      map.insert(std::pair<int, int>(j, req_id));
-      j++;
-    }
-  }
-}
-
-#if defined(DirtyCleanUp)
-void exahype::reactive::RequestManager::cancelOutstandingRequests() {
-  std::vector<RequestType> types = {RequestType::send,
-      RequestType::sendBack,
-      RequestType::receive,
-      RequestType::receiveBack,
-      RequestType::sendOutcome,
-      RequestType::receiveOutcome
-  };
-  tarch::multicore::Lock lock(_progressSemaphore, false);
-  lock.lock();
-
-  for(auto type : types) {
-    while(hasOutstandingRequestOfType(type)) {
-      int i = requestTypeToMsgQueueIdx(type);
-      logInfo("cancelOutstandingRequests ", " cancelling i "<<i<<" size "<<_activeRequests[i].size());
-      for(int j=0; j<_activeRequests[i].size(); j++) {
-        if(_activeRequests[i][j]==MPI_REQUEST_NULL) continue;      
-
-        int ierr = MPI_Cancel(&_activeRequests[i][j]);
-        
-        if(ierr!=MPI_SUCCESS) {
-           char err_buffer[MPI_MAX_ERROR_STRING];
-           int resultlen = 0;
-         
-           MPI_Error_string(ierr,err_buffer,&resultlen);
-          fprintf(stderr,err_buffer);
-        }
-        assertion(ierr==MPI_SUCCESS);
-        ierr = MPI_Request_free(&_activeRequests[i][j]);
-        assertion(ierr==MPI_SUCCESS);
-      }
-      _activeRequests[i].clear();
-      createRequestArray( type, _activeRequests[i], _internalIdsOfActiveRequests[i] );
-    }
-  }
-  lock.free();
-}
-#endif
-
-bool exahype::reactive::RequestManager::hasOutstandingRequestOfType(RequestType requestType) {
-  logDebug("hasOutstandingRequestOfType",
-           " type "
-           <<int(requestType)
-           <<" outstanding "
-           <<_outstandingRequests[requestTypeToMsgQueueIdx(requestType)].unsafe_size()
-           <<" active "<<_activeRequests[requestTypeToMsgQueueIdx(requestType)].size() );
-  return (!_outstandingRequests[requestTypeToMsgQueueIdx(requestType)].empty() || !_activeRequests[requestTypeToMsgQueueIdx(requestType)].size()==0);
-}
-
-void exahype::reactive::RequestManager::progressRequests() {
-  static double lastOutputTimeStamp = 0;
-
-  if(lastOutputTimeStamp==0 || (MPI_Wtime()-lastOutputTimeStamp)>10) {
-    lastOutputTimeStamp = MPI_Wtime();
-    printPostedRequests();
-    logDebug("progressRequests()", "there are "<<getNumberOfOutstandingRequests(RequestType::send)<< " send requests remaining "
-        <<","<<getNumberOfOutstandingRequests(RequestType::receive)<<" receive requests remaining"
-        <<","<<getNumberOfOutstandingRequests(RequestType::sendBack)<<" sendBack requests remaining"
-        <<","<<getNumberOfOutstandingRequests(RequestType::receiveBack)<<" receiveBack requests remaining"
-        <<","<<getNumberOfOutstandingRequests(RequestType::sendOutcome)<<" replica send requests remaining"
-        <<","<<getNumberOfOutstandingRequests(RequestType::receiveOutcome)<<" replica receive requests remaining");
-  }
-
-  if(hasOutstandingRequestOfType(RequestType::send)) {
-#ifdef USE_ITAC
-    VT_begin(event_progress_send);
-#endif
-    progressRequestsOfType(RequestType::send);
-#ifdef USE_ITAC
-    VT_end(event_progress_send);
-#endif
-  }
-  else if (hasOutstandingRequestOfType(RequestType::receive)) {
-#ifdef USE_ITAC
-    VT_begin(event_progress_receive);
-#endif
-    progressRequestsOfType(RequestType::receive);
-#ifdef USE_ITAC
-    VT_end(event_progress_receive);
-#endif
-  }
-  else if (hasOutstandingRequestOfType(RequestType::receiveBack)) {
-#ifdef USE_ITAC
-    VT_begin(event_progress_receiveBack);
-#endif
-    progressRequestsOfType(RequestType::receiveBack);
-#ifdef USE_ITAC
-    VT_end(event_progress_receiveBack);
-#endif
-  }
-  else if (hasOutstandingRequestOfType(RequestType::sendBack)) {
-#ifdef USE_ITAC
-    VT_begin(event_progress_sendBack);
-#endif
-    progressRequestsOfType(RequestType::sendBack);
-#ifdef USE_ITAC
-    VT_end(event_progress_sendBack);
-#endif
-  }
-  //Todo: add ITAC events if needed
-  if (hasOutstandingRequestOfType(RequestType::receiveOutcome)) {
-    progressRequestsOfType(RequestType::receiveOutcome);
-  }
-  if (hasOutstandingRequestOfType(RequestType::sendOutcome)) {
-    progressRequestsOfType(RequestType::sendOutcome);
-  }
-}
-
-void exahype::reactive::RequestManager::progressAnyRequests() {
-
-  if(hasOutstandingRequestOfType(RequestType::send)) {
-#ifdef USE_ITAC
-    VT_begin(event_progress_send);
-#endif
-    progressRequestsOfType(RequestType::send);
-#ifdef USE_ITAC
-    VT_end(event_progress_send);
-#endif
-  }
-  if (hasOutstandingRequestOfType(RequestType::receive)) {
-#ifdef USE_ITAC
-    VT_begin(event_progress_receive);
-#endif
-    progressRequestsOfType(RequestType::receive);
-#ifdef USE_ITAC
-    VT_end(event_progress_receive);
-#endif
-  }
-  if (hasOutstandingRequestOfType(RequestType::receiveBack)) {
-#ifdef USE_ITAC
-    VT_begin(event_progress_receiveBack);
-#endif
-    progressRequestsOfType(RequestType::receiveBack);
-#ifdef USE_ITAC
-    VT_end(event_progress_receiveBack);
-#endif
-  }
-  if (hasOutstandingRequestOfType(RequestType::sendBack)) {
-#ifdef USE_ITAC
-    VT_begin(event_progress_sendBack);
-#endif
-    progressRequestsOfType(RequestType::sendBack);
-#ifdef USE_ITAC
-    VT_end(event_progress_sendBack);
-#endif
-  }
-  //always progress both sends and receives for replica tasks!
-  //todo: add ITAC events if needed
-  if (hasOutstandingRequestOfType(RequestType::receiveOutcome)) {
-    progressRequestsOfType(RequestType::receiveOutcome);
-  }
-  if (hasOutstandingRequestOfType(RequestType::sendOutcome)) {
-    progressRequestsOfType(RequestType::sendOutcome);
-  }
-}
-
-bool exahype::reactive::RequestManager::progressReceiveBackRequests() {
-  return progressRequestsOfType( RequestType::receiveBack );
-}
-
 bool exahype::reactive::RequestManager::progressRequestsOfType( RequestType type ) {
   // First, we ensure here that only one thread at a time progresses offloading
   // this attempts to avoid multithreaded MPI problems
@@ -501,20 +120,15 @@ bool exahype::reactive::RequestManager::progressRequestsOfType( RequestType type
   tbb::concurrent_hash_map<int, int>::accessor a_remoteRank;
   tbb::concurrent_hash_map<int, int>::accessor a_remoteTag;
 
-  //std::vector<MPI_Request>     outstandingRequests;
-  //std::unordered_map<int, int> vecIdToReqId;
-
   int nRequests = _activeRequests[mapId].size();
   if(nRequests==0) {
     //logInfo("progressRequestsOfType()", "begin create req array");
-    if(type==RequestType::receiveBack || type==RequestType::sendOutcome)
+    if(type==RequestType::ReceiveBack || type==RequestType::SendOutcome)
       createRequestArray( type, _activeRequests[mapId], _internalIdsOfActiveRequests[mapId] );
-      //createRequestArray( type, _activeRequests[mapId], _internalIdsOfActiveRequests[mapId], 10 );
     else {
       createRequestArray( type, _activeRequests[mapId], _internalIdsOfActiveRequests[mapId] );
     }
     nRequests = _activeRequests[mapId].size();
-    //logInfo("progressRequestsOfType()", "end create req array");
   }
 
   std::vector<MPI_Status> stats(nRequests);
@@ -601,8 +215,6 @@ bool exahype::reactive::RequestManager::progressRequestsOfType( RequestType type
       a_remoteTag.release();
 
       handler(solver, remoteTag, remoteRank);
-      //RequestHandlerJob *requestHandlerJob = new RequestHandlerJob(handler, solver, remoteTag, remoteRank);
-      //peano::datatraversal::TaskSet spawnedSet( requestHandlerJob, peano::datatraversal::TaskSet::TaskType::Background);
 
       _handlers[mapId].erase(groupId);
       _outstandingReqsForGroup[mapId].erase(groupId);
@@ -654,6 +266,39 @@ bool exahype::reactive::RequestManager::progressRequestsOfType( RequestType type
   return outcount>0;
 }
 
+int exahype::reactive::RequestManager::requestTypeToMsgQueueIdx( RequestType requestType ) {
+  return static_cast<int> (requestType);
+}
+
+void exahype::reactive::RequestManager::createRequestArray(
+    RequestType type,
+    std::vector<MPI_Request> &requests,
+    std::unordered_map<int, int> &map,
+    int limit) {
+
+  int mapId = requestTypeToMsgQueueIdx(type);
+
+  bool gotOne = true;
+  int j = 0;
+
+  while(gotOne && j<limit) {
+    int req_id;
+    gotOne = _outstandingRequests[mapId].try_pop(req_id);
+    if(gotOne) {
+      tbb::concurrent_hash_map<int, MPI_Request>::accessor a_requests;
+      bool found = _reqIdToReqHandle[mapId].find(a_requests, req_id);
+      if(!found)
+        logError("createRequestArray", "didn't find MPI request.");
+      assertion(found);
+      MPI_Request request = a_requests->second;
+      a_requests.release();
+      requests.push_back(request);
+      map.insert(std::pair<int, int>(j, req_id));
+      j++;
+    }
+  }
+}
+
 exahype::reactive::RequestManager::RequestHandlerJob::RequestHandlerJob(
     std::function<void(exahype::solvers::Solver*, int, int)> handleRequest,
     exahype::solvers::Solver* solver,
@@ -675,6 +320,281 @@ bool exahype::reactive::RequestManager::RequestHandlerJob::operator()() {
 #endif
   return false;
 }
+
+exahype::reactive::RequestManager& exahype::reactive::RequestManager::getInstance() {
+  int threadID;
+#if defined(UseMPIThreadSplit)
+  threadID = tarch::multicore::Core::getInstance().getThreadNum();
+#else
+  threadID = 0;
+#endif
+
+  if(threadID>=MAX_THREADS) {
+	  logError("getInstance()","The application is using too many threads (>MAX_THREADS), we need to exit...");
+	  assertion(false);
+	  MPI_Abort(MPI_COMM_WORLD, -1);
+  }
+
+  //Todo: need to deallocate somewhere
+  if(StaticManagers[threadID]==nullptr) {
+    StaticManagers[threadID] = new RequestManager(threadID);
+  }
+  return *StaticManagers[threadID];
+}
+
+int exahype::reactive::RequestManager::getNumberOfOutstandingRequestsOfType(RequestType type) const {
+  int mapId = requestTypeToMsgQueueIdx(type);
+  return _outstandingReqsForGroup[mapId].size() + _outstandingRequests[mapId].unsafe_size();
+}
+
+void exahype::reactive::RequestManager::printPostedRequests() const {
+  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
+  for(unsigned int i=0; i< nnodes* exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams(); i++) {
+    std::string str="for rank "+std::to_string(i)+":";
+    if(_postedSendsPerRank[i]>0)
+    str = str + "posted sends: "+std::to_string(_postedSendsPerRank[i]);
+    if(_postedReceivesPerRank[i]>0)
+    str = str + "posted receives: "+std::to_string(_postedReceivesPerRank[i]);
+    if(_postedReceiveBacksPerRank[i]>0)
+    str = str + "posted receiveBacks: "+std::to_string(_postedReceiveBacksPerRank[i]);
+    if(_postedSendBacksPerRank[i]>0)
+    str = str + "posted sendBacks: "+std::to_string(_postedSendBacksPerRank[i]);
+    logDebug("printPostedRequests()", str);
+  }
+}
+
+void exahype::reactive::RequestManager::resetPostedRequests() {
+  logDebug("resetPostedRequests","resetting posted requests statistics");
+  int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes()
+               * exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams();
+  std::fill(&_postedSendsPerRank[0], &_postedSendsPerRank[nnodes], 0);
+  std::fill(&_postedReceivesPerRank[0], &_postedReceivesPerRank[nnodes], 0);
+  std::fill(&_postedSendBacksPerRank[0], &_postedSendBacksPerRank[nnodes], 0);
+  std::fill(&_postedReceiveBacksPerRank[0], &_postedReceiveBacksPerRank[nnodes], 0);
+  std::fill(&_postedReceiveOutcomesPerRank[0], &_postedReceiveOutcomesPerRank[nnodes], 0);
+  std::fill(&_postedSendOutcomesPerRank[0], &_postedSendOutcomesPerRank[nnodes], 0);
+
+}
+
+void exahype::reactive::RequestManager::submitRequests(
+    MPI_Request *requests,
+    int nRequests,
+    int tag,
+    int remoteRank,
+    std::function<void(exahype::solvers::Solver*, int, int)> handler,
+    RequestType type,
+    exahype::solvers::Solver *solver,
+    bool block ) {
+
+  assertion(remoteRank>=0 || remoteRank==MULTIPLE_RANKS);
+  assertion(remoteRank<=tarch::parallel::Node::getInstance().getNumberOfNodes()
+               * exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams()
+            || remoteRank==MULTIPLE_RANKS);
+
+  int ierr;
+  //bug only appears when using scorep
+  #ifdef ScoreP
+  for(int i=0; i<nRequests; i++) {
+	  assertion(requests[i]!=MPI_REQUEST_NULL);
+  }
+  #endif
+
+  if(remoteRank!=MULTIPLE_RANKS) {
+    switch(type) {
+      case RequestType::Send:
+        _postedSendsPerRank[remoteRank]++; break;
+      case RequestType::Receive:
+        _postedReceivesPerRank[remoteRank]++; break;
+      case RequestType::SendBack:
+        _postedSendBacksPerRank[remoteRank]++; break;
+      case RequestType::ReceiveBack:
+        _postedReceiveBacksPerRank[remoteRank]++; break;
+      case RequestType::ReceiveOutcome:
+        _postedReceiveOutcomesPerRank[remoteRank]++; break;
+      case RequestType::SendOutcome:
+        _postedSendOutcomesPerRank[remoteRank]++; break;
+    }
+  }
+
+  int finished = -1;
+
+  MPI_CHECK("submitRequests", MPI_Testall(nRequests, requests, &finished, MPI_STATUSES_IGNORE));
+
+  assertion(ierr==MPI_SUCCESS);
+  if(finished) {
+    handler(solver, tag, remoteRank);
+    return;
+  }
+   //check if ok after test
+  #ifdef ScoreP
+  for(int i=0; i<nRequests; i++) {
+    assertion(requests[i]!=MPI_REQUEST_NULL);
+  }
+  #endif
+
+  if(block) {
+    MPI_CHECK("submitRequests", MPI_Waitall(nRequests, requests, MPI_STATUSES_IGNORE));
+    assertion(ierr==MPI_SUCCESS);
+    handler(solver, tag, remoteRank);
+    return;
+  }
+  //check if ok after wait
+  #ifdef ScoreP
+  for(int i=0; i<nRequests; i++) {
+    assertion(requests[i]!=MPI_REQUEST_NULL);
+  }
+  #endif
+
+  int mapId = requestTypeToMsgQueueIdx(type);
+
+  logDebug("submitRequests","submitted["<<mapId<<"]:"<<nRequests);
+
+  // assign group id for this request group
+  int groupId = getNextGroupId();
+  // insert metadata into maps
+  std::pair<int, std::function<void(exahype::solvers::Solver*, int, int)>> handlerElem(groupId, handler);
+  std::pair<int, exahype::solvers::Solver*> solverElem(groupId, solver);
+  std::pair<int, int> outstandingElem(groupId, nRequests);
+  std::pair<int, int> remoteRankElem(groupId, remoteRank);
+  std::pair<int, int> remoteTagElem(groupId, tag);
+
+  _handlers[mapId].insert(handlerElem);
+  _solvers[mapId].insert(solverElem);
+  _outstandingReqsForGroup[mapId].insert(outstandingElem);
+  _groupIdToRank[mapId].insert(remoteRankElem);
+  _groupIdToTag[mapId].insert(remoteTagElem);
+
+   //check if ok before pushing to queue
+  #ifdef ScoreP
+  for(int i=0; i<nRequests; i++) {
+    assertion(requests[i]!=MPI_REQUEST_NULL);
+  }
+  #endif
+
+  // push requests into queue
+  for(int i=0; i<nRequests; i++) {
+    int id = getNextRequestId();
+
+    std::pair<int, MPI_Request> reqElem(id, requests[i]);
+    std::pair<int, int> reqGroupElem(id, groupId);
+
+    _reqIdToReqHandle[mapId].insert(reqElem);
+    _reqIdToGroup[mapId].insert(reqGroupElem);
+    _outstandingRequests[mapId].push(id);
+  }
+}
+
+void exahype::reactive::RequestManager::progressRequests() {
+  /*static double lastOutputTimeStamp = 0;
+
+  if(lastOutputTimeStamp==0 || (MPI_Wtime()-lastOutputTimeStamp)>10) {
+    lastOutputTimeStamp = MPI_Wtime();
+    printPostedRequests();
+    logDebug("progressRequests()", "there are "<<getNumberOfOutstandingRequestsOfType(RequestType::Send)<< " send requests remaining "
+        <<","<<getNumberOfOutstandingRequestsOfType(RequestType::Receive)<<" receive requests remaining"
+        <<","<<getNumberOfOutstandingRequestsOfType(RequestType::SendBack)<<" sendBack requests remaining"
+        <<","<<getNumberOfOutstandingRequestsOfType(RequestType::ReceiveBack)<<" receiveBack requests remaining"
+        <<","<<getNumberOfOutstandingRequestsOfType(RequestType::SendOutcome)<<" replica send requests remaining"
+        <<","<<getNumberOfOutstandingRequestsOfType(RequestType::ReceiveOutcome)<<" replica receive requests remaining");
+  }*/
+
+  if(hasOutstandingRequestOfType(RequestType::Send)) {
+#ifdef USE_ITAC
+    VT_begin(event_progress_send);
+#endif
+    progressRequestsOfType(RequestType::Send);
+#ifdef USE_ITAC
+    VT_end(event_progress_send);
+#endif
+  }
+  else if (hasOutstandingRequestOfType(RequestType::Receive)) {
+#ifdef USE_ITAC
+    VT_begin(event_progress_receive);
+#endif
+    progressRequestsOfType(RequestType::Receive);
+#ifdef USE_ITAC
+    VT_end(event_progress_receive);
+#endif
+  }
+  else if (hasOutstandingRequestOfType(RequestType::ReceiveBack)) {
+#ifdef USE_ITAC
+    VT_begin(event_progress_receiveBack);
+#endif
+    progressRequestsOfType(RequestType::ReceiveBack);
+#ifdef USE_ITAC
+    VT_end(event_progress_receiveBack);
+#endif
+  }
+  else if (hasOutstandingRequestOfType(RequestType::SendBack)) {
+#ifdef USE_ITAC
+    VT_begin(event_progress_sendBack);
+#endif
+    progressRequestsOfType(RequestType::SendBack);
+#ifdef USE_ITAC
+    VT_end(event_progress_sendBack);
+#endif
+  }
+  //Todo: add ITAC events if needed
+  if (hasOutstandingRequestOfType(RequestType::ReceiveOutcome)) {
+    progressRequestsOfType(RequestType::ReceiveOutcome);
+  }
+  if (hasOutstandingRequestOfType(RequestType::SendOutcome)) {
+    progressRequestsOfType(RequestType::SendOutcome);
+  }
+}
+
+bool exahype::reactive::RequestManager::progressReceiveBackRequests() {
+  return progressRequestsOfType(RequestType::ReceiveBack);
+}
+
+bool exahype::reactive::RequestManager::hasOutstandingRequestOfType(RequestType requestType) const {
+  logDebug("hasOutstandingRequestOfType"," type "
+           <<static_cast<int>(requestType)
+           <<" outstanding "
+           <<_outstandingRequests[requestTypeToMsgQueueIdx(requestType)].unsafe_size()
+           <<" active "<<_activeRequests[requestTypeToMsgQueueIdx(requestType)].size() );
+  return (!_outstandingRequests[requestTypeToMsgQueueIdx(requestType)].empty() || !_activeRequests[requestTypeToMsgQueueIdx(requestType)].size()==0);
+}
+
+#if defined(DirtyCleanUp)
+void exahype::reactive::RequestManager::cancelOutstandingRequests() {
+  std::vector<RequestType> types = {RequestType::Send,
+      RequestType::SendBack,
+      RequestType::Receive,
+      RequestType::ReceiveBack,
+      RequestType::SendOutcome,
+      RequestType::ReceiveOutcome
+  };
+  tarch::multicore::Lock lock(_progressSemaphore, false);
+  lock.lock();
+
+  for(auto type : types) {
+    while(hasOutstandingRequestOfType(type)) {
+      int i = requestTypeToMsgQueueIdx(type);
+      logDebug("cancelOutstandingRequests ", " cancelling i "<<i<<" size "<<_activeRequests[i].size());
+      for(int j=0; j<_activeRequests[i].size(); j++) {
+        if(_activeRequests[i][j]==MPI_REQUEST_NULL) continue;
+
+        int ierr = MPI_Cancel(&_activeRequests[i][j]);
+
+        if(ierr!=MPI_SUCCESS) {
+           char err_buffer[MPI_MAX_ERROR_STRING];
+           int resultlen = 0;
+
+           MPI_Error_string(ierr,err_buffer,&resultlen);
+          fprintf(stderr,err_buffer);
+        }
+        assertion(ierr==MPI_SUCCESS);
+        ierr = MPI_Request_free(&_activeRequests[i][j]);
+        assertion(ierr==MPI_SUCCESS);
+      }
+      _activeRequests[i].clear();
+      createRequestArray( type, _activeRequests[i], _internalIdsOfActiveRequests[i] );
+    }
+  }
+  lock.free();
+}
+#endif
 
 #endif
 

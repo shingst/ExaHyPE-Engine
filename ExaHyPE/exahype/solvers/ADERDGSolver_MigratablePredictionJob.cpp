@@ -658,7 +658,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackOutcomeToO
        _tag,
        _originRank,
        sendBackHandler,
-       exahype::reactive::RequestType::sendBack,
+       exahype::reactive::RequestType::SendBack,
        &_solver);
 #else
   _solver.mpiSendMigratablePredictionJobOutcomeOffload(
@@ -689,7 +689,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendBackOutcomeToO
        _tag,
        _originRank,
        sendBackHandler,
-       exahype::reactive::RequestType::sendBack,
+       exahype::reactive::RequestType::SendBack,
        &_solver);
 #endif
 }

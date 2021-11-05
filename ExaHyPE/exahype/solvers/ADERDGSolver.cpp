@@ -2894,7 +2894,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
           tag,
           destRank,
           exahype::solvers::ADERDGSolver::MigratablePredictionJob::sendHandler,
-          exahype::reactive::RequestType::send,
+          exahype::reactive::RequestType::Send,
           this);
 #endif
 
@@ -2907,7 +2907,7 @@ void exahype::solvers::ADERDGSolver::submitOrSendMigratablePredictionJob(Migrata
 //     exahype::reactive::RequestManager::getInstance().submitRequests(
 //         recvRequests, 4, tag, destRank,
 //         exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler,
-//      exahype::reactive::RequestType::receiveBack, this);
+//      exahype::reactive::RequestType::ReceiveBack, this);
 
      assertion(!job->_isSkeleton); //skeleton jobs should never be sent away!
 
@@ -2935,7 +2935,7 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
   double timing = - MPI_Wtime();
 #endif
 
-  //Todo (Philipp): refactor and make nice
+
   logDebug("cleanUpStaleTaskOutcomes()", "before cleanup there are "<<_allocatedOutcomes.unsafe_size()<<" allocated received jobs left, "
                                                                      <<_mapTagToSTPData.size()<<" jobs to send,"
                                                                      <<" allocated jobs send "<<AllocatedSTPsSend
@@ -2947,8 +2947,8 @@ void exahype::solvers::ADERDGSolver::cleanUpStaleTaskOutcomes(bool isFinal) {
                                                                      <<" entries in hash map "<<_outcomeDatabase.size()
                                                                      <<" sent STPs "<<SentSTPs
                                                                      <<" completed sends "<<CompletedSentSTPs
-                                                                     <<" outstanding requests (for outcomes) "<<exahype::reactive::RequestManager::getInstance().getNumberOfOutstandingRequests(exahype::reactive::RequestType::sendOutcome)
-                                                                                            +exahype::reactive::RequestManager::getInstance().getNumberOfOutstandingRequests(exahype::reactive::RequestType::receiveOutcome));
+                                                                     <<" outstanding requests (for outcomes) "<<exahype::reactive::RequestManager::getInstance().getNumberOfOutstandingRequests(exahype::reactive::RequestType::SendOutcome)
+                                                                                            +exahype::reactive::RequestManager::getInstance().getNumberOfOutstandingRequests(exahype::reactive::RequestType::ReceiveOutcome));
 
   double lastconsistentTimeStamp, lastconsistentTimeStepSize, lastconsistentEstimatedSize;
   exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().getLastConsistentTimeStepData(lastconsistentTimeStamp, lastconsistentTimeStepSize, lastconsistentEstimatedSize);
@@ -3242,9 +3242,9 @@ void exahype::solvers::ADERDGSolver::releaseDummyOutcomeAndShare(int cellDescrip
   exahype::reactive::RequestManager::getInstance().submitRequests(sendRequests,
                                                                        (teams-1)*(NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME+1),
                                                                        tag,
-                                                                       exahype::reactive::RequestManager::MULTIPLE_SOURCES,
+                                                                       exahype::reactive::RequestManager::MULTIPLE_RANKS,
                                                                        MigratablePredictionJob::sendHandlerTaskSharing,
-                                                                       exahype::reactive::RequestType::sendOutcome,
+                                                                       exahype::reactive::RequestType::SendOutcome,
                                                                        this, MPI_BLOCKING);
   delete[] sendRequests;
 }
@@ -3326,9 +3326,9 @@ void exahype::solvers::ADERDGSolver::releasePendingOutcomeAndShare(int cellDescr
     exahype::reactive::RequestManager::getInstance().submitRequests(sendRequests,
                                                                     (teams-1)*(NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME+1),
                                                                     tag,
-                                                                    exahype::reactive::RequestManager::MULTIPLE_SOURCES,
+                                                                    exahype::reactive::RequestManager::MULTIPLE_RANKS,
                                                                     MigratablePredictionJob::sendHandlerTaskSharing,
-                                                                    exahype::reactive::RequestType::sendOutcome,
+                                                                    exahype::reactive::RequestType::SendOutcome,
                                                                     this, MPI_BLOCKING);
     delete[] sendRequests;
   }
@@ -3905,9 +3905,9 @@ void exahype::solvers::ADERDGSolver::sendTaskOutcomeToOtherTeams(MigratablePredi
     exahype::reactive::RequestManager::getInstance().submitRequests(sendRequests,
                                                                          (teams-1)*(NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME+1),
                                                                          tag,
-                                                                         exahype::reactive::RequestManager::MULTIPLE_SOURCES,
+                                                                         exahype::reactive::RequestManager::MULTIPLE_RANKS,
                                                                          MigratablePredictionJob::sendHandlerTaskSharing,
-                                                                         exahype::reactive::RequestType::sendOutcome,
+                                                                         exahype::reactive::RequestType::SendOutcome,
                                                                          this, MPI_BLOCKING);
    delete[] sendRequests;
 #endif
@@ -3974,7 +3974,7 @@ void exahype::solvers::ADERDGSolver::receiveMigratableJob(int tag, int src, exah
            tag,
            src,
            MigratablePredictionJob::receiveHandler,
-           exahype::reactive::RequestType::receive,
+           exahype::reactive::RequestType::Receive,
            solver,
            true);
        wtime+= MPI_Wtime();
@@ -3988,7 +3988,7 @@ void exahype::solvers::ADERDGSolver::receiveMigratableJob(int tag, int src, exah
            tag,
            src,
            MigratablePredictionJob::receiveHandler,
-           exahype::reactive::RequestType::receive,
+           exahype::reactive::RequestType::Receive,
            solver,
            false);
     }
@@ -4035,7 +4035,7 @@ void exahype::solvers::ADERDGSolver::receiveBackMigratableJob(int tag, int src, 
       tag,
       src,
       exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler,
-      exahype::reactive::RequestType::receiveBack,
+      exahype::reactive::RequestType::ReceiveBack,
       solver,
       false);
 #else
@@ -4067,7 +4067,7 @@ void exahype::solvers::ADERDGSolver::receiveBackMigratableJob(int tag, int src, 
       tag,
       src,
       exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler,
-      exahype::reactive::RequestType::receiveBack, solver, false);
+      exahype::reactive::RequestType::ReceiveBack, solver, false);
 #endif /*UseSmartMPI*/
 }
 
@@ -4136,7 +4136,7 @@ void exahype::solvers::ADERDGSolver::receiveTaskOutcome(int tag, int src, exahyp
          tag,
          src,
          MigratablePredictionJob::receiveHandlerTaskSharing,
-         exahype::reactive::RequestType::receiveOutcome,
+         exahype::reactive::RequestType::ReceiveOutcome,
          solver,
          MPI_BLOCKING);
 #endif
@@ -4891,8 +4891,8 @@ bool exahype::solvers::ADERDGSolver::mpiSendMigratablePredictionJobOutcomeOffloa
 void exahype::solvers::ADERDGSolver::finishOutstandingInterTeamCommunication () {
   MPI_Comm interTeamComm = exahype::reactive::ReactiveContext::getInstance().getTMPIInterTeamCommunicatorData();
 
-  while(exahype::reactive::RequestManager::getInstance().hasOutstandingRequestOfType(exahype::reactive::RequestType::sendOutcome)
-    || exahype::reactive::RequestManager::getInstance().hasOutstandingRequestOfType(exahype::reactive::RequestType::receiveOutcome) ) {
+  while(exahype::reactive::RequestManager::getInstance().hasOutstandingRequestOfType(exahype::reactive::RequestType::SendOutcome)
+    || exahype::reactive::RequestManager::getInstance().hasOutstandingRequestOfType(exahype::reactive::RequestType::ReceiveOutcome) ) {
     progressOffloading(this, false, std::numeric_limits<int>::max());
   }
   MPI_Request request;

@@ -30,7 +30,7 @@
 #include "exahype/reactive/PerformanceMonitor.h"
 #include "exahype/reactive/AggressiveHybridDistributor.h"
 #include "exahype/reactive/ReactiveContext.h"
-#include "exahype/reactive/LocalBlacklist.h"
+#include "exahype/reactive/Blacklist.h"
 
 tarch::logging::Log  exahype::reactive::OffloadingAnalyser::_log( "exahype::reactive::OffloadingAnalyser" );
 
@@ -193,7 +193,7 @@ void exahype::reactive::OffloadingAnalyser::beginIteration() {
     _timeStepWatch.startTimer();
 
     exahype::reactive::ReactiveContext::getInstance().resetVictimFlag(); //todo: find better position -> fused time step mapping
-    exahype::reactive::LocalBlacklist::getInstance().recoverBlacklistedRanks();
+    exahype::reactive::Blacklist::getInstance().recoverBlacklistedRanks();
   }
 }
 

@@ -25,7 +25,7 @@
 #include "exahype/reactive/OffloadingProfiler.h"
 #include "exahype/reactive/PerformanceMonitor.h"
 #include "exahype/reactive/OffloadingAnalyser.h"
-#include "exahype/reactive/LocalBlacklist.h"
+#include "exahype/reactive/Blacklist.h"
 #include "exahype/solvers/ADERDGSolver.h"
 #include "exahype/solvers/LimitingADERDGSolver.h"
 #include "tarch/multicore/Core.h"
@@ -262,7 +262,7 @@ void exahype::reactive::AggressiveHybridDistributor::determineOptimalVictim(
     for(int j=0; j<nnodes; j++) {
       if(waitingTimesSnapshot[k+j]> exahype::reactive::OffloadingAnalyser::getInstance().getZeroThreshold()) {
          if(waitingTimesSnapshot[k+j]>currentLongestWaitTimeVictim 
-           && !exahype::reactive::LocalBlacklist::getInstance().isBlacklisted(i)
+           && !exahype::reactive::Blacklist::getInstance().isBlacklisted(i)
            && waitingRanks[i]==0) {
       //     && i!=0) { //exclude rank 0 as optimal victim
              currentOptimalVictim = i;

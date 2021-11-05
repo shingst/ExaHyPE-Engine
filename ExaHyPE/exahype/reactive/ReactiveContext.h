@@ -27,9 +27,13 @@
 #include <limits>
 
 #if defined(UseMPIThreadSplit)
+#ifndef MAX_THREADS
 #define MAX_THREADS 48  // for SuperMUC, may be increased for other architectures
+#endif
 #else
+#ifndef MAX_THREADS
 #define MAX_THREADS 1
+#endif
 #endif
 
 namespace exahype {
@@ -124,6 +128,27 @@ class exahype::reactive::ReactiveContext {
      */
     static bool isReactiveOffloadingEnabled();
 
+    /**
+     * Indicates that this rank is a victim rank (i.e., it has received an offloaded task).
+     */
+    static void triggerVictimFlag();
+
+    /**
+     * Reset victim flag (to be called after a time step).
+     */
+    static void resetVictimFlag();
+
+    /**
+     * @return If this rank is a victim.
+     */
+    static bool isVictim();
+
+    static void setTMPINumTeams(int team);
+    static unsigned int getTMPINumTeams();
+
+    static void setTMPITeamNumber(int interTeamRank);
+    static int getTMPITeamNumber();
+
   private:
     /**
      * The logging device.
@@ -142,23 +167,13 @@ class exahype::reactive::ReactiveContext {
     /**
      * Maximum supported tag by MPI.
      */
-    int _maxSupportedTag;
+    static int MaxSupportedTag;
 
     /**
      * Flag is set if this rank has become a victim rank in the current
      * time step.
      */
-    std::atomic<bool> _isVictim;
-
-    /**
-     * Flag indicating whether this rank has triggered an emergency.
-     */
-    std::atomic<bool> _emergencyTriggered;
-
-    /**
-     * Local instance of blacklist.
-     */
-    double *_localBlacklist;
+    static std::atomic<bool> IsVictim;
 
     /**
      * Flag indicating whether the rank has notified
@@ -168,40 +183,57 @@ class exahype::reactive::ReactiveContext {
     bool _hasNotifiedSendCompleted;
 
     /**
-     * Communicator for communication between replicating ranks.
+     * Stores the number of teaMPI teams.
      */
-    static int _numTeams;
-    static int _interTeamRank;
+    static int NumTeams;
 
-    static ReactiveContext* _static_managers[MAX_THREADS];
+    /**
+     * Stores the team number the rank belongs to.
+     */
+    static int Team;
 
-    static MPI_Comm  _offloadingComms[MAX_THREADS];
-    static MPI_Comm  _offloadingCommsMapped[MAX_THREADS];
+    /**
+     * Array of managers. With UseMPIThreadSplit, there is one reactive context per thread (with each using its own MPI communicators).
+     * Per default, there is only a single reactive context (singleton).
+     */
+    static ReactiveContext* StaticManagers[MAX_THREADS];
 
-    static MPI_Comm  _interTeamComms[MAX_THREADS];
+    /**
+     * Communicators for offloading tasks to a victim rank. There may be multiple if UseMPIThreadSplit is used.
+     */
+    static MPI_Comm  OffloadingComms[MAX_THREADS];
+
+    /**
+     * Communicators for receiving task outcomes from a victim rank. There may be multiple if UseMPIThreadSplit is used.
+     */
+    static MPI_Comm  OffloadingCommsMapped[MAX_THREADS];
+
+    /**
+     * Communicators for communication between replicating ranks.
+     */
+    static MPI_Comm  InterTeamComms[MAX_THREADS];
 
     static OffloadingStrategy ChosenOffloadingStrategy;
-
     static ResilienceStrategy ChosenResilienceStrategy;
 
     static bool SaveRedundantComputations;
     static bool MakeSkeletonsShareable;
   public:
-    //Todo: with these two function, we can clean up the interface and make some more functions private
-    void initializeCommunicatorsAndTeamMetadata();
+    /**
+     * Initializes a reactive context object.
+     */
+    void initialize();
 
+    /**
+     * Destroys a reactive context object.
+     */
     void destroy();
 
+    /**
+     * Used to get a new tag for communication related to offloading/task sharing.
+     */
     int getNextMPITag();
 
-    void setTMPIInterTeamCommunicators(MPI_Comm comm, MPI_Comm commKey, MPI_Comm commAck);
-    MPI_Comm getTMPIInterTeamCommunicatorData();
-
-    void setTMPINumTeams(int team);
-    unsigned int getTMPINumTeams();
-
-    void setTMPITeamNumber(int interTeamRank);
-    int getTMPITeamNumber();
 
     /**
      * Creates offloading MPI communicators.
@@ -217,13 +249,18 @@ class exahype::reactive::ReactiveContext {
      * distributing load information and
      * sending/receiving tasks to/from a rank.
      */
-    MPI_Comm getMPICommunicator();
+    MPI_Comm getMPICommunicator() const;
 
     /**
      * Return MPI communicator for sending/receiving back
      * results of an offloaded task.
      */
-    MPI_Comm getMPICommunicatorMapped();
+    MPI_Comm getMPICommunicatorMapped() const;
+
+    /**
+     * Return MPI communicator for communication between teams (reactive task outcome sharing).
+     */
+    MPI_Comm getTMPIInterTeamCommunicatorData() const;
 
     /**
      * Given the current load situation and global knowledge of the performance
@@ -233,10 +270,6 @@ class exahype::reactive::ReactiveContext {
      * improve load balance.
      */
     bool selectVictimRank(int& victim, bool& last);
-
-    void triggerVictimFlag();
-    void resetVictimFlag();
-    bool isVictim();
 
     static ReactiveContext& getInstance();
 };
