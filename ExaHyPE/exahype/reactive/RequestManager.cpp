@@ -102,7 +102,7 @@ exahype::reactive::RequestManager::~RequestManager() {
   delete[] _postedReceiveOutcomesPerRank;
 }
 
-bool exahype::reactive::RequestManager::progressRequestsOfType( RequestType type ) {
+bool exahype::reactive::RequestManager::progressRequestsOfType(RequestType type) {
   // First, we ensure here that only one thread at a time progresses offloading
   // this attempts to avoid multithreaded MPI problems
   tarch::multicore::Lock lock(_progressSemaphore, false);
@@ -111,42 +111,37 @@ bool exahype::reactive::RequestManager::progressRequestsOfType( RequestType type
     return false;
   }
 
+  int ierr = MPI_SUCCESS;
   int mapId = requestTypeToMsgQueueIdx(type);
 
-  tbb::concurrent_hash_map<int, std::function<void(exahype::solvers::Solver*, int, int)>>::accessor a_handler;
-  tbb::concurrent_hash_map<int, exahype::solvers::Solver*>::accessor a_solver;
-  tbb::concurrent_hash_map<int, int>::accessor a_groupId;
-  tbb::concurrent_hash_map<int, int>::accessor a_outstandingGroup;
-  tbb::concurrent_hash_map<int, int>::accessor a_remoteRank;
-  tbb::concurrent_hash_map<int, int>::accessor a_remoteTag;
-
+  //1. Get new active requests if there are currently none
   int nRequests = _activeRequests[mapId].size();
   if(nRequests==0) {
-    //logInfo("progressRequestsOfType()", "begin create req array");
     if(type==RequestType::ReceiveBack || type==RequestType::SendOutcome)
-      createRequestArray( type, _activeRequests[mapId], _internalIdsOfActiveRequests[mapId] );
+      createAndFillRequestArray( type, _activeRequests[mapId], _internalIdsOfActiveRequests[mapId] );
     else {
-      createRequestArray( type, _activeRequests[mapId], _internalIdsOfActiveRequests[mapId] );
+      createAndFillRequestArray( type, _activeRequests[mapId], _internalIdsOfActiveRequests[mapId] );
     }
     nRequests = _activeRequests[mapId].size();
   }
 
-  std::vector<MPI_Status> stats(nRequests);
-  std::vector<int> arrOfIndices(nRequests);
-  int outcount = 0;
-
   double time = -MPI_Wtime();
   exahype::reactive::OffloadingProfiler::getInstance().beginCommunication();
 
-  logDebug("progressRequestsOfType()"," type: "<<mapId<< " nreq "<<nRequests);
+  //2. Test for completion
+  logDebug("progressRequestsOfType()"," type: "<<mapId<< " number of input requests "<<nRequests);
+  std::vector<MPI_Status> statuses(nRequests);
+  std::vector<int> indicesOfCompletedRequests(nRequests);
+  int numCompleted = 0;
+  MPI_CHECK("progressRequestsOfType", MPI_Testsome(nRequests,&_activeRequests[mapId][0], &numCompleted, &indicesOfCompletedRequests[0], MPI_STATUSES_IGNORE));
 
-  int ierr = MPI_Testsome(nRequests,&_activeRequests[mapId][0], &outcount, &arrOfIndices[0], MPI_STATUSES_IGNORE);
-
+  //3. Error handling
+#ifdef Asserts
   if(ierr != MPI_SUCCESS) {
     for(int i=0;i<nRequests;i++) {
-      int ierrstatus = stats[i].MPI_ERROR;
+      int ierrstatus = statuses[i].MPI_ERROR;
       if(ierrstatus!=MPI_SUCCESS) {
-        logError("progressRequestsOfType()", "error "<<ierrstatus<<" for request "<<_internalIdsOfActiveRequests[mapId][i]<< " source "<<stats[i].MPI_SOURCE<<" tag "<<stats[i].MPI_TAG);
+        logError("progressRequestsOfType()", "error "<<ierrstatus<<" for request "<<_internalIdsOfActiveRequests[mapId][i]<< " source "<<statuses[i].MPI_SOURCE<<" tag "<<statuses[i].MPI_TAG);
       }
       char err_buffer[MPI_MAX_ERROR_STRING];
       int resultlen = 0;
@@ -158,19 +153,46 @@ bool exahype::reactive::RequestManager::progressRequestsOfType( RequestType type
     MPI_Abort(MPI_COMM_WORLD, ierr); /* abort*/
   }
   assertion(ierr==MPI_SUCCESS);
-  time += MPI_Wtime();
+#endif
 
-  if(outcount>0)
+  time += MPI_Wtime();
+  if(numCompleted>0)
     exahype::reactive::OffloadingProfiler::getInstance().endCommunication(true, time);
   else
     exahype::reactive::OffloadingProfiler::getInstance().endCommunication(false, time);
 
-  logDebug("progressRequestsOfType()"," finished type: "<<mapId<< " nreq "<<outcount);
+  logDebug("progressRequestsOfType()"," finished type: "<<mapId<< " nreq "<<numCompleted);
+  //4. Handle finished requests
+  processFinishedRequests(mapId, numCompleted, indicesOfCompletedRequests);
 
-  bool found=false;
-  //handle finished requests
-  for(int i=0; i<outcount; i++) {
-    int reqIdx = arrOfIndices[i];
+  //5. clean up if all requests have finished
+  bool allFinished = true;
+  for(int i=0; i<nRequests; i++) {
+    if(_activeRequests[mapId][i]!=MPI_REQUEST_NULL) {
+      allFinished = false;
+      break;
+    }
+  }
+  if(allFinished) {
+    _activeRequests[mapId].clear();
+    _internalIdsOfActiveRequests[mapId].clear();
+  }
+  lock.free();
+
+  return numCompleted>0;
+}
+
+void exahype::reactive::RequestManager::processFinishedRequests(int mapId, int numCompleted, std::vector<int>& indicesOfCompletedRequests) {
+  tbb::concurrent_hash_map<int, std::function<void(exahype::solvers::Solver*, int, int)>>::accessor a_handler;
+  tbb::concurrent_hash_map<int, exahype::solvers::Solver*>::accessor a_solver;
+  tbb::concurrent_hash_map<int, int>::accessor a_groupId;
+  tbb::concurrent_hash_map<int, int>::accessor a_outstandingGroup;
+  tbb::concurrent_hash_map<int, int>::accessor a_remoteRank;
+  tbb::concurrent_hash_map<int, int>::accessor a_remoteTag;
+
+  for(int i=0; i<numCompleted; i++) {
+    bool found=false;
+    int reqIdx = indicesOfCompletedRequests[i];
     int reqId = _internalIdsOfActiveRequests[mapId][reqIdx];
     assertion(_activeRequests[mapId][reqIdx]==MPI_REQUEST_NULL);
     _internalIdsOfActiveRequests[mapId].erase(reqIdx);
@@ -249,28 +271,13 @@ bool exahype::reactive::RequestManager::progressRequestsOfType( RequestType type
     }
 #endif
   }
-
-  bool allFinished = true;
-  for(int i=0; i<nRequests; i++) {
-    if(_activeRequests[mapId][i]!=MPI_REQUEST_NULL) {
-      allFinished = false;
-      break;
-    }
-  }
-  if(allFinished) {
-    _activeRequests[mapId].clear();
-    _internalIdsOfActiveRequests[mapId].clear();
-  }
-  lock.free();
-
-  return outcount>0;
 }
 
 int exahype::reactive::RequestManager::requestTypeToMsgQueueIdx( RequestType requestType ) {
   return static_cast<int> (requestType);
 }
 
-void exahype::reactive::RequestManager::createRequestArray(
+void exahype::reactive::RequestManager::createAndFillRequestArray(
     RequestType type,
     std::vector<MPI_Request> &requests,
     std::unordered_map<int, int> &map,

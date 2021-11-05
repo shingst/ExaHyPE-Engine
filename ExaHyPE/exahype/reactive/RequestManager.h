@@ -197,16 +197,18 @@ class exahype::reactive::RequestManager {
      */
     bool progressRequestsOfType(RequestType type);
 
+    void processFinishedRequests(int mapId, int numCompleted, std::vector<int>& indicesOfCompletedRequests);
+
     /**
      * Maps a request type to an integer that defines message queue.
      */
     static int requestTypeToMsgQueueIdx(RequestType requestType);
 
     /**
-     * This method pop's #limit current requests of a given type from the request queue and
+     * This method pops #limit current requests of a given type from the request queue and
      * inserts them into the active array of MPI requests on which we can make progress.
      */
-    void createRequestArray(
+    void createAndFillRequestArray(
         RequestType type,
         std::vector<MPI_Request> &requests,
         std::unordered_map<int, int> &vecIdToReqId,
