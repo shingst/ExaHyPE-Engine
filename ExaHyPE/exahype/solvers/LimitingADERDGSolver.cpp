@@ -687,7 +687,6 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
       ADERDGSolver::progressOffloading(_solver.get(), false, 1); //do some progress and receive task outcomes/time stamps
       otherTeamHasTimestamp = exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().otherTeamHasTimeStamp(solverPatch.getTimeStamp());
       otherTeamHasLargerTimestamp =  exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().otherTeamHasLargerTimeStamp(solverPatch.getTimeStamp());
-      //exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().printHistory();
       logDebug("fusedTimeStepBody"," waiting for timestamp="<<solverPatch.getTimeStamp()
                                      <<" time step size "<<solverPatch.getTimeStepSize()
                                      <<" other has larger "<<otherTeamHasLargerTimestamp
@@ -711,7 +710,7 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
               predictionTimeStepSize));
       return; //early exit here, do checks later
     }
-    else  { //if (otherTeamHasLargerTimestamp) {
+    else  {
       double lastConsistentTimeStamp, lastConsistentTimeStepSize, lastConsistentEstimatedTimeStepSize;
       exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().getLastConsistentTimeStepData(lastConsistentTimeStamp, lastConsistentTimeStepSize, lastConsistentEstimatedTimeStepSize);
       logError("fusedTimeStepBody", "Team = "<<exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber()
@@ -721,7 +720,6 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
                                  <<" and for timestep="<<predictionTimeStepSize
                                  <<" . Abort due to soft error! This case currently can't be treated without correction."
                                  <<" Last consistent timestamp = "<<lastConsistentTimeStamp);
-      //exahype::reactive::TimeStampAndLimiterTeamHistory::getInstance().printHistory();
       MPI_Abort(MPI_COMM_WORLD, -1);
     }
   }
@@ -735,7 +733,6 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
 
   reduce(solverPatch,cellInfo,result);
 
-  //todo(Philipp): do we still need this?
   if (
       (solverPatch.getRefinementStatus()<_solver->_minRefinementStatusForTroubledCell)
 	  &&
@@ -774,7 +771,6 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
           isSkeletonCell);
       logDebug("fusedTimeStepBody", "spawning migratable job for "<< cellInfo._cellDescriptionsIndex<< " predictionTimeStamp "<<predictionTimeStamp<<" predictionTimeStepSize "<<predictionTimeStepSize
           << " troubled "<<isTroubled<<" previous stamp "<<_solver.get()->getMinTimeStamp());
-
        _solver.get()->submitOrSendMigratablePredictionJob(migratablePredictionJob);
 #else
       peano::datatraversal::TaskSet(

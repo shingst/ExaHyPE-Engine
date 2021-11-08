@@ -11,11 +11,9 @@
  * For the full license text, see LICENSE.txt
  **/
 
-
 #include "exahype/reactive/ResilienceTools.h"
 #include "exahype/reactive/ReactiveContext.h"
 #include "exahype/reactive/ResilienceStatistics.h"
-//#include "exahype/parser/Parser.h"
 
 #include "tarch/parallel/Node.h"
 
@@ -214,14 +212,12 @@ void exahype::reactive::ResilienceTools::overwriteRandomValueInArrayWithGivenErr
   std::uniform_int_distribution<int> un_arr(0, size-1);
 
   int idx_array = un_arr(generator);
-  //int idx_array = 0;
 
   double old_val = array[idx_array];
   double error =  _injectedErrorVal;      //introduces error of fixed value
 
-  //overwrite with "random number"
+  //overwrite
   array[idx_array] += error;
-  //std::numeric_limits<double>::max();
   _numInjected++;
 
   logError("overwriteRandomValueInArrayWithGivenError()", "overwrite double value, pos = "<<idx_array<<std::setprecision(30)
@@ -386,12 +382,6 @@ bool exahype::reactive::ResilienceTools::isEqual(const double *a1, const double 
             &&  (l2norm==0);  //todo: we may need some tolerance but in all experiments,
                               // teams compute exactly (in a bitwise sense) the same results
 
-  /*if(!admissible || infnorm!=0 || l1norm!=0 || l2norm!=0) {
-    logError("isAdmissibleNumericalError","We'll likely have a soft error: "
-                                         << " inf norm = "<<infnorm
-                                         << " l1 norm = "<<l1norm
-                                         << " l2 norm = "<<l2norm);
-  }*/
   return equal;
 }
 

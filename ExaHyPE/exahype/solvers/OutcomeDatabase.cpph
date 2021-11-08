@@ -47,22 +47,14 @@ OutcomeDatabase<K,T>::OutcomeDatabase()
 #if defined(SharedTBB) //todo: this is not nice, should provide a stdlib hash map without TBB in the future
   : _database()
 #endif
-{
-  // TODO Auto-generated constructor stub
-
-}
+{}
 
 template<typename K,typename T>
-OutcomeDatabase<K,T>::~OutcomeDatabase() {
-  // TODO Auto-generated destructor stub
-}
+OutcomeDatabase<K,T>::~OutcomeDatabase() {}
 
 template<typename K,typename T>
 void OutcomeDatabase<K,T>::insertOutcome(const K& key, T* data, const DeliveryStatus status) {
   OutcomeEntry<T> entry (data, status);
-  //tbb::concurrent_hash_map<OutcomeKey, OutcomeEntry<T>>::accessor a_jobToData;
- // bool found = _database.find(a_jobToData, key);
- // assert(!found);
 #if defined(SharedTBB)
   _database.insert(std::make_pair(key,entry));
 #else

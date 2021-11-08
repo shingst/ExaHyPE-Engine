@@ -29,6 +29,7 @@ private:
 
   static tarch::logging::Log _log;
 
+  //atomic counters
   std::atomic<int> _spawnedTasks;
   std::atomic<int> _executedTasks;
   std::atomic<int> _savedTasks;

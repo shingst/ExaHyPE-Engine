@@ -123,12 +123,6 @@ exahype::solvers::LimitingADERDGSolver::CheckAndCorrectSolutionJob::SDCCheckResu
                                                                      outcome->_metadata._errorIndicatorTimeStepSize,
                                                                      outcome->_metadata._errorIndicatorAdmissibility))
   {
-    /*logError("checkAgainstOutcome","Limiter was not active previously in other team, we must have a soft error!"
-        <<_cellInfo._cellDescriptionsIndex
-        <<" stamp "<<_predictorTimeStamp
-        <<" step "<<_predictorTimeStepSize
-        <<" previous stamp "<<_solverPatch.getPreviousTimeStamp()
-        <<" previous step "<<_solverPatch.getPreviousTimeStepSize());*/
      exahype::reactive::ResilienceStatistics::getInstance().notifyDetectedError();
      return SDCCheckResult::OutcomeSaneAsLimiterNotActive;
   }
@@ -147,19 +141,9 @@ void exahype::solvers::LimitingADERDGSolver::CheckAndCorrectSolutionJob::correct
 
   //todo: check other data, too?
   double *luh = static_cast<double*>(_solverPatch.getSolution());
-  //double *lduh = static_cast<double*>(_solverPatch.getUpdate());
-  //double *lQhbnd = static_cast<double*>(_solverPatch.getExtrapolatedPredictor());
-  //double *lGradQhbnd = static_cast<double*>(_solverPatch.getExtrapolatedPredictorGradient());
-  //double *lFhbnd = static_cast<double*>(_solverPatch.getFluctuation());
 
   //correct here
   std::memcpy(luh, &outcome->_luh[0], outcome->_luh.size() * sizeof(double));
-//  std::memcpy(lduh, &outcome->_lduh[0], outcome->_lduh.size() * sizeof(double));
-//  std::memcpy(lQhbnd, &outcome->_lQhbnd[0], outcome->_lQhbnd.size() * sizeof(double));
-//  std::memcpy(lFhbnd, &outcome->_lFhbnd[0], outcome->_lFhbnd.size() * sizeof(double));
-//#if OffloadingGradQhbnd
-//  std::memcpy(lGradQhbnd, &outcome->_lGradQhbnd[0], outcome->_lGradQhbnd.size() * sizeof(double));
-//#endif
 
   logError("correctWithOutcomeAndDeleteLimiterStatus()","We corrected an error and disable limiter for this cell (compute again with ADER-DG).");
 
@@ -172,12 +156,6 @@ void exahype::solvers::LimitingADERDGSolver::CheckAndCorrectSolutionJob::correct
   logError("correctWithOutcomeAndDeleteLimiterStatus()","New time step size ="<<result._timeStepSize);
 
   _solver.reduce(_solverPatch,_cellInfo,result);
-
-  /*if(_solver.getMeshUpdateEvent()==ADERDGSolver::MeshUpdateEvent::IrregularLimiterDomainChangeButMayCorrect) {
-    _solver.resetMeshUpdateEvent();
-    logInfo("correctWithOutcomeAndDeleteLimiterStatus", "team = "<<exahype::reactive::OffloadingContext::getInstance().getTMPIInterTeamRank()
-          <<" corrected patch "<<_solverPatch.toString());
-  }*/
 
   exahype::reactive::ResilienceStatistics::getInstance().notifyHealedTask();
 }
