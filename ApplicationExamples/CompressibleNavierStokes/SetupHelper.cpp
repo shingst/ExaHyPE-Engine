@@ -42,6 +42,7 @@ NavierStokes::ScenarioConfig NavierStokes::parseConfig(
     ++numberOfNecessaryVariables;
   }
   if (numberOfVariables != numberOfNecessaryVariables) {
+    std::cerr<<"Error not enough variables"<<std::endl;
     throw - 1;
   }
 
@@ -53,11 +54,13 @@ NavierStokes::ScenarioConfig NavierStokes::parseConfig(
     numberOfNecessaryParameters += 2;
   }
   if (numberOfParameters != numberOfNecessaryParameters) {
+    std::cerr<<"Error not enough parameters"<<std::endl;
     throw - 1;
   }
 
   auto numberOfNecessaryGlobalObservables = amrSettings.useAMR ? 3 : 0;
   if (numberOfGlobalObservables < numberOfNecessaryGlobalObservables) {
+    std::cerr<<"Error not enough global observables"<<std::endl;
     throw - 1;
   }
 

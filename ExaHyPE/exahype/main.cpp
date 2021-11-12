@@ -32,6 +32,10 @@
 #include <cstdio>
 #include "../kernels/GaussLegendreBasis.h"
 
+#ifdef OffloadingUseProfiler
+#include "exahype/reactive/OffloadingProfiler.h"
+#endif
+
 #ifndef EXAHYPE_LATE_TAKEOVER
 
 tarch::logging::Log _log("exahype");
@@ -55,7 +59,9 @@ int exahype::main(int argc, char** argv) {
   bool showHelp    = firstarg == "-h" || firstarg == "--help";
   bool showVersion = firstarg == "-v" || firstarg == "--version";
   bool runTests    = firstarg == "-t" || firstarg == "--tests";
+#if defined(Asserts)
   bool runPingPong = firstarg == "-p" || firstarg == "--pingpong";
+#endif
   bool showCompiledSpecfile = firstarg == "--show-specfile";
   bool runCompiledSpecfile  = firstarg == "--built-in-specfile";
 
@@ -84,6 +90,8 @@ int exahype::main(int argc, char** argv) {
     std::cout << std::string(kernels::compiledSpecfile());
     return EXIT_SUCCESS;
   }
+
+  SCOREP_USER_REGION( (std::string("exahype::main")).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
 
   //
   //   Setup environment
@@ -228,6 +236,10 @@ int exahype::main(int argc, char** argv) {
                                                              "exahype", false));
 */
 
+  #if defined(OffloadingUseProfiler)
+  //prints useful statistics about reactive offloading on every rank
+  exahype::reactive::OffloadingProfiler::getInstance().beginProfilingPhase();
+  #endif
 
   exahype::runners::Runner runner(parser, cmdlineargs); // TODO Make runner singleton?
   int programExitCode = runner.run();
@@ -243,6 +255,12 @@ int exahype::main(int argc, char** argv) {
   } else {
     logInfo("main()", "quit with error code " << programExitCode);
   }
+ 
+#if defined(OffloadingUseProfiler)
+  //prints useful statistics about reactive offloading on every rank
+  exahype::reactive::OffloadingProfiler::getInstance().endProfilingPhase();
+  exahype::reactive::OffloadingProfiler::getInstance().printCumulativeStatistics();
+#endif
 
   peano::shutdownParallelEnvironment();
   peano::shutdownSharedMemoryEnvironment();

@@ -1,4 +1,4 @@
-/**os
+/**
  * This file is part of the ExaHyPE project.
  * Copyright (c) 2016  http://exahype.eu
  * All rights reserved.

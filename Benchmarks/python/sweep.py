@@ -285,7 +285,13 @@ def build(buildOnlyMissing=False, skipMakeClean=False):
                         print(infoMessage)
 
                         
-                        # clean application folder only
+                        # clean everything
+                        command = "make clean"
+                        print(command)
+                        process = subprocess.Popen([command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+                        (output, err) = process.communicate()
+                        process.wait()
+
                         command = "rm -r *.o cipofiles.mk cfiles.mk ffiles.mk kernels"
                         print(command)
                         process = subprocess.Popen([command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
@@ -384,11 +390,12 @@ def renderJobScript(jobScriptTemplate,jobScriptBody,jobs,
     
     # put optional sweep options in context
     context["mail"]         = jobs["mail"]
-    context["ranksPerNode"]        = ranksPerNode
+    context["ranksPerNode"] = ranksPerNode
     context["time"]         = jobs["time"]
     context["class"]        = jobClass
     context["islands"]      = islands
-    context["coresPerRank"] = str( int ( int(jobs["num_cpus"]) / int(ranksPerNode) ) )
+    context["coresPerRank"] = cores #really use specified number of cores
+    #str( int ( int(jobs["num_cpus"]) / int(ranksPerNode) ) )
     
     # now verify template parameters are defined in options file
     if not createdFirstJobScript:
@@ -562,7 +569,10 @@ def generateScripts():
                                                  
                                 outputFileName = projectName + "-" + environmentDictHash + "-" + parameterDictHash + \
                                                  "-n" + ranks + "-N" + nodes + "-t"+ranksPerNode+"-c"+cores+"-b"+consumers+"-r"+myRun+".out"
+                                errorFileName = projectName + "-" + environmentDictHash + "-" + parameterDictHash + \
+                                                 "-n" + ranks + "-N" + nodes + "-t"+ranksPerNode+"-c"+cores+"-b"+consumers+"-r"+myRun+".err"
                                 outputFilePath = resultsFolderPath + "/" + outputFileName 
+                                errorFilePath = resultsFolderPath + "/" + errorFileName
 
                                 if "preamble" in jobs:
                                     renderedPreamble = jobs["preamble"].strip("\"")
@@ -595,6 +605,7 @@ def generateScripts():
                                 jobScriptBody += "echo \"sweep/parameters="+json.dumps(parameterDict).replace("\"","\\\"")   +"\" >> "+outputFilePath+"\n"
                                 # pipe the commands into the output file
                                 runCommand = general["run_command"].replace("\"","")
+                                runCommand = runCommand.replace("{{run}}",myRun);
                                 runCommand = runCommand.replace("{{ranks}}",ranks);
                                 runCommand = runCommand.replace("{{nodes}}",nodes);
                                 runCommand = runCommand.replace("{{ranksPerNode}}",ranksPerNode);
@@ -603,7 +614,7 @@ def generateScripts():
                                     runCommand = runCommand.strip()
                                 else:
                                     runCommand += " "
-                                jobScriptBody += runCommand+executable+" "+specFilePath+" >> "+outputFilePath+"\n" # no whitespace after runCommand
+                                jobScriptBody += runCommand+executable+" "+specFilePath+" >> "+outputFilePath+" 2> "+errorFilePath +"\n" # no whitespace after runCommand
                                 
                                 if "likwid" in general:
                                     groups = sweep_options.parseList(general["likwid"])

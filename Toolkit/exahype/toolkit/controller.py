@@ -255,6 +255,22 @@ class Controller:
             self.log.exception(e)
             sys.exit(-4)
 
+        useReactive = False
+        #check if offloading is used together with multiple solvers -> abort as currently not supported
+        if "distributed_memory" in spec:
+           useReactive = spec["distributed_memory"]["offloading_lb_strategy"]!="none" 
+        if "resilience" in spec:
+           useReactive = useReactive or spec["resilience"]["task_sharing"] or spec["resilience"]["task_sharing_resilience_checks"] or spec["resilience"]["task_sharing_resilience_correction"]
+        
+        numADERDGSolvers = 0
+        for solver in spec["solvers"]: 
+            if(solver["type"]=="ADER-DG"):
+                numADERDGSolvers += 1
+  
+        if (useReactive and numADERDGSolvers>1):
+           self.log.error("Specification file uses offloading for more than one ADERDGSolver which is currently not supported! Aborting...")
+           sys.exit(-4)
+       
         if validate_only:
             print(json.dumps(spec, sort_keys=True, indent=4))
             sys.exit(0)
@@ -294,9 +310,32 @@ class Controller:
         context["linkerFlags"]       = self.spec["linker_flags"]
         context["useSharedMem"]      = "shared_memory" in self.spec;
         context["useDistributedMem"] = "distributed_memory" in self.spec;
+        context["useNoiseGenerator"] = False
+        if "noise_generator" in self.spec:
+            context["useNoiseGenerator"] = self.spec["noise_generator"]["enable"]
+
+        context["useSTPStatsTracing"] = False
+        if "stp_stats_tracing" in self.spec:
+            context["useSTPStatsTracing"] = True
+
         context["useIpcm"]   = False # TODO
         context["useLikwid"] = False # TODO
         context["likwidInc"] = ""    # TODO
+        if context["useDistributedMem"]:
+            context["offloading"]  = self.spec["distributed_memory"]["offloading_lb_strategy"]
+            context["offloadingProgress"] = self.spec["distributed_memory"]["offloading_progress"]
+            context["useTasksharing"] = "resilience" in self.spec and self.spec["resilience"]["task_sharing"]!="no"
+        else:
+            context["offloading"] = "none"
+            context["offloadingProgress"] = "none"
+            context["useTasksharing"] = False
+      
+        context["useViscousFlux"] = False
+        for solver in self.spec["solvers"]: 
+            if(solver["type"]=="ADER-DG" and "viscous_flux" in solver["aderdg_kernel"]["terms"]):
+                context["useViscousFlux"] = True
+        context["useViscousFlux"] = False
+
         # kernels
         useOptKernel = False
         useFortran   = False

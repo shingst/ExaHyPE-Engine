@@ -15,6 +15,7 @@
 #ifndef LIMITEDADERDGSOLVER_H_
 #define LIMITEDADERDGSOLVER_H_
 
+#include "exahype/solvers/Solver.h"
 #include "exahype/solvers/ADERDGSolver.h"
 #include "exahype/solvers/FiniteVolumesSolver.h"
 
@@ -93,12 +94,13 @@ public:
   static int updateBodyHandle;
   static int mergeNeighboursHandle;
   #endif
-
-protected:
+  
   /**
    * The ADERDG solver.
    */
   std::unique_ptr<exahype::solvers::ADERDGSolver> _solver;
+
+protected:
 
   /**
    * The finite volumes solver used for the a posteriori subcell limiting.
@@ -287,7 +289,7 @@ private:
       SolverPatch& solverPatch,
       CellInfo&    cellInfo,
       const bool   isTroubled);
-
+  
   /**
    * Takes the FV solution from the limiter patch and projects it on the
    * DG space, overwrites the DG solution on the solver patch with the projected values.
@@ -463,7 +465,9 @@ private:
     return
         solverPatch.getType()==SolverPatch::Type::Leaf &&
         solverPatch.getLevel()==getMaximumAdaptiveMeshLevel() &&
-        solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell-2;
+        solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell-2; 
+        //solverPatch.getCorruptionStatus()!=ADERDGSolver::CorruptedAndCorrected &&
+        //solverPatch.getCorruptionStatus()!=ADERDGSolver::CorruptedNeighbour;
   }
 
   /**
@@ -702,6 +706,38 @@ private:
     bool run(bool runOnMasterThread) override;
   };
 
+#if defined(Parallel)
+  class CheckAndCorrectSolutionJob : public tarch::multicore::jobs::Job {
+    enum class SDCCheckResult {NoCorruption, OutcomeSaneAsLimiterNotActive, UncorrectableSoftError};
+
+    private:
+      LimitingADERDGSolver&               _solver;
+      SolverPatch&                _solverPatch;
+      CellInfo                    _cellInfo;
+      const double                _predictorTimeStamp;
+      const double                _predictorTimeStepSize;
+
+      // actual execution of a STP job
+      bool run(bool runOnMasterThread) override;
+      SDCCheckResult checkAgainstOutcome(ADERDGSolver::MigratablePredictionJobData *outcome);
+      void correctWithOutcomeAndDeleteLimiterStatus(ADERDGSolver::MigratablePredictionJobData *outcome);
+
+    public:
+      // constructor for local jobs that can be stolen
+      CheckAndCorrectSolutionJob(
+        LimitingADERDGSolver&     solver,
+        SolverPatch& solverPatch,
+        CellInfo& cellInfo,
+        const double predictorTimeStamp,
+        const double predictorTimeStepSize
+      );
+      ~CheckAndCorrectSolutionJob();
+
+      CheckAndCorrectSolutionJob(const CheckAndCorrectSolutionJob& stp) = delete;
+  };
+
+#endif
+
 public:
   /**
    * Create a limiting ADER-DG solver.
@@ -887,6 +923,9 @@ public:
    * returns true if a new limiter patch was allocated.
    */
   MeshUpdateEvent  updateRefinementStatusDuringRefinementStatusSpreading(SolverPatch& solverPatch) const;
+
+  void updateCorruptionStatusDuringRefinementStatusSpreading( SolverPatch& solverPatch) const;
+
 
   /**\copydoc exahype::solvers::Solver::progressMeshRefinementInEnterCell
    *
@@ -1452,6 +1491,12 @@ public:
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) final override;
 
+   void initOffloadingManager();
+   void stopOffloadingManager();
+#ifndef OffloadingUseProgressThread
+   void resumeOffloadingManager();
+   void pauseOffloadingManager();
+#endif
 #endif
 
   std::string toString() const final override;

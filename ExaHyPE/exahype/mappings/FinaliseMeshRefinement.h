@@ -60,7 +60,15 @@ class exahype::mappings::FinaliseMeshRefinement {
   static bool OneSolverRequestedMeshUpdate;
 
   /**
-<<<<<<< HEAD
+   * Used for counting number of enclave cells after mesh refinement.
+   */
+  int _numberOfEnclaveCells;
+  /**
+   * Used for counting the number of skeleton cells after mesh refinement.
+   */
+  int _numberOfSkeletonCells;
+
+  /**
    * A minimum time step size for each solver.
    */
   std::vector<double> _minTimeStepSizes;
@@ -76,8 +84,6 @@ class exahype::mappings::FinaliseMeshRefinement {
   std::vector<std::vector<double>> _reducedGlobalObservables;
 
   /**
-=======
->>>>>>> master
    * Indicates that the background tasks have terminated.
    * No further checks are required in this case.
    *
@@ -92,7 +98,19 @@ class exahype::mappings::FinaliseMeshRefinement {
    */
   bool _backgroundJobsHaveTerminated = false;
 
+
+  void initialiseLocalVariables();
+
  public:
+  /**
+   * Contains the number of enclave cells (accessed in runGlobalStep).
+   */
+  static int NumberOfEnclaveCells;
+
+  /**
+   * Contains the number of skeleton cells (accessed in runGlobalStep).
+   */
+  static int NumberOfSkeletonCells;
   /**
    * Reduce data from the worker to the master.
    *

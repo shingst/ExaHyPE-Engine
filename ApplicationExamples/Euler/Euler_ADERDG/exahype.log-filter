@@ -28,7 +28,6 @@ info  exahype::mappings::LoadBalancing        -1  white
 info  exahype::runners::Runner::runAsWorker   -1  black
 info  exahype::runners::Runner::init          -1  black
 info  exahype::runners::Runner::createRepository -1  white
-
 info  exahype::mappings::LoadBalancing::endIteration -1 black
 
 

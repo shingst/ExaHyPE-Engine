@@ -1,11 +1,25 @@
 #!/usr/bin/env groovy
-def slurmBatch(code) {
+def slurmBatch(code, directory) {
     sh '''#!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
 
 # Kill all called processes when script finishes!
 trap "kill 0" SIGINT
+
+# Set environment defaults
+export JENKINS_MPI_RANKS=1
+export JENKINS_MPI_NODES=1
+export JENKINS_TBB_CORES=28
+# Read env config file
+''' + 'export FILENAME=' + directory + '/env.sh' + '''
+echo "filename is ${FILENAME}"
+[ -f "${FILENAME}" ] && cat "${FILENAME}"
+set -o allexport # no need for export
+[ -f "${FILENAME}" ] && source "${FILENAME}"
+set +o allexport
+
+echo "Using ${JENKINS_MPI_RANKS} ranks on ${JENKINS_MPI_NODES} nodes."
 
 #REMARK: required until SCRATCH env got fixed by LRZ
 export SCRATCH="/gpfs/scratch/pr63so/di57wuf"
@@ -25,11 +39,13 @@ cat > "$tmpfile" <<EOF
 #SBATCH -J exahype
 #SBATCH --clusters=mpp2
 ##SBATCH --partition=acc
-#SBATCH --cpus-per-task=28
+#SBATCH --cpus-per-task=${JENKINS_TBB_CORES}
 #SBATCH --time=02:00:00
+#SBATCH --ntasks=${JENKINS_MPI_RANKS}
+#SBATCH --nodes=${JENKINS_MPI_NODES}
 source /etc/profile.d/modules.sh
 cd "${workspace}"
-export OMP_NUM_THREADS=28
+export OMP_NUM_THREADS=${JENKINS_TBB_CORES}
 EOF
 # Now write actual code to file.
 # Quoting the EOL avoids string interpolation!

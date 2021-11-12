@@ -1,0 +1,93 @@
+/**
+ * This file is part of the ExaHyPE project.
+ * Copyright (c) 2016  http://exahype.eu
+ * All rights reserved.
+ *
+ * The project has received funding from the European Union's Horizon
+ * 2020 research and innovation programme under grant agreement
+ * No 671698. For copyrights and licensing, please consult the webpage.
+ *
+ * Released under the BSD 3 Open Source License.
+ * For the full license text, see LICENSE.txt
+ **/
+
+#include "OutcomeDatabase.h"
+
+#if defined(SharedTBB)
+#include <tbb/concurrent_queue.h>
+#endif
+
+namespace exahype {
+namespace solvers {
+
+template<typename T>
+OutcomeEntry<T>::OutcomeEntry(T* data, DeliveryStatus status)
+ : _data(data),
+   _status(status)
+{}
+
+template<typename T>
+OutcomeEntry<T>::~OutcomeEntry()
+{}
+
+template<typename T>
+DeliveryStatus OutcomeEntry<T>::getStatus() const
+{
+  return _status;
+}
+
+template<typename T>
+T* OutcomeEntry<T>::getData() const
+{
+  return _data;
+}
+
+template<typename K,typename T>
+OutcomeDatabase<K,T>::OutcomeDatabase()
+#if defined(SharedTBB) //todo: this is not nice, should provide a stdlib hash map without TBB in the future
+  : _database()
+#endif
+{}
+
+template<typename K,typename T>
+OutcomeDatabase<K,T>::~OutcomeDatabase() {}
+
+template<typename K,typename T>
+void OutcomeDatabase<K,T>::insertOutcome(const K& key, T* data, const DeliveryStatus status) {
+  OutcomeEntry<T> entry (data, status);
+#if defined(SharedTBB)
+  _database.insert(std::make_pair(key,entry));
+#else
+  assert(false); //should not be called!
+#endif  
+}
+
+template<typename K,typename T>
+bool OutcomeDatabase<K,T>::tryFindAndExtractOutcome(K key, T **data, DeliveryStatus& status) {
+#if defined(SharedTBB)
+  typename tbb::concurrent_hash_map<K, OutcomeEntry<T>>::accessor a_jobToData;
+  bool found = _database.find(a_jobToData, key);
+  if (found) {
+    status = a_jobToData->second.getStatus();
+    *data = a_jobToData->second.getData();
+    _database.erase(a_jobToData);
+    a_jobToData.release();
+  }
+  return found;
+#else
+  assert(false); //should not be called!
+#endif  
+}
+
+template<typename K,typename T>
+int OutcomeDatabase<K,T>::size() const {
+#if defined(SharedTBB)
+  return _database.size();
+#else
+  assert(false);
+#endif
+}
+
+
+} /* namespace solvers */
+} /* namespace exahype */

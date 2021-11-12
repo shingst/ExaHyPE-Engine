@@ -596,6 +596,27 @@ class exahype::parser::Parser {
   std::string getProfilerIdentifier() const;
   std::string getMetricsIdentifierList() const;
   std::string getProfilingOutputFilename() const;
+  
+  /**
+   * @return The output directory where memory statistics should be written to (for task sharing).
+   */
+  std::string getMemoryStatsOutputDir() const;
+
+  /**
+   * @return Number of steps between switching to next noisy rank for round-robin noise generation
+   * strategy.
+   */
+  int getNoiseGenerationRRFrequency() const;
+
+  /**
+   * @return A factor that determines the strength of the noise.
+   */
+  double getNoiseGenerationScalingFactor() const;
+
+  /**
+   * @return Base time a rank is sleeping for "chase victim" noise generation strategy.
+   */
+  double getNoiseBaseTime() const;
 
   /**
    * The profiling target.
@@ -703,6 +724,147 @@ class exahype::parser::Parser {
   };
 
   TBBInvadeStrategy getTBBInvadeStrategy() const;
+
+  /**
+   * The offloading strategy for lightweight distributed task offloading.
+   */
+  enum class OffloadingStrategy {
+      None,  //do not use task offloading
+      AggressiveHybrid, //hybrid of CCP guess + diffusion
+      StaticHardcoded //use input file with offloading rules to control how many tasks are offloaded (see StaticDistributor)
+   };
+
+  /**
+   * @return The offloading strategy as configured in the specfile.
+   */
+  OffloadingStrategy getOffloadingStrategy() const;
+
+  /**
+   * The configuration of the resilience strategy.
+   */
+  enum class ResilienceStrategy {
+      None,
+      TaskSharing,
+      TaskSharingResilienceChecks,
+      TaskSharingResilienceCorrection
+   };
+
+  /**
+   * @return The configured resilience strategy.
+   */
+  ResilienceStrategy getResilienceStrategy() const;
+
+  /**
+   * @return Input filename for offloading rules (to be used with StaticHardcoded strategy). Can be empty if not specified.
+   */
+  std::string getOffloadingInputFile() const;
+
+  /**
+   * @return Initial "temperature" that steers how aggressively task offloading  will converge towards the CCP guess.
+   */
+  double getCCPTemperatureOffloading() const;
+
+  /**
+   * @return Initial temperature that steers how aggressively diffusion will offload tasks.
+   */
+  double getDiffusionTemperatureOffloading() const;
+
+  /**
+   * @return Number of timesteps after which CCP offloading steps are made.
+   */
+  int   getCCPFrequencyOffloading() const;
+
+  /**
+   * @return number of subsequent CCP steps.
+   */
+  int   getCCPStepsOffloading() const;
+
+  /**
+   * @return true if diffusion temperatur should be adapted at runtime and false otherwise.
+   */
+  bool getUpdateTemperatureActivatedOffloading() const;
+
+  /**
+   * @return Threshold that steers how aggressively the temperature is updated.
+   */
+  double getTempIncreaseThreshold() const;
+
+  /**
+   * @return How many tasks must be ready in Peano before tasks are offloaded to other ranks.
+   */
+  int getLocalStarvationThreshold() const;
+
+  /**
+   * @return Output directory for detailed tracing data.
+   */
+  std::string getSTPTracingOutputDirName() const;
+
+  /**
+   * @return Number of timesteps after which a tracing output is written.
+   */
+  int getSTPTracingDumpInterval() const;
+
+  /**
+   * @return True if the parsed strategy matches the argument.
+   * @param strategy one of "no", "migratable_stp_tasks_bitflip", "migratable_stp_tasks_overwrite", "migratable_stp_tasks_overwrite_hardcoded"
+   */
+  bool compareSoftErrorGenerationStrategy(const std::string& strategy) const;
+
+  double getFixedErrorForInjection() const;
+
+  double getMaximumErrorIndicatorForDerivatives() const;
+  
+  double getMaximumErrorIndicatorForTimeStepSizes() const;
+
+  tarch::la::Vector<DIMENSIONS, double> getErrorInjectionPosition() const;
+
+  double getErrorInjectionTime() const;
+  
+  int getErrorInjectionRank() const;
+
+  int getErrorInjectionFrequency() const;
+
+  int getMaxNumInjections() const;
+
+  /**
+   * @return True if ExaHyPE should try so save redundant computations sharing task outcomes between team.
+   * @note Makes only sense if task sharing is activated and more than one team is run.
+   */
+  bool getTryToSaveRedundantComputations() const;
+
+  //todo: docu!
+  bool getMakeSkeletonsShareable() const;
+
+  /**
+   * @return True if all migratable STPs should be checked for soft errors (i.e., if they are considered as potentially having an error).
+   */
+  bool getCheckAllMigratableSTPs() const;
+
+  /**
+   * @return True if only STP+solution of cells for which the limiter was activated should be checked (i.e., if they should be considered as potentially having an error).
+   */
+  bool getCheckLimitedCellsOnly() const;
+
+  /**
+   * @return True if only corrupted STPs (with artificially injected errors) should be triggered as suspicious.
+   */
+  bool getCheckCorrupted() const;
+
+  /**
+   * @return True if only STPs should be checked which -- if applied to the solution -- would violate the physical admissibility checks.
+   */
+  bool getCheckSTPsWithLowConfidence() const;
+
+
+  bool getCheckSTPConfidenceAdmissibility() const;
+
+  bool getCheckSTPConfidenceDerivatives() const;
+
+  bool getCheckSTPConfidenceTimeStepSizes() const;
+
+  bool getCheckSTPsLazily() const;
+
+
 };
 
 #endif

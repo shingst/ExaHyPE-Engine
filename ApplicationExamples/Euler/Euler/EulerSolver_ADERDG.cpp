@@ -27,6 +27,10 @@
 
 #include "peano/utils/Loop.h"
 
+#ifdef USE_TMPI
+#include "teaMPI.h"
+#endif
+
 tarch::logging::Log Euler::EulerSolver_ADERDG::_log("Euler::EulerSolver_ADERDG");
 
 Euler::EulerSolver_ADERDG::Reference Euler::EulerSolver_ADERDG::ReferenceChoice = Euler::EulerSolver_ADERDG::Reference::EntropyWave;
@@ -471,6 +475,17 @@ void Euler::EulerSolver_ADERDG::adjustPointSolution(const double* const x,const 
   if (tarch::la::equals(t, 0.0)) {
     referenceSolution(x,0.0,Q);
   }
+#if defined(USE_TMPI) && defined(GenerateSolutionError)
+  //  std::cerr<<" t "<<t<<" x[0] "<<x[0]<<" , x[1] "<<x[1]<<std::endl;
+  if (tarch::la::equals(t,0.208,0.001) && tarch::la::equals(x[0],0.719,0.001) 
+       && tarch::la::equals(x[1],0.9758,0.001))
+  {
+    if(TMPI_IsLeadingRank()) {
+      std::cerr<<"Corrupting: t "<<t<<" x[0] "<<x[0]<<" , x[1] "<<x[1]<<std::endl;
+      Q[0]=1.0; 
+    }
+  }
+#endif
 }
 
 /*void Euler::EulerSolver_ADERDG::adjustSolution(double* const luh, const tarch::la::Vector<DIMENSIONS,double>& center, const tarch::la::Vector<DIMENSIONS,double>& dx,double t,double dt) {

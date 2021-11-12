@@ -22,6 +22,9 @@ int scenario_DG;
 
 tarch::logging::Log SWE::MySWESolver_ADERDG::_log( "SWE::MySWESolver_ADERDG" );
 
+#if defined USE_TMPI && defined(GenerateError)
+#include "teaMPI.h"
+#endif
 
 void SWE::MySWESolver_ADERDG::init(const std::vector<std::string>& cmdlineargs,const exahype::parser::ParserView& constants) {
   if (constants.isValueValidDouble( "grav" )) {
@@ -42,7 +45,25 @@ void SWE::MySWESolver_ADERDG::adjustPointSolution(const double* const x,const do
   if (tarch::la::equals(t,0.0)) {
     initialData->getInitialData(x, Q); 
   }
-
+  static bool flipped = false;
+  //logError("adjustPointSolution", "Could introduce error into solution x[0]="<<x[0]<<" x[1]="<<x[1]<<" t= "<<t);
+#if defined(GenerateError)
+  //if (tarch::la::equals(t,0.138785,0.01)
+  //   && tarch::la::equals(x[0],5.0319,0.01) 
+  if (tarch::la::equals(t,0.138785,0.01)
+     && tarch::la::equals(x[0],3.0,0.2) 
+     && tarch::la::equals(x[1],3.0,0.2)
+#if defined USE_TMPI
+     && TMPI_IsLeadingRank()
+#endif	     
+     && !flipped)
+   {
+    logError("adjustPointSolution", "Introducing error into solution x[0]="<<x[0]<<" x[1]="<<x[1]<<" t= "<<t
+		     <<"Q[0]="<<Q[0]);
+    Q[0]=Q[0]*10;
+    flipped = true;
+  }
+#endif
 }
 
 void SWE::MySWESolver_ADERDG::boundaryValues(const double* const x,const double t,const double dt,const int faceIndex,const int normalNonZero,const double* const fluxIn,const double* const stateIn,const double* const gradStateIn,double* const fluxOut,double* const stateOut) {

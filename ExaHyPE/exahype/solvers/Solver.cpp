@@ -13,6 +13,9 @@
  * \author Dominic E. Charrier, Tobias Weinzierl
  **/
  
+#ifdef OffloadingUseProfiler
+#include "exahype/reactive/OffloadingProfiler.h"
+#endif
 #include "exahype/solvers/Solver.h"
 
 #include "exahype/Cell.h"
@@ -30,6 +33,9 @@
 #include "ADERDGSolver.h"
 #include "FiniteVolumesSolver.h"
 
+
+#include "tarch/timing/Watch.h"
+
 #ifdef USE_ITAC
 int exahype::solvers::Solver::waitUntilCompletedLastStepHandle  = 0;
 int exahype::solvers::Solver::ensureAllJobsHaveTerminatedHandle = 0;
@@ -42,6 +48,7 @@ exahype::DataHeap::HeapEntries exahype::EmptyDataHeapMessage(0);
 #endif
 
 tarch::multicore::BooleanSemaphore exahype::HeapSemaphore;
+tarch::multicore::BooleanSemaphore exahype::OffloadingSemaphore;
 
 exahype::DataHeap::HeapEntries& exahype::getDataHeapEntries(const int index) {
   assertion1(DataHeap::getInstance().isValidIndex(index),index);
@@ -120,10 +127,16 @@ bool exahype::solvers::Solver::SpawnCompressionAsBackgroundJob = false;
 
 exahype::solvers::Solver::JobSystemWaitBehaviourType exahype::solvers::Solver::JobSystemWaitBehaviour;
 
-std::atomic<int> exahype::solvers::Solver::NumberOfAMRBackgroundJobs(0);
-std::atomic<int> exahype::solvers::Solver::NumberOfReductionJobs(0);
-std::atomic<int> exahype::solvers::Solver::NumberOfEnclaveJobs(0);
-std::atomic<int> exahype::solvers::Solver::NumberOfSkeletonJobs(0);
+std::atomic<int> exahype::solvers::Solver::NumberOfAMRBackgroundJobs (0);
+std::atomic<int> exahype::solvers::Solver::NumberOfReductionJobs (0);
+std::atomic<int> exahype::solvers::Solver::NumberOfEnclaveJobs (0);
+std::atomic<int> exahype::solvers::Solver::NumberOfSkeletonJobs (0);
+std::atomic<int> exahype::solvers::Solver::NumberOfRemoteJobs (0);
+std::atomic<int> exahype::solvers::Solver::NumberOfStolenJobs (0);
+
+#ifdef USE_ITAC
+int event_wait = -1;
+#endif
 
 std::string exahype::solvers::Solver::toString(const JobType& jobType) {
   switch (jobType) {
@@ -158,8 +171,10 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
 
   int queuedJobs = getNumberOfQueuedJobs(jobType);
   bool finishedWait = queuedJobs == 0;
+  bool waitingForRemoteJobs = false;
 
   if ( !finishedWait ) {
+    //std::cerr<<"waitUntilAllBackgroundTasksHaveTerminated()"<< "waiting for " << queuedJobs << " background job(s) to complete (type=" << toString(jobType) << ").";
     #if defined(Asserts)
     logInfo("waitUntilAllBackgroundTasksHaveTerminated()",
       "waiting for " << queuedJobs << " background job(s) to complete (type=" << toString(jobType) << ").");
@@ -193,9 +208,14 @@ void exahype::solvers::Solver::ensureAllJobsHaveTerminated(JobType jobType) {
     }
     queuedJobs = getNumberOfQueuedJobs(jobType);
     finishedWait = queuedJobs == 0;
+    if (NumberOfRemoteJobs > 0 && NumberOfRemoteJobs == NumberOfEnclaveJobs
+        && !waitingForRemoteJobs && jobType == JobType::EnclaveJob) {
+      waitingForRemoteJobs = true;
+      logInfo("waitUntilAllBackgroundTasksHaveTerminated()",
+          "there are still " << NumberOfRemoteJobs << " remote background job(s) to complete!");
+    }
     maxNumberOfJobsAtOnce++;
   }
-
   #ifdef USE_ITAC
   VT_end(ensureAllJobsHaveTerminatedHandle);
   #endif
@@ -870,6 +890,14 @@ void exahype::solvers::Solver::mergeWithWorkerMeshUpdateEvent(
 */
   }
 }
+
+void exahype::solvers::Solver::waitUntilCompletedLastStepOffloading(
+    const void *cellDescription,
+    const bool waitForHighPriorityJob,
+    const bool receiveDanglingMessages ) {
+  //do nothing
+}
+
 #endif
 
 

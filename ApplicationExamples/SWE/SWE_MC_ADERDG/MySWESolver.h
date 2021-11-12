@@ -26,7 +26,13 @@ class SWE::MySWESolver: public exahype::solvers::LimitingADERDGSolver {
     static constexpr int Order                     = SWE::AbstractMySWESolver_ADERDG::Order;
     static constexpr int NumberOfGlobalObservables = SWE::AbstractMySWESolver_ADERDG::NumberOfGlobalObservables;
     static constexpr int NumberOfDMPObservables    = SWE::AbstractMySWESolver_ADERDG::NumberOfDMPObservables;
+    static constexpr int PatchSize                 = SWE::AbstractMySWESolver_FV::PatchSize;
     static constexpr int GhostLayerWidth           = SWE::AbstractMySWESolver_FV::GhostLayerWidth;
+      
+    // limiter projection matrices
+    double dg2fv[(Order+1)*PatchSize];
+    double fv2dg[(Order+1)*PatchSize];
+    double leg2lob[(Order+1)*(Order+1)];
       
     MySWESolver(
         const double maximumMeshSize,

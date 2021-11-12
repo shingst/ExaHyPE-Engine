@@ -205,7 +205,7 @@ def parseResultFile(filePath):
                 stats["unrefined_inner_cells_max"]  = max( stats["unrefined_inner_cells_max"], unrefinedInnerCells )
                 stats["unrefined_inner_cells_avg"] += unrefinedInnerCells
             # 154.448      [i22r02c02s11],rank:0 info         exahype::runners::Runner::startNewTimeStep(...)         step 20	t_min          =0.0015145
-            m = re.search("step(\s*)([0-9]+)(\s*)t_min",line)
+            m = re.search("step(\s*)([0-9]+)(\s*).*t_min",line)
             if m:
                 isPassedGridSetup = True
                 stats["run_time_steps"] = max(stats["run_time_steps"],float(m.group(2)))
@@ -225,7 +225,7 @@ def parseResultFile(filePath):
  
             anchor = '|'
             header = '||'
-            if anchor in line and header not in line:
+            if anchor in line and header not in line and "MODULES" not in line : #fixes a problem on SuperMUC-NG where anchor is part of some other output lines
                 segments = line.split('|')
                 adapter = segments[1].strip();
                 adapters[adapter]                   = {}
@@ -516,10 +516,16 @@ def parseSummedTimes(resultsFolderPath,projectName,timePerTimeStep=False):
               fused = False
             
             if timePerTimeStep and (fused and adapter in fusedAdapters) or (not fused and adapter in nonfusedAdapters):
-                summedCPUTimes[-1]            += float(line[cpuTimeColumn]) / float(line[runTimeStepsColumn])
-                summedUserTimes[-1]           += float(line[userTimeColumn]) / float(line[runTimeStepsColumn])
-                summedNormalisedCPUTimes[-1]  += float(line[normalisedCPUTimeColumn]) / float(line[runTimeStepsColumn])
-                summedNormalisedUserTimes[-1] += float(line[normalisedUserTimeColumn]) / float(line[runTimeStepsColumn])
+                normalization_factor = float(line[runTimeStepsColumn])
+                if (fused and adapter in fusedAdapters and int(line[iterationsColumn])/2!=normalization_factor):
+                  print("WARNING: number of time steps run does not match iterations count. Using adapted normalization_factor. You should only see this warning if you have used -DKSkipFirstTimeSteps!")
+                  print("Old normalization factor:", normalization_factor)
+                  normalization_factor = float(line[iterationsColumn])/2  # assumes two iterations per time step!
+                  print("WARNING: Assuming you tracked "+str(normalization_factor)+" fused time steps")
+                summedCPUTimes[-1]            += float(line[cpuTimeColumn]) / normalization_factor
+                summedUserTimes[-1]           += float(line[userTimeColumn])/ normalization_factor
+                summedNormalisedCPUTimes[-1]  += float(line[normalisedCPUTimeColumn]) / normalization_factor
+                summedNormalisedUserTimes[-1] += float(line[normalisedUserTimeColumn]) / normalization_factor
             elif not timePerTimeStep:
                 summedCPUTimes[-1]            += float(line[cpuTimeColumn])
                 summedUserTimes[-1]           += float(line[userTimeColumn])

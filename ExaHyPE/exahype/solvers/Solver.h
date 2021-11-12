@@ -52,10 +52,25 @@
 #include "exahype/records/FiniteVolumesCellDescription.h"
 
 #include <functional>
+#include <limits>
 
 #if defined(CompilerICC) && defined(SharedTBB)
 // See: https://www.threadingbuildingblocks.org/tutorial-intel-tbb-scalable-memory-allocator
 #include <tbb/cache_aligned_allocator.h> // prevents false sharing
+#endif
+
+
+namespace exahype {
+  namespace solvers{
+    class ADERDGSolver;
+    class LimitingADERDGSolver;
+  }
+}
+
+
+#include "exahype/reactive/ReactiveContext.h"
+#ifdef OffloadingUseProfiler
+#include "exahype/reactive/OffloadingProfiler.h"
 #endif
 
 #if defined(USE_ITAC_ALL) and !defined(USE_ITAC)
@@ -97,8 +112,13 @@ namespace exahype {
    *
    * All solvers must store the face data they send to neighbours at persistent addresses.
    */
-  #ifdef ALIGNMENT
-  #if defined(CompilerICC) && defined(SharedTBB)
+  #if defined(ALIGNMENT) || defined(UseSmartMPI)
+
+  #ifndef ALIGNMENT
+  #define ALIGNMENT 1
+  #endif
+
+  #if defined(CompilerICC) && defined(SharedTBB) && !defined(UseSmartMPI) //always go through SmartMPI with HeapAllocator
   typedef tbb::cache_aligned_allocator<double> AlignedAllocator;
   typedef tbb::cache_aligned_allocator<char> AlignedCharAllocator;
   #else
@@ -210,6 +230,13 @@ namespace exahype {
    * A semaphore for serialising heap access.
    */
   extern tarch::multicore::BooleanSemaphore HeapSemaphore;
+  
+  //todo: move somewhere else(?)
+  /**
+   * Semaphore that is used to guarantee mutual exclusion for
+   * offloading progress.
+   */
+  extern tarch::multicore::BooleanSemaphore OffloadingSemaphore;
 
 #ifdef Parallel
   /**
@@ -754,6 +781,7 @@ public:
    */
   static std::atomic<int> NumberOfSkeletonJobs;
 
+  static std::atomic<int> NumberOfStolenJobs;
   /**
    * The type of a solver.
    */
@@ -1089,6 +1117,7 @@ public:
 
   static int getNumberOfQueuedJobs(const JobType& jobType);
 
+  static std::atomic<int> NumberOfRemoteJobs;
 
   /**
    * Ensure that all background jobs (such as prediction or compression jobs) have terminated before progressing
@@ -1101,78 +1130,96 @@ public:
    */
   static void ensureAllJobsHaveTerminated(JobType jobType);
 
+ /**
+  * Waits until the @p cellDescription has completed its time step.
+  *
+  * Thread-safety
+  * -------------
+  *
+  * We only read (sample) the hasCompletedLastStep flag and thus do not need any locks.
+  * If this flag were to assume an undefined state, this would happen after the job working processing the
+  * cell description was completed. This routine will then do an extra iteration or finish.
+  * Either is fine.
+  *
+  * The flag is modified before a job is spawned and after it was processed.
+  * As the job cannot be processed before it is spawned, setting the flag
+  * is thread-safe.
+  *
+  * MPI
+  * ---
+  *
+  * Tries to receive dangling MPI messages while waiting if this
+  * is specified by the user.
+  *
+  *
+  * @note Only use receiveDanglingMessages=true if the routine
+  * is called from a serial context.
+  *
+  * @param cellDescription a cell description
+  * @param waitForHighPriorityJob a cell description's task was spawned as high priority job
+  * @param receiveDanglingMessages receive dangling messages while waiting
+  */
+ template <typename CellDescription>
+ void waitUntilCompletedLastStep(
+     const CellDescription& cellDescription,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) {
 
-  /**
-   * Waits until the @p cellDescription has completed its time step.
-   *
-   * Thread-safety
-   * -------------
-   *
-   * We only read (sample) the hasCompletedLastStep flag and thus do not need any locks.
-   * If this flag were to assume an undefined state, this would happen after the job working processing the
-   * cell description was completed. This routine will then do an extra iteration or finish.
-   * Either is fine.
-   *
-   * The flag is modified before a job is spawned and after it was processed.
-   * As the job cannot be processed before it is spawned, setting the flag
-   * is thread-safe.
-   *
-   * MPI
-   * ---
-   *
-   * Tries to receive dangling MPI messages while waiting if this
-   * is specified by the user.
-   *
-   * Work Stealing
-   * -------------
-   *
-   * Assume this rank has stolen jobs from another rank.
-   * If this routine actually waits, this indicates it has to wait for a local job
-   * and not for a stolen one.
-   * Therefore, we exclude stolen jobs from being processed by this routine.
-   *
-   * @note Only use receiveDanglingMessages=true if the routine
-   * is called from a serial context.
-   *
-   * @param cellDescription a cell description
-   * @param waitForHighPriorityJob a cell description's task was spawned as high priority job
-   * @param receiveDanglingMessages receive dangling messages while waiting
-   */
-  template <typename CellDescription>
-  void waitUntilCompletedLastStep(
-      const CellDescription& cellDescription,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) {
-    #ifdef USE_ITAC
+  #ifdef USE_ITAC
     VT_begin(waitUntilCompletedLastStepHandle);
-    #endif
+  #endif
+ 
 
-    if ( !cellDescription.getHasCompletedLastStep() ) {
-      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
-    }
-    while ( !cellDescription.getHasCompletedLastStep() ) {
-      #ifdef Parallel
-      {
-        tarch::multicore::RecursiveLock lock( tarch::services::Service::receiveDanglingMessagesSemaphore );
-        tarch::parallel::Node::getInstance().receiveDanglingMessages();
-        lock.free();
-      }
-      #endif
+ #ifdef OffloadingUseProfiler
+   exahype::reactive::OffloadingProfiler::getInstance().beginWaitForTasks();
+   double time_background = -MPI_Wtime();
+ #endif
+ 
+#if defined(Parallel)
+   if ( this->getType() == solvers::Solver::Type::ADERDG 
+        && exahype::reactive::ReactiveContext::getInstance().isReactiveOffloadingEnabled()) {
+      waitUntilCompletedLastStepOffloading((const void*) &cellDescription, waitForHighPriorityJob, receiveDanglingMessages);
+   }
+   else {
+#endif
+     if ( !cellDescription.getHasCompletedLastStep() ) {
+       peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
+     }
+      while ( !cellDescription.getHasCompletedLastStep() ) {
+        #if defined(Parallel) and !defined(noWaitsProgressMPI)
+        {
+          tarch::multicore::RecursiveLock lock( tarch::services::Service::receiveDanglingMessagesSemaphore, false );
+          if(lock.tryLock()) {
+             tarch::parallel::Node::getInstance().receiveDanglingMessages();
+             lock.free();
+          }
+        }
+        #endif
 
-      switch ( JobSystemWaitBehaviour ) {
-        case JobSystemWaitBehaviourType::ProcessJobsWithSamePriority:
-          tarch::multicore::jobs::processBackgroundJobs( 1, getTaskPriority(waitForHighPriorityJob) );
-          break;
-        case JobSystemWaitBehaviourType::ProcessAnyJobs:
-          tarch::multicore::jobs::processBackgroundJobs( 1 );
-          break;
-        default:
-          break;
+        switch ( JobSystemWaitBehaviour ) {
+          case JobSystemWaitBehaviourType::ProcessJobsWithSamePriority:
+            //wasIdle = !tarch::multicore::jobs::processBackgroundJobs( 1, -1, true );
+            tarch::multicore::jobs::processBackgroundJobs( 1, getTaskPriority(waitForHighPriorityJob), true );
+            break;
+          case JobSystemWaitBehaviourType::ProcessAnyJobs:
+            tarch::multicore::jobs::processBackgroundJobs( 1, -1, true );
+            break;
+          default:
+            break;
+        }
       }
-    }
-    #ifdef USE_ITAC
+#if defined(Parallel)
+   }
+#endif
+
+  #ifdef OffloadingUseProfiler
+    time_background += MPI_Wtime();
+    exahype::reactive::OffloadingProfiler::getInstance().endWaitForTasks(time_background);
+  #endif
+
+  #ifdef USE_ITAC
     VT_end(waitUntilCompletedLastStepHandle);
-    #endif
+  #endif
   }
-
+  
   /**
    * @return the default priority.
    */
@@ -1185,6 +1232,7 @@ public:
   static int getHighPriorityTaskPriority() {
     return tarch::multicore::DefaultPriority*2;
   }
+
   /**
    * @return a high priority if the argument is set to true. Otherwise,
    * the default priority.
@@ -2119,6 +2167,10 @@ public:
    */
 
  protected:
+  #if defined(Parallel)
+  virtual void waitUntilCompletedLastStepOffloading(const void *cellDescription, const bool waitForHighPriorityJob,const bool receiveDanglingMessages);
+  #endif
+
   /**
    * On coarser grids, the solver can hint on the eventual load or memory distribution
    * with this function.

@@ -18,17 +18,14 @@
       1000.0,
       1000.0
     ],
-    "max_mesh_setup_iterations": 400,
-    "outside_cells": 2,
-    "outside_cells_left": 1,
-    "one_third_of_cells_outside": false
+    "max_mesh_setup_iterations": 400
   },
   "shared_memory": {
     "cores": 16,
     "properties_file": "sharedmemory.properties",
     "autotuning_strategy": "dummy",
     "background_job_processing": "job_system",
-    "background_job_consumers": 1,
+    "background_job_consumers": 15,
     "min_background_jobs_in_one_rush": 1,
     "max_background_jobs_in_one_rush": 2147483647,
     "invasion_strategy": "no_invade",
@@ -66,8 +63,8 @@
       "type": "ADER-DG",
       "name": "NavierStokesSolver_ADERDG",
       "order": 4,
-      "maximum_mesh_size": 38.0,
-      "maximum_mesh_depth": 0,
+      "maximum_mesh_size": 400.0,
+      "maximum_mesh_depth": 2,
       "time_stepping": "global",
       "halo_cells": 0,
       "aderdg_kernel": {
@@ -80,7 +77,7 @@
         ],
         "space_time_predictor": {
           "fix_picard_iterations": false,
-          "split_ck": "disabled"
+          "split_ck": false
         },
         "optimised_terms": [],
         "optimised_kernel_debugging": [],

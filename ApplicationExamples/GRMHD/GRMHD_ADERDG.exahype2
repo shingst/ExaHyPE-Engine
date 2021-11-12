@@ -37,8 +37,11 @@
     "node_pool_strategy": "fair",
     "ranks_per_node": 6
   },
+  "stp_stats_tracing" : {
+     "stp_tracing_output_dir" : "test_stp"
+  },
   "optimisation": {
-    "fuse_algorithmic_steps": true,
+    "fuse_algorithmic_steps": "all",
     "spawn_predictor_as_background_thread": true,
     "spawn_update_as_background_thread": true,
     "spawn_amr_background_threads": true,

@@ -10,18 +10,22 @@
  * Released under the BSD 3 Open Source License.
  * For the full license text, see LICENSE.txt
  *
- * \author Dominic E. Charrier, Tobias Weinzierl, Jean-Matthieu Gallard, Fabian Güra
+ * \author Dominic E. Charrier, Tobias Weinzierl, Jean-Matthieu Gallard, Fabian Güra, Philipp Samfass
  **/
 
 #ifndef _EXAHYPE_SOLVERS_ADERDG_SOLVER_H_
 #define _EXAHYPE_SOLVERS_ADERDG_SOLVER_H_
 
+#include "exahype/solvers/Solver.h"
+
 #include <iostream>
 #include <string>
 #include <vector>
+#include <atomic>
 #include <tuple>
-
-#include "exahype/solvers/Solver.h"
+#include <functional>
+#include <mutex>
+#include <algorithm>
 
 #include "peano/heap/Heap.h"
 #include "peano/utils/Globals.h"
@@ -31,6 +35,37 @@
 
 #include "exahype/profilers/simple/NoOpProfiler.h"
 #include "exahype/records/ADERDGCellDescription.h"
+
+#include "exahype/solvers/OutcomeDatabase.h"
+
+#define OFFLOADING_SLOW_OPERATION_THRESHOLD 0.001
+
+#define NUM_REQUESTS_MIGRATABLE_COMM 1
+
+#if defined(OffloadingGradQhbnd)
+#define NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME 5
+#define NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME_OFFLOADING 4
+#else
+#define NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME 4
+#define NUM_REQUESTS_MIGRATABLE_COMM_SEND_OUTCOME_OFFLOADING 3
+#endif
+
+//some routines need to make progress to poll the unexpected message queue, determines how many loop iterations are done
+//this effectively constrains the work we're willing to spend in MPI for one progress call
+#define MAX_PROGRESS_ITS 10000
+
+#include "exahype/reactive/ReactiveContext.h"
+#include "exahype/reactive/Blacklist.h"
+#include "exahype/reactive/ResilienceStatistics.h"
+
+#if defined(SharedTBB)
+#include <tbb/concurrent_hash_map.h>
+#include <tbb/concurrent_queue.h>
+#include <tbb/task.h>
+#include <tbb/task_group.h>
+#endif
+#include <unordered_set>
+#include "tarch/multicore/Jobs.h"
 
 namespace exahype {
   namespace parser {
@@ -177,6 +212,24 @@ public:
    */
   typedef exahype::records::ADERDGCellDescription CellDescription;
   typedef peano::heap::RLEHeap<CellDescription> Heap;
+
+  static std::atomic<int> NumberOfReceiveJobs;
+  static std::atomic<int> NumberOfReceiveBackJobs;
+
+  static std::atomic<int> LocalStealableSTPCounter;
+
+  static std::atomic<int> CompletedSentSTPs;
+  static std::atomic<int> SentSTPs;
+  static std::atomic<int> ReceivedSTPs;
+  static std::atomic<int> AllocatedSTPs;
+  static std::atomic<int> AllocatedSTPsSend;
+  static std::atomic<int> AllocatedSTPsReceive;
+  
+  static std::atomic<int> NumberOfCheckJobs;
+
+  static std::atomic<bool> VetoEmergency;
+  static const CellDescription* LastEmergencyCell;
+  static tarch::multicore::BooleanSemaphore  EmergencySemaphore;
 
   /**
    * @return if this an ADER-DG solver which is not able to solve nonlinear problems.
@@ -892,6 +945,815 @@ private:
   static void prepareWorkerCellDescriptionAtMasterWorkerBoundary(
       CellDescription& cellDescription);
 
+  /**
+   * Computed task priority for migratable jobs.
+   * With task sharing, task priorities are shuffled such that teams --- assuming they are running in sync ---
+   * don't compute the same tasks at the same time.
+   */
+  static int getTaskPriorityLocalMigratableJob(int cellDescriptionsIndex,
+                                               int element,
+                                               double timeStamp,
+                                               bool isSkeleton);
+
+  static int getTaskPriorityCheckCorrectJob(bool isSkeleton);
+
+
+  /**
+   * A helper job that should run on every rank in the background while offloading
+   * is active. There should be exactly one single OffloadingManagerJob per rank.
+   * The OffloadingManagerJob is started and stopped in the FusedTimeStep and
+   * BroadcastAndDropNeighbourMessages mappings. It will terminate itself once
+   * all ranks have stopped their OffloadingManagerJob. The OffloadingManagerJob is
+   * required in order to dynamically receive tasks and make progress on MPI
+   * communication.
+   * If a progress thread should be used, the OffloadingManagerJob is directly spawned
+   * as a tbb::task that runs until the end of the program.
+   */
+#if defined(OffloadingUseProgressThread) && defined (SharedTBB)
+  class OffloadingManagerJob : public tbb::task{
+#else
+  class OffloadingManagerJob : public tarch::multicore::jobs::Job {
+#endif
+    public:
+      enum class State {
+        Running,
+        Resume,
+        Paused,
+        Terminate,
+       	Terminated
+      };
+	  OffloadingManagerJob(ADERDGSolver& solver);
+	  ~OffloadingManagerJob();
+	  bool run( bool isCalledOnMaster );
+#if defined(OffloadingUseProgressThread) && defined(SharedTBB)
+      tbb::task* execute();
+#endif
+      void pause();
+      void resume();
+      void terminate();
+    public:
+	      State 	_state;
+    private:
+	      ADERDGSolver& _solver;
+        bool _started;
+  };
+
+  class ReceiveJob : public tarch::multicore::jobs::Job {
+    public: 
+        ReceiveJob(ADERDGSolver& solver);
+        bool run( bool isCalledOnMaster );
+    private:
+        ADERDGSolver& _solver;
+  };
+
+  class ReceiveBackJob : public tarch::multicore::jobs::Job {
+    public: 
+        ReceiveBackJob(ADERDGSolver& solver);
+        bool run( bool isCalledOnMaster );
+    private:
+        ADERDGSolver& _solver;
+  };
+
+  /**
+   * Stores metadata (timestep sizes, time stamp, ...) of an offloaded task or its task outcome
+   */
+  class MigratablePredictionJobMetaData {
+    public: //todo: should be private but there are some issues with MigratableJob not being able to access private data as a friend
+      double _center[DIMENSIONS];
+      double _dx[DIMENSIONS];
+      double _predictorTimeStamp;
+      double _predictorTimeStepSize;
+      int    _element;
+      int    _originRank;
+      double  _errorIndicatorTimeStepSize;
+      double  _errorIndicatorDerivative;
+      double  _errorIndicatorAdmissibility;
+      bool   _isCorrupted;
+      char * _contiguousBuffer;
+
+      MigratablePredictionJobMetaData();
+      ~MigratablePredictionJobMetaData();
+
+      bool operator==(const MigratablePredictionJobMetaData &other) const {
+         //todo: may not work with SmartMPI
+         bool equal = true;
+         equal &= std::equal(&(_center[0]), &(_center[DIMENSIONS]), &(other._center[0]));
+         equal &= std::equal(&(_dx[0]), &(_dx[DIMENSIONS]), &(other._dx[0]));
+         equal &= _predictorTimeStamp == other._predictorTimeStamp;
+         equal &= _predictorTimeStepSize == other._predictorTimeStepSize;
+         equal &= _element == other._element;
+         equal &= _originRank == other._originRank;
+         equal &= _errorIndicatorTimeStepSize == other._errorIndicatorTimeStepSize;
+         equal &= _errorIndicatorDerivative == other._errorIndicatorDerivative;
+         equal &= _errorIndicatorAdmissibility == other._errorIndicatorAdmissibility;
+         return true;
+      }
+
+      std::string to_string() const;
+
+      char* getContiguousBuffer() const {
+        return _contiguousBuffer;
+      }
+
+      void* getMPIBuffer() const {
+      #if defined(UseSmartMPI) || defined(OffloadingMetadataPacked)
+        return _contiguousBuffer;
+      #else
+        return (void*)this;
+      #endif
+      }
+
+      static MPI_Datatype getMPIDatatype() {
+        return _datatype;
+      }
+
+      static size_t getMessageLen() {
+      #if defined(UseSmartMPI) || defined(OffloadingMetadataPacked)
+        return (2*DIMENSIONS+5)*sizeof(double)+2*sizeof(int)+1*sizeof(bool);
+      #else
+        return 1;
+      #endif
+      }
+
+      const double * getCenter() const {
+        return _center;
+      }
+
+      const double * getDx() const {
+        return _dx;
+      }
+
+      double getPredictorTimeStamp() const {
+        return _predictorTimeStamp;
+      }
+
+      double getPredictorTimeStepSize() const {
+        return _predictorTimeStepSize;
+      }
+
+      int getElement() const {
+        return _element;
+      }
+
+      int getOrigin() const {
+        return _originRank;
+      }
+
+      double getErrorIndicatorAdmissibility() const {
+        return _errorIndicatorAdmissibility;
+      }
+      
+      double getErrorIndicatorTimeStepSize() const {
+        return _errorIndicatorTimeStepSize;
+      }
+      
+      double getErrorIndicatorDerivative() const {
+        return _errorIndicatorDerivative;
+      }
+
+      void unpackContiguousBuffer();
+
+      static void initDatatype();
+      static void shutdownDatatype();
+
+    private:
+      static MPI_Datatype _datatype;
+
+  };
+
+  /**
+   * This class encapsulates all the data that a victim rank
+   * needs to store when it receives a migratable prediction job.
+   */
+  class MigratablePredictionJobData {
+    public:
+#if defined(ALIGNMENT) || defined(UseSmartMPI)
+      std::vector<double, AlignedAllocator> _luh; // ndata *ndof^DIM
+      std::vector<double, AlignedAllocator>	_lduh; // nvar *ndof^DIM
+      std::vector<double, AlignedAllocator> _lQhbnd;
+      std::vector<double, AlignedAllocator> _lFhbnd;
+      std::vector<double, AlignedAllocator> _lGradQhbnd;
+#else
+      std::vector<double> _luh; // ndata *ndof^DIM
+      std::vector<double> _lduh; // nvar *ndof^DIM
+      std::vector<double> _lQhbnd;
+      std::vector<double> _lFhbnd;
+      std::vector<double> _lGradQhbnd;
+#endif
+
+    MigratablePredictionJobMetaData  _metadata;
+
+    MigratablePredictionJobData(ADERDGSolver& solver);
+    ~MigratablePredictionJobData();
+
+    bool matches(const MigratablePredictionJobData& a) const;
+    //deleted copy constructor
+    MigratablePredictionJobData(const MigratablePredictionJobData&) = delete;
+    //deleted copy assignment operator
+    MigratablePredictionJobData& operator = (const MigratablePredictionJobData &) = delete;
+  };
+
+  /**
+   * A MigratablePredictionJob represents a PredictionJob that can be
+   * executed remotely on a different rank than the one where it
+   * was spawned.
+   */
+  class MigratablePredictionJob : public tarch::multicore::jobs::Job {
+    friend class exahype::solvers::ADERDGSolver;
+    friend class exahype::solvers::LimitingADERDGSolver;
+
+    private:
+      ADERDGSolver&               _solver;
+      const int                   _cellDescriptionsIndex;
+      const int                   _element;
+      const double                _predictorTimeStamp;
+      const double                _predictorTimeStepSize;
+      const int                   _originRank;
+      const int                   _tag;
+      const bool                  _isSkeleton;
+      double*                     _luh; // ndata *ndof^DIM
+      double*                     _lduh; // nvar *ndof^DIM
+      double*                     _lQhbnd;
+      double*                     _lFhbnd;
+      double*                     _lGradQhbnd;
+      double                      _center[DIMENSIONS];
+      double                      _dx[DIMENSIONS];
+      bool                        _isLocalReplica;
+      double                      _errorIndicatorTimeStepSize;
+      double                      _errorIndicatorDerivative;
+      double                      _errorIndicatorAdmissibility;
+      bool                        _isCorrupted;
+
+      static std::atomic<int> JobCounter;
+
+      //job entry method
+      bool run(bool calledFromMaster) override;
+
+      // actual execution of a STP job
+      bool runExecution(bool isCalledOnMaster);
+
+      void executeLocally();
+      void setFinished();
+      void copyOutcome(MigratablePredictionJobData *outcome);
+      void executeOrCopySTPOutcome(MigratablePredictionJobData *outcome, bool& hasComputed, bool& hasFlipped);
+      void shareSTPImmediatelyOrLater();
+
+      bool needToCheckThisSTP(bool hasComputed);
+      bool needToPutBackOutcome();
+      bool needToShare(bool hasOutcome, bool isTrustworthy, bool isOutcomeTrustworthy);
+
+      bool handleExecution(bool isCalledOnMaster, bool& hasComputed);
+      bool handleLocalExecution(bool isCalledOnMaster, bool& hasComputed);
+      bool handleRemoteExecution(bool& hasComputed);
+
+      bool tryToFindAndExtractEquivalentSharedOutcome(bool previous, DeliveryStatus &status, MigratablePredictionJobData **outcome);
+      void checkAgainstOutcomeAndCorrectIfActive(MigratablePredictionJobData *outcome);
+      void computeErrorIndicator(bool flipped);
+      bool corruptIfActive(bool force);
+
+      bool isRemoteJob() {
+        return (_originRank!= tarch::parallel::Node::getInstance().getRank());
+      }
+      void sendBackOutcomeToOrigin();
+      void packMetaData(MigratablePredictionJobMetaData *buffer);
+
+      std::string to_string() const;
+
+      MigratablePredictionJobMetaData getMetadata() const;
+
+    public:
+      // constructor for local jobs that can be stolen
+      MigratablePredictionJob(
+        ADERDGSolver&     solver,
+        const int cellDescriptionsIndex,
+        const int element,
+        const double predictorTimeStamp,
+        const double predictorTimeStepSize,
+        const bool isSkeletonJob //enables task outcome sharing for skeletons
+      );
+      // constructor for remote jobs that were received from another rank
+      MigratablePredictionJob(
+        ADERDGSolver&     solver,
+        int cellDescriptionsIndex,
+        int element,
+        const double predictorTimeStamp,
+        const double predictorTimeStepSize,
+        double *luh, double *lduh,
+        double *lQhbnd, double *lFhbnd,
+        double *lGradQhbnd,
+        double *dx, double *center,
+        const int originRank,
+        const int tag
+      );
+  
+      MigratablePredictionJob(const MigratablePredictionJob& stp) = delete;
+      ~MigratablePredictionJob();
+
+      // call-back method: called when a job has been sent back to its origin rank
+      static void sendBackHandler(
+        exahype::solvers::Solver* solver,
+        int tag,
+        int rank);
+      // call-back method: called when a job has been successfully offloaded to another rank
+      static void sendHandler(
+        exahype::solvers::Solver* solver,
+        int tag,
+        int rank);
+
+      static void sendHandlerTaskSharing(
+        exahype::solvers::Solver* solver,
+        int tag,
+        int rank);
+
+      // call-back method: called when a remotely executed job has been returned back
+      static void receiveBackHandler(
+        exahype::solvers::Solver* solver,
+        int tag,
+        int rank);
+      // call-back method: called when a job has been received from another rank
+      static void receiveHandler(
+        exahype::solvers::Solver* solver,
+        int tag,
+        int rank);
+
+      // call-back method: called when a job has been received from another rank
+      static void receiveHandlerTaskSharing(
+        exahype::solvers::Solver* solver,
+        int tag,
+        int rank);
+
+  };
+
+  enum class SDCCheckResult {NoCorruption, OutcomeHasZeroErrorIndicator, OutcomeIsMoreTrustworthy, MyOutcomeIsMoreOrEquallyTrustworthy};
+  void correctCellDescriptionWithOutcome(CellDescription& cellDescription, MigratablePredictionJobData *outcome);
+  SDCCheckResult checkCellDescriptionAgainstOutcome(CellDescription& cellDescription, MigratablePredictionJobData *outcome,
+                                                    double predictorTimeStamp,
+                                                    double predictorTimeStepSize,
+                                                    double errorIndicatorDerivative,
+                                                    double errorIndicatorTimeStepSize,
+                                                    double errorIndicatorAdmissibility);
+
+  class CheckAndCorrectSolutionJob : public tarch::multicore::jobs::Job {
+
+     private:
+       ADERDGSolver&               _solver;
+       CellDescription&            _solverPatch;
+       const double                _predictorTimeStamp;
+       const double                _predictorTimeStepSize;
+       const double                _errorIndicatorDerivative;
+       const double                _errorIndicatorTimeStepSize;
+       const double                _errorIndicatorAdmissibility;
+ 
+       const double                _startTimeStamp;
+       bool                        _printedTimeoutWarning;
+
+       bool run(bool runOnMasterThread) override;
+       SDCCheckResult checkAgainstOutcome(MigratablePredictionJobData *outcome);
+       bool tryToFindAndExtractEquivalentSharedOutcome(DeliveryStatus &status, MigratablePredictionJobData **outcome);
+       void correctWithOutcome(MigratablePredictionJobData *outcome);
+
+     public:
+       CheckAndCorrectSolutionJob(
+         ADERDGSolver&     solver,
+         CellDescription& solverPatch,
+         const double predictorTimeStamp,
+         const double predictorTimeStepSize,
+         const double errorIndicatorDerivative,
+         const double errorIndicatorTimeStepSize,
+         const double errorIndicatorAdmissibility,
+         bool isSkeleton
+       );
+
+       CheckAndCorrectSolutionJob(const CheckAndCorrectSolutionJob& stp) = delete;
+   };
+
+
+//todo: reactive extensions presently don't work without TBB -> need to get rid of TBB-specific containers eventually
+#if defined(SharedTBB)
+  /*
+   * These maps are needed for deallocating data that belongs to offloaded tasks
+   * and triggering a finished event on the cell description when a STP has finished
+   * and its data has been sent back.
+   */
+
+  tbb::concurrent_hash_map<std::pair<int,int>, MigratablePredictionJobData*> _mapTagRankToStolenData;
+  tbb::concurrent_hash_map<std::pair<int,int>, MigratablePredictionJobData*> _mapTagRankToReplicaData;
+  tbb::concurrent_hash_map<int, CellDescription*> _mapTagToCellDesc;
+  tbb::concurrent_hash_map<const CellDescription*, std::pair<int,int>> _mapCellDescToTagRank;
+  tbb::concurrent_hash_map<const CellDescription*, MigratablePredictionJob*> _mapCellDescToJob;
+  tbb::concurrent_hash_map<int, MigratablePredictionJobMetaData*> _mapTagToMetaData;
+  tbb::concurrent_hash_map<int, MigratablePredictionJobData*> _mapTagToSTPData;
+#endif
+
+  /*
+   * These vectors are used to avoid duplicate
+   * receives that may be induced by MPI_Iprobe.
+   */
+
+  /**
+   * Stores the tag of the last received task per rank.
+   */
+  std::vector<int> _lastReceiveTag;
+
+  /**
+   * See doc on _lastReceiveTag
+   */
+  std::vector<int> _lastReceiveBackTag;
+
+  /**
+   * Offloading manager job associated to the solver.
+   */
+  OffloadingManagerJob *_offloadingManagerJob;
+
+  // Status flags for coordinating termination/start of OffloadingManagerJob.
+
+  /**
+   * Indicates whether the offloading manager job has terminated.
+   */
+  std::atomic<bool> _offloadingManagerJobTerminated;
+
+  /**
+   * Indicates whether the offloading manager job has started.
+   */
+  std::atomic<bool> _offloadingManagerJobStarted;
+
+  /**
+   * If set, tells the offloading manager job that it should terminated itself.
+   */
+  std::atomic<bool> _offloadingManagerJobTriggerTerminate;
+
+  /**
+   * Limit the maximum number of iprobes in progressOffloading()
+   */
+  static std::atomic<int> MaxIprobesInOffloadingProgress;
+
+  /**
+   * If a MigratablePredictionJob has been spawned by the master thread,
+   * it can either be submitted to Peano's job system or be sent away
+   * to another rank.
+   */
+  void submitOrSendMigratablePredictionJob(MigratablePredictionJob *job);
+
+  struct JobTableKey {
+	  double center[DIMENSIONS];
+	  double timestamp;
+	  double timestepSize; //need this due to optimistic time stepping with rollbacks!
+	  int element;
+
+	  bool operator==(const JobTableKey &other) const {
+		  bool result =  true;
+		  for(int i=0; i<DIMENSIONS; i++)
+		   result &= center[i]==other.center[i];
+		  result &= timestamp == other.timestamp;
+		  result &= timestepSize == other.timestepSize;
+		  result &= element == other.element;
+		  return result;
+	  }
+
+	  /**
+	   * Unique hash function for a JobTableKey/task outcome
+	   */
+	  operator std::size_t() const {
+		  using std::hash;
+		  std::size_t result = 0;
+		  std::hash<double> hash_fn_db;
+		  std::hash<int> hash_fn_int;
+
+		  for( int i=0; i<DIMENSIONS; i++) {
+			result ^= hash_fn_db(center[i]);
+		  }
+		  result ^= hash_fn_db(timestamp);
+                  result ^= hash_fn_db(timestepSize);
+		  result ^= hash_fn_int(element);
+		  //logInfo("hash()", " center[0] = "<< center[0]
+		  //					<<" center[1] = "<< center[1]
+		  //		        <<" center[2] = "<< center[2]
+		  //				<<" time stamp = "<< timestamp
+		  //				<<" element = "<< element
+		  //     			<<" hash = "<< result);
+		  return result;
+	  }
+  };
+
+  std::vector<int> _lastReceiveReplicaTag;
+
+  class MigratablePredictionJobOutcomeKey {
+    friend class exahype::solvers::ADERDGSolver;
+    private:
+      double _center[DIMENSIONS];
+      double _timestamp;
+      double _timestepSize; //need this for optimistic time stepping with rollbacks!
+      int _element;
+
+    public:
+      MigratablePredictionJobOutcomeKey() {};
+      ~MigratablePredictionJobOutcomeKey() {};
+
+      MigratablePredictionJobOutcomeKey(const double *center, double timestamp, double timestepSize, int element)
+        : _timestamp(timestamp),
+          _timestepSize(timestepSize),
+          _element(element) {
+          for(int i = 0; i<DIMENSIONS; i++)
+            _center[i] = center[i];
+      }
+
+      bool operator==(const MigratablePredictionJobOutcomeKey &other) const {
+        bool result =  true;
+        for(int i=0; i<DIMENSIONS; i++)
+         result &= _center[i]==other._center[i];
+        result &= _timestamp == other._timestamp;
+        result &= _timestepSize == other._timestepSize;
+        result &= _element == other._element;
+        return result;
+      }
+
+      /**
+       * Unique hash function
+       */
+      operator std::size_t() const {
+        using std::hash;
+        std::size_t result = 0;
+        std::hash<double> hash_fn_db;
+        std::hash<int> hash_fn_int;
+
+        for( int i=0; i<DIMENSIONS; i++) {
+        result ^= hash_fn_db(_center[i]);
+        }
+        result ^= hash_fn_db(_timestamp);
+        result ^= hash_fn_db(_timestepSize);
+        result ^= hash_fn_int(_element);
+        return result;
+      }
+  };
+  OutcomeDatabase<MigratablePredictionJobOutcomeKey, MigratablePredictionJobData> _outcomeDatabase;
+#if defined(SharedTBB)
+  tbb::concurrent_hash_map<std::pair<int,int> , MigratablePredictionJobData*> _pendingOutcomesToBeShared;
+#endif
+
+  void storePendingOutcomeToBeShared(MigratablePredictionJob *job);
+  void storePendingOutcomeToBeShared(int cellDescriptionsIndex, int element, double timestamp, double timestep);
+  void releaseDummyOutcomeAndShare(int cellDescriptionsIndex, int element, double timestamp, double timestep, bool isTroubled);
+  void releasePendingOutcomeAndShare(int cellDescriptionsIndex, int element, double timestamp, double timestepSize, bool isTroubled);
+
+  bool tryToFindAndExtractOutcome(int cellDescriptionsIndex,
+                                  int element,
+                                  double predictionTimeStamp,
+                                  double predictorTimeStepSize,
+                                  DeliveryStatus &status,
+                                  MigratablePredictionJobData **outcome);
+
+  bool tryToFindAndExtractOutcome(CellDescription& cellDescription,
+                                  double predictionTimeStamp,
+                                  double predictorTimeStepSize,
+                                  DeliveryStatus &status,
+                                  MigratablePredictionJobData **outcome);
+
+
+  class ConcurrentJobKeysList {
+    private:
+      std::list<MigratablePredictionJobOutcomeKey> _keys;
+      std::mutex _mtx;
+
+    public:
+      ConcurrentJobKeysList() : _keys(), _mtx() {};
+
+      bool try_pop_front(MigratablePredictionJobOutcomeKey *result) {
+    	bool found = false;
+        _mtx.lock();
+        if(!_keys.empty()) {
+          *result = _keys.front();
+          _keys.pop_front();
+          found = true;
+        }
+        _mtx.unlock();
+        return found;
+      }
+
+      void push_front(MigratablePredictionJobOutcomeKey key) {
+        _mtx.lock();
+        _keys.push_front(key);
+        _mtx.unlock();
+      }
+
+      void push_back(MigratablePredictionJobOutcomeKey key) {
+        _mtx.lock();
+       _keys.push_back(key);
+       _mtx.unlock();
+      }
+
+      size_t unsafe_size() {
+    	return _keys.size();
+      }
+  };
+
+  ConcurrentJobKeysList _allocatedOutcomes;
+
+  /**
+   * Creates a MigratablePredictionJob from MigratablePredictionJobData.
+   */
+  MigratablePredictionJob* createFromData(
+      MigratablePredictionJobData *data,
+	    const int origin,
+	    const int tag);
+
+  void sendTaskOutcomeToOtherTeams(MigratablePredictionJob *job);
+
+  /**
+   *  Sends away data of a MigratablePredictionJob to a destination rank
+   *  using MPI offloading (SmartMPI).
+   */
+  bool mpiSendMigratablePredictionJobOutcomeOffload(
+      double *lduh,
+      double *lQhbnd,
+      double *lFhbnd,
+      double *lGradQhbnd,
+      int dest,
+      int tag,
+      MPI_Comm comm,
+      MigratablePredictionJobMetaData *metadata =nullptr);
+  
+  /**
+   *  Sends away data of a MigratablePredictionJob to a destination rank
+   *  using MPI offloading (SmartMPI) non-blockingly.
+   */
+  void mpiIsendMigratablePredictionJobOutcomeOffload(
+      double *lduh,
+      double *lQhbnd,
+      double *lFhbnd,
+      double *lGradQhbnd,
+      int dest,
+      int tag,
+      MPI_Comm comm,
+      MPI_Request *request,
+      MigratablePredictionJobMetaData *metadata =nullptr);
+
+  /**
+   *  Sends away data of a MigratablePredictionJob to a destination rank
+   *  using MPI offloading non-blockingly (SmartMPI).
+   */
+  void mpiIsendMigratablePredictionJobOffload(
+	  double *luh,
+	  int dest,
+	  int tag,
+	  MPI_Comm comm,
+	  MPI_Request *requests,
+	  MigratablePredictionJobMetaData *metadata =nullptr);
+
+  /**
+   * Sends away a MigratablePredictionJob to a destination rank.
+   */
+  void mpiIsendMigratablePredictionJob(
+	  double *luh,
+	  int dest,
+	  int tag,
+	  MPI_Comm comm,
+	  MPI_Request *requests,
+	  MigratablePredictionJobMetaData *metadata =nullptr);
+
+  /**
+   * Sends away a MigratablePredictionJob to a destination rank
+   * using MPI offloading (SmartMPI).
+   */
+  void mpiSendMigratablePredictionJobOffload(
+	  double *luh,
+	  int dest,
+	  int tag,
+	  MPI_Comm comm,
+	  MigratablePredictionJobMetaData *metadata =nullptr);
+
+  /**
+   * Sends away task outcome of a MigratablePredictionJob to a destination rank.
+   */
+  void mpiIsendMigratablePredictionJobOutcome(
+	  double *lduh,
+	  double *lQhbnd,
+	  double *lFhbnd,
+	  double *lGradQhbnd,
+	  int dest,
+	  int tag,
+	  MPI_Comm comm,
+	  MPI_Request *requests,
+	  MigratablePredictionJobMetaData *metadata =nullptr);
+
+  /**
+   * Sends away task outcome+solution of a MigratablePredictionJob to a destination rank.
+   */
+  void mpiIsendMigratablePredictionJobOutcomeSolution(
+    double *luh,
+    double *lduh,
+    double *lQhbnd,
+    double *lFhbnd,
+    double *lGradQhbnd,
+    int dest,
+    int tag,
+    MPI_Comm comm,
+    MPI_Request *requests,
+    MigratablePredictionJobMetaData *metadata =nullptr);
+
+  /**
+   * Receives a MigratablePredictionJob from a destination rank
+   * using MPI offloading (SmartMPI).
+   */
+  void mpiRecvMigratablePredictionJobOffload(
+	  double *luh,
+          int srcRank,
+	  int tag,
+	  MPI_Comm comm,
+    int rail,
+    MigratablePredictionJobMetaData *metadata =nullptr);
+
+  /**
+   * Receives a MigratablePredictionJob from a destination rank.
+   */
+  void mpiIrecvMigratablePredictionJob(
+	  double *luh,
+      int srcRank,
+   	  int tag,
+	  MPI_Comm comm,
+      MPI_Request *requests,
+      MigratablePredictionJobMetaData *metadata =nullptr);
+  
+  void mpiIrecvMigratablePredictionJobOffload(
+	  double *luh,
+      int srcRank,
+	  int tag,
+	  MPI_Comm comm,
+      int rail,
+      MPI_Request *requests,
+      MigratablePredictionJobMetaData *metadata =nullptr);
+
+  /**
+   * Receives task outcome of a MigratablePredictionJob from a destination rank.
+   */
+  void mpiIrecvMigratablePredictionJobOutcome(
+    double *lduh,
+    double *lQhbnd,
+    double *lFhbnd,
+    double *lGradQhbnd,
+    int srcRank,
+    int tag,
+    MPI_Comm comm,
+    MPI_Request *requests,
+    MigratablePredictionJobMetaData *metadata =nullptr);
+
+  /**
+   * Receives task outcome+solution of a MigratablePredictionJob from a destination rank.
+   */
+  void mpiIrecvMigratablePredictionJobOutcomeSolution(
+    double *luh,
+    double *lduh,
+    double *lQhbnd,
+    double *lFhbnd,
+    double *lGradQhbnd,
+    int srcRank,
+    int tag,
+    MPI_Comm comm,
+    MPI_Request *requests,
+    MigratablePredictionJobMetaData *metadata =nullptr);
+
+  /**
+   * Receives task outcome of a MigratablePredictionJob from a destination rank.
+   */
+  void mpiRecvMigratablePredictionJobOutcome(
+      double *lduh,
+      double *lQhbnd,
+      double *lFhbnd,
+      double *lGradQhbnd,
+      int srcRank,
+      int tag,
+      MPI_Comm comm,
+      MigratablePredictionJobMetaData *metadata =nullptr);
+
+  /**
+   * Receives task outcome of a MigratablePredictionJob from a destination rank using
+   * MPI offloading (SmartMPI).
+   */
+  void mpiRecvMigratablePredictionJobOutcomeOffload(
+      double *lduh,
+      double *lQhbnd,
+      double *lFhbnd,
+      double *lGradQhbnd,
+      int srcRank,
+      int tag,
+      MPI_Comm comm,
+      int rail,
+      MigratablePredictionJobMetaData *metadata =nullptr);
+
+  /**
+   * Receives task outcome of a MigratablePredictionJob from a destination rank using
+   * MPI offloading (SmartMPI) non-blockingly.
+   */
+  void mpiIrecvMigratablePredictionJobOutcomeOffload(
+      double *lduh,
+      double *lQhbnd,
+      double *lFhbnd,
+      double *lGradQhbnd,
+      int srcRank,
+      int tag,
+      MPI_Comm comm,
+      int rail,
+      MPI_Request *requests,
+      MigratablePredictionJobMetaData *metadata =nullptr);
 #endif
 
   /**
@@ -1939,6 +2801,21 @@ public:
    */
   void rollbackSolutionGlobally(const int solverNumber,CellInfo& cellInfo) const final override;
 
+  void computeTemporarySolutionWithPredictor(CellDescription& cellDescription, double *luhWithPredictor);
+
+  double computePredictorErrorIndicatorAdmissibility(double *luhWithPredictor, CellDescription& cellDescription);
+
+  double computePredictorErrorIndicatorTimeStep(double *luhWithPredictor, CellDescription& cellDescription, double predictorTimeStepSize);
+
+  double computePredictorErrorIndicatorDerivative(double *luhWithPredictor, CellDescription& cellDescription);
+  
+  void computePredictorErrorIndicators(CellDescription& cellDescription, 
+                                       double predictorTimeStepSize,
+                                       double *errorIndicatorDerivative,
+                                       double *errorIndicatorTimeStepSize,
+                                       double *errorIndicatorAdmissibility);
+  
+
   ///////////////////////////////////
   // NEIGHBOUR
   ///////////////////////////////////
@@ -2345,7 +3222,89 @@ public:
       const                                        int masterRank,
       const tarch::la::Vector<DIMENSIONS, double>& x,
       const int                                    level) override;
-  #endif
+
+#if defined(SharedTBB)
+  ///////////////////////////////////
+  // REACTIVE
+  ///////////////////////////////////
+
+  ///////////////////////////////////
+  // Communication
+  ///////////////////////////////////
+  /*
+   * Makes progress on all offloading-related MPI communication.
+   */
+  static void progressOffloading(
+      exahype::solvers::ADERDGSolver* solver,
+      bool isCalledOnMaster,
+      int maxIts);
+
+  static void receiveTaskOutcome(
+      int tag,
+      int src,
+      exahype::solvers::ADERDGSolver *solver,
+      int rail = -1);
+
+  static void receiveMigratableJob(
+      int tag,
+      int src,
+      exahype::solvers::ADERDGSolver *solver,
+      int rail=-1); //rail required for SmartMPI
+
+  static void receiveBackMigratableJob(
+      int tag,
+      int src,
+      exahype::solvers::ADERDGSolver *solver,
+      int rail=-1); //rail required for SmartMPI
+
+  static void pollForOutstandingCommunicationRequests(
+      exahype::solvers::ADERDGSolver *solver,
+      bool calledOnMaster,
+      int maxIts);
+
+  static bool tryToReceiveTaskBack(
+      exahype::solvers::ADERDGSolver* solver,
+      const void* cellDescription = nullptr);
+
+  void finishOutstandingInterTeamCommunication();
+
+
+
+  size_t getAdditionalCurrentMemoryUsageReplication();
+
+  static void setMaxNumberOfIprobesInProgressOffloading(int maxNumIprobes);
+
+  void cleanUpStaleTaskOutcomes(bool isFinal=false);
+
+  int getResponsibleRankForCellDescription(const void* cellDescription);
+
+  void getResponsibleRankTagForCellDescription(const void* cellDescription, int& rank, int& tag);
+
+
+  //// OffloadingManagerJob: takes care of progression of outstanding communication
+  /**
+   * Initializes an offloading manager job and submits it as a native TBB task (if progression is set to run a communication thread).
+   */
+  void initOffloadingManager();
+  /**
+   * Terminates offloading manager temporarily (only when used as background task).
+   */
+  void pauseOffloadingManager();
+
+  /**
+   * Resumes offloading manager, i.e., spawns it again as background task.
+   */
+  void resumeOffloadingManager();
+
+  /*
+   * Tells the offloading manager job that it's time for final termination.
+   */
+  void stopOffloadingManager();
+
+
+#endif /*SharedTBB*/
+
+#endif
 
   std::string toString() const override;
 
@@ -2750,6 +3709,78 @@ public:
       const double& previousMax) const {
      return specifiedRelaxationParameter;
   }
-};
 
+#if defined(SharedTBB) && defined(Parallel)
+  virtual void waitUntilCompletedLastStepOffloading(
+      const void* cellDescripPtr,const bool waitForHighPriorityJob,const bool receiveDanglingMessages) {
+ #ifdef USE_ITAC
+   VT_begin(waitUntilCompletedLastStepHandle);
+ #endif
+
+   const CellDescription& cellDescription = *((const CellDescription*) cellDescripPtr);
+   bool hasTriggeredEmergency = false;
+
+ #if !defined(OffloadingUseProgressThread)
+   setMaxNumberOfIprobesInProgressOffloading(1);
+ #endif
+   int myRank = tarch::parallel::Node::getInstance().getRank();
+   int responsibleRank = myRank;
+   responsibleRank = getResponsibleRankForCellDescription((const void*) &cellDescription);
+
+   if ( !cellDescription.getHasCompletedLastStep() ) {
+      peano::datatraversal::TaskSet::startToProcessBackgroundJobs();
+ #if !defined(OffloadingUseProgressThread)
+      if ( responsibleRank != myRank) {
+        //tarch::la::Vector<DIMENSIONS, double> center;
+        //center = cellDescription.getOffset()+0.5*cellDescription.getSize();
+      
+        //logInfo("waitUntil", "cell missing from responsible rank: "<<responsibleRank<<" center[0] = "<< center[0] 
+        //                              <<" center[1] = "<< center[1]
+        //                              <<" center[2] = "<< center[2]);
+        tryToReceiveTaskBack(this) ;
+      }
+ #endif
+    }
+    while ( !cellDescription.getHasCompletedLastStep() ) {
+ #if !defined(OffloadingUseProgressThread)
+      if ( responsibleRank != myRank ) {
+        tryToReceiveTaskBack(this);
+      }
+ #endif
+      //for task sharing without progression thread, it makes sense to not receive dangling messages here as there seems to
+      //be some contention for internal MPI locks or other resources
+      #if defined(Parallel) and !defined(noWaitsProgressMPI)
+      {
+         tarch::multicore::RecursiveLock lock( tarch::services::Service::receiveDanglingMessagesSemaphore,  false );
+         if(lock.tryLock()) {
+             tarch::parallel::Node::getInstance().receiveDanglingMessages();
+           lock.free();
+         } 
+      }
+      #endif
+
+      tarch::multicore::jobs::processBackgroundJobs( 1, getTaskPriority(waitForHighPriorityJob), true );
+
+      if( !cellDescription.getHasCompletedLastStep()
+          && !hasTriggeredEmergency
+          && myRank!=responsibleRank
+          && ( exahype::solvers::ADERDGSolver::NumberOfEnclaveJobs
+              -exahype::solvers::ADERDGSolver::NumberOfRemoteJobs)==0
+        )  {
+
+          hasTriggeredEmergency = true;
+          logInfo("waitUntilCompletedTimeStep()","EMERGENCY: missing from rank "<<responsibleRank);
+          exahype::reactive::Blacklist::getInstance().triggerEmergencyAndBlacklistRank(responsibleRank); //  each emergency needs to notify blacklist
+        }
+    }
+ #if !defined(OffloadingUseProgressThread)
+    exahype::solvers::ADERDGSolver::setMaxNumberOfIprobesInProgressOffloading( std::numeric_limits<int>::max() );
+ #endif
+
+ #ifdef USE_ITAC
+    VT_end(waitUntilCompletedLastStepHandle);
+ #endif
+  }
+#endif
+};
 #endif

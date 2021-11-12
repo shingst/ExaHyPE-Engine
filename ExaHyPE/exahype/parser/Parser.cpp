@@ -228,7 +228,7 @@ void exahype::parser::Parser::readFile(std::istream& inputStream, std::string fi
     _impl->data = json::parse(inputStream);
   } catch(json::parse_error& e) {
     logError("readFile()", "Could not read specification file " << filename
-      << " becaue the file is not a valid JSON file.");
+      << " because the file is not a valid JSON file.");
     logError("readFile()", "Syntax Error (Error type " << e.id << "): " << e.what() << " at byte position " << e.byte);
     logError("readFile()", "Hint: Please ensure the given specification file is of the novel JSON format. We recently "
       << "switched formats and if you have an old-style specification file, use the toolkit to translate it to JSON.");
@@ -342,7 +342,7 @@ std::string exahype::parser::Parser::getStringFromPath(std::string path, std::st
 bool exahype::parser::Parser::stringFromPathEquals(const std::string& path, const std::string& defaultValue,const bool isOptional, const std::string& otherString) const {
   assertion(isValid());
   try {
-    return _impl->getFromPath(path, defaultValue, isOptional).compare(otherString);
+    return _impl->getFromPath(path, defaultValue, isOptional).compare(otherString)==0;
   } catch(std::runtime_error& e) {
     logError("stringFromPathEquals()", e.what());
     invalidate();
@@ -1192,6 +1192,22 @@ std::string exahype::parser::Parser::getProfilingOutputFilename() const {
   return getStringFromPath("/profiling/profiling_output", "", isOptional);
 }
 
+std::string exahype::parser::Parser::getMemoryStatsOutputDir() const {
+  return getStringFromPath("/memory_monitoring/memory_stats_output_dir", "", isOptional);
+}
+
+int exahype::parser::Parser::getNoiseGenerationRRFrequency() const {
+  return getIntFromPath("/noise_generator/frequency", 1, isOptional);
+}
+
+double exahype::parser::Parser::getNoiseGenerationScalingFactor() const{
+  return getDoubleFromPath("/noise_generator/noise_factor", 0.5, isOptional);
+}
+
+double exahype::parser::Parser::getNoiseBaseTime() const{
+  return getDoubleFromPath("/noise_generator/noise_base_time", 1, isOptional);
+}
+
 void exahype::parser::Parser::checkSolverConsistency(int solverNumber) const {
   assertion1(solverNumber <
                  static_cast<int>(exahype::solvers::RegisteredSolvers.size()),
@@ -1337,4 +1353,166 @@ exahype::parser::Parser::TBBInvadeStrategy exahype::parser::Parser::getTBBInvade
   if (stringFromPathEquals("/shared_memory/invasion_strategy", "no_invade", true, "invade_at_time_step_startup_plus_throughout_computation")) return TBBInvadeStrategy::InvadeAtTimeStepStartupPlusThroughoutComputation;
 
   return TBBInvadeStrategy::Undef;
+}
+
+// Settings for reactive extensions
+exahype::parser::Parser::OffloadingStrategy exahype::parser::Parser::getOffloadingStrategy() const{
+  if (stringFromPathEquals("/distributed_memory/offloading_lb_strategy", "none", true, "reactive_diffusion")) {
+    return OffloadingStrategy::AggressiveHybrid;
+  }
+  if (stringFromPathEquals("/distributed_memory/offloading_lb_strategy", "none", true, "none")) {
+    return OffloadingStrategy::None;
+  }
+  if (stringFromPathEquals("/distributed_memory/offloading_lb_strategy", "none", true, "static_hardcoded")) {
+    return OffloadingStrategy::StaticHardcoded;
+  }
+  return OffloadingStrategy::None;
+}
+
+exahype::parser::Parser::ResilienceStrategy exahype::parser::Parser::getResilienceStrategy() const{
+  if (stringFromPathEquals("/resilience/task_sharing", "no", true, "no")) {
+    return ResilienceStrategy::None;
+  }
+  if (stringFromPathEquals("/resilience/task_sharing", "no", true, "task_sharing")) {
+    return ResilienceStrategy::TaskSharing;
+  }
+  if (stringFromPathEquals("/resilience/task_sharing", "no", true, "task_sharing_resilience_checks")) {
+    return ResilienceStrategy::TaskSharingResilienceChecks;
+  }
+  if (stringFromPathEquals("/resilience/task_sharing", "no", true, "task_sharing_resilience_correction")) {
+    return ResilienceStrategy::TaskSharingResilienceCorrection;
+  }
+  return ResilienceStrategy::None;
+}
+
+double exahype::parser::Parser::getCCPTemperatureOffloading() const {
+  double result = getDoubleFromPath("/distributed_memory/offloading_CCP_temperature", 0, isOptional); 
+  return result;
+}
+
+double exahype::parser::Parser::getDiffusionTemperatureOffloading() const{
+  double result = getDoubleFromPath("/distributed_memory/offloading_diffusion_temperature", 1, isOptional);
+  return result;
+}
+
+int exahype::parser::Parser::getCCPFrequencyOffloading() const{
+  int result = getIntFromPath("/distributed_memory/offloading_CCP_frequency", 0, isOptional);
+  return result;
+}
+
+int exahype::parser::Parser::getCCPStepsOffloading() const{
+  int result = getIntFromPath("/distributed_memory/offloading_CCP_steps", 0, isOptional);
+  return result;
+}
+
+bool exahype::parser::Parser::getUpdateTemperatureActivatedOffloading() const{
+  bool result = getBoolFromPath("/distributed_memory/offloading_update_temperature", true, isOptional);
+  return result;
+}
+
+double exahype::parser::Parser::getTempIncreaseThreshold() const{
+  double result = getDoubleFromPath("/distributed_memory/offloading_increase_temp_threshold", 1, isOptional);
+  return result;
+}
+
+int exahype::parser::Parser::getLocalStarvationThreshold() const{
+  int result = getIntFromPath("/distributed_memory/offloading_local_starvation_threshold", -1, isOptional);
+  return result;
+}
+
+std::string exahype::parser::Parser::getOffloadingInputFile() const {
+  std::string result = getStringFromPath("/distributed_memory/offloading_input_file","",isOptional);
+  return result;
+}
+
+std::string exahype::parser::Parser::getSTPTracingOutputDirName() const {
+  std::string result = getStringFromPath("/stp_stats_tracing/stp_tracing_output_dir","", isOptional);
+  return result;
+}
+
+int exahype::parser::Parser::getSTPTracingDumpInterval() const {
+  int result = getIntFromPath("/stp_stats_tracing/stp_tracing_frequency", 1 , isOptional);
+  return result;
+}
+
+bool exahype::parser::Parser::compareSoftErrorGenerationStrategy(const std::string& strategy) const  {
+  return getStringFromPath("/resilience/generate_soft_errors", "no", isOptional).compare(strategy)==0;
+}
+
+double exahype::parser::Parser::getFixedErrorForInjection() const {
+  return getDoubleFromPath("/resilience/error", 0, isOptional);
+}
+
+tarch::la::Vector<DIMENSIONS, double> exahype::parser::Parser::getErrorInjectionPosition() const {
+  //default is zero vector
+  tarch::la::Vector<DIMENSIONS, double> result;
+  if(hasPath("/resilience/injection_position")) {
+    std::string token;
+    result = getDimVectorFromPath("/resilience/injection_position");
+  }
+  return result;
+}
+
+double exahype::parser::Parser::getErrorInjectionTime() const {
+  return getDoubleFromPath("/resilience/injection_time", -1, isOptional);
+}
+
+int exahype::parser::Parser::getErrorInjectionRank() const {
+  return getIntFromPath("/resilience/injection_rank", 0, isOptional);
+}
+
+int exahype::parser::Parser::getErrorInjectionFrequency() const {
+  return getIntFromPath("/resilience/injection_frequency", 0, isOptional);
+}
+
+int exahype::parser::Parser::getMaxNumInjections() const {
+  return getIntFromPath("/resilience/max_injections", 1, isOptional);
+}
+
+double exahype::parser::Parser::getMaximumErrorIndicatorForDerivatives() const {
+  return getDoubleFromPath("/resilience/max_error_indicator_derivatives", 0.00, isOptional);
+}
+
+double exahype::parser::Parser::getMaximumErrorIndicatorForTimeStepSizes() const {
+  return getDoubleFromPath("/resilience/max_error_indicator_timestepsizes", 0.00, isOptional);
+}
+
+bool exahype::parser::Parser::getTryToSaveRedundantComputations() const {
+  return getBoolFromPath("/resilience/save_redundant_computations", false, isOptional);
+}
+
+bool exahype::parser::Parser::getMakeSkeletonsShareable() const {
+  return getBoolFromPath("/resilience/make_skeletons_shareable", false, isOptional);
+}
+
+bool exahype::parser::Parser::getCheckAllMigratableSTPs() const {
+  return getStringFromPath("/resilience/check_mechanism", "none", isOptional).compare("check_all_stps")==0;
+}
+
+bool exahype::parser::Parser::getCheckLimitedCellsOnly() const {
+  return getStringFromPath("/resilience/check_mechanism", "none", isOptional).compare("check_limited_after_update")==0;
+}
+
+bool exahype::parser::Parser::getCheckCorrupted() const {
+  return getStringFromPath("/resilience/check_mechanism", "none", isOptional).compare("check_corrupted_stps")==0;
+}
+
+bool exahype::parser::Parser::getCheckSTPsWithLowConfidence() const {
+  return getStringFromPath("/resilience/check_mechanism", "none", isOptional).compare("check_stps_with_low_confidence")==0;
+}
+
+bool exahype::parser::Parser::getCheckSTPConfidenceAdmissibility() const {
+  return getBoolFromPath("/resilience/check_admissibility", false, isOptional);;
+}
+
+bool exahype::parser::Parser::getCheckSTPConfidenceDerivatives() const {
+  return getBoolFromPath("/resilience/check_derivatives", false, isOptional);;
+}
+
+bool exahype::parser::Parser::getCheckSTPConfidenceTimeStepSizes() const {
+  return getBoolFromPath("/resilience/check_time_step_sizes", false, isOptional);;
+}
+
+bool exahype::parser::Parser::getCheckSTPsLazily() const {
+  return getBoolFromPath("/resilience/check_lazily", false, isOptional);;
 }

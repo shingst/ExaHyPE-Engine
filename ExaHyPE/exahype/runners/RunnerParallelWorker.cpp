@@ -15,6 +15,7 @@
 
 #ifdef Parallel
 #include "exahype/repositories/Repository.h"
+#include "exahype/mappings/FinaliseMeshRefinement.h"
 #include "peano/parallel/messages/ForkMessage.h"
 #include "peano/utils/Globals.h"
 #include "peano/utils/UserInterface.h"
@@ -26,13 +27,18 @@
 
 #include "exahype/Vertex.h"
 
-#if  defined(SharedMemoryParallelisation) && defined(PerformanceAnalysis)
+#include "exahype/reactive/StaticDistributor.h"
+#include "exahype/reactive/AggressiveHybridDistributor.h"
+#include "exahype/reactive/ReactiveContext.h"
+
+#if defined(SharedMemoryParallelisation) && defined(PerformanceAnalysis)
 #include "sharedmemoryoracles/OracleForOnePhaseWithShrinkingGrainSize.h"
 #include "peano/datatraversal/autotuning/Oracle.h"
 #endif
 
 int exahype::runners::Runner::runAsWorker(
     exahype::repositories::Repository& repository) {
+  SCOREP_USER_REGION( (std::string("exahype::runners::Runner::runAsWorker")).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
   int newMasterNode = tarch::parallel::NodePool::getInstance().waitForJob();
   while (newMasterNode !=
          tarch::parallel::NodePool::JobRequestMessageAnswerValues::Terminate) {
@@ -100,6 +106,7 @@ int exahype::runners::Runner::runAsWorker(
 
       // -------------------------------
 
+      //repository.logIterationStatistics(false);
       repository.terminate();
     } else if (newMasterNode ==
                tarch::parallel::NodePool::JobRequestMessageAnswerValues::
@@ -117,9 +124,29 @@ void exahype::runners::Runner::runGlobalStep() {
   assertion(!peano::parallel::loadbalancing::Oracle::getInstance()
                  .isLoadBalancingActivated());
 
-  // insert yourcode here
-  // -------------------------------
+  // For the static offloading strategy, we need to allgather load information
+  // from all ranks once and compute a new target load distribution.
+  switch(exahype::reactive::ReactiveContext::getInstance().getOffloadingStrategy()) {
+  case exahype::reactive::ReactiveContext::OffloadingStrategy::Static:
+    logInfo("runner(...)",
+            "running global step "<<exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells<<
+		        ", "<<exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells );
+    exahype::reactive::StaticDistributor::getInstance().computeNewLoadDistribution(
+      exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells,
+	    exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells);
+    break;
+  case exahype::reactive::ReactiveContext::OffloadingStrategy::AggressiveHybrid:
+    logInfo("runner(...)",
+          "running global step "<<exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells<<
+          ", "<<exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells );
+    exahype::reactive::AggressiveHybridDistributor::getInstance().computeIdealLoadDistribution(
+      exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells,
+      exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells);
+    exahype::reactive::AggressiveHybridDistributor::getInstance().enable();
+    break;
+  default:
+    break;
+  }
 
-  // -------------------------------
 }
 #endif

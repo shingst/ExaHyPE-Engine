@@ -1,0 +1,51 @@
+#!/bin/bash
+#SBATCH --account=pr48ma
+
+# Job Name and Files (also --job-name)
+#SBATCH -J {{job_name}}
+#SBATCH --partition={{class}}
+
+#Output and error (also --output, --error):
+#SBATCH -o {{output_file}}
+#SBATCH -e {{error_file}}
+
+#Initial working directory (also --chdir):
+# # #SBATCH -D ./
+
+#Notification and type
+#SBATCH --mail-type=END
+#SBATCH --mail-user={{mail}}
+
+# Wall clock limit:
+#SBATCH --time={{time}}
+#SBATCH --no-requeue
+
+#SBATCH --exclusive
+#SBATCH --mem=MaxMemPerNode
+
+# set number of nodes
+#SBATCH --nodes={{nodes}}
+#SBATCH --ntasks={{ranks}}
+#SBATCH --cpus-per-task={{coresPerRank}}
+
+. /etc/profile
+. /etc/profile.d/modules.sh
+. $HOME/.bashrc
+
+ulimit -s unlimited
+
+module unload python
+module load python/3.6_intel
+module load gcc
+module load tbb
+module load itac
+module load mpi.intel/2019
+
+export OMP_NUM_THREADS={{coresPerRank}}
+
+#mkdir TraceOutput
+
+# run the application
+echo "Running ExaHyPE"
+{{body}}
+echo "Done."

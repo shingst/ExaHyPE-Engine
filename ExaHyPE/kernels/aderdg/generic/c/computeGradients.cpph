@@ -32,6 +32,181 @@ inline constexpr int basisSizeD(int basisSize) {
     return basisSize * basisSize * (DIMENSIONS == 3 ? basisSize : 1);
 }
 
+inline double compareSecondDerivativesAndGetMeanMaxScaling(const double* const u1, const double* const u2, int order, int numberOfData, const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch) {
+  const int basisSize = order +1;
+
+  const int basisX = basisSize;
+  const int basisY = basisSize;
+  const int basisZ = DIMENSIONS == 3 ? basisSize : 1;
+
+  index idx_derivative(basisZ, basisY, basisX, numberOfData);
+  index idx_u(basisZ, basisY, basisX, numberOfData);
+ 
+  double sumScaling = 0;
+
+  //x direction
+  for(int z = 0; z<basisZ; z++) {
+    for(int y = 0; y<basisY; y++) {
+      for(int x = 0; x<basisX; x++) {
+        for(int v = 0; v<numberOfData; v++){
+            double tmp1 = 0;
+            double tmp2 = 0;
+            for(int n = 0; n<basisSize; n++) {
+              tmp1 += (1/(sizeOfPatch[0]*sizeOfPatch[0])) * u1[idx_u(z,y,n,v)] *
+                                                          kernels::legendre::basisFunctionSecondDerivative[order][n](kernels::legendre::nodes[order][x]);
+              tmp2 += (1/(sizeOfPatch[0]*sizeOfPatch[0])) * u2[idx_u(z,y,n,v)] *
+                                                          kernels::legendre::basisFunctionSecondDerivative[order][n](kernels::legendre::nodes[order][x]);
+            }
+            double tmp = std::abs(tmp1-tmp2)/std::abs(tmp2);
+            sumScaling += (tmp2<=1e-15 ? std::abs(tmp1) : tmp);
+        }
+      }
+    }
+  }
+
+  //y direction
+  for(int z = 0; z<basisZ; z++) {
+    for(int y = 0; y<basisY; y++) {
+      for(int x = 0; x<basisX; x++) {
+        for(int v = 0; v<numberOfData; v++){
+            double tmp1 = 0;
+            double tmp2 = 0;
+            for(int n = 0; n<basisSize; n++) {
+              tmp1 += (1/(sizeOfPatch[0]*sizeOfPatch[0])) * u1[idx_u(z,n,x,v)] *
+                                                          kernels::legendre::basisFunctionSecondDerivative[order][n](kernels::legendre::nodes[order][y]);
+              tmp2 += (1/(sizeOfPatch[0]*sizeOfPatch[0])) * u2[idx_u(z,n,x,v)] *
+                                                          kernels::legendre::basisFunctionSecondDerivative[order][n](kernels::legendre::nodes[order][y]);
+            }
+            double tmp = std::abs(tmp1-tmp2)/std::abs(tmp2);
+            sumScaling += (tmp2<=1e-15 ? std::abs(tmp1) : tmp);
+        }
+      }
+    }
+  }
+
+#if DIMENSIONS==3
+  for(int z = 0; z<basisZ; z++) {
+    for(int y = 0; y<basisY; y++) {
+      for(int x = 0; x<basisX; x++) {
+        for(int v = 0; v<numberOfData; v++){
+            double tmp1 = 0;
+            double tmp2 = 0;
+            for(int n = 0; n<basisSize; n++) {
+              tmp1 += (1/(sizeOfPatch[0]*sizeOfPatch[0])) * u1[idx_u(n,y,x,v)] *
+                                                          kernels::legendre::basisFunctionSecondDerivative[order][n](kernels::legendre::nodes[order][z]);
+              tmp2 += (1/(sizeOfPatch[0]*sizeOfPatch[0])) * u2[idx_u(n,y,x,v)] *
+                                                          kernels::legendre::basisFunctionSecondDerivative[order][n](kernels::legendre::nodes[order][z]);
+            }
+            double tmp = std::abs(tmp1-tmp2)/std::abs(tmp2);
+            sumScaling += (tmp2<=1e-15 ? std::abs(tmp1) : tmp);
+        }
+      }
+    }
+  }
+#endif
+  return sumScaling/(DIMENSIONS*numberOfData*basisX*basisY*basisZ);
+}
+
+//todo(Philipp): document and probably move somewhere else
+inline void computeSecondDerivatives(double *secondDerivatives, const double* const u, int direction, int order, int numberOfData, const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch) {
+ 
+  const int basisSize = order +1;
+  
+  const int basisX = basisSize;
+  const int basisY = basisSize;
+  const int basisZ = DIMENSIONS == 3 ? basisSize : 1;
+  
+  std::fill_n(secondDerivatives, numberOfData*basisX*basisY*basisZ, 0);
+  
+  index idx_derivative(basisZ, basisY, basisX, numberOfData);
+  index idx_u(basisZ, basisY, basisX, numberOfData);
+  
+  for(int z = 0; z<basisZ; z++) {
+    for(int y = 0; y<basisY; y++) {
+      for(int x = 0; x<basisX; x++) {
+        for(int v = 0; v<numberOfData; v++){ 
+          //x direction
+          if(direction==0) { //if can be taken out for optimization
+            for(int n = 0; n<basisSize; n++) {
+              secondDerivatives[idx_derivative(z,y,x,v)] += (1/(sizeOfPatch[0]*sizeOfPatch[0])) * u[idx_u(z,y,n,v)] *
+                                                          kernels::legendre::basisFunctionSecondDerivative[order][n](kernels::legendre::nodes[order][x]);
+            }
+          }
+          //y direction
+          else if (direction==1) {
+            for(int n = 0; n<basisSize; n++) {
+              secondDerivatives[idx_derivative(z,y,x,v)] += (1/(sizeOfPatch[1]*sizeOfPatch[1])) * u[idx_u(z,n,x,v)] *
+                                                          kernels::legendre::basisFunctionSecondDerivative[order][n](kernels::legendre::nodes[order][y]);
+            }
+          }
+          //z direction
+          else if (direction==2) {
+            for(int n = 0; n<basisSize; n++) {
+              secondDerivatives[idx_derivative(z,y,x,v)] += (1/(sizeOfPatch[2]*sizeOfPatch[2])) * u[idx_u(n,y,x,v)] *
+                                                          kernels::legendre::basisFunctionSecondDerivative[order][n](kernels::legendre::nodes[order][z]);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+inline void computeMaxAbsSecondDerivativesPerComponent(double *maxAbsDerivativesPerComponent, const double* const u, int direction, int order, int numberOfData, const tarch::la::Vector<DIMENSIONS, double>& sizeOfPatch) {
+ 
+  const int basisSize = order +1;
+  
+  const int basisX = basisSize;
+  const int basisY = basisSize;
+  const int basisZ = DIMENSIONS == 3 ? basisSize : 1;
+  
+  index idx_derivative(basisZ, basisY, basisX, numberOfData);
+  index idx_u(basisZ, basisY, basisX, numberOfData);
+  
+  double tmp_derivative = 0;
+  
+  std::fill_n(maxAbsDerivativesPerComponent, numberOfData, std::numeric_limits<double>::min());
+  
+  for(int z = 0; z<basisZ; z++) {
+    for(int y = 0; y<basisY; y++) {
+      for(int x = 0; x<basisX; x++) {
+        for(int v = 0; v<numberOfData; v++){ 
+          tmp_derivative = 0;
+          //x direction
+          if(direction==0) { //if can be taken out for optimization
+            for(int n = 0; n<basisSize; n++) {
+             tmp_derivative += (1/(sizeOfPatch[0]*sizeOfPatch[0])) * u[idx_u(z,y,n,v)] *
+                                                          kernels::legendre::basisFunctionSecondDerivative[order][n](kernels::legendre::nodes[order][x]);
+            }
+            if(std::abs(tmp_derivative)>maxAbsDerivativesPerComponent[v])
+              maxAbsDerivativesPerComponent[v] = std::abs(tmp_derivative);
+          }
+          //y direction
+          else if (direction==1) {
+            tmp_derivative = 0;
+            for(int n = 0; n<basisSize; n++) {
+              tmp_derivative += (1/(sizeOfPatch[1]*sizeOfPatch[1])) * u[idx_u(z,n,x,v)] *
+                                                          kernels::legendre::basisFunctionSecondDerivative[order][n](kernels::legendre::nodes[order][y]);
+            }
+            if(std::abs(tmp_derivative)>maxAbsDerivativesPerComponent[v])
+              maxAbsDerivativesPerComponent[v] = std::abs(tmp_derivative);;
+          }
+          //z direction
+          else if (direction==2) {
+            tmp_derivative = 0;
+            for(int n = 0; n<basisSize; n++) {
+              tmp_derivative += (1/(sizeOfPatch[2]*sizeOfPatch[2])) * u[idx_u(n,y,x,v)] *
+                                                          kernels::legendre::basisFunctionSecondDerivative[order][n](kernels::legendre::nodes[order][z]);
+            }
+            if(std::abs(tmp_derivative)>maxAbsDerivativesPerComponent[v])
+              maxAbsDerivativesPerComponent[v] = std::abs(tmp_derivative);
+          }
+        }
+      }
+    }
+  }
+}
+
 /**
  * Helper function to compute the gradients for *all* entries in Q with the 
  * ADER-DG scheme.

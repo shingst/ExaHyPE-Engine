@@ -28,13 +28,13 @@
 #include "tarch/multicore/Lock.h"
 
 #include "exahype/mappings/LevelwiseAdjacencyBookkeeping.h"
-
+#include "exahype/mappings/RefinementStatusSpreading.h"
 
 #include "exahype/VertexOperations.h"
 
 #include "exahype/solvers/LimitingADERDGSolver.h"
 
-#include "exahype/mappings/RefinementStatusSpreading.h"
+#include "exahype/reactive/AggressiveHybridDistributor.h"
 
 #include <sstream>
 
@@ -147,6 +147,11 @@ void exahype::mappings::MeshRefinement::beginIteration( exahype::State& solverSt
   if (! MetadataHeap::getInstance().validateThatIncomingJoinBuffersAreEmpty() ) {
       exit(-1);
   }
+  
+  // for mesh refinement, disable the reactive task distributor
+  if(exahype::reactive::ReactiveContext::getInstance().getOffloadingStrategy()
+     == exahype::reactive::ReactiveContext::OffloadingStrategy::AggressiveHybrid)
+    exahype::reactive::AggressiveHybridDistributor::getInstance().disable();  
   #endif
 }
 

@@ -13,6 +13,11 @@
  
 #include "exahype/mappings/FinaliseMeshRefinement.h"
 
+#include "exahype/reactive/ReactiveContext.h"
+#include "exahype/reactive/AggressiveHybridDistributor.h"
+#include "exahype/reactive/OffloadingAnalyser.h"
+#include "exahype/reactive/PerformanceMonitor.h"
+
 #include "tarch/multicore/Loop.h"
 
 #include "peano/datatraversal/autotuning/Oracle.h"
@@ -24,6 +29,14 @@
 
 #include "exahype/mappings/MeshRefinement.h"
 #include "exahype/mappings/RefinementStatusSpreading.h"
+
+
+#if defined(TMPI_Heartbeats)
+#include "exahype/reactive/HeartbeatJob.h"
+#endif
+
+int exahype::mappings::FinaliseMeshRefinement::NumberOfEnclaveCells = 0;
+int exahype::mappings::FinaliseMeshRefinement::NumberOfSkeletonCells = 0;
 
 peano::CommunicationSpecification
 exahype::mappings::FinaliseMeshRefinement::communicationSpecification() const {
@@ -83,6 +96,11 @@ exahype::mappings::FinaliseMeshRefinement::descendSpecification(int level) const
       peano::MappingSpecification::AvoidCoarseGridRaces,false);
 }
 
+void exahype::mappings::FinaliseMeshRefinement::initialiseLocalVariables(){
+  _numberOfEnclaveCells = 0;
+  _numberOfSkeletonCells = 0;
+}
+
 tarch::logging::Log exahype::mappings::FinaliseMeshRefinement::_log(
     "exahype::mappings::FinaliseMeshRefinement");
 
@@ -95,12 +113,15 @@ exahype::mappings::FinaliseMeshRefinement::~FinaliseMeshRefinement() {}
 #if defined(SharedMemoryParallelisation)
 exahype::mappings::FinaliseMeshRefinement::FinaliseMeshRefinement(const FinaliseMeshRefinement& masterThread) {
   _backgroundJobsHaveTerminated=masterThread._backgroundJobsHaveTerminated;
+  initialiseLocalVariables();
 }
 
 // Merge over threads
 void exahype::mappings::FinaliseMeshRefinement::mergeWithWorkerThread(
     const FinaliseMeshRefinement& workerThread) {
- // do nothing
+  //count number of enclave and skeleton cells
+  _numberOfEnclaveCells += workerThread._numberOfEnclaveCells;
+  _numberOfSkeletonCells += workerThread._numberOfSkeletonCells;
 }
 #endif
 
@@ -127,6 +148,7 @@ void exahype::mappings::FinaliseMeshRefinement::beginIteration(exahype::State& s
   // enforce reductions from worker side
   solverState.setReduceStateAndCell(true);
   #endif
+  initialiseLocalVariables();
 
   logTraceOutWith1Argument("beginIteration(State)", solverState);
 }
@@ -167,6 +189,16 @@ void exahype::mappings::FinaliseMeshRefinement::enterCell(
           limitingADERDGSolver->determineMinAndMax(solverNumber,cellInfo);
           assertion(limitingADERDGSolver->getMeshUpdateEvent()!=exahype::solvers::Solver::MeshUpdateEvent::IrregularLimiterDomainChange);
         }
+        
+        // determine numbers of enclave and skeleton cells, each leaf cell has a uniform weight
+        if (solver->getType()==exahype::solvers::Solver::Type::ADERDG || solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+          //auto* ADERDGSolver = static_cast<exahype::solvers::ADERDGSolver*>(solver);
+          if( !exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator))
+            _numberOfEnclaveCells += exahype::solvers::ADERDGSolver::computeWeight(cellInfo._cellDescriptionsIndex);
+          else if( exahype::Cell::isAtRemoteBoundary(fineGridVertices,fineGridVerticesEnumerator))
+            _numberOfSkeletonCells += exahype::solvers::ADERDGSolver::computeWeight(cellInfo._cellDescriptionsIndex);
+        }
+        
       }
     }
   }
@@ -192,6 +224,37 @@ void exahype::mappings::FinaliseMeshRefinement::endIteration(
     }
   }
 
+  NumberOfEnclaveCells = _numberOfEnclaveCells;
+  NumberOfSkeletonCells = _numberOfSkeletonCells;
+#if defined(SharedTBB) && defined(Parallel)
+  //pass info on numbers of cells to performance monitor
+  exahype::reactive::PerformanceMonitor::getInstance().setTasksPerTimestep(_numberOfEnclaveCells + _numberOfSkeletonCells);
+
+  //start offloading manager background job
+  if(exahype::reactive::ReactiveContext::getInstance().isReactivityEnabled()) {
+    for (auto* solver : exahype::solvers::RegisteredSolvers) {
+      if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
+        static_cast<exahype::solvers::ADERDGSolver*>(solver)->initOffloadingManager();
+      }
+      if (solver->getType()==exahype::solvers::Solver::Type::LimitingADERDG) {
+        static_cast<exahype::solvers::LimitingADERDGSolver*>(solver)->initOffloadingManager();
+      }
+    }
+  }
+
+  if(exahype::reactive::ReactiveContext::getInstance().getOffloadingStrategy()
+   ==  exahype::reactive::ReactiveContext::OffloadingStrategy::AggressiveHybrid) {
+    // 
+    exahype::reactive::AggressiveHybridDistributor::getInstance().resetTasksToOffload();
+    exahype::reactive::OffloadingAnalyser::getInstance().resetWaitingTimes(); //makes sure that grid refinement does not influence diffusion
+    exahype::reactive::AggressiveHybridDistributor::getInstance().enable();
+  }
+
+#if defined(TMPI_Heartbeats)
+  //start heartbeat job after mesh refinement
+  exahype::reactive::HeartbeatJob::startHeartbeatJob();
+#endif
+#endif
   _backgroundJobsHaveTerminated = false;
 }
 

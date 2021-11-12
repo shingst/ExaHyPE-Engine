@@ -332,6 +332,7 @@ void Euler::EulerSolver_ADERDG::adjustPointSolution(const double* const x,const 
     referenceSolution(x,0.0,Q);
   }
   //referenceSolution(x,0.0,Q);
+
 }
 
 exahype::solvers::Solver::RefinementControl

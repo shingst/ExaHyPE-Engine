@@ -72,6 +72,42 @@ ifeq ($(DISTRIBUTEDMEM),)
 {% endif %}
 endif
 
+{% if offloading!="none" %}
+PROJECT_CFLAGS += -DPerformanceAnalysis
+{% if offloadingProgress=="none" %}
+PROJECT_CFLAGS += -DnoMPIWaitsProcessJobs
+{% endif %}
+{% endif %}
+
+{% if useTasksharing %}
+PROJECT_CFLAGS += -DUSE_TMPI  
+{% if offloadingProgress=="none" %}
+PROJECT_CFLAGS += -DnoMPIWaitsProcessJobs
+{% endif %}
+{% endif %}
+
+{% if useNoiseGenerator %}
+PROJECT_CFLAGS += -DGenerateNoise
+{% endif %}
+
+{% if useSTPStatsTracing %}
+PROJECT_CFLAGS += -DFileTrace -DPicard
+{% endif %}
+
+{% if offloadingProgress=="progress_thread" %}
+PROJECT_CFLAGS += -DOffloadingUseProgressThread
+{% elif offloadingProgress=="mpithreadsplit" %}
+PROJECT_CFLAGS +=  -DUseMPIThreadSplit
+{% elif offloadingProgress=="smartmpi" %}
+PROJECT_CFLAGS +=  -DUseSmartMPI -DOffloadingNoEarlyReceiveBacks
+{% elif offloadingProgress=="smartmpi_nb" %}
+PROJECT_CFLAGS +=  -DUseSmartMPI -DSmartMPINB -DOffloadingNoEarlyReceiveBacks
+{% endif %}
+
+{% if useViscousFlux and (offloading!="none" or tasksharingMode!="no") %}
+PROJECT_CFLAGS += -DOffloadingGradQhbnd
+{% endif %}
+
 # If using TBB only, link pthread (comment this if you want to link a specific pthread)
 ifeq ($(call tolower,$(SHAREDMEM)),tbb)
     ifeq ($(call tolower,$(DISTRIBUTEDMEM)),none)

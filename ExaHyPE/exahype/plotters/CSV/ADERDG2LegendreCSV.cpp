@@ -39,7 +39,7 @@ exahype::plotters::ADERDG2LegendreCSV::ADERDG2LegendreCSV(exahype::plotters::Plo
   comment("#"),
   seperator("\t"),
   endl("\n"),
-  precision(8),
+  precision(16),
   fileCounter(-1),
   basicFilename("undefined"),
   appendix(".csv"),
@@ -52,7 +52,7 @@ exahype::plotters::ADERDG2LegendreCSV::ADERDG2LegendreCSV(exahype::plotters::Plo
 exahype::plotters::ADERDG2LegendreCSV::~ADERDG2LegendreCSV() {}
 
 void exahype::plotters::ADERDG2LegendreCSV::init(const std::string& filename, int orderPlusOne, int  unknowns, int writtenUnknowns,  exahype::parser::ParserView plotterParameters) {
-	this->basicFilename     = basicFilename;
+	this->basicFilename     = filename;
 	this->order             = orderPlusOne-1;
 	this->solverUnknowns    = unknowns;
 	this->writtenUnknowns   = writtenUnknowns;
@@ -76,7 +76,7 @@ void exahype::plotters::ADERDG2LegendreCSV::openNewFile() {
 	cur_filename << basicFilename << "-" << fileCounter << appendix;
 	ofs.open(cur_filename.str(), std::ofstream::out);
 	ofs << std::setprecision(precision);
-	writeHeader();
+	//writeHeader();
 }
 
 void exahype::plotters::ADERDG2LegendreCSV::finishPlotting() {

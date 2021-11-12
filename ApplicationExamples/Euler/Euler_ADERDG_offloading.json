@@ -1,0 +1,113 @@
+{
+  "project_name": "Euler",
+  "paths": {
+    "peano_kernel_path": "./Peano",
+    "exahype_path": "./ExaHyPE",
+    "output_directory": "./ApplicationExamples/Euler/Euler_ADERDG"
+  },
+  "architecture": "hsw",
+  "computational_domain": {
+    "dimension": 3,
+    "time_steps": 100,
+    "offset": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "width": [
+      1.0,
+      1.0,
+      1.0
+    ]
+  },
+  "shared_memory": {
+    "cores": 2,
+    "properties_file": "sharedmemory.properties",
+    "autotuning_strategy": "dummy"
+  },
+  "distributed_memory": {
+    "offloading_lb_strategy": "none",
+    "offloading_input_file" : "",
+    "offloading_progress" : "none",
+    "offloading_CCP_temperature" : 0,
+    "offloading_diffusion_temperature" : 1,
+    "offloading_CCP_frequency" : 0,
+    "offloading_CCP_steps" : 0,
+    "offloading_update_temperature" : true,
+    "offloading_increase_temp_threshold" : 1.0,
+    "timeout": 12000,
+    "load_balancing_type": "static",
+    "buffer_size"            : 1600,
+    "load_balancing_strategy": "hotspot",
+    "node_pool_strategy": "fair",
+    "ranks_per_node"         : 1
+  },
+  "resilience" : {
+    "task_sharing" : "no",
+    "generate_soft_errors" : "migratable_stp_tasks_overwrite",
+    "check_mechanism" : "none"
+  },
+  "_stp_stats_tracing" : {
+    "stp_tracing_output_dir" : "./test"
+  },
+  "optimisation": {
+    "fuse_algorithmic_steps": "all",
+    "fuse_algorithmic_steps_rerun_factor": 0.99,
+    "fuse_algorithmic_steps_diffusion_factor": 0.99,
+    "spawn_predictor_as_background_thread": true,
+    "spawn_amr_background_threads": true,
+    "disable_vertex_exchange_in_time_steps": true,
+    "time_step_batch_factor": 0.5,
+    "disable_metadata_exchange_in_batched_time_steps": true,
+    "double_compression": 0.0,
+    "spawn_double_compression_as_background_thread": false
+  },
+  "solvers": [
+    {
+      "type": "ADER-DG",
+      "name": "EulerSolver_ADERDG",
+      "order": 5,
+      "maximum_mesh_size": 0.3,
+      "time_stepping": "global",
+      "aderdg_kernel": {
+        "language": "C",
+        "nonlinear": true,
+        "terms": [
+          "flux"
+        ],
+        "space_time_predictor": {},
+        "optimised_terms": [],
+        "optimised_kernel_debugging": [],
+        "implementation": "generic"
+      },
+      "point_sources": 0,
+      "variables": [
+        {
+          "name": "rho",
+          "multiplicity": 1
+        },
+        {
+          "name": "j",
+          "multiplicity": 3
+        },
+        {
+          "name": "E",
+          "multiplicity": 1
+        }
+      ],
+      "parameters": {
+        "reference": "entropywave"
+      },
+      "plotters": [
+        {
+          "type": "user::defined",
+          "name": "ErrorWriter",
+          "time": 0.0,
+          "repeat": 0.001,
+          "output": "not-available",
+          "variables": 5
+        }
+      ]
+    }
+  ]
+}

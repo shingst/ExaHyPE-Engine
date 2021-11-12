@@ -20,7 +20,7 @@ info mpibalancing -1 black
 info  peano::parallel::SendReceiveBufferAbstractImplementation::releaseSentMessages -1 black
 
 info  sharedmemoryoracles        -1  black
-
+info Euler -1 black
 info  Z4Solver                                -1  black
 info  exahype::solvers::Plotter               -1  black
 info  exahype::runner::Runner::runAsWorker    -1  black

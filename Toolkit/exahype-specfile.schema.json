@@ -167,6 +167,59 @@
         "measure_cell_processing_times_iter" : ["measure_cell_processing_times"]
       }
     },
+    "_noise_generator" : {},
+    "noise_generator" : {
+      "type" : "object",
+      "properties" : {
+         "enable" : {
+            "type" : "boolean",
+            "title" : "If set, noise is generated",
+            "default" : false
+         },
+         "round_robin_frequency" : {
+            "type" : "integer",
+            "title " : "Sets number of time steps after which the disturbed rank changes",
+            "scope" : "run-time",
+            "minimum" : 1,
+            "default" : 1 
+         },
+         "noise_factor" : {
+            "type" : "number",
+            "title" : "Controls how much a disturbed rank is affected by noise",
+            "scope" : "run-time",
+            "minimum" : 0,
+            "default" : 0.5
+         }
+      }
+    },
+    "_stp_stats_tracing" : {},
+    "stp_stats_tracing" : {
+      "type" : "object",
+      "properties" : {
+        "stp_tracing_output_dir" : {
+          "type" : "string", 
+          "title" : "The directory to store STP statistics into.", 
+          "default" : ""
+        },
+        "stp_tracing_frequency" : {
+          "type" : "integer",
+          "title" : "Sets number of time steps after which the cumulative STP statistics are dumped",
+          "scope"  : "run-time",
+          "default" : 1
+        }
+      }
+    },
+    "_memory_monitoring" : {},
+    "memory_monitoring" : {
+      "type" : "object",
+      "properties" : {
+        "memory_stats_output_dir" : {
+          "type" : "string", 
+          "title" : "The directory to store memory statistics into.", 
+          "default" : ""
+        }
+      }
+    },
     "architecture" : {
       "type" : "string", 
       "title" : "Computational target architecture", 
@@ -371,6 +424,116 @@
         }
       }
     }, 
+    "_resilience" : { },
+    "resilience" : { 
+      "type" : "object",
+      "used-by" : "toolkit",
+      "scope" : "run-time",
+      "properties" : { 
+        "task_sharing": {
+          "type" : "string",
+          "title" : "Task sharing mode between teams (requires teaMPI): task outcomes can be merely shared or shared + checked for soft resilience (experimental) or shared + recovered from soft errors (experimental).",
+          "enum" : ["no","task_sharing","task_sharing_resilience_checks","task_sharing_resilience_correction"],
+          "default" : "no"
+        }, 
+        "save_redundant_computation": { 
+          "type" : "boolean",
+          "title": "Specifies whether ExaHyPE attempts to save redundant computations by reusing shared outcomes (requires task sharing). This can make undetected silent errors propagate to other teams.",
+          "default" : true
+        },
+        "make_skeletons_shareable": { 
+          "type" : "boolean",
+          "title" : "Specifies whether task sharing should also share the outcome of skeleton tasks (not to be used with task offloading!).",
+          "default" : false
+        },
+        "generate_soft_errors" : { 
+          "type" : "string",
+          "title" : "Specifies whether and how soft-errors should be artifically generated.",
+          "enum" : ["no","migratable_stp_tasks_bitflip", "migratable_stp_tasks_overwrite", "migratable_stp_tasks_overwrite_random", "migratable_stp_tasks_overwrite_hardcoded"],
+          "default" : "no"
+         },
+         "check_mechanism" : { 
+          "type" : "string",
+          "title" : "Specifies which results in ADER-DG should be checked for soft errors (checking requires teaMPI + tasksharing with resilience checks).",
+          "enum" : ["none", "check_limited_after_update", "check_all_stps", "check_stps_with_low_confidence", "check_corrupted_stps"],
+          "default" : "none"
+         },
+         "error" : {
+            "type" : "number",
+            "title" : "Error of fixed value that should be introduced with error injection (only overwrite) into the STP update: a coefficient in the Lagrange polynomial is modified by this error.",
+            "scope" : "run-time",
+            "default" : 0
+         },
+         "max_error_indicator_timestepsizes" : {
+            "type" : "number",
+            "title" : "Specifies the maximum error indicator for the time step size criterion below which a task outcome is considered as being trustworthy.",
+            "scope" : "run-time",
+            "default" : 0.0
+         },
+         "max_error_indicator_derivatives" : {
+            "type" : "number",
+            "title" : "Specifies the maximum error indicator for the derivatives criterion below which a task outcome is considered as being trustworthy.",
+            "scope" : "run-time",
+            "default" : 0.0
+         },
+         "injection_position" : {
+            "type" : "array",
+            "default" : [0.0, 0.0, 0.0],
+            "items" : {
+              "type" : "number", 
+              "title" : "The spatial position of the node the error should be injected.",
+              "scope" : "run-time"
+            },
+            "$comment" : "We wait for a solution to: https://stackoverflow.com/questions/27597825/assigning-maxitems-property-in-an-array-in-json-schema-equal-to-some-other-prope",
+            "minItems" : 2,
+            "maxItems" : 3
+        },
+        "injection_time" : {
+            "type" : "number",
+            "title" : "Time stamp at which the error should be injected.",
+            "scope" : "run-time",
+            "default" : -1
+        },
+        "injection_rank" : {
+            "type" : "number",
+            "title" : "Rank on which the error should be injected.",
+            "scope" : "run-time",
+            "default" : 0
+        },
+	"max_injections" : {
+            "type" : "number",
+	    "title" : "Limits the maximum number of injected errors",
+	    "scope" : "run-time",
+	    "default" : 1
+        },
+        "injection_frequency": { 
+           "type" : "number",
+           "title": "Controls after how many STPs the next error should be injected (migratable_stp_tasks_bitflip, migratable_stp_tasks_overwrite, migratable_stp_tasks_overwrite_random) or after how many time steps each error should be injected (migratable_stp_tasks_hardcoded).",
+           "scope" : "run-time",
+           "default" : 0
+        },
+        "check_admissibility" : {
+           "type" : "boolean", 
+           "title" : "Use admissibility checks as error indicator.",
+           "default" : false
+         },
+         "check_derivatives" : {
+           "type" : "boolean", 
+           "title" : "Use second derivatives changes as error indicator.",
+           "default" : false
+         },
+         "check_time_step_sizes" : {
+           "type" : "boolean", 
+           "title" : "Use changes in admissible time step sizes as error indicator.",
+           "default" : false
+         },
+         "check_lazily" : {
+           "type" : "boolean", 
+           "title" : "Check error indicators lazily for improved performance (typically looses sensitivity).",
+           "default" : false
+         }
+      }
+    },
     "_distributed_memory" : {},
     "distributed_memory" : {
       "type" : "object", 
@@ -439,7 +602,61 @@
           "title" : "Timeout for MPI packages in seconds before the simulation is killed", 
           "default" : 60,
           "old_format" : { "token_after" : "timeout" }
-        }, 
+        },
+        "offloading_lb_strategy" : {
+          "type" : "string", 
+          "title" : "Offloading strategy for non-persistent task-based diffusive load balancing (runs only with TBB enabled).",  
+          "enum"  : ["none",  "static_hardcoded", "reactive_diffusion"],
+          "default" : "none",
+          "old_format" : { "token_after" : "offloading_lb_strategy" }
+        },
+        "offloading_progress": {
+          "type" : "string",
+          "scope" : "compile-time",
+          "title": "Sets progression mode in MPI for offloading-related communication. This is a compile-time flag.",
+          "enum" : ["none","progress_thread", "smartmpi", "smartmpi_nb", "mpithreadsplit"],
+          "default": "none"
+        },
+        "offloading_CCP_temperature" : {
+              "type" : "number",
+              "title" : "The initial temperature for chains-on-chains (CCP) approximation .",
+              "default" : 1.0
+        },
+        "offloading_diffusion_temperature" : {
+              "type" : "number",
+              "title" : "The initial temperature for diffusion.",
+              "default" : 0.5
+        },
+        "offloading_increase_temp_threshold" : {
+              "type" : "number",
+              "title" : "The threshold in the increment ratio, above which temperature is increased (load balancing).",
+              "default" : 1.0
+        },
+        "offloading_CCP_frequency" : {
+              "type" : "integer",
+              "title" : "Frequency after how many steps CCP is restarted.",
+              "default" : 0
+        },
+        "offloading_CCP_steps" : {
+              "type" : "integer",
+              "title" : "Number of CCP steps conducted per CCP phase.",
+              "default" : 5
+        },
+        "offloading_local_starvation_threshold" : {
+              "type" : "integer",
+              "title" : "Number of tasks that must be available locally before a task is offloaded (avoids local consumer starvation). A value of -1 means not set and uses a default policy based on the number of jobs in the queue.",
+              "default" : -1
+        },
+        "offloading_update_temperature": {
+              "type" : "boolean",
+              "title" : "If false, then diffusion temperature is fixed, otherwise it will adapt at runtime.",
+              "default" : true
+        },
+        "offloading_input_file" : {
+          "type" : "string",
+          "title" : "Path to file that specifies offloading rules (only for the hardcoded offloading strategy).",
+          "default" : ""
+        },
         "buffer_size" : {
           "type" : "integer", 
           "title" : "Buffer size in bytes per MPI package", 

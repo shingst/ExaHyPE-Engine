@@ -19,12 +19,17 @@
 
 #include "LimitingADERDGSolver.h"
 
+#include "exahype/reactive/TimeStampAndDubiosityTeamHistory.h"
+#include "exahype/reactive/ReactiveContext.h"
+#include "exahype/reactive/OffloadingProfiler.h"
+#include "exahype/reactive/ResilienceTools.h"
 #include "exahype/VertexOperations.h"
 #include "exahype/amr/AdaptiveMeshRefinement.h"
 
 #include "exahype/mappings/LevelwiseAdjacencyBookkeeping.h"
 
 #include "kernels/finitevolumes/commons/c/commons.h" // TODO measurements
+
 
 namespace exahype {
 namespace solvers {
@@ -170,6 +175,7 @@ void exahype::solvers::LimitingADERDGSolver::kickOffTimeStep(const bool isFirstT
 
 void exahype::solvers::LimitingADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOfBatchOrNoBatch,const bool isLastTimeStepOfBatchOrNoBatch) {
   _solver->wrapUpTimeStep(isFirstTimeStepOfBatchOrNoBatch,isLastTimeStepOfBatchOrNoBatch);
+
   if ( tarch::parallel::Node::getInstance().isGlobalMaster() ) { // have consistent data when limiter's wrap up routine is called.
     std::copy(_solver->_globalObservables.begin(),_solver->_globalObservables.end(),
               _limiter->_globalObservables.begin());
@@ -623,26 +629,160 @@ void exahype::solvers::LimitingADERDGSolver::fusedTimeStepBody(
                  isFirstTimeStepOfBatch/*addSurfaceIntegralContributionToUpdate*/);
   const bool isTroubled = checkIfCellIsTroubledAndDetermineMinAndMax(solverPatch,cellInfo);
 
+#if defined(Parallel)
+  int team = exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber();
+#else
+  int team = 0;
+#endif
+  exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().trackTimeStepAndDubiosity(team,
+                                                                                                 solverPatch.getTimeStamp(),
+                                                                                                 solverPatch.getTimeStepSize(),
+                                                                                                 isTroubled,
+                                                                                                 _solver.get()->getEstimatedTimeStepSize());
+  if(isTroubled) {
+    exahype::reactive::ResilienceStatistics::getInstance().notifyLimitedTask();
+  }
+
+#if defined(SharedTBB) && defined(Parallel) //todo: tasksharing and resilience extensions only work with TBB!
+  if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()
+      >= exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceChecks
+      && exahype::reactive::ResilienceTools::CheckLimitedCellsOnly) {
+    if(!(solverPatch.getRefinementStatus()>=_solver->_minRefinementStatusForTroubledCell)) {
+      logDebug("fusedTimeStepBody", "team = "<<exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber()
+            <<" releasing outcome "<<solverPatch.toString()
+            <<std::setprecision(30)<<" time step size "<<solverPatch.getTimeStepSize());
+      _solver.get()->releasePendingOutcomeAndShare(cellInfo._cellDescriptionsIndex,
+                                                   cellInfo.indexOfADERDGCellDescription(solverPatch.getSolverNumber()),
+                                                   solverPatch.getTimeStamp(), solverPatch.getTimeStepSize(),
+                                                   isTroubled);
+    }
+    else {
+      logDebug("fusedTimeStepBody", "team = "<<exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber()
+            <<" releasing dummy outcome "<<solverPatch.toString()
+            <<std::setprecision(30)<<" time step size "<<solverPatch.getTimeStepSize());
+      _solver.get()->releaseDummyOutcomeAndShare(cellInfo._cellDescriptionsIndex,
+                                                 cellInfo.indexOfADERDGCellDescription(solverPatch.getSolverNumber()),
+                                                 solverPatch.getTimeStamp(), solverPatch.getTimeStepSize(),
+                                                 isTroubled);
+    }
+  }
+
+  if(isTroubled
+    && (exahype::reactive::ReactiveContext::getInstance().getInstance().getResilienceStrategy()
+        >= exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceChecks)
+    && exahype::reactive::ResilienceTools::CheckLimitedCellsOnly) {
+
+    assertion(isFirstTimeStepOfBatch); //something that we currently assume -> global time stepping!
+    logDebug("fusedTimeStepBody", "team = "<<exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber()
+        <<" has corrupt patch "<<solverPatch.toString());
+    logDebug("fusedTimeStepBody", "team = "<<exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber()
+              <<" want to check patch "<<solverPatch.toString()
+              <<" prediction time stamp "<<solverPatch.getTimeStamp()
+              <<" prediction time step size"<<solverPatch.getTimeStepSize());
+
+    bool otherTeamHasTimestamp = exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().otherTeamHasTimeStamp(solverPatch.getTimeStamp());
+    bool otherTeamHasLargerTimestamp =  exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().otherTeamHasLargerTimeStamp(solverPatch.getTimeStamp());
+
+    while(!otherTeamHasTimestamp && !otherTeamHasLargerTimestamp) {
+      ADERDGSolver::progressOffloading(_solver.get(), false, 1); //do some progress and receive task outcomes/time stamps
+      otherTeamHasTimestamp = exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().otherTeamHasTimeStamp(solverPatch.getTimeStamp());
+      otherTeamHasLargerTimestamp =  exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().otherTeamHasLargerTimeStamp(solverPatch.getTimeStamp());
+      logDebug("fusedTimeStepBody"," waiting for timestamp="<<solverPatch.getTimeStamp()
+                                     <<" time step size "<<solverPatch.getTimeStepSize()
+                                     <<" other has larger "<<otherTeamHasLargerTimestamp
+                                     <<" other has time stamp "<<otherTeamHasTimestamp);
+    }
+
+    //we can be sure now that we will be able to check the result
+    if(otherTeamHasTimestamp
+      && exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().otherTeamHasTimeStepData(
+                                                                          solverPatch.getTimeStamp(),
+                                                                          solverPatch.getTimeStepSize()))
+    {
+      logDebug("fusedTimeStepBody", "team = "<<exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber()
+                <<" will check patch "<<solverPatch.toString()
+                <<" time stamp "<<predictionTimeStamp
+                <<" time step size"<<predictionTimeStepSize);
+
+      peano::datatraversal::TaskSet(
+          new LimitingADERDGSolver::CheckAndCorrectSolutionJob(*this, solverPatch, cellInfo,
+              predictionTimeStamp,
+              predictionTimeStepSize));
+      return; //early exit here, do checks later
+    }
+    else  {
+      double lastConsistentTimeStamp, lastConsistentTimeStepSize, lastConsistentEstimatedTimeStepSize;
+      exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().getLastConsistentTimeStepData(lastConsistentTimeStamp, lastConsistentTimeStepSize, lastConsistentEstimatedTimeStepSize);
+      logError("fusedTimeStepBody", "Team = "<<exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber()
+                                 <<" is trying to check an outcome that it won't be able to find as the other team is ahead or doesn't have the time step size."
+                                 << " There must be a soft error somewhere."
+                                 <<" I was looking for timestamp="<<std::setprecision(30)<<predictionTimeStamp
+                                 <<" and for timestep="<<predictionTimeStepSize
+                                 <<" . Abort due to soft error! This case currently can't be treated without correction."
+                                 <<" Last consistent timestamp = "<<lastConsistentTimeStamp);
+      MPI_Abort(MPI_COMM_WORLD, -1);
+    }
+  }
+#endif
+
   UpdateResult result;
   result._timeStepSize    = startNewTimeStep(solverPatch,cellInfo,isFirstTimeStepOfBatch);
   result._meshUpdateEvent = updateRefinementStatusAfterSolutionUpdate(solverPatch,cellInfo,isTroubled);
 
+  assertion(std::isfinite(result._timeStepSize));
+
   reduce(solverPatch,cellInfo,result);
 
   if (
-      solverPatch.getRefinementStatus()<_solver->_minRefinementStatusForTroubledCell &&
+      (solverPatch.getRefinementStatus()<_solver->_minRefinementStatusForTroubledCell)
+	  &&
       SpawnPredictionAsBackgroundJob &&
       !mustBeDoneImmediately         &&
       isLastTimeStepOfBatch  // may only spawned in last iteration
   ) {
     const int element = cellInfo.indexOfADERDGCellDescription(solverPatch.getSolverNumber());
-    peano::datatraversal::TaskSet(
-        new ADERDGSolver::PredictionJob(
-            *_solver.get(),solverPatch/*the reductions are delegated to _solver anyway*/,
-            cellInfo._cellDescriptionsIndex,element,
-            predictionTimeStamp,
-            predictionTimeStepSize,
-            false/*is uncompressed*/,isSkeletonCell,isLastTimeStepOfBatch/*addVolumeIntegralResultToUpdate*/));
+    logDebug("fusedTimeStepBody", "spawning for "<< cellInfo._cellDescriptionsIndex<< " predictionTimeStamp "<<predictionTimeStamp<<" predictionTimeStepSize "<<predictionTimeStepSize);
+    //skeleton cells are not considered for offloading
+    if (
+        (isSkeletonCell
+#if defined(Parallel)
+          && !exahype::reactive::ReactiveContext::getInstance().getMakeSkeletonsShareable()
+#endif
+        )
+#if defined(Parallel)
+      || !exahype::reactive::ReactiveContext::getInstance().isReactivityEnabled()
+#endif
+    ) {
+      peano::datatraversal::TaskSet(
+          new ADERDGSolver::PredictionJob(
+              *_solver.get(),solverPatch/*the reductions are delegated to _solver anyway*/,
+              cellInfo._cellDescriptionsIndex,element,
+              predictionTimeStamp,
+              predictionTimeStepSize,
+              false/*is uncompressed*/,isSkeletonCell,isLastTimeStepOfBatch/*addVolumeIntegralResultToUpdate*/));
+      exahype::reactive::OffloadingProfiler::getInstance().notifySpawnedTask();
+    }
+    else {
+#if defined(SharedTBB) && defined(Parallel)
+      ADERDGSolver::MigratablePredictionJob *migratablePredictionJob = new ADERDGSolver::MigratablePredictionJob(*_solver.get(),
+          cellInfo._cellDescriptionsIndex, element,
+          predictionTimeStamp,
+          predictionTimeStepSize,
+          isSkeletonCell);
+      logDebug("fusedTimeStepBody", "spawning migratable job for "<< cellInfo._cellDescriptionsIndex<< " predictionTimeStamp "<<predictionTimeStamp<<" predictionTimeStepSize "<<predictionTimeStepSize
+          << " troubled "<<isTroubled<<" previous stamp "<<_solver.get()->getMinTimeStamp());
+       _solver.get()->submitOrSendMigratablePredictionJob(migratablePredictionJob);
+#else
+      peano::datatraversal::TaskSet(
+          new ADERDGSolver::PredictionJob(
+              *_solver.get(),solverPatch/*the reductions are delegated to _solver anyway*/,
+              cellInfo._cellDescriptionsIndex,element,
+              predictionTimeStamp,
+              predictionTimeStepSize,
+              false/*is uncompressed*/,isSkeletonCell,isLastTimeStepOfBatch/*addVolumeIntegralResultToUpdate*/));
+#endif
+      exahype::reactive::OffloadingProfiler::getInstance().notifySpawnedTask();
+    }
   }
   else if ( solverPatch.getRefinementStatus()<_solver->_minRefinementStatusForTroubledCell ){
     _solver->predictionAndVolumeIntegralBody(
@@ -771,7 +911,7 @@ void exahype::solvers::LimitingADERDGSolver::updateOrRestrict(
     synchroniseTimeStepping(solverPatch,cellInfo);
     solverPatch.setHasCompletedLastStep(false);
 
-    const bool isAtRemoteBoundary    = tarch::la::oneEquals(boundaryMarkers,exahype::mappings::LevelwiseAdjacencyBookkeeping::RemoteAdjacencyIndex);
+    //const bool isAtRemoteBoundary    = tarch::la::oneEquals(boundaryMarkers,exahype::mappings::LevelwiseAdjacencyBookkeeping::RemoteAdjacencyIndex);
     if ( _solver->isLeaf(solverPatch) && SpawnUpdateAsBackgroundJob ) {
       peano::datatraversal::TaskSet( new UpdateJob(*this, solverPatch,cellInfo,boundaryMarkers ) );
     }
@@ -867,6 +1007,14 @@ void exahype::solvers::LimitingADERDGSolver::updateSolution(
     assertion1(solverPatch.getRefinementStatus()>0,solverPatch.toString());
     LimiterPatch& limiterPatch = getLimiterPatch(solverPatch,cellInfo);
 
+    if(!std::isfinite(limiterPatch.getTimeStepSize())) {
+      logError("updateSolution"," trying to run limiter with time step size "<<limiterPatch.getTimeStepSize()
+                                    <<" cell "<<limiterPatch.toString());
+    }
+    logDebug("updateSolution"," running limiter with time step size "<<limiterPatch.getTimeStepSize()
+                                        <<" cell "<<limiterPatch.toString());
+
+    assertion(std::isfinite(limiterPatch.getTimeStepSize()));
     _limiter->updateSolution(limiterPatch,cellInfo._cellDescriptionsIndex,boundaryMarkers,isFirstTimeStep);
 
     // always perform the projection in neighbours of troubled cells as these couple the dg and fv domain.
@@ -1310,7 +1458,9 @@ void exahype::solvers::LimitingADERDGSolver::localRecomputation(
     LimiterPatch& limiterPatch = getLimiterPatch(solverPatch,cellInfo);
 
     _limiter->rollbackToPreviousTimeStep(limiterPatch);
+    assertion(std::isfinite(limiterPatch.getTimeStepSize()));
     _limiter->updateSolution(limiterPatch,cellInfo._cellDescriptionsIndex,boundaryMarkers,true);
+    assertion(std::isfinite(limiterPatch.getTimeStepSize()));
     copyTimeStepDataFromSolverPatch(solverPatch,limiterPatch); // restore pre-rollback limiter patch time stamp and step size
     projectFVSolutionOnDGSpace(solverPatch,limiterPatch);
   }
@@ -1336,6 +1486,7 @@ double exahype::solvers::LimitingADERDGSolver::localRecomputationBody(
   double admissibleTimeStepSize = std::numeric_limits<double>::infinity();
   if ( _solver->isLeaf(solverPatch) ) {
     admissibleTimeStepSize = computeTimeStepSize(solverPatch,cellInfo);
+    assertion(std::isfinite(admissibleTimeStepSize));
     solverPatch.setTimeStepSize(admissibleTimeStepSize);
     ensureLimiterPatchTimeStepDataIsConsistent(solverPatch,cellInfo);
   }
@@ -1382,6 +1533,7 @@ void exahype::solvers::LimitingADERDGSolver::localRecomputation(
 
     if ( isInvolvedInLocalRecomputation(solverPatch) ) {
       LimiterPatch& limiterPatch = getLimiterPatch(solverPatch,cellInfo);
+      assertion(std::isfinite(limiterPatch.getTimeStepSize()));
     }
     if ( SpawnUpdateAsBackgroundJob ) {
       peano::datatraversal::TaskSet( new LocalRecomputationJob(
@@ -1389,6 +1541,7 @@ void exahype::solvers::LimitingADERDGSolver::localRecomputation(
     } else {
       double admissibleTimeStepSize = localRecomputationBody(
           solverPatch,cellInfo,boundaryMarkers);
+      assertion(std::isfinite(admissibleTimeStepSize));
       updateAdmissibleTimeStepSize(admissibleTimeStepSize);
     }
   }
@@ -1940,6 +2093,37 @@ void exahype::solvers::LimitingADERDGSolver::mergeWithMasterData(
     const int                                    level) {
   _solver->mergeWithMasterData(masterRank,x,level);
 }
+
+
+/////////////////////////////////
+// Reactive extensions
+/////////////////////////////////
+void exahype::solvers::LimitingADERDGSolver::initOffloadingManager() {
+#if defined(SharedTBB)
+  _solver->initOffloadingManager();
+#endif
+}
+
+void exahype::solvers::LimitingADERDGSolver::stopOffloadingManager() {
+#if defined(SharedTBB)
+  _solver->stopOffloadingManager();
+#endif
+}
+
+#ifndef OffloadingUseProgressThread
+void exahype::solvers::LimitingADERDGSolver::pauseOffloadingManager() {
+#if defined(SharedTBB)
+  _solver->pauseOffloadingManager();
+#endif
+}
+
+void exahype::solvers::LimitingADERDGSolver::resumeOffloadingManager() {
+#if defined(SharedTBB)
+  _solver->resumeOffloadingManager();
+#endif
+}
+#endif
+
 #endif
 
 std::string exahype::solvers::LimitingADERDGSolver::toString() const {

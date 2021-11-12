@@ -379,7 +379,7 @@ endif
 ifeq ($(call tolower,$(DISTRIBUTEDMEM)),mpi)
 	COMPILER_CFLAGS += -DParallel
 	COMPILER_CFLAGS += -DnoPackedRecords -DnoPersistentRegularSubtrees 
-	COMPILER_CFLAGS += -DIprobeEveryKIterations=0 -DUsePeanosRLEBoundaryExchanger -DUsePeanosRLEBoundaryExchangerForMetaData
+	COMPILER_CFLAGS += -DIprobeEveryKIterations=0 # -DUsePeanosRLEBoundaryExchanger -DUsePeanosRLEBoundaryExchangerForMetaData: slows down tasksharing performance 
 endif
 
 
@@ -489,9 +489,11 @@ endif
 ifneq ($(call tolower,$(USE_IPO_INTERN)),on)
 	find -H $(EXAHYPE_PATH)'/exahype/solvers' -name '*.cpp' | tr '\n' ' ' >> cfiles.mk
 	find -L $(PROJECT_PATH) -name '*.cpp' -and ! -name 'gemmsCPP.cpp' | tr '\n' ' ' >> cfiles.mk
+	#find  $(PROJECT_PATH) -name '*.cpp' -and ! -name 'gemmsCPP.cpp' | tr '\n' ' ' >> cfiles.mk
 endif
 # explicitely find compile the gemms without IPO in all case
 	find -L $(PROJECT_PATH) -name 'gemmsCPP.cpp' | tr '\n' ' ' >> cfiles.mk
+	#find  $(PROJECT_PATH) -name 'gemmsCPP.cpp' | tr '\n' ' ' >> cfiles.mk
 
 
 #	ipo for kernel + application + exahype/solvers. Explicitely exclude gemms to avoid IPO bug due to assembly code!
@@ -501,6 +503,7 @@ cipofiles.mk:
 ifeq ($(call tolower,$(USE_IPO_INTERN)),on)
 	find -H $(EXAHYPE_PATH)'/exahype/solvers' -name '*.cpp' | tr '\n' ' ' >> cipofiles.mk
 	find -L $(PROJECT_PATH) -name '*.cpp' -and ! -name 'gemmsCPP.cpp' | tr '\n' ' ' >> cipofiles.mk
+	#find  $(PROJECT_PATH) -name '*.cpp' -and ! -name 'gemmsCPP.cpp' | tr '\n' ' ' >> cipofiles.mk
 endif
 
 ffiles.mk:
@@ -509,16 +512,20 @@ ffiles.mk:
 #	If no Fortran files are in the project, we don't include the fortran library in the linking in the end.
 #	This works with inverted logic: "find -exec false" will return true if nothing is found.
 	if find -L $(PROJECT_PATH) -name '*.f90' -exec false {} \+; then echo 'FOUND_ANY_FORTRAN=No' > ffiles.mk; else echo 'FOUND_ANY_FORTRAN=Yes' > ffiles.mk; fi
+	#if find  $(PROJECT_PATH) -name '*.f90' -exec false {} \+; then echo 'FOUND_ANY_FORTRAN=No' > ffiles.mk; else echo 'FOUND_ANY_FORTRAN=Yes' > ffiles.mk; fi
 #	ALLOW mixed language Fortran applications! C.f. SRHD, MHD, Z4
 #	To resolve the dependency problem  (compile fortran modules first), we detect them heuristically.
 	echo -n FMODULESOURCES= >> ffiles.mk
-	find -L $(PROJECT_PATH) -name '*.f90' -exec grep -il module {} \+ | tr '\n'  ' ' >> ffiles.mk
+	find -L $(PROJECT_PATH) -name '*.f90' -exec grep -il "end module" {} \+ | tr '\n'  ' ' >> ffiles.mk
+	#find  $(PROJECT_PATH) -name '*.f90' -exec grep -il "end module" {} \+ | tr '\n'  ' ' >> ffiles.mk
 	echo >> ffiles.mk
 	echo -n FSOURCES= >> ffiles.mk
-	find -L $(PROJECT_PATH) -name '*.f90' -exec grep -iL module {} \+ | tr '\n' ' ' >> ffiles.mk
+	find -L $(PROJECT_PATH) -name '*.f90' -exec grep -iL "end module" {} \+ | tr '\n' ' ' >> ffiles.mk
+	#find  $(PROJECT_PATH) -name '*.f90' -exec grep -iL "end module" {} \+ | tr '\n' ' ' >> ffiles.mk
 #	 only for the projects which use the old fortran kernels:
 ifneq (,$(findstring Yes, $(MIXEDLANG) ))
 	find -L $(EXAHYPE_PATH) -name '*.f90' | tr '\n' ' ' >> ffiles.mk
+	#find  $(EXAHYPE_PATH) -name '*.f90' | tr '\n' ' ' >> ffiles.mk
 endif
 
 mergeipoobjects:  $(CIPOOBJECTS)
