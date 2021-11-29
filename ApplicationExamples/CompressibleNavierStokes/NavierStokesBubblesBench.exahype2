@@ -24,13 +24,15 @@
     "autotuning_strategy": "dummy"
   },
   "distributed_memory": {
-      "offloading_lb_strategy" : "reactive_diffusion",
       "ranks_per_node": 1,
       "load_balancing_strategy": "greedy_naive",
       "load_balancing_type": "dynamic",
       "node_pool_strategy": "fair",
       "timeout": 6000,
       "buffer_size": 1600
+  },
+  "offloading": {
+      "offloading_lb_strategy" : "reactive_diffusion"
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",

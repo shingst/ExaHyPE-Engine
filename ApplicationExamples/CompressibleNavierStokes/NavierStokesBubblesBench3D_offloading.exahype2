@@ -27,6 +27,14 @@
     "autotuning_strategy": "dummy"
   },
  "distributed_memory": {
+    "ranks_per_node": 1,
+    "load_balancing_strategy": "hotspot",
+    "load_balancing_type": "static",
+    "node_pool_strategy": "fair",
+    "timeout": 60000,
+    "buffer_size": 64
+  },
+  "offloading": {
     "offloading_lb_strategy": "reactive_diffusion",
     "offloading_input_file" : "",
     "offloading_progress" : "none",
@@ -35,13 +43,7 @@
     "offloading_CCP_frequency" : 0,
     "offloading_CCP_steps" : 0,
     "offloading_update_temperature" : true,
-    "offloading_increase_temp_threshold" : 1.0,
-    "ranks_per_node": 1,
-    "load_balancing_strategy": "hotspot",
-    "load_balancing_type": "static",
-    "node_pool_strategy": "fair",
-    "timeout": 60000,
-    "buffer_size": 64
+    "offloading_increase_temp_threshold" : 1.0
   },
   "_stp_stats_tracing" : {
     "stp_tracing_output_dir" : "test_trace",

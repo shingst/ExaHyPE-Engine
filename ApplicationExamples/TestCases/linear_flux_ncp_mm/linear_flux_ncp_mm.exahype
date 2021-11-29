@@ -47,7 +47,6 @@ exahype-project  Elastic
 / //    configure                = {hotspot,fair,ranks-per-node:4}
      buffer-size              = 64
      timeout                  = 60
-     offloading_lb_strategy          = none
    end distributed-memory
 
   global-optimisation

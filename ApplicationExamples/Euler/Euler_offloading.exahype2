@@ -30,6 +30,14 @@
     "load_balancing_strategy": "hotspot",
     "node_pool_strategy": "fair",
     "ranks_per_node": 1,
+    "timeout": 12000,
+    "load_balancing_type": "static",
+    "buffer_size"            : 1600,
+    "load_balancing_strategy": "hotspot",
+    "node_pool_strategy": "fair",
+    "ranks_per_node"         : 1
+  },
+  "offloading": {
     "offloading_lb_strategy": "none",
     "offloading_input_file" : "",
     "offloading_progress" : "progress_thread",
@@ -38,13 +46,7 @@
     "offloading_CCP_frequency" : 0,
     "offloading_CCP_steps" : 0,
     "offloading_update_temperature" : true,
-    "offloading_increase_temp_threshold" : 1.0,
-    "timeout": 12000,
-    "load_balancing_type": "static",
-    "buffer_size"            : 1600,
-    "load_balancing_strategy": "hotspot",
-    "node_pool_strategy": "fair",
-    "ranks_per_node"         : 1
+    "offloading_increase_temp_threshold" : 1.0
   },
   "resilience" : {
     "generate_soft_errors" : "no",

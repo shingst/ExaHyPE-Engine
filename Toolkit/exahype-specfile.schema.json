@@ -603,6 +603,32 @@
           "default" : 60,
           "old_format" : { "token_after" : "timeout" }
         },
+        "buffer_size" : {
+          "type" : "integer", 
+          "title" : "Buffer size in bytes per MPI package", 
+          "default" : 64,
+          "old_format" : { "token_after" : "buffer-size" }
+        },
+        "node_pool_timeout" : {
+          "type" : "number", 
+          "title" : "The timeout for receiving an answer message from the node pool (seconds).", 
+          "default" : 1
+        },
+        "max_forks_at_once" : {
+          "type" : "integer", 
+          "title" : "The number of forks the load balancing can perform at once on the critical worker (a number < 1 mean that no limit is applied).",
+          "default": -1
+        }
+      }
+    },
+    "_offloading" : {},
+    "offloading": {
+      "type" : "object", 
+      "used-by" : "toolkit",
+      "scope" : "run-time",
+      "additionalProperties" : false,
+      "required" : ["offloading_lb_strategy"],
+      "properties" : {
         "offloading_lb_strategy" : {
           "type" : "string", 
           "title" : "Offloading strategy for non-persistent task-based diffusive load balancing (runs only with TBB enabled).",  
@@ -656,25 +682,9 @@
           "type" : "string",
           "title" : "Path to file that specifies offloading rules (only for the hardcoded offloading strategy).",
           "default" : ""
-        },
-        "buffer_size" : {
-          "type" : "integer", 
-          "title" : "Buffer size in bytes per MPI package", 
-          "default" : 64,
-          "old_format" : { "token_after" : "buffer-size" }
-        },
-        "node_pool_timeout" : {
-          "type" : "number", 
-          "title" : "The timeout for receiving an answer message from the node pool (seconds).", 
-          "default" : 1
-        },
-        "max_forks_at_once" : {
-          "type" : "integer", 
-          "title" : "The number of forks the load balancing can perform at once on the critical worker (a number < 1 mean that no limit is applied).",
-          "default": -1
         }
       }
-    }, 
+    },
     "optimisation" : {
       "type" : "object",
       "scope" : "run-time",

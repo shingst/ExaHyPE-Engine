@@ -30,6 +30,15 @@
     "thread_stack_size" : 12582912 
   },
   "distributed_memory": {
+    "timeout": 6000,
+    "load_balancing_type": "static",
+    "buffer_size"            : 64,
+    "load_balancing_strategy": "hotspot",
+    "node_pool_strategy": "fair",
+    "node_pool_timeout" : 60,
+    "ranks_per_node"         : 4
+  },
+  "offloading": {
     "offloading_lb_strategy": "reactive_diffusion",
     "offloading_input_file" : "",
     "offloading_progress" : "progress_task",
@@ -38,14 +47,7 @@
     "offloading_CCP_frequency" : 1000,
     "offloading_CCP_steps" : 1,
     "offloading_update_temperature" : true,
-    "offloading_increase_temp_threshold" : 1,
-    "timeout": 6000,
-    "load_balancing_type": "static",
-    "buffer_size"            : 64,
-    "load_balancing_strategy": "hotspot",
-    "node_pool_strategy": "fair",
-    "node_pool_timeout" : 60,
-    "ranks_per_node"         : 4
+    "offloading_increase_temp_threshold" : 1
   },
   "optimisation": {
     "fuse_algorithmic_steps"                            : "all",
