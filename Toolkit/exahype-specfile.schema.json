@@ -618,6 +618,13 @@
           "type" : "integer", 
           "title" : "The number of forks the load balancing can perform at once on the critical worker (a number < 1 mean that no limit is applied).",
           "default": -1
+        },
+        "reactive_progress": {
+          "type" : "string",
+          "scope" : "compile-time",
+          "title": "Sets progression mode in MPI for offloading-related and task sharing-related communication. This is a compile-time flag.",
+          "enum" : ["none","progress_thread", "smartmpi", "smartmpi_nb", "mpithreadsplit"],
+          "default": "none"
         }
       }
     },
@@ -635,13 +642,6 @@
           "enum"  : ["none",  "static_hardcoded", "reactive_diffusion"],
           "default" : "none",
           "old_format" : { "token_after" : "offloading_lb_strategy" }
-        },
-        "offloading_progress": {
-          "type" : "string",
-          "scope" : "compile-time",
-          "title": "Sets progression mode in MPI for offloading-related communication. This is a compile-time flag.",
-          "enum" : ["none","progress_thread", "smartmpi", "smartmpi_nb", "mpithreadsplit"],
-          "default": "none"
         },
         "offloading_CCP_temperature" : {
               "type" : "number",

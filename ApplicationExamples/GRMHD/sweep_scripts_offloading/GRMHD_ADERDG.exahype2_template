@@ -35,13 +35,7 @@
   "distributed_memory": {
      "offloading": "{{offloading}}",
      "offloading_input_file" : "",
-     "offloading_progress" : "{{offloading_progress}}",
-     "offloading_CCP_temperature" : {{offloading_CCP_temperature}},
-     "offloading_diffusion_temperature" : {{offloading_diffusion_temperature}},
-     "offloading_CCP_frequency" : {{offloading_CCP_frequency}},
-     "offloading_CCP_steps" : {{offloading_CCP_steps}},
-     "offloading_update_temperature" : {{offloading_update_temperature}},
-     "offloading_increase_temp_threshold" :  {{offloading_increase_temp_threshold}},
+     "reactive_progress" : "{{reactive_progress}}",
      "timeout": 12000,
      "load_balancing_type": "static",
      "buffer_size"            : {{bufferSize}},
@@ -49,6 +43,14 @@
      "node_pool_strategy": "fair",
      "ranks_per_node"         : {{ranksPerNode}}
   }, 
+  "offloading": {
+     "offloading_CCP_temperature" : {{offloading_CCP_temperature}},
+     "offloading_diffusion_temperature" : {{offloading_diffusion_temperature}},
+     "offloading_CCP_frequency" : {{offloading_CCP_frequency}},
+     "offloading_CCP_steps" : {{offloading_CCP_steps}},
+     "offloading_update_temperature" : {{offloading_update_temperature}},
+     "offloading_increase_temp_threshold" :  {{offloading_increase_temp_threshold}}
+  },
   "optimisation": {
     "fuse_algorithmic_steps": "all",
     "spawn_predictor_as_background_thread": {{spawnBackgroundThread}},

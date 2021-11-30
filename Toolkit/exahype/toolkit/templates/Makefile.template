@@ -74,14 +74,14 @@ endif
 
 {% if offloading!="none" %}
 PROJECT_CFLAGS += -DPerformanceAnalysis
-{% if offloadingProgress=="none" %}
+{% if reactiveProgress=="none" %}
 PROJECT_CFLAGS += -DnoMPIWaitsProcessJobs
 {% endif %}
 {% endif %}
 
 {% if useTasksharing %}
 PROJECT_CFLAGS += -DUSE_TMPI  
-{% if offloadingProgress=="none" %}
+{% if reactiveProgress=="none" %}
 PROJECT_CFLAGS += -DnoMPIWaitsProcessJobs
 {% endif %}
 {% endif %}
@@ -94,13 +94,13 @@ PROJECT_CFLAGS += -DGenerateNoise
 PROJECT_CFLAGS += -DFileTrace -DPicard
 {% endif %}
 
-{% if offloadingProgress=="progress_thread" %}
+{% if reactiveProgress=="progress_thread" %}
 PROJECT_CFLAGS += -DOffloadingUseProgressThread
-{% elif offloadingProgress=="mpithreadsplit" %}
+{% elif reactiveProgress=="mpithreadsplit" %}
 PROJECT_CFLAGS +=  -DUseMPIThreadSplit
-{% elif offloadingProgress=="smartmpi" %}
+{% elif reactiveProgress=="smartmpi" %}
 PROJECT_CFLAGS +=  -DUseSmartMPI -DOffloadingNoEarlyReceiveBacks
-{% elif offloadingProgress=="smartmpi_nb" %}
+{% elif reactiveProgress=="smartmpi_nb" %}
 PROJECT_CFLAGS +=  -DUseSmartMPI -DSmartMPINB -DOffloadingNoEarlyReceiveBacks
 {% endif %}
 

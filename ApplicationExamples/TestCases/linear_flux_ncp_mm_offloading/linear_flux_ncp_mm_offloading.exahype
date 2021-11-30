@@ -36,12 +36,12 @@
     "load_balancing_strategy": "hotspot",
     "node_pool_strategy": "fair",
     "node_pool_timeout" : 60,
+    "reactive_progress" : "progress_task",
     "ranks_per_node"         : 4
   },
   "offloading": {
     "offloading_lb_strategy": "reactive_diffusion",
     "offloading_input_file" : "",
-    "offloading_progress" : "progress_task",
     "offloading_CCP_temperature" : 1,
     "offloading_diffusion_temperature" : 1,
     "offloading_CCP_frequency" : 1000,

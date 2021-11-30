@@ -52,12 +52,12 @@
     "load_balancing_strategy": "hotspot",
     "node_pool_strategy": "fair",
     "node_pool_timeout" : 2,
+    "reactive_progress" : "{{reactive_progress}}",
     "ranks_per_node"         : {{ranksPerNode}}   
   },
   "offloading": {
     "offloading_lb_strategy": "{{offloading}}",
     "offloading_input_file" : "",
-    "offloading_progress" : "{{offloading_progress}}",
     "offloading_CCP_temperature" : {{offloading_CCP_temperature}},
     "offloading_diffusion_temperature" : {{offloading_diffusion_temperature}},
     "offloading_CCP_frequency" : {{offloading_CCP_frequency}},

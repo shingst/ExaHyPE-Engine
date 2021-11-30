@@ -35,12 +35,12 @@
     "buffer_size"            : 1600,    
     "load_balancing_strategy": "hotspot",
     "node_pool_strategy": "fair",
+    "reactive_progress" : "none", 
     "ranks_per_node"         : 1   
   },
   "offloading": {
     "offloading_lb_strategy": "none",
     "offloading_input_file" : "",
-    "offloading_progress" : "none", 
     "offloading_CCP_temperature" : 0,
     "offloading_diffusion_temperature" : 1,
     "offloading_CCP_frequency" : 0,

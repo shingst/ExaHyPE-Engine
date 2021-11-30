@@ -260,8 +260,8 @@ class Controller:
         if "distributed_memory" in spec and "offloading" in spec:
            useReactive = spec["offloading"]["offloading_lb_strategy"]!="none" 
         if "distributed_memory" in spec and "resilience" in spec:
-           useReactive = useReactive or spec["resilience"]["task_sharing"] or spec["resilience"]["task_sharing_resilience_checks"] or spec["resilience"]["task_sharing_resilience_correction"]
-        
+           useReactive = useReactive or spec["resilience"]["task_sharing"]!="no" 
+
         numADERDGSolvers = 0
         for solver in spec["solvers"]: 
             if(solver["type"]=="ADER-DG"):
@@ -321,14 +321,16 @@ class Controller:
         context["useIpcm"]   = False # TODO
         context["useLikwid"] = False # TODO
         context["likwidInc"] = ""    # TODO
+            
+        context["offloading"] = "none"
+        context["reactiveProgress"] = "none"
+        context["useTasksharing"] = False
         if context["useDistributedMem"] and "offloading" in self.spec:
             context["offloading"]  = self.spec["offloading"]["offloading_lb_strategy"]
-            context["offloadingProgress"] = self.spec["offloading"]["offloading_progress"]
-            context["useTasksharing"] = "resilience" in self.spec and self.spec["resilience"]["task_sharing"]!="no"
-        else:
-            context["offloading"] = "none"
-            context["offloadingProgress"] = "none"
-            context["useTasksharing"] = False
+            context["reactiveProgress"] = self.spec["distributed_memory"]["reactive_progress"]
+        if context["useDistributedMem"] and "resilience" in self.spec:
+            context["reactiveProgress"] = self.spec["distributed_memory"]["reactive_progress"]
+            context["useTasksharing"] = self.spec["resilience"]["task_sharing"]!="no"
       
         context["useViscousFlux"] = False
         for solver in self.spec["solvers"]: 
