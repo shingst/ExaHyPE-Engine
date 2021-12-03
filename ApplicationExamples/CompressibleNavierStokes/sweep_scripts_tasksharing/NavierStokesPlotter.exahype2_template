@@ -29,10 +29,10 @@
       "thread_stack_size" : 12582912
   },
   "resilience" : {
+    "resilience_mode" : "{{task_sharing_mode}}",
     "generate_soft_errors" : "{{soft_error_generation}}",
     "check_mechanism" : "{{check_mechanism}}",
     "save_redundant_computations" : {{save_redundancy}},
-    "task_sharing" : "{{task_sharing_mode}}",
     "max_error_indicator_derivatives" : {{max_error_indicator_derivatives}},
     "max_error_indicator_timestepsizes" : {{max_error_indicator_timestepsizes}},
     "rel_error" : {{rel_error}},

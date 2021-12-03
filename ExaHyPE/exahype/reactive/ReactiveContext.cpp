@@ -85,6 +85,8 @@ exahype::reactive::ReactiveContext::ResilienceStrategy exahype::reactive::Reacti
 
 bool exahype::reactive::ReactiveContext::SaveRedundantComputations(false);
 bool exahype::reactive::ReactiveContext::MakeSkeletonsShareable(false);
+double exahype::reactive::ReactiveContext::ResilienceChecksTimeout(300);
+
 
 std::atomic<bool> exahype::reactive::ReactiveContext::IsVictim(false);
 
@@ -154,6 +156,14 @@ void exahype::reactive::ReactiveContext::setMakeSkeletonsShareable(bool makeSkel
 
 bool exahype::reactive::ReactiveContext::getMakeSkeletonsShareable() {
   return MakeSkeletonsShareable;
+}
+
+double exahype::reactive::ReactiveContext::getResilienceChecksTimeout() {
+  return ResilienceChecksTimeout;
+}
+
+void exahype::reactive::ReactiveContext::setResilienceChecksTimeout(double timeout) {
+  ResilienceChecksTimeout = timeout;
 }
 
 bool exahype::reactive::ReactiveContext::isReactivityEnabled() {

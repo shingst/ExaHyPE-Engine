@@ -45,7 +45,7 @@
     "offloading_increase_temp_threshold" : 1.0
   },
   "resilience" : {
-    "task_sharing" : "no",
+    "resilience_mode" : "none",
     "generate_soft_errors" : "migratable_stp_tasks_overwrite",
     "check_mechanism" : "none"
   },

@@ -46,8 +46,6 @@ private:
   std::atomic<int> _softErrorsInjected;
   std::atomic<int> _limitedTasks;
 
-  ResilienceStatistics();
-  virtual ~ResilienceStatistics();
 public:
 
   static ResilienceStatistics& getInstance();

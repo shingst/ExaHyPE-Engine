@@ -1208,7 +1208,7 @@ private:
 
       bool tryToFindAndExtractEquivalentSharedOutcome(bool previous, DeliveryStatus &status, MigratablePredictionJobData **outcome);
       void checkAgainstOutcomeAndCorrectIfActive(MigratablePredictionJobData *outcome);
-      void computeErrorIndicator(bool flipped);
+      void computeErrorIndicators(bool flipped);
       bool corruptIfActive(bool force);
 
       bool isRemoteJob() {

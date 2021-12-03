@@ -430,11 +430,11 @@
       "used-by" : "toolkit",
       "scope" : "run-time",
       "properties" : { 
-        "task_sharing": {
+        "resilience_mode": {
           "type" : "string",
-          "title" : "Task sharing mode between teams (requires teaMPI): task outcomes can be merely shared or shared + checked for soft resilience (experimental) or shared + recovered from soft errors (experimental).",
-          "enum" : ["no","task_sharing","task_sharing_resilience_checks","task_sharing_resilience_correction"],
-          "default" : "no"
+          "title" : "Mode for team-based resilience (requires teaMPI with at least two teams): task outcomes can be merely shared or shared + checked for silent errors (experimental) or shared + corrected in case of silent errors (experimental).",
+          "enum" : ["none","task_sharing","task_sharing_error_checks","task_sharing_error_correction"],
+          "default" : "none"
         }, 
         "save_redundant_computation": { 
           "type" : "boolean",
@@ -451,87 +451,93 @@
           "title" : "Specifies whether and how soft-errors should be artifically generated.",
           "enum" : ["no","migratable_stp_tasks_bitflip", "migratable_stp_tasks_overwrite", "migratable_stp_tasks_overwrite_random", "migratable_stp_tasks_overwrite_hardcoded"],
           "default" : "no"
-         },
-         "check_mechanism" : { 
+        },
+        "check_mechanism" : { 
           "type" : "string",
           "title" : "Specifies which results in ADER-DG should be checked for soft errors (checking requires teaMPI + tasksharing with resilience checks).",
           "enum" : ["none", "check_limited_after_update", "check_all_stps", "check_stps_with_low_confidence", "check_corrupted_stps"],
-          "default" : "none"
-         },
-         "error" : {
-            "type" : "number",
-            "title" : "Error of fixed value that should be introduced with error injection (only overwrite) into the STP update: a coefficient in the Lagrange polynomial is modified by this error.",
-            "scope" : "run-time",
-            "default" : 0
-         },
-         "max_error_indicator_timestepsizes" : {
-            "type" : "number",
-            "title" : "Specifies the maximum error indicator for the time step size criterion below which a task outcome is considered as being trustworthy.",
-            "scope" : "run-time",
-            "default" : 0.0
-         },
-         "max_error_indicator_derivatives" : {
-            "type" : "number",
-            "title" : "Specifies the maximum error indicator for the derivatives criterion below which a task outcome is considered as being trustworthy.",
-            "scope" : "run-time",
-            "default" : 0.0
-         },
-         "injection_position" : {
-            "type" : "array",
-            "default" : [0.0, 0.0, 0.0],
-            "items" : {
-              "type" : "number", 
-              "title" : "The spatial position of the node the error should be injected.",
-              "scope" : "run-time"
-            },
-            "$comment" : "We wait for a solution to: https://stackoverflow.com/questions/27597825/assigning-maxitems-property-in-an-array-in-json-schema-equal-to-some-other-prope",
-            "minItems" : 2,
-            "maxItems" : 3
+          "default" : "check_stps_with_low_confidence"
+        },
+        "check_timeout" : {
+          "type" : "number",
+          "title": "Number of seconds after which the engine gives up checking a computed STP and continues.",
+          "scope": "run-time",
+          "default": 300
+        },
+        "error" : {
+          "type" : "number",
+          "title" : "Error of fixed value that should be introduced with error injection (only overwrite) into the STP update: a coefficient in the Lagrange polynomial is modified by this error.",
+          "scope" : "run-time",
+          "default" : 0
+        },
+        "max_error_indicator_timestepsizes" : {
+          "type" : "number",
+          "title" : "Specifies the maximum error indicator for the time step size criterion below which a task outcome is considered as being trustworthy.",
+          "scope" : "run-time",
+          "default" : 0.0
+       },
+       "max_error_indicator_derivatives" : {
+          "type" : "number",
+          "title" : "Specifies the maximum error indicator for the derivatives criterion below which a task outcome is considered as being trustworthy.",
+          "scope" : "run-time",
+          "default" : 0.0
+       },
+       "injection_position" : {
+          "type" : "array",
+          "default" : [0.0, 0.0, 0.0],
+          "items" : {
+          "type" : "number", 
+          "title" : "The spatial position of the node the error should be injected.",
+            "scope" : "run-time"
+          },
+          "$comment" : "We wait for a solution to: https://stackoverflow.com/questions/27597825/assigning-maxitems-property-in-an-array-in-json-schema-equal-to-some-other-prope",
+          "minItems" : 2,
+          "maxItems" : 3
         },
         "injection_time" : {
-            "type" : "number",
-            "title" : "Time stamp at which the error should be injected.",
-            "scope" : "run-time",
-            "default" : -1
+          "type" : "number",
+          "title" : "Time stamp at which the error should be injected.",
+          "scope" : "run-time",
+          "default" : -1
         },
         "injection_rank" : {
-            "type" : "number",
-            "title" : "Rank on which the error should be injected.",
-            "scope" : "run-time",
-            "default" : 0
+          "type" : "number",
+          "title" : "Rank on which the error should be injected.",
+          "scope" : "run-time",
+          "default" : 0
         },
-	"max_injections" : {
-            "type" : "number",
-	    "title" : "Limits the maximum number of injected errors",
-	    "scope" : "run-time",
-	    "default" : 1
+      	"max_injections" : {
+          "type" : "number",
+	  "title" : "Limits the maximum number of injected errors",
+	  "scope" : "run-time",
+	  "default" : 1
         },
         "injection_frequency": { 
-           "type" : "number",
-           "title": "Controls after how many STPs the next error should be injected (migratable_stp_tasks_bitflip, migratable_stp_tasks_overwrite, migratable_stp_tasks_overwrite_random) or after how many time steps each error should be injected (migratable_stp_tasks_hardcoded).",
-           "scope" : "run-time",
-           "default" : 0
+          "type" : "number",
+          "title": "Controls after how many STPs the next error should be injected (migratable_stp_tasks_bitflip, migratable_stp_tasks_overwrite, migratable_stp_tasks_overwrite_random) or after how many time steps each error should be injected (migratable_stp_tasks_hardcoded).",
+          "scope" : "run-time",
+          "default" : 0
         },
         "check_admissibility" : {
-           "type" : "boolean", 
-           "title" : "Use admissibility checks as error indicator.",
-           "default" : false
-         },
-         "check_derivatives" : {
-           "type" : "boolean", 
-           "title" : "Use second derivatives changes as error indicator.",
-           "default" : false
-         },
-         "check_time_step_sizes" : {
-           "type" : "boolean", 
-           "title" : "Use changes in admissible time step sizes as error indicator.",
-           "default" : false
-         },
-         "check_lazily" : {
-           "type" : "boolean", 
-           "title" : "Check error indicators lazily for improved performance (typically looses sensitivity).",
-           "default" : false
-         }
+          "type" : "boolean", 
+          "title" : "Use admissibility checks as error indicator.",
+          "default" : true
+        },
+        "check_derivatives" : {
+          "type" : "boolean", 
+          "title" : "Use second derivatives changes as error indicator.",
+          "default" : false
+        },
+        "check_time_step_sizes" : {
+          "type" : "boolean", 
+          "title" : "Use changes in admissible time step sizes as error indicator.",
+          "default": true
+        },
+        "check_lazily" : {
+          "type" : "boolean", 
+          "title" : "Check error indicators lazily for improved performance (typically looses sensitivity).",
+          "default" : false
+        }
       }
     },
     "_distributed_memory" : {},
@@ -646,12 +652,12 @@
         "offloading_CCP_temperature" : {
               "type" : "number",
               "title" : "The initial temperature for chains-on-chains (CCP) approximation .",
-              "default" : 1.0
+              "default" : 0.0
         },
         "offloading_diffusion_temperature" : {
               "type" : "number",
               "title" : "The initial temperature for diffusion.",
-              "default" : 0.5
+              "default" : 1.0
         },
         "offloading_increase_temp_threshold" : {
               "type" : "number",
@@ -666,7 +672,7 @@
         "offloading_CCP_steps" : {
               "type" : "integer",
               "title" : "Number of CCP steps conducted per CCP phase.",
-              "default" : 5
+              "default" : 0
         },
         "offloading_local_starvation_threshold" : {
               "type" : "integer",

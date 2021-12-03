@@ -104,7 +104,7 @@ PROJECT_CFLAGS +=  -DUseSmartMPI -DOffloadingNoEarlyReceiveBacks
 PROJECT_CFLAGS +=  -DUseSmartMPI -DSmartMPINB -DOffloadingNoEarlyReceiveBacks
 {% endif %}
 
-{% if useViscousFlux and (offloading!="none" or tasksharingMode!="no") %}
+{% if useViscousFlux and (offloading!="none" or tasksharingMode!="none") %}
 PROJECT_CFLAGS += -DOffloadingGradQhbnd
 {% endif %}
 

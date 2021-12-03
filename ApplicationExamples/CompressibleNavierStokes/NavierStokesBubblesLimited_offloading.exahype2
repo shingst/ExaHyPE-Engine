@@ -22,7 +22,7 @@
 	"autotuning_strategy": "dummy"
     },
     "distributed_memory": {
-      "task_sharing" : "task_sharing_resilience_checks",
+      "resilience_mode" : "task_sharing_error_checks",
       "timeout": 12000,
       "load_balancing_type": "static",
       "buffer_size"            : 1600,    

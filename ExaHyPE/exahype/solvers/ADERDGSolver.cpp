@@ -483,9 +483,10 @@ void exahype::solvers::ADERDGSolver::wrapUpTimeStep(const bool isFirstTimeStepOf
   }
 
   if(exahype::reactive::ReactiveContext::getInstance().getResilienceStrategy()>=exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceChecks) {
-    bool isConsistent = exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().checkConsistency();
+    bool isConsistent = exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().hasConsistentTeamTimeStampHistories();
     if(!isConsistent) {
       exahype::reactive::ResilienceTools::getInstance().setCorruptionDetected(true);
+      //exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().printHistory();
       //MPI_Abort(MPI_COMM_WORLD, -1);
     }
   }

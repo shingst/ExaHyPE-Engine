@@ -260,7 +260,7 @@ class Controller:
         if "distributed_memory" in spec and "offloading" in spec:
            useReactive = spec["offloading"]["offloading_lb_strategy"]!="none" 
         if "distributed_memory" in spec and "resilience" in spec:
-           useReactive = useReactive or spec["resilience"]["task_sharing"]!="no" 
+           useReactive = useReactive or spec["resilience"]["resilience_mode"]!="none" 
 
         numADERDGSolvers = 0
         for solver in spec["solvers"]: 
@@ -330,7 +330,7 @@ class Controller:
             context["reactiveProgress"] = self.spec["distributed_memory"]["reactive_progress"]
         if context["useDistributedMem"] and "resilience" in self.spec:
             context["reactiveProgress"] = self.spec["distributed_memory"]["reactive_progress"]
-            context["useTasksharing"] = self.spec["resilience"]["task_sharing"]!="no"
+            context["useTasksharing"] = self.spec["resilience"]["resilience_mode"]!="none"
       
         context["useViscousFlux"] = False
         for solver in self.spec["solvers"]: 

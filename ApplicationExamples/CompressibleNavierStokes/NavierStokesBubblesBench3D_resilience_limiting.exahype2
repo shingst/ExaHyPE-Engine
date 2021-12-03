@@ -53,7 +53,7 @@
     "generate_soft_errors" : "migratable_stp_tasks_overwrite",
     "check_mechanism" : "check_corrupted_stps",
     "save_redundant_computations" : true,
-    "task_sharing" : "task_sharing_resilience_checks",
+    "resilience_mode" : "task_sharing_error_checks",
     "abs_error" : -100,
     "injection_time" : 0.136866,
     "injection_position" : [500.0, 500.0, 500.0],

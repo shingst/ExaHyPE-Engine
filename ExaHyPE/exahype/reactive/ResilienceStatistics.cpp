@@ -22,23 +22,6 @@ namespace reactive {
 tarch::logging::Log ResilienceStatistics::_log( "exahype::reactive::ResilienceStatistics" );
 
 
-ResilienceStatistics::ResilienceStatistics() :
-  _spawnedTasks(0),
-  _executedTasks(0),
-  _savedTasks(0),
-  _receivedTasks(0),
-  _sentTasks(0),
-  _declinedTasks(0),
-  _lateTasks(0),
-  _recomputedTasks(0),
-  _doubleCheckedTasks(0),
-  _softErrorsDetected(0),
-  _healedTasks(0),
-  _softErrorsInjected(0),
-  _limitedTasks(0)
-{}
-
-ResilienceStatistics::~ResilienceStatistics() {}
 
 ResilienceStatistics& ResilienceStatistics::getInstance() {
   static ResilienceStatistics replicationStats;

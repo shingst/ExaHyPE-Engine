@@ -58,12 +58,19 @@ class exahype::reactive::TimeStampAndDubiosityTeamHistory {
     TimeStampAndDubiosityTeamHistory();
     ~TimeStampAndDubiosityTeamHistory();
 
+    TimeStampAndDubiosityTeamHistory(const TimeStampAndDubiosityTeamHistory& other) = delete;
+    TimeStampAndDubiosityTeamHistory& operator=(const TimeStampAndDubiosityTeamHistory& other) = delete;
+
+
+    TimeStampAndDubiosityTeamHistory(TimeStampAndDubiosityTeamHistory&& other) = delete;
+    TimeStampAndDubiosityTeamHistory& operator=(TimeStampAndDubiosityTeamHistory&& other) = delete;
+
     static TimeStampAndDubiosityTeamHistory& getInstance();
 
-    void trackTimeStepAndDubiosity(int team, double timeStamp, double timeStepSize, bool limiterActive, double estimated = std::numeric_limits<double>::infinity());
+    void trackTimeStepAndDubiosity(int team, double timeStamp, double timeStepSize, bool triggerActive, double estimated = std::numeric_limits<double>::infinity());
     void trackEstimatedTimeStepSizeLocally(double timeStamp, double estTimeStepSize);
 
-    bool checkConsistency();
+    bool hasConsistentTeamTimeStampHistories();
     void getLastConsistentTimeStepData(double& timestamp, double& timestepSize, double& estimatedTimeStepSize);
     void resetMyTeamHistoryToLastConsistentTimeStep();
 

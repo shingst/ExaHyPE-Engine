@@ -104,20 +104,23 @@ void exahype::reactive::TimeStampAndDubiosityTeamHistory::trackTimeStepAndDubios
   }
   else if (size>0 && _timestamps[team][size-1]>timeStamp) {
     int idx = size-2;
-    while(idx>=0 && _timestamps[team][idx]!=timeStamp) {
+    while(idx>=0 && _timestamps[team][idx]>timeStamp) {
       idx--;
     }
-    if(idx<0) {
-      logError("trackTimeStepAndLimiterActive", "Have received timestamp from another team which seems to be old but has not been observed. This is expected if the other team has done a rollback. Appending new time stamp..");
-      _dubiosityStatuses[team].push_back(triggerActive);
-      _timestamps[team].push_back(timeStamp);
-      _timestepSizes[team].push_back(timeStepSize);
-    }
-    else {
+    if(_timestamps[team][idx]==timeStamp) { //update at idx
       _dubiosityStatuses[team][idx] = _dubiosityStatuses[team][idx] || triggerActive;
       _timestepSizes[team][idx] = std::min(_timestepSizes[team][idx], timeStepSize);
       if(team==myTeam) {
         _estimatedTimestepSizes[idx]= std::min(_estimatedTimestepSizes[idx], estimatedTimeStepSize);
+      }
+    }
+    else {
+      logWarning("trackTimeStepAndLimiterActive", "Have received smaller timestamp "<<timeStamp<<" from team "<<team<<" than my current maximum one. Inserting...");
+      _dubiosityStatuses[team].insert(_dubiosityStatuses[team].begin()+idx+1, triggerActive);
+      _timestepSizes[team].insert(_timestepSizes[team].begin()+idx+1, timeStepSize);
+      _timestamps[team].insert(_timestamps[team].begin()+idx+1, timeStamp);
+      if(team==myTeam) {
+        _estimatedTimestepSizes.insert(_estimatedTimestepSizes.begin()+idx+1, std::min(_estimatedTimestepSizes[idx], estimatedTimeStepSize));
       }
     }
   }
@@ -132,7 +135,7 @@ void exahype::reactive::TimeStampAndDubiosityTeamHistory::trackTimeStepAndDubios
   lock.free();
 }
 
-bool exahype::reactive::TimeStampAndDubiosityTeamHistory::checkConsistency() {
+bool exahype::reactive::TimeStampAndDubiosityTeamHistory::hasConsistentTeamTimeStampHistories() {
 #if defined(Parallel)
   forwardLastConsistentTimeStepPtr();
 
@@ -143,29 +146,25 @@ bool exahype::reactive::TimeStampAndDubiosityTeamHistory::checkConsistency() {
     maxIdx = std::min(_timestamps[i].size(), maxIdx);
   }
 
-  logDebug("checkConsistency","checking arrays from " <<_lastConsistentTimeStepPtr<<" until "<<maxIdx);
+  logDebug("hasConsistentTeamTimeStampHistories","checking arrays from " <<_lastConsistentTimeStepPtr<<" until "<<maxIdx);
 
   bool consistentTimeStamps = true;
-  bool consistentTimeStepSizes = true;
-  bool consistentDubiosityStatuses = true;
 
-  for(size_t i=_lastConsistentTimeStepPtr; i<maxIdx; i++) {
+  for(size_t i=_lastConsistentTimeStepPtr; i<(maxIdx>0 ? maxIdx-1 : 0); i++) {
     std::vector<double> tmp_timestamps;
-    std::vector<double> tmp_timestepsizes;
-    std::vector<bool> tmp_statuses;
     for(unsigned int t=0; t<exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams(); t++) {
       tmp_timestamps.push_back(_timestamps[t][i]);
-      tmp_statuses.push_back(_dubiosityStatuses[t][i]);
-      tmp_timestepsizes.push_back(_timestepSizes[t][i]);
     }
     consistentTimeStamps = consistentTimeStamps && std::all_of(tmp_timestamps.begin(), tmp_timestamps.end(), [tmp_timestamps](double x){ return x==tmp_timestamps[0]; });
-    consistentDubiosityStatuses = consistentDubiosityStatuses && std::all_of(tmp_statuses.begin(), tmp_statuses.end(), [tmp_statuses](double x){ return x==tmp_statuses[0]; });
-    consistentTimeStepSizes = consistentTimeStepSizes && std::all_of(tmp_timestepsizes.begin(), tmp_timestepsizes.end(), [tmp_timestepsizes](double x){ return x==tmp_timestepsizes[0]; });
+    if(!consistentTimeStamps) { 
+      logError("hasConsistentTeamTimeStampHistories","History is inconsistent"
+                           <<" consistentTimeStamps = "<<consistentTimeStamps);
+    }
   }
 
   lock.free();
 
-  return consistentTimeStamps && consistentDubiosityStatuses && consistentTimeStepSizes;
+  return consistentTimeStamps; 
 #else
   return true;
 #endif 

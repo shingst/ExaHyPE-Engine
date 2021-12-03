@@ -52,7 +52,7 @@
     "generate_soft_errors" : "migratable_stp_tasks_overwrite",
     "check_mechanism" : "check_limited_after_update",
     "save_redundant_computations" : true,
-    "task_sharing" : "task_sharing_resilience_correction",
+    "resilience_mode" : "task_sharing_error_correction",
     "error" : 10000,
     "max_error_indicator_derivatives" : 0,
     "max_error_indicator_timestepsizes" : 0,

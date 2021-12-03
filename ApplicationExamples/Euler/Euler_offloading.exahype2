@@ -31,10 +31,6 @@
     "node_pool_strategy": "fair",
     "ranks_per_node": 1,
     "timeout": 12000,
-    "load_balancing_type": "static",
-    "buffer_size"            : 1600,
-    "load_balancing_strategy": "hotspot",
-    "node_pool_strategy": "fair",
     "reactive_progress" : "progress_thread",
     "ranks_per_node"         : 1
   },
@@ -51,7 +47,7 @@
   "resilience" : {
     "generate_soft_errors" : "no",
     "check_mechanism" : "check_limited_after_update",
-    "task_sharing" : "no"
+    "resilience_mode" : "none"
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",

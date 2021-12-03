@@ -33,7 +33,7 @@
     "check_mechanism" : "{{check_mechanism}}",
     "save_redundant_computations" : {{save_redundancy}},
     "make_skeletons_shareable" : {{make_skeletons_shareable}},
-    "task_sharing" : "{{task_sharing_mode}}",
+    "resilience_mode" : "{{task_sharing_mode}}",
     "max_error_indicator_derivatives" : {{max_error_indicator_derivatives}},
     "max_error_indicator_timestepsizes" : {{max_error_indicator_timestepsizes}},
     "error" : {{error}},

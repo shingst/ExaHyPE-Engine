@@ -33,7 +33,6 @@
   },
   "distributed_memory": {
     "reactive_progress" : "progress_thread",
-    "task_sharing" : true,
     "timeout": 12000,
     "load_balancing_type": "static",
     "buffer_size"            : 1600,    

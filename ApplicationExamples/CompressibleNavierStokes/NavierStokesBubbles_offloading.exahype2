@@ -50,7 +50,7 @@
     "offloading_increase_temp_threshold" : 1.0
   },
   "resilience" : {
-    "task_sharing" : "task_sharing",
+    "resilience_mode" : "task_sharing",
     "generate_soft_errors" : "no",
     "trigger_mechanism" : "trigger_all"
   },

@@ -1370,16 +1370,16 @@ exahype::parser::Parser::OffloadingStrategy exahype::parser::Parser::getOffloadi
 }
 
 exahype::parser::Parser::ResilienceStrategy exahype::parser::Parser::getResilienceStrategy() const{
-  if (stringFromPathEquals("/resilience/task_sharing", "no", true, "no")) {
+  if (stringFromPathEquals("/resilience/resilience_mode", "none", true, "none")) {
     return ResilienceStrategy::None;
   }
-  if (stringFromPathEquals("/resilience/task_sharing", "no", true, "task_sharing")) {
+  if (stringFromPathEquals("/resilience/resilience_mode", "none", true, "task_sharing")) {
     return ResilienceStrategy::TaskSharing;
   }
-  if (stringFromPathEquals("/resilience/task_sharing", "no", true, "task_sharing_resilience_checks")) {
+  if (stringFromPathEquals("/resilience/resilience_mode", "none", true, "task_sharing_error_checks")) {
     return ResilienceStrategy::TaskSharingResilienceChecks;
   }
-  if (stringFromPathEquals("/resilience/task_sharing", "no", true, "task_sharing_resilience_correction")) {
+  if (stringFromPathEquals("/resilience/resilience_mode", "none", true, "task_sharing_error_correction")) {
     return ResilienceStrategy::TaskSharingResilienceCorrection;
   }
   return ResilienceStrategy::None;
@@ -1478,31 +1478,35 @@ double exahype::parser::Parser::getMaximumErrorIndicatorForTimeStepSizes() const
 }
 
 bool exahype::parser::Parser::getTryToSaveRedundantComputations() const {
-  return getBoolFromPath("/resilience/save_redundant_computations", false, isOptional);
+  return getBoolFromPath("/resilience/save_redundant_computations", true, isOptional);
 }
 
 bool exahype::parser::Parser::getMakeSkeletonsShareable() const {
   return getBoolFromPath("/resilience/make_skeletons_shareable", false, isOptional);
 }
 
+double exahype::parser::Parser::getResilienceChecksTimeout() const {
+  return getDoubleFromPath("/resilience/check_timeout", 300, isOptional);
+}
+
 bool exahype::parser::Parser::getCheckAllMigratableSTPs() const {
-  return getStringFromPath("/resilience/check_mechanism", "none", isOptional).compare("check_all_stps")==0;
+  return getStringFromPath("/resilience/check_mechanism", "check_stps_with_low_confidence", isOptional).compare("check_all_stps")==0;
 }
 
 bool exahype::parser::Parser::getCheckLimitedCellsOnly() const {
-  return getStringFromPath("/resilience/check_mechanism", "none", isOptional).compare("check_limited_after_update")==0;
+  return getStringFromPath("/resilience/check_mechanism", "check_stps_with_low_confidence", isOptional).compare("check_limited_after_update")==0;
 }
 
 bool exahype::parser::Parser::getCheckCorrupted() const {
-  return getStringFromPath("/resilience/check_mechanism", "none", isOptional).compare("check_corrupted_stps")==0;
+  return getStringFromPath("/resilience/check_mechanism", "check_stps_with_low_confidence", isOptional).compare("check_corrupted_stps")==0;
 }
 
 bool exahype::parser::Parser::getCheckSTPsWithLowConfidence() const {
-  return getStringFromPath("/resilience/check_mechanism", "none", isOptional).compare("check_stps_with_low_confidence")==0;
+  return getStringFromPath("/resilience/check_mechanism", "check_stps_with_low_confidence", isOptional).compare("check_stps_with_low_confidence")==0;
 }
 
 bool exahype::parser::Parser::getCheckSTPConfidenceAdmissibility() const {
-  return getBoolFromPath("/resilience/check_admissibility", false, isOptional);;
+  return getBoolFromPath("/resilience/check_admissibility", true, isOptional);;
 }
 
 bool exahype::parser::Parser::getCheckSTPConfidenceDerivatives() const {
@@ -1510,7 +1514,7 @@ bool exahype::parser::Parser::getCheckSTPConfidenceDerivatives() const {
 }
 
 bool exahype::parser::Parser::getCheckSTPConfidenceTimeStepSizes() const {
-  return getBoolFromPath("/resilience/check_time_step_sizes", false, isOptional);;
+  return getBoolFromPath("/resilience/check_time_step_sizes", true, isOptional);;
 }
 
 bool exahype::parser::Parser::getCheckSTPsLazily() const {

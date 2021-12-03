@@ -41,7 +41,6 @@ bool exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::run(bool isRunO
   MigratablePredictionJobData *outcome;
   bool found = tryToFindAndExtractEquivalentSharedOutcome(status, &outcome);
         
-        
   logDebug("runCheck", std::setprecision(30)<<
                       " Checking my outcome: predictorTimeStamp = "<<_predictorTimeStamp<<
                       " predictor time step size = "<<_predictorTimeStepSize<<
@@ -49,13 +48,13 @@ bool exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::run(bool isRunO
                       " time step size = "<<_errorIndicatorTimeStepSize<<
                       " admissibility = "<<_errorIndicatorAdmissibility);
 
-  bool timeout = (MPI_Wtime()-_startTimeStamp) > 300;
+  bool timeout = (MPI_Wtime()-_startTimeStamp) > exahype::reactive::ReactiveContext::getInstance().getResilienceChecksTimeout();
 
   if(timeout && !_printedTimeoutWarning) {
     _solverPatch.setHasCompletedLastStep(true);
     reschedule = false;
-    exahype::reactive::ResilienceStatistics::getInstance().notifyDetectedError();
-    logWarning("runCheck","Waiting too long for an outcome. You may either have a progresion problem or a silent error which could not be corrected so time step sizes between teams diverge. Won't check anymore! sent ="<<SentSTPs<< " received "<<ReceivedSTPs<< " CheckJobs "<<NumberOfCheckJobs<< " NumberOfEnclaveJobs "<<NumberOfEnclaveJobs );
+    //exahype::reactive::ResilienceStatistics::getInstance().notifyDetectedError();
+    logWarning("runCheck","Waiting too long for an outcome. You may either have a progression problem or a silent error which could not be corrected so time step sizes between teams may have diverged. Won't check anymore! sent ="<<SentSTPs<< " received "<<ReceivedSTPs<< " CheckJobs "<<NumberOfCheckJobs<< " NumberOfEnclaveJobs "<<NumberOfEnclaveJobs );
     tarch::la::Vector<DIMENSIONS, double> center;
     center = _solverPatch.getOffset() + 0.5 *_solverPatch.getSize();
 
@@ -65,23 +64,18 @@ bool exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::run(bool isRunO
                                          <<" timestamp = "<<_predictorTimeStamp
                                          <<" time step = "<<_predictorTimeStepSize);
     _printedTimeoutWarning = true;
+    return reschedule;
   }
 
   //assert(exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().otherTeamHasTimeStepData(_predictorTimeStamp, _predictorTimeStepSize));
   if( !found
-    && !exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().otherTeamHasTimeStepData(_predictorTimeStamp, _predictorTimeStepSize)
-    && (exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().otherTeamHasLargerTimeStamp(_predictorTimeStamp)
-        ||
-        exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().otherTeamHasLargerTimeStepSizeForStamp(_predictorTimeStamp,_predictorTimeStepSize)))
-       // ||
-       // !exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().checkConsistency()))
+    && !exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().hasConsistentTeamTimeStampHistories())
   {
     _solverPatch.setHasCompletedLastStep(true);
     reschedule = false;
     exahype::reactive::ResilienceStatistics::getInstance().notifyDetectedError();
   }
   else {
-
     if(found && status==DeliveryStatus::Received) {
       switch(checkAgainstOutcome(outcome))
       {
@@ -96,7 +90,7 @@ bool exahype::solvers::ADERDGSolver::CheckAndCorrectSolutionJob::run(bool isRunO
         break;
       case SDCCheckResult::OutcomeIsMoreTrustworthy:
          //continue to correction
-        logError("runCheck", "I'm correcting with an outcome that has lower error indicator!"<<
+        logError("runCheck", "I have an outcome that has lower error indicator!"<<
                               "My error indicators: derivative = "<<_errorIndicatorDerivative<<
                               " time step size = "<<_errorIndicatorTimeStepSize<<
                               " admissibility = "<<_errorIndicatorAdmissibility<<

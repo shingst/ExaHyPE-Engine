@@ -35,30 +35,14 @@
     "buffer_size"            : 1600,    
     "load_balancing_strategy": "hotspot",
     "node_pool_strategy": "fair",
-    "ranks_per_node"         : 1,
-    "reactive_progress" : "progress_thread"
-  },
-  "_offloading": {
-    "offloading_lb_strategy": "none",
-    "offloading_input_file" : "",
-    "offloading_CCP_temperature" : 0,
-    "offloading_diffusion_temperature" : 1,
-    "offloading_CCP_frequency" : 0,
-    "offloading_CCP_steps" : 0,
-    "offloading_update_temperature" : true,
-    "offloading_increase_temp_threshold" : 1.0
+    "ranks_per_node"         : 1
   },
   "resilience" : {
-    "generate_soft_errors" : "migratable_stp_tasks_overwrite",
+    "resilience_mode" : "task_sharing_error_checks",
     "check_mechanism" : "check_stps_with_low_confidence",
-    "save_redundant_computations" : true,
-    "task_sharing" : "task_sharing_resilience_correction",
-    "error" : 1000,
-    "max_error_indicator_derivatives" : 0,
-    "max_error_indicator_timestepsizes" : 0,
-    "check_admissibility" : false,
-    "check_time_step_sizes" : true,
-    "check_derivatives" : false
+    "generate_soft_errors" : "no",
+    "error" : 0.0,
+    "check_timeout" : 1
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",

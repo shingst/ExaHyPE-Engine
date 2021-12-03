@@ -835,6 +835,8 @@ class exahype::parser::Parser {
   //todo: docu!
   bool getMakeSkeletonsShareable() const;
 
+  double getResilienceChecksTimeout() const;
+
   /**
    * @return True if all migratable STPs should be checked for soft errors (i.e., if they are considered as potentially having an error).
    */

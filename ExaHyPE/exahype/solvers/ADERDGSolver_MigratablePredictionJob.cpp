@@ -232,7 +232,7 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
   DeliveryStatus status;
   if(tryToFindAndExtractEquivalentSharedOutcome(false, status, &outcome)) {
     executeOrCopySTPOutcome(outcome, hasComputed, hasFlipped); //corruption can also happen here if executed
-    computeErrorIndicator(hasFlipped);
+    computeErrorIndicators(hasFlipped);
 
     if(needToCheckThisSTP(hasComputed)) {
       checkAgainstOutcomeAndCorrectIfActive(outcome);
@@ -249,8 +249,10 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
       shareSTPImmediatelyOrLater();
     }
     if(needToPutBackOutcome()) {
-      MigratablePredictionJobOutcomeKey key(outcome->_metadata.getCenter(), outcome->_metadata.getPredictorTimeStamp(),
-                                             outcome->_metadata.getPredictorTimeStepSize(), outcome->_metadata.getElement());
+      MigratablePredictionJobOutcomeKey key(outcome->_metadata.getCenter(),
+                                            outcome->_metadata.getPredictorTimeStamp(),
+                                            outcome->_metadata.getPredictorTimeStepSize(),
+                                            outcome->_metadata.getElement());
       _solver._outcomeDatabase.insertOutcome(key, outcome, DeliveryStatus::Received);
     }
     else {
@@ -264,16 +266,27 @@ bool exahype::solvers::ADERDGSolver::MigratablePredictionJob::handleLocalExecuti
     executeLocally();
     hasComputed = true;
     hasFlipped = corruptIfActive(false);
-    computeErrorIndicator(hasFlipped);
+    computeErrorIndicators(hasFlipped);
+
+    if(exahype::reactive::ReactiveContext::getResilienceStrategy()
+      >=exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceChecks) {
+
+        exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().trackTimeStepAndDubiosity(
+                    exahype::reactive::ReactiveContext::getInstance().getTMPITeamNumber(), 
+		                                                      _predictorTimeStamp,
+							                                            _predictorTimeStepSize,
+							      !exahype::reactive::ResilienceTools::getInstance().isTrustworthy(
+                                                         _errorIndicatorDerivative,
+                                                         _errorIndicatorTimeStepSize,
+                                                         _errorIndicatorAdmissibility));
+    }
 
     if(needToShare(false, false, false)) {
       shareSTPImmediatelyOrLater();
     }
 
     if(needToCheckThisSTP(hasComputed)) {
-      if((exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().otherTeamHasTimeStepData(_predictorTimeStamp, _predictorTimeStepSize)
-         || !exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().otherTeamHasLargerTimeStamp(_predictorTimeStamp))) {
-        // && exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().checkConsistency()) {
+      if(exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().hasConsistentTeamTimeStampHistories()) {
         logDebug("handleLocalExecution","going into check mode "<<to_string());
 
         CheckAndCorrectSolutionJob *job = new CheckAndCorrectSolutionJob(_solver,
@@ -484,7 +497,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::executeLocally() {
   exahype::reactive::ResilienceStatistics::getInstance().notifyExecutedTask();
 }
 
-void exahype::solvers::ADERDGSolver::MigratablePredictionJob::computeErrorIndicator(bool flipped) {
+void exahype::solvers::ADERDGSolver::MigratablePredictionJob::computeErrorIndicators(bool flipped) {
 
   CellDescription& cellDescription = getCellDescription(_cellDescriptionsIndex,
                                                         _element);
@@ -513,7 +526,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::computeErrorIndica
   }
 
   if(flipped)
-    logError("computeErrorIndicator", "Celldesc ="<<_cellDescriptionsIndex<<" errorIndicator derivative "<<std::setprecision(30)<<_errorIndicatorDerivative
+    logError("computeErrorIndicators", "Celldesc ="<<_cellDescriptionsIndex<<" errorIndicator derivative "<<std::setprecision(30)<<_errorIndicatorDerivative
                                                                            <<" errorIndicator time step size "<<_errorIndicatorTimeStepSize
                                                                            <<" errorIndicator admissibility "<<_errorIndicatorAdmissibility);
 }
@@ -550,7 +563,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::checkAgainstOutcom
     case SDCCheckResult::NoCorruption:
       break;
     case SDCCheckResult::OutcomeIsMoreTrustworthy:
-      logError("handleLocalExecution", std::setprecision(16)<<"I'm correcting with an outcome that is more trustworthy!"<<
+      logError("handleLocalExecution", std::setprecision(16)<<"I have an outcome that is more trustworthy!"<<
                             " My error indicators: derivative = "<<_errorIndicatorDerivative<<
                             " time step size = "<<_errorIndicatorTimeStepSize<<
                             " admissibility = "<<_errorIndicatorAdmissibility<<
@@ -855,7 +868,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
     DeliveryStatus status;
     bool hasOutcome = job->tryToFindAndExtractEquivalentSharedOutcome(false, status, &outcome);
 
-    job->computeErrorIndicator(false);
+    job->computeErrorIndicators(false);
     bool isTrustworthy = exahype::reactive::ResilienceTools::getInstance().isTrustworthy(
                                                                 job->_errorIndicatorDerivative,
                                                                 job->_errorIndicatorTimeStepSize,
@@ -892,9 +905,7 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::receiveBackHandler
       }
 
       if(job->needToCheckThisSTP(true)) {
-        if((exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().otherTeamHasTimeStepData(job->_predictorTimeStamp, job->_predictorTimeStepSize)
-           || !exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().otherTeamHasLargerTimeStamp(job->_predictorTimeStamp))) {
-          // && exahype::reactive::TimeStampAndTriggerTeamHistory::getInstance().checkConsistency()) {
+        if(exahype::reactive::TimeStampAndDubiosityTeamHistory::getInstance().hasConsistentTeamTimeStampHistories()) {
           logDebug("handleLocalExecution","going into check mode "<<job->to_string());
 
           CheckAndCorrectSolutionJob *checkJob = new CheckAndCorrectSolutionJob(job->_solver,

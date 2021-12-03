@@ -149,6 +149,9 @@ class exahype::reactive::ReactiveContext {
     static void setTMPITeamNumber(int interTeamRank);
     static int getTMPITeamNumber();
 
+    static double getResilienceChecksTimeout(); 
+    static void setResilienceChecksTimeout(double timeout);
+
   private:
     /**
      * The logging device.
@@ -218,6 +221,7 @@ class exahype::reactive::ReactiveContext {
 
     static bool SaveRedundantComputations;
     static bool MakeSkeletonsShareable;
+    static double ResilienceChecksTimeout;
   public:
     /**
      * Initializes a reactive context object.
