@@ -840,7 +840,7 @@ class exahype::parser::Parser {
   /**
    * @return True if all migratable STPs should be checked for soft errors (i.e., if they are considered as potentially having an error).
    */
-  bool getCheckAllMigratableSTPs() const;
+  bool getCheckAllSTPs() const;
 
   /**
    * @return True if only STP+solution of cells for which the limiter was activated should be checked (i.e., if they should be considered as potentially having an error).
@@ -855,7 +855,7 @@ class exahype::parser::Parser {
   /**
    * @return True if only STPs should be checked which -- if applied to the solution -- would violate the physical admissibility checks.
    */
-  bool getCheckSTPsWithLowConfidence() const;
+  bool getCheckDubiousSTPs() const;
 
 
   bool getCheckSTPConfidenceAdmissibility() const;

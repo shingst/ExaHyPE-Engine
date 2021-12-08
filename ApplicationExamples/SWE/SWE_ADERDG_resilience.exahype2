@@ -39,10 +39,15 @@
   },
   "resilience" : {
     "resilience_mode" : "task_sharing_error_checks",
-    "check_mechanism" : "check_stps_with_low_confidence",
+    "check_mechanism" : "check_dubious_stps",
     "generate_soft_errors" : "no",
     "error" : 0.0,
-    "check_timeout" : 1
+    "check_timeout" : 1,
+    "check_derivatives" : false,
+    "check_time_step_sizes": true,
+    "check_admissibility"  : true,
+    "tol_derivatives" : 100000,
+    "tol_time_step_sizes" : 100000
   },
   "optimisation": {
     "fuse_algorithmic_steps": "all",

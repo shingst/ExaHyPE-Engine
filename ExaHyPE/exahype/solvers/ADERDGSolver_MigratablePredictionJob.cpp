@@ -510,13 +510,13 @@ void exahype::solvers::ADERDGSolver::MigratablePredictionJob::computeErrorIndica
   if(exahype::reactive::ReactiveContext::getResilienceStrategy()
     >=exahype::reactive::ReactiveContext::ResilienceStrategy::TaskSharingResilienceChecks) {
 
-    if( (exahype::reactive::ResilienceTools::CheckFlipped && flipped)
-      || exahype::reactive::ResilienceTools::CheckAllMigratableSTPs) {
+    if(exahype::reactive::ResilienceTools::CheckFlipped && flipped) {
       _errorIndicatorDerivative = std::numeric_limits<double>::max();
       _errorIndicatorTimeStepSize = std::numeric_limits<double>::max();
       _errorIndicatorAdmissibility = std::numeric_limits<double>::max();
     }
-    else if(exahype::reactive::ResilienceTools::CheckSTPsWithLowConfidence) {
+    else if(exahype::reactive::ResilienceTools::CheckSTPsWithLowConfidence 
+    || exahype::reactive::ResilienceTools::CheckAllMigratableSTPs) {
        _solver.computePredictorErrorIndicators(cellDescription,
                               _predictorTimeStepSize,
                               &_errorIndicatorDerivative,

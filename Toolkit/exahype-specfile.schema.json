@@ -455,8 +455,8 @@
         "check_mechanism" : { 
           "type" : "string",
           "title" : "Specifies which results in ADER-DG should be checked for soft errors (checking requires teaMPI + tasksharing with resilience checks).",
-          "enum" : ["none", "check_limited_after_update", "check_all_stps", "check_stps_with_low_confidence", "check_corrupted_stps"],
-          "default" : "check_stps_with_low_confidence"
+          "enum" : ["none", "check_limited_after_update", "check_all_stps", "check_dubious_stps", "check_corrupted_stps"],
+          "default" : "check_dubious_stps"
         },
         "check_timeout" : {
           "type" : "number",
@@ -470,13 +470,13 @@
           "scope" : "run-time",
           "default" : 0
         },
-        "max_error_indicator_timestepsizes" : {
+        "tol_time_step_sizes" : {
           "type" : "number",
           "title" : "Specifies the maximum error indicator for the time step size criterion below which a task outcome is considered as being trustworthy.",
           "scope" : "run-time",
           "default" : 0.0
        },
-       "max_error_indicator_derivatives" : {
+       "tol_derivatives" : {
           "type" : "number",
           "title" : "Specifies the maximum error indicator for the derivatives criterion below which a task outcome is considered as being trustworthy.",
           "scope" : "run-time",

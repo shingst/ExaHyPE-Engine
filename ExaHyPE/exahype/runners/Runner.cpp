@@ -375,10 +375,10 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
           exahype::reactive::ResilienceTools::SoftErrorGenerationStrategy::None);
     }
 #endif
-    exahype::reactive::ResilienceTools::CheckAllMigratableSTPs = _parser.getCheckAllMigratableSTPs();
+    exahype::reactive::ResilienceTools::CheckAllMigratableSTPs = _parser.getCheckAllSTPs();
     exahype::reactive::ResilienceTools::CheckLimitedCellsOnly= _parser.getCheckLimitedCellsOnly();
     exahype::reactive::ResilienceTools::CheckFlipped = _parser.getCheckCorrupted();
-    exahype::reactive::ResilienceTools::CheckSTPsWithLowConfidence = _parser.getCheckSTPsWithLowConfidence();
+    exahype::reactive::ResilienceTools::CheckSTPsWithLowConfidence = _parser.getCheckDubiousSTPs();
 
     exahype::reactive::ResilienceTools::CheckSTPDerivatives = _parser.getCheckSTPConfidenceDerivatives();
     exahype::reactive::ResilienceTools::CheckSTPAdmissibility = _parser.getCheckSTPConfidenceAdmissibility();

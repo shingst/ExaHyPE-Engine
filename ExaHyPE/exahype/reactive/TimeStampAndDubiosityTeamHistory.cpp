@@ -158,7 +158,7 @@ bool exahype::reactive::TimeStampAndDubiosityTeamHistory::hasConsistentTeamTimeS
     consistentTimeStamps = consistentTimeStamps && std::all_of(tmp_timestamps.begin(), tmp_timestamps.end(), [tmp_timestamps](double x){ return x==tmp_timestamps[0]; });
     if(!consistentTimeStamps) { 
       logError("hasConsistentTeamTimeStampHistories","History is inconsistent"
-                           <<" consistentTimeStamps = "<<consistentTimeStamps);
+                           <<" consistentTimeStamps = "<<consistentTimeStamps<<". This may either be due to a silent error or due to optimistic timestepping, in which case the histories should become eventually consistent again.");
     }
   }
 

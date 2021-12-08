@@ -1470,11 +1470,11 @@ int exahype::parser::Parser::getMaxNumInjections() const {
 }
 
 double exahype::parser::Parser::getMaximumErrorIndicatorForDerivatives() const {
-  return getDoubleFromPath("/resilience/max_error_indicator_derivatives", 0.00, isOptional);
+  return getDoubleFromPath("/resilience/tol_derivatives", 0.00, isOptional);
 }
 
 double exahype::parser::Parser::getMaximumErrorIndicatorForTimeStepSizes() const {
-  return getDoubleFromPath("/resilience/max_error_indicator_timestepsizes", 0.00, isOptional);
+  return getDoubleFromPath("/resilience/tol_time_step_sizes", 0.00, isOptional);
 }
 
 bool exahype::parser::Parser::getTryToSaveRedundantComputations() const {
@@ -1489,20 +1489,20 @@ double exahype::parser::Parser::getResilienceChecksTimeout() const {
   return getDoubleFromPath("/resilience/check_timeout", 300, isOptional);
 }
 
-bool exahype::parser::Parser::getCheckAllMigratableSTPs() const {
-  return getStringFromPath("/resilience/check_mechanism", "check_stps_with_low_confidence", isOptional).compare("check_all_stps")==0;
+bool exahype::parser::Parser::getCheckAllSTPs() const {
+  return getStringFromPath("/resilience/check_mechanism", "check_dubious_stps", isOptional).compare("check_all_stps")==0;
 }
 
 bool exahype::parser::Parser::getCheckLimitedCellsOnly() const {
-  return getStringFromPath("/resilience/check_mechanism", "check_stps_with_low_confidence", isOptional).compare("check_limited_after_update")==0;
+  return getStringFromPath("/resilience/check_mechanism", "check_dubious_stps", isOptional).compare("check_limited_after_update")==0;
 }
 
 bool exahype::parser::Parser::getCheckCorrupted() const {
-  return getStringFromPath("/resilience/check_mechanism", "check_stps_with_low_confidence", isOptional).compare("check_corrupted_stps")==0;
+  return getStringFromPath("/resilience/check_mechanism", "check_dubious_stps", isOptional).compare("check_corrupted_stps")==0;
 }
 
-bool exahype::parser::Parser::getCheckSTPsWithLowConfidence() const {
-  return getStringFromPath("/resilience/check_mechanism", "check_stps_with_low_confidence", isOptional).compare("check_stps_with_low_confidence")==0;
+bool exahype::parser::Parser::getCheckDubiousSTPs() const {
+  return getStringFromPath("/resilience/check_mechanism", "check_dubious_stps", isOptional).compare("check_dubious_stps")==0;
 }
 
 bool exahype::parser::Parser::getCheckSTPConfidenceAdmissibility() const {
