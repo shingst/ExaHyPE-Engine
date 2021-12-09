@@ -185,7 +185,7 @@ int exahype::reactive::AggressiveHybridDistributor::determineCriticalRank() {
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();  
 
-  const double* waitingTimesSnapshot =
+  const std::vector<double>& waitingTimesSnapshot =
 		 exahype::reactive::OffloadingAnalyser::getInstance().getFilteredWaitingTimesSnapshot();
  
   int *waitingRanks = new int[nnodes];
@@ -235,7 +235,7 @@ void exahype::reactive::AggressiveHybridDistributor::determineOptimalVictim(
   
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();  
 
-  const double* waitingTimesSnapshot = exahype::reactive::OffloadingAnalyser::getInstance().getFilteredWaitingTimesSnapshot();
+  const std::vector<double>& waitingTimesSnapshot = exahype::reactive::OffloadingAnalyser::getInstance().getFilteredWaitingTimesSnapshot();
 
   int *waitingRanks = new int[nnodes];
   bool *isWaitingForSomeone = new bool[nnodes];

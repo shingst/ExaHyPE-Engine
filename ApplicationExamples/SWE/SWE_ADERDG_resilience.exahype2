@@ -5,10 +5,10 @@
     "exahype_path": "./ExaHyPE",
     "output_directory": "./ApplicationExamples/SWE/SWE_ADERDG"
   },
-  "architecture": "hsw",
+  "architecture": "skx",
   "computational_domain": {
     "dimension": 2,
-    "time_steps": 100,
+    "time_steps": 5,
     "offset": [
       0.0,
       0.0

@@ -107,7 +107,7 @@ class exahype::reactive::OffloadingAnalyser : public peano::performanceanalysis:
     /**
      * Array of filtered waiting times where waiting times below zero threshold are set to zero.
      */
-    double *_currentFilteredWaitingTimesSnapshot;
+    std::vector<double> _currentFilteredWaitingTimesSnapshot;
 
     /**
      * After the code waits for a worker, some tasks may still be received with reactive offloading. This counter counts those tasks.
@@ -122,7 +122,7 @@ class exahype::reactive::OffloadingAnalyser : public peano::performanceanalysis:
 
   public:
     OffloadingAnalyser();
-    virtual ~OffloadingAnalyser();
+    //virtual ~OffloadingAnalyser() {};
 
     OffloadingAnalyser(const OffloadingAnalyser& other) = delete;
     OffloadingAnalyser& operator=(const OffloadingAnalyser& other) = delete;
@@ -130,7 +130,7 @@ class exahype::reactive::OffloadingAnalyser : public peano::performanceanalysis:
     /**
      * Returns snapshot of filtered waiting times.
      */
-    const double* getFilteredWaitingTimesSnapshot() const;
+    const std::vector<double>& getFilteredWaitingTimesSnapshot() const;
 
     /**
      * Returns true if there is an entry > 0 in the waiting times snapshot for each rank (each rank needs to be waiting for at least one rank)

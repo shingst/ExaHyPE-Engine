@@ -58,31 +58,24 @@ exahype::reactive::OffloadingAnalyser::OffloadingAnalyser():
   VT_funcdef(event_name_waitForWorker, VT_NOCLASS, &event_waitForWorker ); assertion(ierr==0);
 #endif
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
-  _currentFilteredWaitingTimesSnapshot = new double[nnodes*nnodes];
-  std::fill(&_currentFilteredWaitingTimesSnapshot[0], &_currentFilteredWaitingTimesSnapshot[nnodes*nnodes], 0);
+  _currentFilteredWaitingTimesSnapshot.resize(nnodes*nnodes);
+  std::fill(_currentFilteredWaitingTimesSnapshot.begin(), _currentFilteredWaitingTimesSnapshot.end(), 0);
 
   for(int i=0; i<nnodes; i++) 
      _waitAvgForOtherRank.push_back(tarch::timing::GlidingAverageMeasurement());
 }
 
 exahype::reactive::OffloadingAnalyser& exahype::reactive::OffloadingAnalyser::getInstance() {
-  static OffloadingAnalyser* analyser = nullptr;
+  static OffloadingAnalyser analyser;
 
-  if(analyser==nullptr) {
-    analyser = new OffloadingAnalyser();
-  }  
-  return *analyser;
-}
-
-exahype::reactive::OffloadingAnalyser::~OffloadingAnalyser() {
-  delete[] _currentFilteredWaitingTimesSnapshot;
+  return analyser;
 }
 
 void exahype::reactive::OffloadingAnalyser::enable(bool value) {
   _isSwitchedOn=value;
 }
 
-const double* exahype::reactive::OffloadingAnalyser::getFilteredWaitingTimesSnapshot() const {
+const std::vector<double>& exahype::reactive::OffloadingAnalyser::getFilteredWaitingTimesSnapshot() const {
   return _currentFilteredWaitingTimesSnapshot;
 }
 
@@ -237,7 +230,7 @@ void exahype::reactive::OffloadingAnalyser::printWaitingTimes() const {
   if(!_isSwitchedOn) return;
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
-  const double* waitingTimesSnapshot = getFilteredWaitingTimesSnapshot();
+  const std::vector<double> waitingTimesSnapshot = getFilteredWaitingTimesSnapshot();
   int k = 0;
   for(int i=0; i<nnodes; i++) {
     for(int j=0; j<nnodes; j++) {

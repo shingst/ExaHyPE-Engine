@@ -175,7 +175,7 @@ class exahype::reactive::RequestManager {
      */
     std::unordered_map<int, int> _internalIdsOfActiveRequests[6];
 
-    // some counters for debugging
+    // some counters for debugging (RAII not easily possible since there is no copy constructor for atomics)
     std::atomic<int> *_postedSendsPerRank;
     std::atomic<int> *_postedReceivesPerRank;
     std::atomic<int> *_postedSendBacksPerRank;
@@ -191,6 +191,9 @@ class exahype::reactive::RequestManager {
 
     RequestManager(const RequestManager& other) = delete;
     RequestManager& operator=(const RequestManager& other) = delete;
+
+    RequestManager(RequestManager&& other) = delete;
+    RequestManager& operator=(RequestManager&& other) = delete;
 
     /**
      * This method makes progress on all current requests of the given request type.
