@@ -187,7 +187,6 @@ class exahype::reactive::RequestManager {
      * @param Id of the thread this manager belongs to.
      */
     RequestManager(int threadId);
-    virtual ~RequestManager();
 
     RequestManager(const RequestManager& other) = delete;
     RequestManager& operator=(const RequestManager& other) = delete;
@@ -236,7 +235,7 @@ class exahype::reactive::RequestManager {
     /**
      * There may be multiple request managers with UseMPIThreadSplit
      */
-    static RequestManager* StaticManagers[MAX_THREADS];
+    static std::array<std::unique_ptr<RequestManager>, MAX_THREADS> StaticManagers;
 
     /**
      * The request handler job aims to distribute the work that is to be done
@@ -258,7 +257,8 @@ class exahype::reactive::RequestManager {
         bool operator()();
     };
 
-  public:
+  public: 
+    ~RequestManager();
 
     /**
      * Special flag indicating that a request group contains requests for several MPI ranks (receivers, senders).

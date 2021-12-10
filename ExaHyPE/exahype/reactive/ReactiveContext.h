@@ -49,6 +49,7 @@ namespace exahype {
  */
 class exahype::reactive::ReactiveContext {
   public:
+
     /**
      * Enum for offloading strategy.
      */
@@ -152,6 +153,15 @@ class exahype::reactive::ReactiveContext {
     static double getResilienceChecksTimeout(); 
     static void setResilienceChecksTimeout(double timeout);
 
+    /**
+     * Creates offloading MPI communicators.
+     */
+    static void createMPICommunicators();
+    /**
+     * Destroys offloading MPI communicators.
+     */
+    static void destroyMPICommunicators();
+
   private:
     /**
      * The logging device.
@@ -160,8 +170,7 @@ class exahype::reactive::ReactiveContext {
 
     //singleton per thread
     ReactiveContext(int threadId);
-    virtual ~ReactiveContext();
-
+   
     /**
      * Thread id of the thread the reactive context object belongs to.
      */
@@ -196,10 +205,10 @@ class exahype::reactive::ReactiveContext {
     static int Team;
 
     /**
-     * Array of managers. With UseMPIThreadSplit, there is one reactive context per thread (with each using its own MPI communicators).
+     * Array of contexts. With UseMPIThreadSplit, there is one reactive context per thread (with each using its own MPI communicators).
      * Per default, there is only a single reactive context (singleton).
      */
-    static ReactiveContext* StaticManagers[MAX_THREADS];
+    static std::array<std::unique_ptr<ReactiveContext>, MAX_THREADS> StaticContexts;
 
     /**
      * Communicators for offloading tasks to a victim rank. There may be multiple if UseMPIThreadSplit is used.
@@ -223,30 +232,11 @@ class exahype::reactive::ReactiveContext {
     static bool MakeSkeletonsShareable;
     static double ResilienceChecksTimeout;
   public:
-    /**
-     * Initializes a reactive context object.
-     */
-    void initialize();
-
-    /**
-     * Destroys a reactive context object.
-     */
-    void destroy();
 
     /**
      * Used to get a new tag for communication related to offloading/task sharing.
      */
     int getNextMPITag();
-
-
-    /**
-     * Creates offloading MPI communicators.
-     */
-    static void createMPICommunicators();
-    /**
-     * Destroys offloading MPI communicators.
-     */
-    static void destroyMPICommunicators();
 
     /**
      * Returns MPI communicator used for

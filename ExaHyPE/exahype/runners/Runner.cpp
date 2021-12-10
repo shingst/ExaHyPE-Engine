@@ -288,7 +288,6 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
     _parser.invalidate();
   }
 
-  exahype::reactive::ReactiveContext::getInstance(); //fixme: always collectively (all MPI procs) call getInstance in order to init communicators!
 
   ///
   /// Configuration of reactive load balancing + task sharing
@@ -486,12 +485,12 @@ void exahype::runners::Runner::initDistributedMemoryConfiguration() {
   #endif
 }
 
-
 void exahype::runners::Runner::shutdownDistributedMemoryConfiguration() {
   SCOREP_USER_REGION( (std::string("exahype::runners::Runner::shutdownDistributedMemoryConfiguration")).c_str(), SCOREP_USER_REGION_TYPE_FUNCTION)
 #ifdef Parallel
   tarch::parallel::NodePool::getInstance().terminate();
   exahype::repositories::RepositoryFactory::getInstance().shutdownAllParallelDatatypes();
+  exahype::reactive::ReactiveContext::destroyMPICommunicators();
 #endif
 }
 
@@ -1112,6 +1111,9 @@ int exahype::runners::Runner::run() {
 
     auto* repository = createRepository();
     // must come after repository creation
+
+    // ideally, this would go into initDistributedMemoryConfiguration, but the solver requires information from the reactive context
+    exahype::reactive::ReactiveContext::createMPICommunicators();
 
     initSolvers();
 

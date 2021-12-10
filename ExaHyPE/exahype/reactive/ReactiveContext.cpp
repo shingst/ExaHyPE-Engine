@@ -74,7 +74,7 @@ int exahype::reactive::ReactiveContext::Team(-1);
 
 int exahype::reactive::ReactiveContext::MaxSupportedTag(-1);
 
-exahype::reactive::ReactiveContext* exahype::reactive::ReactiveContext::StaticManagers[MAX_THREADS];
+std::array<std::unique_ptr<exahype::reactive::ReactiveContext>, MAX_THREADS> exahype::reactive::ReactiveContext::StaticContexts;
 MPI_Comm exahype::reactive::ReactiveContext::OffloadingComms[MAX_THREADS];
 MPI_Comm exahype::reactive::ReactiveContext::OffloadingCommsMapped[MAX_THREADS];
 
@@ -109,7 +109,6 @@ exahype::reactive::ReactiveContext::ReactiveContext(int threadId) :
 #endif
   MPI_Comm_set_errhandler(MPI_COMM_WORLD, MPI_ERRORS_RETURN);
 
-  initialize();
 
   int *tag_ptr;
   int flag = 0;
@@ -122,9 +121,6 @@ exahype::reactive::ReactiveContext::ReactiveContext(int threadId) :
   }
 }
 
-exahype::reactive::ReactiveContext::~ReactiveContext() {
-  destroy();
-}
 
 void exahype::reactive::ReactiveContext::setOffloadingStrategy(OffloadingStrategy strategy) {
   ChosenOffloadingStrategy = strategy;
@@ -184,23 +180,6 @@ void exahype::reactive::ReactiveContext::resetVictimFlag() {
 
 bool exahype::reactive::ReactiveContext::isVictim() {
   return IsVictim;
-}
-
-
-void exahype::reactive::ReactiveContext::initialize() {
-  static bool initialized = false;
-  //Todo:  this collective routine should probably be exposed to the runner instead of being implicitly invoked by the constructor
-  //#if defined(SharedTBB)
-  if(!initialized)
-    createMPICommunicators();
-  //#endif
-  initialized = true;
-}
-
-void exahype::reactive::ReactiveContext::destroy() {
-  //#if defined(SharedTBB)
-  destroyMPICommunicators();
-  //#endif
 }
 
 MPI_Comm exahype::reactive::ReactiveContext::getTMPIInterTeamCommunicatorData() const {
@@ -304,15 +283,15 @@ exahype::reactive::ReactiveContext& exahype::reactive::ReactiveContext::getInsta
 #endif
 
   if(threadID>=MAX_THREADS) {
-	  logError("getInstance()","The application is using too many threads (>48), we need to exit... You may want to increase MAX_THREADS.");
-	  assertion(false);
-	  MPI_Abort(MPI_COMM_WORLD, -1);
+    logError("getInstance()","The application is using too many threads (>48), we need to exit... You may want to increase the compile-time constant MAX_THREADS.");
+    assertion(false);
+    MPI_Abort(MPI_COMM_WORLD, -1);
   }
 
-  if(StaticManagers[threadID]==nullptr) {
-    StaticManagers[threadID] = new ReactiveContext(threadID);
+  if(StaticContexts[threadID]==nullptr) {
+    StaticContexts[threadID] = std::unique_ptr<ReactiveContext>(new ReactiveContext(threadID));
   }
-  return *StaticManagers[threadID];
+  return *StaticContexts[threadID];
 }
 
 

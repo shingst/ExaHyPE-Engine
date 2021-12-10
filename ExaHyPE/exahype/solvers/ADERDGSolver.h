@@ -983,7 +983,6 @@ private:
        	Terminated
       };
 	  OffloadingManagerJob(ADERDGSolver& solver);
-	  ~OffloadingManagerJob();
 	  bool run( bool isCalledOnMaster );
 #if defined(OffloadingUseProgressThread) && defined(SharedTBB)
       tbb::task* execute();

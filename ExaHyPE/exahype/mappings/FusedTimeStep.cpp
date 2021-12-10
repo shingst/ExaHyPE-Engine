@@ -173,7 +173,8 @@ void exahype::mappings::FusedTimeStep::beginIteration(
 #if defined(Parallel) && defined(SharedTBB)
   // Offloading manager job is paused after each iteration to not disturb other communication -> need to restart
   if ( exahype::reactive::ReactiveContext::getInstance().isReactivityEnabled()
-     && !tarch::parallel::Node::getInstance().isGlobalMaster())
+     && (!tarch::parallel::Node::getInstance().isGlobalMaster()
+      || tarch::parallel::Node::getInstance().getNumberOfNodes()==1))
   {
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
       if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {
@@ -250,8 +251,9 @@ void exahype::mappings::FusedTimeStep::endIteration(
   }
 
 #if defined(Parallel) && defined(SharedTBB) && !defined(OffloadingUseProgressThread)
-  if (
-      !tarch::parallel::Node::getInstance().isGlobalMaster() )
+  if ( exahype::reactive::ReactiveContext::isReactivityEnabled()
+     && (!tarch::parallel::Node::getInstance().isGlobalMaster()
+      || tarch::parallel::Node::getInstance().getNumberOfNodes()==1))
   {
     for (auto* solver : exahype::solvers::RegisteredSolvers) {
       if (solver->getType()==exahype::solvers::Solver::Type::ADERDG) {

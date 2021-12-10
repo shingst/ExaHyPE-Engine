@@ -5,7 +5,7 @@
     "exahype_path": "./ExaHyPE",
     "output_directory": "./ApplicationExamples/SWE/SWE_ADERDG"
   },
-  "architecture": "skx",
+  "architecture": "hsw",
   "computational_domain": {
     "dimension": 2,
     "time_steps": 5,

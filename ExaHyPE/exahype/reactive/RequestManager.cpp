@@ -53,7 +53,7 @@ static int event_progress_receiveBack;
 
 tarch::logging::Log exahype::reactive::RequestManager::_log( "exahype::reactive::RequestManager" );
 
-exahype::reactive::RequestManager* exahype::reactive::RequestManager::StaticManagers[MAX_THREADS];
+std::array<std::unique_ptr<exahype::reactive::RequestManager>, MAX_THREADS> exahype::reactive::RequestManager::StaticManagers;
 
 exahype::reactive::RequestManager::RequestManager(int threadId) :
     _threadId(threadId),
@@ -342,9 +342,8 @@ exahype::reactive::RequestManager& exahype::reactive::RequestManager::getInstanc
 	  MPI_Abort(MPI_COMM_WORLD, -1);
   }
 
-  //Todo: need to deallocate somewhere
   if(StaticManagers[threadID]==nullptr) {
-    StaticManagers[threadID] = new RequestManager(threadID);
+    StaticManagers[threadID] = std::unique_ptr<RequestManager>(new RequestManager(threadID));
   }
   return *StaticManagers[threadID];
 }

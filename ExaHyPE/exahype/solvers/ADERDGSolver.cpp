@@ -267,10 +267,9 @@ exahype::solvers::ADERDGSolver::ADERDGSolver(
      _offloadingManagerJobTerminated(false),
      _offloadingManagerJobStarted(false),
      _offloadingManagerJobTriggerTerminate(false),
-     _lastReceiveReplicaTag(tarch::parallel::Node::getInstance().getNumberOfNodes()
-                            *exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams()),
+     _lastReceiveReplicaTag(),
      _outcomeDatabase()
-#if defined(SharedTBB) //todo(Philipp): this is super ugly, should avoid TBB defines, make design better!
+#if defined(SharedTBB) //todo(Philipp): this is not nice, should avoid TBB defines
      ,_pendingOutcomesToBeShared(),
      _allocatedOutcomes()
 #endif
@@ -600,6 +599,9 @@ void exahype::solvers::ADERDGSolver::initSolver(
   _receivedFluctuations.resize(getBndFluxSize());
 
   _receivedUpdate.reserve(getUpdateSize());
+
+  _lastReceiveReplicaTag.resize(tarch::parallel::Node::getInstance().getNumberOfNodes()
+                            *exahype::reactive::ReactiveContext::getInstance().getTMPINumTeams());
   #endif
 }
 
@@ -2575,9 +2577,7 @@ exahype::solvers::ADERDGSolver::OffloadingManagerJob::OffloadingManagerJob(ADERD
   _solver(solver),
   _started(false)
  {}
-
-exahype::solvers::ADERDGSolver::OffloadingManagerJob::~OffloadingManagerJob() {}
-
+   
 #if defined(OffloadingUseProgressThread)
 tbb::task* exahype::solvers::ADERDGSolver::OffloadingManagerJob::execute() {
    while(run( false )) {};
@@ -2652,8 +2652,11 @@ void exahype::solvers::ADERDGSolver::initOffloadingManager() {
   _offloadingManagerJob = new( backgroundTaskContext ) OffloadingManagerJob(*this);
   tbb::task::enqueue(*_offloadingManagerJob);
 #else
-  _offloadingManagerJob = new OffloadingManagerJob(*this);
-  _offloadingManagerJobStarted = true;
+  if(!tarch::parallel::Node::getInstance().isGlobalMaster() 
+  || tarch::parallel::Node::getInstance().getNumberOfNodes()==1) {
+    _offloadingManagerJob = new OffloadingManagerJob(*this);
+    _offloadingManagerJobStarted = true;
+  }
 #endif
 }
 
@@ -2671,9 +2674,9 @@ void exahype::solvers::ADERDGSolver::resumeOffloadingManager() {
   //old job will be deleted so we create a new one here
   if(_offloadingManagerJob==nullptr) {
     _offloadingManagerJob = new OffloadingManagerJob(*this);
-    _offloadingManagerJob->resume();
-    peano::datatraversal::TaskSet spawnedSet(_offloadingManagerJob);
   }
+  _offloadingManagerJob->resume();
+  peano::datatraversal::TaskSet spawnedSet(_offloadingManagerJob);
 }
 #endif
 

@@ -66,9 +66,13 @@ exahype::reactive::OffloadingAnalyser::OffloadingAnalyser():
 }
 
 exahype::reactive::OffloadingAnalyser& exahype::reactive::OffloadingAnalyser::getInstance() {
-  static OffloadingAnalyser analyser;
-
-  return analyser;
+  static OffloadingAnalyser *analyser = nullptr; //must be a raw pointer since Peano takes ownership and frees up the analyser eventually!
+  //fixme: this can cause a (non-critical) resource leak at the end of the application if the analyser is not used by Peano
+  //Peano should not necessarily have to take owernship such that we could change analyser to a normal variable here...
+  if(analyser==nullptr) {
+    analyser = new OffloadingAnalyser();
+  }
+  return *analyser;
 }
 
 void exahype::reactive::OffloadingAnalyser::enable(bool value) {
