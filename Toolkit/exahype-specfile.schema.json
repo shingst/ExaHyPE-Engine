@@ -629,7 +629,7 @@
           "type" : "string",
           "scope" : "compile-time",
           "title": "Sets progression mode in MPI for offloading-related and task outcome sharing-related communication. This is a compile-time flag.",
-          "enum" : ["progress_task","progress_thread", "smartmpi", "smartmpi_nb", "mpithreadsplit"],
+          "enum" : ["progress_task","progress_thread", "smartmpi", "smartmpi_nb", "mpi_thread_split"],
           "default": "progress_task"
         }
       }

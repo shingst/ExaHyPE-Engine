@@ -96,7 +96,7 @@ PROJECT_CFLAGS += -DFileTrace -DPicard
 
 {% if reactiveProgress=="progress_thread" %}
 PROJECT_CFLAGS += -DOffloadingUseProgressThread
-{% elif reactiveProgress=="mpithreadsplit" %}
+{% elif reactiveProgress=="mpi_thread_split" %}
 PROJECT_CFLAGS +=  -DUseMPIThreadSplit
 {% elif reactiveProgress=="smartmpi" %}
 PROJECT_CFLAGS +=  -DUseSmartMPI -DOffloadingNoEarlyReceiveBacks
