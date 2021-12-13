@@ -323,7 +323,7 @@ class Controller:
         context["likwidInc"] = ""    # TODO
             
         context["offloading"] = "none"
-        context["reactiveProgress"] = "none"
+        context["reactiveProgress"] = "progress_task"
         context["useTasksharing"] = False
         if context["useDistributedMem"] and "offloading" in self.spec:
             context["offloading"]  = self.spec["offloading"]["offloading_lb_strategy"]

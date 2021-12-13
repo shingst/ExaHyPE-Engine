@@ -32,7 +32,7 @@
     "load_balancing_type": "static",
     "node_pool_strategy": "fair",
     "timeout": 60000,
-    "reactive_progress" : "none",
+    "reactive_progress" : "progress_task",
     "buffer_size": 64
   },
   "offloading": {

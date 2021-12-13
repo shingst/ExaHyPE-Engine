@@ -508,9 +508,9 @@
         },
       	"max_injections" : {
           "type" : "number",
-	  "title" : "Limits the maximum number of injected errors",
-	  "scope" : "run-time",
-	  "default" : 1
+          "title" : "Limits the maximum number of injected errors",
+          "scope" : "run-time",
+          "default" : 1
         },
         "injection_frequency": { 
           "type" : "number",
@@ -628,9 +628,9 @@
         "reactive_progress": {
           "type" : "string",
           "scope" : "compile-time",
-          "title": "Sets progression mode in MPI for offloading-related and task sharing-related communication. This is a compile-time flag.",
-          "enum" : ["none","progress_thread", "smartmpi", "smartmpi_nb", "mpithreadsplit"],
-          "default": "none"
+          "title": "Sets progression mode in MPI for offloading-related and task outcome sharing-related communication. This is a compile-time flag.",
+          "enum" : ["progress_task","progress_thread", "smartmpi", "smartmpi_nb", "mpithreadsplit"],
+          "default": "progress_task"
         }
       }
     },

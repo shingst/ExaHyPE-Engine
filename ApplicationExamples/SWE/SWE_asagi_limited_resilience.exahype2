@@ -35,7 +35,7 @@
     "buffer_size"            : 1600,    
     "load_balancing_strategy": "hotspot",
     "node_pool_strategy": "fair",
-    "reactive_progress" : "none", 
+    "reactive_progress" : "progress_task", 
     "ranks_per_node"         : 1   
   },
   "offloading": {

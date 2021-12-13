@@ -74,14 +74,14 @@ endif
 
 {% if offloading!="none" %}
 PROJECT_CFLAGS += -DPerformanceAnalysis
-{% if reactiveProgress=="none" %}
+{% if reactiveProgress=="progress_task" %}
 PROJECT_CFLAGS += -DnoMPIWaitsProcessJobs
 {% endif %}
 {% endif %}
 
 {% if useTasksharing %}
 PROJECT_CFLAGS += -DUSE_TMPI  
-{% if reactiveProgress=="none" %}
+{% if reactiveProgress=="progress_task" %}
 PROJECT_CFLAGS += -DnoMPIWaitsProcessJobs
 {% endif %}
 {% endif %}
