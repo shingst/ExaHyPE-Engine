@@ -208,6 +208,27 @@ update_others() {
 			cd "$scriptDir" #move back
 		fi
 	fi
+        #teaMPI
+	if [ ! -d teaMPI ]; then
+		mkdir teaMPI
+	fi
+	if [ ! -f teaMPI/.git ]; then
+		echo "Initialize teaMPI submodule"
+		cd "$pathToTopLevel" # move to the top level (required for git version below 1.8.4)
+		git submodule update --init Submodules/teaMPI
+		cd "$scriptDir" #move back
+	else
+		echo "Update teaMPI submodule"
+		if [ "$toNewest" = true ]; then
+			cd teaMPI
+			git pull origin master
+			cd ..
+		else
+			cd "$pathToTopLevel" # move to the top level (required for git version below 1.8.4)
+			git submodule update Submodules/teaMPI
+			cd "$scriptDir" #move back
+		fi
+	fi
 	#Libxsmm
 	if [ ! -d libxsmm ]; then
 		mkdir libxsmm
@@ -280,7 +301,8 @@ else
 			git config submodule.Submodules/pyrsistent.url  git://localhost:12345/tobgu/pyrsistent.git
 			git config submodule.Submodules/jsonschema.url  git://localhost:12345/Julian/jsonschema.git
 			git config submodule.Submodules/six.url         git://localhost:12345/benjaminp/six.git
-			git config submodule.Submodules/libxsmm.url     git://localhost:12345/hfp/libxsmm.git ;;
+			git config submodule.Submodules/libxsmm.url     git://localhost:12345/hfp/libxsmm.git 
+			git config submodule.Submodules/teaMPI.url     git://localhost:12345/hpcsoftware/teaMPI.git ;;
 		s)  git config submodule.Submodules/Peano.url       git@gitlab.lrz.de:hpcsoftware/Peano.git
 			git config submodule.Submodules/eigen.url       git@gitlab.com:libeigen/eigen.git
 			git config submodule.Submodules/jinja.url       git@github.com:pallets/jinja.git
@@ -289,7 +311,8 @@ else
 			git config submodule.Submodules/pyrsistent.url  git@github.com:tobgu/pyrsistent.git
 			git config submodule.Submodules/jsonschema.url  git@github.com:Julian/jsonschema.git
 			git config submodule.Submodules/six.url         git@github.com:benjaminp/six.git
-			git config submodule.Submodules/libxsmm.url     git@github.com:hfp/libxsmm.git ;;
+			git config submodule.Submodules/libxsmm.url     git@github.com:hfp/libxsmm.git 
+			git config submodule.Submodules/teaMPI.url     git@github.com:hpcsoftware/teaMPI.git ;;
 		w)  git config submodule.Submodules/Peano.url       https://gitlab.lrz.de/hpcsoftware/Peano.git
 			git config submodule.Submodules/eigen.url       https://gitlab.com/libeigen/eigen.git
 			git config submodule.Submodules/jinja.url       https://github.com/pallets/jinja.git
@@ -298,7 +321,8 @@ else
 			git config submodule.Submodules/pyrsistent.url  https://github.com/tobgu/pyrsistent.git
 			git config submodule.Submodules/jsonschema.url  https://github.com/Julian/jsonschema.git
 			git config submodule.Submodules/six.url         https://github.com/benjaminp/six.git
-			git config submodule.Submodules/libxsmm.url     https://github.com/hfp/libxsmm.git ;;
+			git config submodule.Submodules/libxsmm.url     https://github.com/hfp/libxsmm.git 
+		  git config submodule.Submodules/teaMPI.url       https://gitlab.lrz.de/hpcsoftware/teaMPI.git;;
 		p)  echo "only update Peano"
 			schedulePeano=true
 			scheduleOthers=false ;;
