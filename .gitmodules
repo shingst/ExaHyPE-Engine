@@ -31,4 +31,4 @@
 	url = https://gitlab.com/libeigen/eigen.git
 [submodule "Submodules/teaMPI"]
 	path = Submodules/teaMPI
-	url = https://gitlab.lrz.de/hpcsoftware/teaMPI
+	url = https://gitlab.lrz.de/hpcsoftware/teaMPI.git
