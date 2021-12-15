@@ -56,41 +56,27 @@ exahype::reactive::PerformanceMonitor::PerformanceMonitor() :
 
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
-  _currentTasksSnapshot = new int[nnodes];
+  _currentTasksSnapshot.resize(nnodes);
 
-  _currentWaitingTimesLocal = new double[nnodes];
-  _currentWaitingTimesGlobalSnapshot = new double[nnodes*nnodes];
+  _currentWaitingTimesLocal.resize(nnodes);
+  _currentWaitingTimesGlobalSnapshot.resize(nnodes*nnodes);
 
-  _currentBlacklistLocal = new double[nnodes];
-  _currentBlacklistGlobalSnapshot = new double[nnodes];
+  _currentBlacklistLocal.resize(nnodes);
+  _currentBlacklistGlobalSnapshot.resize(nnodes);
 
-  _currentFusedDataSendBuffer = new double[2*nnodes+2];
-  _currentFusedDataReceiveBuffer = new double[nnodes*(2*nnodes+2)];
+  _currentFusedDataSendBuffer.resize(2*nnodes+2);
+  _currentFusedDataReceiveBuffer.resize(nnodes*(2*nnodes+2));
 
-  std::fill(_currentTasksSnapshot, _currentTasksSnapshot+nnodes, 0);
+  std::fill(_currentTasksSnapshot.begin(), _currentTasksSnapshot.end(), 0);
 
-  std::fill(_currentWaitingTimesGlobalSnapshot, _currentWaitingTimesGlobalSnapshot+nnodes*nnodes, 0);
-  std::fill(_currentWaitingTimesLocal, _currentWaitingTimesLocal+nnodes, 0);
+  std::fill(_currentWaitingTimesGlobalSnapshot.begin(), _currentWaitingTimesGlobalSnapshot.end(), 0);
+  std::fill(_currentWaitingTimesLocal.begin(), _currentWaitingTimesLocal.end(), 0);
 
-  std::fill(_currentBlacklistGlobalSnapshot, _currentBlacklistGlobalSnapshot+nnodes, 0);
-  std::fill(_currentBlacklistLocal, _currentBlacklistLocal+nnodes, 0);
+  std::fill(_currentBlacklistGlobalSnapshot.begin(), _currentBlacklistGlobalSnapshot.end(), 0);
+  std::fill(_currentBlacklistLocal.begin(), _currentBlacklistLocal.end(), 0);
 
-  std::fill(_currentFusedDataSendBuffer, _currentFusedDataSendBuffer+nnodes+nnodes+1, 0);
-  std::fill(_currentFusedDataReceiveBuffer, _currentFusedDataReceiveBuffer+nnodes*(nnodes+nnodes+1), 0);
-}
-
-exahype::reactive::PerformanceMonitor::~PerformanceMonitor() {
-
-  delete[] _currentWaitingTimesGlobalSnapshot;
-  delete[] _currentWaitingTimesLocal;
-
-  delete[] _currentFusedDataSendBuffer;
-  delete[] _currentFusedDataReceiveBuffer;
-
-  delete[] _currentBlacklistLocal;
-  delete[] _currentBlacklistGlobalSnapshot;
- 
-  delete[] _currentTasksSnapshot;
+  std::fill(_currentFusedDataSendBuffer.begin(), _currentFusedDataSendBuffer.end(), 0);
+  std::fill(_currentFusedDataReceiveBuffer.begin(), _currentFusedDataReceiveBuffer.end(), 0);
 }
 
 void exahype::reactive::PerformanceMonitor::submitWaitingTimeForRank(double waitingTime, int rank) {
@@ -98,7 +84,7 @@ void exahype::reactive::PerformanceMonitor::submitWaitingTimeForRank(double wait
     _currentWaitingTimesLocal[rank] =  waitingTime;
 }
 
-const double *exahype::reactive::PerformanceMonitor::getWaitingTimesGlobalSnapshot() const {
+const std::vector<double>& exahype::reactive::PerformanceMonitor::getWaitingTimesGlobalSnapshot() const {
   return _currentWaitingTimesGlobalSnapshot;
 }
 
@@ -106,7 +92,7 @@ void exahype::reactive::PerformanceMonitor::submitBlacklistValueForRank(double b
   _currentBlacklistLocal[rank] = bval;
 }
 
-const double *exahype::reactive::PerformanceMonitor::getBlacklistGlobalSnapshot() const {
+const std::vector<double>& exahype::reactive::PerformanceMonitor::getBlacklistGlobalSnapshot() const {
   return _currentBlacklistGlobalSnapshot;
 }
 
@@ -118,7 +104,7 @@ int exahype::reactive::PerformanceMonitor::getTasksPerTimestep() const {
   return _tasksPerTimestep;
 }
 
-const int* exahype::reactive::PerformanceMonitor::getCurrentTasksGlobalSnapshot() const {
+const std::vector<int>& exahype::reactive::PerformanceMonitor::getCurrentTasksGlobalSnapshot() const {
   return _currentTasksSnapshot;
 }
 
@@ -182,7 +168,7 @@ void exahype::reactive::PerformanceMonitor::processCompletedFusedRequestAndSetTe
   int nnodes    = tarch::parallel::Node::getInstance().getNumberOfNodes();
 
   bool newGlobalTerminationStatus = true;
-  double *tmpBlacklistSum = new double[nnodes];
+  std::vector<double> tmpBlacklistSum (nnodes);
   std::fill(&tmpBlacklistSum[0], &tmpBlacklistSum[nnodes], 0);
 
   for(int i=0; i<nnodes; i++) {
@@ -209,7 +195,6 @@ void exahype::reactive::PerformanceMonitor::processCompletedFusedRequestAndSetTe
   }
 
   _fusedGatherRequest = MPI_REQUEST_NULL;
-  delete[] tmpBlacklistSum;
 }
 
 void exahype::reactive::PerformanceMonitor::copyToSendBufferAndPostFusedRequest() {
