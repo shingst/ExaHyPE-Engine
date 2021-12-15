@@ -1113,7 +1113,9 @@ int exahype::runners::Runner::run() {
     // must come after repository creation
 
     // ideally, this would go into initDistributedMemoryConfiguration, but the solver requires information from the reactive context
+    #ifdef Parallel
     exahype::reactive::ReactiveContext::createMPICommunicators();
+    #endif
 
     initSolvers();
 
