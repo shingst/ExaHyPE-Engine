@@ -27,8 +27,11 @@ RUN cd /dependencies/ && git clone https://github.com/SeisSol/easi.git && \
     sed -i "s|find_package (OpenMP)| |g" CMakeLists.txt && \
     mkdir build && cd build && CC=mpicc CXX=mpicxx cmake .. && make
 
-RUN git clone https://gitlab.lrz.de/exahype/ExaHyPE-Engine.git
+RUN git clone --recurse-submodules https://gitlab.lrz.de/exahype/ExaHyPE-Engine.git
 WORKDIR /ExaHyPE-Engine
+RUN git checkout ci_dev && \ 
+    git pull
+RUN Submodules/updateSubmodules.sh
 
 ENV COMPILER_LFLAGS="  -L/dependencies/easi/build/ -leasi -L/dependencies/ImpalaJIT/build/ -limpalajit -L/usr/lib/x86_64-linux-gnu/ -lyaml-cpp  -L/dependencies/ASAGI/ -lasagi -lpthread"
 ENV COMPILER_CFLAGS=" -I/dependencies/easi/include/"
@@ -40,7 +43,10 @@ ENV EXAHYPE_CC=mpicc
 ENV EXAHYPE_CXX=mpicxx
 ENV PROJECT_CFLAGS=-DUSE_ASAGI
 
-RUN cd ApplicationExamples/TestCases/nonlinear_Euler_Sod_3d && \
-    ../../../Toolkit/toolkit.sh nonlinear_Euler_Sod_3d.exahype2 &&
-    make -j2
+#RUN cd ApplicationExamples/TestCases/nonlinear_Euler_Sod_3d && \
+#    ../../../Toolkit/toolkit.sh nonlinear_Euler_Sod_3d.exahype2 && \
+#    make -j2
 
+RUN cd ApplicationExamples/TestCases/nonlinear_Euler_Sod_3d && \
+    ../../../Toolkit/toolkit.sh nonlinear_Euler_Sod_3d_generic.exahype2 && \
+    make -j2
