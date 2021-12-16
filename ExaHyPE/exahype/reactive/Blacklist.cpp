@@ -65,13 +65,13 @@ void exahype::reactive::Blacklist::recoverBlacklistedRanks() {
 
 bool exahype::reactive::Blacklist::isBlacklisted(int rank) const {
   // global blacklist check might be moved out to reactive context
-  const double* globalBlacklist = exahype::reactive::PerformanceMonitor::getInstance().getBlacklistGlobalSnapshot();
+  const std::vector<double>& globalBlacklist = exahype::reactive::PerformanceMonitor::getInstance().getBlacklistGlobalSnapshot();
   return (globalBlacklist[rank]>0.5) || (_localBlacklist[rank]>0.5);
 }
 
 void exahype::reactive::Blacklist::printBlacklist() {
   int nnodes = tarch::parallel::Node::getInstance().getNumberOfNodes();
-  const double* globalBlacklist = exahype::reactive::PerformanceMonitor::getInstance().getBlacklistGlobalSnapshot();
+  const std::vector<double>& globalBlacklist = exahype::reactive::PerformanceMonitor::getInstance().getBlacklistGlobalSnapshot();
 
   for(int i=0; i<nnodes; i++) {
     if(globalBlacklist[i]>0 || _localBlacklist[i]>0)

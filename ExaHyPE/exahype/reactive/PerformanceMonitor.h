@@ -19,6 +19,7 @@
 
 #include <mpi.h>
 #include <atomic>
+#include <vector>
 
 namespace exahype {
   namespace reactive {
@@ -41,10 +42,12 @@ class exahype::reactive::PerformanceMonitor {
     static tarch::logging::Log _log;
 
     PerformanceMonitor();
-    virtual ~PerformanceMonitor();
 
-    PerformanceMonitor(const PerformanceMonitor& other) = delete;
+    /*PerformanceMonitor(const PerformanceMonitor& other) = delete;
     PerformanceMonitor& operator=(const PerformanceMonitor& other) = delete;
+
+    PerformanceMonitor(PerformanceMonitor&& other) = delete;
+    PerformanceMonitor& operator=(PerformanceMonitor&& other) = delete;*/
 
     /**
      * Makes progress on outstanding Iallgather, receives a new global performance snapshot (if possible) and posts a new gather operation if necessary.
@@ -80,27 +83,27 @@ class exahype::reactive::PerformanceMonitor {
     /**
      * Array of current global view of waiting times (matrix with length nranks*nranks).
      */
-    double *_currentWaitingTimesGlobalSnapshot;
+    std::vector<double> _currentWaitingTimesGlobalSnapshot;
 
     /**
      * Stores the rank-local current waiting times (length nranks).
      */
-    double *_currentWaitingTimesLocal;
+    std::vector<double> _currentWaitingTimesLocal;
 
     /**
      * Stores global snapshot of blacklist (length nranks*nranks).
      */
-    double *_currentBlacklistGlobalSnapshot;
+    std::vector<double> _currentBlacklistGlobalSnapshot;
 
     /**
      * Stores the rank-local blacklist (length nranks)
      */
-    double *_currentBlacklistLocal;
+    std::vector<double> _currentBlacklistLocal;
 
     /**
      * Stores snapshot of current number of tasks per rank (length nranks).
      */
-    int *_currentTasksSnapshot;
+    std::vector<int> _currentTasksSnapshot;
 
     /**
      * Buffer for the currently in-flight iallgather messages.
@@ -110,13 +113,13 @@ class exahype::reactive::PerformanceMonitor {
      * 3) Currently outstanding tasks on this rank (length 1)
      * 4) Local termination signal: -1 if local rank has terminated, 0 otherwise
      */
-    double *_currentFusedDataSendBuffer;
+    std::vector<double> _currentFusedDataSendBuffer;
 
     /**
      * The receive buffer stores the global allgathered view of the rank local performance infos.
      * As each rank sends data of size nranks*2+2, it has length nranks*(nranks*2+2)
      */
-    double *_currentFusedDataReceiveBuffer;
+    std::vector<double> _currentFusedDataReceiveBuffer;
 
     /**
      *  Local load counter of a rank, represents current load (i.e. number of tasks
@@ -156,7 +159,7 @@ class exahype::reactive::PerformanceMonitor {
      * Returns pointer to the current waiting times snapshot.
      * @return
      */
-    const double *getWaitingTimesGlobalSnapshot() const;
+    const std::vector<double>& getWaitingTimesGlobalSnapshot() const;
 
     /**
      * Submits a new blacklist value for a given rank.
@@ -169,7 +172,7 @@ class exahype::reactive::PerformanceMonitor {
      * Returns current blacklist snapshot.
      * @return Current global blacklist snapshot.
      */
-    const double *getBlacklistGlobalSnapshot() const;
+    const std::vector<double>& getBlacklistGlobalSnapshot() const;
 
     /**
      * Sets the current number of tasks to a given
@@ -205,7 +208,7 @@ class exahype::reactive::PerformanceMonitor {
      * @return Snapshot containing the current number of
      * tasks on every MPI rank.
      */
-    const int *getCurrentTasksGlobalSnapshot() const;
+    const std::vector<int>& getCurrentTasksGlobalSnapshot() const;
 
     /**
      * @return True, if every rank has finished computing during
