@@ -32,6 +32,7 @@ build-job:       # This job runs in the build stage, which runs first.
     - echo "Compiling linear elastics test case"
     - cd ApplicationExamples/TestCases/linear_flux_ncp_mm_offloading
     - ../../../Toolkit/toolkit.sh ./linear_flux_ncp_mm_offloading.exahype
+    - make clean
     - make -j2
     - echo "Compiling Euler test case"
     - cd ../nonlinear_Euler_Sod_3d
