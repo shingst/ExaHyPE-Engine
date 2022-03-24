@@ -1113,6 +1113,12 @@
             "title" : "Maximum number of adaptive refinement levels.",
             "scope" : "run-time",
             "old_format" : { "token_after" : "maximum-mesh-depth" }
+          },
+          "adg" : {
+            "type" : "string", 
+            "title" : "If set to true refinement is done according to provided refinement file",
+            "scope" : "run-time",
+            "old_format" : { "token_after" : "mxxxx" }
           }, 
           "order" : {
             "type" : "integer", 
