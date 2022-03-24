@@ -25,6 +25,7 @@
 #include <vector>
 #include <unordered_map>
 #include <limits>
+#include <memory>
 
 #if defined(UseMPIThreadSplit)
 #ifndef MAX_THREADS
