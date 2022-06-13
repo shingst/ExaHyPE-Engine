@@ -415,6 +415,9 @@ FOBJECTS=$(FSOURCES:.f90=.o)
 FMODULEOBJECTS=$(FMODULESOURCES:.f90=.o)
 FOBJECTS+=$(FMODULEOBJECTS)
 
+#builddir code:
+builddir=build
+COBJECTSbuild=$(addprefix $(builddir), $(COBJECTS))
 
 # 
 # Project-wise Settings
@@ -440,6 +443,7 @@ wellsortedbuild: header buildinfo ffiles.mk cfiles.mk cipofiles.mk
 ifneq ($(FMODULEOBJECTS),)
 		$(MAKE) $(FMODULEOBJECTS)
 endif
+	mkdir -p $(dir $(COBJECTSbuild))
 	$(MAKE) build
 
 
@@ -589,12 +593,12 @@ header:
 	@echo flags, i.e. it is up  to you to initialise all compiler settings. Notably, 
 	@echo you have to specify through EXAHYPE_CC which compiler to use.
 
-build:  $(FOBJECTS) mergeipoobjects $(COBJECTS)
-	$(LL) $(COBJECTS) $(FOBJECTS) $(SOLVERKERNELS_IPO_OBJ) $(PROJECT_LINK) $(LINK_FORTRAN) $(COMPILER_LFLAGS) $(NO_IPO_FLAG) $(SYSTEM_LFLAGS) $(PROJECT_LFLAGS) -o $(EXECUTABLE)
+build:  $(FOBJECTS) mergeipoobjects $(COBJECTSbuild)
+	$(LL) $(COBJECTSbuild) $(FOBJECTS) $(SOLVERKERNELS_IPO_OBJ) $(PROJECT_LINK) $(LINK_FORTRAN) $(COMPILER_LFLAGS) $(NO_IPO_FLAG) $(SYSTEM_LFLAGS) $(PROJECT_LFLAGS) -o $(EXECUTABLE)
 	@echo build of ExaHyPE successful
 	@echo run code with ./$(EXECUTABLE) and pass config file as argument
 
-link_muq:   header buildinfo ffiles.mk cfiles.mk cipofiles.mk $(FOBJECTS) mergeipoobjects $(COBJECTS)
+link_muq:   header buildinfo ffiles.mk cfiles.mk cipofiles.mk $(FOBJECTS) mergeipoobjects $(COBJECTSbuild)
 ifeq (,$(findstring EXAHYPE_LATE_TAKEOVER,$(COMPILER_CFLAGS)))
 	@echo
 	@echo
@@ -603,7 +607,7 @@ endif
 ifneq ($(FMODULEOBJECTS),)
 		$(MAKE) $(FMODULEOBJECTS)
 endif
-	@echo $(COBJECTS) $(FOBJECTS) $(SOLVERKERNELS_IPO_OBJ) $(PROJECT_LINK) $(LINK_FORTRAN) $(COMPILER_LFLAGS) $(NO_IPO_FLAG) $(SYSTEM_LFLAGS) $(PROJECT_LFLAGS) > exahype_link
+	@echo $(COBJECTSbuild) $(FOBJECTS) $(SOLVERKERNELS_IPO_OBJ) $(PROJECT_LINK) $(LINK_FORTRAN) $(COMPILER_LFLAGS) $(NO_IPO_FLAG) $(SYSTEM_LFLAGS) $(PROJECT_LFLAGS) > exahype_link
 
 clean:
 	rm -f $(EXECUTABLE)
@@ -611,6 +615,7 @@ clean:
 	rm -f ffiles.mk
 	rm -f $(COBJECTS)
 	rm -f cfiles.mk
+	rm -rf build/*
 ifeq ($(call tolower,$(USE_IPO_INTERN)),on)	
 	rm -f $(CIPOOBJECTS)
 	rm -f $(SOLVERKERNELS_IPO_OBJ)
@@ -626,7 +631,7 @@ peano.a: $(FOBJECTS) $(COBJECTS)
 #	Since the find does not work in-place, here we just collect all object files, also from ExaHyPE:
 	ar r peano.a  $(COBJECTS) $(FOBJECTS)
 
-$(COBJECTS): %.o : %.cpp
+$(COBJECTSbuild): $(builddir)%.o : %.cpp
 	$(CC) $(COMPILER_CFLAGS) $(NO_IPO_FLAG) $(SYSTEM_CFLAGS) $(PROJECT_CFLAGS) -I$(PEANO_KERNEL_PEANO_PATH)/../ -I$(PEANO_KERNEL_TARCH_PATH)/../ -I$(PROJECT_PATH) -I$(PEANO_TOOLBOX_MPI_BLANCING_PATH)/../ -I$(PEANO_TOOLBOX_SHAREDMEMORY_ORACLES_PATH)/../ -I$(PEANO_TOOLBOX_MULTISCALELINKEDCELL_PATH)/../ -I$(EXAHYPE_PATH) -I$(PROJECT_PATH)  -c $< -o $@
 
 $(CIPOOBJECTS): %.o : %.cpp

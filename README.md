@@ -1,6 +1,9 @@
-# This is the ExaHyPE project #
+# This is a fork ExaHyPE project #
+source: https://gitlab.lrz.de/exahype/ExaHyPE-Engine/
+It contains a change to to the .exahype file specification needed for
+https://github.com/shingst/adjoint/ 
 
-This is the main repository of the ExaHyPE project*. It contains the following directories:
+It contains the following directories:
 
 * ApplicationExamples: A number of exemplaric application such as Euler, MHD, Seismic, etc.
 * Benchmarks: An ExaHyPE Benchmark suite for TBB and MPI (maintained by Durham)
