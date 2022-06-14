@@ -1,5 +1,6 @@
-# This is a fork ExaHyPE project #
+# This is a fork of the ExaHyPE project #
 source: https://gitlab.lrz.de/exahype/ExaHyPE-Engine/
+
 It contains a change to to the .exahype file specification needed for
 https://github.com/shingst/adjoint/ 
 
